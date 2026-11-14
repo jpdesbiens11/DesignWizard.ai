@@ -21,7 +21,9 @@ export function flowStatus(board, r = {}) {
   const orphan = fs.filter((f) => !f.block && f.kind !== "contrainte" && !fs.some((c) => c.parent === f.id)).length, zones = r.zones || [], placement = r.placement || [], open = drc ? drc.stats.open : null, st = {};
   st.fonctions = { ok: fs.length > 0 && !orphan, detail: fs.length ? `${plural(fs.length, "fonction", "fonctions")}${orphan ? `, ${orphan} sans solution` : ""}` : "à décrire" };
   st.architecture = { ok: blocks.length > 0 && !erc.summary.error, bad: erc.summary.error > 0, detail: blocks.length ? `${plural(blocks.length, "bloc", "blocs")} · ${parts.length} comp.${erc.summary.error ? ` · ${plural(erc.summary.error, "erreur", "erreurs")}` : ""}` : "aucun bloc" };
-  st.implantation = { ok: blocks.length > 0 && !zones.length, detail: blocks.length && !zones.length ? `${String((b.size || [0, 0])[0]).replace(".", ",")} × ${String((b.size || [0, 0])[1]).replace(".", ",")} mm, ${b.layers || 2} couches` : blocks.length ? plural(zones.length, "point à régler", "points à régler") : "après l'architecture" };
+  // once every part is placed without a fault, the detailed layout speaks for the floor plan : a block moved by hand may leave its zone over its neighbour's
+  const settled = parts.length > 0 && parts.every((p) => p.at) && !placement.length, size = `${String((b.size || [0, 0])[0]).replace(".", ",")} × ${String((b.size || [0, 0])[1]).replace(".", ",")} mm, ${b.layers || 2} couches`;
+  st.implantation = { ok: blocks.length > 0 && (!zones.length || settled), detail: blocks.length && !zones.length ? size : blocks.length && settled ? "zones retouchées au layout" : blocks.length ? plural(zones.length, "point à régler", "points à régler") : "après l'architecture" };
   st.pdr = { ok: st.fonctions.ok && st.architecture.ok && st.implantation.ok, detail: "" };
   st.pdr.detail = st.pdr.ok ? "prête" : "pas encore";
   const unplaced = parts.filter((p) => !p.at).length;

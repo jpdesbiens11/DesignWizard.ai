@@ -12,6 +12,7 @@ import { connectivity, ratsnest } from "../pcba/connect.js";
 import { routeStats, clearRoutes } from "../pcba/route.js";
 import { stackup } from "../pcba/fabfiles.js";
 import { inheritFromPart } from "../pcba/twin.js";
+import { blockRefs } from "../pcba/move.js";
 import { boardView, layerList } from "./pcba_view.js";
 
 const num = (value, onChange, step = "any", w = "5.2rem") => el("input", { type: "number", value, step, style: { width: w }, onChange: (e) => { const x = parseFloat(e.target.value); if (Number.isFinite(x)) onChange(x); } });
@@ -146,23 +147,35 @@ function layout(ctx, { left, view, right }) {
   l.append(el("div", { class: "form-actions", style: { justifyContent: "flex-start", flexWrap: "wrap" } },
     btn("Placer", () => runJob(ctx, "place", "Placement des composants", { keep: false }, (i) => { toast(i.failed.length ? `${i.failed.length} composant(s) sans place.` : `${i.placed} composants placés.`, i.failed.length ? "warn" : "success"); }), { primary: unplaced > 0, icon: "sparkle", tip: "Place les composants non verrouillés dans la zone de leur bloc" }),
     btn("Router", () => runJob(ctx, "route", "Routage", { maxMs: 60000, passes: 4 }, (i) => toast(i.complete ? `Routage complet : ${Math.round(i.length)} mm, ${i.vias} vias, ${fmt(i.ms / 1000, 1)} s.` : `${i.routed} liaisons sur ${i.total} : ${i.open} à reprendre.`, i.complete ? "success" : "warn", 7000)), { primary: !unplaced && conn.open > 0, icon: "play", disabled: unplaced > 0, tip: "Route toutes les liaisons ouvertes ; le cuivre verrouillé est conservé" }),
+    btn("Reconnecter", () => runJob(ctx, "route", "Reconnexion", { keep: true, maxMs: 30000, passes: 2 }, (i) => toast(i.complete ? `${i.routed} liaison(s) refaite(s) ; le cuivre en place n'a pas bougé.` : `${i.routed} liaison(s) refaite(s), ${i.open} à reprendre.`, i.complete ? "success" : "warn")), { small: true, icon: "link", disabled: unplaced > 0 || !conn.open, tip: "Ne pose que les liaisons manquantes, autour du cuivre en place" }),
     btn("Effacer", () => ctx.update((x) => clearRoutes(x), "Routage effacé"), { small: true, icon: "trash", tip: "Retire le cuivre posé par le routeur" })));
+  /* a brick moves — one part or a whole block — and the board reconnects itself : one job, one undo step */
+  const snap = (q) => Math.round(q * 4) / 4, said = (what) => (i) => { const r = i.route; toast(`${what} : ${i.tracks} piste(s) et ${i.vias} via(s) ont suivi, ${r.routed} liaison(s) refaite(s)${r.open ? `, ${r.open} à reprendre` : ""}${i.clashes ? ` ; ${i.clashes} pastille(s) trop près d'un voisin` : ""}.`, r.open || i.clashes ? "warn" : "success", 6000); };
+  const moveParts = (refs, o, label, what) => { const d = [snap((o.delta || [0, 0])[0]), snap((o.delta || [0, 0])[1])]; if (!d[0] && !d[1] && !o.turn) return; runJob(ctx, "move", label, { ...o, refs, delta: d }, said(what)); };
+  const moveBlock = (id, o) => { ui.block = id; moveParts(blockRefs(board, id), { ...o, block: id }, `Bloc ${id} ${o.turn ? "tourné" : "déplacé"}`, `Bloc ${id}`); };
+  const mode = ui.move === "blocks" ? "blocks" : "parts";
+  l.append(el("div", { class: "form-row tight", style: { alignItems: "center", margin: ".2rem 0 .6rem" } }, el("span", { class: "muted small" }, "Glisser déplace"), el("span", { class: "seg" }, [["parts", "un composant"], ["blocks", "un bloc entier"]].map(([k, t]) => el("button", { type: "button", class: mode === k ? "on" : "", onClick: () => { ui.move = k; ctx.redraw(); } }, t)))));
   l.append(el("div", { class: "kpis" }, el("div", { class: "kpi" }, el("b", null, String(conn.open)), el("span", null, "liaisons à router")), el("div", { class: "kpi" }, el("b", null, `${Math.round(stats.length)} mm`), el("span", null, `${stats.tracks} pistes`)), el("div", { class: "kpi" }, el("b", null, String(stats.vias)), el("span", null, "vias"))));
   const v = boardView(view);
-  const scene = () => ({ R, art: ctx.art, board, layers: ui.layers, zones: ui.layers.has("zones"), ratsnest: rats, mode: "parts", ref: ui.ref, net: ui.net,
-    onPick: (h) => { ui.ref = h.ref || (h.pin ? h.pin.slice(0, h.pin.indexOf(".")) : null); ui.net = h.net || null; ctx.redraw(); },
-    onMovePart: (ref, d) => ctx.update((x) => { const p = x.parts.find((q) => q.ref === ref), s = (q) => Math.round(q * 4) / 4; p.at = [s(p.at[0] + d[0]), s(p.at[1] + d[1])]; const nets = x.nets.filter((n) => n.pins.some((pin) => pin.startsWith(`${ref}.`))).map((n) => n.name); clearRoutes(x, { nets }); ui.ref = ref; }, `${ref} déplacé`) });
+  const scene = () => ({ R, art: ctx.art, board, layers: ui.layers, zones: ui.layers.has("zones"), ratsnest: rats, mode, block: ui.block, ref: ui.ref, net: ui.net,
+    onPick: (h) => { ui.ref = h.ref || (h.pin ? h.pin.slice(0, h.pin.indexOf(".")) : null); ui.net = h.net || null; const pp = board.parts.find((q) => q.ref === ui.ref); ui.block = pp ? pp.block || null : null; ctx.redraw(); },
+    onMoveBlock: (id, d) => moveBlock(id, { delta: d }),
+    onMovePart: (ref, d) => { ui.ref = ref; moveParts([ref], { delta: d }, `${ref} déplacé`, ref); } });
   v.show(scene());
   l.append(section("Couches", layerList(ctx.art, ui.layers, () => v.show(scene())), el("label", { class: "pv-layer-row" }, el("input", { type: "checkbox", checked: ui.layers.has("zones"), onChange: (e) => { if (e.target.checked) ui.layers.add("zones"); else ui.layers.delete("zones"); v.show(scene()); } }), el("i", { style: { background: "var(--acc)" } }), el("span", null, "Zones des blocs"))));
-  l.append(el("p", { class: "muted small" }, "Glissez un composant pour le déplacer : ses pistes sont retirées et ses liaisons redeviennent à router. Molette : zoom. Un clic sur du cuivre montre son net."));
+  l.append(el("p", { class: "muted small" }, "Glissez un composant ou un bloc : ses pistes internes le suivent, ses liaisons avec le reste de la carte se refont seules, le cuivre qu'il recouvre est repris. Ctrl+Z annule le tout. Molette : zoom. Un clic sur du cuivre montre son net."));
   const r = scroll(right), part = board.parts.find((p) => p.ref === ui.ref), net = R.nets.find((n) => n.name === ui.net);
   if (part) {
     const def = ctx.lib[part.comp] || (board.library || {})[part.comp], edit = (fn, label) => ctx.update((x) => fn(x.parts.find((q) => q.ref === part.ref), x), label || `${part.ref} modifié`);
     r.append(el("div", { class: "side-head" }, el("h2", null, `${part.ref} — ${def ? def.name : part.comp}`)), el("p", { class: "muted small" }, `${part.role || ""}${part.block ? ` · bloc ${part.block}` : ""}`));
-    r.append(section("Position", el("div", { class: "form-row" }, field("X", num(part.at ? part.at[0] : 0, (q) => edit((p, x) => { p.at = [q, (p.at || [0, 0])[1]]; clearRoutes(x); }))), field("Y", num(part.at ? part.at[1] : 0, (q) => edit((p, x) => { p.at = [(p.at || [0, 0])[0], q]; clearRoutes(x); }))),
-      field("Rotation", sel(part.rot || 0, [[0, "0°"], [90, "90°"], [180, "180°"], [270, "270°"]], (q) => edit((p, x) => { p.rot = +q; clearRoutes(x); }, `${part.ref} tourné`))), field("Face", sel(part.side || "top", [["top", "dessus"], ["bottom", "dessous"]], (q) => edit((p, x) => { p.side = q; clearRoutes(x); })))),
+    const at = part.at || [0, 0], netsOf = (x) => x.nets.filter((n) => n.pins.some((pin) => pin.startsWith(`${part.ref}.`))).map((n) => n.name), go = (o, verb) => (part.at && !part.fixed ? moveParts([part.ref], o, `${part.ref} ${verb}`, part.ref) : toast("Ce composant a une position imposée : libérez-le d'abord.", "info"));
+    r.append(section("Position", el("div", { class: "form-row" }, field("X", num(at[0], (q) => go({ delta: [q - at[0], 0] }, "déplacé"))), field("Y", num(at[1], (q) => go({ delta: [0, q - at[1]] }, "déplacé"))),
+      field("Rotation", sel(part.rot || 0, [[0, "0°"], [90, "90°"], [180, "180°"], [270, "270°"]], (q) => go({ turn: (+q - (part.rot || 0) + 360) % 360, about: at }, "tourné"))), field("Face", sel(part.side || "top", [["top", "dessus"], ["bottom", "dessous"]], (q) => edit((p, x) => { p.side = q; clearRoutes(x, { nets: netsOf(x) }); }, `${part.ref} changé de face`)))),
       el("label", { class: "check" }, el("input", { type: "checkbox", checked: !!part.fixed, onChange: (e) => edit((p) => { if (e.target.checked) p.fixed = true; else delete p.fixed; }, `${part.ref} ${e.target.checked ? "verrouillé" : "libéré"}`) }), "Position imposée (verrouillée)")));
     r.append(section("Approvisionnement", field("Valeur", txt(part.value, (q) => edit((p) => { p.value = q; }))), field("Référence du fabricant", txt(part.mpn, (q) => edit((p) => { if (q) p.mpn = q; else delete p.mpn; }))), el("label", { class: "check" }, el("input", { type: "checkbox", checked: !!part.dnp, onChange: (e) => edit((p) => { if (e.target.checked) p.dnp = true; else delete p.dnp; }) }), "Non monté")));
+    const blk = part.block ? board.blocks.find((b) => b.id === part.block) : null;
+    if (blk) r.append(section(`Bloc ${blk.id} — ${blk.name || blk.template}`, el("p", { class: "muted small" }, `${blockRefs(board, blk.id).length} composant(s) libres : le bloc se déplace et tourne d'une pièce, avec ses pistes internes.`),
+      el("div", { class: "form-actions", style: { justifyContent: "flex-start" } }, btn("Tourner le bloc de 90°", () => moveBlock(blk.id, { turn: 90 }), { small: true, icon: "refresh" }), btn("Glisser le bloc", () => { ui.move = "blocks"; ui.block = blk.id; ctx.redraw(); }, { small: true, icon: "drag", disabled: mode === "blocks" }))));
     if (def) r.append(section("Composant", el("p", { class: "small" }, `${def.package} · ${def.desc || ""}`), el("p", { class: "muted small" }, `${def.pads.length} pastilles, ${fmt(def.body[0])} × ${fmt(def.body[1])} × ${fmt(def.body[2])} mm, ${fmt(def.price)} $`)));
   } else if (net) {
     r.append(el("div", { class: "side-head" }, el("h2", null, `Net ${net.name}`), badge(CLASSES[net.class] ? CLASSES[net.class].label : net.class)));

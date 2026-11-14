@@ -32,7 +32,7 @@ function layerGroup(key, prims, bbox, net) {
 }
 
 /** The canvas. → { show(scene), fit(), focus([x, y]), destroy() }
-    scene : { R, art, board, layers: Set, zones, ratsnest, findings, net, ref, mode: "zones" | "parts" | null, onPick, onMoveZone, onMovePart } */
+    scene : { R, art, board, layers: Set, zones, ratsnest, findings, net, ref, mode: "zones" | "parts" | "blocks" | null, block, onPick, onMoveZone, onMovePart, onMoveBlock } */
 export function boardView(host) {
   host.classList.add("pcba-view");
   const root = svg("svg", { class: "pv-svg", preserveAspectRatio: "xMidYMid meet" }), world = svg("g", { transform: "scale(1,-1)" });
@@ -46,7 +46,8 @@ export function boardView(host) {
     if (!scene) return;
     const t = e.target, p = toBoard(e), hit = t.closest && t.closest("[data-drag]");
     root.setPointerCapture(e.pointerId);
-    if (hit && scene.mode) drag = { kind: hit.dataset.drag, id: hit.dataset.id, node: hit, from: p, moved: false, grip: hit.dataset.grip === "1" };
+    if (hit && scene.mode) { drag = { kind: hit.dataset.drag, id: hit.dataset.id, node: hit, from: p, moved: false, grip: hit.dataset.grip === "1" };
+      if (scene.mode === "blocks" && hit.dataset.block) { drag.block = hit.dataset.block; drag.group = [...world.querySelectorAll("[data-drag='part']")].filter((n) => n.dataset.block === drag.block); } }      // a block moves as one brick
     else drag = { kind: "pan", from: [e.clientX, e.clientY], vb: [...vb], moved: false, target: t };
   });
   root.addEventListener("pointermove", (e) => {
@@ -54,14 +55,15 @@ export function boardView(host) {
     if (drag.kind === "pan") { const r = root.getBoundingClientRect(), k = Math.max(vb[2] / r.width, vb[3] / r.height), dx = e.clientX - drag.from[0], dy = e.clientY - drag.from[1]; if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true; vb = [drag.vb[0] - dx * k, drag.vb[1] - dy * k, vb[2], vb[3]]; setVb(); return; }
     const p = toBoard(e), d = [p[0] - drag.from[0], p[1] - drag.from[1]]; drag.delta = d; if (Math.abs(d[0]) + Math.abs(d[1]) > 0.2) drag.moved = true;
     if (drag.grip) { const r = drag.node.parentNode.querySelector("rect"); r.setAttribute("width", Math.max(3, +r.dataset.w + d[0])); r.setAttribute("y", +r.dataset.y + Math.min(d[1], +r.dataset.h - 3)); r.setAttribute("height", Math.max(3, +r.dataset.h - d[1])); }
-    else (drag.kind === "zone" ? drag.node.parentNode : drag.node).setAttribute("transform", `translate(${d[0]},${d[1]})`);
+    else for (const n of drag.group || [drag.kind === "zone" ? drag.node.parentNode : drag.node]) n.setAttribute("transform", `translate(${d[0]},${d[1]})`);
   });
   root.addEventListener("pointerup", (e) => {
     const d = drag; drag = null; if (!d || !scene) return;
     if (d.kind === "pan") { if (!d.moved && scene.onPick) { const t = d.target; scene.onPick({ net: (t.dataset && t.dataset.net) || null, pin: (t.dataset && t.dataset.pin) || null, at: toBoard(e) }); } return; }
-    if (!d.moved) { if (d.kind === "part" && scene.onPick) scene.onPick({ ref: d.id, at: toBoard(e) }); return; }
+    if (!d.moved) { if (d.kind === "part" && scene.onPick) scene.onPick({ ref: d.id, block: d.block || null, at: toBoard(e) }); return; }
     if (d.kind === "zone" && scene.onMoveZone) scene.onMoveZone(d.id, d.delta, d.grip);
-    if (d.kind === "part" && scene.onMovePart) scene.onMovePart(d.id, d.delta);
+    if (d.kind === "part" && d.group && scene.onMoveBlock) scene.onMoveBlock(d.block, d.delta);
+    else if (d.kind === "part" && scene.onMovePart) scene.onMovePart(d.id, d.delta);
   });
 
   function show(s) {
@@ -79,9 +81,10 @@ export function boardView(host) {
       if (s.mode === "zones") g.append(svg("rect", { class: "pv-grip", x: z[0] + z[2] - 1.6, y: z[1], width: 1.6, height: 1.6, "data-drag": "zone", "data-id": b.id, "data-grip": "1" }));
       world.append(g);
     }
-    if (s.mode === "parts" || s.ref) for (const p of R.parts) {
-      const sel = p.ref === s.ref;
-      if (s.mode === "parts" || sel) world.append(svg("rect", { class: `pv-part${sel ? " sel" : ""}${p.fixed ? " fixed" : ""}`, x: p.box[0], y: p.box[1], width: p.box[2] - p.box[0], height: p.box[3] - p.box[1], "data-drag": s.mode === "parts" && !p.fixed ? "part" : null, "data-id": p.ref }, svg("title", null, `${p.ref} — ${p.def.name}${p.value ? ` — ${p.value}` : ""}`)));
+    const grab = s.mode === "parts" || s.mode === "blocks";
+    if (grab || s.ref) for (const p of R.parts) {
+      const sel = p.ref === s.ref, mate = s.mode === "blocks" && s.block && p.block === s.block;
+      if (grab || sel) world.append(svg("rect", { class: `pv-part${sel ? " sel" : ""}${mate ? " blk" : ""}${p.fixed ? " fixed" : ""}`, x: p.box[0], y: p.box[1], width: p.box[2] - p.box[0], height: p.box[3] - p.box[1], "data-drag": grab && !p.fixed ? "part" : null, "data-id": p.ref, "data-block": p.block || null }, svg("title", null, `${p.ref} — ${p.def.name}${p.value ? ` — ${p.value}` : ""}`)));
     }
     for (const l of s.ratsnest || []) world.append(svg("line", { class: "pv-rat", x1: l.a[0], y1: l.a[1], x2: l.b[0], y2: l.b[1] }));
     for (const f of s.findings || []) if (f.at) world.append(svg("circle", { class: `pv-mark ${f.severity}${f === s.focus ? " focus" : ""}`, cx: f.at[0], cy: f.at[1], r: f === s.focus ? 2.2 : 1.3 }, svg("title", null, `${f.title} — ${f.message}`)));

@@ -162,11 +162,11 @@ function routeAll(board, lib, order, opts, t0) {
   return { tracks, vias, failed: [...failed.values()].flat(), routed };
 }
 
-/** Routes every open connection. opts : { grid, maxMs, onProgress, nets, viaCost, passes }.
+/** Routes every open connection. opts : { grid, maxMs, onProgress, nets, keep, viaCost, passes }.
     → { routed, total, open, failed: [{ net, from, to }], length, vias, ms, passes, complete } */
 export function autoroute(board, lib = {}, opts = {}) {
   const t0 = Date.now(), o = { maxMs: 15000, passes: 2, ...opts };
-  clearRoutes(board, { nets: o.nets || null });
+  if (!o.keep) clearRoutes(board, { nets: o.nets || null });      // keep : the copper in place stays, only the missing links are laid
   const before = connectivity(resolveBoard(board, lib)).open;
   // order : nets that own a plane (short stubs), then grounds, then supplies, then signals — the shortest first in each family
   const R = resolveBoard(board, lib), planes = new Set(R.planes.map((p) => p.net)), rank = (n) => (planes.has(n.name) ? 0 : n.class === "ground" ? 1 : n.class === "signal" ? 3 : 2);

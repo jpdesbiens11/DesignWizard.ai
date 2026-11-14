@@ -24,6 +24,8 @@ import { boardView, layerList, LAYER_STYLE, DRAW_ORDER } from "./pcba_view.js";
 import { ui$ } from "./pcba_steps.js";
 import { openAiLoopFor } from "./ai_loop.js";
 import { boardAssemblyPlan } from "../pcba/assembly_plan.js";
+import { followMoves, pruneCopper } from "../pcba/move.js";
+import { autoroute } from "../pcba/route.js";
 import { planPanel, setPlanNote, setPlanPoints } from "./plan_view.js";
 
 const { txt, sel, section, scroll, hint } = ui$;
@@ -32,14 +34,18 @@ const finding = (f, onClick) => el("div", { class: "finding", onClick, style: { 
 
 /** What an AI needs to know to edit a board. */
 export const boardAiHelp = () => [`Blocs disponibles (block <repère> <gabarit>, puis params) : ${Object.keys(BLOCKS).join(", ")}. Changer les « params » d'un bloc suffit : ses composants et ses nets seront reconstruits.`,
-  "Un composant : part <repère> <composant de la bibliothèque> value=… at=[x, y] rot=0|90|180|270. Un net : net <NOM> class=signal|power|ground|hv pins=[U1.3, C2.1].", "Noms de nets en majuscules : rails +5V, +3V3 ; masses GND ; signaux FONCTION_SIGNAL."];
+  "Un composant : part <repère> <composant de la bibliothèque> value=… at=[x, y] rot=0|90|180|270. Pour déplacer un composant ou un bloc, change seulement « at » (et « rot ») : ne touche pas aux lignes « track » et « via », l'outil fait suivre les pistes et refait les liaisons. Un net : net <NOM> class=signal|power|ground|hv pins=[U1.3, C2.1].", "Noms de nets en majuscules : rails +5V, +3V3 ; masses GND ; signaux FONCTION_SIGNAL."];
 /** Completes an answer : blocks whose parameters changed are built again so parts and nets follow ; says what the checks find. */
 export function boardAiCheck(board, doc) {
   try {
     const before = new Map(board.blocks.map((b) => [b.id, JSON.stringify(b.params)]));
     for (const b of doc.blocks || []) if (BLOCKS[b.template] && before.has(b.id) && before.get(b.id) !== JSON.stringify(b.params)) rebuildBlock(doc, b.id, b.params);
     const R = resolveBoard(doc, LIBRARY);
-    return R.problems.length ? R.problems.map((t) => ({ severity: "block", text: t })) : [{ severity: "info", text: "Après application : relancez le placement et le routage si des composants ont changé, puis les vérifications." }];
+    if (R.problems.length) return R.problems.map((t) => ({ severity: "block", text: t }));
+    const f = followMoves(board, doc, LIBRARY), notes = [];      // parts moved in the answer : their copper follows, their links are laid again
+    if (f.moved.length) { const r = f.nets.length ? autoroute(doc, LIBRARY, { nets: f.nets, keep: true, maxMs: 8000, passes: 1 }) : { routed: 0, open: 0 }; pruneCopper(doc, LIBRARY, f.nets);
+      notes.push({ severity: r.open ? "warn" : "info", text: `${f.moved.length} composant(s) déplacé(s) (${f.moved.slice(0, 6).join(", ")}${f.moved.length > 6 ? "…" : ""}) : leurs pistes ont suivi, ${r.routed} liaison(s) refaite(s)${r.open ? ` ; ${r.open} restent à router` : ""}.` }); }
+    return [...notes, { severity: "info", text: "Après application : relancez le placement et le routage si des composants ont été ajoutés, puis les vérifications." }];
   } catch (e) { return [{ severity: "block", text: `Réponse incohérente : ${e.message}` }]; }
 }
 export const boardAiLoop = (ctx) => openAiLoopFor(`board:${ctx.board.id}`);
