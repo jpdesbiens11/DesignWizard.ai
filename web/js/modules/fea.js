@@ -15,18 +15,18 @@ import { footprint } from "../core/shop_intent.js";
 import { patternPoints } from "../cad/interfaces.js";
 import { thread } from "../cad/standards.js";
 import { buildModel, skin } from "../analysis/fea/index.js";
-import { precheckStructure, precheckThermal, compare } from "../analysis/fea/precheck.js";
+import { precheckStructure, precheckThermal, precheckThermo, compare } from "../analysis/fea/precheck.js";
 import { VERDICT, show } from "../analysis/fea/summary.js";
 
 const FACES = [["-X", "gauche (−X)"], ["+X", "droite (+X)"], ["-Y", "avant (−Y)"], ["+Y", "arrière (+Y)"], ["-Z", "dessous (−Z)"], ["+Z", "dessus (+Z)"]];
 const DIRS = { "+X": [1, 0, 0], "-X": [-1, 0, 0], "+Y": [0, 1, 0], "-Y": [0, -1, 0], "+Z": [0, 0, 1], "-Z": [0, 0, -1] };
-const st = { target: null, kind: "structure", cells: 3000, fixed: [], loads: [], power: [], fixedT: [], conv: { on: true, h: 10, Tamb: 25 } };
+const st = { target: null, kind: "structure", cells: 3000, fixed: [], loads: [], power: [], fixedT: [], conv: { on: true, h: 10, Tamb: 25 }, thermo: { uniform: true, T: 80, Tref: 20 } };
 let seq = 0;
 
 /** Material of a body for the simulation (typical values; the data sheet of the grade prevails). */
 export function feaMaterial(id) {
   const p = props(id) || {}, E = p.E ? (p.E < 2000 ? p.E * 1000 : p.E) : 3000;
-  return { id: id || "?", name: p.name || id || "matériau inconnu", E, nu: p.nu || 0.33, k: p.k || 0.3, rho: p.rho || 1200, Re: p.Re || null, known: !!p.E };
+  return { id: id || "?", name: p.name || id || "matériau inconnu", E, nu: p.nu || 0.33, k: p.k || 0.3, rho: p.rho || 1200, Re: p.Re || null, alpha: (p.cte || 0) * 1e-6, known: !!p.E };
 }
 /** Blue to red, the way a result plot is read. */
 function colour(t) {
@@ -94,14 +94,20 @@ function render(main, args) {
   /** The simple regions of a choice: one for a face, one per screw for a bolted interface (the effort is shared between them). */
   const listOf = (key) => (regions.find((r) => r.key === key) || regions[0]).list;
   function loadCase() {
-    if (st.kind === "thermal") return { power: st.power.flatMap((x) => listOf(x.region).map((region, i, all) => ({ region, P: x.P / all.length }))), fixedT: st.fixedT.flatMap((x) => listOf(x.region).map((region) => ({ region, T: x.T }))),
+    if (st.kind === "thermo") return { fixed: st.fixed.flatMap(listOf), loads: [], Tref: st.thermo.Tref, thermal: st.thermo.uniform ? { uniform: st.thermo.T } : { case: thermalCase() } };
+    return st.kind === "thermal" ? thermalCase() : structureCase();
+  }
+  function thermalCase() {
+    return { power: st.power.flatMap((x) => listOf(x.region).map((region, i, all) => ({ region, P: x.P / all.length }))), fixedT: st.fixedT.flatMap((x) => listOf(x.region).map((region) => ({ region, T: x.T }))),
       convection: st.conv.on ? [{ region: "exterior", h: st.conv.h, Tamb: st.conv.Tamb }] : [] };
+  }
+  function structureCase() {
     return { fixed: st.fixed.flatMap(listOf), loads: st.loads.flatMap((l) => listOf(l.region).map((region, i, all) => (l.mode === "pressure" ? { region, pressure: l.p } : { region, force: DIRS[l.dir].map((c) => c * l.F / all.length) }))) };
   }
   function refreshEstimate() {
     if (!model) return;
     const mat = geo.bodies[0].material;
-    try { estimate = st.kind === "thermal" ? precheckThermal(model, loadCase(), mat) : precheckStructure(model, loadCase(), mat); }
+    try { estimate = st.kind === "thermal" ? precheckThermal(model, loadCase(), mat) : st.kind === "thermo" ? precheckThermo(model, loadCase(), mat) : precheckStructure(model, loadCase(), mat); }
     catch (e) { estimate = { kind: "none", title: "Cas incomplet", steps: [e.message], values: {}, warnings: [] }; }
     const v = vp.viewer; v.clearOverlays("bc");
     if (estimate.where) v.addMarker(estimate.where, "#0c66e4", "bc", 1.6);
@@ -122,20 +128,26 @@ function render(main, args) {
     left.append(scroll);
     scroll.append(el("div", { class: "subtabs" }, el("a", { class: "subtab", href: "#/physics" }, "Modèles analytiques"), el("a", { class: "subtab active", href: "#/fea" }, "Simulation")),
       el("div", { class: "side-section" }, field("Ce que l'on simule", sel(st.target.id, targets.map((t) => [t.id, `${t.type === "part" ? "Pièce" : "Assemblage"} — ${t.name}`]), (id) => { st.target = targets.find((t) => t.id === id); st.fixed = []; loadGeometry(); })),
-        field("Physique", sel(st.kind, [["structure", "Structure — efforts et déformations"], ["thermal", "Thermique — régime permanent"]], (k) => { st.kind = k; changed(); })),
+        field("Physique", sel(st.kind, [["structure", "Structure — efforts et déformations"], ["thermal", "Thermique — régime permanent"], ["thermo", "Thermo-mécanique — dilatation et contraintes"]], (k) => { st.kind = k; changed(); })),
         field("Finesse du maillage", el("input", { type: "range", min: 500, max: 16000, step: 500, value: st.cells, onChange: (e) => { st.cells = +e.target.value; last = null; remesh(false); } }), `Environ ${st.cells.toLocaleString("fr-CA")} cubes : grossier et rapide. Les détails plus petits qu'un cube sont ignorés.`)));
     const sec = el("div", { class: "side-section" });
     scroll.append(sec);
-    if (st.kind === "structure") {
+    const heat = st.kind === "thermal" || (st.kind === "thermo" && !st.thermo.uniform);
+    if (st.kind !== "thermal") {
       sec.append(el("h3", null, el("span", { class: "grow" }, "Appuis (encastrés)"), btn("", () => { st.fixed.push(regions[0].key); changed(); }, { small: true, icon: "plus", tip: "Ajouter un appui" })));
       st.fixed.forEach((k, i) => sec.append(el("div", { class: "bc-row" }, regSel(k, (v) => { st.fixed[i] = v; changed(); }), st.fixed.length > 1 ? rm(st.fixed, i) : null)));
-      sec.append(el("h3", { style: { marginTop: ".7rem" } }, el("span", { class: "grow" }, "Efforts"), btn("", () => { st.loads.push({ region: regions[1].key, mode: "force", F: 100, dir: "-Z", p: 0.1 }); changed(); }, { small: true, icon: "plus", tip: "Ajouter un effort" })));
-      st.loads.forEach((l, i) => sec.append(el("div", { class: "bc-card" }, el("div", { class: "bc-row" }, regSel(l.region, (v) => { l.region = v; changed(); }), rm(st.loads, i)),
+      if (st.kind === "thermo") sec.append(el("h3", { style: { marginTop: ".7rem" } }, "Température"),
+        el("div", { class: "bc-row" }, el("small", null, "Montage sans contrainte à"), num(st.thermo.Tref, (v) => { st.thermo.Tref = v; changed(); }), el("small", null, "°C")),
+        el("label", { class: "check" }, el("input", { type: "checkbox", checked: st.thermo.uniform, onChange: (e) => { st.thermo.uniform = e.target.checked; changed(); } }), "Pièce à température uniforme"),
+        st.thermo.uniform ? el("div", { class: "bc-row" }, num(st.thermo.T, (v) => { st.thermo.T = v; changed(); }), el("small", null, "°C en service")) : el("p", { class: "muted small" }, "Le champ de température est d'abord calculé avec les sources ci-dessous, puis appliqué à la structure."));
+      if (st.kind === "structure") sec.append(el("h3", { style: { marginTop: ".7rem" } }, el("span", { class: "grow" }, "Efforts"), btn("", () => { st.loads.push({ region: regions[1].key, mode: "force", F: 100, dir: "-Z", p: 0.1 }); changed(); }, { small: true, icon: "plus", tip: "Ajouter un effort" })));
+      if (st.kind === "structure") st.loads.forEach((l, i) => sec.append(el("div", { class: "bc-card" }, el("div", { class: "bc-row" }, regSel(l.region, (v) => { l.region = v; changed(); }), rm(st.loads, i)),
         el("div", { class: "bc-row" }, sel(l.mode, [["force", "Force (N)"], ["pressure", "Pression (MPa)"]], (v) => { l.mode = v; changed(); }),
           l.mode === "force" ? num(l.F, (v) => { l.F = v; changed(); }) : num(l.p, (v) => { l.p = v; changed(); }),
           l.mode === "force" ? sel(l.dir, Object.keys(DIRS).map((d) => [d, `vers ${d}`]), (v) => { l.dir = v; changed(); }) : null))));
-    } else {
-      sec.append(el("h3", null, el("span", { class: "grow" }, "Sources de chaleur"), btn("", () => { st.power.push({ region: regions[0].key, P: 5 }); changed(); }, { small: true, icon: "plus", tip: "Ajouter une source" })));
+    }
+    if (heat) {
+      sec.append(el("h3", { style: st.kind === "thermo" ? { marginTop: ".7rem" } : null }, el("span", { class: "grow" }, "Sources de chaleur"), btn("", () => { st.power.push({ region: regions[0].key, P: 5 }); changed(); }, { small: true, icon: "plus", tip: "Ajouter une source" })));
       st.power.forEach((x, i) => sec.append(el("div", { class: "bc-row" }, regSel(x.region, (v) => { x.region = v; changed(); }), num(x.P, (v) => { x.P = v; changed(); }), el("small", null, "W"), st.power.length > 1 ? rm(st.power, i) : null)));
       sec.append(el("h3", { style: { marginTop: ".7rem" } }, el("span", { class: "grow" }, "Températures imposées"), btn("", () => { st.fixedT.push({ region: regions[5].key, T: 25 }); changed(); }, { small: true, icon: "plus", tip: "Ajouter une face tenue en température" })));
       st.fixedT.forEach((x, i) => sec.append(el("div", { class: "bc-row" }, regSel(x.region, (v) => { x.region = v; changed(); }), num(x.T, (v) => { x.T = v; changed(); }), el("small", null, "°C"), rm(st.fixedT, i))));
@@ -144,7 +156,7 @@ function render(main, args) {
         el("p", { class: "muted small" }, "Air calme : 5 à 15 W/m²·K ; air soufflé : 25 à 100 ; plaque froide à eau : 500 et plus."));
     }
     const m = geo.bodies[0].material;
-    scroll.append(el("div", { class: "side-section" }, el("h3", null, "Matériau"), el("p", { class: "small" }, geo.bodies.length > 1 ? `${geo.bodies.length} corps, chacun avec son matériau ; contacts collés, conduction parfaite.` : `${m.name} — E ${fmt(m.E / 1000, 1)} GPa, ν ${m.nu}, k ${fmt(m.k, 1)} W/m·K${m.Re ? `, Re ${fmt(m.Re, 0)} MPa` : ""}.`),
+    scroll.append(el("div", { class: "side-section" }, el("h3", null, "Matériau"), el("p", { class: "small" }, geo.bodies.length > 1 ? `${geo.bodies.length} corps, chacun avec son matériau ; contacts collés, conduction parfaite.` : `${m.name} — E ${fmt(m.E / 1000, 1)} GPa, ν ${m.nu}, k ${fmt(m.k, 1)} W/m·K${m.alpha ? `, α ${fmt(m.alpha * 1e6, 1)} µm/m·K` : ""}${m.Re ? `, Re ${fmt(m.Re, 0)} MPa` : ""}.`),
       el("p", { class: "muted small" }, "Valeurs typiques : la fiche de la nuance fait foi.")));
   }
 
@@ -161,14 +173,15 @@ function render(main, args) {
     body.append(el("div", { class: "side-section" }, el("h3", null, "2. La simulation"), el("p", { class: "muted small" }, "Cubes identiques, hexaèdre à modes incompatibles (flexion juste même avec un élément dans l'épaisseur), gradient conjugué. Tout le code du solveur est dans ce dépôt, sous licence MIT."),
       el("div", { class: "form-actions", style: { justifyContent: "flex-start" } }, go)));
     if (!last) return;
-    const r = last.result, c = last.compare, mat = geo.bodies[0].material, sf = st.kind === "structure" && mat.Re ? mat.Re / r.maxVm.value : null;
+    const r = last.result, c = last.compare, mat = geo.bodies[0].material, sf = st.kind !== "thermal" && mat.Re ? mat.Re / r.maxVm.value : null;
     body.append(el("div", { class: "kpis" }, ...(st.kind === "thermal"
       ? [el("div", { class: "kpi" }, el("b", null, `${show(r.maxT.value, 1)} °C`), el("span", null, "Température maximale")), el("div", { class: "kpi" }, el("b", null, `${show(r.minT.value, 1)} °C`), el("span", null, "Température minimale")), el("div", { class: "kpi" }, el("b", null, `${show(r.balance.out, 2)} W`), el("span", null, `évacués sur ${show(r.balance.in, 2)} W`))]
-      : [el("div", { class: "kpi" }, el("b", null, `${show(r.maxVm.value, 1)} MPa`), el("span", null, `Contrainte de pointe${r.nominalVm ? ` · nominale ${show(r.nominalVm.value, 1)}` : ""}`)), el("div", { class: "kpi" }, el("b", null, `${show(r.maxU.value)} mm`), el("span", null, "Déplacement maximal")), el("div", { class: "kpi" }, el("b", null, sf ? show(sf, 2) : "—"), el("span", null, "Marge Re / σ de pointe"))])));
+      : [el("div", { class: "kpi" }, el("b", null, `${show(r.maxVm.value, 1)} MPa`), el("span", null, `Contrainte de pointe${r.nominalVm ? ` · nominale ${show(r.nominalVm.value, 1)}` : ""}`)), el("div", { class: "kpi" }, el("b", null, `${show(r.maxU.value)} mm`), el("span", null, "Déplacement maximal")), el("div", { class: "kpi" }, el("b", null, sf ? show(sf, 2) : "—"), el("span", null, "Marge Re / σ de pointe")),
+        ...(st.kind === "thermo" ? [el("div", { class: "kpi" }, el("b", null, `${show(r.maxT.value, 1)} °C`), el("span", null, r.minT.value === r.maxT.value ? "Température uniforme" : `Température, de ${show(r.minT.value, 1)} °C`))] : [])])));
     body.append(el("div", { class: "fea-legend" }, el("span", null, show(last.range[0], 1)), el("i"), el("span", null, `${show(last.range[1], 1)} ${st.kind === "thermal" ? "°C" : "MPa"}`)),
-      st.kind === "structure" ? el("p", { class: "muted small" }, `Déformée amplifiée ${fmt(r.scale, 0)} fois.`) : null);
+      st.kind !== "thermal" ? el("p", { class: "muted small" }, `Déformée amplifiée ${fmt(r.scale, 0)} fois.`) : null);
     body.append(el("div", { class: "side-section" }, el("h3", null, "3. Le recoupement ", badge(VERDICT[c.verdict][0], VERDICT[c.verdict][1])),
-      c.rows.length ? table(["", "À la main", "Simulation", "Écart"], c.rows.map((x) => [x.label, x.low !== undefined ? `${show(x.low, 2)} à ${show(x.analytic, 2)} ${x.unit}` : `${show(x.analytic, 2)} ${x.unit}`, `${show(x.fea, 2)} ${x.unit}`, x.deviation === null ? "—" : x.low !== undefined && x.deviation === 0 ? "dans la fourchette" : `${x.deviation > 0 ? "+" : ""}${Math.round(x.deviation * 100)} %`])) : null,
+      c.rows.length ? table(["", "À la main", "Simulation", "Écart"], c.rows.map((x) => [x.label, x.low !== undefined ? `${show(x.low, 2)} à ${show(x.analytic, 2)} ${x.unit}` : `${x.bound ? "au plus " : ""}${show(x.analytic, 2)} ${x.unit}`, `${show(x.fea, 2)} ${x.unit}`, x.deviation === null ? "—" : x.low !== undefined && x.deviation === 0 ? "dans la fourchette" : x.bound && x.deviation === 0 ? `sous la borne${x.note ? ` (${x.note})` : ""}` : `${x.deviation > 0 ? "+" : ""}${Math.round(x.deviation * 100)} %`])) : null,
       el("p", { class: "small" }, c.text),
       el("p", { class: "muted small" }, `${last.info.cells.toLocaleString("fr-CA")} cubes, ${r.dofs.toLocaleString("fr-CA")} inconnues, ${r.iterations} itérations, ${fmt(r.ms / 1000, 2)} s. La contrainte de pointe d'un maillage grossier est indicative : les concentrations locales (trous, congés, bord de l'encastrement) ne sont pas résolues.`),
       el("div", { class: "form-actions" }, btn("Ajouter au rapport", () => keep(), { small: true, icon: "plus" }))));
@@ -199,10 +212,10 @@ function render(main, args) {
   }
   function keep() {
     if (!last) return;
-    const r = last.result, mat = geo.bodies[0].material, thermal = st.kind === "thermal";
+    const r = last.result, mat = geo.bodies[0].material, thermal = st.kind === "thermal", nominal = r.nominalVm ? r.nominalVm.value : null;
     store.commit(`Simulation gardée : ${st.target.id}`, (x) => { x.simulations = x.simulations || []; x.simulations.push({ id: `S${x.simulations.length + 1}`, kind: st.kind, target: st.target.id, cells: last.info.cells, h: last.info.h,
       estimate: thermal ? { Tmax: last.estimate.values.Tmax } : { sigma: last.estimate.values.sigma, delta: last.estimate.values.delta },
-      result: thermal ? { Tmax: r.maxT.value, Tmin: r.minT.value } : { sigma: r.maxVm.value, delta: r.maxU.value, sf: mat.Re ? mat.Re / r.maxVm.value : null },
+      result: thermal ? { Tmax: r.maxT.value, Tmin: r.minT.value } : { sigma: r.maxVm.value, nominal, delta: r.maxU.value, sf: mat.Re ? mat.Re / r.maxVm.value : null, ...(st.kind === "thermo" ? { Tmax: r.maxT.value } : {}) },
       worst: last.compare.rows.length ? last.compare.worst : null, verdict: last.compare.verdict, when: new Date().toISOString() }); });
     toast("Simulation ajoutée au rapport de revue.", "success");
   }

@@ -1,7 +1,8 @@
 # Simulation — des éléments finis volontairement simples
 
 La brique **Simulation** (onglet Physique → Simulation) calcule en quelques secondes les déformations, les contraintes
-ou les températures d'une pièce ou d'un assemblage. Elle vise **80 % de la réalité ou mieux**, pas la dernière
+ou les températures d'une pièce ou d'un assemblage — et, en **thermo-mécanique**, ce que la température fait à une
+pièce tenue. Elle vise **80 % de la réalité ou mieux**, pas la dernière
 décimale : assez pour décider de commander le prototype, pas pour signer une note de calcul.
 
 Elle ne remplace pas le calcul à la main ; elle le suit. L'écran écrit d'abord **l'estimation analytique** du modèle
@@ -17,7 +18,10 @@ simple équivalent, puis lance la simulation, puis compare les deux.
      au droit de l'appui ;
    - thermique : **conduction 1-D** vers une face tenue en température (ΔT = P L / k A), ou **bilan global de
      convection** (T = T∞ + P / h A) avec le **nombre de Biot**, qui dit si la pièce est quasi isotherme — auquel cas
-     le bilan à la main suffit presque.
+     le bilan à la main suffit presque ;
+   - thermo-mécanique : la **dilatation libre** (δ = α ΔT L), la **borne de bridage** (σ = E α ΔT si la dilatation
+     est totalement empêchée), la contrainte due au seul **écart de température interne**
+     (σ ≈ E α ΔT / 2 (1 − ν)) et, entre deux matériaux collés, celle du **bilame** (σ ≈ E Δα ΔT / 2).
 2. **La simulation.** Un clic ; le solveur tourne à côté de la page, qui reste utilisable.
 3. **Le recoupement.** Un tableau « à la main / simulation / écart » et un verdict :
    - écart de 20 % ou moins : **concordant**, le résultat est crédible ;
@@ -27,7 +31,11 @@ simple équivalent, puis lance la simulation, puis compare les deux.
 Une simulation gardée (« Ajouter au rapport ») entre dans le rapport de revue avec son estimation, son résultat et
 son écart.
 
-Deux précisions qui comptent :
+Trois précisions qui comptent :
+
+- **Une borne se lit comme une borne.** En thermo-mécanique, E α ΔT est le maximum possible loin des appuis : la
+  simulation doit rester dessous, et le rapport contrainte nominale / borne donne le **taux de bridage** réel de la
+  pièce. Une pièce tenue d'un seul côté doit, elle, se dilater de α ΔT L à 20 % près.
 
 - **Une fourchette quand les appuis sont vissés.** Une pièce tenue par des vis de part et d'autre de l'effort est une
   poutre sur deux appuis, quelque part entre l'appui simple et l'encastrement : l'estimation donne les deux bornes, et
@@ -56,7 +64,7 @@ Dans un assemblage, les corps qui se touchent partagent leurs nœuds : les conta
 | Élément | hexaèdre à 8 nœuds **à modes incompatibles** (Wilson, Taylor) | hexaèdre à 8 nœuds trilinéaire |
 | Inconnues | 3 déplacements par nœud | 1 température par nœud |
 | Pourquoi | l'hexaèdre ordinaire est beaucoup trop raide en flexion ; les modes incompatibles rendent la flexion juste **même avec un seul élément dans l'épaisseur** | suffisant pour la conduction |
-| Conditions aux frontières | encastrement ; force répartie sur une région ; pression sur une face | température imposée ; puissance sur une région ; convection (h, T∞) sur les faces exposées |
+| Conditions aux frontières | encastrement, ou appui par direction ; force répartie sur une région ; pression sur une face ; **champ de température** (dilatation α (T − T de montage)) | température imposée ; puissance sur une région ; convection (h, T∞) sur les faces exposées |
 | Résultat | déplacements, contrainte de von Mises aux nœuds, réaction d'appui | températures, bilan de puissance |
 
 Le système est résolu par un **gradient conjugué préconditionné** (diagonale), sans jamais assembler la matrice :
@@ -92,7 +100,8 @@ plus d'itérations (quelques secondes).
   encastrement, autour d'un trou ou dans un congé, la valeur locale réelle peut être deux à trois fois plus élevée.
 - **Linéaire, statique, petits déplacements** : pas de plasticité, de flambage, de contact qui s'ouvre, de fatigue,
   de dynamique.
-- **Thermique en régime permanent** seulement ; pas de rayonnement, pas de contrainte d'origine thermique.
+- **Thermique en régime permanent** seulement ; pas de rayonnement. En thermo-mécanique, les propriétés ne varient
+  pas avec la température et le coefficient de dilatation est isotrope.
 - **Matériaux isotropes**, valeurs typiques : la fiche de la nuance fait foi.
 - **Parois minces** : il faut au moins un cube dans l'épaisseur, donc beaucoup de cubes pour une grande pièce mince.
 

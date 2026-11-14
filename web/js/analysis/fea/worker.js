@@ -30,10 +30,16 @@ self.onmessage = (e) => {
       s = skin(model, r.T);
       result = { maxT: r.maxT, minT: r.minT, balance: r.balance, dofs: r.dofs, iterations: r.iterations, residual: r.residual, ms: r.ms };
     } else {
-      const r = solveStructure(model, load, progress), b = model.bbox, diag = Math.hypot(b[3] - b[0], b[4] - b[1], b[5] - b[2]);
+      let thermal = null, temps = null;
+      if (kind === "thermo") {                                   // the temperature field first, then what it does to the held part
+        const t = load.thermal || {};
+        if (typeof t.uniform === "number") { thermal = { T: t.uniform, Tref: load.Tref ?? 20 }; temps = { maxT: { value: t.uniform }, minT: { value: t.uniform } }; }
+        else { const rt = solveThermal(model, t.case || {}, progress); thermal = { T: rt.T, Tref: load.Tref ?? 20 }; temps = { maxT: rt.maxT, minT: rt.minT, thermalIterations: rt.iterations }; }
+      }
+      const r = solveStructure(model, thermal ? { fixed: load.fixed, loads: load.loads || [], thermal } : load, progress), b = model.bbox, diag = Math.hypot(b[3] - b[0], b[4] - b[1], b[5] - b[2]);
       const k = scale ?? (r.maxU.value > 0 ? Math.max(1, 0.06 * diag / r.maxU.value) : 1);
       s = skin(model, r.vm, { u: r.u, scale: k });
-      result = { maxU: r.maxU, maxVm: r.maxVm, nominalVm: nominalStress(model, load, r.vm), reaction: r.reaction, energy: r.energy, dofs: r.dofs, iterations: r.iterations, residual: r.residual, ms: r.ms, scale: k };
+      result = { maxU: r.maxU, maxVm: r.maxVm, nominalVm: nominalStress(model, load, r.vm), reaction: r.reaction, energy: r.energy, dofs: r.dofs, iterations: r.iterations, residual: r.residual, ms: r.ms, scale: k, ...(temps || {}) };
     }
     self.postMessage({ id, ok: true, result, info, skin: s }, [s.pos.buffer, s.idx.buffer, s.val.buffer, s.epos.buffer]);
   } catch (err) { self.postMessage({ id, ok: false, error: err && err.message ? err.message : String(err) }); }

@@ -11,8 +11,8 @@ export const show = (v, d = 3) => {
 
 /** Rows of the design-review report: one per saved simulation (project.simulations). */
 export function simulationSummary(project) {
-  return ((project && project.simulations) || []).map((r) => ({ id: r.id, kind: r.kind === "thermal" ? "Thermique" : "Structure", target: r.target, mesh: `${r.cells} cubes de ${show(r.h, 2)} mm`,
-    estimate: r.kind === "thermal" ? `${show(r.estimate.Tmax, 1)} °C` : `${show(r.estimate.sigma, 1)} MPa · ${show(r.estimate.delta)} mm`,
+  return ((project && project.simulations) || []).map((r) => ({ id: r.id, kind: r.kind === "thermal" ? "Thermique" : r.kind === "thermo" ? "Thermo-mécanique" : "Structure", target: r.target, mesh: `${r.cells} cubes de ${show(r.h, 2)} mm`,
+    estimate: r.kind === "thermal" ? `${show(r.estimate.Tmax, 1)} °C` : `${r.kind === "thermo" ? "≤ " : ""}${show(r.estimate.sigma, 1)} MPa · ${show(r.estimate.delta)} mm`,
     result: r.kind === "thermal" ? `${show(r.result.Tmax, 1)} °C` : `${show(r.result.sigma, 1)} MPa · ${show(r.result.delta)} mm${r.result.sf ? ` · marge ${show(r.result.sf, 2)}` : ""}`,
     verdict: r.verdict, verdictLabel: (VERDICT[r.verdict] || VERDICT.none)[0], deviation: typeof r.worst === "number" ? `${Math.round(r.worst * 100)} %` : "—", when: r.when || "" }));
 }

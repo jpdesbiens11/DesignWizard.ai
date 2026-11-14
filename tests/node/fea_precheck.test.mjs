@@ -2,7 +2,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { buildModel, solveStructure, solveThermal } from "../../web/js/analysis/fea/index.js";
-import { precheckStructure, precheckThermal, compare } from "../../web/js/analysis/fea/precheck.js";
+import { precheckStructure, precheckThermal, precheckThermo, compare } from "../../web/js/analysis/fea/precheck.js";
 
 function boxMesh(x0, y0, z0, x1, y1, z1) {
   const p = [[x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0], [x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]];
@@ -71,4 +71,33 @@ test("structure: a load between two supports is read as a beam on two supports",
   near(spread.values.delta, 5 * 100 * 1e6 / (384 * 210000 * 833.33), 0.02); near(spread.values.deltaLow, spread.values.delta / 5, 1e-9);
   const onSupport = precheckStructure(m, { fixed: [{ face: "-X" }], loads: [{ region: { face: "-X" }, force: [0, 0, -100] }] }, steel);
   assert.equal(onSupport.kind, "none"); assert.match(onSupport.steps[0], /bras de levier/);
+});
+
+test("thermo-mechanical: free growth from one support, the full-restraint bound, the gradient stress", () => {
+  const al = { ...alu, alpha: 23e-6 }, m = buildModel({ bodies: [{ name: "barre", ...boxMesh(0, 0, 0, 100, 10, 10), material: al }], h: 5 });
+  const free = precheckThermo(m, { fixed: [{ face: "-X" }], thermal: { uniform: 120 }, Tref: 20 }, al);
+  assert.equal(free.kind, "free"); near(free.values.dTmean, 100, 1e-9);
+  near(free.values.sigma, 69000 * 23e-6 * 100, 1e-9);                                  // E alpha dT = 158.7 MPa
+  near(free.values.delta, 23e-6 * 100 * Math.hypot(100, 5, 5), 1e-6);                  // alpha dT x distance to the farthest corner = 0.2306 mm
+  assert.ok(free.steps.some((s) => /σ = E α ΔT/.test(s)) && free.steps.at(-1).includes("un seul appui"));
+  assert.ok(free.warnings.length === 0, "276 MPa of yield is above the 158.7 MPa bound");
+  const held = precheckThermo(m, { fixed: [{ face: "-X" }, { face: "+X" }], thermal: { uniform: 220 }, Tref: 20 }, { ...al, Re: 240 });
+  assert.equal(held.kind, "restrained"); near(held.values.sigma, 317.4, 1e-3);
+  assert.ok(held.warnings.some((w) => /limite élastique/.test(w)) && held.steps.at(-1).includes("bridée"));
+  const grad = precheckThermo(m, { fixed: [{ face: "-X" }], Tref: 20, thermal: { case: { fixedT: [{ region: { face: "-X" }, T: 20 }], power: [{ region: { face: "+X" }, P: 10 }], convection: [] } } }, al);
+  near(grad.values.dTmax, 50, 1e-6); near(grad.values.dTmean, 25, 1e-6);               // conduction: 20 -> 70 degrees C, mean 45
+  near(grad.values.sigmaGrad, 69000 * 23e-6 * 50 / (2 * (1 - 0.33)), 1e-6);            // E alpha dT / (2 (1 - nu)) = 59.2 MPa
+  assert.equal(precheckThermo(m, { fixed: [{ face: "-X" }], thermal: { uniform: 80 } }, alu).kind, "none", "no expansion coefficient, no estimate");
+  assert.equal(precheckThermo(m, { fixed: [], thermal: { uniform: 80 } }, al).kind, "none");
+  const two = buildModel({ bodies: [{ name: "bas", ...boxMesh(0, 0, 0, 100, 10, 2.5), material: { ...al, alpha: 20e-6 } }, { name: "haut", ...boxMesh(0, 0, 2.5, 100, 10, 5), material: { ...al, alpha: 10e-6 } }], h: 2.5 });
+  near(precheckThermo(two, { fixed: [{ face: "-X" }], thermal: { uniform: 120 }, Tref: 20 }, { ...al, alpha: 20e-6 }).values.mismatch, 69000 * 10e-6 * 100 / 2, 1e-6);   // E dalpha dT / 2 = 34.5 MPa
+});
+
+test("thermo-mechanical: compare() reads a bound as a bound, and a free growth as a value", () => {
+  const free = { values: { delta: 0.23, sigma: 158.7, restrained: false } }, held = { values: { delta: 0.23, sigma: 158.7, restrained: true } };
+  const a = compare("thermo", free, { maxU: { value: 0.24 }, maxVm: { value: 190 }, nominalVm: { value: 20 } });
+  assert.equal(a.verdict, "ok"); assert.equal(a.rows[1].bound, true); assert.equal(a.rows[1].deviation, 0); assert.match(a.rows[1].note, /bridage 13 %/);
+  assert.equal(compare("thermo", free, { maxU: { value: 0.4 }, maxVm: { value: 50 }, nominalVm: { value: 20 } }).verdict, "fail", "a free part cannot grow 74 % more than alpha dT L");
+  assert.equal(compare("thermo", held, { maxU: { value: 0.05 }, maxVm: { value: 200 }, nominalVm: { value: 150 } }).verdict, "ok", "under both bounds");
+  assert.equal(compare("thermo", held, { maxU: { value: 0.05 }, maxVm: { value: 400 }, nominalVm: { value: 260 } }).verdict, "fail", "a nominal stress above E alpha dT is not thermal");
 });

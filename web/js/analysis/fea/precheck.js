@@ -122,13 +122,57 @@ export function precheckThermal(model, load, material) {
   return none("Ni température imposée ni convection : la chaleur n'a pas de sortie, la température n'est pas définie.");
 }
 
+/** Thermo-mechanical: what a temperature does to a held part — how far it wants to grow, and the stress if it cannot.
+    load = { fixed: [regions], thermal: { uniform: T } | { case: thermal load case }, Tref }. material = { E, nu, alpha (1/K), Re, k }. */
+export function precheckThermo(model, load, material) {
+  const none = (why) => ({ kind: "none", title: "Pas de modèle équivalent simple", steps: [why], values: {}, warnings: [] });
+  if (!load.fixed || !load.fixed.length) return none("Aucun appui défini : ajoutez au moins un encastrement.");
+  const E = material.E, a = material.alpha || 0, Tref = load.Tref ?? 20, steps = [], warnings = [];
+  if (!(a > 0)) return none("Coefficient de dilatation inconnu pour ce matériau : pas d'estimation possible.");
+  let dTmean, dTmax, dTint;
+  if (load.thermal && typeof load.thermal.uniform === "number") {
+    dTmean = dTmax = load.thermal.uniform - Tref; dTint = 0;
+    steps.push(`Lecture du cas : pièce portée uniformément à ${n(load.thermal.uniform)} °C, montée sans contrainte à ${n(Tref)} °C : ΔT = ${n(dTmean)} K.`);
+  } else {
+    const th = precheckThermal(model, (load.thermal && load.thermal.case) || {}, material);
+    if (th.kind === "none") return none(th.steps[0]);
+    const Tmax = th.values.Tmax, Tmean = th.kind === "conduction" ? Tmax - th.values.dT / 2 : th.values.Tmean;
+    dTmax = Tmax - Tref; dTmean = Tmean - Tref; dTint = th.kind === "conduction" ? th.values.dT : Math.max(0, Tmax - Tmean);
+    steps.push(`Températures attendues (${th.kind === "conduction" ? "conduction 1-D" : "bilan de convection"}) : moyenne ≈ ${n(Tmean)} °C, maximale ≈ ${n(Tmax)} °C, pour un montage sans contrainte à ${n(Tref)} °C : ΔT moyen = ${n(dTmean)} K, écart interne ≈ ${n(dTint)} K.`);
+  }
+  const sups = load.fixed.map((r) => regionInfo(model, r.region || r).centroid), h = model.grid.h, b = model.bbox;
+  const spread = [0, 1, 2].map((i) => Math.max(...sups.map((c) => c[i])) - Math.min(...sups.map((c) => c[i]))), sa = dominant(spread), restrained = sups.length > 1 && spread[sa] > 2 * h;
+  const c0 = sups[0], far = Math.hypot(...[0, 1, 2].map((i) => Math.max(Math.abs(b[i] - c0[i]), Math.abs(b[3 + i] - c0[i])))), delta = a * Math.abs(dTmean) * far;
+  const bound = E * a * Math.abs(dTmax), grad = E * a * Math.abs(dTint) / (2 * (1 - (material.nu || 0.3)));
+  steps.push(`Dilatation libre : δ = α ΔT L = ${n(a * 1e6, 1)} × 10⁻⁶ × ${n(Math.abs(dTmean))} × ${n(far)} = ${n(delta)} mm au point le plus éloigné de l'appui.`);
+  steps.push(`Si cette dilatation est totalement empêchée : σ = E α ΔT = ${n(E)} × ${n(a * 1e6, 1)} × 10⁻⁶ × ${n(Math.abs(dTmax))} = ${n(bound)} MPa. C'est la borne haute : aucune contrainte d'origine thermique ne la dépasse loin des appuis.`);
+  if (dTint > 0) steps.push(`Contrainte due au seul écart de température dans la pièce : σ ≈ E α ΔT / (2 (1 − ν)) = ${n(grad)} MPa (gradient linéaire bridé, ordre de grandeur).`);
+  const alphas = [...new Set((model.bodies || []).map((x) => x.material && x.material.alpha).filter((x) => x > 0))];
+  let mismatch = null;
+  if (alphas.length > 1) { mismatch = E * (Math.max(...alphas) - Math.min(...alphas)) * Math.abs(dTmean) / 2; steps.push(`Matériaux différents collés : σ ≈ E Δα ΔT / 2 = ${n(mismatch)} MPa à leur jonction (bilame de Timoshenko, couches égales).`); }
+  if (restrained) {
+    steps.push(`Lecture des appuis : ${sups.length} appuis écartés de ${n(spread[sa])} mm le long de ${AX[sa]} — la pièce est bridée entre eux. Attendu : contrainte entre ${n(Math.max(grad, mismatch || 0))} et ${n(bound)} MPa selon la raideur des appuis ; déplacement inférieur à ${n(delta)} mm.`);
+    warnings.push("Des appuis vissés ne sont pas infiniment raides et la pièce peut fléchir : le taux de bridage réel se lit sur la simulation (contrainte nominale / borne haute).");
+  } else steps.push(`Lecture des appuis : un seul appui — la pièce se dilate presque librement. Attendu : déplacement ≈ ${n(delta)} mm, contrainte faible loin de l'appui${dTint > 0 ? ` (≈ ${n(grad)} MPa)` : ""}, forte seulement contre l'appui qui l'empêche de s'élargir.`);
+  const sf = material.Re ? material.Re / bound : null;
+  if (sf !== null && sf < 1) warnings.push(`Totalement bridée, la pièce dépasserait sa limite élastique (marge ${n(sf)}) : laissez-la se dilater (trou oblong, appui glissant) ou réduisez l'écart de température.`);
+  return { kind: restrained ? "restrained" : "free", title: restrained ? "Modèle équivalent : dilatation bridée entre appuis" : "Modèle équivalent : dilatation libre depuis un appui",
+    values: { delta, sigma: bound, sigmaGrad: grad, mismatch, dTmean, dTmax, restrained, sf }, where: c0, steps, warnings };
+}
+
 const dev = (fea, ref) => (ref ? (fea - ref) / ref : null);
+/** Deviation from an upper bound: zero below it, the relative excess above. */
+const devBound = (fea, bound) => (bound ? Math.max(0, fea / bound - 1) : null);
 /** Deviation from a bracket [low, high]: zero inside it, relative to the nearer bound outside. */
 const devRange = (fea, low, high) => (fea >= low && fea <= high ? 0 : fea < low ? dev(fea, low) : dev(fea, high));
 /** Simulation against hand calculation: rows { label, analytic, fea, unit, deviation } and a plain verdict. */
 export function compare(kind, estimate, result) {
   const rows = [];
-  if (kind === "thermal") {
+  if (kind === "thermo") {
+    const v = estimate.values, nominal = result.nominalVm ? result.nominalVm.value : result.maxVm.value;
+    if (v.delta !== undefined) rows.push({ label: "Déplacement maximal", analytic: v.delta, bound: v.restrained, fea: result.maxU.value, unit: "mm", deviation: v.restrained ? devBound(result.maxU.value, v.delta) : dev(result.maxU.value, v.delta) });
+    if (v.sigma !== undefined) rows.push({ label: "Contrainte nominale, hors appuis (von Mises)", analytic: v.sigma, bound: true, fea: nominal, unit: "MPa", deviation: devBound(nominal, v.sigma), note: v.sigma ? `bridage ${Math.round(100 * nominal / v.sigma)} %` : "" });
+  } else if (kind === "thermal") {
     if (estimate.values.Tmax !== undefined) rows.push({ label: "Température maximale", analytic: estimate.values.Tmax, fea: result.maxT.value, unit: "°C", deviation: dev(result.maxT.value - (estimate.values.Tmax - estimate.values.dT), estimate.values.dT) });
   } else {
     const v = estimate.values, range = v.deltaLow !== undefined;
