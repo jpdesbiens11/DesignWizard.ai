@@ -51,10 +51,10 @@ const project = {
   fr: "Projet", en: "Project", module: "Accueil", brick: "B9",
   sections: [
     ["Le produit", ["description", "author", "drawing"]],
-    ["La physique vérifiée — modèles analytiques gardés pour la revue", ["physics"]],
+    ["La physique vérifiée — modèles analytiques et simulations gardés pour la revue", ["physics", "simulations"]],
     ["Journal", ["log"]],
   ],
-  kids: { drawing: {}, physics: { word: "physics", head: ["id", "model"] }, log: { word: "log" } },
+  kids: { drawing: {}, physics: { word: "physics", head: ["id", "model"] }, simulations: { word: "simulation", head: ["id", "kind"], first: ["target"], kids: { estimate: {}, result: {} } }, log: { word: "log" } },
   embed: { parts: "part", assemblies: "assembly" },            // documents carried inside a project file, one after the other
 };
 

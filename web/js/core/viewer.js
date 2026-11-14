@@ -102,6 +102,26 @@ export class Viewer {
   setMatrix(id, m) { const o = this.objects.get(id); if (o) { o.base = m.slice(); this._place(o); this.dirty = true; } }
   setVisible(id, on) { const o = this.objects.get(id); if (o) { o.group.visible = on; this.dirty = true; } }
   setColor(id, color) { const o = this.objects.get(id); if (o) { o.mesh.material.color.set(color); this.dirty = true; } }
+  /** A coloured result field (simulation): f = {pos, idx, col (r, g, b per vertex, 0..1), epos}. Unlit, so a colour reads exactly as the legend. */
+  addField(id, f) {
+    this.remove(id);
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.BufferAttribute(f.pos, 3));
+    g.setAttribute("color", new THREE.BufferAttribute(f.col, 3));
+    g.setIndex(new THREE.BufferAttribute(f.idx, 1));
+    g.computeBoundingBox(); g.computeBoundingSphere();
+    const mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 }));
+    const eg = new THREE.BufferGeometry();
+    eg.setAttribute("position", new THREE.BufferAttribute(f.epos || new Float32Array(0), 3));
+    const edges = new THREE.LineSegments(eg, new THREE.LineBasicMaterial({ color: this.edgeColor.clone(), transparent: true, opacity: 0.3 }));
+    const group = new THREE.Group();
+    group.add(mesh, edges);
+    group.matrixAutoUpdate = false;
+    mesh.userData = { id };
+    this.root.add(group);
+    this.objects.set(id, { group, mesh, edges, def: { id, mesh: f, pickable: false }, base: null, opacity: 1 });
+    this.dirty = true;
+  }
   setOpacity(id, op) { const o = this.objects.get(id); if (o) { o.opacity = op; this._applyState(o); this.dirty = true; } }
   highlight(ids, color = "#ffd23f") {
     const set = new Set([].concat(ids || []));

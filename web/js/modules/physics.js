@@ -87,7 +87,8 @@ function render(main, args) {
   const page = el("div", { class: "page" });
   main.append(page);
   page.append(el("div", { class: "page-head" }, el("div", { class: "grow" }, el("h1", null, "Physique"),
-    el("p", { class: "muted" }, "Des modèles analytiques reconnus et simples — une poutre, un tube, une vis, une ailette — qui répondent à 80 % de la question « la physique derrière cette pièce fonctionne-t-elle ? ». Chaque calcul montre ses formules, ses hypothèses et sa source ; un calcul par éléments finis ou un essai confirme le reste."))));
+    el("p", { class: "muted" }, "Des modèles analytiques reconnus et simples — une poutre, un tube, une vis, une ailette — qui répondent à 80 % de la question « la physique derrière cette pièce fonctionne-t-elle ? ». Chaque calcul montre ses formules, ses hypothèses et sa source ; la simulation par éléments finis simplifiés, puis l'essai, confirment le reste.")),
+    el("div", { class: "subtabs" }, el("a", { class: "subtab active", href: "#/physics" }, "Modèles analytiques"), el("a", { class: "subtab", href: "#/fea" }, "Simulation"))));
   const left = el("div", { style: { flex: "0 1 300px", minWidth: "230px" } }), right = el("div", { style: { flex: "1 1 560px", minWidth: "0" } });
   page.append(el("div", { style: { display: "flex", flexWrap: "wrap", gap: "1.2rem", alignItems: "flex-start" } }, left, right));
   for (const d of DOMAINS) {

@@ -10,6 +10,7 @@ import { showBuilt } from "../core/viewport.js";
 import { buildAssembly, showAssembly } from "../core/asm_scene.js";
 import { projectDfx } from "./dfx.js";
 import { physicsSummary } from "./physics.js";
+import { simulationSummary } from "../analysis/fea/summary.js";
 import { routing } from "../cad/shop.js";
 import { orderCheck } from "../cad/order.js";
 import { makeDrawing, svgNode } from "./drawings.js";
@@ -109,6 +110,11 @@ function render(main) {
       el("p", { class: "muted", style: { fontSize: ".84rem" } }, "Chaque ligne est un modèle simple et reconnu, gardé pour la revue : il dit si la physique fonctionne, avant l'essai en laboratoire qui le confirme."),
       table(["Question", "Pièce", "Résultat", "Verdict"], phys.map((r) => [el("span", null, el("b", null, r.title), el("br"), el("small", { class: "muted" }, r.question)), r.partName || r.part || "—", r.result || "—",
         badge(r.verdictLabel || r.verdict, r.verdict === "ok" ? "ok" : r.verdict === "warn" ? "warn" : "danger")]))));
+
+    const sims = simulationSummary(p);
+    if (sims.length) doc.append(el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, "Simulations — éléments finis simplifiés"),
+      el("p", { class: "muted", style: { fontSize: ".84rem" } }, "Maillage grossier par cubes identiques. Chaque simulation est recoupée par le calcul à la main du modèle simple équivalent ; un écart de 20 % ou moins les dit concordants."),
+      table(["Cas", "Cible", "Maillage", "À la main", "Simulation", "Écart", "Recoupement"], sims.map((r) => [r.kind, r.target, r.mesh, r.estimate, r.result, r.deviation, badge(r.verdictLabel, r.verdict === "ok" ? "ok" : r.verdict === "warn" ? "warn" : r.verdict === "fail" ? "danger" : "neutral")]))));
 
     for (const x of dfx.parts) {
       const s = x.spec, b = x.built, sum = x.res.summary || {};
