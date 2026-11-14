@@ -25,7 +25,7 @@ test("model: net rules widen with current and voltage ; outline, layers, bill of
   const b = smallBoard();
   near(trackForCurrent(2), 0.78, 0.011);                        // IPC-2221, 2 A, 35 µm, 10 K, outer layer
   assert.ok(trackForCurrent(2, 35, 10, true) > 2 * trackForCurrent(2));
-  assert.equal(netRules(b, { class: "signal" }).track, 0.25);
+  assert.equal(netRules(b, { class: "signal" }).track, 0.25); assert.equal(netRules(b, { class: "signal" }).clearance, 0.15); assert.equal(netRules(b, { class: "power", voltage: 24 }).clearance, 0.2);
   assert.equal(netRules(b, { class: "power", current: 3 }).track, trackForCurrent(3));
   assert.equal(netRules(b, { class: "hv", voltage: 400 }).clearance, 2.5);                               // IPC-2221B B2, bare board
   b.board.coating.type = "AR"; assert.equal(netRules(b, { class: "hv", voltage: 400 }).clearance, 0.8);    // A5, conformal coating

@@ -1,5 +1,8 @@
 /* A tiny library and a small board shared by the PCBA tests : enough to exercise every module without the trade library. */
 import { emptyBoard } from "../../web/js/pcba/model.js";
+import { addBlock } from "../../web/js/pcba/synth.js";
+import { resolveBoard } from "../../web/js/pcba/model.js";
+import { padShape, discShape, trackShapes, gap, edgeGap } from "../../web/js/pcba/geom2d.js";
 
 const two = (pitch, w, h) => [{ n: "1", x: -pitch / 2, y: 0, w, h, shape: "rect" }, { n: "2", x: pitch / 2, y: 0, w, h, shape: "rect" }];
 const passive = [{ n: "1", name: "1", type: "passive" }, { n: "2", name: "2", type: "passive" }];
@@ -28,4 +31,35 @@ export function smallBoard() {
   b.nets = [{ name: "+12V", class: "power", voltage: 12, current: 1, pins: ["J1.1", "U1.VIN", "U1.EN", "C1.1"] }, { name: "+5V", class: "power", voltage: 5, current: 1, pins: ["U1.VOUT", "U1.FB", "C2.1", "R1.1", "J2.1"] },
     { name: "GND", class: "ground", pins: ["J1.2", "U1.GND", "C1.2", "C2.2", "D1.K", "J2.2"] }, { name: "LED_A", class: "signal", pins: ["R1.2", "D1.A"] }];
   return b;
+}
+
+/** A complete control board assembled function by function from the trade library (57 parts, 26 nets) ; nothing is placed.
+    With `size` it also gets its outline, four mounting holes and its number of layers (4 layers : ground and 3.3 V planes). */
+export function controlBoard(size = null, layers = 2) {
+  const b = emptyBoard("CTRL", "Carte de contrôle");
+  addBlock(b, "conn_power", { v: 24, i: 2 }); addBlock(b, "input_protection", { v: 24, i: 2 }); addBlock(b, "buck", { vin: 24, vout: 5, iout: 1 }); addBlock(b, "ldo", { vin: 5, vout: 3.3, iout: 0.2 });
+  addBlock(b, "mcu", {}); addBlock(b, "can", {}); addBlock(b, "conn_io", { signals: "CAN_H,CAN_L,GND" }); addBlock(b, "ntc", {}); addBlock(b, "led", {}); addBlock(b, "conn_swd", {}); addBlock(b, "test", {});
+  if (size) {
+    b.board.size = size; b.board.r = 2; b.board.layers = layers;
+    b.board.holes = [[5, 5], [size[0] - 5, 5], [5, size[1] - 5], [size[0] - 5, size[1] - 5]].map((at) => ({ at, d: 3.2, land: 6 }));
+    if (layers >= 4) b.planes = [{ net: "GND", layer: "in1" }, { net: "+3V3", layer: "in2" }];
+  }
+  return b;
+}
+
+/** Brute-force clearance check, independent of the router and of the design-rule module : every pair of copper shapes of
+    different nets on a common layer, and every routed shape against the board edge. → list of violations as text. */
+export function clearanceViolations(board, lib) {
+  const R = resolveBoard(board, lib), items = [], out = [];
+  R.pads.forEach((p) => items.push({ s: padShape(p), net: p.net, layers: p.layers, what: p.pin }));
+  for (const t of R.tracks) for (const s of trackShapes(t)) items.push({ s, net: t.net, layers: [t.layer], what: `piste ${t.net}`, laid: true });
+  for (const v of R.vias) items.push({ s: discShape(v.x, v.y, v.d), net: v.net, layers: R.layers, what: `via ${v.net}`, laid: true });
+  for (let i = 0; i < items.length; i++) for (let j = i + 1; j < items.length; j++) {
+    const a = items[i], b = items[j];
+    if (!(a.laid || b.laid) || (a.net && a.net === b.net) || !a.layers.some((l) => b.layers.includes(l))) continue;
+    const d = gap(a.s, b.s), need = R.rules.clearance(a.net, b.net);
+    if (d < need - 1e-6) out.push(`${a.what} / ${b.what} : ${d.toFixed(3)} < ${need}`);
+  }
+  for (const it of items) if (it.laid && edgeGap(it.s, R.outline) < R.fab.edge - 1e-6) out.push(`${it.what} au bord : ${edgeGap(it.s, R.outline).toFixed(3)}`);
+  return out;
 }

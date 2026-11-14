@@ -42,11 +42,13 @@ export const FAB = {
   standard: { label: "Prototype standard", track: 0.15, space: 0.15, drill: 0.3, ring: 0.15, viaD: 0.6, edge: 0.3, holeGap: 0.5, maskDam: 0.1, maskExp: 0.05, silk: 0.15, silkH: 1.0 },
   fin: { label: "Classe fine", track: 0.1, space: 0.1, drill: 0.2, ring: 0.125, viaD: 0.45, edge: 0.25, holeGap: 0.4, maskDam: 0.08, maskExp: 0.05, silk: 0.12, silkH: 0.8 },
 };
-/** Net classes every board starts with ; a board may redefine them or add its own in rules.classes. */
+/** Net classes every board starts with ; a board may redefine them or add its own in rules.classes. `track` is the
+    width the router prefers, `clearance` the smallest gap to other nets ; both grow with the current and the voltage
+    of each net (netRules). Clearances stay within what a 0.5 mm pitch package allows. */
 export const CLASSES = {
-  signal: { label: "Signal", track: 0.25, clearance: 0.2, via: [0.6, 0.3] },
-  power: { label: "Puissance", track: 0.6, clearance: 0.25, via: [0.8, 0.4] },
-  ground: { label: "Masse", track: 0.6, clearance: 0.25, via: [0.8, 0.4] },
+  signal: { label: "Signal", track: 0.25, clearance: 0.15, via: [0.6, 0.3] },
+  power: { label: "Puissance", track: 0.5, clearance: 0.2, via: [0.8, 0.4] },
+  ground: { label: "Masse", track: 0.5, clearance: 0.2, via: [0.8, 0.4] },
   hv: { label: "Haute tension", track: 0.6, clearance: 0.6, via: [0.8, 0.4] },
 };
 export const COATINGS = { none: "Aucun vernis", AR: "Acrylique (AR)", UR: "Polyuréthane (UR)", SR: "Silicone (SR)", XY: "Parylène (XY)" };

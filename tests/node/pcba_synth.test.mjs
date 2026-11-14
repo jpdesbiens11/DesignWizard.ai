@@ -10,16 +10,9 @@ import { addBlock, removeBlock, rebuildBlock, connectPort, renameNet, addFunctio
 import { erc, ERC_RULES } from "../../web/js/pcba/erc.js";
 import { emptyBoard, resolveBoard, boardBom } from "../../web/js/pcba/model.js";
 import { toDwiz, fromDwiz } from "../../web/js/core/dwiz.js";
+import { controlBoard } from "./pcba_fixture.mjs";
 
 const near = (a, b, tol) => assert.ok(Math.abs(a - b) <= tol, `${a} vs ${b}`);
-/** A complete control board, assembled function by function. */
-export function controlBoard() {
-  const b = emptyBoard("CTRL", "Carte de contrôle");
-  addBlock(b, "conn_power", { v: 24, i: 2 }); addBlock(b, "input_protection", { v: 24, i: 2 }); addBlock(b, "buck", { vin: 24, vout: 5, iout: 1 }); addBlock(b, "ldo", { vin: 5, vout: 3.3, iout: 0.2 });
-  addBlock(b, "mcu", {}); addBlock(b, "can", {}); addBlock(b, "conn_io", { signals: "CAN_H,CAN_L,GND" }); addBlock(b, "ntc", {}); addBlock(b, "led", {}); addBlock(b, "conn_swd", {}); addBlock(b, "test", {});
-  return b;
-}
-
 test("library: every component is complete, every package generates, a user component is built in one call", () => {
   const all = Object.values(LIBRARY);
   assert.ok(all.length >= 70, `${all.length} components`);

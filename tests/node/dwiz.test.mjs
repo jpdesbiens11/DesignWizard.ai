@@ -80,7 +80,8 @@ note « Ébavurer »
 });
 
 test("names: kinds of today, kinds reserved for the modules to come, file names", () => {
-  assert.deepEqual(Object.keys(KINDS), ["part", "assembly", "project"]);
+  assert.deepEqual(Object.keys(KINDS), ["part", "assembly", "project", "board"]);
+  assert.equal(kindOfDoc({ board: { size: [60, 40] }, nets: [] }), "board"); assert.equal(dwizFileName({ dw: "board/1", id: "DRV-CTRL-PCBA" }), "DRV-CTRL-PCBA.board.dwiz");
   assert.ok(RESERVED_KINDS.map((k) => k.kind).includes("order") && RESERVED_KINDS.every((k) => !KINDS[k.kind] && k.fr && k.text));
   assert.equal(dwizFileName({ dw: "part/1", id: "DW-0042" }), "DW-0042.part.dwiz"); assert.equal(dwizFileName({ dw: "assembly/1", id: "DRV ASM" }), "DRV_ASM.assembly.dwiz");
   assert.equal(kindOfDoc({ parts: [], assemblies: [] }), "project"); assert.equal(kindOfDoc({ instances: [] }), "assembly");
