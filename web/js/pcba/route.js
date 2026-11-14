@@ -103,7 +103,8 @@ function routeAll(board, lib, order, opts, t0) {
     const name = queue.shift(), net = byName.get(name), rules = R.rules.of(name), plane = R.planes.find((p) => p.net === name), cache = new Map(), groups = groupsOf(name);
     failed.delete(name);
     if (groups.length < 2 && !plane) continue;
-    const mapsFor = (w, loose = false) => { const key = `${w}${loose ? "L" : ""}`; if (!cache.has(key)) cache.set(key, netMaps(G, name, w, rules.via, R.planes, loose)); return cache.get(key); };
+    const mapsFor = (w, via, loose = false) => { const key = `${w}/${via[0]}${loose ? "L" : ""}`; if (!cache.has(key)) cache.set(key, netMaps(G, name, w, via, R.planes, loose)); return cache.get(key); };
+    const small = [R.fab.viaD, R.fab.drill], viaSet = small[0] < rules.via[0] - 1e-9 ? [rules.via, small] : [rules.via];     // the via of the class, then the smallest the shop drills
     // the width of the net class, grown for the current of the net ; a track narrows to enter a small pad (0.1 mm less than the pad) :
     // the branch that feeds one pin of a circuit does not carry the current of the whole net
     const widthFor = (pads) => { const lim = Math.min(...pads.map((i) => Math.min(R.pads[i].w, R.pads[i].h))) - 0.1, w = Math.round(Math.max(R.fab.track, Math.min(rules.track, lim)) * 100) / 100, thin = Math.max(R.fab.track, Math.min(rules.need, lim, 0.2)); return thin < w - 1e-9 ? [w, Math.round(thin * 100) / 100] : [w]; };
@@ -118,14 +119,14 @@ function routeAll(board, lib, order, opts, t0) {
         copper were not there and rip up what is in the way. */
     const connect = (widths, src, goalOf, targets, cost, finish) => {
       if (Date.now() - t0 > opts.maxMs) return false;
-      for (const loose of [false, true]) for (const w of widths) {
-        const maps = mapsFor(w, loose), s = src(maps), goal = goalOf(maps);
+      for (const loose of [false, true]) for (const via of viaSet) for (const w of widths) {
+        const maps = mapsFor(w, via, loose), s = src(maps), goal = goalOf(maps);
         if (!s.length) continue;
         S.open.fill(0); for (const x of s) S.open[x.k] = 1; if (goal.open) for (const x of goal.open) S.open[x.k] = 1;
         const path = search(G, maps, S, s, goal.test, targets ? targets(goal) : null, cost);
         if (!path) continue;
-        const res = finish(path, s, goal, w), bad = conflicts(res, name);
-        if (bad.hard || (!loose && bad.nets.length) || bad.nets.some((v) => (rips.get(v) || 0) >= 2)) continue;
+        const res = finish(path, s, goal, w, via), bad = conflicts(res, name);
+        if (bad.hard || (!loose && bad.nets.length) || bad.nets.some((v) => (rips.get(v) || 0) >= 3)) continue;
         bad.nets.forEach(rip);
         commit(res); return path;
       }
@@ -134,9 +135,9 @@ function routeAll(board, lib, order, opts, t0) {
     if (plane) {                                                 // a net with a plane : each surface-mount group drops a via into it
       for (const group of groups) {
         if (group.some((i) => R.pads[i].layers.includes(plane.layer))) continue;
-        const ok = connect(widthFor(group), (maps) => group.flatMap((i) => states(R.pads[i], maps)), (maps) => ({ test: (l, k) => !maps.viaNo[k] && !maps.blocked[l][k] }), null, 0, (path, s, goal, w) => {
-          const start = s.find((x) => x.k === path[0].k && x.l === path[0].l), res = lay(G, path, name, w, rules.via, start ? [start.pad.x, start.pad.y] : null, null);
-          res.vias.push({ net: name, at: G.at(path[path.length - 1].k), d: rules.via[0], drill: rules.via[1], auto: true }); return res;
+        const ok = connect(widthFor(group), (maps) => group.flatMap((i) => states(R.pads[i], maps)), (maps) => ({ test: (l, k) => !maps.viaNo[k] && !maps.blocked[l][k] }), null, 0, (path, s, goal, w, via) => {
+          const start = s.find((x) => x.k === path[0].k && x.l === path[0].l), res = lay(G, path, name, w, via, start ? [start.pad.x, start.pad.y] : null, null);
+          res.vias.push({ net: name, at: G.at(path[path.length - 1].k), d: via[0], drill: via[1], auto: true }); return res;
         });
         if (!ok) fail(R.pads[group[0]].pin, "plan");
       }
@@ -150,9 +151,9 @@ function routeAll(board, lib, order, opts, t0) {
       // sources : the pads already joined and the nodes of the tracks laid for this net — a wider branch may not start where only a narrow track fits
       const from = (maps) => [...tree.pads.flatMap((i) => states(R.pads[i], maps)), ...tree.nodes.filter((x) => !maps.blocked[x.l][x.k])];
       const to = (maps) => { const dst = target.pads.flatMap((i) => states(R.pads[i], maps)), at = new Map(dst.map((x) => [x.l * G.n + x.k, x])); return { open: dst, at, test: (l, k) => at.has(l * G.n + k) }; };
-      const path = connect(widthFor(target.pads), from, to, (goal) => goal.open.map((x) => [x.k % G.nx, Math.floor(x.k / G.nx)]), viaCost, (p, s, goal, w) => {
+      const path = connect(widthFor(target.pads), from, to, (goal) => goal.open.map((x) => [x.k % G.nx, Math.floor(x.k / G.nx)]), viaCost, (p, s, goal, w, via) => {
         const a = s.find((x) => x.k === p[0].k && x.l === p[0].l && x.pad), b = goal.at.get(p[p.length - 1].l * G.n + p[p.length - 1].k);
-        return lay(G, p, name, w, rules.via, a ? [a.pad.x, a.pad.y] : null, [b.pad.x, b.pad.y]);
+        return lay(G, p, name, w, via, a ? [a.pad.x, a.pad.y] : null, [b.pad.x, b.pad.y]);
       });
       if (!path) { fail(R.pads[tree.pads[0]].pin, R.pads[target.pads[0]].pin); continue; }
       tree.pads.push(...target.pads); for (const x of path) tree.nodes.push({ l: x.l, k: x.k });

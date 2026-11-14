@@ -19,7 +19,8 @@ const mcu = { id: "mcu", name: "Microcontrôleur", category: "Calculer", functio
     b.part("U", `U-MCU-LQFP${n}`, "", "Calcule, mesure et commande", p.xtal ? {} : { nc: ["OSC_IN", "OSC_OUT"] });
     vdd.forEach((pin, i) => { b.part(`CD${i + 1}`, "C-0603", "100 nF", `Découplage de la broche ${pin}`, { near: "U", pin }); gnd.push(`CD${i + 1}.2`); });
     b.part("CB", "C-0805", "4,7 µF", "Réserve locale", { near: "U" }).part("FB", "FB-0603", "600 Ω à 100 MHz", "Isole l'alimentation analogique", { near: "U" });
-    b.part("CA1", "C-0603", "1 µF", "Découplage analogique", { near: "U" }).part("CA2", "C-0603", "10 nF", "Découplage analogique", { near: "U" });
+    const vdda = n === 48 ? "9" : "5";
+    b.part("CA1", "C-0603", "1 µF", "Découplage analogique", { near: "U", pin: vdda }).part("CA2", "C-0603", "10 nF", "Découplage analogique", { near: "U", pin: vdda });
     b.part("RR", "R-0603", "10 kΩ", "Rappel de la remise à zéro", { near: "U" }).part("CR", "C-0603", "100 nF", "Filtre la remise à zéro", { near: "U" }).part("RB", "R-0603", "10 kΩ", "Démarrage sur la mémoire programme", { near: "U" });
     b.net("VDD", ["U.VDD", ...vdd.map((_, i) => `CD${i + 1}.1`), "CB.1", "FB.1", "RR.1"], pw(p.vdd, 0.15)).net("VDDA", ["U.VDDA", "FB.2", "CA1.1", "CA2.1"], pw(p.vdd, 0.02));
     b.net("NRST", ["U.NRST", "RR.2", "CR.1"]).net("BOOT0", ["U.BOOT0", "RB.1"]);

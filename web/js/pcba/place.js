@@ -102,7 +102,11 @@ export function placeParts(board, lib = {}, opts = {}) {
     if (stay && p.at) commit(p); else todo.push(p);
   }
   const size = (p) => { const c = courtOf(info.get(p.ref).def); return c[0] * c[1]; };
-  todo.sort((a, b) => (b.edge ? 1 : 0) - (a.edge ? 1 : 0) || (a.corner ? 1 : 0) - (b.corner ? 1 : 0) || (a.near ? 1 : 0) - (b.near ? 1 : 0) || size(b) - size(a));
+  // order : connectors on the edge, then block by block — the part the others gather around, its decoupling capacitors (each against
+  // its supply pin), the rest of its satellites in the order of the template, then what is left ; fiducials last
+  const hubs = new Set((board.parts || []).map((p) => p.near).filter(Boolean)), blockNo = new Map((board.blocks || []).map((k, i) => [k.id, i]));
+  const tier = (p) => (hubs.has(p.ref) && !p.near ? 0 : p.near && p.pin ? 1 : p.near ? 2 : 3);
+  todo.sort((a, b) => (b.edge ? 1 : 0) - (a.edge ? 1 : 0) || (a.corner ? 1 : 0) - (b.corner ? 1 : 0) || (blockNo.get(a.block) ?? 1e6) - (blockNo.get(b.block) ?? 1e6) || tier(a) - tier(b) || (tier(a) === 0 || tier(a) === 3 ? size(b) - size(a) : 0));
   const zoneOf = (p) => { const b = (board.blocks || []).find((x) => x.id === p.block); return b && Array.isArray(b.zone) ? [b.zone[0], b.zone[1], b.zone[0] + b.zone[2], b.zone[1] + b.zone[3]] : [bb[0] + 1, bb[1] + 1, bb[2] - 1, bb[3] - 1]; };
   const cost = (p, at, rot, zone) => {
     const pts = padsAt(p, at, rot), nets = info.get(p.ref).nets, def = info.get(p.ref).def;
@@ -147,7 +151,9 @@ export function placeParts(board, lib = {}, opts = {}) {
       const cs = [[bb[0] + 3, bb[1] + 3, 1], [bb[2] - 3, bb[1] + 3, -1], [bb[0] + 3, bb[3] - 3, 1], [bb[2] - 3, bb[3] - 3, -1]], c = cs[(p.corner - 1) % 4];
       for (let k = 0; k < 40 && !hit; k++) { const at = [snap(c[0] + c[2] * k * 1.5), c[1]]; if (legal(boxAt(info.get(p.ref).def, at, 0), p.side || "top", false)) hit = { at, rot: 0 }; }
     }
-    if (!hit) hit = search(p, zone, !!p.edge) || (p.edge ? search(p, whole, true) : null) || search(p, zone, false);
+    // a part that others gather around keeps 2.5 mm of its zone free on every side, for them
+    const room = hubs.has(p.ref) && !p.edge && zone[2] - zone[0] > 12 && zone[3] - zone[1] > 12 ? [zone[0] + 2.5, zone[1] + 2.5, zone[2] - 2.5, zone[3] - 2.5] : zone;
+    if (!hit) hit = search(p, room, !!p.edge) || (room !== zone ? search(p, zone, false) : null) || (p.edge ? search(p, whole, true) : null) || search(p, zone, false);
     if (!hit && !p.edge) { hit = search(p, whole, false); if (hit) notes.push(`${p.ref} ne tenait pas dans la zone de son bloc : placé à côté.`); }
     if (!hit) { failed.push(p.ref); continue; }
     p.at = hit.at; p.rot = hit.rot; p.side = p.side || "top"; commit(p); placed++;
