@@ -3,6 +3,7 @@
 
 import { el, clear, icon, btn, badge, field, toast, fmt, fmtMass, copyText, download } from "../core/dom.js";
 import { store } from "../core/store.js";
+import { app } from "../core/app.js";
 import { interfaceDialog, nextIfaceId } from "../core/part_edit.js";
 import { INTERFACE_TYPES, interfaceType } from "../cad/interfaces.js";
 import { MATERIALS, PROCESSES, materialOrDefault } from "../cad/materials.js";
@@ -132,6 +133,7 @@ export function jsonPanel(body, { st, id }) {
   body.append(el("p", { class: "muted", style: { fontSize: ".82rem" } }, "La pièce dans le format de la plateforme (.dwiz) : une instruction par ligne, lisible par un humain, un atelier et une IA. Modifiez-la ici, ou recollez la réponse d'une entrevue (.dwiz ou JSON)."), ta, err,
     el("div", { class: "form-actions" }, flip, btn("Copier", async () => toast((await copyText(ta.value)) ? "Texte copié." : "Copie impossible."), { small: true, icon: "copy" }),
       btn(".dwiz", () => download(dwizFileName(st.spec), toDwiz(st.spec), "text/plain;charset=utf-8"), { small: true, icon: "download", tip: "Télécharger la fiche de pièce .dwiz" }),
+      btn("Confier à l'IA", () => app.aiLoop && app.aiLoop(`part:${id}`), { small: true, icon: "sparkle", tip: "Exporter la pièce avec une demande, réimporter la réponse et voir les changements avant de les appliquer" }),
       btn("Appliquer", () => {
         const obj = extractJson(ta.value), v = obj && !Array.isArray(obj) ? validateSpec(obj) : null;
         if (!v) { err.textContent = extractJson.error || "Texte illisible : ni .dwiz, ni JSON de pièce."; return; }

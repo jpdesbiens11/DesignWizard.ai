@@ -44,6 +44,11 @@ test("AI round trip: the brief carries the artefact, the answer is read back, th
   assert.deepEqual(aiDiff(b, aiRead(`Voici :\n\`\`\`dwiz\n${text}\n\`\`\`\nRien changé.`)), [], "an untouched answer shows no change");
   const back = aiRead(`\`\`\`dwiz\n${text.replace(/(block B3 buck[\s\S]*?iout=)1/, "$12").replace(/part TP1 [^\n]*\n/, "")}\n\`\`\``), diff = aiDiff(b, back);
   assert.deepEqual(diff.map((d) => d.kind).sort(), ["changed", "removed"]); assert.ok(diff.some((d) => d.text === "blocks B3.params.iout : 1 → 2") && diff.some((d) => d.text === "parts TP1 retiré"));
+  // the whole project makes the round trip too : its parts, assemblies and boards come back as one document
+  const project = { ...JSON.parse(JSON.stringify(DEMO_DRIVE)), boards: [b] }, pb = aiBrief(project, "Passe le couvercle en révision B.", []), ptext = pb.split("```dwiz\n")[1].split("\n```")[0];
+  assert.ok(/^dwiz project\/1 demo-variateur/.test(ptext) && ptext.includes("\ndwiz part/1 DRV-COVER") && ptext.includes("\ndwiz assembly/1 DRV-ASM") && ptext.includes("\ndwiz board/1 DRV-CTRL-PCBA"));
+  const pback = aiRead(ptext.replace(/(dwiz part\/1 DRV-COVER[\s\S]*?\nrevision )A/, "$1B")), pdiff = aiDiff(project, pback);
+  assert.equal(pback.parts.length, project.parts.length); assert.equal(pback.boards[0].id, "DRV-CTRL-PCBA"); assert.deepEqual(pdiff.map((d) => d.text), ["parts DRV-COVER.revision : A → B"]);
   assert.equal(aiRead('```json\n{"dw":"part/1","id":"X"}\n```').id, "X"); assert.throws(() => aiRead("Désolé, je ne peux pas."), /Aucun artéfact/);
   assert.deepEqual(aiDiff({ a: [1, 2], n: { x: 1 } }, { a: [1, 2, 3], n: { x: 2, y: 3 } }).map((d) => d.path), ["a", "n.x", "n.y"]);
 });

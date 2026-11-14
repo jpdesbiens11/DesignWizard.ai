@@ -77,6 +77,7 @@ async function projectMenu(menu, close) {
   if (p) {
     menu.append(el("hr"));
     menu.append(item("Renommer le projet…", "edit", async () => { const name = await promptBox("Renommer", "Nom du projet", p.name); if (name) store.commit(`Projet renommé : ${name}`, (x) => { x.name = name; }); }, close));
+    menu.append(item("Confier à l'IA…", "sparkle", () => app.aiLoop && app.aiLoop(), close));
     menu.append(item("Exporter le projet (.dwiz)", "download", () => download(dwizFileName(p), toDwiz(p), "text/plain;charset=utf-8"), close));
     menu.append(item("Exporter en JSON", "download", () => download(`${p.id}.dwproject.json`, store.exportJson(), "application/json"), close));
   }

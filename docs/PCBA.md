@@ -137,6 +137,7 @@ Les fichiers sortent aux extensions que ces outils et les ateliers reconnaissent
 Le bouton « Confier à l'IA » (étape Revue, et barre du haut sur tout écran) exporte la carte en `.dwiz` avec votre
 demande, formulée comme à un technicien. La réponse se colle ; l'écran liste chaque changement ; vous appliquez ou
 non, en une étape annulable. Changer les paramètres d'un bloc suffit : ses composants et ses nets sont reconstruits.
+Le geste et ses garde-fous sont décrits dans [IA.md](IA.md).
 
 ## 9. Ce qui est vérifié, ce qui ne l'est pas
 

@@ -40,4 +40,4 @@ Consignes permanentes de JP (propriétaire du dépôt). Elles s'appliquent à to
 ## Documents de référence
 
 `docs/VISION.md` (objectif et briques), `docs/ARCHITECTURE.md`, `docs/FORMAT.md`, `docs/SIMULATION.md`,
-`docs/GOOGLE.md`, `docs/REA.md`, `docs/BRAND.md`.
+`docs/PCBA.md`, `docs/IA.md` (aller-retour IA), `docs/GOOGLE.md`, `docs/REA.md`, `docs/BRAND.md`.

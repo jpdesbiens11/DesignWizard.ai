@@ -22,7 +22,7 @@ import { toDwiz } from "../core/dwiz.js";
 import { dwizFileName } from "../core/dwiz_names.js";
 import { boardView, layerList, LAYER_STYLE, DRAW_ORDER } from "./pcba_view.js";
 import { ui$ } from "./pcba_steps.js";
-import { openAiLoop } from "./ai_loop.js";
+import { openAiLoopFor } from "./ai_loop.js";
 
 const { txt, sel, section, scroll, hint } = ui$;
 const pane = (view, title, sub, ...kids) => { const p = el("div", { class: "pcba-pane" }, el("div", { class: "pcba-pane-head" }, el("h2", null, title), sub ? el("span", { class: "muted small" }, sub) : null), el("div", { class: "pcba-scroll" }, ...kids)); view.append(p); return p; };
@@ -40,10 +40,7 @@ export function boardAiCheck(board, doc) {
     return R.problems.length ? R.problems.map((t) => ({ severity: "block", text: t })) : [{ severity: "info", text: "Après application : relancez le placement et le routage si des composants ont changé, puis les vérifications." }];
   } catch (e) { return [{ severity: "block", text: `Réponse incohérente : ${e.message}` }]; }
 }
-export function boardAiLoop(ctx) {
-  openAiLoop({ doc: ctx.board, title: `Confier la carte ${ctx.board.id} à l'IA`, help: boardAiHelp(), check: (doc) => boardAiCheck(ctx.board, doc),
-    apply: (doc) => ctx.update((b) => { for (const k of Object.keys(b)) if (k !== "id") delete b[k]; Object.assign(b, doc, { id: b.id }); }, `Carte ${ctx.board.id} mise à jour par l'IA`) });
-}
+export const boardAiLoop = (ctx) => openAiLoopFor(`board:${ctx.board.id}`);
 
 /* ---------- 5. checks ---------- */
 function verifs(ctx, { left, view, right }) {
