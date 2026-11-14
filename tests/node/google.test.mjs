@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createAuth, authMessage } from "../../web/js/google/auth.js";
 import { createDrive, GoogleError, FOLDER, APP_KEY } from "../../web/js/google/drive.js";
-import { createDriveFs, safeName, PROJECT_FILE } from "../../web/js/google/drive_fs.js";
+import { createDriveFs, safeName, itemFolderName } from "../../web/js/google/drive_fs.js";
 import { accessHash, decide, approve, revoke, accessFileText, requestUrl, isHosted, isHash, shortHash, loadAccess } from "../../web/js/core/access.js";
 import { CONFIG } from "../../web/js/config.js";
 
@@ -76,44 +76,68 @@ function fakeDrive() {
     async createFolder({ name, parent, role, props }) { this.log.push(`mkdir ${name}`); return mk({ name, mimeType: FOLDER, parents: [parent || "My Drive"], appProperties: { [APP_KEY]: role || "folder", ...(props || {}) } }); },
     async upload({ name, mime, bytes, parent, role, props }) { this.log.push(`upload ${name}`); return mk({ name, mimeType: mime, parents: [parent], content: bytes, appProperties: { [APP_KEY]: role, ...(props || {}) } }); },
     async replace(id, { bytes }) { this.log.push(`replace ${files.get(id).name}`); files.get(id).content = bytes; return files.get(id); },
-    async rename(id, name) { files.get(id).name = name; return files.get(id); },
-    async text(id) { return files.get(id).content; } };
+    async rename(id, name) { this.log.push(`rename ${files.get(id).name} -> ${name}`); files.get(id).name = name; return files.get(id); },
+    async move(id, to) { this.log.push(`move ${files.get(id).name}`); files.get(id).parents = [to]; return files.get(id); },
+    async trash(id) { files.get(id).trashed = true; return files.get(id); },
+    async text(id) { return files.get(id).content; },
+    names(parentName) { const p = [...files.values()].find((f) => f.name === parentName && !f.trashed); return [...files.values()].filter((f) => p && f.parents[0] === p.id && !f.trashed).map((f) => f.name).sort(); } };
 }
 
-test("drive tree: save, reopen, rename, publish artefacts without duplicates", async () => {
+test("drive tree: the product as an ergonomic folder — named, renamed, archived, never duplicated", async () => {
   const drive = fakeDrive(), fs = createDriveFs(drive, { root: "DesignWizard.ai" });
-  const project = { dw: "project/1", id: "p1", name: "Variateur 400 V / essai", parts: [{ id: "DW-0001" }], assemblies: [] };
+  const part = (id, name) => ({ dw: "part/1", id, name, material: "AL6061-T6", features: [{ op: "box", size: [1, 1, 1] }] });
+  const project = { dw: "project/1", id: "p1", name: "Variateur 400 V / essai", description: "Démonstration", parts: [part("DW-0001", "Support"), part("DW-0002", "Capot")], assemblies: [] };
   const a = await fs.saveProject(project);
   assert.equal(a.folder.name, "Variateur 400 V essai", "the folder name is made safe");
-  assert.deepEqual(drive.log, ["mkdir DesignWizard.ai", "mkdir Variateur 400 V essai", `upload ${PROJECT_FILE}`]);
-  await fs.saveProject({ ...project, parts: [{ id: "DW-0001" }, { id: "DW-0002" }] });
-  assert.equal(drive.log.at(-1), `replace ${PROJECT_FILE}`, "a second save replaces the file");
-  assert.equal([...drive.files.values()].filter((f) => f.name === PROJECT_FILE).length, 1);
-  const back = await fs.loadProject(a.folder.id);
-  assert.equal(back.parts.length, 2);
-  const fs2 = createDriveFs(drive);                              // a new session finds the same folders by their tags
-  const renamed = await fs2.projectFolder({ ...project, name: "Variateur 400 V" });
-  assert.equal(renamed.id, a.folder.id); assert.equal(renamed.name, "Variateur 400 V");
+  assert.equal(a.file.name, "Variateur 400 V essai.project.dwiz", "the project file carries the name of the product");
+  assert.deepEqual(drive.names("DesignWizard.ai"), ["LISEZ-MOI.txt", "Variateur 400 V essai"]);
+  assert.deepEqual(drive.names("Variateur 400 V essai"), ["LISEZ-MOI.txt", "Variateur 400 V essai.project.dwiz"]);
+  assert.match(drive.files.get(a.file.id).content, /^dwiz project\/1 p1 "Variateur 400 V \/ essai"/, "stored in the platform's own format");
+  const readme = [...drive.files.values()].find((f) => f.name === "LISEZ-MOI.txt" && f.parents[0] === a.folder.id).content;
+  assert.ok(readme.includes("DW-0001 — Support (AL6061-T6)") && readme.includes("01_Pieces/") && readme.includes("05_Commandes/"), "a note explains the folder to whoever opens it");
+  await fs.saveProject({ ...project, parts: [...project.parts, part("DW-0003", "Bride")] });
+  assert.equal(drive.log.at(-1), "replace Variateur 400 V essai.project.dwiz", "a second save replaces the file");
+  assert.equal([...drive.files.values()].filter((f) => /\.project\.dwiz$/.test(f.name)).length, 1);
+  assert.equal((await fs.loadProject(a.folder.id)).parts.length, 3);
+
+  const fs2 = createDriveFs(drive);                              // a new session finds everything by its tags, not by its names
+  const renamed = { ...project, name: "Variateur 400 V" };
+  const b = await fs2.saveProject(renamed);
+  assert.equal(b.folder.id, a.folder.id); assert.equal(b.folder.name, "Variateur 400 V"); assert.equal(b.file.id, a.file.id); assert.equal(b.file.name, "Variateur 400 V.project.dwiz");
+  assert.equal((await fs2.openProject("p1")).name, "Variateur 400 V");
+  await assert.rejects(fs2.openProject("nope"), /introuvable dans Google Drive/);
+
   const steps = [];
-  const pub = await fs2.publish(project, [
-    { path: ["01_Pieces", "DW-0001 Support"], name: "DW-0001.step", mime: "application/step", bytes: "S" },
-    { path: ["01_Pieces", "DW-0001 Support"], name: "DW-0001.stl", mime: "model/stl", bytes: new Uint8Array(84) },
-    { path: ["04_Rapports"], name: "rapport.html", mime: "text/html", bytes: "<p>" }], (i, n) => steps.push(`${i}/${n}`));
-  assert.deepEqual(steps, ["1/3", "2/3", "3/3"]);
-  assert.equal(drive.log.filter((l) => l === "mkdir 01_Pieces").length, 1); assert.equal(drive.log.filter((l) => l === "mkdir DW-0001 Support").length, 1);
-  assert.ok(pub.files.every((f) => f.id && f.link));
-  await fs2.publish(project, [{ path: ["01_Pieces", "DW-0001 Support"], name: "DW-0001.step", mime: "application/step", bytes: "S2" }]);
-  assert.equal([...drive.files.values()].filter((f) => f.name === "DW-0001.step").length, 1);
+  const pub = await fs2.publish(renamed, [
+    { of: { kind: "part", id: "DW-0001", name: "Support" }, name: "DW-0001.step", mime: "application/step", bytes: "S" },
+    { of: { kind: "part", id: "DW-0001", name: "Support" }, name: "DW-0001.stl", mime: "model/stl", bytes: new Uint8Array(84) },
+    { of: { kind: "part", id: "DW-0002", name: "Capot" }, name: "DW-0002.step", mime: "application/step", bytes: "S" },
+    { path: ["03_Analyses"], name: "physique.dwiz", mime: "text/plain", bytes: "dwiz analysis/1" }], (i, n) => steps.push(`${i}/${n}`));
+  assert.deepEqual(steps, ["1/4", "2/4", "3/4", "4/4"]);
+  assert.deepEqual(drive.names("01_Pieces"), ["DW-0001 — Support", "DW-0002 — Capot"], "one folder per part: number — name");
+  assert.deepEqual(drive.names("DW-0001 — Support"), ["DW-0001.step", "DW-0001.stl"]);
+  assert.ok(pub.files.every((f) => f.id && f.link)); assert.deepEqual(pub.archived, []);
+  const later = { ...renamed, parts: [part("DW-0001", "Support de capteur")] };          // one part renamed, one removed
+  const pub2 = await fs2.publish(later, [{ of: { kind: "part", id: "DW-0001", name: "Support de capteur" }, name: "DW-0001.step", mime: "application/step", bytes: "S2" }]);
+  assert.deepEqual(drive.names("01_Pieces"), ["DW-0001 — Support de capteur"], "the folder follows the name of its part");
+  assert.deepEqual(pub2.archived, ["DW-0002 — Capot"]); assert.deepEqual(drive.names("99_Archives"), ["DW-0002 — Capot"], "a removed part is archived, not deleted");
+  assert.equal([...drive.files.values()].filter((f) => f.name === "DW-0001.step").length, 1, "publishing again replaces the file");
+
+  const order = await fs2.saveOrder(later, { name: "DW-0001_commande.zip", bytes: new Uint8Array(22), rfq: "DEMANDE DE PRIX" }, { partId: "DW-0001", quantity: 4 }, new Date(2026, 10, 20));
+  assert.equal(order.folder.name, "2026-11-20 DW-0001 ×4"); assert.deepEqual(drive.names("2026-11-20 DW-0001 ×4"), ["DW-0001_commande.zip", "demande_de_prix.txt"]);
+  assert.deepEqual(drive.names("Variateur 400 V"), ["01_Pieces", "03_Analyses", "05_Commandes", "99_Archives", "LISEZ-MOI.txt", "Variateur 400 V.project.dwiz"]);
   const tree = await fs2.tree(a.folder.id);
-  assert.deepEqual(tree.map((t) => t.name), ["01_Pieces", "04_Rapports", PROJECT_FILE]);
-  assert.deepEqual(tree[0].children[0].children.map((c) => c.name), ["DW-0001.step", "DW-0001.stl"]);
-  assert.deepEqual((await fs2.listProjects()).map((p) => p.pid), ["p1"]);
-  await assert.rejects(fs2.loadProject(tree[0].id), /projet\.dwiz/);
-  assert.match(drive.files.get(a.file.id).content, /^dwiz project\/1 p1 "Variateur 400 V \/ essai"/, "the project is stored in the platform's own format");
+  assert.deepEqual(tree.map((t) => t.name), ["01_Pieces", "03_Analyses", "05_Commandes", "99_Archives", "LISEZ-MOI.txt", "Variateur 400 V.project.dwiz"], "numbered folders first, in the order of the work");
+  const list = await fs2.listProjects();
+  assert.deepEqual(list.map((p) => [p.id, p.name, p.folder]), [["p1", "Variateur 400 V", a.folder.id]]);
+
   const old = await drive.createFolder({ name: "ancien", parent: "x", role: "project", props: { pid: "old" } });
-  await drive.upload({ name: "projet.dwproject.json", mime: "application/json", bytes: JSON.stringify({ dw: "project/1", id: "old", name: "Ancien", parts: [], assemblies: [] }), parent: old.id, role: "project-file" });
+  await drive.upload({ name: "projet.dwproject.json", mime: "application/json", bytes: JSON.stringify({ dw: "project/1", id: "old", name: "Ancien", parts: [], assemblies: [] }), parent: old.id, role: "file" });
   assert.equal((await fs2.loadProject(old.id)).name, "Ancien", "project files of the first versions (JSON) are still read");
-  assert.equal(safeName('a/b:c*?"<>|d'), "a b c d"); assert.equal(safeName(""), "sans nom");
+  await assert.rejects(fs2.loadProject(tree[0].id), /fichier de projet/);
+  await fs2.trashProject("p1");
+  assert.deepEqual((await fs2.listProjects()).map((p) => p.id), ["old"], "a deleted project goes to the Drive bin");
+  assert.equal(safeName('a/b:c*?"<>|d'), "a b c d"); assert.equal(safeName(""), "sans nom"); assert.equal(itemFolderName("DW-1", "DW-1"), "DW-1");
 });
 
 test("access: hashed addresses only, admin and approved rights, request without the address", async () => {
@@ -152,5 +176,6 @@ test("the committed access list holds hashes only and one administrator; the con
   assert.equal(list.mode, "approved"); assert.ok(list.salt.length >= 16 && list.iterations >= 100000);
   assert.ok(list.admins.length >= 1 && [...list.admins, ...list.approved].every(isHash));
   assert.match(CONFIG.scopes, /drive\.file/); assert.ok(!/drive(\s|$)|drive\.readonly/.test(CONFIG.scopes.replace("drive.file", "")), "only the per-file Drive scope");
-  assert.ok(CONFIG.clientId === "" || /\.apps\.googleusercontent\.com$/.test(CONFIG.clientId));
+  assert.match(CONFIG.clientId, /^\d+-[a-z0-9]+\.apps\.googleusercontent\.com$/, "a public OAuth client ID, never a client secret");
+  assert.ok(!/GOCSPX|client_secret|refresh_token/i.test(readFileSync(new URL("../../web/js/config.js", import.meta.url), "utf8")));
 });

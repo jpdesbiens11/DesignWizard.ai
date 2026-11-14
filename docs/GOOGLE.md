@@ -5,36 +5,38 @@ Trois choses distinctes, toutes facultatives pour un usage sur votre poste :
 | Quoi | À quoi ça sert | Où c'est réglé |
 |---|---|---|
 | **Connexion Google** | savoir qui se connecte ; ouvrir la porte de la démo en ligne | `web/js/config.js` → `clientId` |
-| **Google Drive** | ranger le projet dans le Drive de l'utilisateur, en arborescence lisible | automatique une fois connecté |
+| **Google Drive** | le stockage de l'application en ligne : un dossier par produit, rangé et nommé pour être lu | automatique une fois connecté |
 | **Accès à la démo** | réserver la démo en ligne aux comptes approuvés ; rôle d'administrateur | `web/acces.json` |
 
 Sur votre poste (`python designwizard.py`, adresse `localhost`), rien de tout cela n'est demandé : l'application
 s'ouvre directement et enregistre les projets sur le disque.
 
-## 1. Créer l'identifiant client OAuth (une fois, cinq minutes)
+## 1. L'identifiant client OAuth
 
-1. Ouvrez la [console Google Cloud](https://console.cloud.google.com/) et choisissez ou créez un projet.
-2. **API et services → Bibliothèque** : activez « Google Drive API ».
-3. **API et services → Écran de consentement OAuth** : type « Externe », nom « DesignWizard.ai », votre adresse de
-   contact. Champs d'application (scopes) : `openid`, `email`, `.../auth/drive.file`.
-   Laissez l'état de publication sur **« Test »** et ajoutez les adresses Gmail de vos collaborateurs dans
-   **Utilisateurs test** : Google refusera alors la connexion à tout autre compte. C'est la vraie barrière.
-4. **API et services → Identifiants → Créer des identifiants → ID client OAuth**, type « Application Web ».
-   **Origines JavaScript autorisées** : l'adresse où la démo est servie, sans chemin — par exemple
-   `https://jpdesbiens11.github.io` — et, pour utiliser Drive depuis votre poste, `http://localhost:8070` et
-   `http://127.0.0.1:8070`. Aucune « URI de redirection » n'est nécessaire.
-5. Copiez l'**ID client** (il finit par `.apps.googleusercontent.com`) dans `web/js/config.js` :
+**Ce qui est en place.** `web/js/config.js` contient l'identifiant client du projet Google Cloud du propriétaire,
+le même que celui de SuperChef.ai. Les deux applications sont servies depuis la même origine,
+`https://jpdesbiens11.github.io`, déjà déclarée pour cet identifiant : la connexion fonctionne donc sans rien
+changer dans la console Google. Conséquences à connaître :
 
-   ```js
-   clientId: "1234567890-xxxxxxxx.apps.googleusercontent.com",
-   ```
+- l'écran de consentement de Google affiche le **nom de ce projet-là** ;
+- tant que l'écran de consentement est en mode **« Test »**, seuls les **utilisateurs test** de ce projet peuvent se
+  connecter : ajoutez-y l'adresse Gmail de chaque collaborateur (Google Cloud → API et services → Écran de
+  consentement OAuth → Utilisateurs test). C'est la vraie barrière d'accès ;
+- la portée `drive.file` est attachée à l'identifiant : techniquement, les deux applications peuvent voir les
+  fichiers l'une de l'autre. En pratique chacune ne cherche que les siens (étiquette `dw` pour DesignWizard.ai).
 
-   Cet identifiant est **public par nature** : il ne fonctionne que depuis les origines déclarées à l'étape 4.
-   Il n'y a aucun secret client dans cette application.
+Cet identifiant est **public par nature** : il ne fonctionne que depuis les origines déclarées. Il n'y a aucun
+secret client dans cette application.
 
-Vous pouvez aussi réutiliser l'identifiant d'un autre de vos projets Google si son origine est la même ; l'écran
-de consentement affichera alors le nom de ce projet-là, et les deux applications verront les fichiers l'une de
-l'autre (la portée `drive.file` est attachée à l'identifiant client).
+**Pour servir l'application ailleurs** (autre domaine, ou Drive depuis votre poste) : console Google Cloud → API et
+services → Identifiants → l'ID client OAuth « Application Web » → **Origines JavaScript autorisées** → ajouter
+l'adresse sans chemin, par exemple `https://designwizard.exemple.com`, `http://localhost:8070`,
+`http://127.0.0.1:8070`. Aucune « URI de redirection » n'est nécessaire.
+
+**Pour un identifiant propre à DesignWizard.ai** (son nom sur l'écran de consentement, ses fichiers séparés) :
+créez un ID client OAuth « Application Web » dans un projet Google Cloud où « Google Drive API » est activée, avec
+les portées `openid`, `email` et `.../auth/drive.file`, déclarez les origines, et remplacez `clientId` dans
+`web/js/config.js`.
 
 ## 2. Ce que l'application demande, et ce qu'elle ne voit pas
 
@@ -46,24 +48,42 @@ l'autre (la portée `drive.file` est attachée à l'identifiant client).
 - Le script de connexion Google n'est chargé qu'au premier clic sur « Se connecter avec Google » : tant que vous ne
   vous connectez pas, l'application ne contacte aucun site.
 
-## 3. Le projet dans Google Drive
+## 3. Google Drive, le stockage de l'application en ligne
+
+Sur la page hébergée, une fois connecté, **votre Google Drive est le stockage de l'application** : la liste des
+projets vient de Drive, chaque modification y est enregistrée (quelques secondes après la dernière frappe), et un
+projet se rouvre de n'importe quel poste. Rien n'est gardé sur un serveur de DesignWizard.ai. Sur votre poste
+(`python designwizard.py`), les projets restent sur le disque et Drive est une option (menu Compte).
 
 ```text
 DesignWizard.ai/
-  <Projet>/
-    projet.dwiz                      le projet entier (ce que « Ouvrir depuis Drive » relit)
-    01_Pieces/<numéro> <nom>/        .part.dwiz · .step · .stl · .dxf · _decoupe.dxf · .pdf · .fs · _gamme.txt
-    02_Assemblages/<numéro> <nom>/   .assembly.dwiz · .step · _nomenclature.csv
-    03_Analyses/                     physique.dwiz
+  LISEZ-MOI.txt
+  <Nom du projet>/
+    <Nom du projet>.project.dwiz        le projet entier — ce que l'application ouvre
+    LISEZ-MOI.txt                       ce qui est où, avec la liste des pièces
+    01_Pieces/<numéro> — <nom>/         .part.dwiz · .step · .stl · .dxf · _decoupe.dxf · .pdf · .fs · _gamme.txt
+    02_Assemblages/<numéro> — <nom>/    .assembly.dwiz · .step · _nomenclature.csv
+    03_Analyses/                        physique.dwiz
     04_Rapports/
+    05_Commandes/<date> <numéro> ×<quantité>/    dossier de commande .zip · demande_de_prix.txt
+    99_Archives/                        dossiers des pièces retirées du projet
 ```
 
-- **Enregistrer le projet** écrit `projet.dwiz` ; **Publier les artéfacts** construit et dépose tous les fichiers
-  d'échange ; une case permet d'enregistrer après chaque modification.
-- Les dossiers sont retrouvés par une étiquette invisible, pas par leur nom : vous pouvez les renommer, les
-  déplacer et les partager dans Drive.
-- Partager le dossier du projet avec un collègue ou un atelier se fait dans Drive, comme pour n'importe quel
-  dossier.
+Les règles de cette arborescence :
+
+- **Dossiers numérotés** : ils se rangent dans l'ordre du travail, de la pièce à la commande.
+- **« numéro — nom »** : un dossier par pièce, que l'on retrouve par son numéro ou par son nom ; il est **renommé
+  avec sa pièce**.
+- **La date d'abord** (AAAA-MM-JJ) là où le temps compte : les commandes se rangent dans l'ordre chronologique.
+- **Rien n'est supprimé** : le dossier d'une pièce retirée du projet va dans `99_Archives` ; un projet supprimé va
+  dans la corbeille de Drive (récupérable 30 jours).
+- **Un LISEZ-MOI** explique le dossier à qui l'ouvre sans l'application — un collègue, un atelier.
+- Dossiers et fichiers sont retrouvés par une étiquette invisible, pas par leur nom : vous pouvez les renommer, les
+  déplacer et les **partager** dans Drive comme n'importe quel dossier.
+
+**Enregistrer** se fait tout seul ; **Publier les artéfacts** (menu Compte) construit et dépose tous les fichiers
+d'échange ; **Ranger la commande dans Drive** (onglet Artéfacts d'une pièce) crée le dossier daté à partager avec
+l'atelier.
 
 ## 4. Réserver la démo en ligne aux comptes approuvés
 
@@ -93,14 +113,14 @@ Pour voir la porte sur votre poste, ajoutez `?porte` à l'adresse : `http://127.
 **Ce que cette porte est, et n'est pas.** C'est la politique d'accès de la page hébergée, appliquée dans le
 navigateur. Le code est libre (MIT) : quiconque clone le dépôt fait tourner l'application chez lui. Ce qui empêche
 réellement un compte non invité de se connecter, c'est la liste des **utilisateurs test** de l'écran de consentement
-Google (étape 1.3). Aucune donnée d'un utilisateur n'est exposée par la porte : chacun ne voit que son propre Drive.
+Google (section 1). Aucune donnée d'un utilisateur n'est exposée par la porte : chacun ne voit que son propre Drive.
 
 ## 5. Dépannage
 
 | Message | Cause | Correctif |
 |---|---|---|
-| « La connexion Google n'est pas configurée » | `clientId` vide | étape 1.5 |
-| Fenêtre Google : `origin_mismatch` | l'adresse de la page n'est pas dans les origines autorisées | étape 1.4 |
-| « Google a refusé l'accès » | compte absent des utilisateurs test, ou permissions refusées | étape 1.3 |
+| « La connexion Google n'est pas configurée » | `clientId` vide | section 1 |
+| Fenêtre Google : `origin_mismatch` | l'adresse de la page n'est pas dans les origines autorisées | section 1, « Pour servir l'application ailleurs » |
+| « Google a refusé l'accès » | compte absent des utilisateurs test, ou permissions refusées | section 1, utilisateurs test |
 | « Ce compte n'est pas encore approuvé » | empreinte absente de `web/acces.json` | section 4 |
 | « … demande une page servie en HTTPS » | page servie en `http://` ailleurs que sur `localhost` | servir en HTTPS |

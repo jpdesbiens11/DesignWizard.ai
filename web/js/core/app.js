@@ -33,9 +33,9 @@ function topbar() {
   const chip = el("span", { class: "chip", id: "kernel-chip" }, "Prêt");
   shellOff.push(kernel.onStage((s) => setStatus(s || "Prêt", s ? "busy" : "")));
   const save = el("span", { class: "chip", id: "save-chip", "data-tip": "État de l'enregistrement du projet" }, "—");
-  const showSave = (s) => { save.textContent = s === "saved" ? "Enregistré" : s === "dirty" ? "Modifié…" : s ? "Non enregistré" : "—"; save.className = "chip" + (s === "error" ? " bad" : s === "saved" ? " done" : s ? " busy" : ""); };
+  const showSave = (s) => { save.textContent = s === "saved" ? (store.mode === "drive" ? "Enregistré dans Drive" : "Enregistré") : s === "saving" ? "Enregistrement…" : s === "dirty" ? "Modifié…" : s ? "Non enregistré" : "—"; save.className = "chip" + (s === "error" ? " bad" : s === "saved" ? " done" : s ? " busy" : ""); };
   showSave(store.project ? store.saveState : null);
-  shellOff.push(store.on("saved", showSave), session.on(() => rebuildShell()));
+  shellOff.push(store.on("saved", showSave), store.on("project", () => showSave(store.project ? store.saveState : null)), session.on(() => rebuildShell()));
   const wand = el("button", { class: "wand", type: "button", "data-tip": "La baguette : tapez ce que vous voulez faire (« 4 trous M4 aux coins », « longueur 150 », « aller à Assemblage »…)", onClick: () => app.openPalette && app.openPalette() },
     icon("wizard"), el("span", { class: "wand-text" }, "Que voulez-vous faire ?"), el("kbd", null, "Ctrl K"));
   const tools = el("div", { class: "top-tools" }, wand, chip, save,
@@ -80,14 +80,14 @@ async function projectMenu(menu, close) {
     menu.append(item("Exporter en JSON", "download", () => download(`${p.id}.dwproject.json`, store.exportJson(), "application/json"), close));
   }
   menu.append(item("Importer un projet ou une pièce…", "upload", () => app.pickFile && app.pickFile(), close));
-  if (session.configured) menu.append(item("Ouvrir depuis Google Drive…", "cloud", () => app.openFromDrive && app.openFromDrive(), close));
+  if (session.configured && store.mode !== "drive") menu.append(item("Ouvrir depuis Google Drive…", "cloud", () => app.openFromDrive && app.openFromDrive(), close));
   menu.append(el("hr"));
-  menu.append(el("div", { class: "menu-title" }, store.mode === "server" ? "Serveur local : projets sur le disque" : "Mode navigateur : projets gardés dans ce navigateur"));
+  menu.append(el("div", { class: "menu-title" }, store.mode === "server" ? "Serveur local : projets sur le disque" : store.mode === "drive" ? "Projets dans votre Google Drive, dossier « DesignWizard.ai »" : "Mode navigateur : projets gardés dans ce navigateur"));
 }
 function accountMenu(menu, close) {
   const a = session.account, cur = currentTheme();
   menu.append(el("div", { class: "menu-title" }, a ? a.email : session.configured ? "Non connecté à Google" : "Connexion Google non configurée"));
-  if (a) { if (store.project) menu.append(item("Enregistrer le projet dans Drive", "save", () => app.saveToDrive && app.saveToDrive(), close)); menu.append(item("Se déconnecter", "lock", () => signOut(), close)); }
+  if (a) { if (store.project && store.mode !== "drive") menu.append(item("Enregistrer le projet dans Drive", "save", () => app.saveToDrive && app.saveToDrive(), close)); menu.append(item("Se déconnecter", "lock", () => { signOut(); if (store.mode === "drive") location.reload(); }, close)); }
   else if (session.configured) menu.append(item("Se connecter avec Google", "user", () => app.connect && app.connect(), close));
   menu.append(item("Compte, Drive et accès", "cloud", () => go("#/account"), close), el("hr"), el("div", { class: "menu-title" }, "Thème"));
   for (const t of THEMES) { const it = item(t.label, t.key === cur ? "check" : "palette", () => { applyTheme(t.key); rebuildShell(); }, close); if (t.key === cur) it.classList.add("on"); menu.append(it); }

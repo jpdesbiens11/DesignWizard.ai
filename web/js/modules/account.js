@@ -16,7 +16,7 @@ const sayError = (e) => toast(e && e.status ? `Google Drive : ${e.message}` : au
 
 /* Keep the project file in Drive up to date after each local save, when the user asked for it. */
 const pushLater = debounce(async () => {
-  if (!session.account || !store.project || !autoOn()) return;
+  if (!session.account || !store.project || !autoOn() || store.mode === "drive") return;
   try { await session.fs.saveProject(store.project); setStatus("Projet enregistré dans Drive", "done"); } catch (e) { setStatus("Drive : enregistrement impossible", "bad"); }
 }, 4000);
 store.on("saved", (s) => { if (s === "saved") pushLater(); });
@@ -41,8 +41,8 @@ export async function openFromDrive() {
     if (!list.length) { toast("Aucun projet DesignWizard.ai dans ce Drive pour l'instant.", "info"); return; }
     const m = modal("Ouvrir depuis Google Drive", el("div", { class: "grid" }, list.map((p) => el("button", { class: "card lift", type: "button", onClick: async () => {
       m.close();
-      try { const obj = await session.fs.loadProject(p.id); await store.create(obj.name || p.name, obj); toast(`Projet « ${obj.name || p.name} » ouvert depuis Drive.`, "success"); refresh(); } catch (e) { sayError(e); }
-    } }, el("h3", null, icon("folder"), " ", p.name), el("p", { class: "muted small" }, p.modified ? new Date(p.modified).toLocaleString("fr-CA") : "")))), { wide: true });
+      try { const obj = await session.fs.loadProject(p.folder); await store.create(obj.name || p.name, obj); toast(`Projet « ${obj.name || p.name} » ouvert depuis Drive.`, "success"); refresh(); } catch (e) { sayError(e); }
+    } }, el("h3", null, icon("folder"), " ", p.name), el("p", { class: "muted small" }, p.updated ? new Date(p.updated).toLocaleString("fr-CA") : "")))), { wide: true });
   } catch (e) { sayError(e); }
 }
 export async function publishToDrive(onStep = () => {}) {
@@ -52,7 +52,7 @@ export async function publishToDrive(onStep = () => {}) {
     await session.fs.saveProject(store.project);
     const r = await session.fs.publish(store.project, items, (i, n, it) => { setStatus(`Drive : ${i} / ${n} — ${it.name}`, "busy"); onStep(`${i} / ${n} — ${it.name}`); });
     setStatus(`${r.files.length} fichier(s) publiés dans Drive`, "done");
-    toast(`${r.files.length} fichier(s) publiés dans « ${r.folder.name} »${errors.length ? ` ; ${errors.length} artéfact(s) non produits` : ""}.`, errors.length ? "warn" : "success", 7000);
+    toast(`${r.files.length} fichier(s) publiés dans « ${r.folder.name} »${r.archived.length ? ` ; ${r.archived.length} dossier(s) de pièces retirées rangé(s) dans 99_Archives` : ""}${errors.length ? ` ; ${errors.length} artéfact(s) non produits` : ""}.`, errors.length ? "warn" : "success", 7000);
     return { ...r, errors };
   } catch (e) { setStatus("Drive : erreur", "bad"); sayError(e); return null; }
 }
@@ -88,10 +88,10 @@ function render(main) {
     const auto = el("input", { type: "checkbox", checked: autoOn(), onChange: (e) => { try { localStorage.setItem(AUTO, e.target.checked ? "1" : "0"); } catch (x) { /* private window */ } if (e.target.checked) pushLater(); } });
     drive.append(el("p", { class: "muted small" }, "Le projet devient un dossier lisible par tous : pièces, assemblages, analyses, rapports — STEP, STL, DXF, PDF, FeatureScript et gammes rangés par numéro de pièce."),
       el("div", { class: "form-actions", style: { justifyContent: "flex-start" } },
-        btn("Enregistrer le projet", async () => { if (await saveToDrive()) loadTree(); }, { primary: true, icon: "save", disabled: !store.project }),
+        store.mode === "drive" ? null : btn("Enregistrer le projet", async () => { if (await saveToDrive()) loadTree(); }, { primary: true, icon: "save", disabled: !store.project }),
         btn("Publier les artéfacts", async () => { if (await publishToDrive()) loadTree(); }, { icon: "export", disabled: !store.project, tip: "Construit et dépose tous les fichiers d'échange de chaque pièce et de chaque assemblage" }),
-        btn("Ouvrir depuis Drive…", () => openFromDrive(), { icon: "folder" })),
-      el("label", { class: "check" }, auto, "Enregistrer le projet dans Drive après chaque modification"));
+        store.mode === "drive" ? null : btn("Ouvrir depuis Drive…", () => openFromDrive(), { icon: "folder" })),
+      store.mode === "drive" ? el("p", { class: "small" }, icon("check"), " Google Drive est le stockage de cette application : chaque modification y est enregistrée.") : el("label", { class: "check" }, auto, "Enregistrer le projet dans Drive après chaque modification"));
     const box = el("div", { style: { marginTop: ".7rem" } });
     drive.append(box);
     if (!session.account) { box.append(el("p", { class: "muted small" }, "Connectez-vous pour voir l'arborescence.")); return; }

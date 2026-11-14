@@ -16,7 +16,7 @@ import { viewRequest } from "../draw/part_drawing.js";
 import { makeDrawing } from "../modules/drawings.js";
 import { gammeText } from "../modules/part_gamme.js";
 import { buildAssembly } from "./asm_scene.js";
-import { TREE, safeName } from "../google/drive_fs.js";
+import { TREE } from "../google/drive_fs.js";
 import { toDwiz } from "./dwiz.js";
 import { orderCheck, rfqText } from "../cad/order.js";
 import { runDfx } from "../analysis/dfx_api.js";
@@ -81,12 +81,12 @@ export async function projectArtifacts(onStep = () => {}) {
   for (const spec of p.parts) {
     onStep(`${spec.id} : artéfacts…`);
     const r = await partArtifacts(spec.id);
-    for (const f of r.files) items.push({ path: [TREE.parts, safeName(`${spec.id} ${spec.name || ""}`)], name: f.name, mime: f.mime, bytes: f.bytes });
+    for (const f of r.files) items.push({ of: { kind: "part", id: spec.id, name: spec.name || "" }, name: f.name, mime: f.mime, bytes: f.bytes });
     errors.push(...r.errors.map((e) => ({ ...e, of: spec.id })));
   }
   for (const asm of p.assemblies) {
     onStep(`${asm.id} : STEP et nomenclature…`);
-    try { const r = await assemblyArtifacts(asm.id); for (const f of r.files) items.push({ path: [TREE.assemblies, safeName(`${asm.id} ${asm.name || ""}`)], name: f.name, mime: f.mime, bytes: f.bytes }); errors.push(...r.errors.map((e) => ({ ...e, of: asm.id }))); }
+    try { const r = await assemblyArtifacts(asm.id); for (const f of r.files) items.push({ of: { kind: "assembly", id: asm.id, name: asm.name || "" }, name: f.name, mime: f.mime, bytes: f.bytes }); errors.push(...r.errors.map((e) => ({ ...e, of: asm.id }))); }
     catch (e) { errors.push({ key: "step", label: "Assemblage", message: e.message, of: asm.id }); }
   }
   if ((p.physics || []).length) items.push({ path: [TREE.analyses], name: "physique.dwiz", mime: "text/plain", bytes: toDwiz({ dw: "analysis/1", id: "physique", name: "Physique vérifiée", runs: p.physics }) });

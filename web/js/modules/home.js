@@ -60,7 +60,7 @@ function render(main) {
     el("h3", null, icon(app.modules.get(key).icon), ` ${i + 1}. ${title}`), el("p", { class: "muted", style: { margin: 0, fontSize: ".86rem" } }, text)))));
 
   const head = el("div", { class: "page-head" }, el("div", { class: "grow" }, el("h1", null, "Projets"),
-    el("p", { class: "muted" }, store.mode === "server" ? "Projets enregistrés sur ce poste par le serveur local." : "Mode navigateur : les projets restent dans ce navigateur. Exportez-les (menu Projet) pour les partager ou les sauvegarder.")));
+    el("p", { class: "muted" }, store.mode === "server" ? "Projets enregistrés sur ce poste par le serveur local." : store.mode === "drive" ? "Vos projets vivent dans votre Google Drive, un dossier par produit sous « DesignWizard.ai » : pièces, assemblages, analyses, rapports et commandes y sont rangés par numéro." : "Mode navigateur : les projets restent dans ce navigateur. Exportez-les (menu Projet) pour les partager ou les sauvegarder.")));
   page.append(head);
   const grid = el("div", { class: "grid" });
   page.append(grid);
@@ -70,7 +70,7 @@ function render(main) {
       grid.append(el("div", { class: "card taped" + (open ? "" : " lift"), onClick: async () => { if (!open) { await store.open(it.id); refresh(); } } },
         el("h3", null, it.name || it.id), el("p", { class: "muted", style: { fontSize: ".82rem" } }, `${it.updated ? new Date(it.updated).toLocaleString("fr-CA") : ""}${it.parts !== undefined ? ` · ${it.parts} pièce(s)` : ""}`),
         el("div", { class: "form-actions", style: { justifyContent: "flex-start" } }, open ? el("a", { class: "btn btn-small btn-primary", href: "#/parts" }, "Projet ouvert → Pièces") : btn("Ouvrir", null, { small: true }),
-          btn("", async (e) => { e.stopPropagation(); if (await confirmBox("Supprimer le projet", `Supprimer « ${it.name || it.id} » ?${store.mode === "server" ? " Il est déplacé dans la corbeille du dossier data." : ""}`, "Supprimer", true)) { await store.remove(it.id); refresh(); } }, { small: true, icon: "trash", danger: true, tip: "Supprimer ce projet" }))));
+          btn("", async (e) => { e.stopPropagation(); if (await confirmBox("Supprimer le projet", `Supprimer « ${it.name || it.id} » ?${store.mode === "server" ? " Il est déplacé dans la corbeille du dossier data." : store.mode === "drive" ? " Son dossier va dans la corbeille de Google Drive (récupérable 30 jours)." : ""}`, "Supprimer", true)) { await store.remove(it.id); refresh(); } }, { small: true, icon: "trash", danger: true, tip: "Supprimer ce projet" }))));
     }
     if (!list.length) grid.append(el("div", { class: "empty", style: { gridColumn: "1 / -1" } }, el("h2", null, "Le carnet attend sa première page"), el("p", null, "Chargez la démonstration ou créez un projet pour commencer.")));
   });

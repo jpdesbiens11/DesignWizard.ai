@@ -1,6 +1,7 @@
-/* DesignWizard.ai — project store: one JSON document per project (parts, assemblies, analyses), with undo / redo and
-   auto-save. Two back-ends, chosen at start: the local server (python designwizard.py: files on disk, Onshape proxy)
-   or the browser alone (static hosting: localStorage + export / import of the project file). */
+/* DesignWizard.ai — project store: one document per project (parts, assemblies, analyses), with undo / redo and
+   auto-save. Three back-ends: the local server (python designwizard.py: files on disk, Onshape proxy), the user's own
+   Google Drive (the hosted application, once signed in: one folder per product, see google/drive_fs.js), or the
+   browser alone (localStorage + export / import of the project file). */
 
 const LS_INDEX = "dw.projects", LS_PREFIX = "dw.project.", LS_LAST = "dw.last";
 const HEADERS = { "Content-Type": "application/json", "X-DW-Request": "1" };
@@ -9,7 +10,7 @@ const now = () => new Date().toISOString();
 
 class Store {
   constructor() {
-    this.mode = "browser"; this.project = null; this.server = null;
+    this.mode = "browser"; this.project = null; this.server = null; this.drive = null;
     this.hooks = [];
     this.listeners = new Map(); this.undoStack = []; this.redoStack = []; this.saveTimer = 0; this.saveState = "saved";
   }
@@ -26,6 +27,8 @@ class Store {
     } catch (e) { /* static hosting: browser mode */ }
     return this.mode;
   }
+  /** Use the signed-in user's Google Drive as the store (the hosted application). `fs` = createDriveFs(...). */
+  useDrive(fs) { this.mode = "drive"; this.drive = fs; }
   async api(method, path, body) {
     const r = await fetch(path, { method, headers: HEADERS, body: body === undefined ? undefined : JSON.stringify(body), cache: "no-store" });
     const j = await r.json().catch(() => ({ ok: false, error: `Réponse illisible du serveur local (${r.status}).` }));
@@ -36,6 +39,7 @@ class Store {
   /* ---------- projects ---------- */
   async list() {
     if (this.mode === "server") return (await this.api("GET", "api/projects")).projects;
+    if (this.mode === "drive") return this.drive.listProjects();
     try { return JSON.parse(localStorage.getItem(LS_INDEX) || "[]"); } catch (e) { return []; }
   }
   blank(name) {
@@ -54,6 +58,7 @@ class Store {
   async open(id) {
     let p;
     if (this.mode === "server") p = (await this.api("GET", `api/projects/${encodeURIComponent(id)}`)).project;
+    else if (this.mode === "drive") p = await this.drive.openProject(id);
     else p = JSON.parse(localStorage.getItem(LS_PREFIX + id) || "null");
     if (!p) throw new Error(`Projet « ${id} » introuvable.`);
     this.adopt(p);
@@ -68,6 +73,7 @@ class Store {
   lastId() { try { return localStorage.getItem(LS_LAST); } catch (e) { return null; } }
   async remove(id) {
     if (this.mode === "server") await this.api("DELETE", `api/projects/${encodeURIComponent(id)}`);
+    else if (this.mode === "drive") await this.drive.trashProject(id);          // to the Drive bin: recoverable for 30 days
     else {
       localStorage.removeItem(LS_PREFIX + id);
       localStorage.setItem(LS_INDEX, JSON.stringify((await this.list()).filter((x) => x.id !== id)));
@@ -81,7 +87,12 @@ class Store {
     p.updated = now();
     try {
       if (this.mode === "server") await this.api("PUT", `api/projects/${encodeURIComponent(p.id)}`, { project: p });
-      else {
+      else if (this.mode === "drive") {
+        if (this.saving) { this.saveAgain = true; return; }       // one write at a time; the latest state is written next
+        this.saving = true; this.emit("saved", "saving");
+        try { await this.drive.saveProject(p); } finally { this.saving = false; }
+        if (this.saveAgain) { this.saveAgain = false; this.touch(); return; }
+      } else {
         localStorage.setItem(LS_PREFIX + p.id, JSON.stringify(p));
         const idx = (await this.list()).filter((x) => x.id !== p.id);
         idx.unshift({ id: p.id, name: p.name, updated: p.updated, parts: p.parts.length, assemblies: p.assemblies.length });
@@ -94,7 +105,7 @@ class Store {
     }
     this.emit("saved", this.saveState);
   }
-  touch() { this.saveState = "dirty"; clearTimeout(this.saveTimer); this.saveTimer = setTimeout(() => this.saveNow(), 700); this.emit("saved", this.saveState); }
+  touch() { this.saveState = "dirty"; clearTimeout(this.saveTimer); this.saveTimer = setTimeout(() => this.saveNow(), this.mode === "drive" ? 2500 : 700); this.emit("saved", this.saveState); }
 
   /* ---------- edits with undo ---------- */
   /** Apply `fn(project)` as one undoable step named `label`. */

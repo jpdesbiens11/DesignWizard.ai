@@ -74,6 +74,10 @@ moulage, soudure ; cinématique d'assemblage ; chaînes de cotes ; schéma élec
 L'objectif est un équivalent **ouvert** des plateformes de CAO en nuage — ce que Linux a été pour Unix : les mêmes
 services rendus à l'utilisateur, une réalisation indépendante, un code que chacun peut lire, corriger et étendre.
 
+La méthode suivie est celle de **REA — Reverse Engineer Anything** : un comportement à la fois, sur une cible que l'on
+possède ou que l'on est autorisé à étudier, des preuves gardées, une spécification écrite, puis notre propre
+implémentation, vérifiée. Son application au projet est décrite dans [REA.md](REA.md).
+
 Règles du projet :
 
 - **Réimplémentation en salle blanche.** On reproduit des *fonctions* et des *comportements* observables et

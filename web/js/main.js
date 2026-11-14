@@ -21,6 +21,7 @@ import "./modules/onshape.js";
 import "./modules/help.js";
 import { connect, saveToDrive, openFromDrive } from "./modules/account.js";
 import { gate } from "./core/gate.js";
+import { session } from "./core/access.js";
 
 store.hooks.push(linkHook);
 app.openPalette = openPalette;
@@ -34,4 +35,5 @@ app.onImported = (r) => {
 app.pickFile = () => pickFile(app.onImported);
 app.connect = connect; app.saveToDrive = saveToDrive; app.openFromDrive = openFromDrive;
 installImport(app.onImported);
-gate().then(start);                                            // hosted demo: approved Google accounts only; on this machine: at once
+// On this machine the application opens at once. Hosted: approved Google accounts only, and their own Google Drive is the store.
+gate().then((who) => { if (who && !who.local && session.fs) store.useDrive(session.fs); return start(); });
