@@ -17,11 +17,13 @@ Functions: min max abs sqrt floor ceil round sin cos tan (degrees) hypot clamp(v
   "process": "cnc_milling | cnc_turning | sheet_metal | laser_cut | extrusion_al | extrusion_plastic | injection_molding | fdm | mjf | pcb | purchased",
   "material": "AL6061-T6 | AL6063-T5 | AL5052-H32 | CU-C110 | BRASS-360 | SS-304 | STEEL-1018 | PA66-GF30 | PC | PC-ABS | ABS | PBT-GF30 | PPS-GF40 | POM | PEEK | PEI-9085 | PA12 | PVC-U | SILICONE | FR4 | FR4-CTI600",
   "elec": { "kind": "conductor | insulator | chassis | none", "net": "HV+" },   // electrical role (isolation analysis); optional
+  "intent": { "loads": "20 N at the tip, vibration", "environment": "-20..60 °C, indoor", "quantity": 50, "priority": "cost | mass | stiffness | lead_time" },   // optional: why the part exists
   "params": { ... },                    // section 2
   "interfaces": [ ... ],                // section 3 — START HERE: interfaces first
-  "features": [ ... ],                  // section 4
-  "extrusion": { ... },                 // section 5 (family extrusion) — replaces the first feature
-  "pcb": { ... },                       // section 6 (family pcb)
+  "stock": { ... },                     // section 4 — the raw material taken from the rack (replaces the first feature)
+  "features": [ ... ],                  // sections 4 and 5 — workshop operations and kernel features, in order
+  "extrusion": { ... },                 // section 6 (family extrusion) — replaces the first feature
+  "pcb": { ... },                       // section 7 (family pcb)
   "notes": ["Drawing note 1", "..."],   // notes printed on the 2D drawing
   "finish": "Anodised black 10 µm",
   "interview": { "questions": [ {"q": "...", "a": "..."} ], "assumptions": ["..."] }   // what was asked and assumed
@@ -63,7 +65,35 @@ Types (params are shared, opts belong to one side):
 - "pins": params { "d": 4, "pitch": 40, "n": 2, "length": 12 } — A = slip-fit holes, B = press-fit holes.
 On a hollow part, bolt_pattern side A must also give opts {"depth": ...} or the holes cross the whole part.
 
-## 4. Features — built in order
+## 4. Raw stock and workshop operations — make the part the way a craftsman would
+PREFERRED for machined, cut and turned parts: say which raw stock is taken from the rack, then list the workshop operations.
+The platform builds the solid, picks the commercial size to buy, writes the routing sheet and reports the material utilisation.
+"stock": { "form": F, ...finished size of the blank }      // min corner at the origin; L along X, W along Y, t / H along Z
+  F = "plate"     {"L","W","t"}            rolled plate (standard thicknesses 3 4 5 6 8 10 12 15 16 20 25 30 40 50…)
+    | "sheet"     {"L","W","t"}            thin sheet, laser cut (0.5 0.8 1 1.2 1.5 2 2.5 3 4 5 6)
+    | "block"     {"L","W","H"}            sawn block machined on several faces
+    | "bar_flat"  {"w","h","L"}            flat or square bar; runs along X ("axis":"Y"|"Z" to change)
+    | "bar_round" {"d","L"}                round bar, centred on its axis, Z by default — the stock of turned parts
+    | "tube_round" {"d","t","L"} | "tube_rect" {"w","h","t","L"} | "angle" {"a","b","t","L"}     // commercial sections
+    | "profile"   {"profile":P,"L"}        custom extruded section
+    | "print"     {}                       additive / moulded: no blank, the features below ADD the material
+Workshop verbs (entries of "features", same common fields and face / position conventions as section 5):
+- {"op":"drill", "face":"+Z", "at":POS, "d":5.5, "depth":"through"|12}
+- {"op":"tap", "face":"+Z", "at":POS, "thread":"M4", "depth":8}            // tap drill + thread
+- {"op":"cbore", "face":"+Z", "at":POS, "screw":"M5"}                      // clearance hole + counterbore for a cap screw
+- {"op":"csink", "face":"+Z", "at":POS, "screw":"M4"}                      // clearance hole + 90° countersink
+- {"op":"ream", "face":"+Z", "at":POS, "d":8, "fit":"H7", "depth":10}
+- {"op":"mill", "face":"+Z", "rect":[x,y,w,h], "r":3, "depth":5}           // closed pocket ("r" ≥ tool radius); also "circle", "profile"
+- {"op":"groove", "face":"+Z", "from":[x,y], "to":[x,y], "w":6, "depth":3}
+- {"op":"face", "face":"+Z", "to":z}                                       // mill the whole face down to level z
+- {"op":"step", "face":"+Z", "rect":[x,y,w,h], "to":z}                     // open shoulder: remove everything beyond level z over the rectangle
+- {"op":"outline", "profile":P}                                            // cut the contour of a plate / sheet (laser, waterjet, router)
+- {"op":"turn", "from":z0, "to":z1, "d":12}                                // round stock: reduce the diameter between two positions along the axis
+- {"op":"bore", "d":6, "depth":20, "face":"+Z"}                            // hole on the axis of a turned part
+- {"op":"break_edges", "d":0.5, "edges":SEL}   ·   {"op":"deburr"}   ·   {"op":"finish", "note":"Anodised black"}
+Every verb becomes one line of the routing sheet. Kernel features of section 5 may be mixed in the same list.
+
+## 5. Features — kernel operations, built in order
 Common fields: "op", optional "id", "name", "body" (default "main"), "mode": "add" | "cut", "suppressed": true.
 - {"op":"box", "size":[sx,sy,sz], "at":[x,y,z]}                       // "at" = min corner (default 0,0,0); or "center":[x,y,z]
 - {"op":"cylinder", "d":10, "h":20, "at":[x,y,z], "axis":"Z"}         // "at" = centre of the base
@@ -90,7 +120,7 @@ P (profile) = {"rect":[x,y,w,h],"r":2} | {"circle":[cx,cy,d]} | {"slot":[x1,y1,x
             | {"gen":"channel","W":40,"H":30,"t":3} | {"gen":"angle","A":40,"B":30,"t":3} | {"gen":"tube","W":60,"H":40,"t":2.5} | {"gen":"round_tube","D":30,"t":2}
             | {"gen":"card_enclosure","W":110,"H":50,"t":2.5,"slots":2,"slot_t":1.9,"slot_d":1.5,"first":6,"pitch":15}   // tube with card-guide grooves
 
-## 5. Extrusion family (aluminium or plastic profile)
+## 6. Extrusion family (aluminium or plastic profile)
 "extrusion": {
   "profile": P,              // cross-section; x horizontal, second axis up
   "length": "L",
@@ -102,7 +132,7 @@ Extrusion design rules to respect in the profile: uniform walls (aluminium ≥ 1
 (≥ 0.4 mm), no gap deeper than 3 × its width (4 × with care), as few hollows as possible, symmetric when possible.
 Machining after extrusion (holes, cut-outs) goes in "features" and "interfaces".
 
-## 6. PCB family
+## 7. PCB family
 "pcb": {
   "size": [100, 80], "r": 2, "t": 1.6,                    // or "outline": P. The bottom of the board is z = 0.
   "components": [ {"ref":"U1","name":"MCU","kind":"mcu","at":[50,40],"size":[14,14,1.6],"side":"top"},
@@ -113,9 +143,10 @@ Machining after extrusion (holes, cut-outs) goes in "features" and "interfaces".
 }
 Mounting holes of a board = one "bolt_pattern" interface, side "A", face "-Z" (the board sits on standoffs).
 
-## 7. Rules of a good answer
+## 8. Rules of a good answer
 1. Interfaces first: list every neighbour and what holds / locates / connects the part to it, then draw the part around them.
 2. Reuse EXACTLY the "key", "type" and "params" of the interfaces already defined in the project (given in the prompt).
 3. Everything a human would tune is a parameter. No raw number repeated twice.
 4. Respect the design-for-manufacturing rules of the process (walls, radii, hole sizes, depths).
-5. Answer with ONE JSON object in a code block, valid JSON (double quotes, no comments, no trailing commas).`;
+5. Think like the workshop: choose the raw stock first (a commercial size), then the fewest operations and set-ups.
+6. Answer with ONE JSON object in a code block, valid JSON (double quotes, no comments, no trailing commas).`;

@@ -96,8 +96,13 @@ Le noyau géométrique est [Open CASCADE Technology](https://dev.opencascade.org
 WebAssembly par opencascade.js / replicad (`web/vendor/occ/`, voir `NOTICE.md`). La vue 3D utilise
 [three.js](https://threejs.org/) (MIT, `web/vendor/three/`). Aucune ressource n'est chargée d'Internet à l'exécution.
 
-La licence du code de DesignWizard.ai lui-même reste à choisir par son auteur ; d'ici là, le dépôt est partagé pour
-évaluation et commentaires.
+## Licence
+
+Le code de DesignWizard.ai est publié sous **licence MIT** (voir [LICENSE](LICENSE)) : vous pouvez l'utiliser, le
+modifier et le redistribuer, y compris dans un produit commercial, en gardant la mention de droit d'auteur. Les
+composants tiers gardent leur propre licence (ci-dessus) ; le noyau Open CASCADE est en LGPL 2.1, livré tel quel et
+remplaçable. La politique d'ouverture du projet (réimplémentation « salle blanche », formats ouverts d'abord) est
+décrite dans [docs/VISION.md](docs/VISION.md).
 
 ---
 

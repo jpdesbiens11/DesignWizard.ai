@@ -1,6 +1,7 @@
 /* DesignWizard.ai — builds a part from its spec (the part language, see docs/PART_LANGUAGE.md).
    spec = { dw:"part/1", id, name, family, process, material, params, features[], interfaces[], extrusion?, pcb?, bodies?, elec? }
-   Order: parameters -> family blocks (extrusion, pcb) -> features -> interfaces -> features placed after {op:"interfaces"}. */
+   Order: parameters -> raw stock and workshop verbs rewritten to kernel features (workshop.js) -> family blocks
+   (extrusion, pcb) -> features -> interfaces -> features placed after {op:"interfaces"}. */
 
 import { resolveParams, evalDeep } from "./expr.js";
 import { newState, runFeatures } from "./features.js";
@@ -9,6 +10,8 @@ import { FACES, faceKey, bboxUnion } from "./vec.js";
 import { materialOrDefault, hexToRgb } from "./materials.js";
 import { compileExtrusion } from "./family_extrusion.js";
 import { compilePcb } from "./family_pcb.js";
+import { expandSpec } from "./workshop.js";
+import { stockFacts } from "./stock.js";
 
 export const PART_VERSION = "part/1";
 
@@ -18,11 +21,17 @@ function evaluated(spec, scope) {
 }
 
 /** Build the kernel bodies of a part. Returns bodies with shapes (kernel objects), frames, facts and a log. */
-export function buildPart(K, spec, opts = {}) {
-  const t0 = Date.now();
+export function buildPart(K, source, opts = {}) {
+  const t0 = Date.now(), shopLog = [];
+  const spec = expandSpec(source, shopLog);                    // stock + workshop verbs -> plain kernel features
   const { defs, scope } = resolveParams(spec.params, opts.overrides || {});
   const E = evaluated(spec, scope);
   const st = newState();
+  st.log.push(...shopLog);
+  if (source.stock) {
+    try { st.facts.stock = stockFacts(evalDeep(source.stock, scope), source.process); }
+    catch (e) { st.log.push({ level: "error", feature: "stock", msg: `Matière première : ${e.message}` }); }
+  }
   const bodyMeta = {};
   let features = E.features.map((f, i) => ({ ...f, id: f.id || `f${i + 1}` }));
   if (E.pcb) { const c = compilePcb(E.pcb, spec); features = [...c.features, ...features]; Object.assign(bodyMeta, c.bodies); st.main = "board"; st.facts.pcb = c.facts; }
@@ -82,7 +91,8 @@ export function buildPart(K, spec, opts = {}) {
     bbox = bboxUnion(bbox, p.bbox); volume += p.volume; mass += m;
     for (let i = 0; i < 3; i++) cogAcc[i] += p.cog[i] * m;
   }
-  if (!bodies.length && !st.log.some((l) => l.level === "error")) st.log.push({ level: "error", msg: "La pièce n'a aucun volume. Correctif : ajoutez au moins un « box », « extrude » ou un bloc « extrusion » / « pcb »." });
+  if (st.facts.stock && st.facts.stock.rawVolume && bodies.length) st.facts.stock.utilisation = bodies[0].volume / st.facts.stock.rawVolume;
+  if (!bodies.length && !st.log.some((l) => l.level === "error")) st.log.push({ level: "error", msg: "La pièce n'a aucun volume. Correctif : donnez la matière première (« stock »), ou au moins un « box », « extrude » ou un bloc « extrusion » / « pcb »." });
   return { id: spec.id, name: spec.name, bodies, interfaces: ifaces, params: { defs, scope }, facts: st.facts, log: st.log, main: st.main,
     bbox: bbox || [0, 0, 0, 0, 0, 0], volume, mass, cog: mass > 0 ? cogAcc.map((x) => x / mass) : [0, 0, 0], ms: Date.now() - t0 };
 }
@@ -94,7 +104,8 @@ export function validateSpec(spec) {
   if (spec.dw && !/^part\//.test(spec.dw)) errors.push(`« dw » vaut « ${spec.dw} » : ce n'est pas une pièce (attendu « ${PART_VERSION} »).`);
   if (!spec.id) warnings.push("« id » (numéro de pièce) manquant : un numéro sera attribué.");
   if (!spec.name) warnings.push("« name » manquant.");
-  if (!spec.features && !spec.extrusion && !spec.pcb) errors.push("Aucune géométrie : il faut « features », « extrusion » ou « pcb ».");
+  if (!spec.features && !spec.extrusion && !spec.pcb && !spec.stock) errors.push("Aucune géométrie : il faut « stock », « features », « extrusion » ou « pcb ».");
+  if (spec.stock && (typeof spec.stock !== "object" || !spec.stock.form)) errors.push("« stock » doit être un objet avec sa forme, ex. {\"form\": \"plate\", \"L\": 120, \"W\": 80, \"t\": 6}.");
   if (spec.features && !Array.isArray(spec.features)) errors.push("« features » doit être une liste.");
   if (spec.interfaces && !Array.isArray(spec.interfaces)) errors.push("« interfaces » doit être une liste.");
   for (const [i, it] of (Array.isArray(spec.interfaces) ? spec.interfaces : []).entries()) {

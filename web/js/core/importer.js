@@ -33,7 +33,7 @@ export function kindOf(obj) {
   const dw = String(obj.dw || "");
   if (dw.startsWith("project/") || (Array.isArray(obj.parts) && Array.isArray(obj.assemblies))) return "project";
   if (dw.startsWith("assembly/") || (Array.isArray(obj.instances) && !obj.features)) return "assembly";
-  if (dw.startsWith("part/") || obj.features || obj.extrusion || obj.pcb) return "part";
+  if (dw.startsWith("part/") || obj.features || obj.extrusion || obj.pcb || (obj.stock && obj.stock.form)) return "part";
   if (obj.outer || obj.poly || obj.path || obj.rect || obj.circle) return "profile";
   if (Array.isArray(obj.parts) && obj.parts.every((x) => kindOf(x) === "part")) return "parts";
   return null;
