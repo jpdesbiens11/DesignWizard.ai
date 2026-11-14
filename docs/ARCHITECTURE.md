@@ -1,0 +1,125 @@
+# Architecture de DesignWizard.ai
+
+Version 0.1.0 — première itération. Ce document dit comment la plateforme est faite, où se trouve quoi, ce qui est
+vérifié, ce qui ne l'est pas, et ce qui est prévu ensuite.
+
+## Principes
+
+- **Les interfaces d'abord.** Une interface est un contrat typé entre deux pièces (`bolt_pattern`, `planar`, `fit`,
+  `cutout`, `rail`, `pins`) : un côté A, un côté B, des paramètres partagés. D'une seule définition sortent la
+  géométrie de chaque côté, le repère de mate, la visserie de la BOM et le GD&T du dessin.
+- **Un langage de pièce** (JSON, « DW part/1 », voir [PART_LANGUAGE.md](PART_LANGUAGE.md)) : c'est ce que l'assistant
+  écrit à la fin de l'entrevue et ce que le noyau construit. Tout nombre peut être une expression des paramètres.
+- **Aucune dépendance à l'exécution.** Pas de framework, pas d'outil de build, pas de CDN : modules ES natifs, noyau
+  CAO et vue 3D dans le dépôt. Python : bibliothèque standard seulement.
+- **Le design « Carnet » de DynamiteAgile** : papier quadrillé, graphite, surligneur par outil (`--acc`), cartes
+  tracées au crayon. Les écrans se construisent avec `el()` et `textContent`, jamais `innerHTML` sur une donnée.
+- **L'IA reste dehors.** La plateforme n'appelle aucun modèle : elle écrit le prompt, vous menez l'entrevue dans
+  Claude, vous collez la réponse. Aucune clé d'IA, aucune donnée de projet envoyée par la plateforme.
+
+## Où se trouve quoi
+
+```
+designwizard.py            serveur local (statique, projets sur disque, proxy Onshape)
+server/                    store.py (projets, historique, corbeille) · onshape.py (client de l'API Onshape)
+web/index.html             page unique
+web/css/app.css            design Carnet
+web/js/main.js             point d'entrée : enregistre les outils, démarre la coquille
+web/js/core/               coquille et logique sans noyau
+    app.js  store.js  dom.js           routeur, projet avec annuler / rétablir, aides DOM
+    viewer.js  viewport.js             vue 3D (three.js) : orbite, vues, coupe, éclaté, mesure, repères
+    assembly_logic.js  links.js        mates automatiques, solveur de placement, BOM · dépendance entre interfaces liées
+    prompts.js  importer.js            prompts génériques · « coller n'importe quoi »
+    nl.js  palette.js                  la baguette (Ctrl + K) et son petit langage
+    companion.js  part_edit.js         pièce complémentaire · dialogues de feature et d'interface
+web/js/cad/                noyau CAO (tourne dans un Web Worker, et dans Node pour les tests)
+    occ.js                             seule couche qui parle à OpenCascade
+    expr.js  profile*.js               expressions sûres (sans eval) · profils 2D, générateurs, mesures de section
+    features.js  interfaces.js         opérations (box, extrude, hole, pocket, shell, fillet…) · interfaces A / B
+    family_extrusion.js  family_pcb.js familles de haut niveau compilées en features
+    build.js  worker.js  client.js     constructeur de pièce · worker · client à promesses avec cache
+    standards.js  materials.js         visserie ISO, ajustements · matériaux et procédés
+    templates.js  language_doc.js      gabarits paramétriques · référence du langage (source unique)
+web/js/analysis/
+    cc_rules.js                        distances requises IEC 60664-1 (tables, altitude, IT, essais)
+    cc_geom.js cc_clearance.js cc_creepage.js cc_paths.js   chemins mesurés sur les maillages
+    cc_scene.js  cc_worker.js          scène de l'assemblage complet · worker d'analyse
+    dfx_core.js dfx_rules*.js dfa_rules.js  règles DFM / DFA / DFx, correctifs déclaratifs
+web/js/draw/               feuille PDF et SVG (même API), aides au dessin, composition du dessin d'une pièce
+web/js/modules/            un fichier par écran
+web/js/onshape/            client du proxy local et orchestration de l'envoi
+web/js/demo/               projets de démonstration
+tests/node  tests/py       tests (noyau réel, règles, chemins, DFx, dessins · serveur et Onshape simulé)
+tools/                     génération des icônes Carnet, de la doc du langage, d'une feuille de démonstration
+```
+
+## Le chemin d'une pièce
+
+1. **Spec** (JSON) → `expr.resolveParams` résout les paramètres (y compris dérivés) → `expr.evalDeep` évalue chaque
+   nombre écrit comme expression.
+2. Les blocs `extrusion` / `pcb` sont compilés en features ; les features s'exécutent dans l'ordre sur des *corps*
+   nommés ; les interfaces sont compilées en features (trous, bossages, découpes) et taillées au repère
+   `{"op": "interfaces"}` ou à la fin.
+3. Le noyau rend, par corps : le solide (gardé dans le worker), son maillage, ses propriétés ; et pour la pièce : les
+   repères d'interface, les *faits* (trous, poches, parois, métriques de section) dont se servent les règles DFx.
+4. Une feature qui échoue est signalée et sautée : la pièce se construit quand même. Un congé refusé par le noyau
+   est retenté arête par arête.
+
+## L'assemblage et la dépendance
+
+- `assembly_logic.candidates` apparie les interfaces libres de même type, de côtés opposés, de même clé (ou de même
+  signature géométrique). `autoMate` prend les meilleures, une interface ne servant qu'une fois.
+- `assembly_logic.solve` part des pièces fixes et place les autres de proche en proche : les repères des deux
+  interfaces coïncident, normales opposées. Un mate redondant est vérifié (écart > 0,05 mm signalé).
+- `links.propagate` s'exécute dans la même étape d'annulation que la modification : pour chaque mate *lié*, les
+  valeurs évaluées de l'interface modifiée sont comparées à l'autre côté ; si un champ de l'autre pièce est piloté
+  par un de ses paramètres (`"dx": "pcbL"`), **c'est ce paramètre qui bouge** — toute la pièce suit ; sinon le champ
+  est remplacé.
+
+## Isolation
+
+- `cc_rules.js` porte le moteur de DynamiteAgile 0.50.9 : tension de travail (DC, AC, système IT flottant), tension
+  de choc (F.1), clearance (F.2, cas A / B, minimum PD, altitude A.2), creepage par material group (F.4), largeur de
+  rainure X, essais après assemblage. Chaque résultat garde les étapes de son calcul.
+- `cc_paths.js` mesure sur les maillages de l'assemblage complet : la clearance est le fil tendu dans l'air qui
+  contourne les solides (graphe de visibilité sur les arêtes, puis resserrage) ; le creepage est le plus court chemin
+  sur les surfaces isolantes (points de Steiner, Dijkstra, rainures plus étroites que X pontées, isolants en contact
+  continus, conducteurs flottants traversés sans compter).
+- Validation : le produit d'exemple DEMO-HVB, dont les distances sont connues par construction, est reproduit
+  (tests `cc_paths.test.mjs`).
+- **À décider** : un joint non collé entre deux isolants est aujourd'hui un chemin de creepage mais pas de clearance
+  (`opts.jointClearance` l'active). À trancher selon votre lecture de la norme.
+
+## Sécurité
+
+- Le serveur n'écoute que sur `127.0.0.1` ; toute écriture exige l'origine du serveur et l'en-tête `X-DW-Request`.
+- CSP stricte sur chaque réponse. Seul le worker du noyau a le droit d'évaluer du code (la colle Emscripten
+  d'OpenCascade en a besoin) : il n'a ni DOM ni cookie, et ne peut charger que depuis ce serveur.
+- Les clés Onshape sont gardées par le serveur dans `data/` (hors dépôt, fichier protégé) et ne reviennent jamais au
+  navigateur. Rien n'est envoyé à Onshape sans l'écran de confirmation.
+
+## Ce qui n'est pas vérifié
+
+- **Onshape** : testé contre un serveur simulé seulement. Voir le tableau « confirmé / non confirmé » de
+  [ONSHAPE.md](ONSHAPE.md).
+- **Tables IEC 60664-1** : à comparer à votre copie de la norme.
+- **Règles DFx** : plusieurs seuils sont des règles de pouce, marquées comme telles dans le livre des règles.
+- **Navigateurs** : essayé sous Chromium ; Firefox et Safari restent à essayer.
+
+## Limites de cette itération
+
+- Dessins : cotes d'enveloppe, tableau des trous, GD&T des interfaces ; pas encore de cotes de détail placées une à une,
+  ni de vues en coupe.
+- Pas de famille tôlerie pliée (déplié, rayon de pliage).
+- Mates : par interfaces uniquement ; pas de contraintes libres entre faces quelconques.
+- Une pièce importée en STEP n'a ni paramètres ni dessin ; les noms de ses solides sont lus au mieux.
+- Pas de multi-utilisateur : un projet = un fichier JSON, partagé par export / import.
+
+## Suite envisagée
+
+1. Entrevue dans l'application avec une clé d'API Claude, en plus du copier / coller.
+2. « Envelopper » : générer le boîtier autour des pièces choisies, colonnettes et découpes alignées sur leurs interfaces.
+3. Mates et variables natifs Onshape, reliés aux paramètres de la plateforme.
+4. Chaînes de cotes le long des interfaces ; vues en coupe et cotes de détail dans les dessins.
+5. Bibliothèque de pièces standard insérées en 3D depuis la BOM.
+6. Revue à plusieurs : commentaires épinglés sur le 3D et sur le rapport.

@@ -1,0 +1,24 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Tests Node (noyau CAO, règles, chemins, DFx, dessins)
+        run: node --test tests/node/*.test.mjs
+      - name: Tests Python (serveur local, proxy Onshape contre un serveur simulé)
+        run: python -m unittest discover -s tests/py -t .
