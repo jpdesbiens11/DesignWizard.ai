@@ -8,6 +8,8 @@
    A bare loop is accepted as a profile without holes. Coordinates are already numbers (see expr.evalDeep).
    Normalised loop = array of segments {t:"L", a, b} or {t:"A", a, b, m, c, r, ccw}, closed, outer loops counter-clockwise. */
 
+import { generateProfile } from "./profile_gen.js";
+
 const EPS = 1e-7;
 const sub = (a, b) => [a[0] - b[0], a[1] - b[1]];
 const add = (a, b) => [a[0] + b[0], a[1] + b[1]];
@@ -159,6 +161,7 @@ function orient(loop, ccw) { return (polyArea(flattenLoop(loop)) > 0) === ccw ? 
 
 function anyLoops(def) {
   if (!def || typeof def !== "object") throw new ProfileError(`Profil invalide : ${JSON.stringify(def)}.`);
+  if (def.gen) { const n = normalizeProfile(generateProfile(def)); return [n.outer, ...n.holes]; }
   if (def.rect) return [loopRect(def.rect, def.r)];
   if (def.circle) return [loopCircle(def.circle)];
   if (def.slot) return [loopSlot(def.slot)];
@@ -170,6 +173,7 @@ function anyLoops(def) {
 /** Normalise any profile definition into {outer, holes} with consistent orientation. */
 export function normalizeProfile(def) {
   if (def && def.outer && Array.isArray(def.outer) && def.outer[0] && def.outer[0].t) return def;     // already normalised
+  if (def && def.gen) def = generateProfile(def);
   let outer, holes = [];
   if (def && def.outer) {
     const lo = anyLoops(def.outer);

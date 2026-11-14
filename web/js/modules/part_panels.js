@@ -1,0 +1,136 @@
+/* DesignWizard.ai — inspector panels of the part studio: parameters (sliders with live rebuild), interfaces,
+   DFx findings with one-click fixes, data sheet, raw JSON. */
+
+import { el, clear, icon, btn, badge, field, toast, fmt, fmtMass, copyText } from "../core/dom.js";
+import { store } from "../core/store.js";
+import { interfaceDialog, nextIfaceId } from "../core/part_edit.js";
+import { INTERFACE_TYPES, interfaceType } from "../cad/interfaces.js";
+import { MATERIALS, PROCESSES, materialOrDefault } from "../cad/materials.js";
+import { validateSpec } from "../cad/build.js";
+import { applyFix } from "../analysis/dfx_api.js";
+
+/* ---------- parameters ---------- */
+export function paramsPanel(body, { st, id, live }) {
+  const defs = Object.entries(st.spec.params || {});
+  if (!defs.length) { body.append(el("p", { class: "muted" }, "Cette pièce n'a pas de paramètres. Ajoutez-en dans l'onglet JSON (« params »), ou demandez-les à l'entrevue.")); return; }
+  const scope = st.built ? st.built.params.scope : {}, pending = {};
+  const groups = new Map();
+  for (const [name, raw] of defs) { const d = raw !== null && typeof raw === "object" ? raw : { value: raw }; const g = d.group || "Paramètres"; if (!groups.has(g)) groups.set(g, []); groups.get(g).push([name, d]); }
+  for (const [g, list] of groups) {
+    const sec = el("div", { class: "side-section" }, el("h3", null, g));
+    for (const [name, d] of list) {
+      const derived = d.expr !== undefined, val = typeof d.value === "number" ? d.value : scope[name];
+      const num = el("input", { type: derived || typeof d.value === "string" ? "text" : "number", value: derived ? fmt(scope[name], 3) : (typeof d.value === "string" ? d.value : val), step: d.step || "any", disabled: derived, "aria-label": d.label || name });
+      const row = el("div", { class: "param" + (derived ? " derived" : "") }, el("label", { "data-tip": derived ? `Calculé : ${d.expr}` : d.note || null }, d.label || name, el("small", null, name + (d.unit ? ` · ${d.unit}` : ""))), num);
+      if (!derived && typeof d.value === "number" && typeof d.min === "number" && typeof d.max === "number") {
+        const range = el("input", { type: "range", min: d.min, max: d.max, step: d.step || (d.max - d.min) / 200, value: val, "aria-label": `${d.label || name} (curseur)` });
+        range.addEventListener("input", () => { num.value = range.value; pending[name] = +range.value; live({ ...pending }); });
+        range.addEventListener("change", () => commit(name, +range.value, num));
+        row.append(range);
+      }
+      num.addEventListener("keydown", (e) => { if (e.key === "Enter") num.blur(); });
+      num.addEventListener("change", () => {
+        const v = num.type === "number" ? parseFloat(num.value) : (/^-?\d+([.,]\d+)?$/.test(num.value.trim()) ? parseFloat(num.value.replace(",", ".")) : num.value.trim());
+        if (v === "" || (typeof v === "number" && Number.isNaN(v))) { num.classList.add("bad"); return; }
+        commit(name, v, num);
+      });
+      sec.append(row);
+    }
+    body.append(sec);
+  }
+  function commit(name, v, input) {
+    input.classList.remove("bad");
+    const ok = store.updatePart(id, (s) => { if (s.params[name] !== null && typeof s.params[name] === "object") s.params[name].value = v; else s.params[name] = v; }, `${st.spec.id} : ${name} = ${v}`);
+    if (ok) { input.classList.remove("flash"); void input.offsetWidth; input.classList.add("flash"); }
+  }
+  body.append(el("p", { class: "muted", style: { fontSize: ".8rem", marginTop: ".8rem" } }, "Glissez un curseur : la pièce se reconstruit en direct. La valeur est enregistrée quand vous relâchez. Les pièces liées par une interface s'adaptent."));
+}
+
+/* ---------- interfaces ---------- */
+export function interfacesPanel(body, { st, id, editIface }) {
+  const s = st.spec;
+  body.append(el("p", { class: "muted", style: { fontSize: ".84rem" } }, "Une interface est le contrat entre cette pièce et sa voisine : même type, même clé, mêmes paramètres des deux côtés. La géométrie, le mate, la visserie et le GD&T en découlent."));
+  for (const it of s.interfaces || []) {
+    let t = null; try { t = interfaceType(it.type); } catch (e) { t = null; }
+    const b = st.built && st.built.interfaces.find((x) => x.id === it.id);
+    const mates = [];
+    for (const a of store.assemblies) for (const m of a.mates || []) for (const [me, other] of [[m.a, m.b], [m.b, m.a]]) {
+      const inst = a.instances.find((i) => i.id === me.inst), o = a.instances.find((i) => i.id === other.inst);
+      if (inst && o && inst.part === id && me.iface === it.id) mates.push(`${o.part} (${a.id})`);
+    }
+    body.append(el("div", { class: "card", style: { marginBottom: ".6rem", padding: ".6rem .7rem" } },
+      el("div", { style: { display: "flex", gap: ".4rem", alignItems: "center", flexWrap: "wrap" } }, el("b", null, it.name || it.id), badge(`côté ${it.side || "A"}`, it.side === "B" ? "b" : "a"), badge(t ? t.fr : it.type, "neutral"),
+        mates.length ? badge("liée", "ok") : badge("libre", "warn")),
+      el("p", { class: "muted", style: { margin: ".3rem 0", fontSize: ".82rem" } }, `${it.id} · face ${it.face || "+Z"} · clé ${it.key || "—"}${it.partner ? ` · voisin : ${it.partner}` : ""}`),
+      b && el("p", { class: "code", style: { margin: ".2rem 0", fontSize: ".76rem", wordBreak: "break-word" } }, JSON.stringify(b.params)),
+      mates.length ? el("p", { style: { margin: ".2rem 0", fontSize: ".82rem" } }, icon("link"), ` Liée à ${mates.join(", ")} : toute modification s'y propage.`) : null,
+      el("div", { class: "form-actions", style: { justifyContent: "flex-start", marginTop: ".3rem" } }, btn("Modifier", () => editIface(it.id), { small: true, icon: "edit" }),
+        btn("Supprimer", () => store.updatePart(id, (x) => { x.interfaces = x.interfaces.filter((q) => q.id !== it.id); }, `Interface ${it.id} supprimée`), { small: true, icon: "trash", danger: true }))));
+  }
+  body.append(btn("Ajouter une interface", () => interfaceDialog({ id: nextIfaceId(s), type: "bolt_pattern", side: "A", face: "+Z", at: st.built ? [(st.built.bbox[0] + st.built.bbox[3]) / 2, (st.built.bbox[1] + st.built.bbox[4]) / 2].map((x) => Math.round(x * 10) / 10) : [0, 0] },
+    (ni) => store.updatePart(id, (x) => { x.interfaces = x.interfaces || []; x.interfaces.push(ni); }, `Interface ${ni.id} ajoutée`), true), { icon: "plus" }));
+  body.append(el("div", { class: "side-section" }, el("h3", null, "Types d'interface"), Object.entries(INTERFACE_TYPES).map(([k, t]) => el("p", { style: { fontSize: ".8rem", margin: "0 0 .35rem" } }, el("b", null, t.fr), ` (${k}) — `, t.doc))));
+}
+
+/* ---------- DFx ---------- */
+export function dfxPanel(body, { st, id, vp }) {
+  const res = st.findings;
+  if (!res) { body.append(el("p", { class: "muted" }, "Les règles DFx s'évaluent après la construction de la pièce…")); return; }
+  if (res.unavailable) { body.append(el("p", { class: "muted" }, "Le moteur de règles DFx n'est pas chargé dans cette version.")); return; }
+  const s = res.summary || { errors: 0, warnings: 0, infos: 0, score: 100 };
+  body.append(el("div", { class: "kpis" }, el("div", { class: "kpi" }, el("b", null, `${s.score ?? "—"}`), el("span", null, "Score DFx / 100")), el("div", { class: "kpi" }, el("b", null, s.errors), el("span", null, "À corriger")),
+    el("div", { class: "kpi" }, el("b", null, s.warnings), el("span", null, "À vérifier"))));
+  const proc = PROCESSES[st.spec.process];
+  body.append(el("p", { class: "muted", style: { fontSize: ".82rem" } }, `Règles du procédé : ${proc ? proc.fr : "non défini"} · ${(res.rules || []).length} règle(s) évaluée(s). Les règles se relancent à chaque modification.`));
+  if (!res.findings.length) body.append(el("div", { class: "card" }, icon("check"), " Aucune remarque : la pièce respecte les règles évaluées."));
+  for (const f of res.findings) {
+    const card = el("div", { class: `finding ${f.severity}`, onClick: () => { if (f.where) { vp.viewer.clearOverlays("focus"); vp.viewer.addMarker(f.where, "#0c66e4", "focus", 1.8); } } }, el("span", { class: "sev" }),
+      el("div", null, el("b", null, f.title), el("span", { class: "id" }, f.id)), el("p", null, f.message));
+    if (f.fix && f.fix.patch) card.append(btn(f.fix.label || "Appliquer le correctif", (e) => {
+      e.stopPropagation();
+      try { store.updatePart(id, (x) => applyFix(x, f.fix.patch), `Correctif ${f.id} : ${f.fix.label || ""}`); toast(`Correctif appliqué : ${f.fix.label || f.id}`, "success"); } catch (err) { toast(err.message, "error"); }
+    }, { small: true, icon: "sparkle", cls: "fix", tip: "Applique le correctif proposé (annulable avec Ctrl+Z)" }));
+    body.append(card);
+  }
+}
+
+/* ---------- data sheet ---------- */
+export function sheetPanel(body, { st, id }) {
+  const s = st.spec, b = st.built, set = (key, label) => (e) => store.updatePart(id, (x) => { if (e.target.value === "") delete x[key]; else x[key] = e.target.value; }, `${s.id} : ${label} modifié`);
+  const text = (key, label, hint) => field(label, el("input", { type: "text", value: s[key] || "", onChange: set(key, label) }), hint);
+  const mat = materialOrDefault(s.material);
+  body.append(text("name", "Nom"), field("Numéro de pièce", el("input", { type: "text", value: s.id, disabled: true })), text("function", "Fonction", "Une phrase : à quoi sert la pièce dans le produit."),
+    field("Matériau", el("select", { onChange: set("material", "matériau") }, el("option", { value: "" }, "— à définir —"), MATERIALS.map((m) => el("option", { value: m.id, selected: m.id === s.material }, m.name)))),
+    field("Procédé", el("select", { onChange: set("process", "procédé") }, el("option", { value: "" }, "— à définir —"), Object.entries(PROCESSES).map(([k, p]) => el("option", { value: k, selected: k === s.process }, p.fr))),
+      s.material && s.process && mat.processes && mat.processes.length && !mat.processes.includes(s.process) ? "Ce matériau n'est pas courant pour ce procédé." : null),
+    text("finish", "Finition"), text("revision", "Révision"));
+  const elec = s.elec || {};
+  body.append(el("div", { class: "side-section" }, el("h3", null, "Rôle électrique (analyse d'isolation)"),
+    el("div", { class: "form-row" }, field("Rôle", el("select", { onChange: (e) => store.updatePart(id, (x) => { x.elec = { ...(x.elec || {}), kind: e.target.value || undefined }; }, `${s.id} : rôle électrique`) },
+      [["", "Automatique (selon le matériau)"], ["conductor", "Conducteur"], ["insulator", "Isolant"], ["chassis", "Chassis"], ["none", "Ignoré"]].map(([k, l]) => el("option", { value: k, selected: k === (elec.kind || "") }, l)))),
+      field("Net", el("input", { type: "text", value: elec.net || "", placeholder: "HV+, GND…", onChange: (e) => store.updatePart(id, (x) => { x.elec = { ...(x.elec || {}), net: e.target.value.trim() || undefined }; }, `${s.id} : net`) })))));
+  if (b) body.append(el("div", { class: "side-section" }, el("h3", null, "Propriétés calculées"), el("table", { class: "data" }, el("tbody", null,
+    [["Masse", fmtMass(b.mass)], ["Volume", `${fmt(b.volume / 1000, 2)} cm³`], ["Enveloppe", `${fmt(b.bbox[3] - b.bbox[0], 2)} × ${fmt(b.bbox[4] - b.bbox[1], 2)} × ${fmt(b.bbox[5] - b.bbox[2], 2)} mm`],
+      ["Centre de gravité", b.cog.map((x) => fmt(x, 1)).join(" ; ")], ["Corps", b.bodies.map((x) => x.name).join(", ")], ["Trous", String(b.facts.holes.length)], ["Densité", `${mat.rho} g/cm³`]].map(([k, v]) => el("tr", null, el("td", null, k), el("td", null, v)))))));
+  if (b && b.log.length) body.append(el("div", { class: "side-section" }, el("h3", null, "Journal du noyau"), b.log.map((l) => el("p", { class: l.level === "error" ? "form-error" : "muted", style: { fontSize: ".82rem" } }, l.msg))));
+  if (s.interview) body.append(el("div", { class: "side-section" }, el("h3", null, "Entrevue d'origine"),
+    (s.interview.questions || []).map((q) => el("p", { style: { fontSize: ".82rem" } }, el("b", null, q.q), " — ", q.a)), (s.interview.assumptions || []).map((a) => el("p", { class: "muted", style: { fontSize: ".82rem" } }, "Hypothèse : ", a))));
+}
+
+/* ---------- JSON ---------- */
+export function jsonPanel(body, { st, id }) {
+  const ta = el("textarea", { rows: 26, spellcheck: false, value: JSON.stringify(st.spec, (k, v) => (k === "text" && typeof v === "string" && v.length > 2000 ? `${v.slice(0, 60)}… [STEP ${v.length} caractères, non modifiable ici]` : v), 1) });
+  const err = el("p", { class: "form-error" });
+  body.append(el("p", { class: "muted", style: { fontSize: ".82rem" } }, "La pièce dans le langage DesignWizard (DW part/1). Modifiez-la ici ou recollez la réponse d'une entrevue."), ta, err,
+    el("div", { class: "form-actions" }, btn("Copier", async () => toast((await copyText(ta.value)) ? "JSON copié." : "Copie impossible."), { small: true, icon: "copy" }),
+      btn("Appliquer", () => {
+        try {
+          const obj = JSON.parse(ta.value), v = validateSpec(obj);
+          if (v.errors.length) { err.textContent = v.errors.join("\n"); return; }
+          if (st.spec.step && obj.step && typeof obj.step.text === "string" && obj.step.text.includes("non modifiable ici")) obj.step = st.spec.step;
+          obj.id = id;
+          store.updatePart(id, () => obj, `${id} : JSON modifié`);
+          toast("Pièce mise à jour.", "success");
+        } catch (e) { err.textContent = `JSON invalide : ${e.message}`; }
+      }, { primary: true, small: true })));
+}

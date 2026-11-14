@@ -86,6 +86,9 @@ P (profile) = {"rect":[x,y,w,h],"r":2} | {"circle":[cx,cy,d]} | {"slot":[x1,y1,x
             | {"poly":[[x,y],[x,y,r],...],"r":0}        // polygon; a vertex may carry its own fillet radius as 3rd value
             | {"path":"M0 0 L10 0 A5 5 0 0 1 15 5 Z"}    // SVG path, y up
             | {"outer":P,"holes":[P,...]}
+            | {"gen":"heatsink","W":80,"base":5,"fin":18,"tf":2,"n":9}                 // generators of usual sections:
+            | {"gen":"channel","W":40,"H":30,"t":3} | {"gen":"angle","A":40,"B":30,"t":3} | {"gen":"tube","W":60,"H":40,"t":2.5} | {"gen":"round_tube","D":30,"t":2}
+            | {"gen":"card_enclosure","W":110,"H":50,"t":2.5,"slots":2,"slot_t":1.9,"slot_d":1.5,"first":6,"pitch":15}   // tube with card-guide grooves
 
 ## 5. Extrusion family (aluminium or plastic profile)
 "extrusion": {

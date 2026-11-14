@@ -1,0 +1,124 @@
+/* DesignWizard.ai — application shell: top bar, hash router (#/module/arg/...), module registry, kernel status,
+   project menu, global shortcuts (undo / redo, Ctrl+K wand, paste or drop anything to import). */
+
+import { el, clear, icon, btn, toast, modal, installTips, download, confirmBox, promptBox } from "./dom.js";
+import { store } from "./store.js";
+import { kernel } from "../cad/client.js";
+
+export const APP_VERSION = "0.1.0";
+const modules = new Map();
+const ORDER = ["home", "interfaces", "parts", "extrusion", "pcb", "assembly", "creepage", "dfx", "drawings", "report"];
+const GROUP_BREAK = new Set(["interfaces", "assembly", "creepage", "report"]);     // a pencil tick before these tabs
+export const app = { modules, context: {}, version: APP_VERSION, current: null, cleanup: null, commands: [] };
+
+/** Register a tool: {key, label, icon, tip, hidden, render(main, args) -> cleanup?}. */
+export function registerModule(def) { modules.set(def.key, def); }
+export function go(hash) { if (location.hash === hash) route(); else location.hash = hash; }
+export function setContext(ctx) { app.context = ctx || {}; }
+
+function topbar() {
+  const tabs = el("nav", { class: "tabs", "aria-label": "Outils" });
+  for (const key of ORDER) {
+    const m = modules.get(key);
+    if (!m || m.hidden) continue;
+    if (GROUP_BREAK.has(key)) tabs.append(el("span", { class: "tab-sep", "aria-hidden": "true" }));
+    tabs.append(el("a", { class: "tab", href: `#/${key}`, "data-key": key, "data-tip": m.tip }, icon(m.icon), el("span", null, m.label)));
+  }
+  const chip = el("span", { class: "chip", id: "kernel-chip" }, "Prêt");
+  kernel.onStage((s) => setStatus(s || "Prêt", s ? "busy" : ""));
+  const save = el("span", { class: "chip", id: "save-chip", "data-tip": "État de l'enregistrement du projet" }, "—");
+  store.on("saved", (s) => { save.textContent = s === "saved" ? "Enregistré" : s === "dirty" ? "Modifié…" : "Non enregistré"; save.className = "chip" + (s === "error" ? " bad" : s === "saved" ? " done" : " busy"); });
+  const wand = el("button", { class: "wand", type: "button", "data-tip": "La baguette : tapez ce que vous voulez faire (« 4 trous M4 aux coins », « longueur 150 », « aller à Assemblage »…)", onClick: () => app.openPalette && app.openPalette() },
+    icon("wizard"), el("span", { class: "wand-text" }, "Que voulez-vous faire ?"), el("kbd", null, "Ctrl K"));
+  const tools = el("div", { class: "top-tools" }, wand, chip, save,
+    btn("", () => store.undo() || toast("Rien à annuler."), { icon: "undo", small: true, tip: "Annuler (Ctrl+Z)" }),
+    btn("", () => store.redo() || toast("Rien à rétablir."), { icon: "redo", small: true, tip: "Rétablir (Ctrl+Y)" }),
+    menuButton("Onshape", "onshape", onshapeMenu), menuButton("Projet", "folder", projectMenu),
+    el("a", { class: "btn btn-small", href: "#/help", "data-tip": "Aide, raccourcis et guide des collaborateurs" }, icon("help")));
+  return el("header", { class: "topbar" },
+    el("a", { class: "brand", href: "#/home", "aria-label": "DesignWizard.ai, accueil" }, el("img", { src: "img/brand.svg", alt: "" }),
+      el("span", { class: "brand-name" }, el("b", null, "DesignWizard", el("i", null, ".ai")), el("small", null, "by DynamiteAgile™"))),
+    tabs, tools);
+}
+export function setStatus(text, cls = "") { const c = document.getElementById("kernel-chip"); if (c) { c.textContent = text; c.className = "chip " + cls; c.title = text; } }
+
+function menuButton(label, ico, build) {
+  const wrap = el("div", { class: "menu-wrap" });
+  const b = btn(label, () => {
+    const open = wrap.querySelector(".menu");
+    document.querySelectorAll(".menu").forEach((m) => m.remove());
+    if (open) return;
+    const menu = el("div", { class: "menu", role: "menu" });
+    build(menu, () => menu.remove());
+    wrap.append(menu);
+  }, { icon: ico, small: true });
+  wrap.append(b);
+  return wrap;
+}
+const item = (label, ico, fn, close) => el("button", { class: "menu-item", type: "button", role: "menuitem", onClick: () => { close(); fn(); } }, icon(ico), label);
+
+async function projectMenu(menu, close) {
+  const p = store.project;
+  menu.append(el("div", { class: "menu-title" }, p ? p.name : "Aucun projet ouvert"));
+  menu.append(item("Tous les projets", "folder", () => go("#/home"), close));
+  menu.append(item("Nouveau projet…", "plus", async () => { const name = await promptBox("Nouveau projet", "Nom du projet", "Mon produit"); if (name) { await store.create(name); go("#/interfaces"); } }, close));
+  if (p) {
+    menu.append(el("hr"));
+    menu.append(item("Renommer le projet…", "edit", async () => { const name = await promptBox("Renommer", "Nom du projet", p.name); if (name) store.commit(`Projet renommé : ${name}`, (x) => { x.name = name; }); }, close));
+    menu.append(item("Exporter le projet (.json)", "download", () => download(`${p.id}.dwproject.json`, store.exportJson(), "application/json"), close));
+  }
+  menu.append(item("Importer un projet ou une pièce…", "upload", () => app.pickFile && app.pickFile(), close));
+  menu.append(el("hr"));
+  menu.append(el("div", { class: "menu-title" }, store.mode === "server" ? "Serveur local : projets sur le disque" : "Mode navigateur : projets gardés dans ce navigateur"));
+}
+function onshapeMenu(menu, close) {
+  menu.append(el("div", { class: "menu-title" }, "Onshape"));
+  menu.append(item("Connexion et envoi vers Onshape", "onshape", () => go("#/onshape"), close));
+  menu.append(el("div", { class: "menu-title" }, store.mode === "server" ? "Les clés restent sur ce poste." : "Demande le serveur local (python designwizard.py)."));
+}
+
+function route() {
+  const parts = location.hash.replace(/^#\/?/, "").split("/").filter(Boolean).map(decodeURIComponent);
+  const key = modules.has(parts[0]) ? parts[0] : "home";
+  const main = document.getElementById("main");
+  if (app.cleanup) { try { app.cleanup(); } catch (e) { console.error(e); } app.cleanup = null; }
+  clear(main);
+  app.context = {}; app.current = key; app.commands = [];
+  document.documentElement.dataset.module = key;
+  document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.key === key));
+  const m = modules.get(key);
+  document.title = `${m.label} · DesignWizard.ai`;
+  if (!store.project && !["home", "help"].includes(key)) {
+    main.append(el("div", { class: "page" }, el("div", { class: "empty" }, el("h2", null, "Aucun projet ouvert"),
+      el("p", null, "Ouvrez un projet ou chargez la démonstration pour utiliser cet outil."), el("a", { class: "btn btn-primary", href: "#/home" }, "Aller à l'accueil"))));
+    return;
+  }
+  try { const c = m.render(main, parts.slice(1)); if (typeof c === "function") app.cleanup = c; }
+  catch (e) { console.error(e); main.append(el("div", { class: "page" }, el("div", { class: "card" }, el("h2", null, "Cet écran n'a pas pu s'afficher"), el("p", { class: "form-error" }, e.message)))); }
+}
+
+export async function start() {
+  installTips();
+  document.body.append(topbar(), el("main", { id: "main" }));
+  store.on("error", (e) => toast(e.message, "error", 8000));
+  await store.init();
+  const last = store.lastId();
+  if (last) { try { await store.open(last); } catch (e) { /* the project is gone: stay on the home page */ } }
+  window.addEventListener("hashchange", route);
+  document.addEventListener("keydown", (e) => {
+    const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement && document.activeElement.tagName);
+    const mod = e.ctrlKey || e.metaKey;
+    if (mod && e.key.toLowerCase() === "k") { e.preventDefault(); app.openPalette && app.openPalette(); }
+    else if (mod && !typing && e.key.toLowerCase() === "z" && !e.shiftKey) { e.preventDefault(); const l = store.undo(); toast(l ? `Annulé : ${l}` : "Rien à annuler."); }
+    else if (mod && !typing && (e.key.toLowerCase() === "y" || (e.key.toLowerCase() === "z" && e.shiftKey))) { e.preventDefault(); const l = store.redo(); toast(l ? `Rétabli : ${l}` : "Rien à rétablir."); }
+    else if (mod && e.key.toLowerCase() === "s") { e.preventDefault(); store.saveNow().then(() => toast("Projet enregistré.", "success")); }
+  });
+  document.addEventListener("click", (e) => { if (!e.target.closest(".menu-wrap")) document.querySelectorAll(".menu").forEach((m) => m.remove()); });
+  window.addEventListener("beforeunload", () => { if (store.saveState === "dirty") store.saveNow(); });
+  if (!location.hash) location.hash = "#/home";
+  route();
+}
+
+/** Re-render the current screen (after an undo, an import...). */
+export function refresh() { route(); }
+export { modal, confirmBox };

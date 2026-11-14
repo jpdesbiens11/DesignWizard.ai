@@ -94,13 +94,13 @@ export function buildDemo(sheet, { jpeg = demoJpeg() } = {}) {
   drawTitleBlock(sheet, frame, {
     title: "Plaque support de palier — usinée", partNumber: "DW-2026-0042", revision: "B",
     material: "Aluminium 6061-T6", finish: "Anodisé noir 15 µm", mass: "0,48 kg", scale: "1:1",
-    sheet: "1/1", size: "A3", drawnBy: "J.-P. Desbiens", checkedBy: "M. Côté", approvedBy: "L. Bélanger",
+    sheet: "1/1", size: "A3", drawnBy: "A. Tremblay", checkedBy: "M. Côté", approvedBy: "L. Bélanger",
     date: "2026-11-14", project: "Banc d'essai — réducteur", generalTolerance: "ISO 2768-mK",
     projection: "first", units: "mm", status: "Préliminaire",
   });
   drawRevisionTable(sheet, frame.x + frame.w, frame.y, [
-    { rev: "A", description: "Émission initiale", date: "2026-10-02", by: "JPD" },
-    { rev: "B", description: "Ajout du lamage Ø50 ; tolérance de position resserrée", date: "2026-11-14", by: "JPD" },
+    { rev: "A", description: "Émission initiale", date: "2026-10-02", by: "ATR" },
+    { rev: "B", description: "Ajout du lamage Ø50 ; tolérance de position resserrée", date: "2026-11-14", by: "ATR" },
   ], { align: "right" });
 
   /* -- front view: plate 120 x 80, corners R10, bore Ø40 H7 with a Ø50 counterbore, 4 holes Ø9 -- */
