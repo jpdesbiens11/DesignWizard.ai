@@ -81,7 +81,7 @@ Sans Python, le dossier `web/` fonctionne aussi tel quel derrière n'importe que
 | **DFx** | Bilan DFM de chaque pièce, DFA de chaque assemblage, livre des règles imprimable (110 règles). |
 | **Dessins** | Dessin 2D généré : vues à arêtes cachées, tableau des trous, références A / B / C et **GD&T calculé depuis les interfaces**, cartouche, notes — en PDF vectoriel. |
 | **Rapport** | Le dossier de revue de conception : images, BOM, interfaces, physique, isolation, constats, matière première, verdict de commande, dessins, décisions et actions. |
-| **Compte** (menu) | Connexion Google facultative : le projet devient une **arborescence dans votre Google Drive** (pièces, assemblages, analyses, rapports). Thèmes. Pour l'administrateur : comptes approuvés de la démo en ligne. Voir [docs/GOOGLE.md](docs/GOOGLE.md). |
+| **Compte** (menu) | Connexion Google : en ligne, **votre Google Drive est le stockage de l'application** — un dossier par produit, rangé par numéro (pièces, assemblages, analyses, rapports, commandes). Thèmes. Pour l'administrateur : comptes approuvés de la démo en ligne. Voir [docs/GOOGLE.md](docs/GOOGLE.md). |
 | **Onshape** (menu) | Connexion du compte, choix du document, puis envoi : STEP converti en Part Studios et assemblage natifs, dessin PDF et dessin natif Onshape de chaque pièce. |
 
 Partout : **Ctrl + K** ouvre *la baguette* (« 4 trous M4 aux coins à 8 mm », « congé 3 vertical », « longueur 150 »…),
@@ -98,8 +98,9 @@ Partout : **Ctrl + K** ouvre *la baguette* (« 4 trous M4 aux coins à 8 mm », 
   fiche de la nuance. Ils disent si la physique fonctionne ; l'essai en laboratoire le confirme.
 - **Délais de commande** : ordres de grandeur d'ateliers de prototypage rapide ; le devis de l'atelier fait foi.
 - **FeatureScript** : généré et vérifié par une émulation des opérations sur le noyau, **jamais exécuté dans Onshape**.
-- **Google** : connexion, Drive et porte d'accès vérifiés contre un Google simulé ; **pas encore sur un vrai compte**
-  (il faut d'abord créer l'identifiant client, voir [docs/GOOGLE.md](docs/GOOGLE.md)).
+- **Google** : connexion, Drive comme stockage de l'application en ligne et porte d'accès vérifiés contre un Google
+  simulé ; **à confirmer sur le site publié**. L'identifiant client est en place (celui du projet Google du
+  propriétaire, voir [docs/GOOGLE.md](docs/GOOGLE.md)).
 - **Isolation** : le moteur de chemins reproduit le produit d'exemple DEMO-HVB de la formation Creepage & Clearance,
   dont les distances sont connues par construction (clearance 16,56 mm et creepage 26 mm entre HV+ et HV−, etc.).
   Chargez « DEMO-HVB » depuis l'accueil pour le voir.

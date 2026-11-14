@@ -1,30 +1,42 @@
-# Publie le dossier web/ sur GitHub Pages (version statique : projets dans le navigateur, sans envoi Onshape).
-# À activer une fois dans Settings → Pages → Source : GitHub Actions. Se lance à la main (onglet Actions).
-name: Pages
+# Publie la démo en ligne : à chaque mise à jour de main, les tests passent, puis le dossier web/ est poussé tel quel
+# sur la branche gh-pages, que GitHub Pages sert à https://jpdesbiens11.github.io/DesignWizard.ai/.
+# La branche gh-pages est réécrite à chaque publication (un seul commit) : le noyau WebAssembly n'alourdit pas l'historique.
+name: Publier la démo
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: pages
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  publier:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/setup-node@v4
         with:
-          path: web
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Tests Node
+        run: node --test tests/node/*.test.mjs
+      - name: Tests Python
+        run: python -m unittest discover -s tests/py -t .
+      - name: Publier web/ sur la branche gh-pages
+        run: |
+          cd web
+          touch .nojekyll
+          git init -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Démo publiée depuis ${GITHUB_SHA::7}"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" gh-pages
