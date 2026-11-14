@@ -10,7 +10,7 @@ elle rend l'artéfact modifié ; l'outil montre ce qui a changé ; l'humain déc
    ou la carte ouverte, sinon le projet entier. Une liste permet d'en choisir un autre sans quitter l'écran.
 2. **Écrire la demande**, en langage courant : « passe le régulateur à 2 A », « ajoute quatre trous M4 aux coins »,
    « renomme les nets du bus CAN », « vérifie que chaque fonction a un critère chiffré ».
-3. **Copier la demande et l'artéfact.** Le texte copié contient la demande, les règles du jeu (ne changer que ce qui est
+3. **Copier pour l'IA.** Le texte copié contient la demande, les règles du jeu (ne changer que ce qui est
    demandé, garder numéros et repères, rendre l'artéfact complet) et l'artéfact au format `.dwiz` (voir
    [FORMAT.md](FORMAT.md)). On le colle dans l'assistant de son choix.
 4. **Coller la réponse.** L'outil y retrouve l'artéfact, le relit, et **liste chaque changement** : ajouts,
@@ -39,6 +39,22 @@ elle rend l'artéfact modifié ; l'outil montre ce qui a changé ; l'humain déc
 
 Le projet entier porte aussi ses analyses (modèles de physique gardés, simulations) et ses réglages de dessin : ils font
 l'aller-retour avec lui.
+
+### Les mêmes garde-fous que DynamiteAgile
+
+Le geste est celui du *Co-Intelligence WorkFlow* de la plateforme DynamiteAgile : **on copie pour l'IA, on travaille
+avec l'assistant de son choix, on réimporte avec un aperçu.** Trois garde-fous en viennent, appliqués à l'arbre
+fonctionnel d'une carte (fonctions et blocs) :
+
+- **« Brouillon IA ».** Ce qu'une réponse ajoute ou modifie arrive marqué ; ce qu'elle ne touche pas garde son état.
+  Un humain relit, corrige, puis **confirme** : l'élément redevient le sien. La revue de conception ne passe pas tant
+  qu'il reste un brouillon.
+- **Une norme nommée par l'IA n'est pas une référence.** Les normes que la réponse cite (ISO, IEC, IPC, EN, UL…)
+  sont relevées dans l'aperçu ; l'élément ne se confirme qu'avec, pour chacune, son **édition** et sa **clause**.
+- **Un numéro de fonction est gardé pour toujours** : une fonction retirée ne rend pas son numéro.
+
+L'aperçu avant import est un essai à blanc : il dit ce qui arriverait en brouillon et quelles normes seraient à
+confirmer, sans rien changer.
 
 ### Les gammes
 

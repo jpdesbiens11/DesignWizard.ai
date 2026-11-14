@@ -13,6 +13,7 @@ import { routeStats, clearRoutes } from "../pcba/route.js";
 import { stackup } from "../pcba/fabfiles.js";
 import { inheritFromPart } from "../pcba/twin.js";
 import { blockRefs } from "../pcba/move.js";
+import { confirmDraft, draftsOf } from "../core/ai_draft.js";
 import { boardView, layerList } from "./pcba_view.js";
 import { penTool, copperCard, dragCorner } from "./pcba_trace.js";
 
@@ -49,16 +50,19 @@ function fonctions(ctx, { left, view, right }) {
     const list = Object.values(BLOCKS).filter((t) => t.category === c); if (!list.length) continue;
     cat.append(section(c, ...list.map((t) => el("button", { type: "button", class: "pcba-pick", "data-tip": t.desc, onClick: () => { let nid; ctx.update((b) => { nid = addBlock(b, t.id, {}, cur && !cur.block && cur.leaf ? { function: cur.id } : cur ? { parent: cur.id } : {}); }, `Bloc ajouté : ${t.name}`); toast(`${t.name} ajouté.`, "success"); } }, icon("plus"), el("span", null, t.name)))));
   }
-  const tree = el("div", { class: "pcba-tree" });
+  const tree = el("div", { class: "pcba-tree" }), waiting = draftsOf(board), plain = waiting.filter((w) => !w.norms.length), aiOf = (fn, bk) => (fn && fn.ai) || (bk && bk.ai) || null;
   view.append(el("div", { class: "pcba-pane" }, el("div", { class: "pcba-pane-head" }, el("h2", null, "Arbre fonctionnel"), el("span", { class: "grow" }),
     btn("Fonction", () => ctx.update((b) => { ui.fn = addFunction(b, { parent: cur ? cur.id : null, name: "Nouvelle fonction" }); }, "Fonction ajoutée"), { small: true, icon: "plus", tip: cur ? `Ajouter une sous-fonction à ${cur.id}` : "Ajouter une fonction principale" }),
-    cur ? btn("Désélectionner", () => { ui.fn = null; ctx.redraw(); }, { small: true }) : null), tree));
+    cur ? btn("Désélectionner", () => { ui.fn = null; ctx.redraw(); }, { small: true }) : null,
+    plain.length ? btn(`Confirmer ${plain.length} brouillon(s) IA`, () => ctx.update((b) => { for (const w of draftsOf(b)) if (!w.norms.length) confirmDraft(b[w.list].find((x) => x.id === w.key)); }, "Brouillons IA confirmés"), { small: true, icon: "check", tip: "Vous avez relu ce que l'IA a proposé : ces éléments ne citent aucune norme. Ceux qui en citent se confirment un par un, avec édition et clause." }) : null), tree));
+  if (waiting.length) tree.append(hint(`${waiting.length} élément(s) proposés par une IA attendent votre confirmation : la revue de conception ne passe pas tant qu'il en reste.`, "warn"));
   if (!rows.length) tree.append(el("div", { class: "empty" }, el("p", null, "Décrivez ce que la carte doit faire : choisissez un bloc à gauche, ou ajoutez une fonction que vous préciserez ensuite.")));
   for (const r of rows) {
     const f = board.functions.find((x) => x.id === r.id);
     tree.append(el("div", { class: `pcba-fn${r.id === ui.fn ? " sel" : ""}`, style: { marginLeft: `${(r.level - 1) * 1.4}rem` }, onClick: (e) => { if (e.target.closest("input,select,button")) return; ui.fn = r.id === ui.fn ? null : r.id; ctx.redraw(); } },
       el("span", { class: "fn-id" }, r.id), txt(f.name, (v) => ctx.update((b) => { const x = b.functions.find((q) => q.id === r.id); x.name = v || x.name; delete x.auto; }, `${r.id} renommée`)),
       sel(f.kind || "technique", [["principale", "principale"], ["contrainte", "contrainte"], ["technique", "technique"]], (v) => ctx.update((b) => { b.functions.find((q) => q.id === r.id).kind = v; }, `${r.id} : type`)),
+      aiOf(f, board.blocks.find((x) => x.id === r.block)) ? badge("Brouillon IA", "warn") : null,
       r.block ? badge(`${r.block} · ${r.parts.length} comp.`, "ok") : f.kind === "contrainte" ? badge("à vérifier en revue", "neutral") : r.leaf ? badge("sans solution", "warn") : badge("regroupe", "neutral"),
       el("button", { class: "icon-btn", type: "button", "aria-label": "Retirer", "data-tip": "Retirer la fonction, ses sous-fonctions et leurs blocs", onClick: () => ctx.update((b) => { const gone = [r.id, ...rows.filter((q) => q.id.startsWith(`${r.id}.`)).map((q) => q.id)]; for (const g of gone) { const fn = b.functions.find((q) => q.id === g); if (fn && fn.block) removeBlock(b, fn.block); } removeFunction(b, r.id); if (ui.fn && gone.includes(ui.fn)) ui.fn = null; }, `${r.id} retirée`) }, icon("trash"))));
   }
@@ -66,6 +70,15 @@ function fonctions(ctx, { left, view, right }) {
   if (!cur) { side.append(el("div", { class: "side-head" }, el("h2", null, "Fonction")), el("p", { class: "muted" }, "Sélectionnez une fonction pour régler son bloc : paramètres, dimensionnement, raccordements, critères.")); return; }
   const f = board.functions.find((x) => x.id === cur.id), blk = board.blocks.find((x) => x.id === cur.block);
   side.append(el("div", { class: "side-head" }, el("h2", null, `${cur.id} — ${cur.name}`)));
+  const tag = aiOf(f, blk);
+  if (tag) {                                                      // proposed by an AI : a human reads it, confirms the standards it names, then confirms it
+    const norms = [...new Set([...((f.ai && f.ai.norms) || []), ...((blk && blk.ai && blk.ai.norms) || [])])], given = Object.fromEntries(norms.map((n) => [n, { edition: "", clause: "" }]));
+    side.append(section("Brouillon IA — à vérifier", el("p", { class: "small" }, "Cet élément a été ajouté ou modifié par une IA. Relisez-le, corrigez-le, puis confirmez-le : il redevient le vôtre."),
+      ...norms.map((n) => el("div", { class: "bc-row" }, el("small", { style: { minWidth: "6.5rem" } }, el("b", null, n)), txt("", (v) => { given[n].edition = v; }, "5.5rem"), txt("", (v) => { given[n].clause = v; }, "5.5rem"))),
+      norms.length ? el("p", { class: "muted small" }, "Pour chaque norme citée : son édition (année), puis la clause qui s'applique. Une norme nommée par une IA n'est pas une référence tant qu'un humain ne l'a pas vérifiée.") : null,
+      btn("Confirmer", () => { const probe = [f, blk].filter(Boolean).map((x) => confirmDraft(JSON.parse(JSON.stringify(x)), given)), miss = [...new Set(probe.flatMap((q) => q.missing))]; if (miss.length) { toast(`Édition et clause à donner pour : ${miss.join(", ")}.`, "warn"); return; }
+        ctx.update((b) => { confirmDraft(b.functions.find((q) => q.id === cur.id), given); if (blk) confirmDraft(b.blocks.find((q) => q.id === blk.id), given); }, `${cur.id} confirmée`); }, { small: true, primary: true, icon: "check" })));
+  }
   const crit = section("Critères", ...(f.criteria || []).map((c, i) => el("div", { class: "bc-row" }, txt(c.name, (v) => ctx.update((b) => { b.functions.find((q) => q.id === cur.id).criteria[i].name = v; }), "38%"), txt(c.level, (v) => ctx.update((b) => { b.functions.find((q) => q.id === cur.id).criteria[i].level = v; }), "34%"),
     sel(c.flex || "F1", [["F0", "F0 impératif"], ["F1", "F1 peu négociable"], ["F2", "F2 négociable"], ["F3", "F3 libre"]], (v) => ctx.update((b) => { b.functions.find((q) => q.id === cur.id).criteria[i].flex = v; })),
     el("button", { class: "icon-btn", type: "button", "aria-label": "Retirer le critère", onClick: () => ctx.update((b) => { b.functions.find((q) => q.id === cur.id).criteria.splice(i, 1); }) }, "×"))),

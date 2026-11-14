@@ -7,6 +7,7 @@
      { type: "checklist", items: [{ text, state }] }, { type: "signatures", roles }, { type: "pagebreak" }, { type: "toc" } ] } */
 
 import { COATINGS, FAB, CLASSES } from "./model.js";
+import { draftsOf } from "../core/ai_draft.js";
 
 export const REVIEW_KINDS = {
   PDR: { label: "Revue de conception préliminaire", short: "RCP", text: "Le concept est-il le bon ? Fonctions, architecture, implantation conceptuelle, nomenclature préliminaire, risques." },
@@ -26,6 +27,8 @@ export function reviewVerdict(d) {
   ok("Le contrôle électrique ne signale aucune erreur", !erc.summary.error, `${erc.summary.error} erreur(s) au contrôle électrique.`);
   ok("Les alimentations et les masses sont définies (tension, courant)", (d.resolved.nets || []).filter((n) => n.class === "power").every((n) => n.voltage), "Des rails n'ont pas de tension.", false);
   ok("Les interfaces mécaniques sont fixées (contour, trous de fixation)", (b.holes || []).length >= 2, "Moins de deux trous de fixation.", false);
+  const waiting = draftsOf(d.board, "board"), named = [...new Set(waiting.flatMap((w) => w.norms))];
+  ok("Ce qu'une IA a proposé a été confirmé par un humain", !waiting.length, `En « Brouillon IA » : ${waiting.map((w) => w.key).join(", ")}${named.length ? ` ; normes à confirmer (édition, clause) : ${named.join(", ")}` : ""}.`);
   ok("L'implantation conceptuelle est cohérente (une zone par bloc)", !(d.zones || []).length, `${(d.zones || []).length} point(s) à régler dans les zones.`);
   ok("La nomenclature n'a pas de valeur manquante", !noValue.length, `Valeur manquante : ${noValue.flatMap((l) => l.refs).join(", ")}.`, false);
   if (d.kind === "CDR") {

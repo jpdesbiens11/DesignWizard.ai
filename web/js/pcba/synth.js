@@ -13,20 +13,23 @@ const nextId = (list, prefix) => { let n = 0; for (const x of list) { const m = 
 /** Next function id under a parent : "F3" at the root, "F1.2" under F1. */
 export function nextFunctionId(board, parent = null) {
   const kids = (board.functions || []).filter((f) => (f.parent || null) === parent), base = parent ? `${parent}.` : "F";
-  let n = 0;
+  let n = (board.fseq || {})[parent || ""] || 0;                  // a number once given is never given again, even after the function is removed
   for (const f of kids) { const m = /(\d+)$/.exec(f.id); if (m) n = Math.max(n, +m[1]); }
   return `${base}${n + 1}`;
 }
+/** Remembers the highest number given under each parent (board.fseq), so that a number is never reused. */
+function keepNumber(board, f) { const m = /(\d+)$/.exec(f.id); if (!m) return; const k = f.parent || ""; board.fseq = board.fseq || {}; if (!(board.fseq[k] >= +m[1])) board.fseq[k] = +m[1]; }
 export function addFunction(board, { parent = null, name, kind, criteria = [], note } = {}) {
   const f = { id: nextFunctionId(board, parent), parent, name: name || "Nouvelle fonction", kind: kind || (parent ? "technique" : "principale"), criteria, block: null };
   if (note) f.note = note;
-  (board.functions = board.functions || []).push(f);
+  (board.functions = board.functions || []).push(f); keepNumber(board, f);
   return f.id;
 }
 /** Removes a function and everything under it ; their blocks stay on the board, without a function. */
 export function removeFunction(board, id) {
   const gone = new Set([id]);
   for (let grew = true; grew;) { grew = false; for (const f of board.functions) if (f.parent && gone.has(f.parent) && !gone.has(f.id)) { gone.add(f.id); grew = true; } }
+  for (const f of board.functions) if (gone.has(f.id)) keepNumber(board, f);
   board.functions = board.functions.filter((f) => !gone.has(f.id));
   for (const b of board.blocks || []) if (gone.has(b.function)) b.function = null;
 }

@@ -25,6 +25,9 @@ import { ui$ } from "./pcba_steps.js";
 import { openAiLoopFor } from "./ai_loop.js";
 import { boardAssemblyPlan } from "../pcba/assembly_plan.js";
 import { followMoves, pruneCopper } from "../pcba/move.js";
+import { functionalStructure, structureCsv, structureDiagram, treeDiagram } from "../pcba/structure.js";
+import { drawio } from "../core/drawio.js";
+import { draftsOf } from "../core/ai_draft.js";
 import { autoroute } from "../pcba/route.js";
 import { planPanel, setPlanNote, setPlanPoints } from "./plan_view.js";
 
@@ -131,10 +134,13 @@ function revue(ctx, { left, view, right }) {
   l.append(section("Rapport à partager", el("div", { class: "form-actions", style: { justifyContent: "flex-start", flexWrap: "wrap" } },
     btn("Word (.docx)", async () => { try { const f = {}; for (const [k, x] of Object.entries(figures)) f[k] = await pngOf(x); download(`${name}.docx`, docx(reviewDoc({ ...data(), figures: f })), "application/vnd.openxmlformats-officedocument.wordprocessingml.document"); } catch (e) { toast(`Rapport Word : ${e.message}`, "error"); } }, { primary: true, icon: "download" }),
     btn("PDF", () => { try { download(`${name}.pdf`, pdfDoc(doc), "application/pdf"); } catch (e) { toast(`Rapport PDF : ${e.message}`, "error"); } }, { primary: true, icon: "pdf" }))));
-  l.append(section("Structure fonctionnelle", el("p", { class: "muted small" }, "L'arbre fonctionnel avec, pour chaque fonction, ses critères, le bloc qui la remplit, ses composants et ses nets."), el("div", { class: "form-actions", style: { justifyContent: "flex-start", flexWrap: "wrap" } },
+  const structure = () => functionalStructure(board, ctx.lib), drafts = new Set(draftsOf(board).filter((w) => w.list === "functions").map((w) => w.key));
+  l.append(section("Structure fonctionnelle", el("p", { class: "muted small" }, "L'arbre des fonctions (critères, bloc, composants, nets) et la structure fonctionnelle : ce qui entre, ce qui sort, les flux d'énergie et d'information entre les blocs. Le fichier draw.io reste modifiable."), el("div", { class: "form-actions", style: { justifyContent: "flex-start", flexWrap: "wrap" } },
+    btn("draw.io", () => download(`${board.id}-fonctions.drawio`, drawio([treeDiagram(ctx.rows, `${board.id} — ${board.name || ""}`, drafts), structureDiagram(structure())]), "application/xml"), { small: true, primary: true, icon: "download", tip: "Deux pages modifiables dans diagrams.net : l'arbre des fonctions et la structure fonctionnelle" }),
+    btn("Flux (.csv)", () => download(`${board.id}-flux.csv`, structureCsv(structure()), "text/csv"), { small: true, icon: "download", tip: "Les flux d'énergie et d'information, bloc à bloc" }),
     btn("Tableur (.csv)", () => download(`${board.id}-fonctions.csv`, functionCsv(ctx.rows), "text/csv"), { small: true, icon: "download" }), btn("Texte", () => download(`${board.id}-fonctions.txt`, functionOutline(ctx.rows), "text/plain"), { small: true, icon: "download" }),
     btn("JSON", () => download(`${board.id}-fonctions.json`, JSON.stringify(ctx.rows, null, 1), "application/json"), { small: true, icon: "download" }))));
-  l.append(section("Artéfact de la carte", el("div", { class: "form-actions", style: { justifyContent: "flex-start", flexWrap: "wrap" } }, btn("Carte (.dwiz)", () => download(dwizFileName(board), toDwiz(board), "text/plain"), { small: true, icon: "download" }), btn("Confier à l'IA", () => boardAiLoop(ctx), { small: true, icon: "sparkle", tip: "Exporter la carte avec une demande, réimporter la réponse, voir les changements avant d'appliquer" }))));
+  l.append(section("Artéfact de la carte", el("div", { class: "form-actions", style: { justifyContent: "flex-start", flexWrap: "wrap" } }, btn("Carte (.dwiz)", () => download(dwizFileName(board), toDwiz(board), "text/plain"), { small: true, icon: "download" }), btn("Copier pour l'IA", () => boardAiLoop(ctx), { small: true, icon: "sparkle", tip: "Copier la carte avec une demande, travailler avec l'assistant de son choix, réimporter avec un aperçu : ce que l'IA ajoute arrive en « Brouillon IA »" }))));
   const page = el("div", { class: "pcba-report" }, el("h1", null, doc.title), el("p", { class: "muted" }, `${doc.subtitle} — ${doc.reference}, révision ${doc.revision}`));
   for (const b of doc.blocks) {
     if (/^h[123]$/.test(b.type)) page.append(el(b.type === "h1" ? "h2" : b.type === "h2" ? "h3" : "h4", null, b.text));

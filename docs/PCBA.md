@@ -61,6 +61,17 @@ Un microcontrôleur offre ses broches *à la demande* : la broche CAN_TX ne rejo
 ce net. Une mesure prend la première entrée analogique libre (AIN0, AIN1…) ; le boîtier 32 broches en offre moins
 que le 48 broches (pas de SPI ni de second port série).
 
+### Arbre des fonctions et structure fonctionnelle, à la façon d'une analyse fonctionnelle
+
+- Chaque fonction garde son **numéro pour toujours** (F1, F1.2…) : retirée, elle ne le rend pas.
+- L'**arbre** se lit vers la droite « comment ? », vers la gauche « pourquoi ? », de haut en bas « quand ? » ; une
+  fonction sans solution y est marquée en rouge.
+- La **structure fonctionnelle** se tire de la carte : un bloc est un sous-système, un connecteur est la frontière
+  (ce qui entre à gauche, ce qui sort à droite), un net partagé par deux blocs est un **flux** — d'énergie pour une
+  alimentation, d'information pour un signal — orienté de la broche qui le pilote vers celles qui l'écoutent.
+- Sorties (étape Revue) : fichier **draw.io** modifiable (deux pages), tableau des flux, tableur, texte, JSON, et les
+  rapports Word et PDF.
+
 ### Nomenclature des nets
 
 | Forme | Exemple | Sens |
