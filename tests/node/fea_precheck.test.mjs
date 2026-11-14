@@ -2,7 +2,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { buildModel, solveStructure, solveThermal } from "../../web/js/analysis/fea/index.js";
-import { precheckStructure, precheckThermal, precheckThermo, compare } from "../../web/js/analysis/fea/precheck.js";
+import { precheckStructure, precheckThermal, precheckThermo, compare, nominalStress, coreStress } from "../../web/js/analysis/fea/precheck.js";
 
 function boxMesh(x0, y0, z0, x1, y1, z1) {
   const p = [[x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0], [x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]];
@@ -78,9 +78,10 @@ test("thermo-mechanical: free growth from one support, the full-restraint bound,
   const free = precheckThermo(m, { fixed: [{ face: "-X" }], thermal: { uniform: 120 }, Tref: 20 }, al);
   assert.equal(free.kind, "free"); near(free.values.dTmean, 100, 1e-9);
   near(free.values.sigma, 69000 * 23e-6 * 100, 1e-9);                                  // E alpha dT = 158.7 MPa
+  near(free.values.sigmaPlate, 158.7 / (1 - 0.33), 1e-9);                              // restrained in two directions: 236.9 MPa
   near(free.values.delta, 23e-6 * 100 * Math.hypot(100, 5, 5), 1e-6);                  // alpha dT x distance to the farthest corner = 0.2306 mm
   assert.ok(free.steps.some((s) => /σ = E α ΔT/.test(s)) && free.steps.at(-1).includes("un seul appui"));
-  assert.ok(free.warnings.length === 0, "276 MPa of yield is above the 158.7 MPa bound");
+  assert.ok(free.warnings.length === 0, "the bar yield used here is above the 158.7 MPa bound");
   const held = precheckThermo(m, { fixed: [{ face: "-X" }, { face: "+X" }], thermal: { uniform: 220 }, Tref: 20 }, { ...al, Re: 240 });
   assert.equal(held.kind, "restrained"); near(held.values.sigma, 317.4, 1e-3);
   assert.ok(held.warnings.some((w) => /limite élastique/.test(w)) && held.steps.at(-1).includes("bridée"));
@@ -90,14 +91,44 @@ test("thermo-mechanical: free growth from one support, the full-restraint bound,
   assert.equal(precheckThermo(m, { fixed: [{ face: "-X" }], thermal: { uniform: 80 } }, alu).kind, "none", "no expansion coefficient, no estimate");
   assert.equal(precheckThermo(m, { fixed: [], thermal: { uniform: 80 } }, al).kind, "none");
   const two = buildModel({ bodies: [{ name: "bas", ...boxMesh(0, 0, 0, 100, 10, 2.5), material: { ...al, alpha: 20e-6 } }, { name: "haut", ...boxMesh(0, 0, 2.5, 100, 10, 5), material: { ...al, alpha: 10e-6 } }], h: 2.5 });
-  near(precheckThermo(two, { fixed: [{ face: "-X" }], thermal: { uniform: 120 }, Tref: 20 }, { ...al, alpha: 20e-6 }).values.mismatch, 69000 * 10e-6 * 100 / 2, 1e-6);   // E dalpha dT / 2 = 34.5 MPa
+  const strip = { fixed: [{ face: "-X" }], thermal: { uniform: 120 }, Tref: 20 }, bi = precheckThermo(two, strip, { ...al, alpha: 20e-6 }), reach = Math.hypot(100, 5, 2.5);      // two equal layers of 2.5 mm
+  near(bi.values.mismatch, 69000 * 10e-6 * 100 / 2, 1e-6);                             // E dalpha dT / 2 = 34.5 MPa
+  near(bi.values.bend, 1.5 * 10e-6 * 100 / 5 * reach * reach / 2, 1e-6);               // Timoshenko: kappa <= 3 dalpha dT / 2 t, tip = kappa L^2 / 2 = 1.505 mm
+  near(bi.values.deltaLow, 10e-6 * 100 * reach, 1e-6); near(bi.values.delta, 20e-6 * 100 * reach + bi.values.bend, 1e-6);
+  const rb = solveStructure(two, { fixed: strip.fixed, loads: [], thermal: { T: 120, Tref: 20 } }), cb = compare("thermo", bi, { ...rb, coreVm: coreStress(two, strip, rb.vm) });
+  assert.ok(rb.maxU.value > 1.4 && rb.maxU.value < bi.values.delta, `the strip bends ${rb.maxU.value} mm, inside ${bi.values.deltaLow} to ${bi.values.delta} mm`);
+  assert.equal(cb.rows[0].low, bi.values.deltaLow); assert.equal(cb.rows[0].deviation, 0); assert.equal(cb.verdict, "ok"); assert.match(cb.notes[0], /fourchette du déplacement est large/);
 });
 
 test("thermo-mechanical: compare() reads a bound as a bound, and a free growth as a value", () => {
-  const free = { values: { delta: 0.23, sigma: 158.7, restrained: false } }, held = { values: { delta: 0.23, sigma: 158.7, restrained: true } };
-  const a = compare("thermo", free, { maxU: { value: 0.24 }, maxVm: { value: 190 }, nominalVm: { value: 20 } });
-  assert.equal(a.verdict, "ok"); assert.equal(a.rows[1].bound, true); assert.equal(a.rows[1].deviation, 0); assert.match(a.rows[1].note, /bridage 13 %/);
-  assert.equal(compare("thermo", free, { maxU: { value: 0.4 }, maxVm: { value: 50 }, nominalVm: { value: 20 } }).verdict, "fail", "a free part cannot grow 74 % more than alpha dT L");
-  assert.equal(compare("thermo", held, { maxU: { value: 0.05 }, maxVm: { value: 200 }, nominalVm: { value: 150 } }).verdict, "ok", "under both bounds");
-  assert.equal(compare("thermo", held, { maxU: { value: 0.05 }, maxVm: { value: 400 }, nominalVm: { value: 260 } }).verdict, "fail", "a nominal stress above E alpha dT is not thermal");
+  const free = { values: { delta: 0.23, sigma: 158.7, sigmaPlate: 236.9, restrained: false } }, held = { values: { delta: 0.23, sigma: 158.7, sigmaPlate: 236.9, restrained: true } };
+  const a = compare("thermo", free, { maxU: { value: 0.24 }, maxVm: { value: 190 }, nominalVm: { value: 40 }, coreVm: { value: 20 } });
+  assert.equal(a.verdict, "ok"); assert.equal(a.rows[1].bound, true); assert.equal(a.rows[1].deviation, 0); assert.match(a.rows[1].note, /bridage 8 %/); assert.equal(a.notes.length, 0);
+  assert.equal(compare("thermo", free, { maxU: { value: 0.4 }, maxVm: { value: 50 }, nominalVm: { value: 20 }, coreVm: { value: 20 } }).verdict, "fail", "a free part cannot grow 74 % more than alpha dT L");
+  const b = compare("thermo", held, { maxU: { value: 0.05 }, maxVm: { value: 600 }, nominalVm: { value: 320 }, coreVm: { value: 150 } });
+  assert.equal(b.verdict, "ok", "the core is under the bound"); assert.match(b.notes[0], /Près des appuis, la contrainte atteint 320 MPa/);
+  assert.equal(compare("thermo", held, { maxU: { value: 0.05 }, maxVm: { value: 900 }, nominalVm: { value: 500 }, coreVm: { value: 400 } }).verdict, "fail", "a core stress above E alpha dT / (1 - nu) is not thermal");
+});
+
+test("thermo-mechanical: the simulation grows as the hand calculation says, and stays under the restraint bound", () => {
+  const al = { ...alu, alpha: 23e-6 }, m = buildModel({ bodies: [{ name: "barre", ...boxMesh(0, 0, 0, 100, 10, 10), material: al }], h: 5 });
+  const free = { fixed: [{ face: "-X" }], thermal: { uniform: 120 }, Tref: 20 }, ef = precheckThermo(m, free, al);
+  const rf = solveStructure(m, { fixed: free.fixed, loads: [], thermal: { T: 120, Tref: 20 } });
+  rf.nominalVm = nominalStress(m, free, rf.vm); rf.coreVm = coreStress(m, free, rf.vm);        // what the application compares: the stress in the core, far from the clamp
+  assert.ok(rf.coreVm.value < 0.05 * ef.values.sigma && rf.maxVm.value > rf.nominalVm.value, `core ${rf.coreVm.value} MPa, nominal ${rf.nominalVm.value} MPa, peak ${rf.maxVm.value} MPa at the clamp`);
+  const cf = compare("thermo", ef, rf);
+  near(rf.maxU.value, ef.values.delta, 0.05);                 // a bar clamped at one end grows by alpha dT L (0.23 mm)
+  assert.equal(cf.verdict, "ok", JSON.stringify(cf.rows));
+  const held = { fixed: [{ face: "-X" }, { face: "+X" }], thermal: { uniform: 120 }, Tref: 20 }, eh = precheckThermo(m, held, al);
+  const rh = solveStructure(m, { fixed: held.fixed, loads: [], thermal: { T: 120, Tref: 20 } });
+  const mid = [...Array(m.nNodes).keys()].filter((i) => Math.abs(m.nodes[3 * i] - 50) < 1e-6).map((i) => rh.vm[i]);
+  near(Math.max(...mid), eh.values.sigma, 0.05);              // between two rigid walls the bar reaches the bound: E alpha dT = 158.7 MPa
+  assert.ok(rh.maxU.value < eh.values.delta, "a restrained bar moves less than a free one");
+  const ch = coreStress(m, held, rh.vm);
+  near(ch.value, eh.values.sigma, 0.05);                      // the core of the bar is at mid-length
+  assert.equal(compare("thermo", eh, { ...rh, coreVm: ch }).verdict, "ok");
+  // the temperature field of the thermal solve drives the structure
+  const tcase = { fixedT: [{ region: { face: "-X" }, T: 20 }], power: [{ region: { face: "+X" }, P: 10 }], convection: [] }, T = solveThermal(m, tcase).T;
+  const rg = solveStructure(m, { fixed: [{ face: "-X" }], loads: [], thermal: { T, Tref: 20 } }), eg = precheckThermo(m, { fixed: [{ face: "-X" }], Tref: 20, thermal: { case: tcase } }, al);
+  near(rg.maxU.value, eg.values.delta, 0.2);                  // mean dT = 25 K over 100 mm: about 0.058 mm
 });

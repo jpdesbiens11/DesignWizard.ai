@@ -8,10 +8,11 @@
 //   nodes Float32Array(3 * nNodes), elems Int32Array(8 * nCells) (hex8 order: bottom face counter-clockwise, then top),
 //   elemBody, elemCell, bodies [{ name, material, cells, volume }], bbox (of the kept cells), volume.
 // region = { face: "+X" | "-X" | "+Y" | "-Y" | "+Z" | "-Z", body?: name } | { box: [x0, y0, z0, x1, y1, z1] } | { near: [x, y, z], r }
+// material = { name, E (MPa), nu, k (W/m.K), rho (kg/m3), Re (MPa or null), alpha (1/K, thermal expansion, optional) }
 
 import { buildModel, exposedFaces, sectionAt, skin, FACE_DIRS } from "./voxel.js";
 import { structureElement, conductionElement, vonMises } from "./hex8.js";
-import { pcg, structureOperator, thermalOperator, weakPiece } from "./solve.js";
+import { pcg, structureOperator, thermalOperator, looseMotion, unmarkedBody } from "./solve.js";
 
 export { buildModel, sectionAt, skin };
 
@@ -114,20 +115,57 @@ function checkConverged(result, maxIter, hint) {
   throw new Error(`Le calcul n'a pas convergé après ${result.iterations} itérations (résidu ${result.residual.toExponential(1)}, limite ${maxIter}). ${hint}`);
 }
 
+const AXIS = ["X", "Y", "Z"];
+
+/** French sentence for a piece that the supports do not hold (see looseMotion in solve.js). */
+function supportError(weak) {
+  if (weak.level === 0) return `Le corps « ${weak.body} » n'est relié à aucun appui : fixez-le ou mettez-le en contact avec une pièce tenue.`;
+  const names = (axes, word) => axes.map((d) => AXIS[d]).join(` ${word} `), moves = [];
+  if (weak.slide.length) moves.push(`glisser le long de ${names(weak.slide, "et")}`);
+  if (weak.pivot.length) moves.push(`pivoter autour d'un axe parallèle à ${names(weak.pivot, "ou")}`);
+  if (weak.tilted) moves.push("pivoter autour d'un axe incliné");
+  const how = weak.level === 1 ? "n'est tenu que par un seul nœud" : weak.level === 2 ? "n'est tenu que par une ligne de nœuds" : "n'est pas assez tenu";
+  return `Le corps « ${weak.body} » ${how} : il peut encore ${moves.join(", ") || "bouger"}. Ajoutez des appuis qui bloquent ces mouvements (une face fixée, ou trois plans de glissement perpendiculaires).`;
+}
+
+/** Nodal temperature rise T - Tref of a thermal load { T: number | one value per node, Tref = 20 }, or a French error. */
+function temperatureRise(model, thermal) {
+  const Tref = Number.isFinite(thermal.Tref) ? thermal.Tref : 20, { T } = thermal, theta = new Float64Array(model.nNodes);
+  if (typeof T === "number" && Number.isFinite(T)) return theta.fill(T - Tref);
+  if (!T || T.length !== model.nNodes) {
+    throw new Error(`Charge thermique invalide : il faut une température uniforme ou une température par nœud (${model.nNodes} valeurs attendues, ${T?.length ?? 0} reçues). Refaites le calcul thermique sur ce maillage.`);
+  }
+  for (let i = 0; i < theta.length; i++) {
+    theta[i] = T[i] - Tref;
+    if (!Number.isFinite(theta[i])) throw new Error("Charge thermique invalide : une température n'est pas un nombre. Refaites le calcul thermique.");
+  }
+  return theta;
+}
+
 /**
- * Linear static analysis.
- * @param setup fixed: regions whose nodes are fully held; loads: [{ region, force: [Fx, Fy, Fz] }] (total N spread equally on
- *   the nodes) or [{ region, pressure }] (MPa on the exposed faces, pushing into the material); gravity: [gx, gy, gz] in m/s2.
- * @returns u (mm), vm (von Mises at the nodes, MPa), vmElem, maxU, maxVm, reaction (N, on the held nodes), energy (N.mm),
- *   dofs, iterations, residual, ms.
+ * Linear static analysis, with optional thermal expansion.
+ * @param setup fixed: supports, each a region (the three directions are held) or { region, dofs: [bx, by, bz] } (only the
+ *   directions that are true: [true, false, false] is a sliding plane normal to X);
+ *   loads: [{ region, force: [Fx, Fy, Fz] }] (total N spread equally on the nodes) or [{ region, pressure }] (MPa on the
+ *   exposed faces, pushing into the material); gravity: [gx, gy, gz] in m/s2;
+ *   thermal: { T, Tref = 20 } — T in degrees C, one number or one value per node (the T of solveThermal); every body expands
+ *   by its material.alpha (1/K) times (T - Tref), T being trilinear in each cell.
+ * @returns u (mm), vm (von Mises at the nodes, MPa), vmElem, maxU, maxVm, reaction (N, sum on the held dofs), reactions (the
+ *   same per entry of `fixed`), energy (elastic strain energy, N.mm), dofs, iterations, residual, ms, thermal (true when applied).
  */
-export function solveStructure(model, { fixed = [], loads = [], gravity, tol = 1e-6, maxIter = 20000 } = {}, onProgress) {
+export function solveStructure(model, { fixed = [], loads = [], gravity, thermal, tol = 1e-6, maxIter = 20000 } = {}, onProgress) {
   const t0 = clock(), { nNodes, nCells, elems, elemBody, grid: { h } } = model, n = 3 * nNodes;
   if (!fixed.length) throw new Error("Aucun appui : fixez au moins une face ou une zone de la pièce, sinon elle part en mouvement libre.");
-  const held = new Uint8Array(nNodes), isFixed = new Uint8Array(n), f = new Float64Array(n);
-  for (const region of fixed) for (const i of pickNodes(model, region)) { held[i] = 1; isFixed[3 * i] = isFixed[3 * i + 1] = isFixed[3 * i + 2] = 1; }
+  const isFixed = new Uint8Array(n), owner = new Int32Array(n).fill(-1), f = new Float64Array(n);
+  fixed.forEach((entry, k) => {   // a dof held by several supports reports its reaction to the first one
+    const split = entry?.region !== undefined, dofs = split && entry.dofs ? entry.dofs : [true, true, true];
+    if (dofs.length !== 3) throw new Error("Appui invalide : « dofs » donne les trois directions tenues, par exemple [true, false, false].");
+    for (const i of pickNodes(model, split ? entry.region : entry)) {
+      for (let d = 0; d < 3; d++) if (dofs[d] && !isFixed[3 * i + d]) { isFixed[3 * i + d] = 1; owner[3 * i + d] = k; }
+    }
+  });
 
-  for (const load of loads) {
+  for (const load of loads || []) {
     if (load.force) {   // total force shared equally by the nodes of the region
       const sel = pickNodes(model, load.region);
       for (const i of sel) for (let d = 0; d < 3; d++) f[3 * i + d] += load.force[d] / sel.length;
@@ -153,32 +191,50 @@ export function solveStructure(model, { fixed = [], loads = [], gravity, tol = 1
     if (!(E > 0) || !(nu > -1 && nu < 0.5)) throw new Error(`Matériau du corps « ${body.name} » incomplet : il faut un module E > 0 (MPa) et un coefficient de Poisson nu entre -1 et 0,5.`);
     return structureElement(h, E, nu);
   });
-  const weak = weakPiece(model, held, true);
-  if (weak) {
-    throw new Error(weak.level === 0
-      ? `Le corps « ${weak.body} » n'est relié à aucun appui : fixez-le ou mettez-le en contact avec une pièce tenue.`
-      : `Le corps « ${weak.body} » n'est tenu que par ${weak.level === 1 ? "un seul nœud" : "une ligne de nœuds"} : il peut pivoter autour de cet appui. Fixez une face ou une zone plus large.`);
+  // Thermal expansion: every cell pushes its 8 nodes with alpha Q theta_e (incompatible modes condensed, see hex8.js).
+  const theta = thermal ? temperatureRise(model, thermal) : null, fth = theta ? new Float64Array(n) : null;
+  const expansion = model.bodies.map((body) => (theta ? Number(body.material?.alpha) || 0 : 0)), te = new Float64Array(8);
+  let energy = 0;   // starts with the part of the elastic energy that does not depend on u
+  for (let e = 0; theta && e < nCells; e++) {
+    const el = elements[elemBody[e]], alpha = expansion[elemBody[e]];
+    if (!alpha) continue;
+    for (let a = 0; a < 8; a++) te[a] = theta[elems[8 * e + a]];
+    for (let i = 0; i < 24; i++) {
+      let s = 0;
+      for (let b = 0; b < 8; b++) s += el.Q[8 * i + b] * te[b];
+      fth[3 * elems[8 * e + Math.floor(i / 3)] + i % 3] += alpha * s;
+    }
+    for (let a = 0; a < 8; a++) for (let b = 0; b < 8; b++) energy += alpha * alpha * te[a] * el.W[8 * a + b] * te[b];
   }
+  if (fth) for (let i = 0; i < n; i++) f[i] += fth[i];
 
+  const weak = looseMotion(model, isFixed);
+  if (weak) throw new Error(supportError(weak));
   const op = structureOperator(model, elements.map((el) => el.K)), x = new Float64Array(n);
   const run = pcg({ apply: op.apply, diag: op.diag, b: f, x, fixed: isFixed, tol, maxIter, onProgress });
   checkConverged(run, maxIter, "Vérifiez qu'aucune pièce ne tient que par une arête ou un coin (elle pivoterait), ou augmentez la taille de maille.");
 
-  // Reactions and strain energy from K u; stresses at the 8 corners of every element, averaged at the nodes.
-  const Ku = new Float64Array(n), reaction = [0, 0, 0];
+  // Reactions (K u - f on the held dofs) and elastic energy; stresses at the 8 corners of every element, averaged at the nodes.
+  const Ku = new Float64Array(n), reaction = [0, 0, 0], reactions = fixed.map(() => [0, 0, 0]);
   op.apply(x, Ku);
-  let energy = 0;
-  for (let i = 0; i < n; i++) { energy += 0.5 * x[i] * Ku[i]; if (isFixed[i]) reaction[i % 3] += Ku[i] - f[i]; }
+  for (let i = 0; i < n; i++) {
+    energy += 0.5 * x[i] * Ku[i] - (fth ? x[i] * fth[i] : 0);
+    if (isFixed[i]) { reaction[i % 3] += Ku[i] - f[i]; reactions[owner[i]][i % 3] += Ku[i] - f[i]; }
+  }
   const u = Float32Array.from(x), vm = new Float32Array(nNodes), vmElem = new Float32Array(nCells);
   const sum = new Float64Array(nNodes), share = new Uint8Array(nNodes), ue = new Float64Array(24), stress = new Float64Array(6);
   for (let e = 0; e < nCells; e++) {
-    const S = elements[elemBody[e]].S;
-    for (let a = 0; a < 8; a++) for (let d = 0; d < 3; d++) ue[3 * a + d] = x[3 * elems[8 * e + a] + d];
+    const { S, St } = elements[elemBody[e]], alpha = expansion[elemBody[e]];
+    for (let a = 0; a < 8; a++) {
+      for (let d = 0; d < 3; d++) ue[3 * a + d] = x[3 * elems[8 * e + a] + d];
+      if (alpha) te[a] = theta[elems[8 * e + a]];
+    }
     let top = 0;
     for (let c = 0; c < 8; c++) {
-      for (let r = 0; r < 6; r++) {
+      for (let r = 0; r < 6; r++) {   // sigma = D (B u + G a - eps_th) at corner c
         let s = 0;
         for (let j = 0, row = (6 * c + r) * 24; j < 24; j++) s += S[row + j] * ue[j];
+        if (alpha) for (let b = 0, row = (6 * c + r) * 8; b < 8; b++) s += alpha * St[row + b] * te[b];
         stress[r] = s;
       }
       const v = vonMises(stress);
@@ -190,8 +246,9 @@ export function solveStructure(model, { fixed = [], loads = [], gravity, tol = 1
   const mag = new Float32Array(nNodes);
   for (let i = 0; i < nNodes; i++) { vm[i] = sum[i] / share[i]; mag[i] = Math.hypot(x[3 * i], x[3 * i + 1], x[3 * i + 2]); }
   return {
-    u, vm, vmElem, maxU: extreme(model, mag), maxVm: extreme(model, vm), reaction, energy,
+    u, vm, vmElem, maxU: extreme(model, mag), maxVm: extreme(model, vm), reaction, reactions, energy,
     dofs: n - isFixed.reduce((s, v) => s + v, 0), iterations: run.iterations, residual: run.residual, ms: clock() - t0,
+    ...(theta ? { thermal: true } : {}),
   };
 }
 
@@ -238,8 +295,8 @@ export function solveThermal(model, { fixedT = [], power = [], convection = [], 
   });
   const anchored = Uint8Array.from(isFixed);
   for (let i = 0; i < nNodes; i++) if (film[i] > 0) anchored[i] = 1;
-  const weak = weakPiece(model, anchored, false);
-  if (weak) throw new Error(`Le corps « ${weak.body} » n'a ni température imposée ni convection et ne touche aucune pièce qui en a : sa température est indéfinie.`);
+  const loose = unmarkedBody(model, anchored);
+  if (loose !== null) throw new Error(`Le corps « ${loose} » n'a ni température imposée ni convection et ne touche aucune pièce qui en a : sa température est indéfinie.`);
 
   // Start from a uniform, plausible temperature: it removes most of the slow "everything warms up together" mode.
   const start = weight > 0 ? guess / weight : 0;

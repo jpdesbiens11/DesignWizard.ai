@@ -136,7 +136,7 @@ tools/                     génération des icônes Carnet, de la doc du langage
 | Commande | `web/js/cad/order.js`, `web/js/core/zip.js` | verdict « prête à commander », délai, demande de prix, archive du dossier |
 | Artéfacts | `web/js/core/artifacts.js`, `web/js/cad/stl.js`, `web/js/draw/dxf.js`, `web/js/cad/featurescript.js` + `fs_*.js` | un générateur pour les téléchargements, Drive et le dossier de commande |
 | Physique | `web/js/analysis/physics/*`, `web/js/modules/physics.js` | 21 modèles : `{ inputs, compute → values, checks, steps }`, `run`, `prefill` depuis la pièce |
-| Simulation | `web/js/analysis/fea/*` (`voxel.js`, `hex8.js`, `solve.js`, `index.js`, `precheck.js`, `worker.js`), `web/js/modules/fea.js` | maillage en cubes identiques, hexaèdre à modes incompatibles, gradient conjugué sans matrice ; estimation analytique avant calcul et recoupement |
+| Simulation | `web/js/analysis/fea/*` (`voxel.js`, `hex8.js`, `solve.js`, `index.js`, `precheck.js`, `worker.js`), `web/js/modules/fea.js` | maillage en cubes identiques, hexaèdre à modes incompatibles, gradient conjugué sans matrice ; structure, thermique et thermo-mécanique (dilatation α (T − T de montage)) ; estimation analytique avant calcul et recoupement |
 | Google | `web/js/google/auth.js`, `drive.js`, `drive_fs.js`, `web/js/config.js` | jeton en mémoire, portée `drive.file`, arborescence du projet |
 | Accès | `web/js/core/access.js`, `web/js/core/gate.js`, `web/acces.json`, `web/js/modules/account.js` | porte de la démo hébergée, empreintes de comptes, administrateur |
 | Thèmes | `web/css/themes.css`, `web/js/core/theme.js`, `web/js/boot.js` | jetons CSS par `html[data-theme]` ; la vue 3D lit `--view-edge` |

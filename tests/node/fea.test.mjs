@@ -250,6 +250,106 @@ test("thermal: two materials in series, interface and end temperatures from the 
   near(r.balance.out, 10, 0.01, "heat balance");
 });
 
+// ---- Thermal expansion (thermo-mechanical loading) and supports per direction ----
+const alu23 = { name: "Aluminium 6061", E: 69000, nu: 0.33, k: 200, rho: 2700, Re: 240, alpha: 23e-6 };
+/** Sliding plane: the nodes of a model face are held along one axis only (0 = X, 1 = Y, 2 = Z). */
+const slide = (face, axis) => ({ region: { face }, dofs: [axis === 0, axis === 1, axis === 2] });
+const threePlanes = [slide("-X", 0), slide("-Y", 1), slide("-Z", 2)];
+const strip = (x, y, z, h, material = alu23) => buildModel({ bodies: [{ name: "Strip", ...boxMesh(0, 0, 0, x, y, z), material }], h });
+const nodeAt = (m, x, y, z) => selectNodes(m, { near: [x, y, z], r: 0 })[0];
+
+test("supports per direction: three sliding planes make an exact patch test in tension", () => {
+  const m = bar(5), r = solveStructure(m, { fixed: threePlanes, loads: [{ region: { face: "+X" }, pressure: -10 }], tol: 1e-10 });
+  // uniform traction of 10 MPa on 100 mm2: sigma = 10 MPa everywhere, delta = sigma L / E = 10 x 100 / 210000 = 0.0047619 mm
+  assert.ok(Math.abs(Math.min(...r.vm) - 10) < 1e-4 && Math.abs(Math.max(...r.vm) - 10) < 1e-4, `stress ${Math.min(...r.vm)} .. ${Math.max(...r.vm)}`);
+  near(mean(r.u, selectNodes(m, { face: "+X" }), 3, 0), 1000 / 210000, 1e-5, "elongation");
+  near(mean(r.u, selectNodes(m, { face: "+Y" }), 3, 1), (-0.3 * 10 * 10) / 210000, 1e-5, "lateral contraction -nu sigma b / E");
+  near(r.reactions[0][0], -1000, 1e-6, "reaction of the X plane");
+  assert.ok(Math.abs(r.reactions[1][1]) < 1e-5 && Math.abs(r.reactions[2][2]) < 1e-5, "the other planes carry nothing");
+  assert.equal(r.dofs, 3 * m.nNodes - 9 - 63 - 63);   // one dof per node of each plane
+  assert.equal(r.thermal, undefined);
+});
+
+test("thermal expansion: free uniform heating expands by alpha dT L and makes no stress", () => {
+  const m = strip(40, 20, 10, 5), r = solveStructure(m, { fixed: threePlanes, thermal: { T: 120, Tref: 20 }, tol: 1e-10 });
+  const grow = [0, 1, 2].map((d) => mean(r.u, selectNodes(m, { face: "+" + "XYZ"[d] }), 3, d));
+  near(grow[0], 0.092, 0.005, "u_x");            // 23e-6 x 100 K x 40 mm = 0.092 mm
+  near(grow[1], 0.046, 0.005, "u_y");            // 23e-6 x 100 x 20 = 0.046 mm
+  near(grow[2], 0.023, 0.005, "u_z");            // 23e-6 x 100 x 10 = 0.023 mm
+  assert.ok(r.maxVm.value < 0.5, `free expansion stress ${r.maxVm.value} MPa`);
+  assert.ok(Math.abs(r.energy) < 1e-3 && Math.hypot(...r.reaction) < 1e-3, `energy ${r.energy} N.mm, reaction ${r.reaction}`);
+  assert.equal(r.thermal, true);
+  console.log(`  free heating: u = ${grow.map((v) => v.toFixed(5)).join(", ")} mm vs 0.092, 0.046, 0.023; max von Mises ${r.maxVm.value.toExponential(1)} MPa`);
+});
+
+test("thermal expansion: bar restrained along X, sigma = -E alpha dT", () => {
+  const m = strip(100, 10, 10, 5), fixed = [slide("-X", 0), slide("+X", 0), slide("-Y", 1), slide("-Z", 2)];
+  const r = solveStructure(m, { fixed, thermal: { T: 120 }, tol: 1e-10 });   // Tref defaults to 20
+  const sigma = 69000 * 23e-6 * 100;            // 158.7 MPa (compression), lateral expansion free -> von Mises = 158.7 MPa
+  near(Math.min(...r.vm), sigma, 0.01, "lowest von Mises"); near(Math.max(...r.vm), sigma, 0.01, "largest von Mises");
+  near(r.reactions[0][0], sigma * 100, 0.01, "reaction of the -X face");   // E alpha dT A = 15870 N, the wall pushes along +X
+  near(r.reactions[1][0], -sigma * 100, 0.01, "reaction of the +X face");
+  assert.ok(Math.abs(r.reaction[0]) < 1e-3, "the two walls balance");
+  near(mean(r.u, selectNodes(m, { face: "+Y" }), 3, 1), 1.33 * 23e-6 * 100 * 10, 0.01, "lateral growth (1 + nu) alpha dT b");
+  near(r.energy, (sigma * sigma * 10000) / (2 * 69000), 0.01, "elastic energy sigma^2 V / (2 E) = 1825 N.mm");
+  console.log(`  restrained bar: von Mises ${Math.min(...r.vm).toFixed(2)} .. ${Math.max(...r.vm).toFixed(2)} MPa vs ${sigma.toFixed(1)}, reaction ${r.reactions[0][0].toFixed(1)} N vs ${(sigma * 100).toFixed(0)}`);
+});
+
+test("thermal expansion: a temperature difference through the thickness bends a free strip, kappa = alpha dT / t", () => {
+  // Supports that leave the strip free to bend: the -X face slides in its plane (X held), the -Y face slides in its plane
+  // (Y held), and Z is held on the single node at the origin. The free solution has u_x = 0 on x = 0 and u_y = 0 on y = 0.
+  const fixed = [slide("-X", 0), slide("-Y", 1), { region: { near: [0, 0, 0], r: 0 }, dofs: [false, false, true] }];
+  for (const h of [5, 2.5]) {                    // ONE cell through the thickness, then two
+    const m = strip(100, 10, 5, h), T = Float32Array.from({ length: m.nNodes }, (_, i) => 20 + (100 * m.nodes[3 * i + 2]) / 5);
+    const r = solveStructure(m, { fixed, thermal: { T, Tref: 20 }, tol: 1e-10 });
+    const end = r.u[3 * nodeAt(m, 100, 0, 0) + 2];
+    near(end, -2.3, 0.05, `end deflection, h = ${h}`);   // kappa = 23e-6 x 100 / 5 = 4.6e-4 /mm, kappa L^2 / 2 = 2.3 mm (hot side convex)
+    assert.ok(r.maxVm.value < 0.05 * 158.7, `stress ${r.maxVm.value} MPa: free bending makes none`);
+    assert.ok(Math.abs(r.energy) < 1e-3, `elastic energy ${r.energy} N.mm`);
+    console.log(`  thermal bending h = ${h}: end ${end.toFixed(5)} mm vs -2.3, max von Mises ${r.maxVm.value.toExponential(1)} MPa`);
+  }
+});
+
+test("thermal expansion: bimetal strip, Timoshenko curvature 1.5 (alpha1 - alpha2) dT / t", () => {
+  const metal = (alpha) => ({ name: "Metal", E: 100000, nu: 0.3, k: 50, rho: 8000, Re: null, alpha });
+  const m = buildModel({ bodies: [{ name: "Bottom", ...boxMesh(0, 0, 0, 100, 10, 2.5), material: metal(20e-6) }, { name: "Top", ...boxMesh(0, 0, 2.5, 100, 10, 5), material: metal(10e-6) }], h: 2.5 });
+  const r = solveStructure(m, { fixed: [{ face: "-X" }], thermal: { T: 120, Tref: 20 } });
+  const tip = mean(r.u, selectNodes(m, { face: "+X" }), 3, 2);
+  near(tip, 1.5, 0.08, "tip deflection");        // kappa = 1.5 x 10e-6 x 100 / 5 = 3.0e-4 /mm, kappa L^2 / 2 = 1.5 mm, towards the low-expansion layer
+  // stress at the interface, away from the clamp: E (alpha1 - alpha2) dT / 2 = 50 MPa for a narrow beam (uniaxial), and
+  // 50 / (1 - nu) = 71.4 MPa for a plate that curves both ways (biaxial); this strip is 10 wide for 5 thick: in between
+  const bond = r.vm[nodeAt(m, 50, 5, 2.5)];
+  assert.ok(bond >= 0.98 * 50 && bond <= 1.02 * 71.43, `interface stress ${bond} MPa, expected between 50 and 71.4`);
+  assert.ok(m.nodes[3 * r.maxVm.node] <= 2.5, "the largest stress is at the clamp, where the expansion is blocked");
+  console.log(`  bimetal: tip ${tip.toFixed(4)} mm vs 1.5, interface von Mises ${bond.toFixed(2)} MPa (beam 50, plate 71.4), ${r.maxVm.value.toFixed(0)} MPa at the clamp`);
+});
+
+test("thermal expansion: the field of solveThermal drives solveStructure", () => {
+  const m = strip(100, 10, 10, 5);
+  const heat = solveThermal(m, { fixedT: [{ region: { face: "-X" }, T: 20 }], power: [{ region: { face: "+X" }, P: 10 }] });
+  const r = solveStructure(m, { fixed: threePlanes, thermal: { T: heat.T, Tref: 20 } });
+  // T goes linearly from 20 to 70: growth = alpha x mean rise x L = 23e-6 x 25 x 100 = 0.0575 mm
+  const grow = mean(r.u, selectNodes(m, { face: "+X" }), 3, 0);
+  near(grow, 0.0575, 0.03, "expansion of the heated bar");
+  console.log(`  heated bar: growth ${grow.toFixed(5)} mm vs 0.0575, max von Mises ${r.maxVm.value.toFixed(2)} MPa`);
+});
+
+test("thermal expansion: backward compatibility and superposition with a mechanical load", () => {
+  const m = strip(100, 10, 10, 5), fixed = [{ face: "-X" }], loads = [{ region: { face: "+X" }, force: [0, 0, -100] }], tol = 1e-12;
+  const T = Float32Array.from({ length: m.nNodes }, (_, i) => 20 + 0.6 * m.nodes[3 * i] + 4 * m.nodes[3 * i + 2]);
+  const mech = solveStructure(m, { fixed, loads, tol }), heat = solveStructure(m, { fixed, thermal: { T }, tol }), both = solveStructure(m, { fixed, loads, thermal: { T }, tol });
+  for (const i of selectNodes(m, { face: "-X" })) assert.deepEqual(Array.from(both.u.subarray(3 * i, 3 * i + 3)), [0, 0, 0]);   // a plain region holds x, y, z
+  assert.equal(both.dofs, 3 * (m.nNodes - 9));
+  let gap = 0;
+  for (let i = 0; i < both.u.length; i++) gap = Math.max(gap, Math.abs(both.u[i] - (mech.u[i] + heat.u[i])));
+  assert.ok(gap <= 1e-6 * both.maxU.value, `superposition gap ${gap} mm on ${both.maxU.value} mm`);
+  near(both.reaction[2], 100, 1e-6, "the thermal load adds no net reaction");
+  assert.deepEqual(both.reactions.length, 1);
+  // no alpha, or alpha = 0: the thermal load does nothing
+  const cold = solveStructure(bar(5), { fixed, loads, thermal: { T: 300 }, tol }), plain = solveStructure(bar(5), { fixed, loads, tol });
+  assert.deepEqual(Array.from(cold.u), Array.from(plain.u));
+});
+
 test("errors are in French and say what to fix", () => {
   const m = bar(10), load = [{ region: { face: "+X" }, force: [0, 0, -100] }];
   assert.throws(() => solveStructure(m, { loads: load }), /appui/);
@@ -268,6 +368,19 @@ test("errors are in French and say what to fix", () => {
   // two cubes that touch along one edge only: an internal hinge, the solver cannot converge and says so
   const hinge = buildModel({ bodies: [{ name: "Base", ...boxMesh(0, 0, 0, 10, 10, 10), material: steel }, { name: "Flap", ...boxMesh(10, 0, 10, 20, 10, 20), material: steel }], h: 5 });
   assert.throws(() => solveStructure(hinge, { fixed: [{ face: "-X" }], loads: [{ region: { face: "+X" }, force: [0, 0, -10] }], maxIter: 300 }), /pas convergé.*arête/);
+});
+
+test("errors of the supports per direction and of the thermal load", () => {
+  const m = strip(100, 10, 10, 5), thermal = { T: 120 };
+  // one sliding plane: the part still slides in the plane and spins about its normal
+  assert.throws(() => solveStructure(m, { fixed: [slide("-X", 0)], thermal }), /Strip.*peut encore glisser le long de Y et Z.*pivoter autour d'un axe parallèle à X/);
+  // two planes: it still slides along Z; X and Y held on one face: it still spins about X
+  assert.throws(() => solveStructure(m, { fixed: [slide("-X", 0), slide("-Y", 1)], thermal }), /peut encore glisser le long de Z\./);
+  assert.throws(() => solveStructure(m, { fixed: [{ region: { face: "-Z" }, dofs: [false, false, true] }, { region: { near: [0, 0, 0], r: 0 }, dofs: [true, true, false] }], thermal }), /peut encore pivoter autour d'un axe parallèle à Z\./);
+  assert.throws(() => solveStructure(m, { fixed: [{ region: { face: "-X" }, dofs: [true, false] }], thermal }), /dofs/);
+  assert.doesNotThrow(() => solveStructure(m, { fixed: threePlanes, thermal }));
+  assert.throws(() => solveStructure(m, { fixed: threePlanes, thermal: { T: new Float32Array(m.nNodes - 1) } }), /température par nœud \(189 valeurs attendues, 188 reçues\)/);
+  assert.throws(() => solveStructure(m, { fixed: threePlanes, thermal: {} }), /Charge thermique invalide/);
 });
 
 test("performance and skin: a 4000-cell cantilever solves in well under 5 s", () => {

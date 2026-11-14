@@ -60,7 +60,7 @@ La plateforme se construit par étages. Chaque brique est utile seule, testée, 
 | B2 | **Matière & procédé** | Matériaux, matière première du commerce, opérations d'atelier, gamme | Atelier (Shop), étapes 3–4 |
 | B3 | **Pièce** | Noyau B-Rep (OpenCascade), format `.dwiz`, paramètres intuitifs | En place |
 | B4 | **Artéfacts & commande** | STEP, DXF, STL, PDF, FeatureScript ; verdict de commande, délai, dossier pour l'atelier | En place (FeatureScript expérimental) |
-| B5 | **Physique & simulation** | Modèles analytiques (poutre, flambage, boulon, écoulement, thermique, conducteur) ; éléments finis simplifiés, structure et thermique, recoupés par le calcul à la main | En place |
+| B5 | **Physique & simulation** | Modèles analytiques (poutre, flambage, boulon, écoulement, thermique, conducteur) ; éléments finis simplifiés — structure, thermique et thermo-mécanique — recoupés par le calcul à la main | En place |
 | B6 | **Assemblage** | Accouplement automatique des interfaces, dépendances liées, nomenclature | En place |
 | B7 | **Isolation & DFx** | Lignes de fuite et distances dans l'air (IEC 60664-1), 110 règles DFM/DFA | En place |
 | B8 | **Dessins & rapport** | 2D coté avec GD&T dérivé des interfaces, rapport de revue de conception | En place |

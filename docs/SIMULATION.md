@@ -20,8 +20,9 @@ simple équivalent, puis lance la simulation, puis compare les deux.
      convection** (T = T∞ + P / h A) avec le **nombre de Biot**, qui dit si la pièce est quasi isotherme — auquel cas
      le bilan à la main suffit presque ;
    - thermo-mécanique : la **dilatation libre** (δ = α ΔT L), la **borne de bridage** (σ = E α ΔT si la dilatation
-     est totalement empêchée), la contrainte due au seul **écart de température interne**
-     (σ ≈ E α ΔT / 2 (1 − ν)) et, entre deux matériaux collés, celle du **bilame** (σ ≈ E Δα ΔT / 2).
+     est totalement empêchée dans une direction, E α ΔT / (1 − ν) dans deux), la contrainte due au seul **écart de
+     température interne** (σ ≈ E α ΔT / 2 (1 − ν)) et, entre matériaux différents collés, le **bilame de
+     Timoshenko** : contrainte à la jonction (σ ≈ E Δα ΔT / 2) et courbure de l'empilage (κ ≤ 3 Δα ΔT / 2 t).
 2. **La simulation.** Un clic ; le solveur tourne à côté de la page, qui reste utilisable.
 3. **Le recoupement.** Un tableau « à la main / simulation / écart » et un verdict :
    - écart de 20 % ou moins : **concordant**, le résultat est crédible ;
@@ -33,9 +34,16 @@ son écart.
 
 Trois précisions qui comptent :
 
-- **Une borne se lit comme une borne.** En thermo-mécanique, E α ΔT est le maximum possible loin des appuis : la
-  simulation doit rester dessous, et le rapport contrainte nominale / borne donne le **taux de bridage** réel de la
-  pièce. Une pièce tenue d'un seul côté doit, elle, se dilater de α ΔT L à 20 % près.
+- **Une borne se lit comme une borne.** En thermo-mécanique, E α ΔT / (1 − ν) est le maximum possible **au cœur de
+  la pièce**, loin des appuis : la simulation doit rester dessous, et le rapport contrainte au cœur / borne donne le
+  **taux de bridage** réel de la pièce. Une pièce tenue d'un seul côté doit, elle, se dilater de α ΔT L à 20 % près.
+- **Près d'un appui qui bloque la dilatation, la contrainte dépasse cette borne** : l'effort de bridage de toute la
+  pièce passe par quelques vis. L'écran l'affiche à part, avec la pointe, et rappelle le remède : un trou de passage
+  ou un appui glissant.
+- **Plusieurs matériaux : une fourchette.** Le déplacement attendu va de la dilatation du matériau le plus stable à
+  celle du matériau qui se dilate le plus, augmentée de la flèche du bilame le plus défavorable (κ L² / 2, avec
+  l'épaisseur moyenne de matière de l'empilage). La simulation **colle** les pièces : l'effet bilame y est entier,
+  alors que des pièces vissées glissent un peu — la courbure réelle est plus faible.
 
 - **Une fourchette quand les appuis sont vissés.** Une pièce tenue par des vis de part et d'autre de l'effort est une
   poutre sur deux appuis, quelque part entre l'appui simple et l'encastrement : l'estimation donne les deux bornes, et
@@ -55,7 +63,8 @@ cubes dont le centre est dans la matière. La finesse se règle par un seul curs
   courbe devient un escalier.
 
 Dans un assemblage, les corps qui se touchent partagent leurs nœuds : les contacts sont **collés** en structure et
-**parfaits** en thermique. Chaque corps garde son matériau.
+**parfaits** en thermique. Chaque corps garde son matériau. Un corps que le maillage grossier ne relie à aucune
+pièce tenue (un petit composant, par exemple) est **laissé de côté**, et l'écran dit lesquels.
 
 ## 3. Les éléments et le solveur
 
@@ -90,9 +99,23 @@ exactes :
 | Barre en conduction, 10 W, une face à 20 °C — température de l'autre face | 70,4 °C | 70 °C | +0,5 % |
 | Bloc refroidi par convection — température moyenne | 129,2 °C | 129,2 °C | 0 |
 | Deux matériaux en série — températures d'interface et de bout | — | résistances en série | moins de 2 % |
+| Bloc libre chauffé de 100 K — dilatation selon X, Y, Z | 0,0920 · 0,0460 · 0,0230 mm | α ΔT L | 0 (aucune contrainte) |
+| Barre aluminium bridée entre deux murs, + 100 K — contrainte | 158,7 MPa | E α ΔT = 158,7 MPa | 0 |
+| Lame libre, écart de température dans l'épaisseur — flèche, **un seul cube dans l'épaisseur** | −2,300 mm | κ = α ΔT / t → −2,3 mm | 0 |
+| Bilame, deux couches égales — flèche en bout | 1,534 mm | Timoshenko, 1,5 mm | +2,3 % |
+| Même bilame — contrainte à la jonction | 71,4 MPa | E Δα ΔT / 2 (1 − ν) = 71,4 MPa | 0 |
+| Barre chauffée en bout (champ de température calculé, puis dilatation) — allongement | 0,05746 mm | 0,0575 mm | −0,1 % |
 
 Un cas de 3 400 cubes (13 400 inconnues) se résout en environ 0,6 s ; une plaque mince tenue par des vis demande
 plus d'itérations (quelques secondes).
+
+Sur le projet de démonstration, en thermo-mécanique (navigateur, de 2 800 à 4 100 cubes, une à deux secondes) :
+
+| Cas | À la main | Simulation | Lecture |
+|---|---|---|---|
+| Capot plastique tenu par quatre vis, porté de 20 à 80 °C | au cœur ≤ 17,6 MPa ; déplacement ≤ 0,83 mm | au cœur 7,2 MPa ; 0,29 mm | bridage 41 % ; 32 MPa près des vis, pointe 52 MPa |
+| Dissipateur tenu par quatre vis, champ de température calculé | au cœur ≤ 37,9 MPa ; ≤ 0,039 mm | au cœur 21,0 MPa ; 0,031 mm | bridage 55 % |
+| Assemblage complet (cuivre, aluminium, FR-4, plastique) tenu par une face, à 80 °C | déplacement de 0,16 à 4,9 mm | 2,6 mm | dans la fourchette ; 13 petits composants laissés de côté |
 
 ## 5. Ce que la brique ne fait pas
 

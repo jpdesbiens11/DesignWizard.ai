@@ -4,7 +4,7 @@
    equivalent model, takes the REAL cross-section from the mesh at the support, and writes the calculation step by
    step. After the solve, compare() says whether the two agree. Pure functions over the model of index.js. */
 
-import { regionInfo, sectionAt, skin } from "./index.js";
+import { regionInfo, sectionAt, skin, selectNodes } from "./index.js";
 
 const AX = ["X", "Y", "Z"];
 const n = (x, d = 3) => {
@@ -127,8 +127,11 @@ export function precheckThermal(model, load, material) {
 export function precheckThermo(model, load, material) {
   const none = (why) => ({ kind: "none", title: "Pas de modèle équivalent simple", steps: [why], values: {}, warnings: [] });
   if (!load.fixed || !load.fixed.length) return none("Aucun appui défini : ajoutez au moins un encastrement.");
-  const E = material.E, a = material.alpha || 0, Tref = load.Tref ?? 20, steps = [], warnings = [];
-  if (!(a > 0)) return none("Coefficient de dilatation inconnu pour ce matériau : pas d'estimation possible.");
+  if (!(material.alpha > 0)) return none("Coefficient de dilatation inconnu pour ce matériau : pas d'estimation possible.");
+  // several materials: the bound is that of the one a full restraint stresses most; the growth is between the two extremes
+  const mats = [material, ...(model.bodies || []).map((x) => x.material)].filter((m) => m && m.alpha > 0 && m.E > 0), nuOf = (m) => m.nu || 0.3, grip = (m) => m.E * m.alpha / (1 - nuOf(m));
+  const worst = mats.reduce((q, m) => (grip(m) > grip(q) ? m : q)), E = worst.E, a = worst.alpha, nu = nuOf(worst), Tref = load.Tref ?? 20, steps = [], warnings = [];
+  const aHi = Math.max(...mats.map((m) => m.alpha)), aLo = Math.min(...mats.map((m) => m.alpha)), several = aHi > 1.001 * aLo, soft = Math.min(...mats.map((m) => m.E));
   let dTmean, dTmax, dTint;
   if (load.thermal && typeof load.thermal.uniform === "number") {
     dTmean = dTmax = load.thermal.uniform - Tref; dTint = 0;
@@ -142,22 +145,61 @@ export function precheckThermo(model, load, material) {
   }
   const sups = load.fixed.map((r) => regionInfo(model, r.region || r).centroid), h = model.grid.h, b = model.bbox;
   const spread = [0, 1, 2].map((i) => Math.max(...sups.map((c) => c[i])) - Math.min(...sups.map((c) => c[i]))), sa = dominant(spread), restrained = sups.length > 1 && spread[sa] > 2 * h;
-  const c0 = sups[0], far = Math.hypot(...[0, 1, 2].map((i) => Math.max(Math.abs(b[i] - c0[i]), Math.abs(b[3 + i] - c0[i])))), delta = a * Math.abs(dTmean) * far;
-  const bound = E * a * Math.abs(dTmax), grad = E * a * Math.abs(dTint) / (2 * (1 - (material.nu || 0.3)));
-  steps.push(`Dilatation libre : δ = α ΔT L = ${n(a * 1e6, 1)} × 10⁻⁶ × ${n(Math.abs(dTmean))} × ${n(far)} = ${n(delta)} mm au point le plus éloigné de l'appui.`);
-  steps.push(`Si cette dilatation est totalement empêchée : σ = E α ΔT = ${n(E)} × ${n(a * 1e6, 1)} × 10⁻⁶ × ${n(Math.abs(dTmax))} = ${n(bound)} MPa. C'est la borne haute : aucune contrainte d'origine thermique ne la dépasse loin des appuis.`);
+  const c0 = sups[0], far = Math.hypot(...[0, 1, 2].map((i) => Math.max(Math.abs(b[i] - c0[i]), Math.abs(b[3 + i] - c0[i]))));
+  let delta = aHi * Math.abs(dTmean) * far, deltaLow;
+  const bound = E * a * Math.abs(dTmax), grad = E * a * Math.abs(dTint) / (2 * (1 - nu)), plate = bound / (1 - nu);
+  steps.push(`Dilatation libre : δ = α ΔT L = ${n(aHi * 1e6, 1)} × 10⁻⁶ × ${n(Math.abs(dTmean))} × ${n(far)} = ${n(delta)} mm au point le plus éloigné de l'appui${several ? ` (matériau qui se dilate le plus ; ${n(aLo * Math.abs(dTmean) * far)} mm pour celui qui se dilate le moins)` : ""}.`);
+  steps.push(`Si cette dilatation est totalement empêchée dans une direction : σ = E α ΔT = ${n(E)} × ${n(a * 1e6, 1)} × 10⁻⁶ × ${n(Math.abs(dTmax))} = ${n(bound)} MPa (barre) ; dans deux directions : σ = E α ΔT / (1 − ν) = ${n(plate)} MPa (plaque)${several && worst.name ? `, pour ${worst.name}, le matériau le plus sollicité` : ""}. C'est la borne haute au cœur de la pièce, loin des appuis.`);
   if (dTint > 0) steps.push(`Contrainte due au seul écart de température dans la pièce : σ ≈ E α ΔT / (2 (1 − ν)) = ${n(grad)} MPa (gradient linéaire bridé, ordre de grandeur).`);
-  const alphas = [...new Set((model.bodies || []).map((x) => x.material && x.material.alpha).filter((x) => x > 0))];
-  let mismatch = null;
-  if (alphas.length > 1) { mismatch = E * (Math.max(...alphas) - Math.min(...alphas)) * Math.abs(dTmean) / 2; steps.push(`Matériaux différents collés : σ ≈ E Δα ΔT / 2 = ${n(mismatch)} MPa à leur jonction (bilame de Timoshenko, couches égales).`); }
+  let mismatch = null, bend = 0;
+  if (several) {                                                 // bonded layers that do not grow alike: stress at the joint, and the stack bends
+    const dims = [b[3] - b[0], b[4] - b[1], b[5] - b[2]].sort((x, y) => x - y), t = Math.min(dims[0], model.volume / (dims[1] * dims[2])), kappa = 1.5 * (aHi - aLo) * Math.abs(dTmean) / t;   // mean thickness of material in the stack
+    mismatch = soft * (aHi - aLo) * Math.abs(dTmean) / 2; bend = kappa * far * far / 2; deltaLow = aLo * Math.abs(dTmean) * far; delta += bend;
+    steps.push(`Matériaux différents collés : σ ≈ E Δα ΔT / 2 = ${n(mismatch)} MPa à leur jonction (bilame de Timoshenko, couches égales, module du matériau le plus souple) ; jusqu'à ${n(mismatch / (1 - nu))} MPa pour une plaque, qui se courbe dans les deux sens.`);
+    steps.push(`L'empilage se courbe comme un bilame d'épaisseur t = ${n(t)} mm (épaisseur moyenne de matière) : courbure κ ≤ 3 Δα ΔT / 2 t = 3 × ${n((aHi - aLo) * 1e6, 1)} × 10⁻⁶ × ${n(Math.abs(dTmean))} / (2 × ${n(t)}) = ${n(kappa * 1000)} × 10⁻³ mm⁻¹, soit une flèche jusqu'à κ L² / 2 = ${n(bend)} mm en bout. Déplacement attendu : entre ${n(deltaLow)} et ${n(delta)} mm.`);
+    warnings.push("La simulation colle les pièces entre elles : l'effet bilame y est entier. Des pièces vissées glissent un peu l'une sur l'autre — la courbure réelle est plus faible.");
+  }
   if (restrained) {
-    steps.push(`Lecture des appuis : ${sups.length} appuis écartés de ${n(spread[sa])} mm le long de ${AX[sa]} — la pièce est bridée entre eux. Attendu : contrainte entre ${n(Math.max(grad, mismatch || 0))} et ${n(bound)} MPa selon la raideur des appuis ; déplacement inférieur à ${n(delta)} mm.`);
-    warnings.push("Des appuis vissés ne sont pas infiniment raides et la pièce peut fléchir : le taux de bridage réel se lit sur la simulation (contrainte nominale / borne haute).");
-  } else steps.push(`Lecture des appuis : un seul appui — la pièce se dilate presque librement. Attendu : déplacement ≈ ${n(delta)} mm, contrainte faible loin de l'appui${dTint > 0 ? ` (≈ ${n(grad)} MPa)` : ""}, forte seulement contre l'appui qui l'empêche de s'élargir.`);
-  const sf = material.Re ? material.Re / bound : null;
+    steps.push(`Lecture des appuis : ${sups.length} appuis écartés de ${n(spread[sa])} mm le long de ${AX[sa]} — la pièce est bridée entre eux. Attendu : contrainte au cœur entre ${n(Math.max(grad, mismatch || 0))} et ${n(plate)} MPa selon la raideur des appuis ; déplacement inférieur à ${n(delta)} mm.`);
+    warnings.push("Des appuis ponctuels qui bloquent la dilatation concentrent l'effort autour d'eux : la contrainte y dépasse la borne du cœur. Le taux de bridage réel se lit sur la simulation.");
+  } else steps.push(`Lecture des appuis : un seul appui — la pièce se dilate presque librement. Attendu : déplacement ${several ? `entre ${n(deltaLow)} et ${n(delta)}` : `≈ ${n(delta)}`} mm, contrainte faible loin de l'appui${dTint > 0 ? ` (≈ ${n(grad)} MPa)` : ""}, forte seulement contre l'appui qui l'empêche de s'élargir.`);
+  const sf = worst.Re ? worst.Re / bound : null;
   if (sf !== null && sf < 1) warnings.push(`Totalement bridée, la pièce dépasserait sa limite élastique (marge ${n(sf)}) : laissez-la se dilater (trou oblong, appui glissant) ou réduisez l'écart de température.`);
   return { kind: restrained ? "restrained" : "free", title: restrained ? "Modèle équivalent : dilatation bridée entre appuis" : "Modèle équivalent : dilatation libre depuis un appui",
-    values: { delta, sigma: bound, sigmaGrad: grad, mismatch, dTmean, dTmax, restrained, sf }, where: c0, steps, warnings };
+    values: { delta, deltaLow, sigma: bound, sigmaPlate: plate, sigmaGrad: grad, mismatch, bend, dTmean, dTmax, restrained, sf }, where: c0, steps, warnings };
+}
+
+/** Largest von Mises stress away from the supports and from concentrated loads (two cells clear): the NOMINAL stress a
+    hand calculation predicts. The peak under a support is singular and depends on the mesh. */
+export function nominalStress(model, load, vm) {
+  const h = model.grid.h, keepOut = [], X = model.nodes, r2 = (2 * h) ** 2;
+  for (const f of load.fixed || []) keepOut.push(...selectNodes(model, f.region || f));
+  for (const l of load.loads || []) if (l.force) { const ns = selectNodes(model, l.region); if (ns.length <= 30) keepOut.push(...ns); }
+  let best = -1, node = -1;
+  for (let i = 0; i < model.nNodes; i++) {
+    if (vm[i] <= best) continue;
+    let clear = true;
+    for (const k of keepOut) { const dx = X[3 * i] - X[3 * k], dy = X[3 * i + 1] - X[3 * k + 1], dz = X[3 * i + 2] - X[3 * k + 2]; if (dx * dx + dy * dy + dz * dz < r2) { clear = false; break; } }
+    if (clear) { best = vm[i]; node = i; }
+  }
+  return node < 0 ? null : { value: best, node, at: [X[3 * node], X[3 * node + 1], X[3 * node + 2]] };
+}
+
+/** Largest von Mises stress in the core of the part: the nodes farthest from every support (at least 60 % of the largest
+    distance to a support). This is what a restraint bound speaks about. */
+export function coreStress(model, load, vm) {
+  const X = model.nodes, held = [], dist = new Float64Array(model.nNodes);
+  for (const f of load.fixed || []) held.push(...selectNodes(model, f.region || f));
+  if (!held.length) return null;
+  let far = 0;
+  for (let i = 0; i < model.nNodes; i++) {
+    let d2 = Infinity;
+    for (const k of held) { const dx = X[3 * i] - X[3 * k], dy = X[3 * i + 1] - X[3 * k + 1], dz = X[3 * i + 2] - X[3 * k + 2], q = dx * dx + dy * dy + dz * dz; if (q < d2) d2 = q; }
+    dist[i] = Math.sqrt(d2); if (dist[i] > far) far = dist[i];
+  }
+  let best = -1, node = -1;
+  for (let i = 0; i < model.nNodes; i++) if (dist[i] >= 0.6 * far && vm[i] > best) { best = vm[i]; node = i; }
+  return node < 0 ? null : { value: best, node, at: [X[3 * node], X[3 * node + 1], X[3 * node + 2]] };
 }
 
 const dev = (fea, ref) => (ref ? (fea - ref) / ref : null);
@@ -167,11 +209,16 @@ const devBound = (fea, bound) => (bound ? Math.max(0, fea / bound - 1) : null);
 const devRange = (fea, low, high) => (fea >= low && fea <= high ? 0 : fea < low ? dev(fea, low) : dev(fea, high));
 /** Simulation against hand calculation: rows { label, analytic, fea, unit, deviation } and a plain verdict. */
 export function compare(kind, estimate, result) {
-  const rows = [];
+  const rows = [], notes = [];
   if (kind === "thermo") {
-    const v = estimate.values, nominal = result.nominalVm ? result.nominalVm.value : result.maxVm.value;
-    if (v.delta !== undefined) rows.push({ label: "Déplacement maximal", analytic: v.delta, bound: v.restrained, fea: result.maxU.value, unit: "mm", deviation: v.restrained ? devBound(result.maxU.value, v.delta) : dev(result.maxU.value, v.delta) });
-    if (v.sigma !== undefined) rows.push({ label: "Contrainte nominale, hors appuis (von Mises)", analytic: v.sigma, bound: true, fea: nominal, unit: "MPa", deviation: devBound(nominal, v.sigma), note: v.sigma ? `bridage ${Math.round(100 * nominal / v.sigma)} %` : "" });
+    const v = estimate.values, core = result.coreVm ? result.coreVm.value : result.nominalVm ? result.nominalVm.value : result.maxVm.value, top = v.sigmaPlate || v.sigma;
+    const range = !v.restrained && v.deltaLow !== undefined;       // several materials: the growth lies between the two extremes, bimetal bending included
+    if (v.delta !== undefined) rows.push({ label: "Déplacement maximal", analytic: v.delta, bound: v.restrained, low: range ? v.deltaLow : undefined, fea: result.maxU.value, unit: "mm",
+      deviation: v.restrained ? devBound(result.maxU.value, v.delta) : range ? devRange(result.maxU.value, v.deltaLow, v.delta) : dev(result.maxU.value, v.delta) });
+    if (top !== undefined) rows.push({ label: "Contrainte au cœur, loin des appuis (von Mises)", analytic: top, bound: true, fea: core, unit: "MPa", deviation: devBound(core, top), note: top ? `bridage ${Math.round(100 * core / top)} %` : "" });
+    if (range && v.delta > 3 * v.deltaLow) notes.push("La fourchette du déplacement est large : pour un empilage de matériaux différents, le calcul à la main ne donne que des bornes (dilatation du matériau le plus stable, bilame le plus défavorable).");
+    const near = result.nominalVm ? result.nominalVm.value : result.maxVm.value;
+    if (top && near > 1.2 * top) notes.push(`Près des appuis, la contrainte atteint ${n(near)} MPa (pointe ${n(result.maxVm.value)} MPa), au-dessus de la borne du cœur : un appui qui bloque la dilatation concentre l'effort autour de lui. En pratique, un trou de passage ou un appui glissant laisse la pièce se dilater.`);
   } else if (kind === "thermal") {
     if (estimate.values.Tmax !== undefined) rows.push({ label: "Température maximale", analytic: estimate.values.Tmax, fea: result.maxT.value, unit: "°C", deviation: dev(result.maxT.value - (estimate.values.Tmax - estimate.values.dT), estimate.values.dT) });
   } else {
@@ -185,5 +232,5 @@ export function compare(kind, estimate, result) {
   const text = { none: "Pas de modèle simple à comparer : le résultat n'est pas recoupé.", ok: "Le calcul à la main et la simulation concordent (écart de 20 % ou moins) : le résultat est crédible.",
     warn: "Écart notable entre le calcul à la main et la simulation : regardez où la simulation concentre la contrainte, et si la pièce ressemble vraiment au modèle simple.",
     fail: "Le calcul à la main et la simulation ne concordent pas : ne retenez ni l'un ni l'autre avant d'avoir compris pourquoi (appuis, efforts, section, maillage trop grossier)." }[verdict];
-  return { rows, worst, verdict, text };
+  return { rows, worst, verdict, text, notes };
 }

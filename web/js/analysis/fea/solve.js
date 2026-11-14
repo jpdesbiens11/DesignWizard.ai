@@ -149,31 +149,97 @@ export function meshPieces(model) {
   return { piece, count };
 }
 
-/**
- * Looks for a piece of the mesh that the marked nodes do not hold.
- * @param mark  Uint8Array per node: the supports (structure) or the nodes with a way out for the heat (thermal)
- * @param rigid true for structure: the marked nodes of a piece must not all lie on one line, or the piece pivots about it
- * @returns null, or { body, level } for the first weak piece — level 0: no marked node, 1: a single node, 2: nodes on one line
- */
-export function weakPiece(model, mark, rigid) {
-  const { nodes, nNodes, elems, nCells } = model, { piece, count } = meshPieces(model);
-  const level = new Uint8Array(count), first = new Int32Array(count), second = new Int32Array(count);
-  for (let i = 0; i < nNodes; i++) {
-    if (!mark[i]) continue;
-    const p = piece[i];
-    if (level[p] === 0) { level[p] = rigid ? 1 : 3; first[p] = i; }
-    else if (level[p] === 1) { level[p] = 2; second[p] = i; }
-    else if (level[p] === 2) {   // a third node off the line of the first two holds the piece
-      const a = 3 * first[p], b = 3 * second[p], c = 3 * i;
-      const ux = nodes[b] - nodes[a], uy = nodes[b + 1] - nodes[a + 1], uz = nodes[b + 2] - nodes[a + 2];
-      const vx = nodes[c] - nodes[a], vy = nodes[c + 1] - nodes[a + 1], vz = nodes[c + 2] - nodes[a + 2];
-      const cx = uy * vz - uz * vy, cy = uz * vx - ux * vz, cz = ux * vy - uy * vx;
-      if (cx * cx + cy * cy + cz * cz > 1e-9 * (ux * ux + uy * uy + uz * uz) * (vx * vx + vy * vy + vz * vz)) level[p] = 3;
+const bodyOf = (model, e) => model.bodies[model.elemBody[e]].name ?? `n° ${model.elemBody[e] + 1}`;
+
+/** Name of the first body that has a piece without any marked node (mark: Uint8Array per node), or null. */
+export function unmarkedBody(model, mark) {
+  const { piece, count } = meshPieces(model), has = new Uint8Array(count);
+  for (let i = 0; i < model.nNodes; i++) if (mark[i]) has[piece[i]] = 1;
+  for (let e = 0; e < model.nCells; e++) if (!has[piece[model.elems[8 * e]]]) return bodyOf(model, e);
+  return null;
+}
+
+/** Eigenvalues and eigenvectors of a small symmetric n x n matrix (cyclic Jacobi rotations). A is destroyed; column j of `vectors` goes with values[j]. */
+function symmetricEigen(A, n) {
+  const V = new Float64Array(n * n);
+  for (let i = 0; i < n; i++) V[i * n + i] = 1;
+  for (let sweep = 0; sweep < 60; sweep++) {
+    let off = 0, all = 0;
+    for (let p = 0; p < n; p++) for (let q = 0; q < n; q++) { all += A[p * n + q] ** 2; if (p !== q) off += A[p * n + q] ** 2; }
+    if (off <= 1e-28 * all) break;
+    for (let p = 0; p < n; p++) for (let q = p + 1; q < n; q++) {
+      const apq = A[p * n + q];
+      if (apq === 0) continue;
+      const theta = (A[q * n + q] - A[p * n + p]) / (2 * apq);
+      const t = (theta < 0 ? -1 : 1) / (Math.abs(theta) + Math.sqrt(theta * theta + 1)), c = 1 / Math.sqrt(t * t + 1), s = t * c;
+      for (let k = 0; k < n; k++) {   // A <- J^T A J and V <- V J, J being the rotation in the plane (p, q)
+        const akp = A[k * n + p], akq = A[k * n + q], vkp = V[k * n + p], vkq = V[k * n + q];
+        A[k * n + p] = c * akp - s * akq; A[k * n + q] = s * akp + c * akq;
+        V[k * n + p] = c * vkp - s * vkq; V[k * n + q] = s * vkp + c * vkq;
+      }
+      for (let k = 0; k < n; k++) {
+        const apk = A[p * n + k], aqk = A[q * n + k];
+        A[p * n + k] = c * apk - s * aqk; A[q * n + k] = s * apk + c * aqk;
+      }
     }
   }
+  return { values: Array.from({ length: n }, (_, i) => A[i * n + i]), vectors: V };
+}
+
+/**
+ * Checks that the held dofs remove the six rigid-body motions of every connected piece of the mesh.
+ * The six motions (3 translations, 3 rotations about the centroid of the held nodes) are written on the held dofs of a
+ * piece; a combination that is zero on all of them is a motion the supports do not see, i.e. a null vector of the 6 x 6
+ * Gram matrix. Mechanisms inside a piece (cells linked by one edge) are not seen here: the solver reports them.
+ * @param isFixed Uint8Array(3 * nNodes), 1 on the held dofs
+ * @returns null, or for the first loose piece { body, level, slide, pivot, tilted } — level 0: no support at all, 1: a single
+ *   held node, 2: held nodes on one line, 3: other; slide: axes (0, 1, 2) it can translate along; pivot: axes it can rotate
+ *   about (an axis parallel to them); tilted: it can also rotate about an axis that is not parallel to X, Y or Z.
+ */
+export function looseMotion(model, isFixed) {
+  const { nodes, nNodes, elems, nCells } = model, { piece, count } = meshPieces(model);
+  const anyHeld = (i) => isFixed[3 * i] || isFixed[3 * i + 1] || isFixed[3 * i + 2];
+  const heldNodes = new Int32Array(count), centre = new Float64Array(3 * count);
+  for (let i = 0; i < nNodes; i++) {
+    if (!anyHeld(i)) continue;
+    heldNodes[piece[i]]++;
+    for (let d = 0; d < 3; d++) centre[3 * piece[i] + d] += nodes[3 * i + d];
+  }
+  const gram = new Float64Array(36 * count), spread = new Float64Array(9 * count), row = new Float64Array(6), q = [0, 0, 0];
+  for (let i = 0; i < nNodes; i++) {
+    if (!anyHeld(i)) continue;
+    const p = piece[i];
+    for (let d = 0; d < 3; d++) q[d] = nodes[3 * i + d] - centre[3 * p + d] / heldNodes[p];
+    for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) spread[9 * p + 3 * a + b] += q[a] * q[b];
+    for (let d = 0; d < 3; d++) {
+      if (!isFixed[3 * i + d]) continue;
+      // displacement along d of the six motions: translation k gives delta_dk, rotation about axis k gives (e_k x q)_d
+      row.fill(0);
+      row[d] = 1; row[3 + (d + 1) % 3] = q[(d + 2) % 3]; row[3 + (d + 2) % 3] = -q[(d + 1) % 3];
+      for (let a = 0; a < 6; a++) for (let b = 0; b < 6; b++) gram[36 * p + 6 * a + b] += row[a] * row[b];
+    }
+  }
+  const seen = new Uint8Array(count);
   for (let e = 0; e < nCells; e++) {
     const p = piece[elems[8 * e]];
-    if (level[p] < 3) return { body: model.bodies[model.elemBody[e]].name ?? `n° ${model.elemBody[e] + 1}`, level: level[p] };
+    if (seen[p]) continue;
+    seen[p] = 1;
+    if (!heldNodes[p]) return { body: bodyOf(model, e), level: 0, slide: [0, 1, 2], pivot: [0, 1, 2], tilted: false };
+    const S = spread.slice(9 * p, 9 * p + 9), G = gram.slice(36 * p, 36 * p + 36);
+    const scale = 1 / Math.sqrt((S[0] + S[4] + S[8]) / heldNodes[p] || 1);   // rotations in units of the support size
+    for (let a = 0; a < 6; a++) for (let b = 0; b < 6; b++) G[6 * a + b] *= (a < 3 ? 1 : scale) * (b < 3 ? 1 : scale);
+    const { values, vectors } = symmetricEigen(G, 6), limit = 1e-9 * values.reduce((s, v) => s + v, 0);
+    const free = [0, 1, 2, 3, 4, 5].filter((j) => values[j] <= limit);
+    if (!free.length) continue;   // rank 6: the piece is held
+    const turn = new Float64Array(9);   // directions of the free rotations: sum of omega omega^T over the free motions
+    for (const j of free) for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) turn[3 * a + b] += vectors[6 * (3 + a) + j] * vectors[6 * (3 + b) + j];
+    const axes = symmetricEigen(turn, 3), span = [0, 1, 2].filter((j) => axes.values[j] > 1e-8);
+    const pivot = [0, 1, 2].filter((d) => span.reduce((s, j) => s + axes.vectors[3 * d + j] ** 2, 0) > 0.99);
+    const extent = symmetricEigen(S, 3).values.sort((a, b) => b - a);
+    return {
+      body: bodyOf(model, e), level: heldNodes[p] === 1 ? 1 : extent[1] <= 1e-9 * extent[0] ? 2 : 3,
+      slide: [0, 1, 2].filter((d) => gram[36 * p + 7 * d] === 0), pivot, tilted: span.length > pivot.length,
+    };
   }
   return null;
 }

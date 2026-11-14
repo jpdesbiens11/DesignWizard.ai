@@ -182,7 +182,8 @@ function render(main, args) {
       st.kind !== "thermal" ? el("p", { class: "muted small" }, `Déformée amplifiée ${fmt(r.scale, 0)} fois.`) : null);
     body.append(el("div", { class: "side-section" }, el("h3", null, "3. Le recoupement ", badge(VERDICT[c.verdict][0], VERDICT[c.verdict][1])),
       c.rows.length ? table(["", "À la main", "Simulation", "Écart"], c.rows.map((x) => [x.label, x.low !== undefined ? `${show(x.low, 2)} à ${show(x.analytic, 2)} ${x.unit}` : `${x.bound ? "au plus " : ""}${show(x.analytic, 2)} ${x.unit}`, `${show(x.fea, 2)} ${x.unit}`, x.deviation === null ? "—" : x.low !== undefined && x.deviation === 0 ? "dans la fourchette" : x.bound && x.deviation === 0 ? `sous la borne${x.note ? ` (${x.note})` : ""}` : `${x.deviation > 0 ? "+" : ""}${Math.round(x.deviation * 100)} %`])) : null,
-      el("p", { class: "small" }, c.text),
+      el("p", { class: "small" }, c.text), ...(c.notes || []).map((t) => el("p", { class: "atelier-hint warn" }, icon("warning"), " ", t)),
+      last.info.dropped && last.info.dropped.length ? el("p", { class: "atelier-hint" }, icon("info"), ` ${last.info.dropped.length} corps laissé(s) de côté, car le maillage grossier ne les relie à aucune pièce tenue : ${last.info.dropped.slice(0, 6).join(", ")}${last.info.dropped.length > 6 ? "…" : ""}.`) : null,
       el("p", { class: "muted small" }, `${last.info.cells.toLocaleString("fr-CA")} cubes, ${r.dofs.toLocaleString("fr-CA")} inconnues, ${r.iterations} itérations, ${fmt(r.ms / 1000, 2)} s. La contrainte de pointe d'un maillage grossier est indicative : les concentrations locales (trous, congés, bord de l'encastrement) ne sont pas résolues.`),
       el("div", { class: "form-actions" }, btn("Ajouter au rapport", () => keep(), { small: true, icon: "plus" }))));
   }
@@ -214,8 +215,8 @@ function render(main, args) {
     if (!last) return;
     const r = last.result, mat = geo.bodies[0].material, thermal = st.kind === "thermal", nominal = r.nominalVm ? r.nominalVm.value : null;
     store.commit(`Simulation gardée : ${st.target.id}`, (x) => { x.simulations = x.simulations || []; x.simulations.push({ id: `S${x.simulations.length + 1}`, kind: st.kind, target: st.target.id, cells: last.info.cells, h: last.info.h,
-      estimate: thermal ? { Tmax: last.estimate.values.Tmax } : { sigma: last.estimate.values.sigma, delta: last.estimate.values.delta },
-      result: thermal ? { Tmax: r.maxT.value, Tmin: r.minT.value } : { sigma: r.maxVm.value, nominal, delta: r.maxU.value, sf: mat.Re ? mat.Re / r.maxVm.value : null, ...(st.kind === "thermo" ? { Tmax: r.maxT.value } : {}) },
+      estimate: thermal ? { Tmax: last.estimate.values.Tmax } : { sigma: (st.kind === "thermo" && last.estimate.values.sigmaPlate) || last.estimate.values.sigma, delta: last.estimate.values.delta },
+      result: thermal ? { Tmax: r.maxT.value, Tmin: r.minT.value } : { sigma: r.maxVm.value, nominal, delta: r.maxU.value, sf: mat.Re ? mat.Re / r.maxVm.value : null, ...(st.kind === "thermo" ? { Tmax: r.maxT.value, core: r.coreVm ? r.coreVm.value : null } : {}) },
       worst: last.compare.rows.length ? last.compare.worst : null, verdict: last.compare.verdict, when: new Date().toISOString() }); });
     toast("Simulation ajoutée au rapport de revue.", "success");
   }
