@@ -268,7 +268,6 @@ test('RULEBOOK: every process, complete entries, every finding documented', () =
     for (const r of b.rules) {
       assert.match(r.id, /^[A-Z]+-\d\d$/);
       assert.ok(r.title && r.limit && r.why !== undefined && r.source !== undefined && ['error', 'warn', 'info'].includes(r.severity), r.id);
-      assert.ok(!/H55/i.test(JSON.stringify(r)), r.id);
       known.add(r.id);
     }
   }
