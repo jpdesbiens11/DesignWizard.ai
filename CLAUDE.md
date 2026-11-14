@@ -27,6 +27,10 @@ Consignes permanentes de JP (propriétaire du dépôt). Elles s'appliquent à to
   sauf le service de connexion de Google. Fichiers source de moins de 500 lignes. DOM par `el()` et `textContent`.
 - Une brique = un module pur et testé, un écran, une entrée dans le rapport, ses mots dans `web/js/core/dwiz_names.js`.
 - Format de fichier : `.dwiz` (voir `docs/FORMAT.md`) ; le JSON reste accepté. Nom anglais de l'Atelier : « Shop ».
+- **Aller-retour IA partout** (demande de JP) : chaque module doit pouvoir exporter son artéfact sous une forme qu'une IA
+  comprend (`.dwiz` + consigne courte), comme on confierait une tâche à un technicien ou à un stagiaire, puis
+  réimporter l'artéfact modifié pour mettre à jour le projet — avec un aperçu des changements et la validation de
+  l'humain avant d'appliquer (une seule étape annulable). Toute nouvelle brique naît avec cette fonction.
 - Vie privée : aucune adresse courriel dans le dépôt (les comptes approuvés sont des empreintes dans `web/acces.json`),
   aucun secret ; l'identifiant client OAuth est public. Pas de contenu H55.
 - Étude de logiciels tiers : méthode REA (`docs/REA.md`) — seulement ce que l'on possède ou que l'on est autorisé à

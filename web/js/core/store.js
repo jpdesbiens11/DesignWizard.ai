@@ -65,7 +65,7 @@ class Store {
     return p;
   }
   adopt(p) {
-    p.parts = p.parts || []; p.assemblies = p.assemblies || []; p.log = p.log || [];
+    p.parts = p.parts || []; p.assemblies = p.assemblies || []; p.boards = p.boards || []; p.log = p.log || [];
     this.project = p; this.undoStack = []; this.redoStack = []; this.saveState = "saved";
     try { localStorage.setItem(LS_LAST, p.id); } catch (e) { /* private mode */ }
     this.emit("project", p); this.emit("change", { label: "open" });
@@ -180,6 +180,19 @@ class Store {
   updateAssembly(id, fn, label) {
     return this.commit(label || `Assemblage modifié : ${id}`, (p) => { const a = p.assemblies.find((x) => x.id === id); if (!a) throw new Error(`Assemblage « ${id} » introuvable.`); fn(a, p); }, { assembly: id });
   }
+
+  /* ---------- electronic boards (PCBA) ---------- */
+  get boards() { return this.project ? this.project.boards || [] : []; }
+  board(id) { return this.boards.find((x) => x.id === id) || null; }
+  addBoard(doc) {
+    const b = { ...doc, id: this.uniqueId(doc.id || `PCBA-${String(this.boards.length + 1).padStart(3, "0")}`) };
+    this.commit(`Carte créée : ${b.id} ${b.name || ""}`, (p) => { p.boards = p.boards || []; p.boards.push(b); }, { board: b.id });
+    return b.id;
+  }
+  updateBoard(id, fn, label) {
+    return this.commit(label || `Carte modifiée : ${id}`, (p) => { const b = (p.boards || []).find((x) => x.id === id); if (!b) throw new Error(`Carte « ${id} » introuvable.`); fn(b, p); }, { board: id });
+  }
+  removeBoard(id) { return this.commit(`Carte retirée : ${id}`, (p) => { p.boards = (p.boards || []).filter((x) => x.id !== id); }, { board: id }); }
 
   exportJson() { return JSON.stringify(this.project, null, 1); }
 }

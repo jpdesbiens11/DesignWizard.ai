@@ -55,17 +55,39 @@ const project = {
     ["Journal", ["log"]],
   ],
   kids: { drawing: {}, physics: { word: "physics", head: ["id", "model"] }, simulations: { word: "simulation", head: ["id", "kind"], first: ["target"], kids: { estimate: {}, result: {} } }, log: { word: "log" } },
-  embed: { parts: "part", assemblies: "assembly" },            // documents carried inside a project file, one after the other
+  embed: { parts: "part", assemblies: "assembly", boards: "board" },   // documents carried inside a project file, one after the other
+};
+const board = {
+  fr: "Carte électronique", en: "Board", module: "PCBA", brick: "B10",
+  sections: [
+    ["Pourquoi — les fonctions que la carte remplit", ["description", "revision", "functions"]],
+    ["Comment — un bloc de circuit par fonction", ["blocks"]],
+    ["Avec quoi — les composants, et les nets qui les relient", ["parts", "nets", "library"]],
+    ["Sur quoi — la carte nue : couches, finition, vernis, trous, règles", ["board", "rules", "part"]],
+    ["Le cuivre — plans, pistes et vias", ["planes", "tracks", "vias"]],
+  ],
+  kids: {
+    functions: { word: "function", head: ["id"], first: ["parent", "kind", "name", "block"], kids: { criteria: { word: "criterion" } } },
+    blocks: { word: "block", head: ["id", "template"], first: ["name", "function", "zone"], kids: { params: {} } },
+    parts: { word: "part", head: ["ref", "comp"], first: ["value", "block", "at", "rot", "side"] },
+    nets: { word: "net", head: ["name"], first: ["class", "voltage", "current", "pins"] },
+    library: { word: "component", keyed: true, first: ["kind", "prefix", "name", "package"], kids: { pins: { word: "pin", head: ["n", "name"] }, pads: { word: "pad", head: ["n"] }, ratings: {} } },
+    board: { kids: { coating: {}, holes: { word: "hole" } } },
+    rules: { kids: { classes: { word: "class", keyed: true } } },
+    planes: { word: "plane", head: ["net", "layer"] },
+    tracks: { word: "track", head: ["net", "layer"], first: ["w", "pts"] },
+    vias: { word: "via", head: ["net"], first: ["at", "d", "drill"] },
+  },
 };
 
 /** Kinds of document the platform reads and writes today. */
-export const KINDS = { part, assembly, project };
+export const KINDS = { part, assembly, project, board };
 
 /** Names reserved for the modules to come, so every part of a mechatronic product ends up in the same format. */
 export const RESERVED_KINDS = [
   { kind: "order", fr: "Commande", text: "Lot de pièces à faire fabriquer : quantités, date voulue, atelier, prix et délai reçus." },
   { kind: "test", fr: "Essai", text: "Plan d'essai de laboratoire : ce que l'on mesure, la valeur prévue par la physique, la valeur mesurée." },
-  { kind: "board", fr: "Carte", text: "Carte électronique complète : schéma, empilage, placement — au-delà du bloc « pcb » d'une pièce." },
+  { kind: "schematic", fr: "Schéma", text: "Schéma électrique dessiné à la main, feuille par feuille — au-delà du schéma par blocs d'une carte." },
   { kind: "harness", fr: "Faisceau", text: "Câbles, connecteurs, longueurs et cheminement entre les interfaces électriques." },
   { kind: "firmware", fr: "Micrologiciel", text: "Brochage, périphériques et paramètres du CPU liés aux interfaces de la carte." },
   { kind: "requirement", fr: "Exigence", text: "Ce que le produit doit faire, relié aux pièces, aux analyses et aux essais qui le prouvent." },
@@ -78,6 +100,7 @@ export function kindOfDoc(doc) {
   if (KINDS[k]) return k;
   if (doc && Array.isArray(doc.parts) && Array.isArray(doc.assemblies)) return "project";
   if (doc && Array.isArray(doc.instances)) return "assembly";
+  if (doc && doc.board && Array.isArray(doc.nets)) return "board";
   return k || "part";
 }
 /** File name of a document: <id>.<kind>.dwiz */
