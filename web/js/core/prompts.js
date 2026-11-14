@@ -96,9 +96,9 @@ export function extrusionPrompt(project, opts) {
     "", "LANGAGE DE LA RÉPONSE :", "", LANGUAGE_REFERENCE].join("\n");
 }
 
-/** Prompt to refine, with Claude, the part the workshop companion wrote from the design intent. The intent, the imposed
+/** Prompt to refine, with Claude, the part the Shop companion wrote from the design intent. The intent, the imposed
     interfaces and the raw stock are kept; Claude adds what experience adds (ribs, reliefs, radii, lighter shapes). */
-export function atelierPrompt(project, brief, spec) {
+export function shopPrompt(project, brief, spec) {
   const intent = [["Fonction", brief.fn], ["Efforts et charges", brief.loads], ["Milieu", brief.environment], ["Quantité", brief.quantity], ["Priorité", brief.priority]].filter(([, v]) => v !== undefined && v !== "" && v !== null).map(([k, v]) => `- ${k} : ${v}`);
   return [`Tu es un concepteur mécanique senior et un compagnon d'atelier. Voici l'INTENTION d'une pièce du projet « ${project.name || ""} » et la première proposition que la plateforme DesignWizard.ai a écrite à partir de cette intention : ses interfaces, sa matière première (« stock ») et ses opérations d'atelier. Améliore-la comme le ferait un artisan d'expérience, sans perdre ce qui est imposé.`,
     "", `PIÈCE : ${spec.id} — ${spec.name || ""}`, "INTENTION :", ...(intent.length ? intent : ["- (à préciser pendant l'entrevue)"]),

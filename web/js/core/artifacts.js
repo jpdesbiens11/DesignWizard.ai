@@ -10,7 +10,7 @@ import { kernel } from "../cad/client.js";
 import { meshesToStl } from "../cad/stl.js";
 import { viewsToDxf, flatOutlineDxf } from "../draw/dxf.js";
 import { toFeatureScript } from "../cad/featurescript.js";
-import { expandSpec, routing } from "../cad/workshop.js";
+import { expandSpec, routing } from "../cad/shop.js";
 import { STOCK_FORMS } from "../cad/stock.js";
 import { viewRequest } from "../draw/part_drawing.js";
 import { makeDrawing } from "../modules/drawings.js";

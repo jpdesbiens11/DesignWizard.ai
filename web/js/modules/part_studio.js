@@ -9,7 +9,7 @@ import { kernel } from "../cad/client.js";
 import { createViewport, showBuilt } from "../core/viewport.js";
 import { TEMPLATES, fromTemplate } from "../cad/templates.js";
 import { featureDialog, interfaceDialog, stockDialog, announceLinks, nextFeatureId, nextIfaceId, FEATURE_LABEL, FEATURE_DEFAULT, SHOP_DEFAULT } from "../core/part_edit.js";
-import { gammePanel } from "./part_gamme.js";
+import { gammePanel, artifactsPanel } from "./part_gamme.js";
 import { STOCK_FORMS } from "../cad/stock.js";
 import { paramsPanel, interfacesPanel, sheetPanel, jsonPanel, dfxPanel } from "./part_panels.js";
 import { runDfx } from "../analysis/dfx_api.js";
@@ -30,7 +30,7 @@ export function partStudio(main, args, cfg) {
     renderLeft();
     view.append(el("div", { class: "page" }, el("div", { class: "empty" }, el("h2", null, cfg.emptyTitle || "Aucune pièce pour l'instant"),
       el("p", null, cfg.emptyText || "Commencez par l'intention de la pièce (Atelier), ou partez d'un gabarit paramétrique."),
-      el("div", { class: "form-actions", style: { justifyContent: "center" } }, el("a", { class: "btn btn-primary", href: "#/atelier" }, icon("wizard"), "Démarrer par l'intention"),
+      el("div", { class: "form-actions", style: { justifyContent: "center" } }, el("a", { class: "btn btn-primary", href: "#/shop" }, icon("wizard"), "Démarrer par l'intention"),
         btn("Partir d'un gabarit", () => newPartDialog(cfg), { icon: "plus" })))));
     return null;
   }
@@ -192,7 +192,7 @@ export function partStudio(main, args, cfg) {
   /* ---------- right: inspector ---------- */
   function renderRight() {
     clear(right);
-    const tabs = [["params", "Paramètres"], ["ifaces", "Interfaces"], ["gamme", "Gamme"], ["dfx", "DFx"], ["sheet", "Fiche"], ["json", "JSON"], ...((cfg.tabs || []).map((t) => [t.key, t.label]))];
+    const tabs = [["params", "Paramètres"], ["ifaces", "Interfaces"], ["gamme", "Gamme"], ["dfx", "DFx"], ["files", "Artéfacts"], ["sheet", "Fiche"], ["json", "JSON"], ...((cfg.tabs || []).map((t) => [t.key, t.label]))];
     const n = st.findings ? st.findings.findings.filter((f) => f.severity === "error").length : 0;
     right.append(el("div", { class: "side-head" }, el("h2", null, st.spec.name || st.spec.id)),
       el("div", { class: "subtabs", style: { margin: "0 .6rem" } }, tabs.map(([k, label]) => el("button", { class: "subtab" + (st.tab === k ? " active" : ""), type: "button", onClick: () => { st.tab = k; renderRight(); } }, label, k === "dfx" && n ? ` (${n})` : ""))));
@@ -201,7 +201,7 @@ export function partStudio(main, args, cfg) {
     const ctx = { st, id, live, rebuild, vp, editIface, editStock, cfg };
     const custom = (cfg.tabs || []).find((t) => t.key === st.tab);
     if (custom) custom.render(body, ctx);
-    else ({ params: paramsPanel, ifaces: interfacesPanel, gamme: gammePanel, dfx: dfxPanel, sheet: sheetPanel, json: jsonPanel })[st.tab](body, ctx);
+    else ({ params: paramsPanel, ifaces: interfacesPanel, gamme: gammePanel, files: artifactsPanel, dfx: dfxPanel, sheet: sheetPanel, json: jsonPanel })[st.tab](body, ctx);
   }
 
   return () => { offChange(); st.token++; vp.dispose(); kernel.forget(`${id}~live`).catch(() => {}); };
@@ -217,5 +217,5 @@ export function newPartDialog(cfg = {}) {
       const spec = store.part(id);
       go(`#/${spec.family === "pcb" ? "pcb" : spec.family === "extrusion" ? "extrusion" : "parts"}/${encodeURIComponent(id)}`);
     } }, el("h3", null, icon(t.icon), " ", t.title), el("p", { class: "muted", style: { margin: 0 } }, t.text)))),
-    el("div", { class: "form-actions" }, el("a", { class: "btn btn-primary", href: "#/atelier", onClick: () => m.close() }, icon("wizard"), "Plutôt démarrer par l'intention"))], { wide: true });
+    el("div", { class: "form-actions" }, el("a", { class: "btn btn-primary", href: "#/shop", onClick: () => m.close() }, icon("wizard"), "Plutôt démarrer par l'intention"))], { wide: true });
 }

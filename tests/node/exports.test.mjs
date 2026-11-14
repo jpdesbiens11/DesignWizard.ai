@@ -14,7 +14,7 @@ import { v3, bboxUnion } from "../../web/js/cad/vec.js";
 import { meshesToStl, stlStats } from "../../web/js/cad/stl.js";
 import { DxfDoc, viewsToDxf, profileToDxf, flatOutlineDxf, parseDxf } from "../../web/js/draw/dxf.js";
 import { toFeatureScript, exprToFeatureScript, FS_NOTICE, FS_VERSION } from "../../web/js/cad/featurescript.js";
-import { expandSpec } from "../../web/js/cad/workshop.js";
+import { expandSpec } from "../../web/js/cad/shop.js";
 
 const close = (a, b, tol = 1e-6, what = "") => assert.ok(Math.abs(a - b) <= tol, `${what} ${a} ≠ ${b}`);
 const BASE = DEMO_DRIVE.parts.find((p) => p.id === "DRV-BASE");
@@ -472,7 +472,7 @@ test("FeatureScript: the script follows its inputs (parameters changed in Onshap
   }
 });
 
-test("FeatureScript: workshop parts (stock + verbs, after expandSpec) — « outline », an extrude with mode intersect, becomes a boolean intersection", async () => {
+test("FeatureScript: Shop parts (stock + verbs, after expandSpec) — « outline », an extrude with mode intersect, becomes a boolean intersection", async () => {
   const K = await kernel();
   const plate = { dw: "part/1", id: "W-1", name: "Platine détourée", material: "AL6061-T6", process: "laser_cut", params: { L: 100, W: 60, t: 5, r: 12 }, stock: { form: "plate", L: "L", W: "W", t: "t" },
     features: [{ op: "outline", id: "contour", profile: { poly: [[0, 0], ["L", 0, "r"], ["L", "W", "r"], [20, "W"], [0, 40]] } }, { op: "drill", id: "d1", face: "+Z", at: [[15, 15], ["L - 15", 15]], d: 5 },

@@ -7,7 +7,7 @@ import { DEMO_DRIVE } from "../demo/demo_drive.js";
 import { DEMO_HVB_PARTS, DEMO_HVB_ASSEMBLY } from "../demo/demo_hvb.js";
 
 const STEPS = [
-  ["atelier", "Atelier", "Dites l'intention : à quoi sert la pièce, ses interfaces, sa matière, sa matière première. Elle se construit sous vos yeux, sans esquisse — ou par une entrevue avec Claude."],
+  ["shop", "Atelier", "Dites l'intention : à quoi sert la pièce, ses interfaces, sa matière, sa matière première. Elle se construit sous vos yeux, sans esquisse — ou par une entrevue avec Claude."],
   ["parts", "Pièces", "Ajustez la pièce avec ses curseurs, la baguette (Ctrl+K) ou l'arbre de construction. Le DFM se vérifie en direct."],
   ["assembly", "Assemblage", "Ajoutez les pièces : les interfaces identiques se matent seules et restent liées. Changez un côté, l'autre suit."],
   ["creepage", "Isolation", "Creepage et clearance mesurés sur l'assemblage complet, comparés à IEC 60664-1."],
@@ -33,7 +33,7 @@ function render(main) {
       el("p", null, "DesignWizard.ai réinvente la conception mécatronique : une pièce naît de son intention — ses interfaces, sa matière, sa matière première — comme dans l'atelier d'un artisan. Les assemblages se montent d'eux-mêmes, la physique se vérifie par des modèles simples, et les règles DFM, DFA et d'isolation s'appliquent dès la première minute. Libre, sous licence MIT."),
       el("div", { class: "form-actions", style: { justifyContent: "flex-start" } },
         btn("Charger la démonstration « Variateur 400 V »", () => loadDemo(DEMO_DRIVE, "#/assembly/DRV-ASM"), { primary: true, icon: "sparkle", tip: "Boîtier moulé, deux PCB, dissipateur extrudé : tout est déjà relié par ses interfaces" }),
-        btn("Nouveau projet", async () => { const name = await promptBox("Nouveau projet", "Nom du projet", "Mon produit"); if (name) { await store.create(name); go("#/atelier"); } }, { icon: "plus" }),
+        btn("Nouveau projet", async () => { const name = await promptBox("Nouveau projet", "Nom du projet", "Mon produit"); if (name) { await store.create(name); go("#/shop"); } }, { icon: "plus" }),
         btn("Importer…", () => app.pickFile(), { icon: "upload", tip: "Projet .json, pièce JSON d'une entrevue, ou fichier STEP — vous pouvez aussi coller (Ctrl+V) ou déposer un fichier n'importe où" }))),
     el("img", { src: `img/sketch/hero-${document.documentElement.dataset.theme || "carnet"}.svg`, alt: "" })));
 

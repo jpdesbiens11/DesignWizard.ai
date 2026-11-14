@@ -1,5 +1,5 @@
-/* DesignWizard.ai — the workshop: a part is made the way a craftsman makes it. It starts from raw stock (spec.stock,
-   see stock.js) and its "features" may use workshop verbs — drill, tap, counterbore, countersink, ream, mill, face,
+/* DesignWizard.ai — the Shop (« Atelier » in French): a part is made the way a craftsman makes it. It starts from raw stock (spec.stock,
+   see stock.js) and its "features" may use Shop verbs — drill, tap, counterbore, countersink, ream, mill, face,
    step, groove, outline, turn, bore, break_edges, deburr, finish — next to the kernel operations.
    expandSpec() rewrites stock and verbs into kernel features, structurally (expressions are kept as text, so the
    part stays parametric and every downstream tool sees a plain part). routing() writes the routing sheet ("gamme de
@@ -64,7 +64,7 @@ export const SHOP_VERBS = {
 };
 export const isShopVerb = (op) => Object.prototype.hasOwnProperty.call(SHOP_VERBS, op);
 
-/** Rewrite stock + workshop verbs into kernel features. Problems are pushed to `log` (the part still builds). */
+/** Rewrite stock + Shop verbs into kernel features. Problems are pushed to `log` (the part still builds). */
 export function expandSpec(spec, log = []) {
   if (!spec || (!spec.stock && !(spec.features || []).some((f) => f && isShopVerb(f.op)))) return spec;
   const out = { ...spec }, feats = [], ctx = { stock: spec.stock || null };
@@ -204,7 +204,7 @@ export function routing(spec, built) {
   if (spec.finish && !steps.some((s) => /^Finition/.test(s.text))) add("finish", `Finition : ${spec.finish}`);
   add("check", "Contrôler les cotes des interfaces (voir le dessin)");
   const rank = { stock: 0, cut: 1, machine: 2, hole: 2, finish: 3, check: 4 };
-  steps.sort((a, b) => rank[a.kind] - rank[b.kind]);           // stable: workshop order is kept inside each stage
+  steps.sort((a, b) => rank[a.kind] - rank[b.kind]);           // stable: shop order is kept inside each stage
   steps.forEach((s, i) => { s.n = (i + 1) * 10; });
 
   const setups = [...faces];

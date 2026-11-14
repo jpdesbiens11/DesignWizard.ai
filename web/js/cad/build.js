@@ -1,6 +1,6 @@
 /* DesignWizard.ai — builds a part from its spec (the part language, see docs/PART_LANGUAGE.md).
    spec = { dw:"part/1", id, name, family, process, material, params, features[], interfaces[], extrusion?, pcb?, bodies?, elec? }
-   Order: parameters -> raw stock and workshop verbs rewritten to kernel features (workshop.js) -> family blocks
+   Order: parameters -> raw stock and Shop verbs rewritten to kernel features (shop.js) -> family blocks
    (extrusion, pcb) -> features -> interfaces -> features placed after {op:"interfaces"}. */
 
 import { resolveParams, evalDeep } from "./expr.js";
@@ -10,7 +10,7 @@ import { FACES, faceKey, bboxUnion } from "./vec.js";
 import { materialOrDefault, hexToRgb } from "./materials.js";
 import { compileExtrusion } from "./family_extrusion.js";
 import { compilePcb } from "./family_pcb.js";
-import { expandSpec } from "./workshop.js";
+import { expandSpec } from "./shop.js";
 import { stockFacts } from "./stock.js";
 
 export const PART_VERSION = "part/1";
@@ -23,7 +23,7 @@ function evaluated(spec, scope) {
 /** Build the kernel bodies of a part. Returns bodies with shapes (kernel objects), frames, facts and a log. */
 export function buildPart(K, source, opts = {}) {
   const t0 = Date.now(), shopLog = [];
-  const spec = expandSpec(source, shopLog);                    // stock + workshop verbs -> plain kernel features
+  const spec = expandSpec(source, shopLog);                    // stock + Shop verbs -> plain kernel features
   const { defs, scope } = resolveParams(spec.params, opts.overrides || {});
   const E = evaluated(spec, scope);
   const st = newState();

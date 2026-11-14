@@ -21,7 +21,7 @@ Functions: min max abs sqrt floor ceil round sin cos tan (degrees) hypot clamp(v
   "params": { ... },                    // section 2
   "interfaces": [ ... ],                // section 3 — START HERE: interfaces first
   "stock": { ... },                     // section 4 — the raw material taken from the rack (replaces the first feature)
-  "features": [ ... ],                  // sections 4 and 5 — workshop operations and kernel features, in order
+  "features": [ ... ],                  // sections 4 and 5 — Shop operations and kernel features, in order
   "extrusion": { ... },                 // section 6 (family extrusion) — replaces the first feature
   "pcb": { ... },                       // section 7 (family pcb)
   "notes": ["Drawing note 1", "..."],   // notes printed on the 2D drawing
@@ -65,8 +65,8 @@ Types (params are shared, opts belong to one side):
 - "pins": params { "d": 4, "pitch": 40, "n": 2, "length": 12 } — A = slip-fit holes, B = press-fit holes.
 On a hollow part, bolt_pattern side A must also give opts {"depth": ...} or the holes cross the whole part.
 
-## 4. Raw stock and workshop operations — make the part the way a craftsman would
-PREFERRED for machined, cut and turned parts: say which raw stock is taken from the rack, then list the workshop operations.
+## 4. Raw stock and Shop operations — make the part the way a craftsman would
+PREFERRED for machined, cut and turned parts: say which raw stock is taken from the rack, then list the Shop operations.
 The platform builds the solid, picks the commercial size to buy, writes the routing sheet and reports the material utilisation.
 "stock": { "form": F, ...finished size of the blank }      // min corner at the origin; L along X, W along Y, t / H along Z
   F = "plate"     {"L","W","t"}            rolled plate (standard thicknesses 3 4 5 6 8 10 12 15 16 20 25 30 40 50…)
@@ -77,7 +77,7 @@ The platform builds the solid, picks the commercial size to buy, writes the rout
     | "tube_round" {"d","t","L"} | "tube_rect" {"w","h","t","L"} | "angle" {"a","b","t","L"}     // commercial sections
     | "profile"   {"profile":P,"L"}        custom extruded section
     | "print"     {}                       additive / moulded: no blank, the features below ADD the material
-Workshop verbs (entries of "features", same common fields and face / position conventions as section 5):
+Shop verbs (entries of "features", same common fields and face / position conventions as section 5):
 - {"op":"drill", "face":"+Z", "at":POS, "d":5.5, "depth":"through"|12}
 - {"op":"tap", "face":"+Z", "at":POS, "thread":"M4", "depth":8}            // tap drill + thread
 - {"op":"cbore", "face":"+Z", "at":POS, "screw":"M5"}                      // clearance hole + counterbore for a cap screw
@@ -148,5 +148,5 @@ Mounting holes of a board = one "bolt_pattern" interface, side "A", face "-Z" (t
 2. Reuse EXACTLY the "key", "type" and "params" of the interfaces already defined in the project (given in the prompt).
 3. Everything a human would tune is a parameter. No raw number repeated twice.
 4. Respect the design-for-manufacturing rules of the process (walls, radii, hole sizes, depths).
-5. Think like the workshop: choose the raw stock first (a commercial size), then the fewest operations and set-ups.
+5. Think like the shop: choose the raw stock first (a commercial size), then the fewest operations and set-ups.
 6. Answer with ONE JSON object in a code block, valid JSON (double quotes, no comments, no trailing commas).`;

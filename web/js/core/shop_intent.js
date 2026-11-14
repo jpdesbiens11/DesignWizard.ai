@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the workshop companion: writes a part from its design INTENT, with no sketch.
+/* DesignWizard.ai — the Shop companion: writes a part from its design INTENT, with no sketch.
    Input (the brief): what the part is for, its interfaces (type, shared parameters, which side of the part), the
    material, the process and the raw stock. Output: a complete part in the part language — stock from the rack,
    interfaces placed without clash, the smallest envelope that carries them, a commercial thickness chosen from what
@@ -19,7 +19,7 @@ const off = (base, d) => (Math.abs(d) < 1e-6 ? base : d > 0 ? `${base} + ${r1(d)
 const slug = (s) => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "_").slice(0, 40).replace(/^_+|_+$/g, "");
 
 /** Forms the companion knows how to synthesise, with the process each one implies by default. */
-export const ATELIER_FORMS = { plate: "cnc_milling", sheet: "laser_cut", block: "cnc_milling", bar_flat: "cnc_milling", angle: "cnc_milling", bar_round: "cnc_turning", print: "fdm" };
+export const SHOP_FORMS = { plate: "cnc_milling", sheet: "laser_cut", block: "cnc_milling", bar_flat: "cnc_milling", angle: "cnc_milling", bar_round: "cnc_turning", print: "fdm" };
 export const WHERE = { "+Z": "dessus", "-Z": "dessous", "-Y": "avant", "+Y": "arrière", "-X": "gauche", "+X": "droite" };
 
 /** Thread engagement in diameters, by material class (steel 1 d, aluminium / copper 1.5 d, plastics 2 d). */
@@ -170,8 +170,8 @@ function round(brief, items, log) {
 
 /** Write the part. Returns { spec, decisions, recommendation }. Throws with a French message when the brief cannot be built. */
 export function synthesize(brief, id = "PN-0001") {
-  const log = [], rec = recommend(brief), form = brief.form && ATELIER_FORMS[brief.form] ? brief.form : rec.form;
-  const b = { ...brief, form, process: brief.process || ATELIER_FORMS[form], material: brief.material || (form === "print" ? "PA12" : "AL6061-T6") };
+  const log = [], rec = recommend(brief), form = brief.form && SHOP_FORMS[brief.form] ? brief.form : rec.form;
+  const b = { ...brief, form, process: brief.process || SHOP_FORMS[form], material: brief.material || (form === "print" ? "PA12" : "AL6061-T6") };
   if (form === "print" && !brief.process) b.process = material(b.material) && material(b.material).processes.includes("mjf") ? "mjf" : "fdm";
   log.push(`Matière première : ${STOCK_FORMS[form].fr.toLowerCase()} — ${form === rec.form ? rec.why : "choix de l'utilisateur."}`);
   const items = prepare(b, log);

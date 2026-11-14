@@ -111,7 +111,7 @@ export function stockFacts(stock, process) {
   const raw = form.raw(stock, a);
   return { form: stock.form, formName: form.fr, label: raw.label, raw: raw.size, rawVolume: raw.volume, exact: raw.exact, standard: raw.standard, allowance: a, advice: raw.advice, additive: !!form.additive };
 }
-/** Stock forms that suit a process, best first (used by the workshop wizard). */
+/** Stock forms that suit a process, best first (used by the Shop). */
 export function formsFor(process) {
   return Object.entries(STOCK_FORMS).filter(([, f]) => f.processes.includes(process)).map(([k]) => k);
 }

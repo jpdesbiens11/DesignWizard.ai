@@ -5,7 +5,7 @@ import { el, field, btn, modal, toast } from "./dom.js";
 import { store } from "./store.js";
 import { INTERFACE_TYPES } from "../cad/interfaces.js";
 import { FACES } from "../cad/vec.js";
-import { SHOP_VERBS } from "../cad/workshop.js";
+import { SHOP_VERBS } from "../cad/shop.js";
 import { STOCK_FORMS } from "../cad/stock.js";
 
 /* Fields offered for each operation: [key, label, kind ("num" | "text" | "json"), hint]. */
@@ -24,7 +24,7 @@ export const FEATURE_FORMS = {
   fillet: [["r", "Rayon", "num"], ["edges", "Arêtes", "json", '"all" · "vertical" · {"face":"+Z"} · {"dir":"X"} · {"box":[…]}']],
   chamfer: [["d", "Taille", "num"], ["edges", "Arêtes", "json"]],
   interfaces: [],
-  /* workshop verbs (see cad/workshop.js) */
+  /* Shop verbs (see cad/shop.js) */
   drill: [["face", "Face", "face"], ["at", "Position(s)", "json", "[x,y] · [[x,y],…] · {grid:{…}} · {circle:{…}}"], ["d", "Diamètre", "num"], ["depth", "Profondeur ou through", "num"]],
   tap: [["face", "Face", "face"], ["at", "Position(s)", "json"], ["thread", "Filetage (M3, M4…)", "text"], ["depth", "Profondeur ou through", "num"]],
   cbore: [["face", "Face", "face"], ["at", "Position(s)", "json"], ["screw", "Vis à tête cylindrique (M3, M4…)", "text"], ["depth", "Profondeur ou through", "num"]],
@@ -49,7 +49,7 @@ export const FEATURE_DEFAULT = {
   pocket: { op: "pocket", face: "+Z", rect: [5, 5, 20, 10], r: 2, depth: 3 }, pad: { op: "pad", face: "+Z", rect: [5, 5, 20, 10], r: 1, h: 2 }, slot: { op: "slot", face: "+Z", from: [5, 5], to: [25, 5], w: 4, depth: 2 },
   boss: { op: "boss", face: "+Z", at: [10, 10], d: 8, h: 6, hole: { thread: "M3", depth: 6 } }, shell: { op: "shell", t: 2, open: ["+Z"] }, fillet: { op: "fillet", r: 2, edges: "vertical" }, chamfer: { op: "chamfer", d: 0.5, edges: { face: "+Z" } },
 };
-/** Workshop verbs offered by « Ajouter une opération ». */
+/** Shop verbs offered by « Ajouter une opération ». */
 export const SHOP_DEFAULT = {
   drill: { op: "drill", face: "+Z", at: [10, 10], d: 5.5, depth: "through" }, tap: { op: "tap", face: "+Z", at: [10, 10], thread: "M4", depth: 8 },
   cbore: { op: "cbore", face: "+Z", at: [10, 10], screw: "M4" }, csink: { op: "csink", face: "+Z", at: [10, 10], screw: "M4" }, ream: { op: "ream", face: "+Z", at: [10, 10], d: 6, fit: "H7", depth: 8 },

@@ -1,7 +1,7 @@
 /* DesignWizard.ai — screens added with the technology bricks (Atelier, Physique, Artéfacts, compte et accès).
    Only design tokens here: every colour, radius and shadow comes from app.css / themes.css, so the four themes apply. */
 
-html[data-module="atelier"] { --acc: var(--hl-violet); }
+html[data-module="shop"] { --acc: var(--hl-violet); }
 html[data-module="physics"] { --acc: var(--hl-teal); }
 html[data-module="artifacts"] { --acc: var(--hl-blue); }
 html[data-module="account"] { --acc: var(--hl-green); }
@@ -79,3 +79,18 @@ html[data-module="account"] { --acc: var(--hl-green); }
 .hash-list div:first-child { border-top: 0; }
 .theme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .5rem; }
 .menu-item.on { font-weight: 700; }
+
+/* ---------- artefacts of a part ---------- */
+.artifact-row { display: flex; gap: .6rem; align-items: center; padding: .45rem .1rem; border-top: 1px dashed var(--line); }
+.artifact-row:first-of-type { border-top: 0; }
+.artifact-row > .sk-icon { width: 1.5rem; height: 1.5rem; flex: none; color: var(--graphite); }
+.artifact-row small { display: block; color: var(--muted); font-size: .78rem; line-height: 1.25; }
+
+/* ---------- the ladder of technology bricks (home) ---------- */
+.bricks { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: .6rem; margin-bottom: 1.6rem; }
+.brick { display: grid; grid-template-columns: auto 1fr; gap: .1rem .6rem; align-items: center; padding: .6rem .7rem; text-decoration: none; color: var(--ink);
+  background: var(--surface); border: 1.5px solid var(--line); border-radius: var(--r-card); transition: transform .12s var(--ease-pop), border-color .12s, box-shadow .12s; }
+a.brick:hover { transform: translateY(-2px); border-color: var(--graphite); box-shadow: var(--shadow-sketch); }
+.brick .sk-icon { grid-row: span 2; width: 2.1rem; height: 2.1rem; color: var(--graphite); }
+.brick b { font-size: .95rem; } .brick b i { font-style: normal; font-family: var(--mono); font-size: .74rem; color: var(--muted); margin-right: .35rem; }
+.brick small { color: var(--muted); font-size: .78rem; line-height: 1.25; }

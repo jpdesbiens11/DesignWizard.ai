@@ -1,11 +1,11 @@
-// Workshop brick: raw stock, workshop verbs, routing sheet and synthesis of a part from its design intent.
+// Shop brick (« Atelier »): raw stock, Shop verbs, routing sheet and synthesis of a part from its design intent.
 import test from "node:test";
 import assert from "node:assert/strict";
 import { kernel } from "./kernel_helper.mjs";
 import { buildPart, validateSpec } from "../../web/js/cad/build.js";
-import { expandSpec, routing, SHOP_VERBS } from "../../web/js/cad/workshop.js";
+import { expandSpec, routing, SHOP_VERBS } from "../../web/js/cad/shop.js";
 import { stockFacts, STOCK_FORMS, nextStd, PLATE_THICKNESS } from "../../web/js/cad/stock.js";
-import { synthesize, recommend, footprint, arrange } from "../../web/js/core/atelier.js";
+import { synthesize, recommend, footprint, arrange } from "../../web/js/core/shop_intent.js";
 import { interfaceSignature, compatible } from "../../web/js/cad/interfaces.js";
 import { LANGUAGE_REFERENCE } from "../../web/js/cad/language_doc.js";
 
@@ -38,12 +38,12 @@ test("expandSpec is structural: expressions survive, plain parts are untouched",
   assert.match(log[0].msg, /M7/);
 });
 
-test("every workshop verb is documented in the language reference", () => {
+test("every Shop verb is documented in the language reference", () => {
   for (const verb of Object.keys(SHOP_VERBS)) assert.ok(LANGUAGE_REFERENCE.includes(`"op":"${verb}"`), `verb ${verb} missing from the reference`);
   for (const form of Object.keys(STOCK_FORMS)) if (form !== "laminate") assert.ok(LANGUAGE_REFERENCE.includes(`"${form}"`), `stock form ${form} missing from the reference`);
 });
 
-test("plate from stock with workshop verbs: volume, facts and routing", async () => {
+test("plate from stock with Shop verbs: volume, facts and routing", async () => {
   const K = await kernel();
   const spec = { dw: "part/1", id: "T1", name: "Plaque", process: "cnc_milling", material: "AL6061-T6", params: { L: 120, W: 80, t: 8 }, stock: { form: "plate", L: "L", W: "W", t: "t" },
     features: [{ op: "mill", id: "p1", face: "+Z", rect: [20, 20, 40, 30], r: 3, depth: 3 }, { op: "tap", id: "t1", face: "+Z", at: { grid: { origin: [10, 10], nx: 2, ny: 2, dx: 100, dy: 60 } }, thread: "M4", depth: 6 },

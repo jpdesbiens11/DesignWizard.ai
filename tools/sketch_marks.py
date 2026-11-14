@@ -135,7 +135,7 @@ ART = {
                 (("line", 12, 15.2, 12, 7.8), "s"), (("poly", [(9.3, 10.4), (12, 7.5), (14.7, 10.4)], False), "s"),
                 (("poly", rhombus(12, 18, 3.7, 1.6), True), "f:yellow"), (("line", 12, 19.6, 12, 22.4), "s"),
                 (("poly", [(8.3, 18), (8.3, 20.8), (12, 22.4), (15.7, 20.8), (15.7, 18)], False), "s")],
-    # B3 « Atelier »: a part clamped in the vice of a workbench, a cutter above it, a square on the bench
+    # B3 « Atelier »: a part clamped in the vice of a shop bench, a cutter above it, a square on the bench
     "atelier": [(("rect", 1, 14.5, 22, 2.6), "f:yellow"), (("line", 3.5, 17.1, 3.5, 22.2), "s"), (("line", 20.5, 17.1, 20.5, 22.2), "s"),
                 (("line", 3.5, 20, 20.5, 20), "t"), (("rect", 8.8, 7.2, 3.7, 5.4), "f:blue"), (("ellipse", 10.65, 9.4, 0.9, 0.9), "t"),
                 (("rect", 12.5, 8.6, 2.6, 5.9), "s"), (("rect", 6.2, 8.6, 2.6, 5.9), "s"), (("line", 2, 11.5, 6.2, 11.5), "s"),

@@ -1,6 +1,6 @@
-/* DesignWizard.ai — Atelier: a part is born from its design intent, the way a craftsman works. No sketch, no plane:
+/* DesignWizard.ai — the Shop (« Atelier » in French): a part is born from its design intent, the way a craftsman works. No sketch, no plane:
    the user says what the part is for, what it connects to (interfaces, by their shape), what it is made of and which
-   raw stock is taken from the rack. The workshop companion writes the part at once — smallest envelope carrying the
+   raw stock is taken from the rack. The shop companion writes the part at once — smallest envelope carrying the
    interfaces, commercial thickness, routing sheet — and shows it live. The same intent can be handed to Claude. */
 
 import { el, clear, icon, btn, badge, field, toast, copyText, fmt, fmtMass, debounce } from "../core/dom.js";
@@ -9,13 +9,13 @@ import { store } from "../core/store.js";
 import { kernel } from "../cad/client.js";
 import { Viewer } from "../core/viewer.js";
 import { showBuilt } from "../core/viewport.js";
-import { synthesize, recommend, ATELIER_FORMS, WHERE } from "../core/atelier.js";
-import { routing } from "../cad/workshop.js";
+import { synthesize, recommend, SHOP_FORMS, WHERE } from "../core/shop_intent.js";
+import { routing } from "../cad/shop.js";
 import { STOCK_FORMS } from "../cad/stock.js";
 import { INTERFACE_TYPES, interfaceSignature } from "../cad/interfaces.js";
 import { THREADS } from "../cad/standards.js";
 import { MATERIALS, PROCESSES, material } from "../cad/materials.js";
-import { anticipatedInterfaces, atelierPrompt } from "../core/prompts.js";
+import { anticipatedInterfaces, shopPrompt } from "../core/prompts.js";
 import { importPart } from "../core/importer.js";
 
 const blank = () => ({ name: "", fn: "", loads: "", environment: "", quantity: 10, priority: "", material: "AL6061-T6", form: "", neighbours: [], interfaces: [], addToAsm: true });
@@ -41,7 +41,7 @@ function render(main) {
   let viewer = null, token = 0, current = null;
   page.append(el("div", { class: "page-head" }, el("div", { class: "grow" }, el("h1", null, "Atelier"),
     el("p", { class: "muted" }, "Pas d'esquisse, pas de plan : dites à quoi sert la pièce, à quoi elle se raccorde, dans quoi elle est faite. Le compagnon d'atelier prend la matière première du commerce et écrit la pièce — vous la voyez naître à droite.")),
-    el("div", { class: "subtabs" }, el("a", { class: "subtab active", href: "#/atelier" }, "Intention d'abord"), el("a", { class: "subtab", href: "#/interfaces" }, "Entrevue avec Claude"), el("a", { class: "subtab", href: "#/interfaces/registre" }, "Registre des interfaces"))));
+    el("div", { class: "subtabs" }, el("a", { class: "subtab active", href: "#/shop" }, "Intention d'abord"), el("a", { class: "subtab", href: "#/interfaces" }, "Entrevue avec Claude"), el("a", { class: "subtab", href: "#/interfaces/registre" }, "Registre des interfaces"))));
   const left = el("div", { class: "atelier-brief" }), right = el("div", { class: "atelier-side" });
   page.append(el("div", { class: "atelier-grid" }, left, right));
   const propose = debounce(() => build(), 220);
@@ -80,7 +80,7 @@ function render(main) {
   const asmBox = el("input", { type: "checkbox", checked: brief.addToAsm, onChange: (e) => { brief.addToAsm = e.target.checked; } });
   right.append(el("section", { class: "card taped" }, el("h2", null, el("span", { class: "step-no" }, "4"), "La pièce proposée"), holder, chips, out,
     el("div", { class: "form-actions" }, p.assemblies.length ? el("label", { class: "check", style: { marginRight: "auto" } }, asmBox, `Ajouter à ${p.assemblies[0].id} et mater`) : null,
-      btn("Affiner avec Claude", async () => { if (!current) return; toast((await copyText(atelierPrompt(p, brief, current.spec))) ? "Prompt copié : collez-le dans Claude, puis collez sa réponse dans « Entrevue avec Claude »." : "Copie impossible.", "success", 6000); }, { icon: "wizard", tip: "Copie un prompt qui contient l'intention et cette proposition : Claude l'améliore sans toucher aux interfaces" }),
+      btn("Affiner avec Claude", async () => { if (!current) return; toast((await copyText(shopPrompt(p, brief, current.spec))) ? "Prompt copié : collez-le dans Claude, puis collez sa réponse dans « Entrevue avec Claude »." : "Copie impossible.", "success", 6000); }, { icon: "wizard", tip: "Copie un prompt qui contient l'intention et cette proposition : Claude l'améliore sans toucher aux interfaces" }),
       create)));
 
   function syncNeighbours() {
@@ -133,7 +133,7 @@ function render(main) {
   function drawStock() {
     clear(stockGrid);
     const rec = recommend(brief), mat = material(brief.material), plastic = mat && mat.cls !== "metal";
-    for (const [form, proc] of Object.entries(ATELIER_FORMS)) {
+    for (const [form, proc] of Object.entries(SHOP_FORMS)) {
       const f = STOCK_FORMS[form], on = (brief.form || rec.form) === form, odd = form === "print" ? !plastic : (plastic && ["sheet", "angle"].includes(form));
       stockGrid.append(el("button", { class: "stock-card" + (on ? " on" : "") + (odd ? " odd" : ""), type: "button", "aria-pressed": on ? "true" : "false", "data-tip": f.hint, onClick: () => { brief.form = form === rec.form ? "" : form; drawStock(); propose(); } },
         icon(f.icon), el("b", null, f.fr), el("small", null, PROCESSES[proc].fr), form === rec.form ? badge("Conseillé", "ok") : null));
@@ -146,7 +146,7 @@ function render(main) {
     let res;
     try { res = synthesize(brief, store.nextPartId()); } catch (e) { clear(out); out.append(el("p", { class: "form-error" }, e.message)); create.disabled = true; return; }
     try {
-      const built = await kernel.build(res.spec, null, "~atelier");
+      const built = await kernel.build(res.spec, null, "~shop");
       if (mine !== token) return;
       current = { ...res, built };
       if (!viewer) viewer = new Viewer(holder, {});
@@ -184,7 +184,7 @@ function render(main) {
   }
 
   syncNeighbours(); drawIfaces(); drawStock(); build();
-  return () => { token++; if (viewer) viewer.dispose(); kernel.forget("~atelier").catch(() => {}); };
+  return () => { token++; if (viewer) viewer.dispose(); kernel.forget("~shop").catch(() => {}); };
 }
 
-registerModule({ key: "atelier", label: "Atelier", icon: "atelier", tip: "La pièce naît de son intention : interfaces, matière, matière première du commerce — sans esquisse", render });
+registerModule({ key: "shop", label: "Atelier", icon: "atelier", tip: "La pièce naît de son intention : interfaces, matière, matière première du commerce — sans esquisse", render });

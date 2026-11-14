@@ -46,7 +46,7 @@ html[data-module="drawings"] { --acc: var(--hl-pink); } html[data-module="report
 html[data-module="onshape"] { --acc: var(--hl-blue); } html[data-module="help"] { --acc: var(--hl-yellow); }
 /* bricks B0–B9 (docs/BRAND.md): intention, matière & procédé, atelier, artéfacts, physique, échange ouvert */
 html:is([data-module="intent"], [data-module="intention"]) { --acc: var(--hl-yellow); } html:is([data-module="stock"], [data-module="matiere"]) { --acc: var(--hl-teal); }
-html[data-module="atelier"] { --acc: var(--hl-blue); } html[data-module="artefacts"] { --acc: var(--hl-cyan); }
+html[data-module="shop"], html[data-module="atelier"] { --acc: var(--hl-violet); } html[data-module="artefacts"] { --acc: var(--hl-cyan); }
 html:is([data-module="physics"], [data-module="physique"]) { --acc: var(--hl-green); } html:is([data-module="exchange"], [data-module="echange"]) { --acc: var(--hl-blue); }
 
 * { box-sizing: border-box; }
