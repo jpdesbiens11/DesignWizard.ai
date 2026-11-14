@@ -11,7 +11,7 @@ import { dwizFileName } from "./dwiz_names.js";
 
 export const APP_VERSION = "0.2.0";
 const modules = new Map();
-const ORDER = ["home", "shop", "parts", "extrusion", "pcb", "assembly", "physics", "creepage", "dfx", "drawings", "report"];
+const ORDER = ["home", "shop", "parts", "extrusion", "pcb", "pcba", "assembly", "physics", "creepage", "dfx", "drawings", "report"];
 const GROUP_BREAK = new Set(["shop", "assembly", "physics", "report"]);         // a pencil tick before these tabs
 export const app = { modules, context: {}, version: APP_VERSION, current: null, cleanup: null, commands: [] };
 

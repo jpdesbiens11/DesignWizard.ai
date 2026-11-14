@@ -20,7 +20,7 @@ const crit = (c) => (c || []).map((x) => `${x.name} : ${x.level}${x.flex ? ` (${
 export function reviewVerdict(d) {
   const tree = d.tree || [], erc = d.erc || { summary: { error: 0, warn: 0 }, findings: [] }, drc = d.drc || { summary: { error: 0, warn: 0 }, findings: [], stats: { open: null } }, b = d.board.board || {}, items = [], blockers = [], cautions = [];
   const ok = (text, good, why, hard = true) => { items.push({ text, state: good ? "ok" : "open" }); if (!good) (hard ? blockers : cautions).push(why || text); };
-  const orphan = tree.filter((r) => r.leaf && !r.block), noValue = (d.bom || []).filter((l) => !l.value && ["resistor", "capacitor", "inductor"].includes(l.kind));
+  const orphan = tree.filter((r) => r.leaf && !r.block && r.kind !== "contrainte"), noValue = (d.bom || []).filter((l) => !l.value && ["resistor", "capacitor", "inductor"].includes(l.kind));
   ok("Chaque fonction a une solution", tree.length > 0 && !orphan.length, orphan.length ? `Sans solution : ${orphan.map((r) => r.id).join(", ")}.` : "Aucune fonction décrite.");
   ok("Les critères des fonctions principales sont chiffrés", tree.filter((r) => r.kind === "principale").every((r) => r.criteria.length || r.block), "Des fonctions principales n'ont ni critère ni solution.", false);
   ok("Le contrôle électrique ne signale aucune erreur", !erc.summary.error, `${erc.summary.error} erreur(s) au contrôle électrique.`);
@@ -58,7 +58,7 @@ export function reviewDoc(d) {
   sec("Besoin et arbre fonctionnel");
   p("Chaque fonction est remplie par un bloc de circuit ; les critères disent à quoi on reconnaît qu'elle l'est. Flexibilité : F0 impératif, F1 peu négociable, F2 négociable, F3 libre.", "muted");
   out.push({ type: "table", head: ["Repère", "Fonction", "Type", "Critères", "Solution retenue"], widths: [8, 38, 11, 23, 20],
-    rows: (d.tree || []).map((r) => [{ text: r.id, bold: r.level === 1 }, { text: `${"   ".repeat(r.level - 1)}${r.name}`, bold: r.level === 1 }, r.kind, crit(r.criteria) || "—", r.block ? `${r.block} — ${r.templateName}` : r.leaf ? { text: "Sans solution", fill: "warn" } : "—"]) });
+    rows: (d.tree || []).map((r) => [{ text: r.id, bold: r.level === 1 }, { text: `${"   ".repeat(r.level - 1)}${r.name}`, bold: r.level === 1 }, r.kind, crit(r.criteria) || "—", r.block ? `${r.block} — ${r.templateName}` : r.kind === "contrainte" ? "Vérifiée en revue" : r.leaf ? { text: "Sans solution", fill: "warn" } : "—"]) });
 
   sec("Architecture");
   figure(fig.blocks);

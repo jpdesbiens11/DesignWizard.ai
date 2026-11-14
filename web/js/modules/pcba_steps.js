@@ -57,7 +57,7 @@ function fonctions(ctx, { left, view, right }) {
     tree.append(el("div", { class: `pcba-fn${r.id === ui.fn ? " sel" : ""}`, style: { marginLeft: `${(r.level - 1) * 1.4}rem` }, onClick: (e) => { if (e.target.closest("input,select,button")) return; ui.fn = r.id === ui.fn ? null : r.id; ctx.redraw(); } },
       el("span", { class: "fn-id" }, r.id), txt(f.name, (v) => ctx.update((b) => { const x = b.functions.find((q) => q.id === r.id); x.name = v || x.name; delete x.auto; }, `${r.id} renommée`)),
       sel(f.kind || "technique", [["principale", "principale"], ["contrainte", "contrainte"], ["technique", "technique"]], (v) => ctx.update((b) => { b.functions.find((q) => q.id === r.id).kind = v; }, `${r.id} : type`)),
-      r.block ? badge(`${r.block} · ${r.parts.length} comp.`, "ok") : r.leaf ? badge("sans solution", "warn") : badge("regroupe", "neutral"),
+      r.block ? badge(`${r.block} · ${r.parts.length} comp.`, "ok") : f.kind === "contrainte" ? badge("à vérifier en revue", "neutral") : r.leaf ? badge("sans solution", "warn") : badge("regroupe", "neutral"),
       el("button", { class: "icon-btn", type: "button", "aria-label": "Retirer", "data-tip": "Retirer la fonction, ses sous-fonctions et leurs blocs", onClick: () => ctx.update((b) => { const gone = [r.id, ...rows.filter((q) => q.id.startsWith(`${r.id}.`)).map((q) => q.id)]; for (const g of gone) { const fn = b.functions.find((q) => q.id === g); if (fn && fn.block) removeBlock(b, fn.block); } removeFunction(b, r.id); if (ui.fn && gone.includes(ui.fn)) ui.fn = null; }, `${r.id} retirée`) }, icon("trash"))));
   }
   const side = scroll(right);
@@ -83,16 +83,17 @@ function fonctions(ctx, { left, view, right }) {
 
 /* ---------- 2. architecture ---------- */
 function blockDiagram(ctx) {
-  const { board } = ctx, cols = BLOCK_CATEGORIES.map((c) => board.blocks.filter((b) => BLOCKS[b.template] && BLOCKS[b.template].category === c)).filter((l) => l.length), bw = 150, bh = 46, gx = 60, gy = 22;
-  const W = Math.max(1, cols.length) * (bw + gx), H = Math.max(1, ...cols.map((l) => l.length)) * (bh + gy) + 20, g = svg("svg", { class: "pcba-blocks", viewBox: `0 0 ${W} ${H}`, style: { minWidth: `${W * 0.9}px` } }), pos = new Map(), owner = new Map(board.parts.map((p) => [p.ref, p.block]));
-  cols.forEach((l, i) => l.forEach((b, j) => pos.set(b.id, [i * (bw + gx) + gx / 2, j * (bh + gy) + 14])));
+  // one lane per kind of function, from what connects the board to what tests it ; a line per net shared by two blocks
+  const { board } = ctx, lanes = BLOCK_CATEGORIES.map((c) => [c, board.blocks.filter((b) => BLOCKS[b.template] && BLOCKS[b.template].category === c)]).filter(([, l]) => l.length), bw = 168, bh = 44, gx = 26, gy = 30, x0 = 104;
+  const W = x0 + Math.max(1, ...lanes.map(([, l]) => l.length)) * (bw + gx), H = lanes.length * (bh + gy) + 8, g = svg("svg", { class: "pcba-blocks", viewBox: `0 0 ${W} ${H}`, width: W, height: H }), pos = new Map(), owner = new Map(board.parts.map((p) => [p.ref, p.block]));
+  lanes.forEach(([c, l], i) => { g.append(svg("text", { x: 4, y: i * (bh + gy) + 14 + bh / 2 + 4, class: "pb-lane" }, c)); l.forEach((b, j) => pos.set(b.id, [x0 + j * (bw + gx), i * (bh + gy) + 14])); });
   for (const n of board.nets) {
     if (n.class === "ground") continue;
-    const bs = [...new Set(n.pins.map((p) => owner.get(p.slice(0, p.indexOf(".")))).filter((x) => pos.has(x)))].sort((a, c) => pos.get(a)[0] - pos.get(c)[0] || pos.get(a)[1] - pos.get(c)[1]);
-    for (let i = 1; i < bs.length; i++) { const a = pos.get(bs[i - 1]), c = pos.get(bs[i]), x1 = a[0] + bw, y1 = a[1] + bh / 2, x2 = c[0], y2 = c[1] + bh / 2, same = Math.abs(a[0] - c[0]) < 1;
-      g.append(svg("path", { class: `pb-net ${n.class}${ctx.ui.net === n.name ? " on" : ""}`, d: same ? `M${a[0] + bw},${y1} C${a[0] + bw + 26},${y1} ${a[0] + bw + 26},${y2} ${c[0] + bw},${y2}` : `M${x1},${y1} C${x1 + gx / 2},${y1} ${x2 - gx / 2},${y2} ${x2},${y2}` }, svg("title", null, `${n.name}${n.voltage ? ` — ${fmt(n.voltage)} V` : ""}${n.current ? `, ${fmt(n.current)} A` : ""}`))); }
+    const bs = [...new Set(n.pins.map((p) => owner.get(p.slice(0, p.indexOf(".")))).filter((x) => pos.has(x)))].sort((a, c) => pos.get(a)[1] - pos.get(c)[1] || pos.get(a)[0] - pos.get(c)[0]);
+    for (let i = 1; i < bs.length; i++) { const a = pos.get(bs[i - 1]), c = pos.get(bs[i]), same = Math.abs(a[1] - c[1]) < 1, x1 = a[0] + bw / 2, x2 = c[0] + bw / 2;
+      g.append(svg("path", { class: `pb-net ${n.class}${ctx.ui.net === n.name ? " on" : ""}`, d: same ? `M${a[0] + bw},${a[1] + bh / 2} C${a[0] + bw + gx / 2},${a[1] + bh / 2 - 12} ${c[0] - gx / 2},${c[1] + bh / 2 - 12} ${c[0]},${c[1] + bh / 2}` : `M${x1},${a[1] + bh} C${x1},${a[1] + bh + gy * 0.8} ${x2},${c[1] - gy * 0.8} ${x2},${c[1]}` }, svg("title", null, `${n.name}${n.voltage ? ` — ${fmt(n.voltage)} V` : ""}${n.current ? `, ${fmt(n.current)} A` : ""}`))); }
   }
-  for (const b of board.blocks) { const p = pos.get(b.id); if (!p) continue; const f = board.functions.find((x) => x.id === b.function), node = svg("g", { class: "pb-block", onclick: "" }, svg("rect", { x: p[0], y: p[1], width: bw, height: bh, rx: 7 }), svg("text", { x: p[0] + 8, y: p[1] + 18, class: "pb-name" }, `${b.id} ${b.name}`.slice(0, 26)), svg("text", { x: p[0] + 8, y: p[1] + 34, class: "pb-fn" }, (f ? f.name : "").slice(0, 34)));
+  for (const b of board.blocks) { const p = pos.get(b.id); if (!p) continue; const f = board.functions.find((x) => x.id === b.function), node = svg("g", { class: "pb-block" }, svg("rect", { x: p[0], y: p[1], width: bw, height: bh, rx: 7 }), svg("text", { x: p[0] + 8, y: p[1] + 18, class: "pb-name" }, `${b.id} ${b.name}`.slice(0, 24)), svg("text", { x: p[0] + 8, y: p[1] + 33, class: "pb-fn" }, (f ? f.name : "").slice(0, 31)));
     node.addEventListener("click", () => { ctx.ui.fn = b.function; ctx.nav("fonctions"); }); g.append(node); }
   return g;
 }
@@ -144,7 +145,7 @@ function layout(ctx, { left, view, right }) {
   const l = scroll(left, el("div", { class: "side-head" }, el("h2", null, "Layout détaillé")));
   l.append(el("div", { class: "form-actions", style: { justifyContent: "flex-start", flexWrap: "wrap" } },
     btn("Placer", () => runJob(ctx, "place", "Placement des composants", { keep: false }, (i) => { toast(i.failed.length ? `${i.failed.length} composant(s) sans place.` : `${i.placed} composants placés.`, i.failed.length ? "warn" : "success"); }), { primary: unplaced > 0, icon: "sparkle", tip: "Place les composants non verrouillés dans la zone de leur bloc" }),
-    btn("Router", () => runJob(ctx, "route", "Routage", { maxMs: 40000 }, (i) => toast(i.complete ? `Routage complet : ${Math.round(i.length)} mm, ${i.vias} vias, ${fmt(i.ms / 1000, 1)} s.` : `${i.routed} liaisons sur ${i.total} : ${i.open} à reprendre.`, i.complete ? "success" : "warn", 7000)), { primary: !unplaced && conn.open > 0, icon: "play", disabled: unplaced > 0, tip: "Route toutes les liaisons ouvertes ; le cuivre verrouillé est conservé" }),
+    btn("Router", () => runJob(ctx, "route", "Routage", { maxMs: 60000, passes: 4 }, (i) => toast(i.complete ? `Routage complet : ${Math.round(i.length)} mm, ${i.vias} vias, ${fmt(i.ms / 1000, 1)} s.` : `${i.routed} liaisons sur ${i.total} : ${i.open} à reprendre.`, i.complete ? "success" : "warn", 7000)), { primary: !unplaced && conn.open > 0, icon: "play", disabled: unplaced > 0, tip: "Route toutes les liaisons ouvertes ; le cuivre verrouillé est conservé" }),
     btn("Effacer", () => ctx.update((x) => clearRoutes(x), "Routage effacé"), { small: true, icon: "trash", tip: "Retire le cuivre posé par le routeur" })));
   l.append(el("div", { class: "kpis" }, el("div", { class: "kpi" }, el("b", null, String(conn.open)), el("span", null, "liaisons à router")), el("div", { class: "kpi" }, el("b", null, `${Math.round(stats.length)} mm`), el("span", null, `${stats.tracks} pistes`)), el("div", { class: "kpi" }, el("b", null, String(stats.vias)), el("span", null, "vias"))));
   const v = boardView(view);

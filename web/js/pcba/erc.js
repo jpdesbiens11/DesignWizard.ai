@@ -29,7 +29,7 @@ export function erc(board, lib = LIBRARY) {
   const add = (rule, severity, message, refs = [], nets = []) => findings.push({ rule, severity, title: TITLE[rule], message, refs, nets });
   for (const p of R.problems) add("ERC-11", "error", p);
   const fs = board.functions || [];
-  for (const f of fs) if (!f.block && !fs.some((c) => c.parent === f.id)) add("ERC-01", "warn", `${f.id} « ${f.name} » n'a pas de bloc qui la remplit.`);
+  for (const f of fs) if (!f.block && f.kind !== "contrainte" && !fs.some((c) => c.parent === f.id)) add("ERC-01", "warn", `${f.id} « ${f.name} » n'a pas de bloc qui la remplit.`);
   for (const b of board.blocks || []) if (!b.function || !fs.some((f) => f.id === b.function)) add("ERC-02", "info", `Le bloc ${b.id} « ${b.name} » n'est rattaché à aucune fonction.`);
 
   const src = new Map((board.parts || []).map((p) => [p.ref, p]));

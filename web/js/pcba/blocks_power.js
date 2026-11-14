@@ -71,7 +71,7 @@ const buck = { id: "buck", name: "Régulateur abaisseur", category: "Alimenter",
 const ldo = { id: "ldo", name: "Régulateur linéaire", category: "Alimenter", function: "Réguler {vin} V vers {vout} V, {iout} A, sans bruit de découpage", desc: "Régulateur à faible chute et ses deux condensateurs.",
   params: { vin: P("Tension d'entrée", "V", 5, 1.8, 15), vout: P("Tension de sortie", "V", 3.3, 0.8, 12), iout: P("Courant de sortie", "A", 0.2, 0.01, 1) },
   build(p) {
-    const b = builder(), small = p.iout <= 0.3 && p.vin <= 6, loss = (p.vin - p.vout) * p.iout, theta = small ? 200 : 60, rise = loss * theta;
+    const b = builder(), loss = (p.vin - p.vout) * p.iout, small = p.iout <= 0.3 && p.vin <= 6 && loss * 200 <= 60, theta = small ? 200 : 60, rise = loss * theta;      // the small package only while it stays cool
     b.part("U", small ? "U-LDO-SOT23-5" : "U-LDO-SOT223", `${fr(p.vout)} V`, "Régule la tension", small ? { nc: ["NC"] } : {});
     b.part("CIN", "C-0603", "1 µF 16 V", "Stabilise l'entrée", { near: "U" }).part("COUT", "C-0805", small ? "2,2 µF 16 V" : "10 µF 16 V", "Stabilise la sortie", { near: "U" });
     b.net("VIN", ["U.VIN", "CIN.1", ...(small ? ["U.EN"] : [])], pw(p.vin, p.iout)).net("VOUT", ["U.VOUT", "COUT.1"], pw(p.vout, p.iout)).net("GND", ["U.GND", "CIN.2", "COUT.2"], GND);

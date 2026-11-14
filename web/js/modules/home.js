@@ -4,11 +4,13 @@ import { el, icon, btn, toast, promptBox, confirmBox, fmt } from "../core/dom.js
 import { registerModule, go, app, refresh } from "../core/app.js";
 import { store } from "../core/store.js";
 import { DEMO_DRIVE } from "../demo/demo_drive.js";
+import { demoBoard } from "../demo/demo_pcba.js";
 import { DEMO_HVB_PARTS, DEMO_HVB_ASSEMBLY } from "../demo/demo_hvb.js";
 
 const STEPS = [
   ["shop", "Atelier", "Dites l'intention : à quoi sert la pièce, ses interfaces, sa matière, sa matière première. Elle se construit sous vos yeux, sans esquisse — ou par une entrevue avec Claude."],
   ["parts", "Pièces", "Ajustez la pièce avec ses curseurs, la baguette (Ctrl+K) ou l'arbre de construction. Le DFM se vérifie en direct ; l'onglet Artéfacts prépare le dossier de commande."],
+  ["pcba", "PCBA", "Une carte électronique à partir de ses fonctions : blocs de circuit, layout conceptuel puis détaillé, règles, Gerber, rapport de revue."],
   ["assembly", "Assemblage", "Ajoutez les pièces : les interfaces identiques se matent seules et restent liées. Changez un côté, l'autre suit."],
   ["physics", "Physique", "Une poutre, une vis, un tube, une ailette : des modèles simples disent si la physique fonctionne. La simulation par éléments finis simplifiés confirme, sur la vraie géométrie."],
   ["creepage", "Isolation", "Creepage et clearance mesurés sur l'assemblage complet, comparés à IEC 60664-1."],
@@ -32,7 +34,7 @@ const BRICKS = [
 ];
 
 async function loadDemo(seed, target) {
-  const p = await store.create(seed.name, seed);
+  const p = await store.create(seed.name, seed === DEMO_DRIVE ? { ...seed, boards: [demoBoard()] } : seed);       // the drive comes with its control board, designed from its functions
   toast(`Projet « ${p.name} » chargé.`, "success");
   go(target);
 }

@@ -75,7 +75,7 @@ export function boardView(host) {
     if (s.zones) for (const b of s.board.blocks || []) {
       if (!Array.isArray(b.zone)) continue;
       const z = b.zone, g = svg("g", { class: "pv-zone" }), r = svg("rect", { x: z[0], y: z[1], width: z[2], height: z[3], "data-drag": s.mode === "zones" ? "zone" : null, "data-id": b.id, "data-w": z[2], "data-h": z[3], "data-y": z[1] });
-      g.append(r, svg("text", { x: z[0] + 0.8, y: -(z[1] + z[3] - 2.4), transform: "scale(1,-1)", class: "pv-zone-name" }, `${b.id} ${b.name}`));
+      g.append(r, svg("text", { x: z[0] + 0.8, y: -(z[1] + z[3] - 2.4), transform: "scale(1,-1)", class: "pv-zone-name" }, `${b.id} ${b.name}`.slice(0, Math.max(3, Math.floor(z[2] / 1.2)))));
       if (s.mode === "zones") g.append(svg("rect", { class: "pv-grip", x: z[0] + z[2] - 1.6, y: z[1], width: 1.6, height: 1.6, "data-drag": "zone", "data-id": b.id, "data-grip": "1" }));
       world.append(g);
     }
