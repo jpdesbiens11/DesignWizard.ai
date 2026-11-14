@@ -36,7 +36,7 @@ app.onImported = (r) => {
 };
 app.pickFile = () => pickFile(app.onImported);
 app.connect = connect; app.saveToDrive = saveToDrive; app.openFromDrive = openFromDrive;
-app.aiLoop = (key) => import("./modules/ai_loop.js").then((m) => (key ? m.openAiLoopFor(key) : m.openCurrentAiLoop()));     // from any screen : the artefact it shows goes to an AI and comes back
+app.aiLoop = (key, more) => import("./modules/ai_loop.js").then((m) => (key ? m.openAiLoopFor(key, more) : m.openCurrentAiLoop()));     // from any screen : the artefact it shows goes to an AI and comes back
 installImport(app.onImported);
 // On this machine the application opens at once. Hosted: approved Google accounts only, and their own Google Drive is the store.
 gate().then((who) => { if (who && !who.local && session.fs) store.useDrive(session.fs); return start(); });

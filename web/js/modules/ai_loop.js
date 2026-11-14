@@ -81,9 +81,10 @@ export function openAiLoop(opts) {
   answer.addEventListener("input", read);
   const pick = opts.targets && opts.targets.length > 1 ? el("label", { class: "field" }, el("span", { class: "field-label" }, "Artéfact"), el("select", { onChange: async (e) => { const t = opts.targets.find((x) => x.key === e.target.value); if (!t) return; const text = ask.value; m.close(); const again = await openAiLoopFor(t.key); if (again && text) again.ask.value = text; } }, opts.targets.map((t) => el("option", { value: t.key, selected: t.key === opts.target }, t.label)))) : null;
   m = modal(opts.title || "Confier à l'IA", el("div", { class: "ai-loop" },
+    opts.context ? el("p", { class: "atelier-hint" }, "La gamme calculée part avec l'artéfact, pour référence : l'IA peut l'annoter (notes par phase, points à discuter) ou modifier ce qui la produit.") : null,
     el("p", { class: "muted small" }, "L'artéfact part en texte lisible (.dwiz) avec votre demande ; rien ne quitte votre poste sans votre geste. Au retour, vous voyez chaque changement avant de l'accepter — une seule étape, annulable."),
     pick, el("h3", null, "1. Votre demande"), ask,
-    el("div", { class: "form-actions", style: { justifyContent: "flex-start" } }, btn("Copier la demande et l'artéfact", async () => { await copyText(aiBrief(opts.doc, ask.value, opts.help || [])); toast("Copié : collez-le dans votre assistant IA.", "success"); }, { primary: true, icon: "copy" }),
+    el("div", { class: "form-actions", style: { justifyContent: "flex-start" } }, btn("Copier la demande et l'artéfact", async () => { await copyText(aiBrief(opts.doc, ask.value, opts.help || [], opts.context)); toast("Copié : collez-le dans votre assistant IA.", "success"); }, { primary: true, icon: "copy" }),
       btn("Télécharger l'artéfact (.dwiz)", () => download(dwizFileName(opts.doc), toDwiz(opts.doc), "text/plain"), { icon: "download" })),
     el("h3", null, "2. La réponse"), answer, out,
     el("div", { class: "form-actions" }, go)), { wide: true });
@@ -91,11 +92,12 @@ export function openAiLoop(opts) {
   return { ...m, ask, answer };
 }
 
-/** The round trip on one artefact of the project, with the list of the others to switch to. */
-export async function openAiLoopFor(key) {
+/** The round trip on one artefact of the project, with the list of the others to switch to.
+    more : { help: [lines], context: text } — what the calling screen adds (a routing sheet given for reference…). */
+export async function openAiLoopFor(key, more = {}) {
   if (!store.project) { toast("Ouvrez d'abord un projet.", "info"); return null; }
-  const targets = aiTargets(), t = targets.find((x) => x.key === key) || targets[targets.length - 1];
-  return openAiLoop({ ...(await t.open()), targets, target: t.key });
+  const targets = aiTargets(), t = targets.find((x) => x.key === key) || targets[targets.length - 1], o = await t.open();
+  return openAiLoop({ ...o, help: [...(o.help || []), ...(more.help || [])], context: more.context || "", targets, target: t.key });
 }
 /** The round trip for whatever the current screen shows : a board, a part, an assembly — otherwise the whole project. */
 export const openCurrentAiLoop = () => openAiLoopFor(currentAiTarget());

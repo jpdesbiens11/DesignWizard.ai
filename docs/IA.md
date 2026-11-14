@@ -40,6 +40,12 @@ elle rend l'artéfact modifié ; l'outil montre ce qui a changé ; l'humain déc
 Le projet entier porte aussi ses analyses (modèles de physique gardés, simulations) et ses réglages de dessin : ils font
 l'aller-retour avec lui.
 
+### Les gammes
+
+Le bouton « IA » d'une gamme (pièce, assemblage, carte) ouvre le même dialogue et joint la gamme calculée **pour
+référence**, avec les clés de ses phases : l'IA peut l'annoter (`plan` → `notes`, `point`), changer l'ordre de montage
+(`plan order=[…]`) ou modifier ce qui produit la gamme. Voir [GAMMES.md](GAMMES.md).
+
 ## Pourquoi cela marche
 
 Le format `.dwiz` a été conçu pour cela : une instruction par ligne, des mots du métier, la plus importante d'abord,

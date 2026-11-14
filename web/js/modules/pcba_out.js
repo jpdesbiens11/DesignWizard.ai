@@ -14,8 +14,8 @@ import { PCBA_BOOK, fixHints } from "../pcba/drc_rules.js";
 import { fabPackage, fabZip, stackup } from "../pcba/fabfiles.js";
 import { reviewData } from "../pcba/review_data.js";
 import { reviewDoc, reviewVerdict, REVIEW_KINDS } from "../pcba/review.js";
-import { docx } from "../pcba/docx.js";
-import { pdfDoc } from "../pcba/pdfdoc.js";
+import { docx } from "../core/docx.js";
+import { pdfDoc } from "../core/pdfdoc.js";
 import { twinPart } from "../pcba/twin.js";
 import { NET_CONVENTION } from "../pcba/netnames.js";
 import { toDwiz } from "../core/dwiz.js";
@@ -23,6 +23,8 @@ import { dwizFileName } from "../core/dwiz_names.js";
 import { boardView, layerList, LAYER_STYLE, DRAW_ORDER } from "./pcba_view.js";
 import { ui$ } from "./pcba_steps.js";
 import { openAiLoopFor } from "./ai_loop.js";
+import { boardAssemblyPlan } from "../pcba/assembly_plan.js";
+import { planPanel, setPlanNote, setPlanPoints } from "./plan_view.js";
 
 const { txt, sel, section, scroll, hint } = ui$;
 const pane = (view, title, sub, ...kids) => { const p = el("div", { class: "pcba-pane" }, el("div", { class: "pcba-pane-head" }, el("h2", null, title), sub ? el("span", { class: "muted small" }, sub) : null), el("div", { class: "pcba-scroll" }, ...kids)); view.append(p); return p; };
@@ -75,8 +77,13 @@ function fabrication(ctx, { left, view, right }) {
   const show = () => v.show({ R, art: pk.art, board, layers: on });
   show();
   l.append(section("Aperçu des couches", layerList(pk.art, on, show)));
-  const r = scroll(right, el("div", { class: "side-head" }, el("h2", null, "Notes de fabrication")));
-  r.append(el("pre", { class: "pcba-notes" }, pk.files.find((f) => f.key === "notes").text));
+  /* right : the assembly routing to talk with the assembler, or the fabrication notes */
+  const tab = ui.fabTab === "notes" ? "notes" : "gamme", r = scroll(right, el("div", { class: "side-head" }, el("h2", null, tab === "notes" ? "Notes de fabrication" : "Gamme d'assemblage")),
+    el("div", { class: "subtabs" }, [["gamme", "Gamme"], ["notes", "Notes"]].map(([k, t]) => el("button", { class: `subtab${tab === k ? " active" : ""}`, type: "button", onClick: () => { ui.fabTab = k; ctx.redraw(); } }, t))));
+  if (tab === "notes") r.append(el("pre", { class: "pcba-notes" }, pk.files.find((f) => f.key === "notes").text));
+  else planPanel(r, boardAssemblyPlan(board, ctx.lib), { aiKey: `board:${board.id}`,
+    onNote: (key, text) => ctx.update((b) => setPlanNote(b, key, text), `${board.id} : note de gamme`), onPoints: (list) => ctx.update((b) => setPlanPoints(b, list), `${board.id} : points à discuter`),
+    figures: async () => { const sides = pk.stats.sides.length ? pk.stats.sides : ["top"], out = []; for (const sd of sides) out.push(await pngOf(figureOf(ctx, ["outline", `fab_${sd}`, `silk_${sd}`], `Plan d'équipement, ${sd === "top" ? "dessus" : "dessous"}`))); return out; } });
   return () => v.destroy();
 }
 

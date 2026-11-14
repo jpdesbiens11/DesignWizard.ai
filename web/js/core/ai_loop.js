@@ -6,14 +6,16 @@
 import { toDwiz, fromDwiz, findDwiz } from "./dwiz.js";
 import { KINDS, kindOfDoc } from "./dwiz_names.js";
 
-/** The text to give to the AI. help = extra lines about what may be used (library, block templates…). */
-export function aiBrief(doc, request, help = []) {
+/** The text to give to the AI. help = extra lines about what may be used (library, block templates…) ; context = what
+    the tool computes from the artefact, given for reference (a routing sheet…). */
+export function aiBrief(doc, request, help = [], context = "") {
   const kind = kindOfDoc(doc), K = KINDS[kind] || { fr: "Document" };
   return [`Tu assistes un bureau d'études. Voici un artéfact DesignWizard.ai — ${K.fr.toLowerCase()} « ${doc.id || ""} » — au format .dwiz : une instruction par ligne, les lignes en retrait précisent la ligne du dessus, « # » commente.`,
     "", `DEMANDE : ${String(request || "").trim() || "(décrire la modification, comme à un technicien)"}`, "",
     "RÈGLES :", "- Ne change que ce que la demande exige ; garde les numéros, les repères et les noms existants.", "- Garde le format .dwiz, la première ligne « dwiz … » comprise.",
     "- Réponds par l'artéfact COMPLET modifié, dans un seul bloc de code, puis par la liste courte de ce que tu as changé et de ce qui reste à vérifier par un humain.", ...help.map((h) => `- ${h}`),
-    "", "ARTÉFACT :", "```dwiz", toDwiz(doc).trimEnd(), "```", ""].join("\n");
+    "", "ARTÉFACT :", "```dwiz", toDwiz(doc).trimEnd(), "```", "",
+    ...(context ? ["POUR RÉFÉRENCE — calculé par l'outil à partir de l'artéfact, à ne pas renvoyer :", "```", String(context).trimEnd(), "```", ""] : [])].join("\n");
 }
 
 /** The artefact found in an answer (.dwiz in or out of a code block, or JSON). Throws a French message when there is none. */

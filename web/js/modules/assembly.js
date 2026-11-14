@@ -1,6 +1,6 @@
 /* DesignWizard.ai — Assemblage: add parts and they mate themselves through their interfaces. A linked mate is a
    dependency: change one side, the other part adapts. Exploded view, BOM with the implied hardware, interference
-   check, complementary-part generator, STEP of the assembly. */
+   check, complementary-part generator, STEP of the assembly, and the assembly routing step by step (asm_gamme.js). */
 
 import { el, clear, icon, btn, badge, toast, modal, fmt, fmtMass, download, promptBox, confirmBox, table } from "../core/dom.js";
 import { registerModule, go, setStatus, app } from "../core/app.js";
@@ -14,6 +14,7 @@ import { companionSpec } from "../core/companion.js";
 import { runDfa } from "../analysis/dfx_api.js";
 import { matPoint, matDir, bboxTransform } from "../cad/vec.js";
 import { INTERFACE_TYPES } from "../cad/interfaces.js";
+import { gammeTab, showWhole } from "./asm_gamme.js";
 
 function render(main, args) {
   const list = store.assemblies;
@@ -157,13 +158,14 @@ function render(main, args) {
   /* ---------- right ---------- */
   function renderRight() {
     clear(right);
-    const a = asm(), tabs = [["mates", "Mates"], ["inst", "Pièce"], ["bom", "BOM"], ["dfa", "DFA"]];
+    const a = asm(), tabs = [["mates", "Mates"], ["inst", "Pièce"], ["bom", "BOM"], ["dfa", "DFA"], ["gamme", "Gamme"]];
+    if (st.tab !== "gamme" && st.step) { st.step = null; showWhole(vp); }      // leaving the routing sheet : the whole product again
     const nErr = st.dfa && st.dfa.summary ? st.dfa.summary.errors : 0;
     right.append(el("div", { class: "side-head" }, el("h2", null, a.name || id)), el("div", { class: "subtabs", style: { margin: "0 .6rem" } }, tabs.map(([k, l]) => el("button", { class: "subtab" + (st.tab === k ? " active" : ""), type: "button", onClick: () => { st.tab = k; renderRight(); } }, l, k === "dfa" && nErr ? ` (${nErr})` : ""))));
     const body = el("div", { class: "side-scroll" });
     right.append(body);
     if (!st.ctx) { body.append(el("p", { class: "muted" }, "Construction…")); return; }
-    ({ mates: matesTab, inst: instTab, bom: bomTab, dfa: dfaTab })[st.tab](body, a);
+    ({ mates: matesTab, inst: instTab, bom: bomTab, dfa: dfaTab, gamme: (b, x) => gammeTab(b, x, { st, vp, id }) })[st.tab](body, a);
   }
   const instName = (a, iid) => { const i = a.instances.find((x) => x.id === iid), s = i && store.part(i.part); return s ? s.name || s.id : iid; };
   function matesTab(body, a) {

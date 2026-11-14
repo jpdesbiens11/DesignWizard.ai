@@ -36,8 +36,8 @@ export function partStudio(main, args, cfg) {
   }
 
   const vp = createViewport(view, { name: () => st.spec.id, onPick: onPick, onHover: onHover });
-  const info = el("span", { class: "chip" }, "—"), hover = el("span", { class: "chip hidden" }, "");
-  vp.setStatus(info, hover);
+  const info = el("span", { class: "chip" }, "—"), hover = el("span", { class: "chip hidden" }, ""), stage = el("span", { class: "chip stage hidden" }, "");
+  vp.setStatus(info, stage, hover);
   const bFrames = btn("", () => { st.showFrames = !st.showFrames; bFrames.classList.toggle("on", st.showFrames); overlays(); }, { small: true, icon: "interfaces", tip: "Afficher les repères des interfaces" });
   bFrames.classList.add("on");
   vp.group(bFrames, btn("Trou ici", () => place("hole"), { small: true, icon: "bolt", tip: "Cliquez ensuite une face plane : le trou est créé à cet endroit" }),
@@ -62,9 +62,8 @@ export function partStudio(main, args, cfg) {
       if (token !== st.token) return;
       st.built = built;
       setContext({ spec: st.spec, built });
-      const keep = new Set(showBuilt(vp.viewer, built, { prefix: "part" }));
-      for (const k of [...vp.viewer.objects.keys()]) if (!keep.has(k)) vp.viewer.remove(k);
-      if (first) vp.viewer.view("iso"); else vp.viewer.invalidate();
+      paint(built);
+      if (first) vp.viewer.view("iso");
       const errs = built.log.filter((l) => l.level === "error").length, warns = built.log.filter((l) => l.level === "warn").length, bb = built.bbox;
       info.textContent = `${fmtMass(built.mass)} · ${fmt(bb[3] - bb[0], 1)} × ${fmt(bb[4] - bb[1], 1)} × ${fmt(bb[5] - bb[2], 1)} mm · ${fmt(built.volume / 1000, 1)} cm³ · ${built.ms} ms`;
       info.className = "chip" + (errs ? " bad" : "");
@@ -81,6 +80,13 @@ export function partStudio(main, args, cfg) {
       info.textContent = e.message; info.className = "chip bad";
       setStatus(`${st.spec.id} : construction impossible`, "bad");
     }
+  }
+  /** Shows a build in the view : the part itself, or the part as it stands after a phase of its routing (label says which). */
+  function paint(built, label) {
+    const keep = new Set(showBuilt(vp.viewer, built, { prefix: "part" }));
+    for (const k of [...vp.viewer.objects.keys()]) if (!keep.has(k)) vp.viewer.remove(k);
+    stage.textContent = label || ""; stage.classList.toggle("hidden", !label);
+    vp.viewer.invalidate();
   }
   function live(ov) { clearTimeout(st.liveTimer); st.liveTimer = setTimeout(() => rebuild(false, ov), 90); }      // slider drag: rebuild without committing
 
@@ -198,7 +204,8 @@ export function partStudio(main, args, cfg) {
       el("div", { class: "subtabs", style: { margin: "0 .6rem" } }, tabs.map(([k, label]) => el("button", { class: "subtab" + (st.tab === k ? " active" : ""), type: "button", onClick: () => { st.tab = k; renderRight(); } }, label, k === "dfx" && n ? ` (${n})` : ""))));
     const body = el("div", { class: "side-scroll" });
     right.append(body);
-    const ctx = { st, id, live, rebuild, vp, editIface, editStock, cfg };
+    if (st.tab !== "gamme" && st.phase) { st.phase = null; if (st.built) paint(st.built); }      // leaving the routing sheet : back to the finished part
+    const ctx = { st, id, live, rebuild, vp, editIface, editStock, cfg, paint, overlays };
     const custom = (cfg.tabs || []).find((t) => t.key === st.tab);
     if (custom) custom.render(body, ctx);
     else ({ params: paramsPanel, ifaces: interfacesPanel, gamme: gammePanel, files: artifactsPanel, dfx: dfxPanel, sheet: sheetPanel, json: jsonPanel })[st.tab](body, ctx);

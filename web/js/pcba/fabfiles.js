@@ -7,6 +7,8 @@ import { layerArt, coatingKeepouts, LAYER_NAMES } from "./art.js";
 import { gerber } from "./gerber.js";
 import { excellon, drillTable } from "./drill.js";
 import { zip } from "../core/zip.js";
+import { boardAssemblyPlan } from "./assembly_plan.js";
+import { planText } from "../core/plan_doc.js";
 
 export const FAB_FILES = [
   { key: "top", ext: ".GTL", fn: (n) => "Copper,L1,Top" }, { key: "in1", ext: ".G1", fn: () => "Copper,L2,Inr" }, { key: "in2", ext: ".G2", fn: () => "Copper,L3,Inr" }, { key: "bottom", ext: ".GBL", fn: (n) => `Copper,L${n},Bot` },
@@ -60,6 +62,7 @@ export function fabPackage(board, lib = {}, opts = {}) {
   const minTrack = R.tracks.length ? Math.min(...R.tracks.map((t) => t.w)) : null, table = drillTable(art.drills), minDrill = table.length ? Math.min(...table.map((t) => t.d)) : null, need = (minTrack !== null && minTrack < FAB.standard.track - 1e-9) || (minDrill !== null && minDrill < FAB.standard.drill - 1e-9) ? "fin" : "standard";
   const keep = coatingKeepouts(R, board), coat = b.coating && b.coating.type && b.coating.type !== "none" ? b.coating : null, smd = R.pads.filter((p) => !p.drill).length, tht = R.pads.length - smd;
   const stats = { layers: n, size: [R.w, R.h], thickness: R.t, minTrack, minDrill, drills: table, pads: R.pads.length, smd, tht, vias: R.vias.length, parts: fitted.length, sides: ["top", "bottom"].filter((s) => R.parts.some((p) => p.side === s)), fab: need, lines: bom.length, cost: bom.reduce((s, l) => s + l.total, 0) };
+  files.push({ key: "gamme", name: `${base}-gamme-assemblage.txt`, label: "Gamme d'assemblage de la carte", mime: "text/plain", text: planText(boardAssemblyPlan(board, lib)) });
   const txt = [`DOSSIER DE FABRICATION — ${board.id || "carte"} « ${board.name || ""} », révision ${board.revision || "A"}`, `Date : ${date.toISOString().slice(0, 10)}${opts.quantity ? ` — Quantité : ${opts.quantity}` : ""}`, "",
     "CARTE NUE", `  Dimensions : ${fr(R.w)} × ${fr(R.h)} mm, épaisseur ${fr(R.t)} mm, ${n} couches de cuivre.`, `  Matériau : FR-4 TG150. Cuivre ${b.copper || 35} µm. Finition : ${b.finish || "ENIG"}.`,
     `  Vernis épargne ${b.mask || "vert"} sur les deux faces, vias recouverts. Sérigraphie ${b.silk || "blanc"}.`, `  Plus petite piste : ${minTrack === null ? "—" : `${fr(minTrack)} mm`}. Plus petit perçage : ${minDrill === null ? "—" : `${fr(minDrill)} mm`}. Classe requise : ${FAB[need].label}.`,

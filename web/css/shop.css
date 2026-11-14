@@ -111,3 +111,30 @@ html[data-module="fea"] { --acc: var(--hl-teal); }
 .calc-steps li { margin-bottom: .32rem; }
 .fea-legend { display: flex; gap: .5rem; align-items: center; margin: .5rem 0 .2rem; font-family: var(--mono); font-size: .78rem; }
 .fea-legend i { flex: 1; height: .7rem; border: 1px solid var(--line); border-radius: 4px; background: linear-gradient(90deg, rgb(13, 64, 217), rgb(0, 191, 230), rgb(51, 199, 64), rgb(255, 224, 26), rgb(230, 31, 26)); }
+
+/* ---------- routing sheets (part, assembly, board) : phases, operations, checks, notes, points to discuss ---------- */
+.plan { list-style: none; margin: .2rem 0 .8rem; padding: 0; display: grid; gap: .45rem; }
+.plan-phase { border: 1.5px solid var(--line); border-radius: var(--r-field); background: var(--surface); overflow: hidden; }
+.plan-phase.on { border-color: var(--acc); box-shadow: 0 0 0 2px color-mix(in srgb, var(--acc) 30%, transparent); }
+.plan-head { display: flex; gap: .4rem; align-items: center; padding-right: .5rem; background: var(--surface-2); }
+.plan-pick { flex: 1; min-width: 0; display: flex; gap: .5rem; align-items: center; padding: .4rem .6rem; border: 0; background: none; color: var(--ink); font-family: inherit; font-size: .9rem; text-align: left; }
+button.plan-pick { cursor: pointer; } button.plan-pick:hover { background: color-mix(in srgb, var(--acc) 12%, transparent); }
+.plan-head .g-n { flex: none; min-width: 2em; font-family: var(--mono); font-weight: 700; }
+.plan-head small { display: block; color: var(--muted); font-size: .76rem; font-weight: 400; }
+.plan-hold { display: flex; gap: .35rem; align-items: baseline; margin: .3rem .6rem 0; font-size: .8rem; color: var(--muted); }
+.plan-ops, .plan-checks, .plan-list, .plan-questions { margin: 0; padding: 0; list-style: none; }
+.plan-ops li { display: flex; gap: .5rem; align-items: baseline; padding: .28rem .6rem; font-size: .86rem; border-top: 1px dashed var(--line); }
+.plan-ops .g-n { flex: none; width: 2.6em; font-family: var(--mono); font-size: .74rem; color: var(--muted); }
+.plan-ops small, .plan-list small { display: block; color: var(--muted); font-size: .76rem; }
+.plan-checks li { display: flex; gap: .4rem; align-items: baseline; padding: .2rem .6rem; font-size: .82rem; color: var(--ink-soft); }
+.plan-checks .sk-icon { flex: none; color: var(--ok); }
+.plan-note { display: block; width: calc(100% - 1.2rem); margin: .35rem .6rem .5rem; padding: .25rem .45rem; font-size: .82rem; resize: vertical; min-height: 1.9rem; }
+.plan-list li { padding: .2rem 0; font-size: .86rem; border-top: 1px dashed var(--line); } .plan-list li:first-child { border-top: 0; }
+.plan-questions { counter-reset: q; }
+.plan-questions li { counter-increment: q; position: relative; padding: .3rem 1.6rem .3rem 1.7rem; font-size: .85rem; border-top: 1px dashed var(--line); }
+.plan-questions li::before { content: counter(q) "."; position: absolute; left: 0; font-family: var(--mono); font-size: .76rem; color: var(--muted); }
+.plan-questions li:first-child { border-top: 0; } .plan-questions .icon-btn { position: absolute; right: 0; top: .2rem; }
+.plan-add { display: flex; gap: .35rem; margin-top: .4rem; } .plan-add input { flex: 1; min-width: 0; }
+.plan-bar { justify-content: flex-start; flex-wrap: wrap; gap: .3rem; margin: .3rem 0 .2rem; }
+.chip.stage { background: color-mix(in srgb, var(--hl-yellow) 45%, var(--surface)); color: var(--graphite); max-width: 420px; }
+.plan-step-btns { display: inline-flex; gap: .1rem; } .plan-step-btns .icon-btn { font-size: .95rem; padding: 0 .15rem; }

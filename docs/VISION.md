@@ -66,6 +66,7 @@ La plateforme se construit par étages. Chaque brique est utile seule, testée, 
 | B8 | **Dessins & rapport** | 2D coté avec GD&T dérivé des interfaces, rapport de revue de conception | En place |
 | B9 | **Échange ouvert** | Google Drive (arborescence de projet), Onshape (envoi natif) | Drive en place ; Onshape à valider sur un compte réel |
 | B10 | **Carte électronique (PCBA)** | Des fonctions aux Gerber : bibliothèque du métier, blocs dimensionnés, implantation conceptuelle puis détaillée, règles, dossier de fabrication, revue Word et PDF | En place ; dossier à faire relire par un atelier |
+| B11 | **Gammes** | Fabrication d'une pièce pas à pas (pour le fournisseur), assemblage d'un produit et d'une carte (pour le prototypage) : phases, outils, contrôles, questions, notes, Word et PDF | En place ; à faire relire par un atelier |
 
 Briques suivantes envisagées : tôlerie pliée et mise à plat, tournage, usinage 5 axes (accessibilité d'outil),
 moulage, soudure ; cinématique d'assemblage ; chaînes de cotes ; faisceaux et micrologiciel liés à la carte ; coût et empreinte.

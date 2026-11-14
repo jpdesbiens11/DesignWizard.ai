@@ -1,0 +1,90 @@
+/* DesignWizard.ai — the assembly routing of a product, written for the discussion with the prototyping engineers :
+   which part goes on which, in which order, through which interface, with which screws, tightened how, checked how.
+   The sequence comes from the mated interfaces — the fixed part first, then whatever mates with what is already
+   there, covers last — and can be reordered by hand (assembly.plan.order). Torques are usual values for class 8.8
+   screws, lowered for boards and for threads in light alloy or plastic : indicative, to confirm by a tightening test. */
+
+import { resolveParams, evalDeep } from "../cad/expr.js";
+import { patternPoints, interfaceType } from "../cad/interfaces.js";
+import { finishPlan } from "./plan_doc.js";
+
+const TORQUE = { M2: 0.3, "M2.5": 0.6, M3: 1.1, M4: 2.6, M5: 5.2, M6: 9, M8: 22, M10: 43, M12: 75 };      // N·m, steel class 8.8, dry
+const BOARD = { M2: 0.2, "M2.5": 0.4, M3: 0.6, M4: 1.2 }, HEX = { M2: 1.5, "M2.5": 2, M3: 2.5, M4: 3, M5: 4, M6: 5, M8: 6, M10: 8, M12: 10 };
+const COVER = /couvercle|capot|cover|carter|lid\b/i, THERMAL = /therm|chaleur|refroid/i, SINK = /dissipateur|radiateur|heat ?sink/i;
+const fr = (v, d = 2) => String(Math.round(v * 10 ** d) / 10 ** d).replace(".", ",");
+const HW = { screw: (h) => `Vis ${/ISO10642/.test(h.id) ? "à tête fraisée ISO 10642" : "à tête cylindrique six pans creux ISO 4762"} ${h.size} × ${h.length}`, insert: (h) => `Insert à chaud ${h.size}`, nut: (h) => `Écrou hexagonal ISO 4032 ${h.size}`, pin: (h) => h.name };
+
+/** One interface of a part, with its parameters evaluated. */
+function ifaceOf(spec, id) {
+  const i = spec && (spec.interfaces || []).find((x) => x.id === id); if (!i) return null;
+  let scope = {}; try { scope = resolveParams(spec.params || {}).scope; } catch (e) { scope = {}; }
+  let params = {}; try { params = evalDeep({ ...(interfaceType(i.type).params || {}), ...(i.params || {}) }, scope); } catch (e) { params = i.params || {}; }
+  return { id: i.id, type: i.type, side: i.side || "A", name: i.name || "", params, opts: i.opts || {} };
+}
+
+/** The order in which the instances are assembled : [instance ids]. */
+export function assemblyOrder(asm, parts) {
+  const all = asm.instances.map((i) => i.id), given = ((asm.plan && asm.plan.order) || []).filter((id) => all.includes(id));
+  if (given.length) return [...new Set([...given, ...all])];
+  const base = asm.instances.find((i) => i.fixed) || asm.instances[0]; if (!base) return [];
+  const placed = [base.id], cover = (id) => { const i = asm.instances.find((x) => x.id === id), s = parts.get(i.part) || {}; return COVER.test(`${s.id} ${s.name || ""}`) ? 1 : 0; };
+  const links = (id) => (asm.mates || []).filter((m) => (m.a.inst === id && placed.includes(m.b.inst)) || (m.b.inst === id && placed.includes(m.a.inst))).length;
+  while (placed.length < all.length) {
+    const rest = all.filter((id) => !placed.includes(id)), ready = rest.filter((id) => links(id) > 0), pool = ready.length ? ready : rest;
+    placed.push(pool.sort((a, b) => cover(a) - cover(b) || links(b) - links(a) || all.indexOf(a) - all.indexOf(b))[0]);
+  }
+  return placed;
+}
+
+/** The assembly routing. ctx : { hardwareOf(mate) → [{ id, kind, size, length, qty, name }], mass, dfa (DFA result) } — all optional. */
+export function assemblyPlan(asm, project, ctx = {}) {
+  const parts = new Map((project.parts || []).map((p) => [p.id, p])), inst = new Map(asm.instances.map((i) => [i.id, i])), order = assemblyOrder(asm, parts), notes = (asm.plan && asm.plan.notes) || {};
+  const nameOf = (id) => { const s = parts.get((inst.get(id) || {}).part) || {}; return s.name ? `${s.name} (${s.id})` : (inst.get(id) || {}).part || id; }, specOf = (id) => parts.get((inst.get(id) || {}).part) || {};
+  const phases = [], totals = new Map(), sizes = new Set(), q = [], ask = (topic, text) => q.push({ topic, text }), loose = [];
+  const hw = (m, A, B) => { let list = []; try { list = ctx.hardwareOf ? ctx.hardwareOf(m) : interfaceType(A.type).hardware(A.params, A.opts, B.opts, specOf(m.a.inst).pcb ? 1.6 : 3) || []; } catch (e) { list = []; } return list; };
+  let thermal = false, boards = 0;
+  order.forEach((id, k) => {
+    const spec = specOf(id), before = order.slice(0, k), ops = [], checks = [], tools = [], isBoard = spec.family === "pcb";
+    if (isBoard) { boards++; checks.push("Protection contre les décharges : bracelet et tapis ; tenir la carte par ses bords"); }
+    if (!k) { ops.push({ text: `Poser ${nameOf(id)} sur le plan de travail, interfaces accessibles`, tools: [] }); checks.push("Pièce propre ; filetages et inserts dégagés"); }
+    const joints = (asm.mates || []).filter((m) => (m.a.inst === id && before.includes(m.b.inst)) || (m.b.inst === id && before.includes(m.a.inst)));
+    if (k && !joints.length) { loose.push(id); ops.push({ text: `Positionner ${nameOf(id)} à la main : aucune interface accouplée ne la tient`, tools: [] }); }
+    for (const m of joints) {
+      const fa = ifaceOf(specOf(m.a.inst), m.a.iface), fb = ifaceOf(specOf(m.b.inst), m.b.iface); if (!fa || !fb) continue;
+      const [A, B, ia, ib] = fa.side === "B" ? [fb, fa, m.b.inst, m.a.inst] : [fa, fb, m.a.inst, m.b.inst], other = m.a.inst === id ? m.b.inst : m.a.inst, label = A.name || B.name || interfaceType(A.type).fr;
+      if ((THERMAL.test(`${A.name} ${B.name}`) || SINK.test(`${spec.name || ""} ${spec.id} ${specOf(other).name || ""} ${specOf(other).id}`)) && (A.type === "planar" || A.type === "bolt_pattern")) { thermal = true; ops.push({ text: `Déposer l'interface thermique (pâte ou feuille) sur la plage d'appui — ${label}`, tools: ["Spatule ou pochoir"], control: "Couche régulière, sans manque" }); }
+      if (A.type === "bolt_pattern") {
+        const s = A.params.screw, n = patternPoints(A.params.pattern).length, list = hw(m, A, B), screw = list.find((h) => h.kind === "screw"), into = B.opts.thread === "insert" ? "les inserts" : B.opts.thread === "clearance" ? "les trous de passage, avec écrous" : B.opts.standoff ? "les colonnettes" : "les taraudages";
+        const soft = /^AL|ALU/i.test(specOf(ib).material || "") && B.opts.thread !== "insert" ? 0.75 : B.opts.thread === "insert" ? 0.5 : 1, board = specOf(ia).family === "pcb" || specOf(ib).family === "pcb";
+        const t = board && BOARD[s] ? BOARD[s] : (TORQUE[s] || 0) * soft;
+        ops.push({ text: `Présenter ${nameOf(id)} sur ${nameOf(other)} — ${label}`, tools: [] }, { text: `Engager ${n} ${screw ? HW.screw(screw).replace(/^Vis/, "vis") : `vis ${s}`} dans ${into} de ${nameOf(ib)}, à la main, sans serrer`, tools: [] },
+          { text: `Serrer en croix${t ? ` à ${fr(t)} N·m` : ""}`, tools: [`Clé six pans de ${fr(HEX[s] || 0)} mm`, "Clé ou tournevis dynamométrique"], control: t ? "Couple indicatif, à confirmer par un essai de serrage" : "" });
+        sizes.add(s);
+        for (const h of list) { const row = totals.get(h.id) || { id: h.id, name: (HW[h.kind] || ((x) => x.name))(h), qty: 0 }; row.qty += h.qty; totals.set(h.id, row); }
+        if (isBoard || specOf(other).family === "pcb") checks.push("Aucun composant ni piste sous les têtes de vis");
+      } else if (A.type === "fit") { const cls = String(A.params.fit || "H7/g6").split("/")[1] || "g6", how = /^[a-h]/.test(cls) ? "à la main" : /^[j-n]/.test(cls) ? "au maillet" : "à la presse"; ops.push({ text: `Emmancher ${nameOf(ia)} dans ${nameOf(ib)} ${how} — Ø ${fr(A.params.d)} ${A.params.fit}`, tools: how === "à la main" ? [] : [how === "au maillet" ? "Maillet" : "Presse"], control: "Portée en butée, sans jeu" }); }
+      else if (A.type === "planar") ops.push({ text: `Mettre ${nameOf(id)} en appui sur ${nameOf(other)} — ${label}`, tools: [], control: "Appui sans jour" });
+      else if (A.type === "pins") { ops.push({ text: `Chasser ${A.params.n || 2} goupilles Ø ${fr(A.params.d)} dans ${nameOf(ib)}`, tools: ["Maillet ou presse"] }, { text: `Présenter ${nameOf(ia)} sur les goupilles`, tools: [], control: "Engagement sans forcer" }); for (const h of hw(m, A, B)) { const row = totals.get(h.id) || { id: h.id, name: h.name, qty: 0 }; row.qty += h.qty; totals.set(h.id, row); } }
+      else if (A.type === "cutout") { ops.push({ text: `Passer ${nameOf(ib)} dans la découpe de ${nameOf(ia)} et le fixer — ${label}`, tools: [] }); for (const h of hw(m, A, B)) { const row = totals.get(h.id) || { id: h.id, name: (HW[h.kind] || ((x) => x.name))(h), qty: 0 }; row.qty += h.qty; totals.set(h.id, row); } }
+      else if (A.type === "rail") ops.push({ text: `Glisser ${nameOf(ia)} dans la glissière de ${nameOf(ib)} jusqu'en butée — ${label}`, tools: [], control: "Butée atteinte, pas de point dur" });
+    }
+    const conns = isBoard ? ((spec.pcb && spec.pcb.components) || []).filter((c) => c.kind === "connector" || c.kind === "terminal") : [];
+    if (conns.length) checks.push(`Raccorder ${conns.map((c) => c.ref).join(", ")} (${conns.length} connecteur${conns.length > 1 ? "s" : ""}) ; faisceaux sans contrainte`);
+    phases.push({ key: id, title: k ? `Monter ${nameOf(id)}` : `Préparer ${nameOf(id)}`, station: "Établi de montage", ops, checks, note: notes[id] || "", inst: id, part: (inst.get(id) || {}).part });
+  });
+  phases.push({ key: "final", title: "Contrôle final", station: "Établi de montage", ops: [], checks: ["Toutes les vis serrées au couple et marquées", "Aucune pièce ni vis en trop sur l'établi", "Essai fonctionnel selon le plan d'essai", ...(boards ? ["Contrôle des distances d'isolement si le produit porte de la haute tension (voir Isolation)"] : [])], note: notes.final || "" });
+  const hardware = [...totals.values()].sort((a, b) => a.name.localeCompare(b.name, "fr", { numeric: true })), nScrews = hardware.filter((h) => /^Vis/.test(h.name)).reduce((s, h) => s + h.qty, 0), covers = order.filter((id) => COVER.test(`${specOf(id).id} ${specOf(id).name || ""}`));
+  ask("Posage", "Faut-il un gabarit pour tenir la première pièce pendant le vissage ? Tout se monte-t-il par le même côté, ou faut-il retourner l'ensemble ?");
+  ask("Accès", "L'accès de l'outil est-il libre pour chaque vis, clé et embout compris ?");
+  if (sizes.size > 2) ask("Visserie", `${sizes.size} tailles de vis (${[...sizes].join(", ")}) : peut-on en réduire le nombre ?`);
+  if (nScrews > 12) ask("Visserie", `${nScrews} vis au total : des clips, des ergots ou un vissage commun sont-ils possibles ?`);
+  for (const id of loose) ask("Tenue", `${nameOf(id)} n'a aucune interface accouplée : comment est-elle tenue et repérée ?`);
+  if (boards) ask("Cartes", "Dans quel ordre monter et raccorder les cartes ? Les connecteurs restent-ils accessibles une fois tout en place ?");
+  if (thermal) ask("Thermique", "Quelle interface thermique, quelle épaisseur, quel couple pour l'écraser sans voiler la carte ou la semelle ?");
+  if (covers.length) ask("Essai", "Peut-on essayer le produit avant de fermer le capot ? Que faut-il pouvoir mesurer capot ouvert ?");
+  ask("Couples", "Les couples indiqués sont des valeurs usuelles : lesquels faut-il confirmer par un essai de serrage, et faut-il un frein-filet ?");
+  for (const f of ((ctx.dfa && ctx.dfa.findings) || []).filter((x) => x.severity !== "info").slice(0, 6)) ask("Montage", `${f.title} — ${f.message}`);
+  return finishPlan({ kind: "assemblage", id: asm.id, name: asm.name || "", revision: asm.revision || "A",
+    facts: [["Pièces", String(asm.instances.length)], ["Étapes", String(order.length)], ["Vis", `${nScrews} en ${sizes.size} taille${sizes.size > 1 ? "s" : ""}`], ...(ctx.mass ? [["Masse", `${fr(ctx.mass, 0)} g`]] : [])],
+    phases, hardware, questions: q, points: (asm.plan && asm.plan.points) || [], order });
+}

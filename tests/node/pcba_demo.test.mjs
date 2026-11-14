@@ -28,7 +28,7 @@ test("demonstration board: from its functions to its Gerber files, nothing left 
   const part = DEMO_DRIVE.parts.find((p) => p.id === b.part), m = boardFromPart(part); assert.deepEqual(b.board.size, m.size); assert.deepEqual(b.board.holes.map((h) => h.at), m.holes.map((h) => h.at), "the board still fits its mechanical part");
   const rows = functionRows(b, LIBRARY); assert.equal(rows.filter((r) => r.level === 1).length, 8); assert.equal(rows.filter((r) => r.kind === "contrainte").length, 2); assert.ok(rows.filter((r) => r.block).length === 12);
   const pk = fabPackage(b, LIBRARY, { date: new Date("2026-11-14T12:00:00Z") });
-  assert.equal(pk.files.length, 20); assert.equal(pk.stats.layers, 4); assert.equal(pk.stats.fab, "standard");
+  assert.equal(pk.files.length, 21); assert.match(pk.files.find((f) => f.key === "gamme").text, /^GAMME D.ASSEMBLAGE DE LA CARTE — DRV-CTRL-PCBA/); assert.equal(pk.stats.layers, 4); assert.equal(pk.stats.fab, "standard");
   for (const f of pk.files.filter((x) => x.mime === "application/vnd.gerber")) assert.equal(readGerber(f.text).units, "mm", f.name);
   assert.equal(readExcellon(pk.files.find((f) => f.key === "pth").text).hits.length, R.vias.length + R.pads.filter((p) => p.drill).length);
   assert.equal(readGerber(pk.files.find((f) => f.key === "in1").text).regions.length, 1, "the ground plane"); assert.ok(readGerber(pk.files.find((f) => f.key === "coat_top").text).regions.length > 8, "coating with its keep-outs");

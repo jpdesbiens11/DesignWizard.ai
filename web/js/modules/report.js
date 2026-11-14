@@ -17,6 +17,10 @@ import { makeDrawing, svgNode } from "./drawings.js";
 import { PROCESSES, materialOrDefault } from "../cad/materials.js";
 import { INTERFACE_TYPES } from "../cad/interfaces.js";
 import { LEVEL_LABEL } from "../analysis/cc_rules.js";
+import { processPlan } from "../cad/process_plan.js";
+import { assemblyPlan } from "../core/asm_plan.js";
+import { mateHardware } from "../core/assembly_logic.js";
+import { planSummary } from "../core/plan_doc.js";
 
 const sevText = { error: "À corriger", warn: "À vérifier", info: "Conseil" };
 const img = (src, alt) => el("img", { src, alt, style: { width: "100%", height: "auto", border: "1.4px solid rgba(38,50,63,.25)", borderRadius: "10px", background: "#fff" } });
@@ -93,6 +97,9 @@ function render(main) {
         const ia = a.asm.instances.find((i) => i.id === m.a.inst), ib = a.asm.instances.find((i) => i.id === m.b.inst), fa = ia && (a.ctx.built[ia.part].interfaces || []).find((i) => i.id === m.a.iface);
         return [m.id, fa ? `${fa.name} (${INTERFACE_TYPES[fa.type].fr})` : "?", ia ? ia.part : "?", ib ? ib.part : "?", m.linked === false ? "non lié" : "paramètres liés"];
       })));
+      const gamme = assemblyPlan(a.asm, p, { hardwareOf: (m) => mateHardware(a.ctx.asm, a.ctx.built, m), mass: a.ctx.mass.mass });
+      sec.append(el("h3", { style: { marginTop: ".8rem" } }, "Gamme d'assemblage"), el("p", { class: "muted", style: { fontSize: ".84rem" } }, planSummary(gamme)),
+        table(["N°", "Étape", "Opérations", "Outillage", "Note de discussion"], gamme.phases.map((ph) => [String(ph.n), ph.title, ph.ops.map((o) => o.text).join(" ; ") || ph.checks.join(" ; "), ph.tools.join(" ; ") || "—", ph.note || "—"])));
       const isoA = (a.asm.isolation || {}).results;
       sec.append(el("h3", { style: { marginTop: ".8rem" } }, "Isolation — creepage et clearance (IEC 60664-1)"));
       if (isoA && isoA.length) {
@@ -114,7 +121,7 @@ function render(main) {
     if ((p.boards || []).length) {                               // electronic boards : where each one stands in its flow
       const holder = el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, "Cartes électroniques"), el("p", { class: "muted" }, "Vérification en cours…"));
       doc.append(holder);
-      import("../pcba/summary.js").then(({ boardSummary }) => { if (!alive) return; holder.lastChild.replaceWith(table(["Carte", "Contenu", "Avancement", "Vérifications", "Revue"], boardSummary(p).map((b) => [el("a", { href: `#/pcba/${encodeURIComponent(b.id)}` }, `${b.id} — ${b.name}`), b.content, b.stage, badge(b.checks, b.errors ? "danger" : b.warns ? "warn" : "ok"), b.review]))); }).catch((e) => { holder.lastChild.textContent = e.message; });
+      import("../pcba/summary.js").then(({ boardSummary }) => { if (!alive) return; holder.lastChild.replaceWith(table(["Carte", "Contenu", "Avancement", "Vérifications", "Gamme d'assemblage", "Revue"], boardSummary(p).map((b) => [el("a", { href: `#/pcba/${encodeURIComponent(b.id)}` }, `${b.id} — ${b.name}`), b.content, b.stage, badge(b.checks, b.errors ? "danger" : b.warns ? "warn" : "ok"), b.assembly, b.review]))); }).catch((e) => { holder.lastChild.textContent = e.message; });
     }
     const sims = simulationSummary(p);
     if (sims.length) doc.append(el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, "Simulations — éléments finis simplifiés"),
@@ -123,13 +130,14 @@ function render(main) {
 
     for (const x of dfx.parts) {
       const s = x.spec, b = x.built, sum = x.res.summary || {};
-      const route = b ? routing(s, b) : null, oc = b ? orderCheck(s, b, x.res, route) : null;
+      const route = b ? routing(s, b) : null, oc = b ? orderCheck(s, b, x.res, route) : null, gamme = b && !s.step ? processPlan(s, b, { route, dfx: x.res }) : null;
       const sec = el("section", { class: "card", style: { marginBottom: "1rem", breakInside: "avoid" } }, el("h2", null, `${s.id} — ${s.name || ""} `, sum.errors ? badge(`${sum.errors} à corriger`, "danger") : sum.warnings ? badge(`${sum.warnings} à vérifier`, "warn") : badge("conforme", "ok")));
       const facts = el("table", { class: "data" }, el("tbody", null, [["Fonction", s.function || "—"], ["Matériau", materialOrDefault(s.material).name], ["Procédé", (PROCESSES[s.process] || {}).fr || "—"], ["Masse", b ? fmtMass(b.mass) : "—"],
         ["Enveloppe", b ? `${fmt(b.bbox[3] - b.bbox[0], 1)} × ${fmt(b.bbox[4] - b.bbox[1], 1)} × ${fmt(b.bbox[5] - b.bbox[2], 1)} mm` : "—"], ["Révision", s.revision || "—"], ["Score DFx", typeof sum.score === "number" ? `${sum.score} / 100` : "—"],
         ["Interfaces", (b ? b.interfaces : []).map((i) => `${i.name} (${i.side})`).join(" · ") || "aucune"],
         ["Matière première", route && route.stock ? `${route.stock.label}${route.utilisation !== null ? ` — ${Math.round(route.utilisation * 100)} % utilisé` : ""}` : "non déclarée"],
         ["Fabrication", route ? `${route.steps.length} opération(s), ${route.setups.length || 1} posage(s), ${route.tools.length} outil(s)` : "—"],
+        ["Gamme de fabrication", gamme ? planSummary(gamme) : "—"], ...(gamme ? gamme.phases.filter((ph) => ph.note).map((ph) => [`Note — phase ${ph.n}`, `${ph.title} : ${ph.note}`]) : []),
         ["Commande prototype", oc ? oc.label : "—"]].map(([k, v]) => el("tr", null, el("td", null, k), el("td", null, v)))));
       sec.append(el("div", { class: "two-col" }, pics.parts[s.id] ? img(pics.parts[s.id], s.id) : el("p", { class: "muted" }, "Pas d'image."), facts));
       const fl = x.res.findings.filter((f) => f.severity !== "info");

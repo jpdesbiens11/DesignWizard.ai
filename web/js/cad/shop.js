@@ -137,7 +137,7 @@ const NEAR_NET = { fdm: ["Imprimer en FDM (orienter la plus grande face sur le p
 /** Routing sheet of a part. `built` = result of the kernel build (params.scope, facts). */
 export function routing(spec, built) {
   const scope = (built && built.params && built.params.scope) || {}, facts = (built && built.facts) || {}, steps = [], tools = new Set(), faces = new Set(), advice = [];
-  const add = (kind, text, o = {}) => { steps.push({ kind, text, face: o.face || null, source: o.source || null, iface: o.iface || null }); (o.tools || []).forEach((t) => tools.add(t)); if (o.face && kind !== "stock") faces.add(o.face); };
+  const add = (kind, text, o = {}) => { steps.push({ kind, text, face: o.face || null, source: o.source || null, iface: o.iface || null, tools: o.tools || [] }); (o.tools || []).forEach((t) => tools.add(t)); if (o.face && kind !== "stock") faces.add(o.face); };
   const st = facts.stock || null, proc = spec.process, nearNet = !!NEAR_NET[proc];   // moulded / printed: the shapes come out of the tool, only inserts and threads are operations
   if (st) {
     add("stock", `Approvisionner : ${st.label}`);
@@ -199,7 +199,7 @@ export function routing(spec, built) {
     } catch (e) { advice.push(`Opération « ${f.id || f.op} » : ${e.message}`); }
   }
   if (!ifaceDone) ifaceSteps();
-  if (nearNet && shaped) steps.splice(1, 0, { kind: "machine", text: `${shaped} forme(s) venue(s) d'outillage ou d'impression (coque, bossages, ouvertures) : aucune reprise`, face: null, source: null, iface: null });
+  if (nearNet && shaped) steps.splice(1, 0, { kind: "machine", text: `${shaped} forme(s) venue(s) d'outillage ou d'impression (coque, bossages, ouvertures) : aucune reprise`, face: null, source: null, iface: null, tools: [] });
   if (!steps.some((s) => s.kind === "finish" && /bavur/i.test(s.text)) && proc !== "purchased") add("finish", "Ébavurer, casser les angles vifs 0,2 à 0,5 mm");
   if (spec.finish && !steps.some((s) => /^Finition/.test(s.text))) add("finish", `Finition : ${spec.finish}`);
   add("check", "Contrôler les cotes des interfaces (voir le dessin)");

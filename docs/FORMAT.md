@@ -141,6 +141,10 @@ Noms réservés aux modules à venir — le format s'étend, la notation ne chan
 | `requirement` | Exigence | ce que le produit doit faire, relié aux pièces, analyses et essais qui le prouvent |
 | `review` | Revue | décision de revue de conception : verdicts, réserves, signatures |
 
+Une pièce, un assemblage et une carte portent aussi, sous `plan`, ce que l'humain ajoute à leur **gamme** — une note
+par phase (`notes`), des points à discuter (`point`), l'ordre de montage (`order`) ; la gamme elle-même se recalcule
+du modèle. Voir [GAMMES.md](GAMMES.md).
+
 **Ajouter un genre ou un mot** se fait dans un seul fichier, `web/js/core/dwiz_names.js` : l'ordre des sections, et
 pour chaque liste le mot de ses lignes et les valeurs écrites sans leur nom. Le lecteur et l'écrivain
 (`web/js/core/dwiz.js`) sont génériques et ne changent pas.

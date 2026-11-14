@@ -14,7 +14,8 @@ import { expandSpec, routing } from "../cad/shop.js";
 import { STOCK_FORMS } from "../cad/stock.js";
 import { viewRequest } from "../draw/part_drawing.js";
 import { makeDrawing } from "../modules/drawings.js";
-import { gammeText } from "../modules/part_gamme.js";
+import { processPlan } from "../cad/process_plan.js";
+import { planText } from "./plan_doc.js";
 import { buildAssembly } from "./asm_scene.js";
 import { TREE } from "../google/drive_fs.js";
 import { toDwiz } from "./dwiz.js";
@@ -40,8 +41,8 @@ export const ARTIFACTS = [
     make: async (spec) => (await makeDrawing(spec.id)).pdfBytes() },
   { key: "fs", ext: ".fs", label: "FeatureScript Onshape", icon: "fs", mime: "text/plain", text: "Expérimental : la pièce reconstruite nativement dans Onshape, paramètres compris.", when: (spec) => !spec.step,
     make: async (spec, out) => { const r = toFeatureScript(expandSpec(spec)); out.warnings.push(...r.warnings); if (r.skipped.length) out.warnings.push(`${r.skipped.length} opération(s) non converties sur ${r.total}.`); return r.code; } },
-  { key: "gamme", ext: "_gamme.txt", label: "Gamme de fabrication", icon: "gamme", mime: "text/plain", text: "Le brut à acheter, les opérations dans l'ordre de l'atelier, les outils.", when: (spec) => !spec.step && spec.process !== "purchased",
-    make: async (spec) => gammeText(spec, routing(spec, await kernel.build(spec))) },
+  { key: "gamme", ext: "_gamme.txt", label: "Gamme de fabrication", icon: "gamme", mime: "text/plain", text: "Phase par phase : poste, prise de pièce, opérations, outils, contrôles — et les points à discuter avec le fournisseur.", when: (spec) => !spec.step && spec.process !== "purchased",
+    make: async (spec) => planText(processPlan(spec, await kernel.build(spec))) },
 ];
 export const artifactsFor = (spec) => ARTIFACTS.filter((a) => !a.when || a.when(spec));
 

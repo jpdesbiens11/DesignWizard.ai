@@ -153,21 +153,23 @@ export function brokenLinks(asm, built) {
   return out;
 }
 
+/** Screws, inserts, nuts and pins one mate asks for. */
+export function mateHardware(asm, built, m) {
+  const ia = instOf(asm, m.a.inst), ib = instOf(asm, m.b.inst);
+  const fa = ia && ifaceOf(built, ia.part, m.a.iface), fb = ib && ifaceOf(built, ib.part, m.b.iface);
+  if (!fa || !fb) return [];
+  const [A, B, pa] = fa.side === "B" ? [fb, fa, ib.part] : [fa, fb, ia.part];
+  const body = (built[pa].bodies || []).find((x) => x.name === A.body);
+  const bb = body ? body.bbox : built[pa].bbox, n = A.frame.n;                // grip = thickness of the body that carries side A
+  const extent = Math.abs(n[0]) * (bb[3] - bb[0]) + Math.abs(n[1]) * (bb[4] - bb[1]) + Math.abs(n[2]) * (bb[5] - bb[2]);
+  const grip = typeof A.opts.depth === "number" ? Math.min(A.opts.depth, extent) : extent;
+  try { return interfaceType(A.type).hardware(A.params, A.opts || {}, B.opts || {}, grip) || []; } catch (e) { return []; }
+}
 /** Screws, inserts, nuts and pins implied by the mates. */
 export function hardware(asm, built) {
   const rows = new Map();
   for (const m of asm.mates || []) {
-    const ia = instOf(asm, m.a.inst), ib = instOf(asm, m.b.inst);
-    const fa = ia && ifaceOf(built, ia.part, m.a.iface), fb = ib && ifaceOf(built, ib.part, m.b.iface);
-    if (!fa || !fb) continue;
-    const [A, B, pa] = fa.side === "B" ? [fb, fa, ib.part] : [fa, fb, ia.part];
-    const body = (built[pa].bodies || []).find((x) => x.name === A.body);
-    const bb = body ? body.bbox : built[pa].bbox, n = A.frame.n;                // grip = thickness of the body that carries side A
-    const extent = Math.abs(n[0]) * (bb[3] - bb[0]) + Math.abs(n[1]) * (bb[4] - bb[1]) + Math.abs(n[2]) * (bb[5] - bb[2]);
-    const grip = typeof A.opts.depth === "number" ? Math.min(A.opts.depth, extent) : extent;
-    let list = [];
-    try { list = interfaceType(A.type).hardware(A.params, A.opts || {}, B.opts || {}, grip) || []; } catch (e) { list = []; }
-    for (const h of list) {
+    for (const h of mateHardware(asm, built, m)) {
       const r = rows.get(h.id) || { ...h, qty: 0, mates: [] };
       r.qty += h.qty; r.mates.push(m.id); r.mate = r.mates.join(", ");
       rows.set(h.id, r);

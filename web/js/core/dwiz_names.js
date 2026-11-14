@@ -11,6 +11,8 @@
 export const DWIZ_VERSION = 1;
 export const DWIZ_EXT = "dwiz";
 
+/* The annotated routing sheet of a part, an assembly or a board : what was said about each phase, what is left to see. */
+const PLAN = { kids: { notes: {}, points: { word: "point", scalar: true } } };
 const part = {
   fr: "Pièce", en: "Part", module: "Atelier (Shop)", brick: "B3",
   sections: [
@@ -20,6 +22,7 @@ const part = {
     ["Ses poignées — les paramètres que l'on règle", ["params"]],
     ["Comment elle se fait — les opérations, dans l'ordre de l'atelier", ["extrusion", "pcb", "features", "bodies"]],
     ["Ce qu'il faut savoir — notes du dessin, révision, hypothèses", ["notes", "revision", "interview"]],
+    ["Ce qui se dit avec le fournisseur — la gamme annotée : une note par phase, les points à voir", ["plan"]],
   ],
   kids: {
     intent: {}, order: {}, elec: {},
@@ -32,6 +35,7 @@ const part = {
     bodies: { word: "body", keyed: true },
     notes: { word: "note", scalar: true },
     interview: { kids: { assumptions: { word: "assume", scalar: true }, questions: { word: "asked" } } },
+    plan: PLAN,
   },
 };
 const assembly = {
@@ -40,11 +44,13 @@ const assembly = {
     ["Ce qu'il contient — une ligne par pièce posée", ["instances"]],
     ["Ce qui les tient ensemble — les interfaces accouplées", ["mates"]],
     ["Ce que l'on vérifie — isolation électrique", ["isolation"]],
+    ["Comment il se monte — la gamme d'assemblage annotée : l'ordre, une note par étape, les points à voir", ["plan"]],
   ],
   kids: {
     instances: { word: "place", head: ["id", "part"] },
     mates: { word: "mate", head: ["id"] },
     isolation: { kids: { nets: { word: "net", head: ["name"] }, params: {} } },
+    plan: PLAN,
   },
 };
 const project = {
@@ -65,6 +71,7 @@ const board = {
     ["Avec quoi — les composants, et les nets qui les relient", ["parts", "nets", "library"]],
     ["Sur quoi — la carte nue : couches, finition, vernis, trous, règles", ["board", "rules", "part"]],
     ["Le cuivre — plans, pistes et vias", ["planes", "tracks", "vias"]],
+    ["Comment elle s'assemble — la gamme annotée et la revue", ["plan", "review"]],
   ],
   kids: {
     functions: { word: "function", head: ["id"], first: ["parent", "kind", "name", "block"], kids: { criteria: { word: "criterion" } } },
@@ -77,6 +84,7 @@ const board = {
     planes: { word: "plane", head: ["net", "layer"] },
     tracks: { word: "track", head: ["net", "layer"], first: ["w", "pts"] },
     vias: { word: "via", head: ["net"], first: ["at", "d", "drill"] },
+    plan: PLAN,
   },
 };
 
