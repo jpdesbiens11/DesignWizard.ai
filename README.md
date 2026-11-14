@@ -8,9 +8,21 @@ sont vérifiées dès la conception.
 > Première itération (v0.1.0), publiée pour recueillir vos commentaires. Voir [Vos commentaires](#vos-commentaires).
 > *English summary at the [end of this page](#english-summary).*
 
+## Aperçu
+
+| | |
+|---|---|
+| ![Assemblage éclaté avec ses mates d'interface](docs/img/assemblage.png) | ![Entrevue : interfaces anticipées et prompt générique](docs/img/interfaces-entrevue.png) |
+| **Assemblage** — les pièces se matent par leurs interfaces et restent liées | **Interfaces** — voisins cochés, interfaces anticipées, prompt générique |
+| ![Part Studio avec les constats DFx](docs/img/part-studio-dfx.png) | ![Isolation : chemins clearance et creepage](docs/img/isolation-demo-hvb.png) |
+| **Pièces** — paramètres, arbre de construction, DFx en direct | **Isolation** — distances requises et chemins mesurés sur l'assemblage |
+
+![Dessin généré avec références, GD&T et cartouche](docs/img/dessin.png)
+
 ## Démarrer en deux minutes
 
-Il faut Python 3.9 ou plus récent (bibliothèque standard seulement) et un navigateur récent (Chrome, Edge, Firefox).
+Il faut Python 3.9 ou plus récent (bibliothèque standard seulement) et un navigateur récent (essayé sous Chrome et
+Edge ; Firefox et Safari restent à essayer).
 
 ```bash
 git clone https://github.com/jpdesbiens11/DesignWizard.ai.git
@@ -84,8 +96,8 @@ Le noyau géométrique est [Open CASCADE Technology](https://dev.opencascade.org
 WebAssembly par opencascade.js / replicad (`web/vendor/occ/`, voir `NOTICE.md`). La vue 3D utilise
 [three.js](https://threejs.org/) (MIT, `web/vendor/three/`). Aucune ressource n'est chargée d'Internet à l'exécution.
 
-La licence du code de DesignWizard.ai lui-même n'est pas encore fixée : tous droits réservés à son auteur pour
-l'instant ; le dépôt est partagé pour évaluation et commentaires.
+La licence du code de DesignWizard.ai lui-même reste à choisir par son auteur ; d'ici là, le dépôt est partagé pour
+évaluation et commentaires.
 
 ---
 

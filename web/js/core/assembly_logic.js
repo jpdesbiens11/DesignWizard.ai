@@ -84,16 +84,21 @@ export function freeInterfaces(asm, built) {
   return out;
 }
 
-/** Possible mates between free interfaces of different instances, best first. */
-export function candidates(asm, built) {
-  const free = freeInterfaces(asm, built), out = [];
+export const pairKey = (a, b) => [`${a.inst}/${a.iface}`, `${b.inst}/${b.iface}`].sort().join("|");
+
+/** Possible mates between free interfaces of different instances, best first. Pairs the user removed by hand
+    (asm.rejected) are left out unless `withRejected`: the automatic mating never brings them back. */
+export function candidates(asm, built, withRejected = false) {
+  const free = freeInterfaces(asm, built), out = [], rejected = new Set(asm.rejected || []);
   for (let i = 0; i < free.length; i++) for (let j = i + 1; j < free.length; j++) {
     const x = free[i], y = free[j];
     if (x.inst === y.inst) continue;
     const c = compatible(x.iface, y.iface);
     if (!c.ok) continue;
     const [a, b] = x.iface.side === "B" ? [y, x] : [x, y];              // side A first
-    out.push({ a: { inst: a.inst, iface: a.iface.id }, b: { inst: b.inst, iface: b.iface.id }, by: c.by, same: c.same, type: a.iface.type,
+    const rej = rejected.has(pairKey({ inst: a.inst, iface: a.iface.id }, { inst: b.inst, iface: b.iface.id }));
+    if (rej && !withRejected) continue;
+    out.push({ rejected: rej, a: { inst: a.inst, iface: a.iface.id }, b: { inst: b.inst, iface: b.iface.id }, by: c.by, same: c.same, type: a.iface.type,
       score: (c.by === "key" ? 4 : 2) + (c.same ? 1 : 0), label: `${a.iface.name} ↔ ${b.iface.name}` });
   }
   return out.sort((p, q) => q.score - p.score);

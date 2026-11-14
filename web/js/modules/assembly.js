@@ -8,7 +8,7 @@ import { store } from "../core/store.js";
 import { kernel } from "../cad/client.js";
 import { createViewport } from "../core/viewport.js";
 import { buildAssembly, showAssembly } from "../core/asm_scene.js";
-import { autoMate, candidates, freeInterfaces, ifaceOf } from "../core/assembly_logic.js";
+import { autoMate, candidates, freeInterfaces, ifaceOf, pairKey } from "../core/assembly_logic.js";
 import { announceLinks } from "../core/part_edit.js";
 import { companionSpec } from "../core/companion.js";
 import { runDfa } from "../analysis/dfx_api.js";
@@ -49,7 +49,7 @@ function render(main, args) {
       if (token !== st.token) return;
       // a part was just added: mate what can be mated, then solve again (one more undo step)
       const cand = candidates(ctx.asm, ctx.built);
-      if (cand.length && a.autoMate !== false && st.autoFor !== JSON.stringify(a.instances.map((i) => i.id))) {
+      if (cand.length && st.autoFor !== JSON.stringify(a.instances.map((i) => i.id))) {
         st.autoFor = JSON.stringify(a.instances.map((i) => i.id));
         let added = [];
         const master = ctx.asm.instances.find((i) => i.fixed) || ctx.asm.instances[0];
@@ -167,12 +167,13 @@ function render(main, args) {
   }
   const instName = (a, iid) => { const i = a.instances.find((x) => x.id === iid), s = i && store.part(i.part); return s ? s.name || s.id : iid; };
   function matesTab(body, a) {
-    const { built, sol } = st.ctx, cand = candidates(st.ctx.asm, built);
+    const { built, sol } = st.ctx, cand = candidates(st.ctx.asm, built, true);
     body.append(el("p", { class: "muted", style: { fontSize: ".84rem" } }, "Un mate relie deux interfaces identiques (côté A et côté B). S'il est lié 🔗, les deux pièces partagent les paramètres de l'interface : modifiez un côté, l'autre s'adapte."));
     if (cand.length) {
       body.append(el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, `Mates possibles (${cand.length})`), btn("Tout mater", () => { store.commit(`${id} : mates automatiques`, (p) => autoMate(p.assemblies.find((x) => x.id === id), built), { assembly: id, part: (a.instances.find((i) => i.fixed) || a.instances[0]).part }); }, { small: true, icon: "sparkle" })),
-        cand.slice(0, 12).map((c) => el("div", { class: "finding", onClick: () => store.updateAssembly(id, (x) => { x.mates = x.mates || []; x.mates.push({ id: `M${Date.now().toString(36).slice(-4)}`, a: c.a, b: c.b, linked: true, by: c.by }); }, `Mate ajouté : ${c.label}`) },
-          el("span", { class: "sev" }), el("div", null, el("b", null, `${instName(a, c.a.inst)} ↔ ${instName(a, c.b.inst)}`)), el("p", null, `${c.label} · ${c.by === "key" ? "même clé" : "même géométrie"}${c.same ? "" : " · paramètres différents : le côté B s'adaptera"}`)))));
+        cand.slice(0, 12).map((c) => el("div", { class: "finding", onClick: () => store.updateAssembly(id, (x) => { x.mates = x.mates || []; x.mates.push({ id: `M${Date.now().toString(36).slice(-4)}`, a: c.a, b: c.b, linked: true, by: c.by });
+          x.rejected = (x.rejected || []).filter((k) => k !== pairKey(c.a, c.b)); }, `Mate ajouté : ${c.label}`) },
+          el("span", { class: "sev" }), el("div", null, el("b", null, `${instName(a, c.a.inst)} ↔ ${instName(a, c.b.inst)}`)), el("p", null, `${c.label} · ${c.by === "key" ? "même clé" : "même géométrie"}${c.same ? "" : " · paramètres différents : le côté B s'adaptera"}${c.rejected ? " · retiré à la main : cliquez pour le remettre" : ""}`)))));
     }
     body.append(el("div", { class: "side-section" }, el("h3", null, `Mates (${(a.mates || []).length})`)));
     for (const m of a.mates || []) {
@@ -183,7 +184,7 @@ function render(main, args) {
         el("div", { class: "form-actions", style: { justifyContent: "flex-start", marginTop: ".2rem" } },
           btn(m.linked === false ? "Lier" : "Délier", () => store.updateAssembly(id, (x) => { const q = x.mates.find((k) => k.id === m.id); q.linked = q.linked === false; }, `${m.id} ${m.linked === false ? "lié" : "délié"}`), { small: true, icon: m.linked === false ? "link" : "unlink", tip: "Lié : les paramètres de l'interface sont partagés" }),
           btn("90°", () => store.updateAssembly(id, (x) => { const q = x.mates.find((k) => k.id === m.id); q.angle = ((q.angle || 0) + 90) % 360; }, `${m.id} tourné de 90°`), { small: true, icon: "refresh", tip: "Tourner la pièce B de 90° autour de la normale de l'interface" }),
-          btn("", () => store.updateAssembly(id, (x) => { x.mates = x.mates.filter((k) => k.id !== m.id); x.autoMate = false; }, `${m.id} supprimé`), { small: true, icon: "trash", danger: true, tip: "Supprimer ce mate" }))));
+          btn("", () => store.updateAssembly(id, (x) => { x.mates = x.mates.filter((k) => k.id !== m.id); x.rejected = [...new Set([...(x.rejected || []), pairKey(m.a, m.b)])]; }, `${m.id} supprimé`), { small: true, icon: "trash", danger: true, tip: "Supprimer ce mate (il ne sera pas recréé automatiquement)" }))));
     }
     const free = freeInterfaces(st.ctx.asm, built);
     if (free.length) body.append(el("div", { class: "side-section" }, el("h3", null, `Interfaces libres (${free.length})`),
@@ -197,7 +198,6 @@ function render(main, args) {
         p.parts.push(spec);
         const a = p.assemblies.find((x) => x.id === id); let n = a.instances.length + 1, iid; do { iid = `i${n++}`; } while (a.instances.some((i) => i.id === iid));
         a.instances.push({ id: iid, part: spec.id, placement: { t: [0, 0, 0], r: [0, 0, 0] } });
-        if (a.autoMate === false) delete a.autoMate;
       }, { assembly: id });
       toast(`Pièce ${spec.id} générée et ajoutée : elle se mate sur « ${f.iface.name} ».`, "success", 5000);
     } catch (e) { toast(e.message, "error"); }
