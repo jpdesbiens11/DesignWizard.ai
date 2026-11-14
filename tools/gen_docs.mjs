@@ -13,8 +13,9 @@ const fence = "```";
 const out = [
   "<!-- Fichier généré par tools/gen_docs.mjs à partir de web/js/cad/language_doc.js : ne pas modifier à la main. -->",
   "# Le langage de pièce de DesignWizard.ai (DW part/1)", "",
-  "Une pièce est un objet JSON. C'est ce que Claude écrit à la fin de l'entrevue, ce que montre l'onglet JSON du Part Studio,",
-  "et ce que le noyau construit. La référence ci-dessous est exactement le texte donné à l'assistant dans le prompt générique",
+  "Une pièce est un document `.dwiz` (voir [FORMAT.md](FORMAT.md)) ou son jumeau JSON. C'est ce que Claude écrit à la fin de",
+  "l'entrevue, ce que montre l'onglet Fichier du studio de pièce, et ce que le noyau construit. La référence ci-dessous est",
+  "exactement le texte donné à l'assistant dans le prompt générique",
   "(elle est en anglais parce que les clés du langage le sont).", "",
   fence + "text", LANGUAGE_REFERENCE, fence, "",
   "## Types d'interface", "", "| Type | Nom | Rôle des côtés A et B |", "|---|---|---|",

@@ -71,3 +71,22 @@ N'envoyez rien de confidentiel : retirez ou renommez ce qui doit l'être avant d
 Elles sont listées dans l'onglet Aide de l'application et dans [ARCHITECTURE.md](ARCHITECTURE.md). Les principales :
 les dessins cotent l'enveloppe et renvoient au tableau des trous ; l'envoi vers Onshape n'a été testé que contre un
 serveur simulé ; les tables IEC 60664-1 intégrées sont à vérifier contre la norme.
+
+
+## Nouveau dans la version 0.2 — à essayer en priorité
+
+1. **Atelier.** Onglet « Atelier » : nommez une pièce, ajoutez deux interfaces par leur forme (« Je me visse sur… »,
+   « On se visse sur moi »), changez la face de l'une, puis la matière première (plaque → cornière). Regardez la pièce,
+   la gamme et les décisions du compagnon changer. *La pièce proposée est-elle celle qu'un artisan aurait faite ?*
+2. **Commander.** Créez la pièce, onglet **Artéfacts** : le verdict, le délai, puis « Dossier de commande (.zip) ».
+   Ouvrez l'archive. *Enverriez-vous ce dossier tel quel à votre atelier ? Que manque-t-il ?*
+3. **Gamme.** Onglet **Gamme** d'une pièce : changez l'épaisseur pour une valeur hors série (7 mm) et lisez le
+   conseil. *Les conseils sont-ils ceux de votre atelier ?*
+4. **Physique.** Onglet « Physique » : choisissez « La poutre en porte-à-faux plie-t-elle trop ? », reprenez les cotes
+   d'une pièce, changez la charge. *Le calcul pas à pas est-il celui que vous feriez à la main ?*
+5. **Fichier.** Onglet **Fichier** d'une pièce : lisez le `.dwiz`, changez une cote dans le texte, « Appliquer ».
+   Donnez le fichier à une IA et demandez-lui de décrire la pièce. *Le comprend-elle sans explication ?*
+6. **Thèmes.** Menu Compte (icône de personne) : essayez Mécanique, Aéronautique, Spatial.
+
+Ce qui n'est pas encore validé sur un vrai compte : la connexion Google et Drive, l'envoi vers Onshape, le
+FeatureScript. Les délais de commande et les propriétés de matériaux sont des valeurs typiques.

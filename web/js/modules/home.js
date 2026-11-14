@@ -8,12 +8,27 @@ import { DEMO_HVB_PARTS, DEMO_HVB_ASSEMBLY } from "../demo/demo_hvb.js";
 
 const STEPS = [
   ["shop", "Atelier", "Dites l'intention : à quoi sert la pièce, ses interfaces, sa matière, sa matière première. Elle se construit sous vos yeux, sans esquisse — ou par une entrevue avec Claude."],
-  ["parts", "Pièces", "Ajustez la pièce avec ses curseurs, la baguette (Ctrl+K) ou l'arbre de construction. Le DFM se vérifie en direct."],
+  ["parts", "Pièces", "Ajustez la pièce avec ses curseurs, la baguette (Ctrl+K) ou l'arbre de construction. Le DFM se vérifie en direct ; l'onglet Artéfacts prépare le dossier de commande."],
   ["assembly", "Assemblage", "Ajoutez les pièces : les interfaces identiques se matent seules et restent liées. Changez un côté, l'autre suit."],
+  ["physics", "Physique", "Une poutre, une vis, un tube, une ailette : des modèles simples disent si la physique fonctionne, avant l'essai."],
   ["creepage", "Isolation", "Creepage et clearance mesurés sur l'assemblage complet, comparés à IEC 60664-1."],
   ["dfx", "DFx", "DFM par procédé, DFA de l'assemblage, correctifs en un clic."],
   ["drawings", "Dessins", "Vues, cotes, GD&T tiré des interfaces, cartouche et notes — en PDF."],
   ["report", "Rapport", "Le dossier de design review : images, analyses, verdicts."],
+];
+
+/* The technology bricks, from the intent to the open exchange: [number, name, what it brings, where it lives]. */
+const BRICKS = [
+  [0, "Intention", "À quoi sert la pièce, ses efforts, son milieu, la quantité.", "#/shop"],
+  [1, "Interfaces", "Le contrat avec les pièces voisines, écrit avant la pièce.", "#/interfaces/registre"],
+  [2, "Matière & procédé", "Matière première du commerce, opérations, gamme.", "#/shop"],
+  [3, "Pièce", "Le solide exact et ses paramètres, dans le format .dwiz.", "#/parts"],
+  [4, "Artéfacts & commande", "STEP, DXF, STL, PDF, FeatureScript — et le dossier de commande.", "#/parts"],
+  [5, "Physique", "21 modèles analytiques : 80 % de la réponse en une seconde.", "#/physics"],
+  [6, "Assemblage", "Les interfaces identiques s'accouplent seules et restent liées.", "#/assembly"],
+  [7, "Isolation & DFx", "Lignes de fuite, distances dans l'air, 110 règles de fabricabilité.", "#/dfx"],
+  [8, "Dessins & rapport", "Dessin coté, GD&T tiré des interfaces, revue de conception.", "#/report"],
+  [9, "Échange ouvert", "Votre Google Drive, Onshape, et un code libre sous licence MIT.", "#/account"],
 ];
 
 async function loadDemo(seed, target) {
@@ -37,6 +52,9 @@ function render(main) {
         btn("Importer…", () => app.pickFile(), { icon: "upload", tip: "Projet .json, pièce JSON d'une entrevue, ou fichier STEP — vous pouvez aussi coller (Ctrl+V) ou déposer un fichier n'importe où" }))),
     el("img", { src: `img/sketch/hero-${document.documentElement.dataset.theme || "carnet"}.svg`, alt: "" })));
 
+  page.append(el("h2", null, "Les briques"),
+    el("p", { class: "muted", style: { marginTop: "-.3rem" } }, "L'objectif : commander en quelques jours des pièces faisables, prototyper la physique du produit, l'essayer au laboratoire — et fermer la boucle de conception avant de lancer la série."),
+    el("div", { class: "bricks" }, BRICKS.map(([n, title, text, href]) => el(href ? "a" : "div", { class: "brick", href }, icon(`b${n}`), el("b", null, el("i", null, `B${n}`), title), el("small", null, text)))));
   page.append(el("h2", null, "Le parcours"));
   page.append(el("div", { class: "grid", style: { marginBottom: "1.6rem" } }, STEPS.map(([key, title, text], i) => el("a", { class: "card lift", href: `#/${key}`, style: { "--acc": `var(--tab-acc)` }, "data-key": key },
     el("h3", null, icon(app.modules.get(key).icon), ` ${i + 1}. ${title}`), el("p", { class: "muted", style: { margin: 0, fontSize: ".86rem" } }, text)))));

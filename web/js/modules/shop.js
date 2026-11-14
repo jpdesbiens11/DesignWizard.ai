@@ -179,7 +179,7 @@ function render(main) {
   /** Born manufacturable: the DFx verdict and the prototype lead time of the proposal, before the part even exists. */
   function drawOrder(res, built, dfx) {
     const c = orderCheck(res.spec, built, dfx, routing(res.spec, built), { quantity: brief.quantity });
-    chips.append(el("span", { class: "chip" + (c.ready ? " done" : " bad"), "data-tip": [...c.blockers, ...c.drivers].join(" · ") || null }, c.ready ? `Prototype : ${c.days[0]} à ${c.days[1]} j ouvrables` : "À corriger avant commande"),
+    chips.append(el("span", { class: "chip" + (c.ready ? " done" : " bad"), "data-tip": [...c.blockers, ...c.drivers].join(" · ") || null }, c.ready ? `Prototype : ${c.days[0]} à ${c.days[1]} j` : "À corriger avant commande"),
       dfx && dfx.summary ? el("span", { class: "chip" + (dfx.summary.errors ? " bad" : " done") }, dfx.summary.errors ? `DFx : ${dfx.summary.errors} à corriger` : `DFx : fabricable${dfx.summary.warnings ? `, ${dfx.summary.warnings} à vérifier` : ""}`) : null);
     for (const t of c.cautions.filter((x) => /prototype/.test(x))) out.prepend(el("p", { class: "atelier-hint warn" }, icon("warning"), " ", t));
   }

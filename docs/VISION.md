@@ -2,6 +2,23 @@
 
 > **DesignWizard.ai by DynamiteAgile™** — libre (MIT), ouvert, bâti brique par brique.
 
+## 0. L'objectif
+
+**Commander en quelques jours des pièces faisables, prototyper la physique du produit, l'essayer au laboratoire —
+et fermer la boucle de conception avant de lancer la production** (prototypes, mini-série ou série).
+
+Tout le reste en découle. La plateforme est alignée sur le **DFx** — la conception pour la fabrication, le montage,
+l'essai — parce que c'est ce qui rend l'ingénieur et le technicien de conception productifs : une pièce qui n'est
+pas fabricable demain matin ne teste rien. Chaque écran répond donc à l'une de ces questions :
+
+| Question | Brique |
+|---|---|
+| À quoi sert la pièce, à quoi se raccorde-t-elle ? | Intention, Interfaces |
+| Peut-on la faire avec ce qu'il y a sur l'étagère, en combien d'opérations ? | Atelier (« Shop » en anglais) |
+| La physique fonctionne-t-elle ? | Physique |
+| Est-elle fabricable, montable, isolée ? | DFx, Isolation |
+| Quand peut-elle être sur le banc d'essai ? | Commande : verdict, délai, dossier pour l'atelier |
+
 ## 1. Le constat
 
 Les logiciels de CAO actuels demandent à l'ingénieur de penser comme le logiciel : choisir un plan, tracer une
@@ -25,7 +42,8 @@ et laisse le logiciel — aidé par l'IA — produire la géométrie, les vérif
 | La fabricabilité est vérifiée à la fin | La pièce **naît fabricable** : elle part d'un brut du commerce et d'outils réels |
 | La physique demande un outil d'éléments finis | Des **modèles analytiques reconnus** donnent 80 % de la réponse en une seconde |
 | Les contraintes d'assemblage se posent une à une | Les interfaces identiques **s'accouplent seules** et restent liées |
-| Format fermé, lié à un éditeur | Fichier texte lisible, formats ouverts, licence MIT |
+| Format fermé, lié à un éditeur | Un format texte, `.dwiz`, lisible par l'ingénieur, l'atelier et l'IA ; licence MIT |
+| La commande est un autre métier, plus tard | Le verdict « prête à commander », le délai et le dossier pour l'atelier sont dans l'outil |
 
 L'IA n'est pas un gadget ajouté à un outil ancien : elle tient le rôle du compagnon d'atelier. On lui décrit le besoin ;
 elle propose les interfaces, la matière et la gamme dans un langage que la plateforme construit et vérifie. Tout ce
@@ -37,11 +55,11 @@ La plateforme se construit par étages. Chaque brique est utile seule, testée, 
 
 | Brique | Nom | Ce qu'elle apporte | État |
 |---|---|---|---|
-| B0 | **Intention** | Fonction de la pièce, charges, milieu, quantité | Atelier, étape 1 |
+| B0 | **Intention** | Fonction de la pièce, charges, milieu, quantité | Atelier (Shop), étape 1 |
 | B1 | **Interfaces** | Contrats typés A/B (boulonnage, appui, ajustement, découpe, rail, broches) | En place |
-| B2 | **Matière & procédé** | Matériaux, matière première du commerce, opérations d'atelier, gamme | Atelier, étapes 3–4 |
-| B3 | **Pièce** | Noyau B-Rep (OpenCascade), langage de pièce `DW part/1`, paramètres intuitifs | En place |
-| B4 | **Artéfacts** | STEP, DXF, STL, PDF, FeatureScript — ce que l'industrie échange | En place (FeatureScript expérimental) |
+| B2 | **Matière & procédé** | Matériaux, matière première du commerce, opérations d'atelier, gamme | Atelier (Shop), étapes 3–4 |
+| B3 | **Pièce** | Noyau B-Rep (OpenCascade), format `.dwiz`, paramètres intuitifs | En place |
+| B4 | **Artéfacts & commande** | STEP, DXF, STL, PDF, FeatureScript ; verdict de commande, délai, dossier pour l'atelier | En place (FeatureScript expérimental) |
 | B5 | **Physique** | Modèles analytiques : poutre, flambage, boulon, écoulement, thermique, conducteur | En place |
 | B6 | **Assemblage** | Accouplement automatique des interfaces, dépendances liées, nomenclature | En place |
 | B7 | **Isolation & DFx** | Lignes de fuite et distances dans l'air (IEC 60664-1), 110 règles DFM/DFA | En place |
@@ -70,7 +88,8 @@ Règles du projet :
 - **Noms et marques.** Les noms de produits tiers ne servent qu'à désigner l'interopérabilité. L'identité visuelle
   s'inspire de principes (les carnets de la Renaissance, les premiers principes, la simplicité), jamais du portrait ou
   de la marque de quelqu'un.
-- **Tout est texte.** Une pièce, un assemblage, une analyse sont des fichiers JSON lisibles, comparables dans Git.
+- **Tout est texte.** Une pièce, un assemblage, un projet sont des fichiers `.dwiz` (voir [FORMAT.md](FORMAT.md)) :
+  une instruction par ligne, comparables dans Git, compris par une IA sans notice. Le JSON en est le jumeau exact.
 - **Pas de serveur obligatoire.** L'application est statique ; le calcul se fait dans le navigateur ; les fichiers
   de l'utilisateur restent chez lui (disque local ou son propre Google Drive).
 
@@ -87,6 +106,23 @@ hypothèses connues et un domaine de validité clair. La brique Physique les ren
 - le verdict rejoint le rapport de revue de conception.
 
 Ce n'est pas un substitut à la validation finale : c'est le moyen de savoir tôt si « la physique derrière marche ».
+L'essai en laboratoire sur la pièce commandée confirme le modèle ; le genre de document `test` (plan d'essai :
+valeur prévue, valeur mesurée) est réservé dans le format pour fermer cette boucle.
+
+## 5 bis. Commander
+
+Une pièce n'est utile que sur le banc d'essai. Pour chaque pièce, la plateforme dit :
+
+- si elle est **prête à commander** — elle se construit, son matériau et son procédé sont définis, aucune règle DFx
+  ne bloque ;
+- **en combien de jours ouvrables** un atelier de prototypage rapide la livre, et ce qui rallonge ce délai (brut hors
+  série, posages, finition sous-traitée, quantité) ;
+- la **voie rapide** quand le procédé visé demande un outillage : imprimer ou usiner le prototype, garder le moule ou
+  la filière pour la série ;
+- et elle prépare le **dossier de commande** : demande de prix rédigée, STEP, dessin PDF, DXF, STL, gamme et fiche
+  `.dwiz` dans une seule archive.
+
+Les délais sont des ordres de grandeur ; le devis de l'atelier fait foi.
 
 ## 6. Ce que la plateforme n'est pas (encore)
 

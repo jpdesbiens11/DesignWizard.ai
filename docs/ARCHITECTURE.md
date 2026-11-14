@@ -123,3 +123,26 @@ tools/                     génération des icônes Carnet, de la doc du langage
 4. Chaînes de cotes le long des interfaces ; vues en coupe et cotes de détail dans les dessins.
 5. Bibliothèque de pièces standard insérées en 3D depuis la BOM.
 6. Revue à plusieurs : commentaires épinglés sur le 3D et sur le rapport.
+
+
+## Itération 2 — ce qui s'est ajouté, et où
+
+| Brique | Fichiers | Rôle |
+|---|---|---|
+| Matière première | `web/js/cad/stock.js` | formes du commerce, séries de tailles, taille à acheter, conseils |
+| Atelier (*Shop*) | `web/js/cad/shop.js` | verbes d'atelier réécrits en opérations du noyau (`expandSpec`, structurel : les formules restent du texte), gamme de fabrication (`routing`) |
+| Intention | `web/js/core/shop_intent.js`, `web/js/modules/shop.js` | synthèse déterministe d'une pièce depuis ses interfaces, sa matière et son brut ; écran « Atelier » |
+| Format `.dwiz` | `web/js/core/dwiz.js`, `web/js/core/dwiz_names.js` | lecture / écriture génériques et sans perte ; vocabulaire par genre de document |
+| Commande | `web/js/cad/order.js`, `web/js/core/zip.js` | verdict « prête à commander », délai, demande de prix, archive du dossier |
+| Artéfacts | `web/js/core/artifacts.js`, `web/js/cad/stl.js`, `web/js/draw/dxf.js`, `web/js/cad/featurescript.js` + `fs_*.js` | un générateur pour les téléchargements, Drive et le dossier de commande |
+| Physique | `web/js/analysis/physics/*`, `web/js/modules/physics.js` | 21 modèles : `{ inputs, compute → values, checks, steps }`, `run`, `prefill` depuis la pièce |
+| Google | `web/js/google/auth.js`, `drive.js`, `drive_fs.js`, `web/js/config.js` | jeton en mémoire, portée `drive.file`, arborescence du projet |
+| Accès | `web/js/core/access.js`, `web/js/core/gate.js`, `web/acces.json`, `web/js/modules/account.js` | porte de la démo hébergée, empreintes de comptes, administrateur |
+| Thèmes | `web/css/themes.css`, `web/js/core/theme.js`, `web/js/boot.js` | jetons CSS par `html[data-theme]` ; la vue 3D lit `--view-edge` |
+
+Règles tenues : modules ES sans outil de construction ; aucune dépendance npm ; fichiers source de moins de
+500 lignes ; DOM construit avec `el()` et `textContent` ; une nouvelle brique = un module pur et testé, un écran, une
+entrée dans le rapport, et ses mots dans `dwiz_names.js`.
+
+Ordre de construction d'une pièce : paramètres → `expandSpec` (brut et verbes d'atelier → opérations du noyau) →
+blocs de famille (`extrusion`, `pcb`) → opérations → interfaces → opérations placées après `do interfaces`.

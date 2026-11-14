@@ -7,7 +7,9 @@ import { TEMPLATES, fromTemplate } from "../../web/js/cad/templates.js";
 import { DEMO_DRIVE } from "../../web/js/demo/demo_drive.js";
 import { DEMO_HVB_PARTS, DEMO_HVB_ASSEMBLY } from "../../web/js/demo/demo_hvb.js";
 import { synthesize } from "../../web/js/core/shop_intent.js";
-import { validateSpec } from "../../web/js/cad/build.js";
+import { validateSpec, buildPart } from "../../web/js/cad/build.js";
+import { kernel } from "./kernel_helper.mjs";
+import { readFileSync } from "node:fs";
 
 const same = (x) => JSON.parse(JSON.stringify(x));             // what JSON keeps (no undefined)
 const round = (x, label) => { const text = toDwiz(x); let back; try { back = fromDwiz(text); } catch (e) { assert.fail(`${label}: ${e.message}\n${text}`); } assert.deepEqual(back, same(x), label); return text; };
@@ -83,4 +85,19 @@ test("names: kinds of today, kinds reserved for the modules to come, file names"
   assert.equal(dwizFileName({ dw: "part/1", id: "DW-0042" }), "DW-0042.part.dwiz"); assert.equal(dwizFileName({ dw: "assembly/1", id: "DRV ASM" }), "DRV_ASM.assembly.dwiz");
   assert.equal(kindOfDoc({ parts: [], assemblies: [] }), "project"); assert.equal(kindOfDoc({ instances: [] }), "assembly");
   for (const K of Object.values(KINDS)) for (const [title, keys] of K.sections) assert.ok(title && keys.length);
+});
+
+test("the .dwiz examples of the documentation are real parts: they read, validate and build", async () => {
+  const K = await kernel();
+  for (const file of ["../../docs/FORMAT.md", "../../README.md"]) {
+    const md = readFileSync(new URL(file, import.meta.url), "utf8"), block = /```text\n(dwiz part\/1[\s\S]*?)```/.exec(md);
+    assert.ok(block, `${file}: no .dwiz example found`);
+    const spec = fromDwiz(block[1]);
+    assert.deepEqual(validateSpec(spec).errors, [], file);
+    const built = buildPart(K, spec);
+    assert.deepEqual(built.log.filter((l) => l.level === "error"), [], file);
+    assert.equal(built.interfaces.length, spec.interfaces.length, file);
+    assert.ok(built.volume > 1000, file);
+    K.flush();
+  }
 });

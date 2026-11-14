@@ -9,6 +9,9 @@ import { Viewer } from "../core/viewer.js";
 import { showBuilt } from "../core/viewport.js";
 import { buildAssembly, showAssembly } from "../core/asm_scene.js";
 import { projectDfx } from "./dfx.js";
+import { physicsSummary } from "./physics.js";
+import { routing } from "../cad/shop.js";
+import { orderCheck } from "../cad/order.js";
 import { makeDrawing, svgNode } from "./drawings.js";
 import { PROCESSES, materialOrDefault } from "../cad/materials.js";
 import { INTERFACE_TYPES } from "../cad/interfaces.js";
@@ -73,7 +76,7 @@ function render(main) {
     const mass = dfx.asms[0] && dfx.asms[0].ctx ? dfx.asms[0].ctx.mass.mass : dfx.parts.reduce((s, x) => s + (x.built ? x.built.mass : 0), 0);
     const verdict = errs || isoBad ? ["Points bloquants à lever", "danger"] : warns ? ["Acceptable sous réserve des points à vérifier", "warn"] : ["Conforme aux règles évaluées", "ok"];
     doc.append(el("section", { class: "card", style: { marginBottom: "1rem" } },
-      el("p", { class: "muted", style: { margin: 0 } }, "DesignWizard.ai by DynamiteAgile™ — dossier de design review"), el("h2", { style: { fontSize: "1.5rem", fontFamily: "var(--hand)", margin: ".2rem 0" } }, p.name),
+      el("p", { class: "muted", style: { margin: 0 } }, "DesignWizard.ai by DynamiteAgile™ — dossier de revue de conception"), el("h2", { style: { fontSize: "1.5rem", fontFamily: "var(--hand)", margin: ".2rem 0" } }, p.name),
       el("p", null, p.description || ""), el("p", { class: "muted" }, `Généré le ${new Date().toLocaleString("fr-CA")} · ${p.parts.length} pièce(s) · ${p.assemblies.length} assemblage(s)${p.author ? ` · ${p.author}` : ""}`),
       el("div", { class: "kpis" }, el("div", { class: "kpi" }, el("b", null, fmtMass(mass)), el("span", null, "Masse des pièces")), el("div", { class: "kpi" }, el("b", null, String(errs)), el("span", null, "DFx : à corriger")), el("div", { class: "kpi" }, el("b", null, String(warns)), el("span", null, "DFx : à vérifier")),
         el("div", { class: "kpi" }, el("b", null, iso.length ? (isoBad ? `${isoBad} / ${iso.length}` : "OK") : "—"), el("span", null, iso.length ? "Isolation : paires en défaut" : "Isolation : non analysée"))),
@@ -101,12 +104,22 @@ function render(main) {
       doc.append(sec);
     }
 
+    const phys = physicsSummary(p);
+    if (phys.length) doc.append(el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, "Physique — modèles analytiques"),
+      el("p", { class: "muted", style: { fontSize: ".84rem" } }, "Chaque ligne est un modèle simple et reconnu, gardé pour la revue : il dit si la physique fonctionne, avant l'essai en laboratoire qui le confirme."),
+      table(["Question", "Pièce", "Résultat", "Verdict"], phys.map((r) => [el("span", null, el("b", null, r.title), el("br"), el("small", { class: "muted" }, r.question)), r.partName || r.part || "—", r.result || "—",
+        badge(r.verdictLabel || r.verdict, r.verdict === "ok" ? "ok" : r.verdict === "warn" ? "warn" : "danger")]))));
+
     for (const x of dfx.parts) {
       const s = x.spec, b = x.built, sum = x.res.summary || {};
+      const route = b ? routing(s, b) : null, oc = b ? orderCheck(s, b, x.res, route) : null;
       const sec = el("section", { class: "card", style: { marginBottom: "1rem", breakInside: "avoid" } }, el("h2", null, `${s.id} — ${s.name || ""} `, sum.errors ? badge(`${sum.errors} à corriger`, "danger") : sum.warnings ? badge(`${sum.warnings} à vérifier`, "warn") : badge("conforme", "ok")));
       const facts = el("table", { class: "data" }, el("tbody", null, [["Fonction", s.function || "—"], ["Matériau", materialOrDefault(s.material).name], ["Procédé", (PROCESSES[s.process] || {}).fr || "—"], ["Masse", b ? fmtMass(b.mass) : "—"],
         ["Enveloppe", b ? `${fmt(b.bbox[3] - b.bbox[0], 1)} × ${fmt(b.bbox[4] - b.bbox[1], 1)} × ${fmt(b.bbox[5] - b.bbox[2], 1)} mm` : "—"], ["Révision", s.revision || "—"], ["Score DFx", typeof sum.score === "number" ? `${sum.score} / 100` : "—"],
-        ["Interfaces", (b ? b.interfaces : []).map((i) => `${i.name} (${i.side})`).join(" · ") || "aucune"]].map(([k, v]) => el("tr", null, el("td", null, k), el("td", null, v)))));
+        ["Interfaces", (b ? b.interfaces : []).map((i) => `${i.name} (${i.side})`).join(" · ") || "aucune"],
+        ["Matière première", route && route.stock ? `${route.stock.label}${route.utilisation !== null ? ` — ${Math.round(route.utilisation * 100)} % utilisé` : ""}` : "non déclarée"],
+        ["Fabrication", route ? `${route.steps.length} opération(s), ${route.setups.length || 1} posage(s), ${route.tools.length} outil(s)` : "—"],
+        ["Commande prototype", oc ? oc.label : "—"]].map(([k, v]) => el("tr", null, el("td", null, k), el("td", null, v)))));
       sec.append(el("div", { class: "two-col" }, pics.parts[s.id] ? img(pics.parts[s.id], s.id) : el("p", { class: "muted" }, "Pas d'image."), facts));
       const fl = x.res.findings.filter((f) => f.severity !== "info");
       if (fl.length) sec.append(el("h3", { style: { marginTop: ".8rem" } }, "Constats DFM / DFx"), table(["Règle", "Niveau", "Constat"], fl.map((f) => [f.id, sevText[f.severity], el("span", null, el("b", null, f.title), " — ", f.message)])));
