@@ -2,8 +2,8 @@
 
      DesignWizard.ai/
        <Projet>/
-         projet.dwproject.json          the whole project (what « Ouvrir depuis Drive » reads back)
-         01_Pieces/<PN> <nom>/          PN.dwpart.json · PN.step · PN.stl · PN.dxf · PN.pdf · PN.fs · PN_gamme.txt
+         projet.dwiz                    the whole project (what « Ouvrir depuis Drive » reads back)
+         01_Pieces/<PN> <nom>/          PN.part.dwiz · PN.step · PN.stl · PN.dxf · PN.pdf · PN.fs · PN_gamme.txt
          02_Assemblages/<ASM>/          ASM.step · ASM_nomenclature.csv
          03_Analyses/                   physique, isolation, DFx
          04_Rapports/                   rapport de revue de conception
@@ -12,9 +12,11 @@
    rename or move them in Drive. Pure logic over a drive client (see drive.js): testable with a fake one. */
 
 import { FOLDER } from "./drive.js";
+import { toDwiz, fromDwiz } from "../core/dwiz.js";
 
 export const TREE = { parts: "01_Pieces", assemblies: "02_Assemblages", analyses: "03_Analyses", reports: "04_Rapports" };
-export const PROJECT_FILE = "projet.dwproject.json";
+export const PROJECT_FILE = "projet.dwiz";
+const LEGACY_PROJECT_FILE = "projet.dwproject.json";           // written by the first versions; still read
 /** A name Drive and every file system accept. */
 export const safeName = (s) => String(s || "sans nom").replace(/[\\/:*?"<>|\u0000-\u001f]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 120) || "sans nom";
 
@@ -65,14 +67,15 @@ export function createDriveFs(drive, { root = "DesignWizard.ai" } = {}) {
     /** Save the project file. Returns { folder, file }. */
     async saveProject(project) {
       const f = await projectFolder(project);
-      const file = await put(f.id, PROJECT_FILE, "application/json", JSON.stringify(project, null, 1), "project-file", { pid: project.id });
+      const file = await put(f.id, PROJECT_FILE, "text/plain", toDwiz(project), "project-file", { pid: project.id });
       return { folder: f, file };
     },
     /** Read a project back from its folder. */
     async loadProject(folderId) {
-      const found = await drive.find({ parent: folderId, name: PROJECT_FILE, limit: 2 });
+      let found = await drive.find({ parent: folderId, name: PROJECT_FILE, limit: 2 });
+      if (!found.length) found = await drive.find({ parent: folderId, name: LEGACY_PROJECT_FILE, limit: 2 });
       if (!found.length) throw new Error(`Ce dossier ne contient pas de fichier ${PROJECT_FILE}.`);
-      const obj = JSON.parse(await drive.text(found[0].id));
+      const text = await drive.text(found[0].id), obj = /^\s*\{/.test(text) ? JSON.parse(text) : fromDwiz(text);
       if (!obj || !Array.isArray(obj.parts)) throw new Error("Le fichier de projet lu dans Drive n'est pas un projet DesignWizard.");
       return obj;
     },

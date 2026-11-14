@@ -4,10 +4,15 @@
 import { store } from "./store.js";
 import { toast } from "./dom.js";
 import { validateSpec } from "../cad/build.js";
+import { findDwiz, fromDwiz } from "./dwiz.js";
 
-/** Find the JSON object in a text that may contain prose and ```json fences (an assistant's answer). */
+/** Find the document in a text that may contain prose and code fences (an assistant's answer): a .dwiz document, or a
+    JSON object. When a .dwiz document is found but cannot be read, extractJson.error says why, with its line. */
 export function extractJson(text) {
+  extractJson.error = null;
   if (typeof text !== "string") return null;
+  const dw = findDwiz(text);
+  if (dw && !/^\s*[[{]/.test(text)) { try { return fromDwiz(dw); } catch (e) { extractJson.error = e.message; } }
   const tryParse = (s) => { try { const v = JSON.parse(s); return v && typeof v === "object" ? v : null; } catch (e) { return null; } };
   const fences = [...text.matchAll(/```(?:json|JSON)?\s*([\s\S]*?)```/g)].map((m) => m[1]);
   for (const f of fences.sort((a, b) => b.length - a.length)) { const v = tryParse(f.trim()); if (v) return v; }
@@ -71,7 +76,7 @@ export async function importAny(text, filename = "") {
     return { kind: "step", id };
   }
   const obj = extractJson(text), kind = kindOf(obj);
-  if (!kind) { toast("Texte non reconnu : ni pièce, ni profil, ni projet DesignWizard, ni STEP. Correctif : collez la réponse JSON complète de l'entrevue.", "error", 7000); return null; }
+  if (!kind) { toast(extractJson.error ? `Fichier .dwiz illisible — ${extractJson.error}` : "Texte non reconnu : ni pièce, ni profil, ni projet DesignWizard (.dwiz ou JSON), ni STEP. Correctif : collez la réponse complète de l'entrevue.", "error", 8000); return null; }
   if (kind === "project") {
     const p = await store.create(obj.name || "Projet importé", obj);
     toast(`Projet « ${p.name} » importé (${p.parts.length} pièce(s)).`, "success");
@@ -103,7 +108,7 @@ export function installImport(onImported) {
     const t = document.activeElement;
     if (t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
     const text = (e.clipboardData || window.clipboardData).getData("text");
-    if (!text || text.length < 20 || !/[{]|ISO-10303/.test(text)) return;
+    if (!text || text.length < 20 || !/[{]|ISO-10303|(^|\n)\s*dwiz\s/.test(text)) return;
     e.preventDefault();
     const r = await importAny(text);
     if (r) onImported(r);
@@ -118,7 +123,7 @@ export function installImport(onImported) {
 }
 export function pickFile(onImported) {
   const input = document.createElement("input");
-  input.type = "file"; input.accept = ".json,.step,.stp,.txt,.md"; input.multiple = true;
+  input.type = "file"; input.accept = ".dwiz,.json,.step,.stp,.txt,.md"; input.multiple = true;
   input.addEventListener("change", async () => { for (const f of input.files) { const r = await importAny(await f.text(), f.name); if (r) onImported(r); } });
   input.click();
 }

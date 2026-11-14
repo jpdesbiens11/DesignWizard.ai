@@ -108,7 +108,11 @@ test("drive tree: save, reopen, rename, publish artefacts without duplicates", a
   assert.deepEqual(tree.map((t) => t.name), ["01_Pieces", "04_Rapports", PROJECT_FILE]);
   assert.deepEqual(tree[0].children[0].children.map((c) => c.name), ["DW-0001.step", "DW-0001.stl"]);
   assert.deepEqual((await fs2.listProjects()).map((p) => p.pid), ["p1"]);
-  await assert.rejects(fs2.loadProject(tree[0].id), /projet\.dwproject\.json/);
+  await assert.rejects(fs2.loadProject(tree[0].id), /projet\.dwiz/);
+  assert.match(drive.files.get(a.file.id).content, /^dwiz project\/1 p1 "Variateur 400 V \/ essai"/, "the project is stored in the platform's own format");
+  const old = await drive.createFolder({ name: "ancien", parent: "x", role: "project", props: { pid: "old" } });
+  await drive.upload({ name: "projet.dwproject.json", mime: "application/json", bytes: JSON.stringify({ dw: "project/1", id: "old", name: "Ancien", parts: [], assemblies: [] }), parent: old.id, role: "project-file" });
+  assert.equal((await fs2.loadProject(old.id)).name, "Ancien", "project files of the first versions (JSON) are still read");
   assert.equal(safeName('a/b:c*?"<>|d'), "a b c d"); assert.equal(safeName(""), "sans nom");
 });
 

@@ -149,4 +149,17 @@ Mounting holes of a board = one "bolt_pattern" interface, side "A", face "-Z" (t
 3. Everything a human would tune is a parameter. No raw number repeated twice.
 4. Respect the design-for-manufacturing rules of the process (walls, radii, hole sizes, depths).
 5. Think like the shop: choose the raw stock first (a commercial size), then the fewest operations and set-ups.
-6. Answer with ONE JSON object in a code block, valid JSON (double quotes, no comments, no trailing commas).`;
+6. Answer with ONE JSON object in a code block, valid JSON (double quotes, no comments, no trailing commas).
+
+## 9. The .dwiz file — the same part, one instruction per line
+The platform stores and exchanges parts as .dwiz text. It is the SAME model as the JSON above, written to be read by people, shops and AIs:
+dwiz part/1 PN-0001 "Short name"                        # first line: kind/version, part number, name
+function "One sentence: what the part does."            # a key and its value
+stock plate L=L W=W t=t                                 # a block: the word, then name=value (the stock form comes first, without its name)
+param L 120 min=60 max=300 unit=mm label="Length"       # one line per parameter;  "param wall = 3"  is the short form
+interface IF1 bolt_pattern side=A face=+Z at=[L/2, W/2] key=pcb_mount
+  params screw=M3 pattern={type: rect, nx: 2, ny: 2, dx: 70, dy: 50}       # indented lines belong to the line above
+do tap face=+Z at=[10, 10] thread=M4 depth=(t - 1)      # one line per feature or Shop operation, in order; (…) is a formula of the parameters
+note "Break sharp edges 0.2 to 0.5 mm"                  # one line per drawing note
+Values: numbers, bare words, "text", (formulas), [lists], {name: value}; "key = value" writes any raw value; "#" starts a comment.
+A .dwiz document is accepted as an answer in place of the JSON object; both are read.`;

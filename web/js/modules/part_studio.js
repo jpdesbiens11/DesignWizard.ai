@@ -192,7 +192,7 @@ export function partStudio(main, args, cfg) {
   /* ---------- right: inspector ---------- */
   function renderRight() {
     clear(right);
-    const tabs = [["params", "Paramètres"], ["ifaces", "Interfaces"], ["gamme", "Gamme"], ["dfx", "DFx"], ["files", "Artéfacts"], ["sheet", "Fiche"], ["json", "JSON"], ...((cfg.tabs || []).map((t) => [t.key, t.label]))];
+    const tabs = [["params", "Paramètres"], ["ifaces", "Interfaces"], ["gamme", "Gamme"], ["dfx", "DFx"], ["files", "Artéfacts"], ["sheet", "Fiche"], ["json", "Fichier"], ...((cfg.tabs || []).map((t) => [t.key, t.label]))];
     const n = st.findings ? st.findings.findings.filter((f) => f.severity === "error").length : 0;
     right.append(el("div", { class: "side-head" }, el("h2", null, st.spec.name || st.spec.id)),
       el("div", { class: "subtabs", style: { margin: "0 .6rem" } }, tabs.map(([k, label]) => el("button", { class: "subtab" + (st.tab === k ? " active" : ""), type: "button", onClick: () => { st.tab = k; renderRight(); } }, label, k === "dfx" && n ? ` (${n})` : ""))));

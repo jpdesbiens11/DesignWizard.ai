@@ -1,8 +1,8 @@
 /* DesignWizard.ai — artefacts: what a part or an assembly hands to the rest of the industry. One generator for the
    downloads, for the project tree in Google Drive and for the report:
-     part      JSON (source) · STEP AP214 · STL · DXF (views) · DXF (flat outline, plate and sheet) · PDF drawing ·
+     part      .dwiz (source) · STEP AP214 · STL · DXF (views) · DXF (flat outline, plate and sheet) · PDF drawing ·
                FeatureScript (Onshape, experimental) · routing sheet
-     assembly  STEP · bill of materials (CSV)
+     assembly  .dwiz · STEP · bill of materials (CSV)
    DWG itself is a closed, undocumented format: the platform writes DXF, which every DWG tool opens. */
 
 import { store } from "./store.js";
@@ -17,13 +17,14 @@ import { makeDrawing } from "../modules/drawings.js";
 import { gammeText } from "../modules/part_gamme.js";
 import { buildAssembly } from "./asm_scene.js";
 import { TREE, safeName } from "../google/drive_fs.js";
+import { toDwiz } from "./dwiz.js";
 
 const isFlat = (spec) => (spec.stock && STOCK_FORMS[spec.stock.form] && STOCK_FORMS[spec.stock.form].flat) || ["plate", "sheet", "busbar"].includes(spec.family);
 
 /* key -> what it is, for whom, and how it is made. `when(spec)` hides an artefact that does not apply. */
 export const ARTIFACTS = [
-  { key: "json", ext: ".dwpart.json", label: "Pièce (JSON)", icon: "copy", mime: "application/json", text: "La source de la pièce : lisible, modifiable, comparable dans Git.",
-    make: async (spec) => JSON.stringify(spec, null, 1) },
+  { key: "dwiz", ext: ".part.dwiz", label: "Fiche de pièce .dwiz", icon: "copy", mime: "text/plain", text: "La pièce dans le format de la plateforme : une instruction par ligne, lisible par un humain, un atelier et une IA.",
+    make: async (spec) => toDwiz(spec) },
   { key: "step", ext: ".step", label: "STEP AP214", icon: "step", mime: "application/step", text: "Le solide exact, pour tout logiciel de CAO et tout atelier.",
     make: async (spec) => { await kernel.build(spec); return kernel.step([{ key: spec.id, name: `${spec.id} ${spec.name || ""}`.trim() }], spec.id); } },
   { key: "stl", ext: ".stl", label: "STL", icon: "stl", mime: "model/stl", text: "Le maillage, pour l'impression 3D et la visualisation.",
@@ -65,6 +66,7 @@ export async function assemblyArtifacts(asmId) {
     const items = ctx.asm.instances.map((i) => { const s = store.part(i.part); return { key: i.part, name: `${i.part} ${s.name || ""}`.trim(), instanceName: `${i.part} ${i.id}`, matrix: ctx.sol.placements[i.id] }; });
     files.push({ key: "step", name: `${asm.id}.step`, mime: "application/step", bytes: await kernel.step(items, `${asm.id} ${asm.name || ""}`.trim()), warnings: [] });
   } catch (e) { errors.push({ key: "step", label: "STEP", message: e.message }); }
+  files.push({ key: "dwiz", name: `${asm.id}.assembly.dwiz`, mime: "text/plain", bytes: toDwiz(asm), warnings: [] });
   files.push({ key: "bom", name: `${asm.id}_nomenclature.csv`, mime: "text/csv", warnings: [],
     bytes: "﻿Item;Reference;Designation;Quantite;Materiau;Procede;Masse_g\n" + ctx.bom.map((r) => [r.item, r.id, `"${(r.name || "").replace(/"/g, '""')}"`, r.qty, r.material, r.process, r.mass === null ? "" : r.mass.toFixed(1)].join(";")).join("\n") });
   return { files, errors };
@@ -84,6 +86,6 @@ export async function projectArtifacts(onStep = () => {}) {
     try { const r = await assemblyArtifacts(asm.id); for (const f of r.files) items.push({ path: [TREE.assemblies, safeName(`${asm.id} ${asm.name || ""}`)], name: f.name, mime: f.mime, bytes: f.bytes }); errors.push(...r.errors.map((e) => ({ ...e, of: asm.id }))); }
     catch (e) { errors.push({ key: "step", label: "Assemblage", message: e.message, of: asm.id }); }
   }
-  if ((p.physics || []).length) items.push({ path: [TREE.analyses], name: "physique.json", mime: "application/json", bytes: JSON.stringify(p.physics, null, 1) });
+  if ((p.physics || []).length) items.push({ path: [TREE.analyses], name: "physique.dwiz", mime: "text/plain", bytes: toDwiz({ dw: "analysis/1", id: "physique", name: "Physique vérifiée", runs: p.physics }) });
   return { items, errors };
 }

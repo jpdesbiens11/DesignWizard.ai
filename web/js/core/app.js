@@ -6,6 +6,8 @@ import { store } from "./store.js";
 import { kernel } from "../cad/client.js";
 import { session, signOut } from "./access.js";
 import { THEMES, currentTheme, applyTheme } from "./theme.js";
+import { toDwiz } from "./dwiz.js";
+import { dwizFileName } from "./dwiz_names.js";
 
 export const APP_VERSION = "0.2.0";
 const modules = new Map();
@@ -74,7 +76,8 @@ async function projectMenu(menu, close) {
   if (p) {
     menu.append(el("hr"));
     menu.append(item("Renommer le projet…", "edit", async () => { const name = await promptBox("Renommer", "Nom du projet", p.name); if (name) store.commit(`Projet renommé : ${name}`, (x) => { x.name = name; }); }, close));
-    menu.append(item("Exporter le projet (.json)", "download", () => download(`${p.id}.dwproject.json`, store.exportJson(), "application/json"), close));
+    menu.append(item("Exporter le projet (.dwiz)", "download", () => download(dwizFileName(p), toDwiz(p), "text/plain;charset=utf-8"), close));
+    menu.append(item("Exporter en JSON", "download", () => download(`${p.id}.dwproject.json`, store.exportJson(), "application/json"), close));
   }
   menu.append(item("Importer un projet ou une pièce…", "upload", () => app.pickFile && app.pickFile(), close));
   if (session.configured) menu.append(item("Ouvrir depuis Google Drive…", "cloud", () => app.openFromDrive && app.openFromDrive(), close));

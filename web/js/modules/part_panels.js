@@ -1,13 +1,16 @@
 /* DesignWizard.ai — inspector panels of the part studio: parameters (sliders with live rebuild), interfaces,
    DFx findings with one-click fixes, data sheet, raw JSON. */
 
-import { el, clear, icon, btn, badge, field, toast, fmt, fmtMass, copyText } from "../core/dom.js";
+import { el, clear, icon, btn, badge, field, toast, fmt, fmtMass, copyText, download } from "../core/dom.js";
 import { store } from "../core/store.js";
 import { interfaceDialog, nextIfaceId } from "../core/part_edit.js";
 import { INTERFACE_TYPES, interfaceType } from "../cad/interfaces.js";
 import { MATERIALS, PROCESSES, materialOrDefault } from "../cad/materials.js";
 import { validateSpec } from "../cad/build.js";
 import { applyFix } from "../analysis/dfx_api.js";
+import { toDwiz } from "../core/dwiz.js";
+import { dwizFileName } from "../core/dwiz_names.js";
+import { extractJson } from "../core/importer.js";
 
 /* ---------- parameters ---------- */
 export function paramsPanel(body, { st, id, live }) {
@@ -117,20 +120,25 @@ export function sheetPanel(body, { st, id }) {
     (s.interview.questions || []).map((q) => el("p", { style: { fontSize: ".82rem" } }, el("b", null, q.q), " — ", q.a)), (s.interview.assumptions || []).map((a) => el("p", { class: "muted", style: { fontSize: ".82rem" } }, "Hypothèse : ", a))));
 }
 
-/* ---------- JSON ---------- */
+/* ---------- the part file: .dwiz (the platform's format) or its JSON twin ---------- */
 export function jsonPanel(body, { st, id }) {
-  const ta = el("textarea", { rows: 26, spellcheck: false, value: JSON.stringify(st.spec, (k, v) => (k === "text" && typeof v === "string" && v.length > 2000 ? `${v.slice(0, 60)}… [STEP ${v.length} caractères, non modifiable ici]` : v), 1) });
-  const err = el("p", { class: "form-error" });
-  body.append(el("p", { class: "muted", style: { fontSize: ".82rem" } }, "La pièce dans le langage DesignWizard (DW part/1). Modifiez-la ici ou recollez la réponse d'une entrevue."), ta, err,
-    el("div", { class: "form-actions" }, btn("Copier", async () => toast((await copyText(ta.value)) ? "JSON copié." : "Copie impossible."), { small: true, icon: "copy" }),
+  const MARK = "[STEP importé : non modifiable ici]", big = st.spec.step && typeof st.spec.step === "object" && String(st.spec.step.text || "").length > 2000;
+  const shown = big ? { ...st.spec, step: { ...st.spec.step, text: MARK } } : st.spec;
+  let json = false;
+  const ta = el("textarea", { rows: 26, spellcheck: false }), err = el("p", { class: "form-error" });
+  const show = () => { ta.value = json ? JSON.stringify(shown, null, 1) : toDwiz(shown); };
+  const flip = btn("Voir en JSON", () => { json = !json; flip.lastChild.textContent = json ? "Voir en .dwiz" : "Voir en JSON"; show(); }, { small: true, icon: "refresh" });
+  show();
+  body.append(el("p", { class: "muted", style: { fontSize: ".82rem" } }, "La pièce dans le format de la plateforme (.dwiz) : une instruction par ligne, lisible par un humain, un atelier et une IA. Modifiez-la ici, ou recollez la réponse d'une entrevue (.dwiz ou JSON)."), ta, err,
+    el("div", { class: "form-actions" }, flip, btn("Copier", async () => toast((await copyText(ta.value)) ? "Texte copié." : "Copie impossible."), { small: true, icon: "copy" }),
+      btn(".dwiz", () => download(dwizFileName(st.spec), toDwiz(st.spec), "text/plain;charset=utf-8"), { small: true, icon: "download", tip: "Télécharger la fiche de pièce .dwiz" }),
       btn("Appliquer", () => {
-        try {
-          const obj = JSON.parse(ta.value), v = validateSpec(obj);
-          if (v.errors.length) { err.textContent = v.errors.join("\n"); return; }
-          if (st.spec.step && obj.step && typeof obj.step.text === "string" && obj.step.text.includes("non modifiable ici")) obj.step = st.spec.step;
-          obj.id = id;
-          store.updatePart(id, () => obj, `${id} : JSON modifié`);
-          toast("Pièce mise à jour.", "success");
-        } catch (e) { err.textContent = `JSON invalide : ${e.message}`; }
+        const obj = extractJson(ta.value), v = obj && !Array.isArray(obj) ? validateSpec(obj) : null;
+        if (!v) { err.textContent = extractJson.error || "Texte illisible : ni .dwiz, ni JSON de pièce."; return; }
+        if (v.errors.length) { err.textContent = v.errors.join("\n"); return; }
+        if (big && obj.step && obj.step.text === MARK) obj.step = st.spec.step;
+        obj.id = id;
+        store.updatePart(id, () => obj, `${id} : fichier modifié`);
+        toast("Pièce mise à jour.", "success");
       }, { primary: true, small: true })));
 }
