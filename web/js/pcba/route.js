@@ -73,7 +73,9 @@ function lay(G, path, net, w, via, first, last) {
 function routeAll(board, lib, order, opts, t0) {
   const R = resolveBoard(board, lib), G = makeGrid(R, opts.grid ?? 0.25), nl = G.layers.length, size = nl * G.n;
   const S = { seen: new Int32Array(size), done: new Int32Array(size), cost: new Float32Array(size), prev: new Int32Array(size), open: new Uint8Array(G.n), heap: new Heap(4096), epoch: 0 };
-  let tracks = [], vias = [];
+  let tracks = opts.seed ? [...opts.seed.tracks] : [], vias = opts.seed ? [...opts.seed.vias] : [];      // seed : copper of an earlier pass, which this one may still rip up
+  for (const t of tracks) addTrack(G, t);
+  for (const v of vias) addVia(G, v);
   const failed = new Map(), viaCost = opts.viaCost ?? 6, li = (name) => G.layers.indexOf(name), byName = new Map(R.nets.map((n) => [n.name, n])), rips = new Map();
   const queue = [...order.filter((n) => byName.has(n)), ...R.nets.map((n) => n.name).filter((n) => !order.includes(n))].filter((n) => !opts.nets || opts.nets.includes(n));
   // pad groups of one net with the copper laid so far
@@ -163,7 +165,8 @@ function routeAll(board, lib, order, opts, t0) {
 }
 
 /** Routes every open connection. opts : { grid, maxMs, onProgress, nets, keep, viaCost, passes, finish }.
-    A last pass on a grid twice as fine takes up the links the first grid could not thread (finish: false skips it).
+    A last pass on a grid twice as fine takes up the links the first grid could not thread, free to rip up and lay
+    again what the earlier passes put in the way (finish: false skips it).
     → { routed, total, open, failed: [{ net, from, to }], length, vias, ms, passes, complete } */
 export function autoroute(board, lib = {}, opts = {}) {
   const t0 = Date.now(), o = { maxMs: 15000, passes: 2, ...opts };
@@ -180,14 +183,12 @@ export function autoroute(board, lib = {}, opts = {}) {
     const bad = [...new Set(res.failed.map((f) => f.net))];       // next pass : the nets that failed go first
     order = [...bad, ...order.filter((n) => !bad.includes(n))];
   }
-  board.tracks = [...(board.tracks || []), ...best.tracks]; board.vias = [...(board.vias || []), ...best.vias];
-  let open = connectivity(resolveBoard(board, lib)).open;
-  if (open > 0 && best.failed.length && o.finish !== false) {      // what the grid could not thread : the same search on a grid twice as fine, around the copper now in place
-    const nets = [...new Set(best.failed.map((f) => f.net))], fine = routeAll(board, lib, nets, { ...o, nets, grid: (o.grid ?? 0.25) / 2, maxMs: Math.min(25000, Math.max(8000, o.maxMs / 3)) }, Date.now());
-    board.tracks.push(...fine.tracks); board.vias.push(...fine.vias);
-    best = { ...best, tracks: [...best.tracks, ...fine.tracks], vias: [...best.vias, ...fine.vias], failed: fine.failed };
-    open = connectivity(resolveBoard(board, lib)).open;
+  if (best.failed.length && o.finish !== false) {                // what the grid could not thread : the same search on a grid twice as fine, free to rip up and lay again what the first passes put in the way
+    const nets = [...new Set(best.failed.map((f) => f.net))], fine = routeAll(board, lib, nets, { ...o, nets, seed: best, grid: (o.grid ?? 0.25) / 2, maxMs: Math.min(30000, Math.max(8000, o.maxMs / 2)) }, Date.now());
+    if (fine.failed.length < best.failed.length) best = fine;
   }
+  board.tracks = [...(board.tracks || []), ...best.tracks]; board.vias = [...(board.vias || []), ...best.vias];
+  const open = connectivity(resolveBoard(board, lib)).open;
   const length = best.tracks.reduce((s, t) => s + t.pts.reduce((a, p, i) => (i ? a + dist(t.pts[i - 1], p) : 0), 0), 0);
   return { routed: before - open, total: before, open, failed: best.failed, length, vias: best.vias.length, ms: Date.now() - t0, passes, complete: open === 0 };
 }

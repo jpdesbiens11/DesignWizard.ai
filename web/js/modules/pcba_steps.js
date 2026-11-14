@@ -14,6 +14,7 @@ import { stackup } from "../pcba/fabfiles.js";
 import { inheritFromPart } from "../pcba/twin.js";
 import { blockRefs } from "../pcba/move.js";
 import { boardView, layerList } from "./pcba_view.js";
+import { penTool, copperCard, dragCorner } from "./pcba_trace.js";
 
 const num = (value, onChange, step = "any", w = "5.2rem") => el("input", { type: "number", value, step, style: { width: w }, onChange: (e) => { const x = parseFloat(e.target.value); if (Number.isFinite(x)) onChange(x); } });
 const txt = (value, onChange, w = "100%") => el("input", { type: "text", value: value ?? "", spellcheck: false, style: { width: w }, onChange: (e) => onChange(e.target.value.trim()) });
@@ -153,17 +154,22 @@ function layout(ctx, { left, view, right }) {
   const snap = (q) => Math.round(q * 4) / 4, said = (what) => (i) => { const r = i.route; toast(`${what} : ${i.tracks} piste(s) et ${i.vias} via(s) ont suivi, ${r.routed} liaison(s) refaite(s)${r.open ? `, ${r.open} à reprendre` : ""}${i.clashes ? ` ; ${i.clashes} pastille(s) trop près d'un voisin` : ""}.`, r.open || i.clashes ? "warn" : "success", 6000); };
   const moveParts = (refs, o, label, what) => { const d = [snap((o.delta || [0, 0])[0]), snap((o.delta || [0, 0])[1])]; if (!d[0] && !d[1] && !o.turn) return; runJob(ctx, "move", label, { ...o, refs, delta: d }, said(what)); };
   const moveBlock = (id, o) => { ui.block = id; moveParts(blockRefs(board, id), { ...o, block: id }, `Bloc ${id} ${o.turn ? "tourné" : "déplacé"}`, `Bloc ${id}`); };
-  const mode = ui.move === "blocks" ? "blocks" : "parts";
-  l.append(el("div", { class: "form-row tight", style: { alignItems: "center", margin: ".2rem 0 .6rem" } }, el("span", { class: "muted small" }, "Glisser déplace"), el("span", { class: "seg" }, [["parts", "un composant"], ["blocks", "un bloc entier"]].map(([k, t]) => el("button", { type: "button", class: mode === k ? "on" : "", onClick: () => { ui.move = k; ctx.redraw(); } }, t)))));
+  const mode = ui.move === "blocks" ? "blocks" : ui.move === "trace" ? "trace" : "parts";
+  if (ui.pick) { const x = ui.pick.track !== undefined ? board.tracks[ui.pick.track] : board.vias[ui.pick.via]; if (!x || x.net !== ui.net) ui.pick = null; }      // the piece picked is gone, or another one took its place
+  if (mode !== "trace") ui.pen = null;
+  l.append(el("div", { class: "form-row tight", style: { alignItems: "center", margin: ".2rem 0 .6rem" } }, el("span", { class: "muted small" }, "Outil"), el("span", { class: "seg" }, [["parts", "déplacer un composant"], ["blocks", "un bloc entier"], ["trace", "tracer une piste"]].map(([k, t]) => el("button", { type: "button", class: mode === k ? "on" : "", onClick: () => { ui.move = k; ctx.redraw(); } }, t)))));
   l.append(el("div", { class: "kpis" }, el("div", { class: "kpi" }, el("b", null, String(conn.open)), el("span", null, "liaisons à router")), el("div", { class: "kpi" }, el("b", null, `${Math.round(stats.length)} mm`), el("span", null, `${stats.tracks} pistes`)), el("div", { class: "kpi" }, el("b", null, String(stats.vias)), el("span", null, "vias"))));
-  const v = boardView(view);
-  const scene = () => ({ R, art: ctx.art, board, layers: ui.layers, zones: ui.layers.has("zones"), ratsnest: rats, mode, block: ui.block, ref: ui.ref, net: ui.net,
-    onPick: (h) => { ui.ref = h.ref || (h.pin ? h.pin.slice(0, h.pin.indexOf(".")) : null); ui.net = h.net || null; const pp = board.parts.find((q) => q.ref === ui.ref); ui.block = pp ? pp.block || null : null; ctx.redraw(); },
+  const v = boardView(view), pen = mode === "trace" ? penTool(ctx, v, ctx.art.names) : null, picked = !pen && ui.pick && ui.pick.track !== undefined ? board.tracks[ui.pick.track] : null;
+  view.classList.toggle("trace", !!pen);
+  if (pen) { l.append(pen.panel); window.addEventListener("keydown", pen.keys); }
+  const scene = () => ({ R, art: ctx.art, board, layers: ui.layers, zones: ui.layers.has("zones"), ratsnest: rats, mode, block: ui.block, ref: ui.ref, net: ui.net, ...(pen ? pen.scene : {}),
+    corners: picked ? { pts: picked.pts, w: picked.w } : null, onMoveCorner: (k, d) => dragCorner(ctx, ui.pick.track, k, d),
+    ...(pen ? {} : { onPick: (h) => { ui.ref = h.ref || (h.pin ? h.pin.slice(0, h.pin.indexOf(".")) : null); ui.net = h.net || null; ui.pick = h.track !== undefined ? { track: h.track } : h.via !== undefined ? { via: h.via } : null; const pp = board.parts.find((q) => q.ref === ui.ref); ui.block = pp ? pp.block || null : null; ctx.redraw(); } }),
     onMoveBlock: (id, d) => moveBlock(id, { delta: d }),
     onMovePart: (ref, d) => { ui.ref = ref; moveParts([ref], { delta: d }, `${ref} déplacé`, ref); } });
-  v.show(scene());
-  l.append(section("Couches", layerList(ctx.art, ui.layers, () => v.show(scene())), el("label", { class: "pv-layer-row" }, el("input", { type: "checkbox", checked: ui.layers.has("zones"), onChange: (e) => { if (e.target.checked) ui.layers.add("zones"); else ui.layers.delete("zones"); v.show(scene()); } }), el("i", { style: { background: "var(--acc)" } }), el("span", null, "Zones des blocs"))));
-  l.append(el("p", { class: "muted small" }, "Glissez un composant ou un bloc : ses pistes internes le suivent, ses liaisons avec le reste de la carte se refont seules, le cuivre qu'il recouvre est repris. Ctrl+Z annule le tout. Molette : zoom. Un clic sur du cuivre montre son net."));
+  v.show(scene()); if (pen) pen.redraw();
+  l.append(section("Couches", layerList(ctx.art, ui.layers, () => { v.show(scene()); if (pen) pen.redraw(); }), el("label", { class: "pv-layer-row" }, el("input", { type: "checkbox", checked: ui.layers.has("zones"), onChange: (e) => { if (e.target.checked) ui.layers.add("zones"); else ui.layers.delete("zones"); v.show(scene()); } }), el("i", { style: { background: "var(--acc)" } }), el("span", null, "Zones des blocs"))));
+  l.append(el("p", { class: "muted small" }, "Tracer une piste : cliquez une pastille, puis un clic par angle (vert : permis ; rouge : refusé), V pour un via. Glissez un composant ou un bloc : ses pistes internes le suivent, ses liaisons avec le reste de la carte se refont seules, le cuivre qu'il recouvre est repris. Ctrl+Z annule le tout. Molette : zoom. Un clic sur du cuivre montre son net."));
   const r = scroll(right), part = board.parts.find((p) => p.ref === ui.ref), net = R.nets.find((n) => n.name === ui.net);
   if (part) {
     const def = ctx.lib[part.comp] || (board.library || {})[part.comp], edit = (fn, label) => ctx.update((x) => fn(x.parts.find((q) => q.ref === part.ref), x), label || `${part.ref} modifié`);
@@ -179,11 +185,15 @@ function layout(ctx, { left, view, right }) {
     if (def) r.append(section("Composant", el("p", { class: "small" }, `${def.package} · ${def.desc || ""}`), el("p", { class: "muted small" }, `${def.pads.length} pastilles, ${fmt(def.body[0])} × ${fmt(def.body[1])} × ${fmt(def.body[2])} mm, ${fmt(def.price)} $`)));
   } else if (net) {
     r.append(el("div", { class: "side-head" }, el("h2", null, `Net ${net.name}`), badge(CLASSES[net.class] ? CLASSES[net.class].label : net.class)));
+    const card = ui.pick ? copperCard(ctx, ui.pick, ctx.art.names, section) : null, left = conn.nets.find((n) => n.name === net.name);
+    if (card) r.append(card);
+    if (left && left.open) r.append(el("div", { class: "form-actions", style: { justifyContent: "flex-start" } }, btn(`Router ce net (${left.open} liaison${left.open > 1 ? "s" : ""})`, () => runJob(ctx, "route", `Routage de ${net.name}`, { nets: [net.name], keep: true, maxMs: 20000, passes: 2 }, (i) => toast(i.open ? `${net.name} : le routeur n'a pas trouvé de passage — tracez-le à la main ou écartez un composant.` : `${net.name} routé.`, i.open ? "warn" : "success")), { small: true, icon: "play" }),
+      btn("Tracer à la main", () => { ui.move = "trace"; ctx.redraw(); }, { small: true, icon: "edit" })));
     r.append(el("p", { class: "small" }, `${net.voltage ? `${fmt(net.voltage)} V, ` : ""}${net.current ? `${fmt(net.current)} A, ` : ""}piste de ${fmt(net.rules.track)} mm, isolement de ${fmt(net.rules.clearance)} mm, via ${fmt(net.rules.via[0])} / ${fmt(net.rules.via[1])} mm.`),
       net.rules.need ? el("p", { class: "muted small" }, `IPC-2221 : ${fmt(net.current)} A demandent ${fmt(net.rules.need)} mm de large (35 µm, +10 K).`) : null, table(["Broche", "Nom"], net.pads.map((i) => [R.pads[i].pin, R.pads[i].name])));
   } else r.append(el("div", { class: "side-head" }, el("h2", null, "Sélection")), el("p", { class: "muted" }, "Cliquez un composant ou du cuivre."), section("Longueur par couche", table(["Couche", "mm"], copperLayers(board.board.layers || 2).map((k) => [ctx.art.names[k], fmt(stats.byLayer[k] || 0, 0)]))),
     ...(ctx.placement.length ? [section("Placement", ...ctx.placement.slice(0, 8).map((p) => hint(p.message, "warn")))] : []));
-  return () => v.destroy();
+  return () => { if (pen) window.removeEventListener("keydown", pen.keys); view.classList.remove("trace"); v.destroy(); };
 }
 
 export const DESIGN_STEPS = { fonctions, architecture, implantation, layout };

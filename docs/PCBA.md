@@ -89,13 +89,32 @@ sur grille de 0,25 mm (A*), sur 2 ou 4 couches, à vias traversants :
 - **chaque liaison est vérifiée au micron contre tout le cuivre avant d'être posée** ;
 - le cuivre verrouillé à la main est conservé.
 
-- ce que la grille n'a pas pu passer est repris par une **passe de finition** sur une grille deux fois plus fine.
+- ce que la grille n'a pas pu passer est repris par une **passe de finition** sur une grille deux fois plus fine,
+  libre de défaire et de refaire ce que les premières passes ont mis en travers.
 
 Mesuré : la carte de démonstration (63 composants, 35 nets, 60 × 90 mm, 4 couches) se route à **137 liaisons sur
 137** en 7 s, 955 mm de pistes, 114 vias, aucun constat au-dessus de la simple remarque. Sur des cartes faites des
-nouveaux blocs (90 × 70 mm, 4 couches) : carte USB de 51 composants, 136 liaisons sur 137 ; carte moteur de
-65 composants, 137 sur 138 ; carte pas à pas de 42 composants, 100 sur 104. Ce que le routeur pose est toujours sans
-défaut d'isolement ; ce qu'il laisse reste affiché en chevelu.
+nouveaux blocs (90 × 70 mm, 4 couches) : carte USB de 51 composants, 137 liaisons sur 137 ; carte moteur de
+65 composants, 138 sur 138 ; carte pas à pas de 42 composants, 102 sur 104 ; cartes de 94 et 106 composants
+(150 × 120 mm), 219 sur 222 et 236 sur 250. Ce que le routeur pose est toujours sans défaut d'isolement ; ce qu'il
+laisse reste affiché en chevelu, et se termine à la main.
+
+### Tracer à la main
+
+Le routeur propose, le concepteur termine. Dans le layout détaillé, l'outil **« tracer une piste »** :
+
+- un clic sur une pastille (ou sur du cuivre) commence une piste de **son net**, à la largeur de sa classe ;
+- chaque clic pose un angle, à 0, 45 ou 90°, accroché au cuivre du net ou à une grille de 0,125 mm ;
+- le tronçon sous le curseur est **vert** s'il respecte les règles du net, **rouge** sinon — et ce qui est rouge
+  n'est pas posé : la raison s'affiche (« 0,07 mm de la pastille Q1.2 : il en faut 0,2 ») ;
+- **V** pose un via et change de couche ; un clic sur du cuivre du même net termine ; Échap annule ; Retour arrière
+  retire le dernier point ; la couche et la largeur se changent en cours de tracé ;
+- une piste terminée est **une étape annulable**. Le cuivre tracé à la main n'est jamais retiré par le routeur.
+
+Un clic sur une piste ou un via (hors outil de tracé) le sélectionne : net, couche, largeur, longueur, origine
+(routeur ou main) ; on le **supprime**, on le **garde** (le routeur n'y touche plus) ou on le rend au routeur ; les
+sommets d'une piste sélectionnée se **glissent**, le déplacement étant refusé s'il enfreint une règle. Sur un net
+qui a des liaisons ouvertes, « Router ce net » relance le routeur pour lui seul.
 
 ### Déplacer un bloc : les pistes suivent
 
@@ -112,8 +131,7 @@ se tourne d'un quart de tour depuis le panneau de droite. Le sous-circuit se dé
 
 Mesuré sur la carte de démonstration : le bloc CAN (7 composants) déplacé de 1 mm — 12 pistes et 8 vias suivent,
 9 liaisons sont refaites, aucune liaison ouverte, aucune erreur de règle, en moins d'une demi-seconde de calcul.
-« Reconnecter » repose les liaisons manquantes sans toucher au reste. Il n'y a pas encore d'outil pour tracer une
-piste à la main : une liaison que le routeur ne passe pas se débloque en écartant un composant.
+« Reconnecter » repose les liaisons manquantes sans toucher au reste.
 
 ## 4. Vérifications
 
@@ -195,8 +213,8 @@ Le geste et ses garde-fous sont décrits dans [IA.md](IA.md).
   de contrôle d'impédance.
 - Plans pleins sur une couche entière, sans freins thermiques ; pas de zones de cuivre partielles.
 - Composants orientés par quarts de tour.
-- Le routeur donne un premier routage : sur une carte dense il laisse quelques liaisons à reprendre (chiffres au § 3),
-  et il n'y a pas encore de tracé manuel de piste.
+- Le routeur donne un premier routage : sur une carte dense il laisse quelques liaisons (chiffres au § 3), à tracer
+  à la main. Le tracé manuel est simple : pas de « pousser-écarter » des pistes voisines, pas d'arcs.
 - Les 26 nouveaux blocs sont vérifiés par le contrôle électrique et par leurs calculs, pas encore sur une carte
   fabriquée ; les constantes propres à une classe de circuit (limite de courant d'un pont en H, gain d'un pilote
   pas à pas) sont typiques : la fiche technique de la référence choisie fait foi.

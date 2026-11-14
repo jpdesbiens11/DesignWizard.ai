@@ -27,12 +27,13 @@ function layerGroup(key, prims, bbox, net) {
     prims.slice(0, last + 1).forEach((p) => (p.clear ? mask : under).append(shape(p, p.clear ? "#000" : color)));
     g.append(svg("defs", null, mask), under);
   }
-  for (const p of prims.slice(last + 1)) { const n = shape(p, net && p.net === net ? "#f5b301" : color); if (p.net) n.dataset.net = p.net; if (p.pin) n.dataset.pin = p.pin; g.append(n); }
+  for (const p of prims.slice(last + 1)) { const n = shape(p, net && p.net === net ? "#f5b301" : color); if (p.net) n.dataset.net = p.net; if (p.pin) n.dataset.pin = p.pin; if (p.ti !== undefined) n.dataset.track = p.ti; if (p.vi !== undefined) n.dataset.via = p.vi; g.append(n); }
   return g;
 }
 
 /** The canvas. → { show(scene), fit(), focus([x, y]), destroy() }
-    scene : { R, art, board, layers: Set, zones, ratsnest, findings, net, ref, mode: "zones" | "parts" | "blocks" | null, block, onPick, onMoveZone, onMovePart, onMoveBlock } */
+    scene : { R, art, board, layers: Set, zones, ratsnest, findings, net, ref, mode: "zones" | "parts" | "blocks" | "trace" | null, block,
+              corners: { pts, w } (handles on a track), onPick, onHover(at), onMoveZone, onMovePart, onMoveBlock, onMoveCorner(index, delta) } */
 export function boardView(host) {
   host.classList.add("pcba-view");
   const root = svg("svg", { class: "pv-svg", preserveAspectRatio: "xMidYMid meet" }), world = svg("g", { transform: "scale(1,-1)" });
@@ -50,8 +51,9 @@ export function boardView(host) {
       if (scene.mode === "blocks" && hit.dataset.block) { drag.block = hit.dataset.block; drag.group = [...world.querySelectorAll("[data-drag='part']")].filter((n) => n.dataset.block === drag.block); } }      // a block moves as one brick
     else drag = { kind: "pan", from: [e.clientX, e.clientY], vb: [...vb], moved: false, target: t };
   });
+  let hoverAt = null, hoverTick = 0;
   root.addEventListener("pointermove", (e) => {
-    if (!drag) return;
+    if (!drag) { if (scene && scene.onHover) { hoverAt = toBoard(e); if (!hoverTick) hoverTick = requestAnimationFrame(() => { hoverTick = 0; if (scene && scene.onHover && hoverAt) scene.onHover(hoverAt); }); } return; }
     if (drag.kind === "pan") { const r = root.getBoundingClientRect(), k = Math.max(vb[2] / r.width, vb[3] / r.height), dx = e.clientX - drag.from[0], dy = e.clientY - drag.from[1]; if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true; vb = [drag.vb[0] - dx * k, drag.vb[1] - dy * k, vb[2], vb[3]]; setVb(); return; }
     const p = toBoard(e), d = [p[0] - drag.from[0], p[1] - drag.from[1]]; drag.delta = d; if (Math.abs(d[0]) + Math.abs(d[1]) > 0.2) drag.moved = true;
     if (drag.grip) { const r = drag.node.parentNode.querySelector("rect"); r.setAttribute("width", Math.max(3, +r.dataset.w + d[0])); r.setAttribute("y", +r.dataset.y + Math.min(d[1], +r.dataset.h - 3)); r.setAttribute("height", Math.max(3, +r.dataset.h - d[1])); }
@@ -59,7 +61,8 @@ export function boardView(host) {
   });
   root.addEventListener("pointerup", (e) => {
     const d = drag; drag = null; if (!d || !scene) return;
-    if (d.kind === "pan") { if (!d.moved && scene.onPick) { const t = d.target; scene.onPick({ net: (t.dataset && t.dataset.net) || null, pin: (t.dataset && t.dataset.pin) || null, at: toBoard(e) }); } return; }
+    if (d.kind === "pan") { if (!d.moved && scene.onPick) { const t = d.target, ds = t.dataset || {}; scene.onPick({ net: ds.net || null, pin: ds.pin || null, track: ds.track !== undefined ? +ds.track : undefined, via: ds.via !== undefined ? +ds.via : undefined, at: toBoard(e) }); } return; }
+    if (d.kind === "corner") { if (d.moved && scene.onMoveCorner) scene.onMoveCorner(+d.id, d.delta); return; }
     if (!d.moved) { if (d.kind === "part" && scene.onPick) scene.onPick({ ref: d.id, block: d.block || null, at: toBoard(e) }); return; }
     if (d.kind === "zone" && scene.onMoveZone) scene.onMoveZone(d.id, d.delta, d.grip);
     if (d.kind === "part" && d.group && scene.onMoveBlock) scene.onMoveBlock(d.block, d.delta);
@@ -86,12 +89,17 @@ export function boardView(host) {
       const sel = p.ref === s.ref, mate = s.mode === "blocks" && s.block && p.block === s.block;
       if (grab || sel) world.append(svg("rect", { class: `pv-part${sel ? " sel" : ""}${mate ? " blk" : ""}${p.fixed ? " fixed" : ""}`, x: p.box[0], y: p.box[1], width: p.box[2] - p.box[0], height: p.box[3] - p.box[1], "data-drag": grab && !p.fixed ? "part" : null, "data-id": p.ref, "data-block": p.block || null }, svg("title", null, `${p.ref} — ${p.def.name}${p.value ? ` — ${p.value}` : ""}`)));
     }
+    if (s.corners) s.corners.pts.forEach((q, k) => world.append(svg("circle", { class: "pv-corner", cx: q[0], cy: q[1], r: Math.max(0.3, s.corners.w * 0.8), "data-drag": "corner", "data-id": k }, svg("title", null, "Glissez ce sommet"))));
     for (const l of s.ratsnest || []) world.append(svg("line", { class: "pv-rat", x1: l.a[0], y1: l.a[1], x2: l.b[0], y2: l.b[1] }));
     for (const f of s.findings || []) if (f.at) world.append(svg("circle", { class: `pv-mark ${f.severity}${f === s.focus ? " focus" : ""}`, cx: f.at[0], cy: f.at[1], r: f === s.focus ? 2.2 : 1.3 }, svg("title", null, `${f.title} — ${f.message}`)));
+    world.append(pen);
     if (first || !vb) fit();
   }
+  /** What is being drawn by hand, on top of everything, without drawing the board again : [{ pts, w, color } | { at, d, color }]. */
+  const pen = svg("g", { class: "pv-pen" });
+  const sketch = (items) => { while (pen.firstChild) pen.removeChild(pen.firstChild); for (const it of items || []) pen.append(it.pts ? svg("polyline", { points: pts(it.pts), fill: "none", stroke: it.color, "stroke-width": it.w, "stroke-linecap": "round", "stroke-linejoin": "round", opacity: 0.85 }) : svg("circle", { cx: it.at[0], cy: it.at[1], r: it.d / 2, fill: it.color, opacity: 0.85 })); };
   const focus = (at, span = 24) => { if (!at) return; vb = [at[0] - span / 2, -at[1] - span / 2, span, span]; setVb(); };
-  return { show, fit, focus, destroy: () => { root.remove(); host.classList.remove("pcba-view"); }, node: root };
+  return { show, fit, focus, sketch, destroy: () => { root.remove(); host.classList.remove("pcba-view"); }, node: root };
 }
 
 /** The layer list with its eyes. onChange(Set). */

@@ -64,8 +64,8 @@ export function layerArt(R, board) {
     for (const h of R.holes) L.push({ t: "circle", x: h.x, y: h.y, d: Math.max(h.land, h.d) + 1, clear: true });
   }
   for (const p of R.pads) for (const l of p.layers) if (layers[l]) layers[l].push({ t: "pad", x: p.x, y: p.y, w: p.w, h: p.h, shape: p.shape, net: p.net, ref: p.ref, pin: p.pin });
-  for (const t of R.tracks) if (layers[t.layer]) layers[t.layer].push({ t: "track", w: t.w, pts: t.pts, net: t.net });
-  for (const v of R.vias) for (const l of R.layers) layers[l].push({ t: "circle", x: v.x, y: v.y, d: v.d, net: v.net });
+  R.tracks.forEach((t, k) => { if (layers[t.layer]) layers[t.layer].push({ t: "track", w: t.w, pts: t.pts, net: t.net, ti: k }); });      // ti, vi : which track, which via — so that a screen can pick one
+  R.vias.forEach((v, k) => { for (const l of R.layers) layers[l].push({ t: "circle", x: v.x, y: v.y, d: v.d, net: v.net, vi: k }); });
   for (const h of R.holes) if (h.plated) for (const l of R.layers) layers[l].push({ t: "circle", x: h.x, y: h.y, d: h.land, net: null });
 
   /* ---------- solder mask openings, paste, silkscreen, assembly drawing : one pass per side ---------- */
