@@ -112,6 +112,15 @@ def b64(data: bytes) -> str:
 
 
 class StaticTests(unittest.TestCase):
+    def test_kernel_worker_has_its_own_policy(self):
+        """The OpenCascade worker needs run-time code generation; every other response keeps the strict policy."""
+        status, headers, _body = req("GET", "/js/cad/worker.js")
+        self.assertEqual(status, 200)
+        self.assertIn("'unsafe-eval'", headers["Content-Security-Policy"])
+        self.assertIn("default-src 'none'", headers["Content-Security-Policy"])
+        status, headers, _body = req("GET", "/js/main.js")
+        self.assertNotIn("'unsafe-eval'", headers["Content-Security-Policy"])
+
     def test_static_file_and_security_headers(self):
         status, h, body = req("GET", "/img/favicon.svg")
         self.assertEqual(status, 200)

@@ -136,6 +136,9 @@ test("a barrier forces the string over it; the joint under the barrier is a cree
   assert.equal(r.clearance.direct, false);
   assert.ok(r.clearance.path.some((p) => p[2] > 5.9), "the path goes over the top of the wall");
   near(r.creepage.d, 6, "through the uncemented joint between the base and the wall");
+  const j = measurePair(s, "A", "B", { jointClearance: true });                // IEC examples 9-10: the joint is a clearance path too
+  assert.deepEqual([j.clearance.joint, j.clearance.d], [true, j.creepage.d]);
+  assert.equal(r.clearance.joint, undefined);
 });
 
 test("a conductor of another net is an obstacle, a floating part is crossed for free (d1 + d2)", () => {
@@ -236,4 +239,20 @@ test("measureAll: pairs, progress, determinism", () => {
   const again = measureAll(s, [["A", "B"]], {});
   assert.equal(again[0].creepage.d, all[0].creepage.d);
   assert.deepEqual(again[0].clearance.path, all[0].clearance.path);
+});
+
+test("copper on both faces of a board: the board is solid insulation, the string goes around its edge", () => {
+  // 70 µm pads overlapping in plan on the two faces of a 1.6 mm board: the closest points are 1.6 mm apart THROUGH the
+  // board, which is not a clearance. Regression: tightening used to take that raw closest point for the first leg.
+  const scene = prepareScene([
+    body("board", "insulator", [0, 0, 0, 40, 40, 1.6], { printed: true, group: "IIIa" }),
+    conductor("top", "A", [5, 15, 1.6, 15, 25, 1.67]), conductor("bottom", "B", [10, 15, -0.07, 25, 25, 0]),
+  ]);
+  for (const o of [{}, { maxClearance: 40, maxCreepage: 60 }]) {
+    const r = measurePair(scene, "A", "B", o);
+    assert.equal(r.clearance.direct, false);
+    near(r.clearance.d, 16.6, "clearance around the board edge");          // 5 to the edge + 1.6 down + 10 back under
+    near(r.creepage.d, 16.6, "creepage around the board edge");
+    assert.equal(r.creepage.printed, true);
+  }
 });

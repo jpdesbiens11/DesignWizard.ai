@@ -86,7 +86,11 @@ test("demo drive: parts build, the assembly mates itself and nothing collides in
   const K = await kernel(), built = {};
   for (const s of DEMO_DRIVE.parts) { built[s.id] = buildPart(K, s); assert.deepEqual(built[s.id].log.filter((l) => l.level === "error"), [], s.id); }
   const asm = JSON.parse(JSON.stringify(DEMO_DRIVE.assemblies[0]));
-  assert.equal(autoMate(asm, built).length, 5);
+  assert.equal(candidates(asm, built).length, 0);            // the demo ships with its mates
+  const shipped = JSON.stringify(asm.mates.map((m) => [m.a, m.b]));
+  asm.mates = [];
+  assert.equal(autoMate(asm, built).length, 5);              // and the automatic mating finds the same ones
+  assert.equal(JSON.stringify(asm.mates.map((m) => [m.a, m.b])), shipped);
   assert.equal(candidates(asm, built).length, 0);
   const sol = solve(asm, built);
   assert.deepEqual(sol.problems, []);
@@ -95,6 +99,7 @@ test("demo drive: parts build, the assembly mates itself and nothing collides in
   close(box("i2")[2], 8.5 - 0.07, 0.02);             // power board sits on its 6 mm standoffs (copper zone under it)
   close(box("i4")[2], 42, 1e-6);                     // cover on top of the base
   close(box("i5")[5], 0, 1e-6);                      // heat sink under the base, fins down
+  close(box("i5")[2], -27, 1e-6);
   const hw = hardware(asm, built);
   assert.ok(hw.some((h) => h.id.startsWith("INSERT-M3")) && hw.some((h) => /ISO4762-M4/.test(h.id)));
   assert.ok(bom(DEMO_DRIVE, asm, built).length >= 7);
@@ -140,11 +145,12 @@ test("companion part and prompt: the other side of a free interface", async () =
   assert.equal(comp.interfaces[0].key, "io_connector");
   assert.deepEqual(buildPart(K, comp).log.filter((l) => l.level === "error"), []);
   const ant = anticipatedInterfaces(DEMO_DRIVE, ["DRV-BASE"]);
-  assert.equal(ant.length, 6);
-  assert.equal(ant[0].iface.side, "A");
+  assert.equal(ant.length, 1);                              // the five other interfaces of the base are already mated
+  assert.equal(ant[0].iface.side, "B");
+  assert.equal(anticipatedInterfaces(DEMO_DRIVE, ["DRV-BASE"], false).length, 6);
   const prompt = partPrompt(DEMO_DRIVE, { name: "Support", neighbours: ["DRV-BASE"], extras: [], mode: "interview" });
   assert.match(prompt, /INTERFACES ANTICIPÉES/);
-  assert.match(prompt, /"key": "pwr_pcb_mount"/);
+  assert.match(prompt, /"key": "io_connector"/);
   assert.match(prompt, /DW part\/1/);
   K.flush();
 });

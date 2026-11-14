@@ -301,6 +301,9 @@ test('other processes run their own rules', () => {
     extrusion: { length: 200, profile: { outer: { rect: [0, 0, 60, 30], r: 2 }, holes: [{ rect: [2, 2, 56, 26], r: 1 }] }, inside: [{ name: 'Carte', w: 54, h: 1.6, at: [30, 15], clearance }] } }, false);
   assert.ok(!ids(tube(0.5)).includes('EXT-09') && ids(tube(0.5)).includes('EXT-05'), 'a 55 mm envelope fits in a 56 mm hollow');
   assert.deepEqual([find(tube(1.5), 'EXT-09').severity, find(tube(1.5), 'EXT-09').value], ['error', 'Carte'], 'a 57 mm envelope does not');
+  const vee = check({ id: 'T-VEE', material: 'AL6063-T5', process: 'extrusion_al', elec: { kind: 'chassis' }, extrusion: { length: 100, profile: { poly: [[0, 0], [40, 0], [40, 20], [24, 20], [20, 8], [16, 20], [0, 20]], r: 0.5 } } }, false);
+  assert.ok(!ids(vee).includes('EXT-03') && !ids(vee).includes('EXT-01') && !ids(vee).includes('EXT-04'), 'a V groove 8 mm wide and 12 mm deep is not a deep gap, its pointed bottom is not a thin wall');
+  assert.deepEqual(ids(vee, 'error'), []);
   assert.deepEqual(find(wrong, 'GEN-03').fix.patch, [{ target: 'spec', id: null, path: 'material', value: 'AL6063-T5' }]);
   assert.equal(find(wrong, 'KRN-01').severity, 'error');
 });

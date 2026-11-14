@@ -261,7 +261,9 @@ export function segmentBlocked(solids, bodies, a, b, joints = true, tol = 1e-4) 
   for (let i = 1; i < ts.length; i++) {
     if (ts[i] - ts[i - 1] < 1e-9) continue;
     const m = (ts[i] + ts[i - 1]) / 2, p = [a[0] + (b[0] - a[0]) * m, a[1] + (b[1] - a[1]) * m, a[2] + (b[2] - a[2]) * m], q = solids.closestPoint(p, tol);
-    if (!q) { if (ts.length > 2 && insideAny(bodies, p)) return true; continue; }
+    // Tested even when no crossing was collected: a segment that leaves a solid exactly through an edge shared with
+    // another part (copper on both faces of a board, say) gives no proper hit, yet its middle is inside the solid.
+    if (!q) { if (insideAny(bodies, p)) return true; continue; }
     if (!joints) continue;
     const u = 3 * I[3 * q.tri], v = 3 * I[3 * q.tri + 1], w = 3 * I[3 * q.tri + 2];
     const e1 = [V[v] - V[u], V[v + 1] - V[u + 1], V[v + 2] - V[u + 2]], e2 = [V[w] - V[u], V[w + 1] - V[u + 1], V[w + 2] - V[u + 2]];

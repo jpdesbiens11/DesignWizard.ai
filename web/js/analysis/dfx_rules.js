@@ -16,8 +16,10 @@ import { BOOK_ASSEMBLY } from "./dfa_rules.js";
 
 /** Printable rule book: one entry per process {process, title, fr, steps[], rules[{id, title, limit, severity, why, source, fix?, manual?}]}.
     `fix: true` = a one-click auto-fix exists; `manual: true` = documented but not checked automatically. */
+const AFTER_EXTRUSION = BOOK_CNC[0].rules.filter((r) => r.id === "CNC-04" || r.id === "CNC-12");      // machining after extrusion: hole sizes
 export const RULEBOOK = [...BOOK_CNC, ...BOOK_SHEET, ...BOOK_EXTRUSION, ...BOOK_PLASTIC, ...BOOK_PCB, ...BOOK_GENERAL, ...BOOK_ASSEMBLY]
-  .map((b) => ({ ...b, title: b.title || (PROCESSES[b.process] || {}).label || b.process, fr: b.fr || (PROCESSES[b.process] || {}).fr || b.process }));
+  .map((b) => ({ ...b, title: b.title || (PROCESSES[b.process] || {}).label || b.process, fr: b.fr || (PROCESSES[b.process] || {}).fr || b.process,
+    rules: /^extrusion_/.test(b.process) ? [...b.rules, ...AFTER_EXTRUSION] : b.rules }));
 
 const INDEX = new Map(), BY_PROCESS = new Map();
 for (const b of RULEBOOK) {

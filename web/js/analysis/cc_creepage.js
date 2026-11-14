@@ -6,8 +6,11 @@
    - the footprint of a conductor of another net is not crossed; the footprint of a floating part is crossed for free;
    - from a Steiner point the path may jump to the closest facing surface: another insulator in contact (uncemented
      joint, free) or, through air, a wall or another insulator closer than X (a groove narrower than X is bridged);
-   - Dijkstra from the sources to the first target, then the crossing points slide along their mesh edges (and the two
-     ends go to the foot of the perpendicular) so that straight runs are exact. */
+   - the outline of the footprints (sharp edges of the conductors that touch a surface) gives extra source and target
+     points, so that thin tracks and small pads are not missed between two Steiner points;
+   - Dijkstra from the sources to the first target; then the path is pulled tight: a crossing point is dropped when the
+     straight segment between its neighbours stays on the surface, the others slide along the line of their mesh edge
+     and the two ends go to the foot of the perpendicular, so that straight runs and unfolded runs are exact. */
 
 import { BVH, subdivide, triNormals, insideAny, segmentBlocked, sharpEdges } from "./cc_geom.js";
 import { Heap } from "./cc_clearance.js";
@@ -162,6 +165,7 @@ function run(scene, S, netA, netB, opts) {
       const [rh, ah] = hi === tn ? [rn, an] : probe(lerp(p, q, hi));
       if (rh === 4) return null;
       if (r === 0) cost += (lo - t) * L;
+      if ((r === 0 && rh === 3) || (r === 3 && rh === 0)) { const c = cond.closestPoint(lerp(p, q, r === 0 ? lo : hi), 4 * ct); cost += c ? c.d : 0; }   // up to the floating part itself
       if (rh === 2) { const x = lerp(p, q, r === 0 ? lo : hi), a = cond.closestPoint(x, 4 * ct); return { cost: cost + (a ? a.d : 0), start, reset, hit: a ? a.point : x }; }
       if (rh === 1) { cost = 0; start = null; reset = true; }
       if (r === 1) { const x = lerp(p, q, hi), a = cond.closestPoint(x, 4 * ct); start = a ? a.point : x; cost = a ? a.d : 0; reset = true; }

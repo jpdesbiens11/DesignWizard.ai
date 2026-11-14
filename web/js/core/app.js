@@ -104,6 +104,7 @@ export async function start() {
   await store.init();
   const last = store.lastId();
   if (last) { try { await store.open(last); } catch (e) { /* the project is gone: stay on the home page */ } }
+  if (!store.project) { try { const list = await store.list(); if (list.length) await store.open(list[0].id); } catch (e) { /* no project yet */ } }   // reopen the most recent one
   window.addEventListener("hashchange", route);
   document.addEventListener("keydown", (e) => {
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement && document.activeElement.tagName);

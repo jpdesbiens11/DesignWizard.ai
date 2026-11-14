@@ -57,6 +57,12 @@ SECURITY_HEADERS = (
     ("X-Content-Type-Options", "nosniff"),
     ("Referrer-Policy", "no-referrer"),
 )
+# The CAD kernel worker runs the vendored OpenCascade build, whose Emscripten glue creates functions at run time:
+# that worker alone may evaluate code. A worker takes its policy from its own script response; it has no DOM,
+# no cookies, and may only load and fetch from this server.
+KERNEL_WORKER_PATH = "/js/cad/worker.js"
+KERNEL_WORKER_CSP = ("default-src 'none'; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval'; connect-src 'self'; "
+                     "frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
 MIME = {
     ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
     ".mjs": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8",
@@ -89,8 +95,9 @@ class Handler(BaseHTTPRequestHandler):
             sys.stderr.write("%s %s\n" % (self.log_date_time_string(), fmt % args))
 
     def end_headers(self):
+        kernel = urlsplit(self.path).path == KERNEL_WORKER_PATH
         for key, value in SECURITY_HEADERS:
-            self.send_header(key, value)
+            self.send_header(key, KERNEL_WORKER_CSP if kernel and key == "Content-Security-Policy" else value)
         super().end_headers()
 
     def _send(self, status: int, body: bytes = b"", ctype: str = "application/json; charset=utf-8", extra=None):

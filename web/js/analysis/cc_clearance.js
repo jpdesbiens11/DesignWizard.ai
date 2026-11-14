@@ -63,6 +63,10 @@ function bendPoints(scene, step) {
 }
 
 const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+/** Is the segment [a b] cut by a solid? Crossings, plus the middle of the segment: the crossing test ignores a small
+    window at each end (bend points graze edges), and a thin layer such as the copper of a board (70 µm) fits in that
+    window — its middle being inside the board is what tells that the string would go through solid insulation. */
+const cut = (scene, a, b, hit) => scene.solids.segmentHits(a, b, hit) || insideAny(scene.bodies, [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2]);
 
 /** Point of a net seen from the bend point p: its closest point when the segment is in air, otherwise the foot of the
     perpendicular on another face (non-convex conductors); edges and corners are covered by the bend points of the net. */
@@ -70,7 +74,7 @@ function reach(scene, net, p, maxDist, first = null) {
   const hit = { ignoreEndsEps: scene.eps / 4 }, tried = [];
   let q = first || net.bvh.closestPoint(p, maxDist);
   for (let k = 0; q && k < 4; k++) {
-    if (!scene.solids.segmentHits(p, q.point, hit)) return q;
+    if (!cut(scene, p, q.point, hit)) return q;
     tried.push(q.point);
     const N = net.N || (net.N = triNormals(net.bvh.V, net.bvh.I).N);
     q = net.bvh.closestPoint(p, maxDist, (t, x, y, z, d2) => {
@@ -86,9 +90,12 @@ function reach(scene, net, p, maxDist, first = null) {
 function leg(scene, x, y) {
   const hit = { ignoreEndsEps: scene.eps / 4 };
   if (x.bvh && y.bvh) { const m = meshDistance(x.bvh, y.bvh); return { d: m.d, pts: [m.a, m.b], ok: !segmentBlocked(scene.solids, scene.bodies, m.a, m.b) }; }
-  if (!x.bvh && !y.bvh) return { d: dist(x.p, y.p), pts: [x.p, y.p], ok: !scene.solids.segmentHits(x.p, y.p) };
-  const p = x.bvh ? y.p : x.p, c = (x.bvh || y.bvh).closestPoint(p);
-  return { d: c.d, pts: x.bvh ? [c.point, p] : [p, c.point], ok: !scene.solids.segmentHits(p, c.point, hit) };
+  if (!x.bvh && !y.bvh) return { d: dist(x.p, y.p), pts: [x.p, y.p], ok: !cut(scene, x.p, y.p) };
+  // bend point to a net or a floating body: the point reach() would take (the closest one when its segment is in
+  // air, else the foot of a perpendicular on another face) — never the raw closest point, which may lie behind a wall
+  const p = x.bvh ? y.p : x.p, anchor = x.bvh ? x : y, c = reach(scene, anchor, p, Infinity);
+  if (!c) return { d: Infinity, pts: [p, p], ok: false };
+  return { d: c.d, pts: x.bvh ? [c.point, p] : [p, c.point], ok: true };
 }
 
 /** Slides the bend points of a path along their edges (reflection principle, a few passes) and measures it. */
@@ -113,6 +120,7 @@ function tighten(scene, els) {
     if (gain < 1e-8) break;
   }
   const path = []; let d = 0;
+  if (legs.some((l) => !l.ok)) return { d: Infinity, path: [] };            // a leg through a solid: not a path
   for (const l of legs) { d += l.d; for (const p of l.pts) if (!path.length || dist(path[path.length - 1], p) > 1e-9) path.push([p[0], p[1], p[2]]); }
   return { d, path };
 }
@@ -155,12 +163,12 @@ function search(scene, netA, netB, floats, step, U, direct) {
       if (gu + dB[u] < bound()) { const q = reach(scene, netB, pu, bound() - gu, { d: dB[u], point: cB[u] }); if (q && gu + q.d < bound()) set(T, gu + q.d, u); }
       floats.forEach((f, k) => {
         const q = f.bvh.closestPoint(pu, Math.min(g[n + 1 + k], bound()) - gu);
-        if (q && gu + q.d < g[n + 1 + k] - 1e-12 && !solids.segmentHits(pu, q.point, hit)) set(n + 1 + k, gu + q.d, u);
+        if (q && gu + q.d < g[n + 1 + k] - 1e-12 && !cut(scene, pu, q.point, hit)) set(n + 1 + k, gu + q.d, u);
       });
       for (let v = 0; v < n; v++) {
         const dx = P[3 * v] - ux, dy = P[3 * v + 1] - uy, dz = P[3 * v + 2] - uz, nd = gu + Math.sqrt(dx * dx + dy * dy + dz * dz);
         if (nd >= g[v] - 1e-12 || nd + hs[v] >= bound() || v === u) continue;
-        if (!solids.segmentHits(pu, pt(v))) set(v, nd, u);
+        if (!cut(scene, pu, pt(v))) set(v, nd, u);
       }
     } else {
       const f = floats[u - n - 1];
@@ -173,7 +181,7 @@ function search(scene, netA, netB, floats, step, U, direct) {
       for (let v = 0; v < n; v++) {
         if (gu + hs[v] >= bound() || gu >= g[v]) continue;
         const q = f.bvh.closestPoint(pt(v), g[v] - gu);
-        if (q && gu + q.d < g[v] - 1e-12 && !solids.segmentHits(pt(v), q.point, hit)) set(v, gu + q.d, u);
+        if (q && gu + q.d < g[v] - 1e-12 && !cut(scene, pt(v), q.point, hit)) set(v, gu + q.d, u);
       }
     }
   }

@@ -80,12 +80,12 @@ const CTRL = {
 const SINK = {
   dw: "part/1", id: "DRV-HEATSINK", name: "Dissipateur extrudé", family: "extrusion", process: "extrusion_al", material: "AL6063-T5", revision: "A",
   function: "Évacue la chaleur de l'étage de puissance ; relié au Chassis.", finish: "Anodisé noir 10 µm", elec: { kind: "chassis", net: "Chassis" },
-  params: { W: P(80, 50, 140, "Largeur"), base: P(6, 3, 12, "Épaisseur de la semelle", "Profil", 0.5), fin: P(20, 8, 50, "Hauteur des ailettes", "Profil"), tf: P(2, 1.2, 4, "Épaisseur d'ailette", "Profil", 0.1),
+  params: { W: P(80, 50, 140, "Largeur"), base: P(7, 3, 12, "Épaisseur de la semelle", "Profil", 0.5), fin: P(20, 8, 50, "Hauteur des ailettes", "Profil"), tf: P(2.4, 1.2, 4, "Épaisseur d'ailette", "Profil", 0.1),
     n: { value: 10, min: 4, max: 20, step: 1, unit: "", label: "Nombre d'ailettes", group: "Profil" }, L: P(86, 40, 200, "Longueur coupée") },
   interfaces: [{ id: "IF1", type: "bolt_pattern", name: "Fixation sous la base", key: "heatsink_mount", partner: "Base du boîtier", side: "B", face: "-Z", at: ["W/2", "L/2"],
     params: { screw: "M4", pattern: { type: "rect", nx: 2, ny: 2, dx: 60, dy: 66 } }, opts: { thread: "tapped", depth: "base - 1" } }],
   extrusion: { axis: "Y", length: "L", profile: { gen: "heatsink", W: "W", base: "base", fin: "fin", tf: "tf", n: "n" },
-    outside: [{ name: "Plage thermique du module", w: 44, h: 1, at: ["W/2", -0.5], clearance: 0 }] },
+    outside: [{ name: "Plage thermique du module", w: 44, h: 1, at: ["W/2", -1], clearance: 0.2 }] },
   features: [], notes: ["Profilé 6063-T5 coupé à longueur, ébavuré.", "Planéité de la face d'appui 0,1 mm."],
 };
 
@@ -95,7 +95,9 @@ export const DEMO_DRIVE = {
   parts: [BASE, COVER, PWR, CTRL, SINK],
   assemblies: [{ dw: "assembly/1", id: "DRV-ASM", name: "Variateur compact — assemblage général",
     instances: [{ id: "i1", part: "DRV-BASE", fixed: true, placement: { t: [0, 0, 0], r: [0, 0, 0] } }, { id: "i2", part: "DRV-PWR-PCB" }, { id: "i3", part: "DRV-CTRL-PCB" }, { id: "i4", part: "DRV-COVER" }, { id: "i5", part: "DRV-HEATSINK" }],
-    mates: [],
+    mates: [{ id: "M1", a: { inst: "i2", iface: "IF1" }, b: { inst: "i1", iface: "IF1" }, linked: true, by: "key" }, { id: "M2", a: { inst: "i3", iface: "IF1" }, b: { inst: "i1", iface: "IF2" }, linked: true, by: "key" },
+      { id: "M3", a: { inst: "i4", iface: "IF1" }, b: { inst: "i1", iface: "IF3" }, linked: true, by: "key" }, { id: "M4", a: { inst: "i4", iface: "IF2" }, b: { inst: "i1", iface: "IF4" }, linked: true, by: "key" },
+      { id: "M5", a: { inst: "i1", iface: "IF5" }, b: { inst: "i5", iface: "IF1" }, linked: true, by: "key" }],
     isolation: { nets: [{ name: "HV+", kind: "dc", voltage: 400, floating: true }, { name: "HV-", kind: "dc", voltage: 0, floating: true }, { name: "LV", kind: "dc", voltage: 12 }, { name: "Chassis", kind: "dc", voltage: 0 }],
       params: { pollution_degree: 2, altitude_m: 2000, ovc: "II", field: "A", level: "basic" }, levels: { "HV+|LV": "reinforced", "HV-|LV": "reinforced" } } }],
   log: [],

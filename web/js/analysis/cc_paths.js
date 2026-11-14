@@ -60,7 +60,10 @@ export function prepareScene(bodies, opts = {}) {
 export function netsOf(scene) { return [...scene.nets.keys()]; }
 
 /** Clearance and creepage between two nets.
-    opts: { x: groove width X in mm (1.0), maxClearance: 80, maxCreepage: 120, step: sampling spacing (auto), exact: bool }. */
+    opts: { x: groove width X in mm (1.0), maxClearance: 80, maxCreepage: 120, step: sampling spacing (auto), exact: bool,
+            jointClearance: bool (false: the clearance is a pure air path) }.
+    Result: { clearance: { d, path, direct, via, capped }, creepage: { d, path, group, printed, bridges, bodies, capped, none }, ms };
+    d = null with capped = true when nothing was found below the cap (for the clearance: also when no air path exists). */
 export function measurePair(scene, netA, netB, opts = {}) {
   const t0 = now();
   if (!scene.nets.has(netA) || !scene.nets.has(netB) || netA === netB) {
@@ -68,6 +71,11 @@ export function measurePair(scene, netA, netB, opts = {}) {
   }
   const o = { ...opts, step: opts.step || (opts.exact ? scene.step / 2 : scene.step) };
   const cl = clearance(scene, netA, netB, o), cr = creepage(scene, netA, netB, o);
+  // IEC 60664-1 examples 9-10: an uncemented joint is also a clearance path ("line of sight"). On request, when the ant
+  // found a shorter way than the string (it can only be through a joint), that way is taken as the clearance.
+  if (opts.jointClearance && cr.d !== null && cr.d <= (opts.maxClearance ?? 80) && (cl.d === null || cr.d < cl.d - Math.max(0.05, 0.002 * cl.d))) {
+    Object.assign(cl, { d: cr.d, path: cr.path.map((p) => p.slice()), direct: false, capped: false, via: [], joint: true });
+  }
   return { clearance: cl, creepage: cr, ms: now() - t0 };
 }
 
