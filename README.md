@@ -9,7 +9,7 @@ d'un artisan, aidé par l'IA. Les règles DFM, DFA, DFx et d'isolation s'appliqu
 
 Libre sous **licence MIT**. Tout tourne dans le navigateur ; vos fichiers restent chez vous.
 
-> Deuxième itération (v0.2.0), publiée pour recueillir vos commentaires. Voir [Vos commentaires](#vos-commentaires),
+> Troisième itération (v0.3.0 : simulation, carte électronique, aller-retour IA), publiée pour recueillir vos commentaires. Voir [Vos commentaires](#vos-commentaires),
 > la [vision](docs/VISION.md) et le [format de fichier `.dwiz`](docs/FORMAT.md).
 > *English summary at the [end of this page](#english-summary).*
 
@@ -76,6 +76,7 @@ Sans Python, le dossier `web/` fonctionne aussi tel quel derrière n'importe que
 | **Extrusion** | Profilés aluminium ou plastique : vous listez ce qui va *dedans* et *dehors*, Claude propose la section, la plateforme l'extrude et vérifie parois, gorges, cavités et cercle circonscrit. |
 | **PCB** | Cartes : composants avec leurs hauteurs, zones de cuivre HV / LV, nets. La carte se fixe par ses interfaces comme une autre pièce. |
 | **Assemblage** | Ajoutez les pièces : les interfaces identiques (côté A et côté B) **se matent seules** et restent **liées** — changez un côté, l'autre pièce s'adapte. Vue éclatée, BOM avec la visserie déduite, interférences, pièce complémentaire générée d'une interface libre. |
+| **PCBA** | Une **carte électronique conçue à partir de ses fonctions** : chaque fonction reçoit un bloc de circuit pris dans la bibliothèque du métier (76 composants, 18 blocs dimensionnés), l'outil en tire composants et nets, propose l'implantation conceptuelle (une zone par bloc) puis le layout détaillé (placement, routage 2 ou 4 couches), vérifie 40 règles (électriques, conception, DFM / DFA / DFT) et sort le dossier de fabrication : Gerber, perçage, placement, nomenclature, vernis de tropicalisation. Rapports de revue préliminaire et détaillée en Word et PDF. Un diagramme montre où l'on en est ; les vues d'un outil ECAD classique restent à un clic. Voir [docs/PCBA.md](docs/PCBA.md). |
 | **Physique → Simulation** | Éléments finis **volontairement simples**, structure et thermique : la pièce ou l'assemblage est maillé en cubes identiques, tenu et chargé par ses faces ou ses interfaces. Trois physiques : structure, thermique, et **thermo-mécanique** (la dilatation d'une pièce tenue). **Avant de calculer**, l'écran écrit le calcul à la main du modèle simple équivalent (poutre, barre, conduction, bilan de convection, dilatation libre et borne de bridage) ; **après**, il compare les deux. Voir [docs/SIMULATION.md](docs/SIMULATION.md). |
 | **Physique** | 21 modèles analytiques — poutres, flambage, torsion, plaque, assemblage boulonné, emmanchement, écoulement en conduite, conduction, dissipateur, busbar, piste de PCB… Les cotes sont reprises de la pièce ; le calcul est montré pas à pas, avec ses hypothèses, son domaine de validité et sa source. |
 | **Isolation** | Creepage et clearance mesurés sur **l'assemblage complet**, comparés aux distances requises par IEC 60664-1 (pollution degree, altitude, OVC, system IT). Chemins tracés en rouge. |

@@ -98,13 +98,44 @@ Le genre est le premier mot après `dwiz`. Il donne l'ordre de lecture du docume
 | `assembly` | `DRV-ASM.assembly.dwiz` | pièces posées, interfaces accouplées, isolation | `place`, `mate`, `net` |
 | `project` | `variateur.project.dwiz` | le produit ; ses pièces et assemblages suivent, un document après l'autre | `physics`, `log` |
 
+### Carte électronique (`board`)
+
+Une carte est un document du genre `board` (brique PCBA, voir [PCBA.md](PCBA.md)) ; un projet porte ses cartes à la
+suite de ses pièces et de ses assemblages. Elle se lit dans l'ordre où on la conçoit :
+
+```
+dwiz board/1 DRV-CTRL-PCBA "Carte de contrôle du variateur"
+function F1 parent=null kind=principale name="Alimenter la logique à partir du 24 V"
+  criterion name="Tension d'entrée" level="18 à 30 V" flex=F0
+function F1.2 parent=F1 kind=technique name="Abaisser 24 V vers 5 V, 1 A" block=B3
+block B3 buck name="Régulateur abaisseur" function=F1.2 zone=[1.5, 58.5, 27.5, 24]
+  params vin=24 vout=5 iout=1 ripple=30
+part U1 U-BUCK-SOT23-6 block=B3 at=[14.5, 71] rot=180
+net +5V class=power voltage=5 current=1 pins=[L1.2, C5.1, C6.1, R2.1]
+board size=[60, 90] r=2 t=1.6 layers=4 copper=35 finish=ENIG
+  coating type=AR thickness=50 sides=both
+plane GND in1
+track +5V top w=0.5 pts=[[14.5, 66.2], [14.5, 64]]
+via GND at=[16, 70.25] d=0.8 drill=0.4
+```
+
+| Mot | Sens |
+|---|---|
+| `function` | une fonction de l'arbre fonctionnel ; `criterion` ses critères ; `block` le bloc qui la remplit |
+| `block` | un bloc de circuit : gabarit, paramètres, zone d'implantation, raccordements |
+| `part` | un composant : repère, composant de la bibliothèque, valeur, position, rotation, face |
+| `net` | un net : classe, tension, courant, broches |
+| `board` | la carte nue : contour, épaisseur, couches, finition, `coating` (vernis), `hole` (trous) |
+| `plane`, `track`, `via` | le cuivre |
+| `component` | un composant ajouté à la bibliothèque du métier, avec ses `pin` et ses `pad` |
+
 Noms réservés aux modules à venir — le format s'étend, la notation ne change pas :
 
 | Genre | Module | Contenu prévu |
 |---|---|---|
 | `order` | Commande | lot de pièces à fabriquer : quantités, date voulue, atelier, prix et délai reçus |
 | `test` | Essai | plan d'essai de laboratoire : mesure, valeur prévue par la physique, valeur mesurée |
-| `board` | Carte | carte électronique complète : schéma, empilage, placement |
+| `schematic` | Schéma | schéma électrique dessiné à la main, feuille par feuille |
 | `harness` | Faisceau | câbles, connecteurs, longueurs, cheminement entre interfaces électriques |
 | `firmware` | Micrologiciel | brochage, périphériques, paramètres du CPU liés aux interfaces de la carte |
 | `requirement` | Exigence | ce que le produit doit faire, relié aux pièces, analyses et essais qui le prouvent |

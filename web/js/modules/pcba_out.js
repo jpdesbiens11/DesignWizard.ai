@@ -5,7 +5,8 @@
 import { el, icon, btn, badge, field, table, toast, download, fmt, modal, svg } from "../core/dom.js";
 import { store } from "../core/store.js";
 import { session } from "../core/access.js";
-import { CLASSES, FAB, boardBom } from "../pcba/model.js";
+import { CLASSES, FAB, boardBom, resolveBoard } from "../pcba/model.js";
+import { LIBRARY } from "../pcba/library.js";
 import { BLOCKS } from "../pcba/blocks.js";
 import { rebuildBlock, functionCsv, functionOutline } from "../pcba/synth.js";
 import { ERC_RULES } from "../pcba/erc.js";
@@ -27,11 +28,20 @@ const { txt, sel, section, scroll, hint } = ui$;
 const pane = (view, title, sub, ...kids) => { const p = el("div", { class: "pcba-pane" }, el("div", { class: "pcba-pane-head" }, el("h2", null, title), sub ? el("span", { class: "muted small" }, sub) : null), el("div", { class: "pcba-scroll" }, ...kids)); view.append(p); return p; };
 const finding = (f, onClick) => el("div", { class: "finding", onClick, style: { cursor: onClick ? "pointer" : null } }, el("span", { class: `sev ${f.severity}` }), el("div", null, el("b", null, `${f.rule} · ${f.title}`), el("p", { class: "small" }, f.message), fixHints(f) ? el("p", { class: "muted small" }, `→ ${fixHints(f)}`) : null));
 
-/** The AI round trip on a board : blocks whose parameters changed are built again so parts and nets follow. */
+/** What an AI needs to know to edit a board. */
+export const boardAiHelp = () => [`Blocs disponibles (block <repère> <gabarit>, puis params) : ${Object.keys(BLOCKS).join(", ")}. Changer les « params » d'un bloc suffit : ses composants et ses nets seront reconstruits.`,
+  "Un composant : part <repère> <composant de la bibliothèque> value=… at=[x, y] rot=0|90|180|270. Un net : net <NOM> class=signal|power|ground|hv pins=[U1.3, C2.1].", "Noms de nets en majuscules : rails +5V, +3V3 ; masses GND ; signaux FONCTION_SIGNAL."];
+/** Completes an answer : blocks whose parameters changed are built again so parts and nets follow ; says what the checks find. */
+export function boardAiCheck(board, doc) {
+  try {
+    const before = new Map(board.blocks.map((b) => [b.id, JSON.stringify(b.params)]));
+    for (const b of doc.blocks || []) if (BLOCKS[b.template] && before.has(b.id) && before.get(b.id) !== JSON.stringify(b.params)) rebuildBlock(doc, b.id, b.params);
+    const R = resolveBoard(doc, LIBRARY);
+    return R.problems.length ? R.problems.map((t) => ({ severity: "block", text: t })) : [{ severity: "info", text: "Après application : relancez le placement et le routage si des composants ont changé, puis les vérifications." }];
+  } catch (e) { return [{ severity: "block", text: `Réponse incohérente : ${e.message}` }]; }
+}
 export function boardAiLoop(ctx) {
-  openAiLoop({ doc: ctx.board, title: `Confier ${ctx.board.id} à l'IA`,
-    help: [`Blocs disponibles (block <repère> <gabarit>, puis params) : ${Object.keys(BLOCKS).join(", ")}. Changer les « params » d'un bloc suffit : ses composants et ses nets seront reconstruits.`, "Un composant : part <repère> <composant de la bibliothèque> value=… at=[x, y] rot=0|90|180|270. Un net : net <NOM> class=signal|power|ground|hv pins=[U1.3, C2.1].", "Noms de nets en majuscules : rails +5V, +3V3 ; masses GND ; signaux FONCTION_SIGNAL."],
-    check: (doc) => { try { const before = new Map(ctx.board.blocks.map((b) => [b.id, JSON.stringify(b.params)])); for (const b of doc.blocks || []) if (BLOCKS[b.template] && before.has(b.id) && before.get(b.id) !== JSON.stringify(b.params)) rebuildBlock(doc, b.id, b.params); return []; } catch (e) { return [{ severity: "block", text: `Réponse incohérente : ${e.message}` }]; } },
+  openAiLoop({ doc: ctx.board, title: `Confier la carte ${ctx.board.id} à l'IA`, help: boardAiHelp(), check: (doc) => boardAiCheck(ctx.board, doc),
     apply: (doc) => ctx.update((b) => { for (const k of Object.keys(b)) if (k !== "id") delete b[k]; Object.assign(b, doc, { id: b.id }); }, `Carte ${ctx.board.id} mise à jour par l'IA`) });
 }
 

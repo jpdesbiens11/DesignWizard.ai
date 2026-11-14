@@ -9,7 +9,7 @@ import { THEMES, currentTheme, applyTheme } from "./theme.js";
 import { toDwiz } from "./dwiz.js";
 import { dwizFileName } from "./dwiz_names.js";
 
-export const APP_VERSION = "0.2.0";
+export const APP_VERSION = "0.3.0";
 const modules = new Map();
 const ORDER = ["home", "shop", "parts", "extrusion", "pcb", "pcba", "assembly", "physics", "creepage", "dfx", "drawings", "report"];
 const GROUP_BREAK = new Set(["shop", "assembly", "physics", "report"]);         // a pencil tick before these tabs
@@ -39,6 +39,7 @@ function topbar() {
   const wand = el("button", { class: "wand", type: "button", "data-tip": "La baguette : tapez ce que vous voulez faire (« 4 trous M4 aux coins », « longueur 150 », « aller à Assemblage »…)", onClick: () => app.openPalette && app.openPalette() },
     icon("wizard"), el("span", { class: "wand-text" }, "Que voulez-vous faire ?"), el("kbd", null, "Ctrl K"));
   const tools = el("div", { class: "top-tools" }, wand, chip, save,
+    btn("", () => app.aiLoop && app.aiLoop(), { icon: "sparkle", small: true, tip: "Confier à l'IA : exporter ce que montre l'écran (pièce, assemblage, carte) avec une demande, réimporter la réponse et voir les changements avant de les appliquer" }),
     btn("", () => store.undo() || toast("Rien à annuler."), { icon: "undo", small: true, tip: "Annuler (Ctrl+Z)" }),
     btn("", () => store.redo() || toast("Rien à rétablir."), { icon: "redo", small: true, tip: "Rétablir (Ctrl+Y)" }),
     menuButton("Onshape", "onshape", onshapeMenu), menuButton("Projet", "folder", projectMenu),

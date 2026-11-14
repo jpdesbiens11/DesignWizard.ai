@@ -111,6 +111,11 @@ function render(main) {
       table(["Question", "Pièce", "Résultat", "Verdict"], phys.map((r) => [el("span", null, el("b", null, r.title), el("br"), el("small", { class: "muted" }, r.question)), r.partName || r.part || "—", r.result || "—",
         badge(r.verdictLabel || r.verdict, r.verdict === "ok" ? "ok" : r.verdict === "warn" ? "warn" : "danger")]))));
 
+    if ((p.boards || []).length) {                               // electronic boards : where each one stands in its flow
+      const holder = el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, "Cartes électroniques"), el("p", { class: "muted" }, "Vérification en cours…"));
+      doc.append(holder);
+      import("../pcba/summary.js").then(({ boardSummary }) => { if (!alive) return; holder.lastChild.replaceWith(table(["Carte", "Contenu", "Avancement", "Vérifications", "Revue"], boardSummary(p).map((b) => [el("a", { href: `#/pcba/${encodeURIComponent(b.id)}` }, `${b.id} — ${b.name}`), b.content, b.stage, badge(b.checks, b.errors ? "danger" : b.warns ? "warn" : "ok"), b.review]))); }).catch((e) => { holder.lastChild.textContent = e.message; });
+    }
     const sims = simulationSummary(p);
     if (sims.length) doc.append(el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, "Simulations — éléments finis simplifiés"),
       el("p", { class: "muted", style: { fontSize: ".84rem" } }, "Maillage grossier par cubes identiques. Chaque simulation est recoupée par le calcul à la main du modèle simple équivalent ; un écart de 20 % ou moins les dit concordants."),

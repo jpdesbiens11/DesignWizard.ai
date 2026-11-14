@@ -5,6 +5,8 @@ import { el, btn, badge, toast, modal, copyText, download } from "../core/dom.js
 import { aiBrief, aiRead, aiDiff } from "../core/ai_loop.js";
 import { toDwiz } from "../core/dwiz.js";
 import { dwizFileName } from "../core/dwiz_names.js";
+import { store } from "../core/store.js";
+import { validateSpec } from "../cad/build.js";
 
 /** opts : { doc, title, help: [lines], check(newDoc) → [{ severity, text }], apply(newDoc) }. */
 export function openAiLoop(opts) {
@@ -36,4 +38,19 @@ export function openAiLoop(opts) {
     el("div", { class: "form-actions" }, go)), { wide: true });
   go.addEventListener("click", () => { if (!next) return; try { opts.apply(next); toast("Changements appliqués (Ctrl+Z pour revenir en arrière).", "success"); if (m && m.close) m.close(); else document.querySelector(".modal-backdrop")?.remove(); } catch (e) { toast(e.message, "error"); } });
   return m;
+}
+
+const replace = (target, doc) => { for (const k of Object.keys(target)) if (k !== "id") delete target[k]; Object.assign(target, doc, { id: target.id }); };
+/** The round trip for whatever the current screen shows : a board, a part, an assembly — otherwise the whole project. */
+export async function openCurrentAiLoop() {
+  if (!store.project) { toast("Ouvrez d'abord un projet.", "info"); return null; }
+  const [key, id] = location.hash.replace(/^#\/?/, "").split("/").map(decodeURIComponent), board = key === "pcba" ? store.board(id) || store.boards[0] : null, part = id ? store.part(id) : null, asm = id ? store.assembly(id) : null;
+  if (board) { const { boardAiHelp, boardAiCheck } = await import("./pcba_out.js"); return openAiLoop({ doc: board, title: `Confier la carte ${board.id} à l'IA`, help: boardAiHelp(), check: (d) => boardAiCheck(board, d), apply: (d) => store.updateBoard(board.id, (b) => replace(b, d), `Carte ${board.id} mise à jour par l'IA`) }); }
+  if (part) return openAiLoop({ doc: part, title: `Confier la pièce ${part.id} à l'IA`, help: ["Garde les « key » des interfaces : elles lient la pièce à ses voisines.", "Une cote s'écrit par un paramètre (param) plutôt que par un nombre répété."],
+    check: (d) => { const v = validateSpec(d); return [...v.errors.map((t) => ({ severity: "block", text: t })), ...v.warnings.map((t) => ({ severity: "warn", text: t }))]; }, apply: (d) => store.updatePart(part.id, (s) => replace(s, d), `Pièce ${part.id} mise à jour par l'IA`) });
+  if (asm) return openAiLoop({ doc: asm, title: `Confier l'assemblage ${asm.id} à l'IA`, help: ["Une ligne « place » par pièce posée ; une ligne « mate » par paire d'interfaces accouplées. Ne cite que des pièces du projet."],
+    check: (d) => (d.instances || []).filter((i) => !store.part(i.part)).map((i) => ({ severity: "block", text: `La pièce « ${i.part} » n'existe pas dans le projet.` })), apply: (d) => store.updateAssembly(asm.id, (a) => replace(a, d), `Assemblage ${asm.id} mis à jour par l'IA`) });
+  const light = JSON.parse(JSON.stringify(store.project)); for (const p of light.parts || []) if (p.step) p.step = "(géométrie STEP importée, non modifiable)";
+  return openAiLoop({ doc: light, title: "Confier le projet à l'IA", help: ["Le projet porte ses pièces, ses assemblages et ses cartes à la suite, chacun commençant par sa ligne « dwiz … »."],
+    check: () => [{ severity: "block", text: "Pour modifier, ouvrez la pièce, l'assemblage ou la carte concernés : l'aller-retour s'y applique document par document." }], apply: () => {} });
 }
