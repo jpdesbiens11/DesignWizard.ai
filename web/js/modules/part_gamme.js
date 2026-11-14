@@ -1,7 +1,7 @@
 /* DesignWizard.ai — « Gamme » panel of the part studio: the raw stock to buy, the routing sheet (operations in the
    order of the shop), the tools, the set-ups and what the shop would advise. */
 
-import { el, icon, btn, badge, fmt, toast, download } from "../core/dom.js";
+import { el, icon, btn, badge, field, fmt, toast, download, copyText } from "../core/dom.js";
 import { store } from "../core/store.js";
 import { routing, stockFromFirstFeature, FACE_FR } from "../cad/shop.js";
 import { STOCK_FORMS } from "../cad/stock.js";
@@ -39,8 +39,28 @@ export function gammeText(spec, r) {
 
 /* ---------- « Artéfacts » panel: every exchange file of the part, one click each ---------- */
 export function artifactsPanel(body, { st, id }) {
-  body.append(el("p", { class: "muted small" }, "Ce que la pièce remet au reste de l'industrie. Chaque fichier est produit à la demande, à partir de la pièce telle qu'elle est maintenant."));
-  import("../core/artifacts.js").then(({ artifactsFor, makeArtifact, partArtifacts }) => {
+  const orderBox = el("div", { class: "order-card" }, el("p", { class: "muted small" }, "Vérification de la commande…"));
+  body.append(el("h3", null, "Commander le prototype"), orderBox, el("h3", { style: { marginTop: "1rem" } }, "Fichiers d'échange"),
+    el("p", { class: "muted small" }, "Ce que la pièce remet au reste de l'industrie. Chaque fichier est produit à la demande, à partir de la pièce telle qu'elle est maintenant."));
+  import("../core/artifacts.js").then(({ artifactsFor, makeArtifact, partArtifacts, orderStatus, orderPackage }) => {
+    const order = { quantity: 1, ...(st.spec.intent && st.spec.intent.quantity ? { quantity: st.spec.intent.quantity } : {}), ...(st.spec.order || {}) };
+    const keep = () => store.updatePart(id, (x) => { x.order = { ...order }; }, `${id} : commande modifiée`);
+    const drawOrder = async () => {
+      let s;
+      try { s = await orderStatus(id, order); } catch (e) { orderBox.replaceChildren(el("p", { class: "form-error" }, e.message)); return; }
+      const c = s.check, qty = el("input", { type: "number", min: 1, step: 1, value: order.quantity, onChange: (e) => { order.quantity = Math.max(1, parseInt(e.target.value, 10) || 1); keep(); } });
+      const need = el("input", { type: "date", value: order.need_by || "", onChange: (e) => { if (e.target.value) order.need_by = e.target.value; else delete order.need_by; keep(); } });
+      orderBox.replaceChildren(el("p", null, badge(c.ready ? (c.express ? "Express" : "Prête") : "À corriger", c.ready ? (c.express ? "ok" : "info") : "danger"), " ", el("b", null, c.label)),
+        ...c.blockers.map((t) => el("p", { class: "form-error" }, t)), ...c.cautions.map((t) => el("p", { class: "atelier-hint warn" }, icon("warning"), " ", t)),
+        c.drivers.length ? el("ul", { class: "decisions" }, c.drivers.map((t) => el("li", null, t))) : null,
+        el("div", { class: "form-row tight" }, field("Quantité", qty), field("Livraison souhaitée", need)),
+        el("div", { class: "form-actions" },
+          btn("Copier la demande de prix", async () => { try { const p = await orderPackage(id, order); toast((await copyText(p.rfq)) ? "Demande de prix copiée : collez-la dans votre courriel à l'atelier." : "Copie impossible.", "success", 6000); } catch (e) { toast(e.message, "error"); } }, { small: true, icon: "copy" }),
+          btn("Dossier de commande (.zip)", async (e, b) => { b.disabled = true; try { const p = await orderPackage(id, order); download(p.name, p.bytes, "application/zip"); toast(`Dossier prêt : demande de prix + ${p.files.length} fichier(s).`, "success", 6000); } catch (x) { toast(x.message, "error"); } b.disabled = false; },
+            { primary: true, small: true, icon: "export", disabled: !c.ready, tip: c.ready ? "Demande de prix, STEP, dessin PDF, DXF, STL, gamme et fiche .dwiz dans une seule archive" : "Corrigez d'abord ce qui bloque" })),
+        el("p", { class: "muted small" }, "Délais typiques d'ateliers de prototypage rapide, en jours ouvrables, hors transport : ils classent les options ; le devis de l'atelier fait foi."));
+    };
+    drawOrder();
     const list = artifactsFor(st.spec);
     const get = async (a, b) => {
       b.disabled = true;

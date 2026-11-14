@@ -17,6 +17,8 @@ import { THREADS } from "../cad/standards.js";
 import { MATERIALS, PROCESSES, material } from "../cad/materials.js";
 import { anticipatedInterfaces, shopPrompt } from "../core/prompts.js";
 import { importPart } from "../core/importer.js";
+import { runDfx } from "../analysis/dfx_api.js";
+import { orderCheck } from "../cad/order.js";
 
 const blank = () => ({ name: "", fn: "", loads: "", environment: "", quantity: 10, priority: "", material: "AL6061-T6", form: "", neighbours: [], interfaces: [], addToAsm: true });
 let brief = blank(), uid = 0;
@@ -44,7 +46,8 @@ function render(main) {
     el("div", { class: "subtabs" }, el("a", { class: "subtab active", href: "#/shop" }, "Intention d'abord"), el("a", { class: "subtab", href: "#/interfaces" }, "Entrevue avec Claude"), el("a", { class: "subtab", href: "#/interfaces/registre" }, "Registre des interfaces"))));
   const left = el("div", { class: "atelier-brief" }), right = el("div", { class: "atelier-side" });
   page.append(el("div", { class: "atelier-grid" }, left, right));
-  const propose = debounce(() => build(), 220);
+  const rebuild = debounce(() => build(), 220);
+  const propose = () => { token++; create.disabled = true; rebuild(); };   // the shown part is stale from the first keystroke: no creation until it is rebuilt
 
   /* 1 — intention */
   const text = (key, label, ph, tag = "input") => { const i = el(tag, tag === "input" ? { type: "text", value: brief[key], placeholder: ph } : { rows: 2, value: brief[key], placeholder: ph }); i.addEventListener("input", () => { brief[key] = i.value; propose(); }); return field(label, i); };
@@ -154,6 +157,7 @@ function render(main) {
       for (const it of built.interfaces) { viewer.addFrame(it.frame, it.side === "A" ? "#9b7bff" : "#2ec4b6"); viewer.addLabel(it.frame.o, `${it.name}`, "label", "iface"); }
       viewer.view("iso");
       drawProposal(res, built);
+      runDfx(res.spec, built).then((dfx) => { if (mine === token) drawOrder(res, built, dfx); });
       const errs = built.log.filter((l) => l.level === "error");
       create.disabled = !!errs.length || !built.bodies.length;
       setStatus(errs.length ? "Proposition à corriger" : "Proposition construite", errs.length ? "bad" : "done");
@@ -171,6 +175,13 @@ function render(main) {
     if (r.tools.length) out.append(el("p", { class: "muted small" }, el("b", null, "Outils : "), r.tools.join(" · ")));
     for (const a of r.advice) out.append(el("p", { class: "atelier-hint warn" }, icon("warning"), " ", a));
     out.append(el("h3", null, "Ce que le compagnon a décidé"), el("ul", { class: "decisions" }, res.decisions.map((d) => el("li", null, d))));
+  }
+  /** Born manufacturable: the DFx verdict and the prototype lead time of the proposal, before the part even exists. */
+  function drawOrder(res, built, dfx) {
+    const c = orderCheck(res.spec, built, dfx, routing(res.spec, built), { quantity: brief.quantity });
+    chips.append(el("span", { class: "chip" + (c.ready ? " done" : " bad"), "data-tip": [...c.blockers, ...c.drivers].join(" · ") || null }, c.ready ? `Prototype : ${c.days[0]} à ${c.days[1]} j ouvrables` : "À corriger avant commande"),
+      dfx && dfx.summary ? el("span", { class: "chip" + (dfx.summary.errors ? " bad" : " done") }, dfx.summary.errors ? `DFx : ${dfx.summary.errors} à corriger` : `DFx : fabricable${dfx.summary.warnings ? `, ${dfx.summary.warnings} à vérifier` : ""}`) : null);
+    for (const t of c.cautions.filter((x) => /prototype/.test(x))) out.prepend(el("p", { class: "atelier-hint warn" }, icon("warning"), " ", t));
   }
   function createPart() {
     if (!current) return;

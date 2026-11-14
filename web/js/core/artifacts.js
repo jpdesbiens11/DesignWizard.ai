@@ -18,6 +18,9 @@ import { gammeText } from "../modules/part_gamme.js";
 import { buildAssembly } from "./asm_scene.js";
 import { TREE, safeName } from "../google/drive_fs.js";
 import { toDwiz } from "./dwiz.js";
+import { orderCheck, rfqText } from "../cad/order.js";
+import { runDfx } from "../analysis/dfx_api.js";
+import { zip } from "./zip.js";
 
 const isFlat = (spec) => (spec.stock && STOCK_FORMS[spec.stock.form] && STOCK_FORMS[spec.stock.form].flat) || ["plate", "sheet", "busbar"].includes(spec.family);
 
@@ -88,4 +91,18 @@ export async function projectArtifacts(onStep = () => {}) {
   }
   if ((p.physics || []).length) items.push({ path: [TREE.analyses], name: "physique.dwiz", mime: "text/plain", bytes: toDwiz({ dw: "analysis/1", id: "physique", name: "Physique vérifiée", runs: p.physics }) });
   return { items, errors };
+}
+
+/** Is the part ready to order, and in how many days? { check, route, built, dfx } — order defaults to spec.order. */
+export async function orderStatus(partId, order) {
+  const spec = store.part(partId), built = await kernel.build(spec), dfx = await runDfx(spec, built), route = routing(spec, built);
+  return { spec, built, dfx, route, check: orderCheck(spec, built, dfx, route, order || spec.order || {}) };
+}
+/** The order package of a prototype part: one .zip with the request for quotation and every file a shop needs. */
+export async function orderPackage(partId, order) {
+  const st = await orderStatus(partId, order), spec = st.spec, keys = artifactsFor(spec).map((a) => a.key).filter((k) => k !== "fs");
+  const { files, errors } = await partArtifacts(partId, keys);
+  const rfq = rfqText(spec, st.built, st.route, st.check, order || spec.order || {}, files.map((f) => f.name));
+  const bytes = zip([{ name: `${spec.id}/demande_de_prix.txt`, bytes: rfq }, ...files.map((f) => ({ name: `${spec.id}/${f.name}`, bytes: f.bytes }))]);
+  return { name: `${spec.id}_commande.zip`, bytes, rfq, files: files.map((f) => f.name), errors, check: st.check };
 }
