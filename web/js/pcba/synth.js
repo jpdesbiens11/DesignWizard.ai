@@ -41,7 +41,7 @@ function mergeNet(board, name, attrs, pins) {
 }
 const refsOf = (board, blockId) => new Map((board.parts || []).filter((p) => p.block === blockId).map((p) => [p.local, p.ref]));
 /** Name of the next free net of a family : "AIN" → AIN0, AIN1… */
-function nextPool(board, family) { for (let k = 0; k < 64; k++) if (!board.nets.some((n) => n.name === `${family}${k}`)) return `${family}${k}`; return `${family}X`; }
+function nextPool(board, family, taken = []) { for (let k = 0; k < 64; k++) if (!board.nets.some((n) => n.name === `${family}${k}`) && !taken.includes(`${family}${k}`)) return `${family}${k}`; return `${family}X`; }
 /** Lazy pins (a microcontroller pin offered to whoever needs it) join the nets that now exist ; nets left with lazy pins only are removed. */
 function bindLazy(board) {
   const lazy = new Set();
@@ -78,7 +78,7 @@ function apply(board, block, built, keep = new Map()) {
   const bound = new Map();                                      // local net → board net
   for (const [name, port] of Object.entries(built.ports)) {
     if (port.lazy) continue;
-    if (!block.connect[name]) block.connect[name] = port.pool ? nextPool(board, port.suggest) : port.suggest;
+    if (!block.connect[name]) block.connect[name] = port.pool ? nextPool(board, port.suggest, Object.values(block.connect)) : port.suggest;      // several ports of one block may draw from the same pool
     if (!bound.has(port.net)) bound.set(port.net, block.connect[name]);
   }
   for (const n of built.nets) mergeNet(board, bound.get(n.name) || localNet(block.id, n.name), n, n.pins.map((pin) => { const dot = pin.indexOf("."); return `${refs.get(pin.slice(0, dot))}.${pin.slice(dot + 1)}`; }));

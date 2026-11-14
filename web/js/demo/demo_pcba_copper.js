@@ -327,6 +327,6 @@ via AIN2 at=[30, 45.25] d=0.6 drill=0.3
 via AIN2 at=[33, 41.75] d=0.6 drill=0.3
 via CAN_L at=[16.25, 44.5] d=0.6 drill=0.3
 
-# Autres données
+# Comment elle s'assemble — la gamme annotée et la revue
 review author="" open=["Choisir la référence exacte du microcontrôleur et de l'émetteur-récepteur CAN."] decisions=[]
 `;

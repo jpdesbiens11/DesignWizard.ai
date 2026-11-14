@@ -16,7 +16,7 @@ export function railName(v) {
   const a = Math.abs(v), whole = Math.floor(a + 1e-9), frac = Math.round((a - whole) * 10);
   return `${v < 0 ? "-" : "+"}${whole}V${frac ? frac : ""}`;
 }
-const GROUND = /^(GND|PGND|AGND|DGND|CHASSIS|PE)$/, RAIL = /^[+-]\d+V\d?(_\w+)?$/;
+const GROUND = /^(GND(_\w+)?|PGND|AGND|DGND|CHASSIS|PE)$/, RAIL = /^[+-]\d+V\d?(_\w+)?$/;
 /** Class of a net from its name and voltage : "ground", "hv" (60 V and above), "power" or "signal". */
 export function netClass(name, voltage = 0) {
   if (GROUND.test(name)) return "ground";

@@ -24,27 +24,42 @@ L'écran dessine le parcours en haut de page ; chaque case dit où en est la car
 
 Une **fonction** dit le besoin (« abaisser 24 V vers 5 V, 1 A »), son type (principale, contrainte, technique) et ses
 critères avec leur flexibilité (F0 impératif … F3 libre). Un **bloc** est le petit circuit éprouvé qui la remplit. Les
-18 blocs fournis couvrent l'électronique de commande basse tension :
+44 blocs fournis couvrent la plupart des sous-circuits d'une carte de commande mécatronique basse tension :
 
-- **Raccorder** : bornier d'alimentation, connecteur d'entrées-sorties, liaison carte à carte ;
-- **Protéger** : fusible, MOSFET contre l'inversion, diode TVS, réservoir ;
-- **Alimenter** : régulateur abaisseur à découpage, régulateur linéaire ;
-- **Calculer** : microcontrôleur 32 bits avec découplage, quartz, remise à zéro ;
-- **Mesurer** : température par CTN, courant par shunt, tension du bus, centrale inertielle ;
-- **Commander** : demi-pont de puissance, commande de charge côté bas ;
-- **Communiquer** : CAN, RS-485 ; **Signaler** : témoin ; **Tester** : connecteur de programmation, points de test et mires.
+- **Raccorder** : bornier d'alimentation, connecteur d'entrées-sorties, liaison carte à carte, embase USB-C,
+  connecteur fil à carte ;
+- **Protéger** : fusible, MOSFET contre l'inversion, diode TVS, réservoir ; surveillance de l'alimentation ;
+- **Alimenter** : régulateur abaisseur, régulateur linéaire, régulateur élévateur, alimentation isolée 1 W,
+  référence de tension ;
+- **Calculer** : microcontrôleur 32 bits (découplage, quartz, remise à zéro), mémoire de paramètres (EEPROM I²C),
+  mémoire flash SPI, horloge temps réel avec pile ;
+- **Mesurer** : température par CTN ou par capteur sur la carte, courant par shunt ou par effet Hall (isolé),
+  tension du bus, centrale inertielle, entrée tout-ou-rien protégée, entrée isolée par optocoupleur, amplificateur
+  et filtre, détection de seuil, entrées de codeur ou de capteurs Hall ;
+- **Commander** : demi-pont de puissance, commande de charge côté bas, relais, pont en H pour moteur à courant
+  continu, pilote de moteur pas à pas ;
+- **Communiquer** : CAN, RS-485, RS-232, LIN, pont USB vers liaison série, isolation de signaux numériques,
+  translation de niveaux I²C ;
+- **Signaler** : témoin, bouton-poussoir, avertisseur sonore ; **Tester** : connecteur de programmation, points de
+  test et mires.
+
+Les blocs **s'agencent comme des briques** : chacun apporte ses nets (`+5V`, `I2C_SCL`, `USB_DP`…) et se raccorde à
+ceux qui portent le même nom ; une entrée ou une sortie prend la prochaine broche libre du microcontrôleur
+(`AIN0…6`, `DIN0…2`, `DOUT0…3`). Deux blocs qui réclament la même ressource (deux liaisons sur le même port série)
+sont signalés par le contrôle électrique.
 
 Chaque bloc **se dimensionne lui-même et l'écrit** comme un calcul à la main : inductance et pont de contre-réaction
 du régulateur (séries E6 / E96), résistance de la DEL, shunt et sa puissance, calibre du fusible, échauffement du
 régulateur linéaire — qui change de boîtier quand il chaufferait trop.
 
-La **bibliothèque** tient 76 composants génériques (passifs, diodes, transistors, circuits intégrés, capteurs,
-connecteurs) sur 49 empreintes : des *classes* de composants au brochage usuel, sans marque ni référence. La
+La **bibliothèque** tient 106 composants génériques (passifs, diodes, transistors, circuits intégrés, capteurs,
+relais, connecteurs) sur 65 empreintes : des *classes* de composants au brochage usuel, sans marque ni référence. La
 référence exacte se saisit dans la nomenclature ; sa fiche technique fait foi. La bibliothèque **s'enrichit** : un
 composant se crée à partir d'un nom de boîtier et d'une liste de broches, et se range dans la carte (`library`).
 
 Un microcontrôleur offre ses broches *à la demande* : la broche CAN_TX ne rejoint un net que lorsqu'un bloc apporte
-ce net. Une mesure prend la première entrée analogique libre (AIN0, AIN1…).
+ce net. Une mesure prend la première entrée analogique libre (AIN0, AIN1…) ; le boîtier 32 broches en offre moins
+que le 48 broches (pas de SPI ni de second port série).
 
 ### Nomenclature des nets
 
@@ -74,9 +89,31 @@ sur grille de 0,25 mm (A*), sur 2 ou 4 couches, à vias traversants :
 - **chaque liaison est vérifiée au micron contre tout le cuivre avant d'être posée** ;
 - le cuivre verrouillé à la main est conservé.
 
+- ce que la grille n'a pas pu passer est repris par une **passe de finition** sur une grille deux fois plus fine.
+
 Mesuré : la carte de démonstration (63 composants, 35 nets, 60 × 90 mm, 4 couches) se route à **137 liaisons sur
-137** en 7 s, 955 mm de pistes, 114 vias, aucun constat au-dessus de la simple remarque. Une carte de 57 composants
-se route à 99 % sur 2 couches comme sur 4.
+137** en 7 s, 955 mm de pistes, 114 vias, aucun constat au-dessus de la simple remarque. Sur des cartes faites des
+nouveaux blocs (90 × 70 mm, 4 couches) : carte USB de 51 composants, 136 liaisons sur 137 ; carte moteur de
+65 composants, 137 sur 138 ; carte pas à pas de 42 composants, 100 sur 104. Ce que le routeur pose est toujours sans
+défaut d'isolement ; ce qu'il laisse reste affiché en chevelu.
+
+### Déplacer un bloc : les pistes suivent
+
+Dans le layout détaillé, on glisse **un composant** ou **un bloc entier** (bascule « Glisser déplace »), et un bloc
+se tourne d'un quart de tour depuis le panneau de droite. Le sous-circuit se déplace comme une brique :
+
+- ses pistes et ses vias **internes** — ses propres nets, sa descente vers un plan — le suivent d'une pièce ;
+- ce qui le reliait au reste de la carte est retiré jusqu'à la dernière jonction qui sert encore aux autres, puis
+  **reposé automatiquement** : seules les liaisons manquantes sont routées, autour du cuivre resté en place ;
+- le cuivre d'autres nets sur lequel il se pose est repris de la même façon ; les tronçons devenus inutiles
+  (antennes, vias isolés) sont retirés ;
+- une position imposée (verrouillée) ne bouge pas ; un déplacement qui sortirait de la carte est refusé ;
+- le tout est **une seule étape annulable** (Ctrl+Z).
+
+Mesuré sur la carte de démonstration : le bloc CAN (7 composants) déplacé de 1 mm — 12 pistes et 8 vias suivent,
+9 liaisons sont refaites, aucune liaison ouverte, aucune erreur de règle, en moins d'une demi-seconde de calcul.
+« Reconnecter » repose les liaisons manquantes sans toucher au reste. Il n'y a pas encore d'outil pour tracer une
+piste à la main : une liaison que le routeur ne passe pas se débloque en écartant un composant.
 
 ## 4. Vérifications
 
@@ -137,6 +174,9 @@ Les fichiers sortent aux extensions que ces outils et les ateliers reconnaissent
 Le bouton « Confier à l'IA » (étape Revue, et barre du haut sur tout écran) exporte la carte en `.dwiz` avec votre
 demande, formulée comme à un technicien. La réponse se colle ; l'écran liste chaque changement ; vous appliquez ou
 non, en une étape annulable. Changer les paramètres d'un bloc suffit : ses composants et ses nets sont reconstruits.
+Si la réponse **déplace des composants** (seules leurs positions changent), leurs pistes les suivent et leurs
+liaisons sont refaites avant l'aperçu : on peut demander « écarte le bloc CAN de 2 mm du connecteur » comme à un
+technicien.
 Le geste et ses garde-fous sont décrits dans [IA.md](IA.md).
 
 ## 9. Ce qui est vérifié, ce qui ne l'est pas
@@ -155,5 +195,9 @@ Le geste et ses garde-fous sont décrits dans [IA.md](IA.md).
   de contrôle d'impédance.
 - Plans pleins sur une couche entière, sans freins thermiques ; pas de zones de cuivre partielles.
 - Composants orientés par quarts de tour.
-- Le routeur donne un premier routage : sur une carte dense à 2 couches il laisse des liaisons à reprendre.
+- Le routeur donne un premier routage : sur une carte dense il laisse quelques liaisons à reprendre (chiffres au § 3),
+  et il n'y a pas encore de tracé manuel de piste.
+- Les 26 nouveaux blocs sont vérifiés par le contrôle électrique et par leurs calculs, pas encore sur une carte
+  fabriquée ; les constantes propres à une classe de circuit (limite de courant d'un pont en H, gain d'un pilote
+  pas à pas) sont typiques : la fiche technique de la référence choisie fait foi.
 - Empreintes et prix typiques : la fiche technique et le devis font foi.

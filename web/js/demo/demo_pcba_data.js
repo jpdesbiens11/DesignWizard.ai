@@ -64,10 +64,9 @@ block B3 buck name="Régulateur abaisseur" function=F1.2 zone=[1.5, 61.5, 27, 20
   params vin=24 vout=5 iout=1 ripple=30
 block B4 ldo name="Régulateur linéaire" function=F1.3 zone=[28.5, 1.5, 14, 28] connect={VIN: +5V, VOUT: +3V3, GND: GND}
   params vin=5 vout=3.3 iout=0.3
-block B5 mcu name=Microcontrôleur function=F2.1 zone=[28.5, 29.5, 30, 30.5]
-  connect={VDD: +3V3, GND: GND, NRST: RESET_N}
+block B5 mcu name=Microcontrôleur function=F2.1 zone=[28.5, 29.5, 30, 32] connect={VDD: +3V3, GND: GND, NRST: RESET_N}
   params pins=48 xtal=8 vdd=3.3
-block B6 conn_board name="Liaison carte à carte" function=F2.2 zone=[28.5, 61, 30, 28]
+block B6 conn_board name="Liaison carte à carte" function=F2.2 zone=[28.5, 62.5, 30, 26.5]
   connect={P1: +5V, P2: GND, P3: PWM_H, P4: PWM_L, P5: AIN1, P6: AIN2, P7: DOUT0, P8: GND}
   params signals="+5V,GND,PWM_H,PWM_L,AIN1,AIN2,DOUT0,GND"
 block B7 can name="Interface CAN" function=F3.2 zone=[1.5, 44, 27, 17]

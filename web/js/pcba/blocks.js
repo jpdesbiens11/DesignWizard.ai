@@ -11,9 +11,11 @@
 import { POWER_BLOCKS } from "./blocks_power.js";
 import { CONTROL_BLOCKS } from "./blocks_control.js";
 import { SENSE_BLOCKS } from "./blocks_sense.js";
+import { IO_BLOCKS } from "./blocks_io.js";
+import { LINK_BLOCKS } from "./blocks_link.js";
 
 export const BLOCK_CATEGORIES = ["Raccorder", "Protéger", "Alimenter", "Calculer", "Mesurer", "Commander", "Communiquer", "Signaler", "Tester"];
-export const BLOCKS = Object.fromEntries([...POWER_BLOCKS, ...CONTROL_BLOCKS, ...SENSE_BLOCKS].map((t) => [t.id, t]));
+export const BLOCKS = Object.fromEntries([...POWER_BLOCKS, ...CONTROL_BLOCKS, ...SENSE_BLOCKS, ...IO_BLOCKS, ...LINK_BLOCKS].map((t) => [t.id, t]));
 
 /** Parameters of a template with their defaults, overridden by `given`. */
 export function blockParams(template, given = {}) {

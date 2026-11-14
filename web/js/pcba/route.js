@@ -162,7 +162,8 @@ function routeAll(board, lib, order, opts, t0) {
   return { tracks, vias, failed: [...failed.values()].flat(), routed };
 }
 
-/** Routes every open connection. opts : { grid, maxMs, onProgress, nets, keep, viaCost, passes }.
+/** Routes every open connection. opts : { grid, maxMs, onProgress, nets, keep, viaCost, passes, finish }.
+    A last pass on a grid twice as fine takes up the links the first grid could not thread (finish: false skips it).
     → { routed, total, open, failed: [{ net, from, to }], length, vias, ms, passes, complete } */
 export function autoroute(board, lib = {}, opts = {}) {
   const t0 = Date.now(), o = { maxMs: 15000, passes: 2, ...opts };
@@ -180,8 +181,14 @@ export function autoroute(board, lib = {}, opts = {}) {
     order = [...bad, ...order.filter((n) => !bad.includes(n))];
   }
   board.tracks = [...(board.tracks || []), ...best.tracks]; board.vias = [...(board.vias || []), ...best.vias];
+  let open = connectivity(resolveBoard(board, lib)).open;
+  if (open > 0 && best.failed.length && o.finish !== false) {      // what the grid could not thread : the same search on a grid twice as fine, around the copper now in place
+    const nets = [...new Set(best.failed.map((f) => f.net))], fine = routeAll(board, lib, nets, { ...o, nets, grid: (o.grid ?? 0.25) / 2, maxMs: Math.min(25000, Math.max(8000, o.maxMs / 3)) }, Date.now());
+    board.tracks.push(...fine.tracks); board.vias.push(...fine.vias);
+    best = { ...best, tracks: [...best.tracks, ...fine.tracks], vias: [...best.vias, ...fine.vias], failed: fine.failed };
+    open = connectivity(resolveBoard(board, lib)).open;
+  }
   const length = best.tracks.reduce((s, t) => s + t.pts.reduce((a, p, i) => (i ? a + dist(t.pts[i - 1], p) : 0), 0), 0);
-  const open = connectivity(resolveBoard(board, lib)).open;
   return { routed: before - open, total: before, open, failed: best.failed, length, vias: best.vias.length, ms: Date.now() - t0, passes, complete: open === 0 };
 }
 

@@ -5,6 +5,7 @@
 
 import { footprint } from "./footprints.js";
 import { PARTS } from "./library_parts.js";
+import { MORE_PARTS } from "./library_more.js";
 
 const TYPE = [[/^(GND\d*|VSS\w*|COM|PGND|AGND|V-|EP)$/, "gnd"], [/^(VIN|VCC|VDD\w*|V\+|VIO|VBAT|VM)$/, "power_in"], [/^(VOUT|VREF)$/, "power_out"], [/^NC\d*$/, "nc"],
   [/^(P[A-D]\d+|SWDIO|SDA|SDO|CANH|CANL|IO\d*)$/, "bidir"], [/^(NRST|BOOT0|EN\d*|SWCLK|SCL|HIN|LIN|TXD|DI|DE|RE_N|STB|IN[A-D]?[+-]?|FB|OSC_IN|CS|SCK|MOSI|WP|A[0-2]|G|B)$/, "in"],
@@ -32,7 +33,7 @@ export const PREFIX = { resistor: "R", capacitor: "C", inductor: "L", diode: "D"
   relay: "K", transformer: "T", optocoupler: "U", switch: "SW", testpoint: "TP", fiducial: "FID", heatsink: "HS", mechanical: "H", other: "X" };
 
 /** The trade library : id → component. */
-export const LIBRARY = Object.fromEntries(PARTS.map((p) => [p.id, makeComponent(p)]));
+export const LIBRARY = Object.fromEntries([...PARTS, ...MORE_PARTS].map((p) => [p.id, makeComponent(p)]));
 
 export const CATEGORIES = [
   { key: "passive", label: "Passifs", kinds: ["resistor", "capacitor", "inductor"] }, { key: "semi", label: "Diodes et transistors", kinds: ["diode", "led", "transistor", "mosfet"] },

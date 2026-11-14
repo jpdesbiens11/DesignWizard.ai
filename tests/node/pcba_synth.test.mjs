@@ -15,11 +15,13 @@ import { controlBoard } from "./pcba_fixture.mjs";
 const near = (a, b, tol) => assert.ok(Math.abs(a - b) <= tol, `${a} vs ${b}`);
 test("library: every component is complete, every package generates, a user component is built in one call", () => {
   const all = Object.values(LIBRARY);
-  assert.ok(all.length >= 70, `${all.length} components`);
+  assert.ok(all.length >= 100, `${all.length} components`);
   for (const c of all) { assert.deepEqual(checkComponent(c), [], c.id); assert.ok(c.name && c.prefix && c.price >= 0 && typeof c.coat === "boolean"); }
   for (const name of packageList().filter((p) => !p.includes("N"))) assert.ok(footprint(name).pads.length > 0, name);
   assert.equal(footprint("HDR-1x06-2.54").pads.length, 6); assert.equal(footprint("TB-3-5.08").pads[0].shape, "rect"); assert.equal(footprint("INCONNU"), null);
   assert.equal(all.filter((c) => !c.coat).every((c) => ["connector", "terminal", "switch", "testpoint", "fiducial"].includes(c.kind)), true);
+  assert.equal(footprint("WTB-4-2.0").pads.length, 4); assert.equal(footprint("SIP-4").pads.length, 4); assert.equal(footprint("USB-C-2.0").pads.filter((q) => q.drill).length, 4); assert.equal(footprint("HTSSOP-28").pads.length, 29);
+  for (const q of ["QFN-16", "QFN-24", "QFN-32", "QFN-48"]) { const f = footprint(q), lands = f.pads.filter((x) => x.n !== "EP"); let gap = Infinity; for (let i = 0; i < lands.length; i++) for (let j = i + 1; j < lands.length; j++) { const a = lands[i], c = lands[j]; gap = Math.min(gap, Math.hypot(Math.max(0, Math.abs(a.x - c.x) - (a.w + c.w) / 2), Math.max(0, Math.abs(a.y - c.y) - (a.h + c.h) / 2))); } assert.ok(gap >= 0.15, `${q} : ${gap.toFixed(3)} mm between lands`); }
   assert.equal(CATEGORIES.reduce((s, cat) => s + all.filter((c) => cat.kinds.includes(c.kind)).length, 0), all.length, "every component is in a category");
   assert.deepEqual(findComponents("régulateur abaisseur").map((c) => c.id).sort(), ["U-BUCK-SOIC8", "U-BUCK-SOT23-6"]);
   const mine = makeComponent({ id: "U-MONCAPTEUR", kind: "sensor", name: "Capteur de pression", package: "SOIC-8", pins: ["VDD", "GND", "SCL", "SDA", "NC", "NC", "INT", "NC"] });

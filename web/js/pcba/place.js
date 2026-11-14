@@ -32,7 +32,7 @@ export function floorplan(board, lib = {}, opts = {}) {
   const blocks = (board.blocks || []).map((b) => {
     const parts = (board.parts || []).filter((p) => p.block === b.id && L[p.comp]), fixed = parts.filter((p) => p.fixed && p.at);
     const need = parts.reduce((s, p) => s + courtOf(L[p.comp])[0] * courtOf(L[p.comp])[1], 0), big = Math.max(1, ...parts.map((p) => Math.max(...courtOf(L[p.comp]))));
-    return { id: b.id, b, need: Math.max(need, 4), big, edge: parts.some((p) => p.edge), anchor: fixed.length ? [fixed.reduce((s, p) => s + p.at[0], 0) / fixed.length, fixed.reduce((s, p) => s + p.at[1], 0) / fixed.length] : null, pos: null };
+    return { id: b.id, b, need: Math.max(need, 4), big, edge: parts.some((p) => p.edge), imposed: fixed.length > 0, anchor: fixed.length ? [fixed.reduce((s, p) => s + p.at[0], 0) / fixed.length, fixed.reduce((s, p) => s + p.at[1], 0) / fixed.length] : null, pos: null };
   });
   if (!blocks.length) return { zones: [], fill: 0, notes: ["Aucun bloc à implanter."] };
   // where each block wants to be : imposed parts pin it, edge blocks go to the rim, the others settle between their neighbours
@@ -61,7 +61,8 @@ export function floorplan(board, lib = {}, opts = {}) {
     const span = wide ? r[2] - r[0] : r[3] - r[1];
     let len = Math.min(Math.max(span * share, Math.min(lo + 1, span / 2)), span - Math.min(hi + 1, span / 2));
     // imposed parts stay on their side of the cut
-    const keepLo = Math.max(-Infinity, ...a.filter((k) => k.anchor).map((k) => k.anchor[ax] - r[ax] + k.big / 2 + 0.5)), keepHi = Math.min(Infinity, ...c.filter((k) => k.anchor).map((k) => k.anchor[ax] - r[ax] - k.big / 2 - 0.5));
+    // (a block that merely prefers the rim has no say here : its place on the rim is a wish, not a constraint)
+    const keepLo = Math.max(-Infinity, ...a.filter((k) => k.imposed).map((k) => k.anchor[ax] - r[ax] + k.big / 2 + 0.5)), keepHi = Math.min(Infinity, ...c.filter((k) => k.imposed).map((k) => k.anchor[ax] - r[ax] - k.big / 2 - 0.5));
     if (keepLo <= keepHi) len = Math.min(Math.max(len, keepLo), keepHi, span - 1); len = Math.max(1, len);
     cut(a, wide ? [r[0], r[1], r[0] + len, r[3]] : [r[0], r[1], r[2], r[1] + len]); cut(c, wide ? [r[0] + len, r[1], r[2], r[3]] : [r[0], r[1] + len, r[2], r[3]]);
   };
