@@ -16,7 +16,7 @@ const up = (x, step = 5) => Math.ceil((x - 1e-9) / step) * step;
 const fr = (x) => r1(x).toLocaleString("fr-CA");
 const P = (value, min, max, label, group = "Enveloppe", step = 1) => ({ value, min: r1(min), max: r1(max), step, unit: "mm", label, group });
 const off = (base, d) => (Math.abs(d) < 1e-6 ? base : d > 0 ? `${base} + ${r1(d)}` : `${base} - ${r1(-d)}`);
-const slug = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "").slice(0, 32);
+const slug = (s) => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "_").slice(0, 40).replace(/^_+|_+$/g, "");
 
 /** Forms the companion knows how to synthesise, with the process each one implies by default. */
 export const ATELIER_FORMS = { plate: "cnc_milling", sheet: "laser_cut", block: "cnc_milling", bar_flat: "cnc_milling", angle: "cnc_milling", bar_round: "cnc_turning", print: "fdm" };
@@ -87,6 +87,8 @@ function prepare(brief, log) {
     return it;
   });
 }
+/** Tapped side of a bolt pattern: through in a thin wall, blind at the engagement the material needs in a block. */
+const tapped = (it, through) => (it.type === "bolt_pattern" && it.side === "B" && !(it.opts && (it.opts.depth !== undefined || it.opts.thread === "insert" || it.opts.standoff)) ? { opts: { ...(it.opts || {}), depth: through ? "through" : r1(it.fp.need) } } : {});
 const ifaceOut = (it, face, at, extra = {}) => { const o = { id: it.id, type: it.type, name: it.name, key: it.key, partner: it.partner, side: it.side, face, at, params: it.params, opts: it.opts, ...extra }; for (const k of Object.keys(o)) if (o[k] === undefined) delete o[k]; return o; };
 function thickness(items, series, floor, log, what = "Épaisseur") {
   let need = floor, why = `minimum d'atelier ${fr(floor)} mm`;
@@ -105,7 +107,7 @@ function flat(brief, items, log) {
     params: { L: P(L, lay.w + 2 * lay.edge, Math.max(400, 2 * L), "Longueur"), W: P(W, lay.h + 2 * lay.edge, Math.max(300, 2 * W), "Largeur"), t: P(t, sheet ? 0.5 : 3, sheet ? 6 : 50, "Épaisseur", "Enveloppe", 0.5), r: P(r, 0, 20, "Rayon des coins", "Détails", 0.5) },
     stock: { form: brief.form, L: "L", W: "W", t: "t" },
     features: [{ op: "outline", id: "contour", name: "Contour", profile: { rect: [0, 0, "L", "W"], r: "r" } }, { op: "interfaces" }, { op: "deburr", id: "ebavurage" }],
-    interfaces: items.map((it) => ifaceOut(it, it.where === "-Z" ? "-Z" : "+Z", [off("L/2", it.du), off("W/2", it.dv)])) };
+    interfaces: items.map((it) => ifaceOut(it, it.where === "-Z" ? "-Z" : "+Z", [off("L/2", it.du), off("W/2", it.dv)], tapped(it, true))) };
 }
 
 function block(brief, items, log) {
@@ -123,7 +125,7 @@ function block(brief, items, log) {
   const L = up(dim("X", env.L)), W = up(dim("Y", env.W)), Hn = dim("Z", env.H), H = additive ? up(Hn, 1) : (nextStd(brief.form === "bar_flat" ? FLAT_THICKNESS : PLATE_THICKNESS, Hn) ?? up(Hn));
   log.push(`Bloc ${fr(L)} × ${fr(W)} × ${fr(H)} mm : chaque face porte ses interfaces${additive ? "" : " ; la hauteur est une épaisseur du commerce, les deux grandes faces restent brutes"}.`);
   const centre = { X: "L/2", Y: "W/2", Z: "H/2" };
-  for (const it of items) { const [a, b] = axesOf[it.where[1]]; out.push(ifaceOut(it, it.where, [off(centre[a], it.du), off(centre[b], it.dv)])); }
+  for (const it of items) { const [a, b] = axesOf[it.where[1]]; out.push(ifaceOut(it, it.where, [off(centre[a], it.du), off(centre[b], it.dv)], additive ? {} : tapped(it, false))); }
   const params = { L: P(L, need.X[0], Math.max(400, 2 * L), "Longueur"), W: P(W, need.Y[0], Math.max(300, 2 * W), "Largeur"), H: P(H, need.Z[0], Math.max(200, 2 * H), "Hauteur") };
   const stock = additive ? { form: "print" } : brief.form === "bar_flat" ? { form: "bar_flat", w: "W", h: "H", L: "L" } : { form: "block", L: "L", W: "W", H: "H" };
   const features = additive ? [{ op: "extrude", id: "corps", name: "Corps", profile: { rect: [0, 0, "L", "W"], r: 2 }, plane: "XY", length: "H" }, { op: "interfaces" }] : [{ op: "interfaces" }, { op: "deburr", id: "ebavurage" }];
@@ -141,8 +143,8 @@ function angle(brief, items, log) {
   return { family: "prismatic",
     params: { A: P(A, 15, 100, "Aile horizontale"), B: P(B, 15, 100, "Aile verticale"), t: P(t, 2, 10, "Épaisseur", "Enveloppe", 0.5), W: P(Wd, 15, Math.max(300, 2 * Wd), "Largeur") },
     stock: { form: "angle", a: "A", b: "B", t: "t", L: "W" }, features: [{ op: "interfaces" }, { op: "deburr", id: "ebavurage" }],
-    interfaces: [...base.map((it) => ifaceOut(it, "-Z", [off("W/2", it.du), "t + (A - t)/2"], it.side === "A" ? { opts: { ...(it.opts || {}), depth: "t + 0.5" } } : {})),
-      ...wall.map((it) => ifaceOut(it, wface, [off("W/2", it.du), "t + (B - t)/2"], it.side === "A" ? { opts: { ...(it.opts || {}), depth: "t + 0.5" } } : {}))] };
+    interfaces: [...base.map((it) => ifaceOut(it, "-Z", [off("W/2", it.du), "t + (A - t)/2"], it.side === "A" ? { opts: { ...(it.opts || {}), depth: "t + 0.5" } } : tapped(it, true))),
+      ...wall.map((it) => ifaceOut(it, wface, [off("W/2", it.du), "t + (B - t)/2"], it.side === "A" ? { opts: { ...(it.opts || {}), depth: "t + 0.5" } } : tapped(it, true)))] };
 }
 
 function round(brief, items, log) {
@@ -160,7 +162,7 @@ function round(brief, items, log) {
   const params = { D: P(D, dNeed, Math.max(150, 2 * D), "Diamètre"), H: P(body, 3, Math.max(200, 4 * body), "Longueur du corps") };
   if (bottom) { z0 = `${r1(bottom.params.length)}`; features.push({ op: "turn", id: "portee_bas", name: `Portée Ø${fr(bottom.params.d)}`, from: 0, to: z0, d: bottom.params.d }); out.push(ifaceOut(bottom, "-Z", [0, 0], { level: z0 })); total = `H + ${z0}`; }
   if (top) { features.push({ op: "turn", id: "portee_haut", name: `Portée Ø${fr(top.params.d)}`, from: total, to: `${total} + ${r1(top.params.length)}`, d: top.params.d }); out.push(ifaceOut(top, "+Z", [0, 0], { level: total })); }
-  for (const it of rest) out.push(ifaceOut(it, it.where === "-Z" ? "-Z" : "+Z", [0, 0], it.where === "-Z" ? { level: z0 } : { level: total }));
+  for (const it of rest) out.push(ifaceOut(it, it.where === "-Z" ? "-Z" : "+Z", [0, 0], { ...tapped(it, false), level: it.where === "-Z" ? z0 : total }));
   if (spig.length) log.push("Les portées d'ajustement sont chariotées dans le rond : la longueur de barre les inclut.");
   features.push({ op: "interfaces" }, { op: "deburr", id: "ebavurage" });
   return { family: "turned", params, stock: { form: "bar_round", d: "D", L: top ? `${total} + ${r1(top.params.length)}` : total }, features, interfaces: out };

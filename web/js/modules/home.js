@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Accueil: projects, the two demonstration projects, and the journey from interfaces to report. */
+/* DesignWizard.ai — Accueil: projects, the two demonstration projects, and the journey from the design intent to the report. */
 
 import { el, icon, btn, toast, promptBox, confirmBox, fmt } from "../core/dom.js";
 import { registerModule, go, app, refresh } from "../core/app.js";
@@ -7,7 +7,7 @@ import { DEMO_DRIVE } from "../demo/demo_drive.js";
 import { DEMO_HVB_PARTS, DEMO_HVB_ASSEMBLY } from "../demo/demo_hvb.js";
 
 const STEPS = [
-  ["interfaces", "Interfaces", "Listez les voisins de la pièce. Le prompt générique mène l'entrevue avec Claude ; collez sa réponse : la pièce est créée."],
+  ["atelier", "Atelier", "Dites l'intention : à quoi sert la pièce, ses interfaces, sa matière, sa matière première. Elle se construit sous vos yeux, sans esquisse — ou par une entrevue avec Claude."],
   ["parts", "Pièces", "Ajustez la pièce avec ses curseurs, la baguette (Ctrl+K) ou l'arbre de construction. Le DFM se vérifie en direct."],
   ["assembly", "Assemblage", "Ajoutez les pièces : les interfaces identiques se matent seules et restent liées. Changez un côté, l'autre suit."],
   ["creepage", "Isolation", "Creepage et clearance mesurés sur l'assemblage complet, comparés à IEC 60664-1."],
@@ -29,11 +29,11 @@ function render(main) {
   main.append(page);
   const p = store.project;
   page.append(el("section", { class: "hero" },
-    el("div", null, el("p", { class: "hero-title" }, "Des ", el("mark", null, "interfaces"), " à la pièce, à l'assemblage, au dossier de revue."),
-      el("p", null, "DesignWizard.ai est une plateforme de développement de produit mécatronique : chaque pièce naît de ses interfaces, les assemblages se montent d'eux-mêmes, et les règles DFM, DFA, DFx et d'isolation (creepage / clearance) sont vérifiées dès la conception."),
+    el("div", null, el("p", { class: "hero-title" }, "De l'", el("mark", null, "intention"), " à la pièce, de la pièce au système."),
+      el("p", null, "DesignWizard.ai réinvente la conception mécatronique : une pièce naît de son intention — ses interfaces, sa matière, sa matière première — comme dans l'atelier d'un artisan. Les assemblages se montent d'eux-mêmes, la physique se vérifie par des modèles simples, et les règles DFM, DFA et d'isolation s'appliquent dès la première minute. Libre, sous licence MIT."),
       el("div", { class: "form-actions", style: { justifyContent: "flex-start" } },
         btn("Charger la démonstration « Variateur 400 V »", () => loadDemo(DEMO_DRIVE, "#/assembly/DRV-ASM"), { primary: true, icon: "sparkle", tip: "Boîtier moulé, deux PCB, dissipateur extrudé : tout est déjà relié par ses interfaces" }),
-        btn("Nouveau projet", async () => { const name = await promptBox("Nouveau projet", "Nom du projet", "Mon produit"); if (name) { await store.create(name); go("#/interfaces"); } }, { icon: "plus" }),
+        btn("Nouveau projet", async () => { const name = await promptBox("Nouveau projet", "Nom du projet", "Mon produit"); if (name) { await store.create(name); go("#/atelier"); } }, { icon: "plus" }),
         btn("Importer…", () => app.pickFile(), { icon: "upload", tip: "Projet .json, pièce JSON d'une entrevue, ou fichier STEP — vous pouvez aussi coller (Ctrl+V) ou déposer un fichier n'importe où" }))),
     el("img", { src: "img/sketch/hero.svg", alt: "" })));
 

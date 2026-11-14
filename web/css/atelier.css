@@ -1,0 +1,51 @@
+/* DesignWizard.ai — screens added with the technology bricks (Atelier, Physique, Artéfacts, compte et accès).
+   Only design tokens here: every colour, radius and shadow comes from app.css / themes.css, so the four themes apply. */
+
+html[data-module="atelier"] { --acc: var(--hl-violet); }
+html[data-module="physics"] { --acc: var(--hl-teal); }
+html[data-module="artifacts"] { --acc: var(--hl-blue); }
+html[data-module="account"] { --acc: var(--hl-green); }
+
+.small { font-size: .84rem; }
+.step-no { display: inline-grid; place-items: center; width: 1.55em; height: 1.55em; margin-right: .45em; border-radius: 50%; background: var(--acc); color: var(--on-acc, var(--graphite)); font-size: .82em; font-weight: 700; }
+.form-row.tight { gap: .45rem; margin-top: .35rem; }
+.form-row.tight .field { min-width: 5.2rem; flex: 1 1 5.2rem; }
+
+.atelier-grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 1rem; align-items: start; }
+.atelier-brief > section { margin-bottom: 1rem; }
+.atelier-side { position: sticky; top: calc(var(--topbar-h) + .6rem); max-height: calc(100vh - var(--topbar-h) - 1.2rem); overflow: auto; }
+.atelier-view { height: 320px; border: 1.4px dashed var(--line); border-radius: 14px; background: var(--view-bg, var(--surface)); }
+.atelier-chips { display: flex; flex-wrap: wrap; gap: .35rem; margin: .55rem 0; }
+.atelier-neigh { display: flex; flex-wrap: wrap; gap: .25rem .9rem; margin-bottom: .5rem; }
+.atelier-hint { display: flex; gap: .4rem; align-items: flex-start; padding: .45rem .6rem; border: 1.4px dashed var(--line); border-radius: var(--r-field); color: var(--muted); font-size: .86rem; }
+.atelier-hint.warn { border-color: var(--warn); color: var(--ink); }
+.atelier-stock { display: flex; gap: .6rem; align-items: center; padding: .5rem .65rem; margin: .2rem 0 .6rem; border: 1.6px solid var(--graphite); border-radius: var(--r-field); background: var(--surface-2); }
+.atelier-stock .sk-icon { width: 1.8rem; height: 1.8rem; flex: none; }
+.atelier-stock small { display: block; color: var(--muted); }
+
+.shape-grid, .stock-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .5rem; }
+.shape-card, .stock-card { display: grid; gap: .15rem; justify-items: start; text-align: left; padding: .55rem .65rem; font: inherit; color: var(--ink); cursor: pointer;
+  background: var(--surface); border: 1.5px solid var(--line); border-radius: var(--r-card); transition: transform .12s var(--ease-pop), border-color .12s, box-shadow .12s; }
+.shape-card:hover, .stock-card:hover { transform: translateY(-2px); border-color: var(--graphite); box-shadow: var(--shadow-sketch); }
+.shape-card .sk-icon, .stock-card .sk-icon { width: 1.5rem; height: 1.5rem; color: var(--graphite); }
+.shape-card small, .stock-card small { color: var(--muted); font-size: .76rem; line-height: 1.25; }
+.stock-card.on { border-color: var(--graphite); box-shadow: var(--shadow-sketch); background: linear-gradient(transparent 62%, var(--acc) 62%, var(--acc) 92%, transparent 92%) no-repeat 0 0 / 100% 1.9rem, var(--surface); }
+.stock-card.odd { opacity: .55; }
+.stock-card .badge { margin-top: .15rem; }
+
+.iface-card { margin: .5rem 0; padding: .55rem .65rem; border: 1.5px solid var(--line); border-left: 5px solid var(--acc); border-radius: var(--r-field); background: var(--surface); }
+.iface-card.imposed { border-left-color: var(--graphite); background: var(--surface-2); }
+.iface-head { display: flex; flex-wrap: wrap; gap: .45rem; align-items: center; }
+.iface-head select { width: auto; margin-left: auto; padding-block: .15rem; }
+.iface-card p { margin: .35rem 0 0; }
+
+.gamme { list-style: none; margin: .2rem 0 .6rem; padding: 0; border: 1.5px solid var(--line); border-radius: var(--r-field); overflow: hidden; }
+.gamme li { display: flex; gap: .55rem; align-items: baseline; padding: .32rem .6rem; font-size: .88rem; border-top: 1px dashed var(--line); }
+.gamme li:first-child { border-top: 0; }
+.gamme .g-n { flex: none; width: 2.2em; font-family: var(--mono); font-size: .78rem; color: var(--muted); }
+.gamme .g-stock, .gamme .g-cut { background: var(--surface-2); }
+.gamme .g-finish, .gamme .g-check { color: var(--muted); }
+.decisions { margin: .2rem 0 .4rem; padding-left: 1.1rem; font-size: .86rem; }
+.decisions li { margin-bottom: .2rem; }
+
+@media (max-width: 1100px) { .atelier-grid { grid-template-columns: 1fr; } .atelier-side { position: static; max-height: none; } }

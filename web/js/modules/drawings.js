@@ -40,7 +40,7 @@ function render(main, args) {
   const scroll = el("div", { class: "side-scroll" });
   left.append(scroll);
   scroll.append(el("div", { class: "side-section" }, el("h3", null, `Pièces (${parts.length})`), parts.map((p) => el("a", { class: "nav-item" + (p.id === id ? " active" : ""), href: `#/drawings/${encodeURIComponent(p.id)}` }, icon("drawing"), el("span", { class: "grow" }, p.name || p.id), el("small", null, p.id)))));
-  if (!id) { center.append(el("div", { class: "empty" }, el("h2", null, "Aucune pièce à dessiner"), el("p", null, "Créez une pièce : son dessin se génère tout seul."), el("a", { class: "btn btn-primary", href: "#/interfaces" }, "Démarrer par les interfaces"))); right.remove(); root.classList.add("no-right"); return null; }
+  if (!id) { center.append(el("div", { class: "empty" }, el("h2", null, "Aucune pièce à dessiner"), el("p", null, "Créez une pièce : son dessin se génère tout seul."), el("a", { class: "btn btn-primary", href: "#/atelier" }, "Démarrer par les interfaces"))); right.remove(); root.classList.add("no-right"); return null; }
   const st = { doc: null, token: 0 };
   const d = () => store.project.drawing || {};
   const setD = (key, val, label) => store.commit(`Dessins : ${label}`, (p) => { p.drawing = { ...(p.drawing || {}), [key]: val }; });

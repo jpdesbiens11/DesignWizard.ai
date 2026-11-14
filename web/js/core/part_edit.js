@@ -5,6 +5,8 @@ import { el, field, btn, modal, toast } from "./dom.js";
 import { store } from "./store.js";
 import { INTERFACE_TYPES } from "../cad/interfaces.js";
 import { FACES } from "../cad/vec.js";
+import { SHOP_VERBS } from "../cad/workshop.js";
+import { STOCK_FORMS } from "../cad/stock.js";
 
 /* Fields offered for each operation: [key, label, kind ("num" | "text" | "json"), hint]. */
 export const FEATURE_FORMS = {
@@ -22,14 +24,38 @@ export const FEATURE_FORMS = {
   fillet: [["r", "Rayon", "num"], ["edges", "Arêtes", "json", '"all" · "vertical" · {"face":"+Z"} · {"dir":"X"} · {"box":[…]}']],
   chamfer: [["d", "Taille", "num"], ["edges", "Arêtes", "json"]],
   interfaces: [],
+  /* workshop verbs (see cad/workshop.js) */
+  drill: [["face", "Face", "face"], ["at", "Position(s)", "json", "[x,y] · [[x,y],…] · {grid:{…}} · {circle:{…}}"], ["d", "Diamètre", "num"], ["depth", "Profondeur ou through", "num"]],
+  tap: [["face", "Face", "face"], ["at", "Position(s)", "json"], ["thread", "Filetage (M3, M4…)", "text"], ["depth", "Profondeur ou through", "num"]],
+  cbore: [["face", "Face", "face"], ["at", "Position(s)", "json"], ["screw", "Vis à tête cylindrique (M3, M4…)", "text"], ["depth", "Profondeur ou through", "num"]],
+  csink: [["face", "Face", "face"], ["at", "Position(s)", "json"], ["screw", "Vis à tête fraisée (M3, M4…)", "text"], ["depth", "Profondeur ou through", "num"]],
+  ream: [["face", "Face", "face"], ["at", "Position(s)", "json"], ["d", "Diamètre", "num"], ["fit", "Tolérance (H7…)", "text"], ["depth", "Profondeur ou through", "num"]],
+  mill: [["face", "Face", "face"], ["rect", "Rectangle [x, y, l, h]", "json"], ["circle", "ou cercle [cx, cy, d]", "json"], ["r", "Rayon des coins (≥ rayon d'outil)", "num"], ["depth", "Profondeur ou through", "num"]],
+  groove: [["face", "Face", "face"], ["from", "Début [x, y]", "json"], ["to", "Fin [x, y]", "json"], ["w", "Largeur", "num"], ["depth", "Profondeur", "num"]],
+  face: [["face", "Face", "face"], ["to", "Cote à atteindre (niveau le long de l'axe de la face)", "num"]],
+  step: [["face", "Face", "face"], ["rect", "Zone [x, y, l, h]", "json"], ["to", "Cote à atteindre", "num"]],
+  outline: [["profile", "Contour", "json", "rect, poly, path…"]],
+  turn: [["from", "Début le long de l'axe", "num"], ["to", "Fin le long de l'axe", "num"], ["d", "Diamètre obtenu", "num"]],
+  bore: [["d", "Diamètre", "num"], ["depth", "Profondeur ou through", "num"], ["face", "Bout de la pièce", "face"]],
+  break_edges: [["d", "Taille du chanfrein", "num"], ["edges", "Arêtes", "json"]],
+  deburr: [["note", "Consigne (vide = ébavurer, casser les angles)", "text"]],
+  finish: [["note", "Finition", "text"]],
 };
-export const FEATURE_LABEL = { box: "Bloc", cylinder: "Cylindre", extrude: "Extrusion de profil", revolve: "Révolution", hole: "Trou", pocket: "Poche", pad: "Bossage plat", slot: "Rainure",
+export const FEATURE_LABEL = { ...Object.fromEntries(Object.entries(SHOP_VERBS).map(([k, v]) => [k, v.fr])), box: "Bloc", cylinder: "Cylindre", extrude: "Extrusion de profil", revolve: "Révolution", hole: "Trou", pocket: "Poche", pad: "Bossage plat", slot: "Rainure",
   boss: "Bossage cylindrique", shell: "Coque", fillet: "Congé", chamfer: "Chanfrein", interfaces: "— géométrie des interfaces —" };
 export const FEATURE_DEFAULT = {
   box: { op: "box", size: [20, 20, 10], at: [0, 0, 0] }, cylinder: { op: "cylinder", d: 10, h: 10, at: [0, 0, 0], axis: "Z" },
   extrude: { op: "extrude", profile: { rect: [0, 0, 30, 20], r: 2 }, plane: "XY", at: 0, length: 10 }, hole: { op: "hole", face: "+Z", at: [10, 10], d: 5, depth: "through" },
   pocket: { op: "pocket", face: "+Z", rect: [5, 5, 20, 10], r: 2, depth: 3 }, pad: { op: "pad", face: "+Z", rect: [5, 5, 20, 10], r: 1, h: 2 }, slot: { op: "slot", face: "+Z", from: [5, 5], to: [25, 5], w: 4, depth: 2 },
   boss: { op: "boss", face: "+Z", at: [10, 10], d: 8, h: 6, hole: { thread: "M3", depth: 6 } }, shell: { op: "shell", t: 2, open: ["+Z"] }, fillet: { op: "fillet", r: 2, edges: "vertical" }, chamfer: { op: "chamfer", d: 0.5, edges: { face: "+Z" } },
+};
+/** Workshop verbs offered by « Ajouter une opération ». */
+export const SHOP_DEFAULT = {
+  drill: { op: "drill", face: "+Z", at: [10, 10], d: 5.5, depth: "through" }, tap: { op: "tap", face: "+Z", at: [10, 10], thread: "M4", depth: 8 },
+  cbore: { op: "cbore", face: "+Z", at: [10, 10], screw: "M4" }, csink: { op: "csink", face: "+Z", at: [10, 10], screw: "M4" }, ream: { op: "ream", face: "+Z", at: [10, 10], d: 6, fit: "H7", depth: 8 },
+  mill: { op: "mill", face: "+Z", rect: [5, 5, 20, 10], r: 3, depth: 3 }, groove: { op: "groove", face: "+Z", from: [5, 5], to: [25, 5], w: 6, depth: 2 },
+  step: { op: "step", face: "+Z", rect: [-1, -1, 12, 200], to: 2 }, face: { op: "face", face: "+Z", to: 5 }, turn: { op: "turn", from: 0, to: 10, d: 8 }, bore: { op: "bore", d: 6, depth: 10, face: "+Z" },
+  break_edges: { op: "break_edges", d: 0.5, edges: { face: "+Z" } }, deburr: { op: "deburr" }, finish: { op: "finish", note: "Anodisation incolore 10 µm" },
 };
 
 const show = (v) => (v === undefined || v === null ? "" : typeof v === "object" ? JSON.stringify(v) : String(v));
@@ -100,6 +126,33 @@ export function interfaceDialog(iface, onSave, isNew) {
     el("div", { class: "form-row" }, field("Position sur la face", at, "[x,y] sur ±Z · [x,z] sur ±Y · [y,z] sur ±X"), field("Niveau du plan d'appui", level, "Vide = extérieur de la pièce"), field("Rotation (°)", rot)),
     el("div", { class: "form-row" }, field("Paramètres partagés par les deux côtés", params), field("Options de ce côté", opts)),
     err, el("div", { class: "form-actions" }, btn("Annuler", () => m.close()), btn(isNew ? "Ajouter" : "Appliquer", save, { primary: true }))], { wide: true });
+}
+
+/** Dialog to choose or edit the raw stock of a part. `onSave(stock | null)` (null removes it). */
+export function stockDialog(stock, onSave) {
+  const cur = JSON.parse(JSON.stringify(stock || { form: "plate", L: 100, W: 60, t: 6 })), err = el("p", { class: "form-error" }), box = el("div", { class: "form-row" }), hint = el("p", { class: "muted" });
+  const form = el("select", null, Object.entries(STOCK_FORMS).map(([k, f]) => el("option", { value: k, selected: k === cur.form }, f.fr)));
+  const inputs = {};
+  const fill = () => {
+    const f = STOCK_FORMS[form.value];
+    hint.textContent = f.hint;
+    box.replaceChildren();
+    for (const k of Object.keys(inputs)) delete inputs[k];
+    for (const [k, label] of f.dims) { inputs[k] = el("input", { type: "text", value: show(cur[k] ?? (k === "t" ? cur.H : k === "H" ? cur.t : undefined)), spellcheck: false }); box.append(field(label, inputs[k], "Nombre ou expression des paramètres")); }
+    if (form.value === "profile") { inputs.profile = el("input", { type: "text", value: show(cur.profile), spellcheck: false }); box.append(field("Section", inputs.profile, "Profil : rect, poly, path, gen…")); }
+  };
+  fill(); form.addEventListener("change", fill);
+  const save = () => {
+    try {
+      const out = { form: form.value };
+      for (const [k, input] of Object.entries(inputs)) { const v = parseValue(input.value, k === "profile" ? "json" : "num"); if (v === undefined) throw new Error(`« ${k} » manquant.`); out[k] = v; }
+      if (cur.axis) out.axis = cur.axis;
+      m.close(); onSave(out);
+    } catch (e) { err.textContent = e.message; }
+  };
+  const m = modal("Matière première", [el("p", { class: "muted" }, "Ce que l'on prend sur l'étagère avant toute opération. Les cotes sont celles du brut fini ; la plateforme choisit la taille du commerce à acheter."),
+    el("div", { class: "form-row" }, field("Forme", form)), hint, box, err,
+    el("div", { class: "form-actions" }, stock ? btn("Retirer le brut", () => { m.close(); onSave(null); }, { danger: true }) : null, btn("Annuler", () => m.close()), btn("Appliquer", save, { primary: true }))], { wide: true });
 }
 
 /** Tell the user which partner parts adapted after an edit (linked interfaces). */

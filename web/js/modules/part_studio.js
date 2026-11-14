@@ -8,11 +8,14 @@ import { app, go, setContext, setStatus } from "../core/app.js";
 import { kernel } from "../cad/client.js";
 import { createViewport, showBuilt } from "../core/viewport.js";
 import { TEMPLATES, fromTemplate } from "../cad/templates.js";
-import { featureDialog, interfaceDialog, announceLinks, nextFeatureId, nextIfaceId, FEATURE_LABEL, FEATURE_DEFAULT } from "../core/part_edit.js";
+import { featureDialog, interfaceDialog, stockDialog, announceLinks, nextFeatureId, nextIfaceId, FEATURE_LABEL, FEATURE_DEFAULT, SHOP_DEFAULT } from "../core/part_edit.js";
+import { gammePanel } from "./part_gamme.js";
+import { STOCK_FORMS } from "../cad/stock.js";
 import { paramsPanel, interfacesPanel, sheetPanel, jsonPanel, dfxPanel } from "./part_panels.js";
 import { runDfx } from "../analysis/dfx_api.js";
 
-const OP_ICON = { box: "part", cylinder: "part", extrude: "extrusion", revolve: "refresh", hole: "bolt", pocket: "section", pad: "layers", slot: "minus", boss: "bolt", shell: "layers", fillet: "edit", chamfer: "edit", interfaces: "interfaces" };
+const OP_ICON = { box: "part", cylinder: "part", extrude: "extrusion", revolve: "refresh", hole: "bolt", pocket: "section", pad: "layers", slot: "minus", boss: "bolt", shell: "layers", fillet: "edit", chamfer: "edit", interfaces: "interfaces",
+  drill: "drill", tap: "tap", cbore: "drill", csink: "drill", ream: "drill", mill: "mill", groove: "mill", face: "mill", step: "mill", outline: "laser", turn: "lathe", bore: "lathe", break_edges: "deburr", deburr: "deburr", finish: "palette" };
 
 export function partStudio(main, args, cfg) {
   const parts = () => store.parts.filter(cfg.filter || (() => true));
@@ -26,8 +29,8 @@ export function partStudio(main, args, cfg) {
     root.classList.add("no-right"); right.remove();
     renderLeft();
     view.append(el("div", { class: "page" }, el("div", { class: "empty" }, el("h2", null, cfg.emptyTitle || "Aucune pièce pour l'instant"),
-      el("p", null, cfg.emptyText || "Commencez par les interfaces (entrevue avec Claude), ou partez d'un gabarit paramétrique."),
-      el("div", { class: "form-actions", style: { justifyContent: "center" } }, el("a", { class: "btn btn-primary", href: "#/interfaces" }, icon("wizard"), "Démarrer par les interfaces"),
+      el("p", null, cfg.emptyText || "Commencez par l'intention de la pièce (Atelier), ou partez d'un gabarit paramétrique."),
+      el("div", { class: "form-actions", style: { justifyContent: "center" } }, el("a", { class: "btn btn-primary", href: "#/atelier" }, icon("wizard"), "Démarrer par l'intention"),
         btn("Partir d'un gabarit", () => newPartDialog(cfg), { icon: "plus" })))));
     return null;
   }
@@ -70,7 +73,7 @@ export function partStudio(main, args, cfg) {
       vp.setBusy("");
       if (!overrides) { st.findings = await runDfx(st.spec, built); if (token !== st.token) return; }
       overlays();
-      if (st.tab === "dfx" || st.tab === "sheet" || first) renderRight();
+      if (st.tab === "dfx" || st.tab === "sheet" || st.tab === "gamme" || first) renderRight();
       if (cfg.onBuilt) cfg.onBuilt(st, vp);
     } catch (e) {
       if (token !== st.token) return;
@@ -131,7 +134,7 @@ export function partStudio(main, args, cfg) {
   function renderLeft() {
     clear(left);
     left.append(el("img", { class: "side-mark", src: `img/marks/${cfg.mark || cfg.key}.svg`, alt: "" }),
-      el("div", { class: "side-head" }, el("h2", null, cfg.title), btn("", () => newPartDialog(cfg), { small: true, icon: "plus", tip: "Nouvelle pièce (gabarit) — ou démarrez par les interfaces" })));
+      el("div", { class: "side-head" }, el("h2", null, cfg.title), btn("", () => newPartDialog(cfg), { small: true, icon: "plus", tip: "Nouvelle pièce (gabarit) — ou démarrez par l'intention, dans l'Atelier" })));
     const scroll = el("div", { class: "side-scroll" });
     left.append(scroll);
     const list = el("div", { class: "side-section" }, el("h3", null, `Pièces (${parts().length})`));
@@ -141,6 +144,8 @@ export function partStudio(main, args, cfg) {
     scroll.append(list);
     if (!st.spec) return;
     const s = st.spec, tree = el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, "Arbre de construction"), addFeatureButton()));
+    if (s.stock) tree.append(el("button", { class: "nav-item", type: "button", onClick: () => editStock(), "data-tip": "Matière première : ce que l'on prend sur l'étagère" }, icon("stock"),
+      el("span", { class: "grow" }, `Brut : ${(STOCK_FORMS[s.stock.form] || { fr: s.stock.form }).fr.toLowerCase()}`), st.built && st.built.facts.stock && !st.built.facts.stock.exact ? badge("hors série", "warn") : null));
     for (const it of s.interfaces || []) tree.append(el("button", { class: "nav-item", type: "button", onClick: () => editIface(it.id), "data-tip": "Interface : modifier" }, icon("interfaces"),
       el("span", { class: "grow" }, it.name || it.type), badge(it.side || "A", it.side === "B" ? "b" : "a")));
     (s.features || []).forEach((f, i) => {
@@ -164,16 +169,20 @@ export function partStudio(main, args, cfg) {
   }
   function addFeatureButton() {
     return btn("", () => {
-      const m = modal("Ajouter une feature", el("div", { class: "grid" }, Object.keys(FEATURE_DEFAULT).map((op) => el("button", { class: "card lift", type: "button", onClick: () => {
+      const cards = (defs) => el("div", { class: "grid" }, Object.keys(defs).map((op) => el("button", { class: "card lift", type: "button", onClick: () => {
         m.close();
-        featureDialog({ ...JSON.parse(JSON.stringify(FEATURE_DEFAULT[op])), id: nextFeatureId(st.spec) }, (nf) => store.updatePart(id, (x) => { x.features = x.features || []; x.features.push(nf); }, `${FEATURE_LABEL[op]} ajouté(e)`), `Nouveau : ${FEATURE_LABEL[op]}`);
-      } }, icon(OP_ICON[op]), " ", el("b", null, FEATURE_LABEL[op])))), { wide: true });
-    }, { small: true, icon: "plus", tip: "Ajouter une feature (ou utilisez la baguette, Ctrl+K)" });
+        featureDialog({ ...JSON.parse(JSON.stringify(defs[op])), id: nextFeatureId(st.spec) }, (nf) => store.updatePart(id, (x) => { x.features = x.features || []; x.features.push(nf); }, `${FEATURE_LABEL[op]} ajouté(e)`), `Nouveau : ${FEATURE_LABEL[op]}`);
+      } }, icon(OP_ICON[op]), " ", el("b", null, FEATURE_LABEL[op]))));
+      const m = modal("Ajouter une opération", [el("h3", null, "À l'atelier — comme le ferait l'opérateur"), cards(SHOP_DEFAULT), el("h3", { style: { marginTop: "1rem" } }, "Formes du noyau géométrique"), cards(FEATURE_DEFAULT)], { wide: true });
+    }, { small: true, icon: "plus", tip: "Ajouter une opération d'atelier ou une forme (ou utilisez la baguette, Ctrl+K)" });
   }
   function editFeature(i) {
     const f = st.spec.features[i];
     if (f.op === "interfaces") { toast("Ce repère indique où la géométrie des interfaces est taillée dans l'arbre. Déplacez-le avec la flèche.", "info"); return; }
     featureDialog({ ...f, id: f.id || `f${i + 1}` }, (nf) => store.updatePart(id, (x) => { x.features[i] = nf; }, `${nf.id} modifiée`));
+  }
+  function editStock() {
+    stockDialog(st.spec.stock, (ns) => store.updatePart(id, (x) => { if (ns) x.stock = ns; else delete x.stock; }, ns ? `${id} : matière première modifiée` : `${id} : matière première retirée`));
   }
   function editIface(iid) {
     const it = (st.spec.interfaces || []).find((x) => x.id === iid);
@@ -183,16 +192,16 @@ export function partStudio(main, args, cfg) {
   /* ---------- right: inspector ---------- */
   function renderRight() {
     clear(right);
-    const tabs = [["params", "Paramètres"], ["ifaces", "Interfaces"], ["dfx", "DFx"], ["sheet", "Fiche"], ["json", "JSON"], ...((cfg.tabs || []).map((t) => [t.key, t.label]))];
+    const tabs = [["params", "Paramètres"], ["ifaces", "Interfaces"], ["gamme", "Gamme"], ["dfx", "DFx"], ["sheet", "Fiche"], ["json", "JSON"], ...((cfg.tabs || []).map((t) => [t.key, t.label]))];
     const n = st.findings ? st.findings.findings.filter((f) => f.severity === "error").length : 0;
     right.append(el("div", { class: "side-head" }, el("h2", null, st.spec.name || st.spec.id)),
       el("div", { class: "subtabs", style: { margin: "0 .6rem" } }, tabs.map(([k, label]) => el("button", { class: "subtab" + (st.tab === k ? " active" : ""), type: "button", onClick: () => { st.tab = k; renderRight(); } }, label, k === "dfx" && n ? ` (${n})` : ""))));
     const body = el("div", { class: "side-scroll" });
     right.append(body);
-    const ctx = { st, id, live, rebuild, vp, editIface, cfg };
+    const ctx = { st, id, live, rebuild, vp, editIface, editStock, cfg };
     const custom = (cfg.tabs || []).find((t) => t.key === st.tab);
     if (custom) custom.render(body, ctx);
-    else ({ params: paramsPanel, ifaces: interfacesPanel, dfx: dfxPanel, sheet: sheetPanel, json: jsonPanel })[st.tab](body, ctx);
+    else ({ params: paramsPanel, ifaces: interfacesPanel, gamme: gammePanel, dfx: dfxPanel, sheet: sheetPanel, json: jsonPanel })[st.tab](body, ctx);
   }
 
   return () => { offChange(); st.token++; vp.dispose(); kernel.forget(`${id}~live`).catch(() => {}); };
@@ -201,12 +210,12 @@ export function partStudio(main, args, cfg) {
 /** Gallery of starter parts. */
 export function newPartDialog(cfg = {}) {
   const list = TEMPLATES.filter((t) => !cfg.templates || cfg.templates.includes(t.key));
-  const m = modal("Nouvelle pièce", [el("p", { class: "muted" }, "Un gabarit est une pièce paramétrique complète, avec ses interfaces. Pour une pièce sur mesure, passez par l'entrevue (onglet Interfaces)."),
+  const m = modal("Nouvelle pièce", [el("p", { class: "muted" }, "Un gabarit est une pièce paramétrique complète, avec ses interfaces. Pour une pièce sur mesure, passez par l'Atelier : elle naît de son intention."),
     el("div", { class: "grid" }, list.map((t) => el("button", { class: "card lift", type: "button", onClick: () => {
       m.close();
       const id = store.addPart(fromTemplate(t.key, store.nextPartId()), `Pièce créée depuis le gabarit « ${t.title} »`);
       const spec = store.part(id);
       go(`#/${spec.family === "pcb" ? "pcb" : spec.family === "extrusion" ? "extrusion" : "parts"}/${encodeURIComponent(id)}`);
     } }, el("h3", null, icon(t.icon), " ", t.title), el("p", { class: "muted", style: { margin: 0 } }, t.text)))),
-    el("div", { class: "form-actions" }, el("a", { class: "btn btn-primary", href: "#/interfaces", onClick: () => m.close() }, icon("wizard"), "Plutôt démarrer par les interfaces"))], { wide: true });
+    el("div", { class: "form-actions" }, el("a", { class: "btn btn-primary", href: "#/atelier", onClick: () => m.close() }, icon("wizard"), "Plutôt démarrer par l'intention"))], { wide: true });
 }

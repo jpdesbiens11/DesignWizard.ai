@@ -23,7 +23,7 @@ function render(main, args) {
   main.append(page);
   page.append(el("div", { class: "page-head" }, el("div", { class: "grow" }, el("h1", null, "Interfaces"),
     el("p", { class: "muted" }, "Une pièce commence par ses interfaces avec ses voisines. Décrivez-la, copiez le prompt générique dans Claude, répondez à l'entrevue, puis collez la réponse ici : la pièce est construite, prête à se mater."))),
-    el("div", { class: "subtabs" }, el("a", { class: "subtab" + (tab === "entrevue" ? " active" : ""), href: "#/interfaces" }, "Entrevue d'une pièce"),
+    el("div", { class: "subtabs" }, el("a", { class: "subtab", href: "#/atelier" }, "Intention d'abord"), el("a", { class: "subtab" + (tab === "entrevue" ? " active" : ""), href: "#/interfaces" }, "Entrevue avec Claude"),
       el("a", { class: "subtab" + (tab === "registre" ? " active" : ""), href: "#/interfaces/registre" }, "Registre des interfaces")));
   let cleanup = null;
   if (tab === "registre") register(page); else cleanup = interview(page);
@@ -175,4 +175,4 @@ function register(page) {
   else page.append(table(["Clé", "Type", "Côté", "Pièce", "Nom", "Voisin attendu", "État"], rows));
 }
 
-registerModule({ key: "interfaces", label: "Interfaces", icon: "interfaces", tip: "Le point d'entrée d'une pièce : interfaces anticipées, prompt générique, réinjection de l'entrevue", render });
+registerModule({ key: "interfaces", label: "Interfaces", icon: "interfaces", hidden: true, tip: "Le point d'entrée d'une pièce : interfaces anticipées, prompt générique, réinjection de l'entrevue", render });

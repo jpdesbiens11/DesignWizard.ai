@@ -7,8 +7,8 @@ import { kernel } from "../cad/client.js";
 
 export const APP_VERSION = "0.1.0";
 const modules = new Map();
-const ORDER = ["home", "interfaces", "parts", "extrusion", "pcb", "assembly", "creepage", "dfx", "drawings", "report"];
-const GROUP_BREAK = new Set(["interfaces", "assembly", "creepage", "report"]);     // a pencil tick before these tabs
+const ORDER = ["home", "atelier", "parts", "extrusion", "pcb", "assembly", "physics", "creepage", "dfx", "drawings", "report"];
+const GROUP_BREAK = new Set(["atelier", "assembly", "physics", "report"]);         // a pencil tick before these tabs
 export const app = { modules, context: {}, version: APP_VERSION, current: null, cleanup: null, commands: [] };
 
 /** Register a tool: {key, label, icon, tip, hidden, render(main, args) -> cleanup?}. */
@@ -61,7 +61,7 @@ async function projectMenu(menu, close) {
   const p = store.project;
   menu.append(el("div", { class: "menu-title" }, p ? p.name : "Aucun projet ouvert"));
   menu.append(item("Tous les projets", "folder", () => go("#/home"), close));
-  menu.append(item("Nouveau projet…", "plus", async () => { const name = await promptBox("Nouveau projet", "Nom du projet", "Mon produit"); if (name) { await store.create(name); go("#/interfaces"); } }, close));
+  menu.append(item("Nouveau projet…", "plus", async () => { const name = await promptBox("Nouveau projet", "Nom du projet", "Mon produit"); if (name) { await store.create(name); go("#/atelier"); } }, close));
   if (p) {
     menu.append(el("hr"));
     menu.append(item("Renommer le projet…", "edit", async () => { const name = await promptBox("Renommer", "Nom du projet", p.name); if (name) store.commit(`Projet renommé : ${name}`, (x) => { x.name = name; }); }, close));
