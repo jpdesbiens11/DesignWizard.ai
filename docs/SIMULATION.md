@@ -27,6 +27,15 @@ simple équivalent, puis lance la simulation, puis compare les deux.
 Une simulation gardée (« Ajouter au rapport ») entre dans le rapport de revue avec son estimation, son résultat et
 son écart.
 
+Deux précisions qui comptent :
+
+- **Une fourchette quand les appuis sont vissés.** Une pièce tenue par des vis de part et d'autre de l'effort est une
+  poutre sur deux appuis, quelque part entre l'appui simple et l'encastrement : l'estimation donne les deux bornes, et
+  la simulation doit tomber entre elles.
+- **La contrainte nominale, pas la pointe.** Sous une vis ou au bord d'un encastrement, la contrainte calculée est une
+  pointe locale qui dépend du maillage ; un calcul à la main ne la prédit pas. Le recoupement compare donc la
+  contrainte **hors zones d'appui** (à deux cubes de distance). La pointe reste affichée, avec sa marge.
+
 ## 2. Le maillage : un seul gabarit, le cube
 
 La pièce est découpée en **cubes identiques** : une grille régulière posée sur son enveloppe, dont on garde les
@@ -57,7 +66,27 @@ le produit se fait élément par élément. Tout le code — maillage, élément
 Les régions des conditions aux frontières sont des **faces de l'enveloppe** ou des **interfaces** de la pièce : on
 tient une pièce par là où elle se fixe, on la charge par là où elle reçoit l'effort.
 
-## 4. Ce que la brique ne fait pas
+## 4. Ce qui est vérifié
+
+Les tests (`tests/node/fea.test.mjs`, `tests/node/fea_precheck.test.mjs`) comparent le solveur à des solutions
+exactes :
+
+| Cas | Simulation | Solution exacte | Écart |
+|---|---|---|---|
+| Poutre encastrée acier 100 × 10 × 10 mm, 100 N en bout, 2 × 2 cubes dans la section — flèche | 0,1894 mm | 0,1920 mm | −1,3 % |
+| Même poutre, **un seul cube dans l'épaisseur** — flèche | 0,1892 mm | 0,1920 mm | −1,5 % |
+| Même poutre — contrainte de flexion à mi-portée | 30,0 MPa | 30 MPa | +0,1 % |
+| Barre en traction — contrainte et allongement | — | F / A, F L / E A | moins de 3 % |
+| Plaque carrée encastrée sous pression, un cube d'épaisseur — flèche au centre | 0,00546 mm | 0,00524 mm | +4 % |
+| Même plaque — contrainte au bord de l'encastrement (pointe) | 8,9 MPa | 10,9 MPa | −19 % |
+| Barre en conduction, 10 W, une face à 20 °C — température de l'autre face | 70,4 °C | 70 °C | +0,5 % |
+| Bloc refroidi par convection — température moyenne | 129,2 °C | 129,2 °C | 0 |
+| Deux matériaux en série — températures d'interface et de bout | — | résistances en série | moins de 2 % |
+
+Un cas de 3 400 cubes (13 400 inconnues) se résout en environ 0,6 s ; une plaque mince tenue par des vis demande
+plus d'itérations (quelques secondes).
+
+## 5. Ce que la brique ne fait pas
 
 - **Concentrations de contrainte** : la contrainte de pointe d'un maillage grossier est indicative. Au bord d'un
   encastrement, autour d'un trou ou dans un congé, la valeur locale réelle peut être deux à trois fois plus élevée.

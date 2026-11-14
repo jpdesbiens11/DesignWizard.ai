@@ -1,0 +1,264 @@
+// Simplified finite elements: mesh a part or an assembly coarsely with identical cubes, solve structure or steady-state
+// heat very fast, and aim at "80 % of reality or better". Public API of the brick (pure, no DOM).
+//
+// Units: mm, N, MPa (N/mm2), W, degrees C. Conductivity k in W/m.K, convection coefficient in W/m2.K, density in kg/m3.
+//
+// model = buildModel({ bodies, target, h }):
+//   grid { nx, ny, nz, h, origin }, cells Int16Array (body index or -1, index = i + nx * (j + ny * k)), nCells, nNodes,
+//   nodes Float32Array(3 * nNodes), elems Int32Array(8 * nCells) (hex8 order: bottom face counter-clockwise, then top),
+//   elemBody, elemCell, bodies [{ name, material, cells, volume }], bbox (of the kept cells), volume.
+// region = { face: "+X" | "-X" | "+Y" | "-Y" | "+Z" | "-Z", body?: name } | { box: [x0, y0, z0, x1, y1, z1] } | { near: [x, y, z], r }
+
+import { buildModel, exposedFaces, sectionAt, skin, FACE_DIRS } from "./voxel.js";
+import { structureElement, conductionElement, vonMises } from "./hex8.js";
+import { pcg, structureOperator, thermalOperator, weakPiece } from "./solve.js";
+
+export { buildModel, sectionAt, skin };
+
+const clock = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
+const round3 = (v) => Math.round(v * 1000) / 1000;
+
+/** Words that name a region in the error messages. */
+function regionLabel(region) {
+  if (region === "exterior") return "« extérieur »";
+  if (region?.face) return `face ${region.face}${region.body ? ` du corps « ${region.body} »` : ""}`;
+  if (region?.box) return `boîte [${Array.from(region.box, round3).join(", ")}]`;
+  if (region?.near) return `voisinage du point [${Array.from(region.near, round3).join(", ")}]`;
+  return `région ${JSON.stringify(region)}`;
+}
+
+/** Sorted, unique ids of the nodes of a region. */
+export function selectNodes(model, region) {
+  const { nodes, nNodes, elems, elemBody, nCells, grid } = model, tol = 0.51 * grid.h, picked = [];
+  if (region?.face) {
+    const m = /^([+-])([XYZ])$/.exec(region.face);
+    if (!m) throw new Error(`Face inconnue « ${region.face} » : utilisez +X, -X, +Y, -Y, +Z ou -Z.`);
+    const axis = "XYZ".indexOf(m[2]), sign = m[1] === "+" ? 1 : -1;
+    let inBody = null;   // optional restriction to the nodes of one body
+    if (region.body != null) {
+      const b = model.bodies.findIndex((body) => body.name === region.body);
+      if (b < 0) throw new Error(`Corps « ${region.body} » introuvable dans le maillage.`);
+      inBody = new Uint8Array(nNodes);
+      for (let e = 0; e < nCells; e++) if (elemBody[e] === b) for (let a = 0; a < 8; a++) inBody[elems[8 * e + a]] = 1;
+    }
+    let extreme = -Infinity;
+    for (let i = 0; i < nNodes; i++) if (!inBody || inBody[i]) extreme = Math.max(extreme, sign * nodes[3 * i + axis]);
+    for (let i = 0; i < nNodes; i++) if ((!inBody || inBody[i]) && extreme - sign * nodes[3 * i + axis] <= tol) picked.push(i);
+  } else if (region?.box?.length === 6) {
+    const b = region.box;
+    for (let i = 0; i < nNodes; i++) {
+      const x = nodes[3 * i], y = nodes[3 * i + 1], z = nodes[3 * i + 2];
+      if (x >= b[0] - tol && x <= b[3] + tol && y >= b[1] - tol && y <= b[4] + tol && z >= b[2] - tol && z <= b[5] + tol) picked.push(i);
+    }
+  } else if (region?.near?.length === 3) {
+    const [px, py, pz] = region.near, r2 = (region.r > 0 ? region.r : 0) ** 2;
+    let best = -1, bestD = Infinity;
+    for (let i = 0; i < nNodes; i++) {
+      const d = (nodes[3 * i] - px) ** 2 + (nodes[3 * i + 1] - py) ** 2 + (nodes[3 * i + 2] - pz) ** 2;
+      if (d <= r2) picked.push(i);
+      if (d < bestD) { bestD = d; best = i; }
+    }
+    if (!picked.length && best >= 0) picked.push(best);   // at least the nearest node
+  } else {
+    throw new Error(`Région invalide (${regionLabel(region)}) : attendu { face }, { box } ou { near, r }.`);
+  }
+  return Int32Array.from(picked);
+}
+
+/** Nodes of a region, or a French error that names the region when it is empty. */
+function pickNodes(model, region) {
+  const sel = selectNodes(model, region);
+  if (!sel.length) throw new Error(`La région « ${regionLabel(region)} » ne contient aucun nœud du maillage : déplacez-la sur la pièce ou choisissez une face.`);
+  return sel;
+}
+
+/** Indices (into exposedFaces) of the exposed cell faces whose 4 nodes are all selected. */
+function facesOf(model, sel) {
+  const faces = exposedFaces(model), mark = new Uint8Array(model.nNodes), out = [];
+  for (const i of sel) mark[i] = 1;
+  for (let f = 0; f < faces.count; f++) {
+    const o = 4 * f;
+    if (mark[faces.nodes[o]] && mark[faces.nodes[o + 1]] && mark[faces.nodes[o + 2]] && mark[faces.nodes[o + 3]]) out.push(f);
+  }
+  return out;
+}
+
+/** Exposed faces of a region ("exterior": all of them), or a French error when the region holds no complete face. */
+function pickFaces(model, region) {
+  if (region === "exterior") return Array.from({ length: exposedFaces(model).count }, (_, f) => f);
+  const list = facesOf(model, pickNodes(model, region));
+  if (!list.length) throw new Error(`La région « ${regionLabel(region)} » ne couvre aucune face extérieure du maillage : agrandissez-la ou choisissez une face.`);
+  return list;
+}
+
+/** Size of a region: node count, centroid of its nodes, exposed area (mm2) and mean outward normal of its faces (or null). */
+export function regionInfo(model, region) {
+  const sel = selectNodes(model, region), { nodes, grid } = model, centroid = [0, 0, 0], sum = [0, 0, 0];
+  for (const i of sel) for (let d = 0; d < 3; d++) centroid[d] += nodes[3 * i + d];
+  for (let d = 0; d < 3; d++) centroid[d] /= sel.length || 1;
+  const faces = exposedFaces(model), list = facesOf(model, sel);
+  for (const f of list) for (let d = 0; d < 3; d++) sum[d] += FACE_DIRS[faces.dir[f]][d];
+  const len = Math.hypot(sum[0], sum[1], sum[2]);
+  return { count: sel.length, centroid, area: list.length * grid.h * grid.h, normal: len > 1e-9 ? sum.map((v) => v / len) : null };
+}
+
+/** Largest value of a nodal field as { value, node, at }; `sign` -1 gives the smallest. */
+function extreme(model, field, sign = 1) {
+  let node = 0;
+  for (let i = 1; i < field.length; i++) if (sign * field[i] > sign * field[node]) node = i;
+  return { value: field[node], node, at: Array.from(model.nodes.subarray(3 * node, 3 * node + 3)) };
+}
+
+function checkConverged(result, maxIter, hint) {
+  if (result.converged) return;
+  throw new Error(`Le calcul n'a pas convergé après ${result.iterations} itérations (résidu ${result.residual.toExponential(1)}, limite ${maxIter}). ${hint}`);
+}
+
+/**
+ * Linear static analysis.
+ * @param setup fixed: regions whose nodes are fully held; loads: [{ region, force: [Fx, Fy, Fz] }] (total N spread equally on
+ *   the nodes) or [{ region, pressure }] (MPa on the exposed faces, pushing into the material); gravity: [gx, gy, gz] in m/s2.
+ * @returns u (mm), vm (von Mises at the nodes, MPa), vmElem, maxU, maxVm, reaction (N, on the held nodes), energy (N.mm),
+ *   dofs, iterations, residual, ms.
+ */
+export function solveStructure(model, { fixed = [], loads = [], gravity, tol = 1e-6, maxIter = 20000 } = {}, onProgress) {
+  const t0 = clock(), { nNodes, nCells, elems, elemBody, grid: { h } } = model, n = 3 * nNodes;
+  if (!fixed.length) throw new Error("Aucun appui : fixez au moins une face ou une zone de la pièce, sinon elle part en mouvement libre.");
+  const held = new Uint8Array(nNodes), isFixed = new Uint8Array(n), f = new Float64Array(n);
+  for (const region of fixed) for (const i of pickNodes(model, region)) { held[i] = 1; isFixed[3 * i] = isFixed[3 * i + 1] = isFixed[3 * i + 2] = 1; }
+
+  for (const load of loads) {
+    if (load.force) {   // total force shared equally by the nodes of the region
+      const sel = pickNodes(model, load.region);
+      for (const i of sel) for (let d = 0; d < 3; d++) f[3 * i + d] += load.force[d] / sel.length;
+    } else if (Number.isFinite(load.pressure)) {   // every exposed face pushes -p A n, a quarter on each corner
+      const faces = exposedFaces(model);
+      for (const face of pickFaces(model, load.region)) {
+        const normal = FACE_DIRS[faces.dir[face]], q = (-load.pressure * h * h) / 4;
+        for (let c = 0; c < 4; c++) for (let d = 0; d < 3; d++) f[3 * faces.nodes[4 * face + c] + d] += q * normal[d];
+      }
+    } else {
+      throw new Error("Charge invalide : donnez une force [Fx, Fy, Fz] en N ou une pression en MPa.");
+    }
+  }
+  if (gravity) {   // weight of each cell, an eighth on each corner: rho (kg/m3) * 1e-9 = kg/mm3, times m/s2 = N
+    for (let e = 0; e < nCells; e++) {
+      const w = ((Number(model.bodies[elemBody[e]].material?.rho) || 0) * 1e-9 * h * h * h) / 8;
+      for (let a = 0; a < 8; a++) for (let d = 0; d < 3; d++) f[3 * elems[8 * e + a] + d] += w * gravity[d];
+    }
+  }
+
+  const elements = model.bodies.map((body) => {
+    const { E, nu } = body.material || {};
+    if (!(E > 0) || !(nu > -1 && nu < 0.5)) throw new Error(`Matériau du corps « ${body.name} » incomplet : il faut un module E > 0 (MPa) et un coefficient de Poisson nu entre -1 et 0,5.`);
+    return structureElement(h, E, nu);
+  });
+  const weak = weakPiece(model, held, true);
+  if (weak) {
+    throw new Error(weak.level === 0
+      ? `Le corps « ${weak.body} » n'est relié à aucun appui : fixez-le ou mettez-le en contact avec une pièce tenue.`
+      : `Le corps « ${weak.body} » n'est tenu que par ${weak.level === 1 ? "un seul nœud" : "une ligne de nœuds"} : il peut pivoter autour de cet appui. Fixez une face ou une zone plus large.`);
+  }
+
+  const op = structureOperator(model, elements.map((el) => el.K)), x = new Float64Array(n);
+  const run = pcg({ apply: op.apply, diag: op.diag, b: f, x, fixed: isFixed, tol, maxIter, onProgress });
+  checkConverged(run, maxIter, "Vérifiez qu'aucune pièce ne tient que par une arête ou un coin (elle pivoterait), ou augmentez la taille de maille.");
+
+  // Reactions and strain energy from K u; stresses at the 8 corners of every element, averaged at the nodes.
+  const Ku = new Float64Array(n), reaction = [0, 0, 0];
+  op.apply(x, Ku);
+  let energy = 0;
+  for (let i = 0; i < n; i++) { energy += 0.5 * x[i] * Ku[i]; if (isFixed[i]) reaction[i % 3] += Ku[i] - f[i]; }
+  const u = Float32Array.from(x), vm = new Float32Array(nNodes), vmElem = new Float32Array(nCells);
+  const sum = new Float64Array(nNodes), share = new Uint8Array(nNodes), ue = new Float64Array(24), stress = new Float64Array(6);
+  for (let e = 0; e < nCells; e++) {
+    const S = elements[elemBody[e]].S;
+    for (let a = 0; a < 8; a++) for (let d = 0; d < 3; d++) ue[3 * a + d] = x[3 * elems[8 * e + a] + d];
+    let top = 0;
+    for (let c = 0; c < 8; c++) {
+      for (let r = 0; r < 6; r++) {
+        let s = 0;
+        for (let j = 0, row = (6 * c + r) * 24; j < 24; j++) s += S[row + j] * ue[j];
+        stress[r] = s;
+      }
+      const v = vonMises(stress);
+      sum[elems[8 * e + c]] += v; share[elems[8 * e + c]]++;
+      if (v > top) top = v;
+    }
+    vmElem[e] = top;
+  }
+  const mag = new Float32Array(nNodes);
+  for (let i = 0; i < nNodes; i++) { vm[i] = sum[i] / share[i]; mag[i] = Math.hypot(x[3 * i], x[3 * i + 1], x[3 * i + 2]); }
+  return {
+    u, vm, vmElem, maxU: extreme(model, mag), maxVm: extreme(model, vm), reaction, energy,
+    dofs: n - isFixed.reduce((s, v) => s + v, 0), iterations: run.iterations, residual: run.residual, ms: clock() - t0,
+  };
+}
+
+/**
+ * Steady-state heat conduction.
+ * @param setup fixedT: [{ region, T }] imposed temperatures; power: [{ region, P }] total W spread equally on the nodes;
+ *   convection: [{ region, h, Tamb }] on the exposed faces of the region, region "exterior" meaning every exposed face
+ *   (h in W/m2.K, Tamb in degrees C).
+ * @returns T (degrees C), maxT, minT, balance { in, out } (W), dofs, iterations, residual, ms.
+ */
+export function solveThermal(model, { fixedT = [], power = [], convection = [], tol = 1e-6, maxIter = 20000 } = {}, onProgress) {
+  const t0 = clock(), { nNodes, grid: { h } } = model;
+  if (!fixedT.length && !convection.length) throw new Error("Température indéfinie : imposez une température sur une zone ou ajoutez une convection, sinon la chaleur n'a aucune sortie.");
+  const isFixed = new Uint8Array(nNodes), x = new Float64Array(nNodes), b = new Float64Array(nNodes);
+  const film = new Float64Array(nNodes), filmT = new Float64Array(nNodes);   // lumped h A and h A Tamb of each node
+  let powerIn = 0, guess = 0, weight = 0;
+
+  for (const item of power) {
+    const sel = pickNodes(model, item.region);
+    for (const i of sel) b[i] += item.P / sel.length;
+    powerIn += item.P;
+  }
+  const faces = exposedFaces(model);
+  for (const item of convection) {
+    if (!(item.h >= 0) || !Number.isFinite(item.Tamb)) throw new Error("Convection invalide : donnez h (W/m².K) et la température ambiante Tamb (°C).");
+    const quarter = ((item.h / 1e6) * h * h) / 4;   // W/m2.K -> W/mm2.K, a quarter of the face on each corner
+    for (const face of pickFaces(model, item.region)) {
+      for (let c = 0; c < 4; c++) { film[faces.nodes[4 * face + c]] += quarter; filmT[faces.nodes[4 * face + c]] += quarter * item.Tamb; }
+      guess += 4 * quarter * item.Tamb; weight += 4 * quarter;
+    }
+  }
+  for (const item of fixedT) {
+    if (!Number.isFinite(item.T)) throw new Error("Température imposée invalide : donnez T en °C.");
+    const sel = pickNodes(model, item.region);
+    for (const i of sel) { isFixed[i] = 1; x[i] = item.T; }
+    guess += item.T; weight += 1;
+  }
+  for (let i = 0; i < nNodes; i++) b[i] += filmT[i];
+
+  const cond = model.bodies.map((body) => {
+    const k = Number(body.material?.k);
+    if (!(k > 0)) throw new Error(`Matériau du corps « ${body.name} » incomplet : il faut une conductivité thermique k > 0 (W/m.K).`);
+    return k / 1000;   // W/m.K -> W/mm.K
+  });
+  const anchored = Uint8Array.from(isFixed);
+  for (let i = 0; i < nNodes; i++) if (film[i] > 0) anchored[i] = 1;
+  const weak = weakPiece(model, anchored, false);
+  if (weak) throw new Error(`Le corps « ${weak.body} » n'a ni température imposée ni convection et ne touche aucune pièce qui en a : sa température est indéfinie.`);
+
+  // Start from a uniform, plausible temperature: it removes most of the slow "everything warms up together" mode.
+  const start = weight > 0 ? guess / weight : 0;
+  for (let i = 0; i < nNodes; i++) if (!isFixed[i]) x[i] = start;
+  const op = thermalOperator(model, conductionElement(h), cond, film);
+  const run = pcg({ apply: op.apply, diag: op.diag, b, x, fixed: isFixed, tol, maxIter, onProgress });
+  checkConverged(run, maxIter, "Vérifiez les conductivités et les conditions aux limites, ou augmentez la taille de maille.");
+
+  // Heat leaving: by convection, and through the imposed-temperature nodes (the residual there is the heat they supply).
+  const AT = new Float64Array(nNodes);
+  op.apply(x, AT);
+  let out = 0;
+  for (let i = 0; i < nNodes; i++) {
+    out += film[i] * x[i] - filmT[i];
+    if (isFixed[i]) out -= AT[i] - b[i];
+  }
+  const T = Float32Array.from(x);
+  return {
+    T, maxT: extreme(model, T), minT: extreme(model, T, -1), balance: { in: powerIn, out },
+    dofs: nNodes - isFixed.reduce((s, v) => s + v, 0), iterations: run.iterations, residual: run.residual, ms: clock() - t0,
+  };
+}

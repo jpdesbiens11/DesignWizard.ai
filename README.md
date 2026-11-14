@@ -76,6 +76,7 @@ Sans Python, le dossier `web/` fonctionne aussi tel quel derrière n'importe que
 | **Extrusion** | Profilés aluminium ou plastique : vous listez ce qui va *dedans* et *dehors*, Claude propose la section, la plateforme l'extrude et vérifie parois, gorges, cavités et cercle circonscrit. |
 | **PCB** | Cartes : composants avec leurs hauteurs, zones de cuivre HV / LV, nets. La carte se fixe par ses interfaces comme une autre pièce. |
 | **Assemblage** | Ajoutez les pièces : les interfaces identiques (côté A et côté B) **se matent seules** et restent **liées** — changez un côté, l'autre pièce s'adapte. Vue éclatée, BOM avec la visserie déduite, interférences, pièce complémentaire générée d'une interface libre. |
+| **Physique → Simulation** | Éléments finis **volontairement simples**, structure et thermique : la pièce ou l'assemblage est maillé en cubes identiques, tenu et chargé par ses faces ou ses interfaces. **Avant de calculer**, l'écran écrit le calcul à la main du modèle simple équivalent (poutre, barre, conduction, bilan de convection) ; **après**, il compare les deux. Voir [docs/SIMULATION.md](docs/SIMULATION.md). |
 | **Physique** | 21 modèles analytiques — poutres, flambage, torsion, plaque, assemblage boulonné, emmanchement, écoulement en conduite, conduction, dissipateur, busbar, piste de PCB… Les cotes sont reprises de la pièce ; le calcul est montré pas à pas, avec ses hypothèses, son domaine de validité et sa source. |
 | **Isolation** | Creepage et clearance mesurés sur **l'assemblage complet**, comparés aux distances requises par IEC 60664-1 (pollution degree, altitude, OVC, system IT). Chemins tracés en rouge. |
 | **DFx** | Bilan DFM de chaque pièce, DFA de chaque assemblage, livre des règles imprimable (110 règles). |
@@ -126,6 +127,7 @@ Le guide complet est dans [docs/GUIDE_COLLABORATEURS.md](docs/GUIDE_COLLABORATEU
 - [docs/FORMAT.md](docs/FORMAT.md) — le format `.dwiz` : notation, genres de document, noms réservés aux modules à venir.
 - [docs/GUIDE_COLLABORATEURS.md](docs/GUIDE_COLLABORATEURS.md) — un essai guidé de 20 minutes et comment donner son avis.
 - [docs/PART_LANGUAGE.md](docs/PART_LANGUAGE.md) — le vocabulaire d'une pièce : ce que Claude écrit et que la plateforme construit.
+- [docs/SIMULATION.md](docs/SIMULATION.md) — la simulation par éléments finis simplifiés : démarche, maillage, solveur, validation, limites.
 - [docs/GOOGLE.md](docs/GOOGLE.md) — connexion Google, projet dans Google Drive, comptes approuvés de la démo en ligne.
 - [docs/REA.md](docs/REA.md) — la méthode REA (*Reverse Engineer Anything*) appliquée au projet, et les fiches de comportement.
 - [docs/BRAND.md](docs/BRAND.md) — logo, thèmes, icônes, voix.

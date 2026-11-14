@@ -55,3 +55,20 @@ test("thermal: conduction to a held face, and the global convection balance with
   assert.equal(precheckThermal(m, { power: [], fixedT: [], convection: [] }, alu).kind, "none");
   assert.match(precheckThermal(m, { power: [{ region: { face: "+X" }, P: 1 }], fixedT: [], convection: [] }, alu).steps[0], /pas de sortie/);
 });
+
+test("structure: a load between two supports is read as a beam on two supports", () => {
+  const m = beam(), load = { fixed: [{ face: "-X" }, { face: "+X" }], loads: [{ region: { near: [50, 5, 10], r: 3 }, force: [0, 0, -100] }] }, e = precheckStructure(m, load, steel);
+  assert.equal(e.kind, "span"); near(e.values.L, 100, 1e-6);
+  near(e.values.sigma, 15, 0.02);           // M = F L / 4 = 2500 N.mm ; sigma = M c / I = 2500 * 5 / 833.3 = 15 MPa
+  near(e.values.delta, 0.011905, 0.02);     // F L^3 / (48 E I) = 1e8 / (48 * 210000 * 833.3) = 0.0119 mm
+  assert.ok(e.warnings.some((w) => /appui simple et l'encastrement/.test(w)));
+  near(e.values.deltaLow, e.values.delta / 4, 1e-9); near(e.values.sigmaLow, 7.5, 0.02);       // clamped ends: F L^3 / (192 E I), M = F L / 8
+  const r = solveStructure(m, load), c = compare("structure", e, r);                           // both ends are clamped in the simulation
+  assert.ok(r.maxU.value < e.values.delta * 1.05 && r.maxU.value > e.values.deltaLow * 0.8, `fea ${r.maxU.value} vs [${e.values.deltaLow}, ${e.values.delta}]`);
+  assert.equal(c.rows[0].low, e.values.deltaLow); assert.ok(Math.abs(c.rows[0].deviation) <= 0.2, `deflection deviation ${c.rows[0].deviation}`);
+  const spread = precheckStructure(m, { fixed: [{ face: "-X" }, { face: "+X" }], loads: [{ region: { face: "+Z" }, pressure: 0.1 }] }, steel);
+  assert.equal(spread.kind, "span"); near(spread.values.sigma, 100 * 100 / 8 * 5 / 833.33, 0.02);   // F = 0.1 * 1000 = 100 N spread: M = F L / 8 = 1250 N.mm -> 7.5 MPa
+  near(spread.values.delta, 5 * 100 * 1e6 / (384 * 210000 * 833.33), 0.02); near(spread.values.deltaLow, spread.values.delta / 5, 1e-9);
+  const onSupport = precheckStructure(m, { fixed: [{ face: "-X" }], loads: [{ region: { face: "-X" }, force: [0, 0, -100] }] }, steel);
+  assert.equal(onSupport.kind, "none"); assert.match(onSupport.steps[0], /bras de levier/);
+});

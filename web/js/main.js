@@ -13,6 +13,7 @@ import "./modules/extrusion.js";
 import "./modules/pcb.js";
 import "./modules/assembly.js";
 import "./modules/physics.js";
+import "./modules/fea.js";
 import "./modules/creepage.js";
 import "./modules/dfx.js";
 import "./modules/drawings.js";

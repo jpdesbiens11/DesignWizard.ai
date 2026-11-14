@@ -12,6 +12,8 @@ import { createViewport } from "../core/viewport.js";
 import { buildAssembly } from "../core/asm_scene.js";
 import { props } from "../analysis/physics/props.js";
 import { footprint } from "../core/shop_intent.js";
+import { patternPoints } from "../cad/interfaces.js";
+import { thread } from "../cad/standards.js";
 import { buildModel, skin } from "../analysis/fea/index.js";
 import { precheckStructure, precheckThermal, compare } from "../analysis/fea/precheck.js";
 import { VERDICT, show } from "../analysis/fea/summary.js";
@@ -62,16 +64,22 @@ function render(main, args) {
   function remesh(first) {
     try { model = buildModel({ bodies: geo.bodies, target: st.cells }); } catch (e) { vp.setBusy(""); info.textContent = e.message; info.className = "chip bad"; model = null; drawRight(); return; }
     const b = model.bbox, h = model.grid.h;
-    regions = FACES.map(([k, l]) => ({ key: `face:${k}`, label: `Face ${l}`, region: { face: k } }));
+    regions = FACES.map(([k, l]) => ({ key: `face:${k}`, label: `Face ${l}`, list: [{ face: k }] }));
     for (const it of geo.interfaces) {
-      const fp = footprint(it, geo.material), f = it.frame, pts = [];
-      for (const su of [-1, 1]) for (const sv of [-1, 1]) for (const sn of [-1, 1]) pts.push([0, 1, 2].map((i) => f.o[i] + su * fp.w / 2 * f.u[i] + sv * fp.h / 2 * f.v[i] + sn * h * f.n[i]));
-      regions.push({ key: `iface:${it.id}`, label: `Interface ${it.id} — ${it.name}`, region: { box: [0, 1, 2].map((i) => Math.min(...pts.map((q) => q[i]))).concat([0, 1, 2].map((i) => Math.max(...pts.map((q) => q[i])))) } });
+      const f = it.frame, sign = it.side === "B" ? -1 : 1, at = (pu, pv, pn = 0) => [0, 1, 2].map((i) => f.o[i] + pu * f.u[i] + pv * sign * f.v[i] + pn * f.n[i]);
+      if (it.type === "bolt_pattern" || it.type === "pins") {     // held or loaded where the screws are, not over the whole pattern
+        const d = it.type === "pins" ? it.params.d : thread(it.params.screw).washer, pts = it.type === "pins" ? Array.from({ length: Math.max(1, Math.round(it.params.n || 2)) }, (_, k, arr) => [(k - (arr.length - 1) / 2) * it.params.pitch, 0]) : patternPoints(it.params.pattern);
+        regions.push({ key: `iface:${it.id}`, label: `Interface ${it.id} — ${it.name} (${pts.length} vis)`.replace("vis)", it.type === "pins" ? "goupilles)" : "vis)"), list: pts.map(([pu, pv]) => ({ near: at(pu, pv), r: Math.max(d / 2, 0.75 * h) })) });
+      } else {
+        const fp = footprint(it, geo.material), pts = [];
+        for (const su of [-1, 1]) for (const sv of [-1, 1]) for (const sn of [-1, 1]) pts.push(at(su * fp.w / 2, sv * fp.h / 2, sn * h));
+        regions.push({ key: `iface:${it.id}`, label: `Interface ${it.id} — ${it.name}`, list: [{ box: [0, 1, 2].map((i) => Math.min(...pts.map((q) => q[i]))).concat([0, 1, 2].map((i) => Math.max(...pts.map((q) => q[i])))) }] });
+      }
     }
     if (!st.fixed.length || !st.fixed.every((k) => regions.some((r) => r.key === k))) {            // a sensible first case: held at one end of the longest side, loaded at the other
       const dims = [b[3] - b[0], b[4] - b[1], b[5] - b[2]], a = dims.indexOf(Math.max(...dims)), ax = "XYZ"[a], iface = regions.find((r) => r.key.startsWith("iface:"));
       st.fixed = [iface ? iface.key : `face:-${ax}`];
-      st.loads = [{ region: `face:+${ax}`, mode: "force", F: 100, dir: a === 2 ? "-Y" : "-Z", p: 0.1 }];
+      st.loads = [{ region: iface ? `face:${dims[2] <= Math.min(dims[0], dims[1]) ? "+Z" : `+${ax}`}` : `face:+${ax}`, mode: iface && dims[2] <= Math.min(dims[0], dims[1]) ? "pressure" : "force", F: 100, dir: a === 2 ? "-Y" : "-Z", p: 0.002 }];
       st.power = [{ region: "face:-Z", P: 5 }]; st.fixedT = [];
     }
     showMesh(); drawLeft(); refreshEstimate();
@@ -83,11 +91,12 @@ function render(main, args) {
     vp.viewer.clear(); vp.viewer.addField("fea", { pos: s.pos, idx: s.idx, col, epos: s.epos });
     info.textContent = `${model.nCells.toLocaleString("fr-CA")} cubes de ${fmt(model.grid.h, 2)} mm · ${model.nNodes.toLocaleString("fr-CA")} nœuds`; info.className = "chip";
   }
-  const regionOf = (key) => (regions.find((r) => r.key === key) || regions[0]).region;
+  /** The simple regions of a choice: one for a face, one per screw for a bolted interface (the effort is shared between them). */
+  const listOf = (key) => (regions.find((r) => r.key === key) || regions[0]).list;
   function loadCase() {
-    if (st.kind === "thermal") return { power: st.power.map((x) => ({ region: regionOf(x.region), P: x.P })), fixedT: st.fixedT.map((x) => ({ region: regionOf(x.region), T: x.T })),
+    if (st.kind === "thermal") return { power: st.power.flatMap((x) => listOf(x.region).map((region, i, all) => ({ region, P: x.P / all.length }))), fixedT: st.fixedT.flatMap((x) => listOf(x.region).map((region) => ({ region, T: x.T }))),
       convection: st.conv.on ? [{ region: "exterior", h: st.conv.h, Tamb: st.conv.Tamb }] : [] };
-    return { fixed: st.fixed.map(regionOf), loads: st.loads.map((l) => (l.mode === "pressure" ? { region: regionOf(l.region), pressure: l.p } : { region: regionOf(l.region), force: DIRS[l.dir].map((c) => c * l.F) })) };
+    return { fixed: st.fixed.flatMap(listOf), loads: st.loads.flatMap((l) => listOf(l.region).map((region, i, all) => (l.mode === "pressure" ? { region, pressure: l.p } : { region, force: DIRS[l.dir].map((c) => c * l.F / all.length) }))) };
   }
   function refreshEstimate() {
     if (!model) return;
@@ -155,11 +164,11 @@ function render(main, args) {
     const r = last.result, c = last.compare, mat = geo.bodies[0].material, sf = st.kind === "structure" && mat.Re ? mat.Re / r.maxVm.value : null;
     body.append(el("div", { class: "kpis" }, ...(st.kind === "thermal"
       ? [el("div", { class: "kpi" }, el("b", null, `${show(r.maxT.value, 1)} °C`), el("span", null, "Température maximale")), el("div", { class: "kpi" }, el("b", null, `${show(r.minT.value, 1)} °C`), el("span", null, "Température minimale")), el("div", { class: "kpi" }, el("b", null, `${show(r.balance.out, 2)} W`), el("span", null, `évacués sur ${show(r.balance.in, 2)} W`))]
-      : [el("div", { class: "kpi" }, el("b", null, `${show(r.maxVm.value, 1)} MPa`), el("span", null, "Contrainte de von Mises")), el("div", { class: "kpi" }, el("b", null, `${show(r.maxU.value)} mm`), el("span", null, "Déplacement maximal")), el("div", { class: "kpi" }, el("b", null, sf ? show(sf, 2) : "—"), el("span", null, "Marge Re / σ"))])));
+      : [el("div", { class: "kpi" }, el("b", null, `${show(r.maxVm.value, 1)} MPa`), el("span", null, `Contrainte de pointe${r.nominalVm ? ` · nominale ${show(r.nominalVm.value, 1)}` : ""}`)), el("div", { class: "kpi" }, el("b", null, `${show(r.maxU.value)} mm`), el("span", null, "Déplacement maximal")), el("div", { class: "kpi" }, el("b", null, sf ? show(sf, 2) : "—"), el("span", null, "Marge Re / σ de pointe"))])));
     body.append(el("div", { class: "fea-legend" }, el("span", null, show(last.range[0], 1)), el("i"), el("span", null, `${show(last.range[1], 1)} ${st.kind === "thermal" ? "°C" : "MPa"}`)),
       st.kind === "structure" ? el("p", { class: "muted small" }, `Déformée amplifiée ${fmt(r.scale, 0)} fois.`) : null);
     body.append(el("div", { class: "side-section" }, el("h3", null, "3. Le recoupement ", badge(VERDICT[c.verdict][0], VERDICT[c.verdict][1])),
-      c.rows.length ? table(["", "À la main", "Simulation", "Écart"], c.rows.map((x) => [x.label, `${show(x.analytic, 2)} ${x.unit}`, `${show(x.fea, 2)} ${x.unit}`, x.deviation === null ? "—" : `${x.deviation > 0 ? "+" : ""}${Math.round(x.deviation * 100)} %`])) : null,
+      c.rows.length ? table(["", "À la main", "Simulation", "Écart"], c.rows.map((x) => [x.label, x.low !== undefined ? `${show(x.low, 2)} à ${show(x.analytic, 2)} ${x.unit}` : `${show(x.analytic, 2)} ${x.unit}`, `${show(x.fea, 2)} ${x.unit}`, x.deviation === null ? "—" : x.low !== undefined && x.deviation === 0 ? "dans la fourchette" : `${x.deviation > 0 ? "+" : ""}${Math.round(x.deviation * 100)} %`])) : null,
       el("p", { class: "small" }, c.text),
       el("p", { class: "muted small" }, `${last.info.cells.toLocaleString("fr-CA")} cubes, ${r.dofs.toLocaleString("fr-CA")} inconnues, ${r.iterations} itérations, ${fmt(r.ms / 1000, 2)} s. La contrainte de pointe d'un maillage grossier est indicative : les concentrations locales (trous, congés, bord de l'encastrement) ne sont pas résolues.`),
       el("div", { class: "form-actions" }, btn("Ajouter au rapport", () => keep(), { small: true, icon: "plus" }))));
