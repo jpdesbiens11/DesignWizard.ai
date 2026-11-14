@@ -12,12 +12,15 @@ import "./modules/parts.js";
 import "./modules/extrusion.js";
 import "./modules/pcb.js";
 import "./modules/assembly.js";
+import "./modules/physics.js";
 import "./modules/creepage.js";
 import "./modules/dfx.js";
 import "./modules/drawings.js";
 import "./modules/report.js";
 import "./modules/onshape.js";
 import "./modules/help.js";
+import { connect, saveToDrive, openFromDrive } from "./modules/account.js";
+import { gate } from "./core/gate.js";
 
 store.hooks.push(linkHook);
 app.openPalette = openPalette;
@@ -29,5 +32,6 @@ app.onImported = (r) => {
   else if (r.kind === "profile") { app.pendingProfile = r.profile; go("#/extrusion/new"); }
 };
 app.pickFile = () => pickFile(app.onImported);
+app.connect = connect; app.saveToDrive = saveToDrive; app.openFromDrive = openFromDrive;
 installImport(app.onImported);
-start();
+gate().then(start);                                            // hosted demo: approved Google accounts only; on this machine: at once

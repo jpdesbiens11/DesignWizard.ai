@@ -1,0 +1,10 @@
+{
+  "v": 1,
+  "mode": "approved",
+  "salt": "2290eaa99c4d84d06e6621100313ec3a",
+  "iterations": 210000,
+  "admins": [
+    "6e6723d0ef78aced9fa76313cd6509818b81c1a4191c79e75d4cd36a44b3f6bb"
+  ],
+  "approved": []
+}

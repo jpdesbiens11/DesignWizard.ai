@@ -25,8 +25,11 @@ ROOT = HERE.parents[1]
 sys.path.insert(0, str(HERE))
 import mock_onshape  # noqa: E402
 
-CSP = ("default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; "
-       "img-src 'self' data: blob:; worker-src 'self' blob:; connect-src 'self'; frame-ancestors 'none'; "
+CSP = ("default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://accounts.google.com/gsi/client; "
+       "style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; "
+       "img-src 'self' data: blob:; worker-src 'self' blob:; "
+       "connect-src 'self' https://accounts.google.com/gsi/ https://www.googleapis.com; "
+       "frame-src https://accounts.google.com/gsi/; object-src 'none'; frame-ancestors 'none'; "
        "base-uri 'self'; form-action 'self'")
 STEP = """ISO-10303-21;
 HEADER;
@@ -127,7 +130,7 @@ class StaticTests(unittest.TestCase):
         self.assertEqual(h["Content-Type"], "image/svg+xml")
         self.assertEqual(h["Content-Security-Policy"], CSP)
         self.assertEqual(h["X-Content-Type-Options"], "nosniff")
-        self.assertEqual(h["Referrer-Policy"], "no-referrer")
+        self.assertEqual(h["Referrer-Policy"], "strict-origin-when-cross-origin")
         self.assertEqual(h["Cache-Control"], "no-store")
         self.assertEqual(body, (ROOT / "web/img/favicon.svg").read_bytes())
         status, h, _ = req("GET", "/js/onshape/api.js")

@@ -35,7 +35,7 @@ function render(main) {
         btn("Charger la démonstration « Variateur 400 V »", () => loadDemo(DEMO_DRIVE, "#/assembly/DRV-ASM"), { primary: true, icon: "sparkle", tip: "Boîtier moulé, deux PCB, dissipateur extrudé : tout est déjà relié par ses interfaces" }),
         btn("Nouveau projet", async () => { const name = await promptBox("Nouveau projet", "Nom du projet", "Mon produit"); if (name) { await store.create(name); go("#/atelier"); } }, { icon: "plus" }),
         btn("Importer…", () => app.pickFile(), { icon: "upload", tip: "Projet .json, pièce JSON d'une entrevue, ou fichier STEP — vous pouvez aussi coller (Ctrl+V) ou déposer un fichier n'importe où" }))),
-    el("img", { src: "img/sketch/hero.svg", alt: "" })));
+    el("img", { src: `img/sketch/hero-${document.documentElement.dataset.theme || "carnet"}.svg`, alt: "" })));
 
   page.append(el("h2", null, "Le parcours"));
   page.append(el("div", { class: "grid", style: { marginBottom: "1.6rem" } }, STEPS.map(([key, title, text], i) => el("a", { class: "card lift", href: `#/${key}`, style: { "--acc": `var(--tab-acc)` }, "data-key": key },

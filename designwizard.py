@@ -49,13 +49,18 @@ def _load(name: str):
 store_mod = _load("store")
 onshape_mod = _load("onshape")
 
+# Google Identity Services and the Drive API are the only outside origins, and only once the user chooses
+# « Se connecter avec Google » (the script is loaded on demand, see web/js/google/auth.js).
 SECURITY_HEADERS = (
     ("Content-Security-Policy",
-     "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; "
-     "img-src 'self' data: blob:; worker-src 'self' blob:; connect-src 'self'; frame-ancestors 'none'; "
+     "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://accounts.google.com/gsi/client; "
+     "style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; "
+     "img-src 'self' data: blob:; worker-src 'self' blob:; "
+     "connect-src 'self' https://accounts.google.com/gsi/ https://www.googleapis.com; "
+     "frame-src https://accounts.google.com/gsi/; object-src 'none'; frame-ancestors 'none'; "
      "base-uri 'self'; form-action 'self'"),
     ("X-Content-Type-Options", "nosniff"),
-    ("Referrer-Policy", "no-referrer"),
+    ("Referrer-Policy", "strict-origin-when-cross-origin"),
 )
 # The CAD kernel worker runs the vendored OpenCascade build, whose Emscripten glue creates functions at run time:
 # that worker alone may evaluate code. A worker takes its policy from its own script response; it has no DOM,

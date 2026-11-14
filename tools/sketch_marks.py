@@ -1,4 +1,4 @@
-"""Module marks and brand mark of DesignWizard.ai (see tools/make_sketch_assets.py).
+"""Module marks of DesignWizard.ai (see tools/make_sketch_assets.py; the logo is in tools/sketch_logo.py).
 
 ART maps a key to a drawing on the same 24-unit grid as the icons: a list of (shape, role). Roles:
   "s" graphite stroke · "t" thin graphite stroke · "d" thin dashed graphite stroke
@@ -135,6 +135,19 @@ ART = {
                 (("line", 12, 15.2, 12, 7.8), "s"), (("poly", [(9.3, 10.4), (12, 7.5), (14.7, 10.4)], False), "s"),
                 (("poly", rhombus(12, 18, 3.7, 1.6), True), "f:yellow"), (("line", 12, 19.6, 12, 22.4), "s"),
                 (("poly", [(8.3, 18), (8.3, 20.8), (12, 22.4), (15.7, 20.8), (15.7, 18)], False), "s")],
+    # B3 « Atelier »: a part clamped in the vice of a workbench, a cutter above it, a square on the bench
+    "atelier": [(("rect", 1, 14.5, 22, 2.6), "f:yellow"), (("line", 3.5, 17.1, 3.5, 22.2), "s"), (("line", 20.5, 17.1, 20.5, 22.2), "s"),
+                (("line", 3.5, 20, 20.5, 20), "t"), (("rect", 8.8, 7.2, 3.7, 5.4), "f:blue"), (("ellipse", 10.65, 9.4, 0.9, 0.9), "t"),
+                (("rect", 12.5, 8.6, 2.6, 5.9), "s"), (("rect", 6.2, 8.6, 2.6, 5.9), "s"), (("line", 2, 11.5, 6.2, 11.5), "s"),
+                (("line", 2, 9.5, 2, 13.5), "s"), (("rect", 9.7, 1.6, 1.9, 4.4), "ft:cyan"), (("line", 7.6, 5.4, 6.4, 4.2), "t"),
+                (("line", 13.6, 5.4, 14.8, 4.2), "t"),
+                (("poly", [(17.2, 14.3), (17.2, 8.2), (18.7, 8.2), (18.7, 12.8), (22.2, 12.8), (22.2, 14.3)], True), "ft:orange")],
+    # B5 « Physique »: a beam on two supports, its load, its deflection and its bending-moment triangle
+    "physique": [(("rect", 2, 8.6, 20, 2.4), "f:green"), (("poly", [(4.5, 11.2), (2.2, 15.4), (6.8, 15.4)], True), "s"),
+                 (("ellipse", 19.5, 13.2, 1.9, 1.9), "s"), (("line", 1.2, 15.6, 8, 15.6), "t"), (("line", 16.6, 15.6, 22.6, 15.6), "t"),
+                 (("line", 12, 1.6, 12, 7.2), "s"), (("poly", [(9.8, 5.4), (12, 7.8), (14.2, 5.4)], False), "s"),
+                 (("curve", [(4.5, 11.4), (8, 13.6), (12, 14.6), (16, 13.6), (19.5, 11.4)], False), "d"),
+                 (("poly", [(4.5, 22), (12, 17.6), (19.5, 22)], True), "ft:yellow"), (("line", 12, 17.6, 12, 22), "t")],
     # a question mark
     "help": [(("ellipse", 12, 12, 9, 9), "f:yellow"),
              (("curve", [(9.2, 9.6), (10, 7.4), (12.2, 7.1), (14.6, 8.4), (14.3, 10.7), (12.1, 12.3), (12, 14.2)], False), "s"),
@@ -143,11 +156,12 @@ ART = {
 
 # module mark → highlighter colour of its blob
 MARKS = {"home": "yellow", "interfaces": "violet", "parts": "blue", "extrusion": "teal", "pcb": "green", "assembly": "orange",
-         "creepage": "red", "dfx": "cyan", "drawings": "pink", "report": "yellow", "onshape": "blue", "help": "yellow"}
+         "creepage": "red", "dfx": "cyan", "drawings": "pink", "report": "yellow", "onshape": "blue", "help": "yellow",
+         "atelier": "blue", "physique": "green"}
 
 
-def draw_art(pen, art, s, dx, dy, width=3.1, alpha=0.62, off=(3, 2.5)):
-    """SVG fragments of one ART drawing scaled by s and moved by (dx, dy)."""
+def draw_art(pen, art, s, dx, dy, width=3.1, alpha=0.62, off=(3, 2.5), INK=INK, HL=HL):
+    """SVG fragments of one ART drawing scaled by s and moved by (dx, dy); INK / HL: the ink and highlighters of a theme."""
     out = []
     thin = max(width * 0.62, 1.3)
     dash = ' stroke-dasharray="{} {}"'.format(pen.f(width * 1.5), pen.f(width * 1.7))
@@ -167,10 +181,10 @@ def draw_art(pen, art, s, dx, dy, width=3.1, alpha=0.62, off=(3, 2.5)):
     return out
 
 
-def cross(pen, x, y, r=4, width=1.6):
+def cross(pen, x, y, r=4, width=1.6, ink=INK):
     """Small « + » doodle."""
-    return (pen.stroke(("line", x - r, y, x + r, y), color=INK, width=width)
-            + pen.stroke(("line", x, y - r, x, y + r), color=INK, width=width))
+    return (pen.stroke(("line", x - r, y, x + r, y), color=ink, width=width)
+            + pen.stroke(("line", x, y - r, x, y + r), color=ink, width=width))
 
 
 def mark_svg(key, accent):
@@ -193,30 +207,7 @@ def mark_svg(key, accent):
             .format("".join(parts)))
 
 
-# ---------------------------------------------------------------- brand mark (64 × 64, no text)
+# ---------------------------------------------------------------- the wizard's hat of the home illustration (64 grid)
 HAT = [(21, 29), (24.5, 19), (29.5, 10.5), (39.5, 5), (36.5, 11.5), (38.5, 20), (43, 29)]
 BASE = [(21, 29), (32, 32.5), (43, 29)]
 BRIM = [(21, 29), (11.5, 29.5), (10, 33.5), (19, 37), (32, 38.5), (45, 37), (54, 33.5), (52.5, 29.5), (43, 29)]
-CUBE = [(13, 37.5), (13, 52.5), (32, 60), (51, 52.5), (51, 37.5)]
-
-
-def brand_svg(simple=False):
-    """A wizard hat whose tip draws a sparkle, worn by a cube. simple=True: the favicon (bolder, on a yellow tile)."""
-    pen = Pen("favicon" if simple else "brand", jitter=0.5 if simple else 0.8, passes=1 if simple else 2)
-    w = 3.6 if simple else 2.9
-    p = []
-    if simple:
-        p.append(pen.fill(("rect", 2.5, 2.5, 59, 59), HL["yellow"], 0.95, 0, 0))
-    else:
-        p.append(pen.fill(("poly", BRIM + BASE[1:2], True), HL["yellow"], 0.8, 1, 1.5))
-        p.append(pen.fill(("poly", HAT + BASE[1:2], True), HL["yellow"], 0.8, 1.5, 1))
-    p.append(pen.fill(("poly", [CUBE[0], (32, 45), CUBE[2], CUBE[1]], True), HL["blue"], 0.75, 1, 1))
-    for shape in (("curve", HAT[:4], False), ("curve", HAT[3:], False), ("curve", BASE, False), ("curve", BRIM, False),
-                  ("poly", CUBE, False), ("line", 32, 45, 32, 60), ("poly", [(14.5, 38.2), (32, 45), (49.5, 38.2)], False)):
-        p.append(pen.stroke(shape, color=INK, width=w))
-    star = sparkle(52, 10.5, 8.5, 0.36)
-    if not simple:
-        p.append(pen.fill(star, HL["yellow"], 0.9, 1, 1))
-        p.append(cross(pen, 9, 15, 3, 1.8) + cross(pen, 58, 24, 2.4, 1.6))
-    p.append(pen.stroke(star, color=INK, width=w * 0.7))
-    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-hidden="true">{}</svg>'.format("".join(p))

@@ -51,23 +51,23 @@ def hero_svg():
     return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 360" role="img" aria-hidden="true">{}</svg>'.format(body)
 
 
-def empty_svg():
-    """Empty state: an open notebook with a pencil and a sparkle waiting in a dashed frame."""
+def empty_svg(ink=INK, paper=0.25):
+    """Empty state: an open notebook with a pencil and a sparkle waiting in a dashed frame (ink: light on dark themes)."""
     pen = Pen("empty", jitter=1.1, passes=2)
     p = []
     book = [("curve", [(20, 40), (70, 26), (120, 40)], False), ("line", 120, 40, 120, 130),
             ("curve", [(20, 126), (70, 114), (120, 130)], False), ("line", 20, 40, 20, 126),
             ("curve", [(120, 40), (170, 26), (220, 40)], False), ("line", 220, 40, 220, 126),
             ("curve", [(120, 130), (170, 114), (220, 126)], False)]
-    p.append(pen.fill(("rect", 26, 40, 188, 84), HL["yellow"], 0.25, 3, 3))
+    p.append(pen.fill(("rect", 26, 40, 188, 84), HL["yellow"], paper, 3, 3))
     for shape in book:
-        p.append(pen.stroke(shape, color=INK, width=2.4))
+        p.append(pen.stroke(shape, color=ink, width=2.4))
     for y in (62, 78, 94):
-        p.append(pen.stroke(("line", 36, y, 102 + pen.j(8), y), color=INK, width=1.4))
-    p.append(pen.stroke(("rect", 140, 60, 60, 44), color=INK, width=1.6, extra=' stroke-dasharray="4 5"'))
+        p.append(pen.stroke(("line", 36, y, 102 + pen.j(8), y), color=ink, width=1.4))
+    p.append(pen.stroke(("rect", 140, 60, 60, 44), color=ink, width=1.6, extra=' stroke-dasharray="4 5"'))
     star = scaled(sparkle(12, 12, 6.2, 0.3), 2.4, 141, 53)
     p.append(pen.fill(star, HL["orange"], 0.85, 1, 1))
-    p.append(pen.stroke(star, color=INK, width=2))
-    p.append(pen.stroke(("poly", [(196, 150), (236, 104), (244, 111), (204, 157), (192, 160)], True), color=INK, width=2.2))
+    p.append(pen.stroke(star, color=ink, width=2))
+    p.append(pen.stroke(("poly", [(196, 150), (236, 104), (244, 111), (204, 157), (192, 160)], True), color=ink, width=2.2))
     p.append(pen.fill(("poly", [(203, 144), (236, 106), (243, 112), (210, 150)], True), HL["pink"], 0.6, 1, 1))
     return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 170" role="img" aria-hidden="true">{}</svg>'.format("".join(p))

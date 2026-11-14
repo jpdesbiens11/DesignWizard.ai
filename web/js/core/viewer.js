@@ -5,6 +5,8 @@
 import * as THREE from "../../vendor/three/three.module.min.js";
 
 const GRAPHITE = 0x26323f;
+/** Colour of a design token (themes.css), read on the element so each theme draws its own edges. */
+const token = (el, name, fallback) => { try { return getComputedStyle(el).getPropertyValue(name).trim() || fallback; } catch (e) { return fallback; } };
 const VIEWS = { iso: [-0.62, -0.72, 0.5], front: [0, -1, 0], back: [0, 1, 0], left: [-1, 0, 0], right: [1, 0, 0], top: [0, 0, 1], bottom: [0, 0, -1] };
 
 export class Viewer {
@@ -37,6 +39,9 @@ export class Viewer {
     this.scene.add(this.key, this.fill);
     this.clip = null; this.explode = 0; this.xray = false; this.mode = "select"; this.measure = [];
     this.raycaster = new THREE.Raycaster();
+    this.edgeColor = new THREE.Color(token(container, "--view-edge", "#26323f"));
+    this._theme = () => { this.edgeColor.set(token(container, "--view-edge", "#26323f")); for (const o of this.objects.values()) if (o.edges) o.edges.material.color.copy(this.edgeColor); this.dirty = true; };
+    window.addEventListener("dw:theme", this._theme);
     this.dirty = true; this.alive = true;
     this._bind();
     this.resizeObs = new ResizeObserver(() => this.resize());
@@ -48,6 +53,7 @@ export class Viewer {
 
   dispose() {
     this.alive = false;
+    window.removeEventListener("dw:theme", this._theme);
     this.resizeObs.disconnect();
     this.clear();
     this.renderer.dispose();
@@ -77,12 +83,12 @@ export class Viewer {
     g.setIndex(new THREE.BufferAttribute(def.mesh.idx, 1));
     g.computeBoundingBox(); g.computeBoundingSphere();
     const opacity = def.opacity ?? 1;
-    const mat = new THREE.MeshStandardMaterial({ color: new THREE.Color(def.color || "#a8b0b8"), metalness: 0.08, roughness: 0.62, side: THREE.DoubleSide,
+    const mat = new THREE.MeshStandardMaterial({ color: new THREE.Color(def.color || token(this.el, "--view-part", "#a8b0b8")), metalness: 0.08, roughness: 0.62, side: THREE.DoubleSide,
       polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1, transparent: opacity < 1, opacity, depthWrite: opacity >= 1 });
     const mesh = new THREE.Mesh(g, mat);
     const eg = new THREE.BufferGeometry();
     eg.setAttribute("position", new THREE.BufferAttribute(def.mesh.epos, 3));
-    const edges = new THREE.LineSegments(eg, new THREE.LineBasicMaterial({ color: GRAPHITE, transparent: true, opacity: 0.85 }));
+    const edges = new THREE.LineSegments(eg, new THREE.LineBasicMaterial({ color: this.edgeColor.clone(), transparent: true, opacity: 0.85 }));
     const group = new THREE.Group();
     group.add(mesh, edges);
     group.matrixAutoUpdate = false;
@@ -313,7 +319,7 @@ export class Viewer {
     const disc = new THREE.Mesh(new THREE.RingGeometry(s * 0.55, s * 0.8, 24), mat);
     disc.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), n); disc.position.copy(o);
     const arrow = new THREE.ArrowHelper(n, o, s * 1.6, color, s * 0.5, s * 0.35);
-    const ax = new THREE.ArrowHelper(u, o, s * 1.1, 0x26323f, s * 0.3, s * 0.2);
+    const ax = new THREE.ArrowHelper(u, o, s * 1.1, this.edgeColor.getHex(), s * 0.3, s * 0.2);
     [arrow, ax].forEach((a) => a.traverse((x) => { if (x.material) { x.material.depthTest = false; x.material.transparent = true; } }));
     g.add(disc, arrow, ax);
     g.traverse((x) => { x.renderOrder = 8; });
@@ -337,13 +343,20 @@ export class Viewer {
     }
   }
   /** PNG data URL of the current view (for the design-review report). */
-  snapshot() { this._render(); return this.canvas.toDataURL("image/png"); }
+  snapshot() { return this._onPaper(() => this.canvas.toDataURL("image/png")); }
   /** JPEG data URL on a white background (for PDF embedding). */
   snapshotJpeg(quality = 0.9) {
-    this._render();
-    const c = document.createElement("canvas"); c.width = this.canvas.width; c.height = this.canvas.height;
-    const g = c.getContext("2d"); g.fillStyle = "#ffffff"; g.fillRect(0, 0, c.width, c.height); g.drawImage(this.canvas, 0, 0);
-    return c.toDataURL("image/jpeg", quality);
+    return this._onPaper(() => {
+      const c = document.createElement("canvas"); c.width = this.canvas.width; c.height = this.canvas.height;
+      const g = c.getContext("2d"); g.fillStyle = "#ffffff"; g.fillRect(0, 0, c.width, c.height); g.drawImage(this.canvas, 0, 0);
+      return c.toDataURL("image/jpeg", quality);
+    });
+  }
+  /** Images for documents are always drawn with graphite edges, as on white paper, whatever the screen theme. */
+  _onPaper(take) {
+    const set = (c) => { for (const o of this.objects.values()) if (o.edges) o.edges.material.color.set(c); };
+    set(GRAPHITE); this._render();
+    try { return take(); } finally { set(this.edgeColor); this.dirty = true; }
   }
 }
 const fmt = (v) => (Math.round(v * 100) / 100).toLocaleString("fr-CA");

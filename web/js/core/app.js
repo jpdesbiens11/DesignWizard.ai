@@ -4,8 +4,10 @@
 import { el, clear, icon, btn, toast, modal, installTips, download, confirmBox, promptBox } from "./dom.js";
 import { store } from "./store.js";
 import { kernel } from "../cad/client.js";
+import { session, signOut } from "./access.js";
+import { THEMES, currentTheme, applyTheme } from "./theme.js";
 
-export const APP_VERSION = "0.1.0";
+export const APP_VERSION = "0.2.0";
 const modules = new Map();
 const ORDER = ["home", "atelier", "parts", "extrusion", "pcb", "assembly", "physics", "creepage", "dfx", "drawings", "report"];
 const GROUP_BREAK = new Set(["atelier", "assembly", "physics", "report"]);         // a pencil tick before these tabs
@@ -16,7 +18,9 @@ export function registerModule(def) { modules.set(def.key, def); }
 export function go(hash) { if (location.hash === hash) route(); else location.hash = hash; }
 export function setContext(ctx) { app.context = ctx || {}; }
 
+let shellOff = [];                                             // listeners of the current top bar (it is rebuilt on a theme change)
 function topbar() {
+  shellOff.forEach((off) => off()); shellOff = [];
   const tabs = el("nav", { class: "tabs", "aria-label": "Outils" });
   for (const key of ORDER) {
     const m = modules.get(key);
@@ -25,24 +29,27 @@ function topbar() {
     tabs.append(el("a", { class: "tab", href: `#/${key}`, "data-key": key, "data-tip": m.tip }, icon(m.icon), el("span", null, m.label)));
   }
   const chip = el("span", { class: "chip", id: "kernel-chip" }, "Prêt");
-  kernel.onStage((s) => setStatus(s || "Prêt", s ? "busy" : ""));
+  shellOff.push(kernel.onStage((s) => setStatus(s || "Prêt", s ? "busy" : "")));
   const save = el("span", { class: "chip", id: "save-chip", "data-tip": "État de l'enregistrement du projet" }, "—");
-  store.on("saved", (s) => { save.textContent = s === "saved" ? "Enregistré" : s === "dirty" ? "Modifié…" : "Non enregistré"; save.className = "chip" + (s === "error" ? " bad" : s === "saved" ? " done" : " busy"); });
+  const showSave = (s) => { save.textContent = s === "saved" ? "Enregistré" : s === "dirty" ? "Modifié…" : s ? "Non enregistré" : "—"; save.className = "chip" + (s === "error" ? " bad" : s === "saved" ? " done" : s ? " busy" : ""); };
+  showSave(store.project ? store.saveState : null);
+  shellOff.push(store.on("saved", showSave), session.on(() => rebuildShell()));
   const wand = el("button", { class: "wand", type: "button", "data-tip": "La baguette : tapez ce que vous voulez faire (« 4 trous M4 aux coins », « longueur 150 », « aller à Assemblage »…)", onClick: () => app.openPalette && app.openPalette() },
     icon("wizard"), el("span", { class: "wand-text" }, "Que voulez-vous faire ?"), el("kbd", null, "Ctrl K"));
   const tools = el("div", { class: "top-tools" }, wand, chip, save,
     btn("", () => store.undo() || toast("Rien à annuler."), { icon: "undo", small: true, tip: "Annuler (Ctrl+Z)" }),
     btn("", () => store.redo() || toast("Rien à rétablir."), { icon: "redo", small: true, tip: "Rétablir (Ctrl+Y)" }),
     menuButton("Onshape", "onshape", onshapeMenu), menuButton("Projet", "folder", projectMenu),
+    menuButton("", session.account && session.account.admin ? "admin" : "user", accountMenu, session.account ? `Compte : ${session.account.email}` : "Compte Google, Drive et thème"),
     el("a", { class: "btn btn-small", href: "#/help", "data-tip": "Aide, raccourcis et guide des collaborateurs" }, icon("help")));
   return el("header", { class: "topbar" },
-    el("a", { class: "brand", href: "#/home", "aria-label": "DesignWizard.ai, accueil" }, el("img", { src: "img/brand.svg", alt: "" }),
+    el("a", { class: "brand", href: "#/home", "aria-label": "DesignWizard.ai, accueil" }, icon("logo", "brand-logo"),
       el("span", { class: "brand-name" }, el("b", null, "DesignWizard", el("i", null, ".ai")), el("small", null, "by DynamiteAgile™"))),
     tabs, tools);
 }
 export function setStatus(text, cls = "") { const c = document.getElementById("kernel-chip"); if (c) { c.textContent = text; c.className = "chip " + cls; c.title = text; } }
 
-function menuButton(label, ico, build) {
+function menuButton(label, ico, build, tip) {
   const wrap = el("div", { class: "menu-wrap" });
   const b = btn(label, () => {
     const open = wrap.querySelector(".menu");
@@ -51,10 +58,12 @@ function menuButton(label, ico, build) {
     const menu = el("div", { class: "menu", role: "menu" });
     build(menu, () => menu.remove());
     wrap.append(menu);
-  }, { icon: ico, small: true });
+  }, { icon: ico, small: true, tip });
   wrap.append(b);
   return wrap;
 }
+/** Rebuild the top bar and the current screen (theme changed, account signed in or out). */
+export function rebuildShell() { const old = document.querySelector("header.topbar"); if (old) old.replaceWith(topbar()); route(); }
 const item = (label, ico, fn, close) => el("button", { class: "menu-item", type: "button", role: "menuitem", onClick: () => { close(); fn(); } }, icon(ico), label);
 
 async function projectMenu(menu, close) {
@@ -68,8 +77,17 @@ async function projectMenu(menu, close) {
     menu.append(item("Exporter le projet (.json)", "download", () => download(`${p.id}.dwproject.json`, store.exportJson(), "application/json"), close));
   }
   menu.append(item("Importer un projet ou une pièce…", "upload", () => app.pickFile && app.pickFile(), close));
+  if (session.configured) menu.append(item("Ouvrir depuis Google Drive…", "cloud", () => app.openFromDrive && app.openFromDrive(), close));
   menu.append(el("hr"));
   menu.append(el("div", { class: "menu-title" }, store.mode === "server" ? "Serveur local : projets sur le disque" : "Mode navigateur : projets gardés dans ce navigateur"));
+}
+function accountMenu(menu, close) {
+  const a = session.account, cur = currentTheme();
+  menu.append(el("div", { class: "menu-title" }, a ? a.email : session.configured ? "Non connecté à Google" : "Connexion Google non configurée"));
+  if (a) { if (store.project) menu.append(item("Enregistrer le projet dans Drive", "save", () => app.saveToDrive && app.saveToDrive(), close)); menu.append(item("Se déconnecter", "lock", () => signOut(), close)); }
+  else if (session.configured) menu.append(item("Se connecter avec Google", "user", () => app.connect && app.connect(), close));
+  menu.append(item("Compte, Drive et accès", "cloud", () => go("#/account"), close), el("hr"), el("div", { class: "menu-title" }, "Thème"));
+  for (const t of THEMES) { const it = item(t.label, t.key === cur ? "check" : "palette", () => { applyTheme(t.key); rebuildShell(); }, close); if (t.key === cur) it.classList.add("on"); menu.append(it); }
 }
 function onshapeMenu(menu, close) {
   menu.append(el("div", { class: "menu-title" }, "Onshape"));
@@ -88,7 +106,7 @@ function route() {
   document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.key === key));
   const m = modules.get(key);
   document.title = `${m.label} · DesignWizard.ai`;
-  if (!store.project && !["home", "help"].includes(key)) {
+  if (!store.project && !["home", "help", "account"].includes(key)) {
     main.append(el("div", { class: "page" }, el("div", { class: "empty" }, el("h2", null, "Aucun projet ouvert"),
       el("p", null, "Ouvrez un projet ou chargez la démonstration pour utiliser cet outil."), el("a", { class: "btn btn-primary", href: "#/home" }, "Aller à l'accueil"))));
     return;

@@ -17,6 +17,9 @@ class Store {
   emit(evt, data) { (this.listeners.get(evt) || []).forEach((fn) => { try { fn(data); } catch (e) { console.error(e); } }); }
 
   async init() {
+    // The local server only exists on the user's own machine: a hosted page (GitHub Pages…) goes straight to browser mode.
+    const host = globalThis.location ? location.hostname : "";
+    if (!(["localhost", "127.0.0.1", "[::1]", ""].includes(host) || /\.localhost$/.test(host))) return this.mode;
     try {
       const r = await fetch("api/ping", { cache: "no-store" });
       if (r.ok) { const j = await r.json(); if (j && j.ok) { this.mode = "server"; this.server = j; } }

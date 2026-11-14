@@ -32,7 +32,8 @@ export function icon(name, cls = "") {
   svg.setAttribute("class", "sk-icon " + cls);
   svg.setAttribute("aria-hidden", "true");
   const use = document.createElementNS(SVG_NS, "use");
-  use.setAttribute("href", `img/icons.svg#i-${name}`);
+  const theme = document.documentElement.dataset.theme;       // hand-drawn sprite in « Le.Carnet », straight lines in the other themes
+  use.setAttribute("href", `img/${theme && theme !== "carnet" ? "icons-crisp" : "icons"}.svg#i-${name}`);
   svg.append(use);
   return svg;
 }
