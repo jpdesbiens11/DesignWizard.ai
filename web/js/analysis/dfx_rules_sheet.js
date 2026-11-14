@@ -22,7 +22,7 @@ const R = {
   sm08: rule("SM-08", "Largeur des découpes", "Largeur d'une fente ou découpe ≥ t", "warn", "Une fente plus étroite que la tôle ne se découpe pas proprement.", S.thumb),
   mat01: rule("MAT-01", "Épaisseur en stock", "Épaisseur dans la liste standard (0,5 · 0,8 · 1 · 1,2 · 1,5 · 2 · 2,5 · 3 · 4 · 5 · 6 mm)", "warn", "Épaisseur spéciale : coût et délai.", S.stock, { fix: true }),
   pl01: rule("PL-01", "Pliage des plastiques", "Une plaque plastique ne se plie qu'à chaud", "warn", "Le pliage à froid fissure ou revient (spring back).", "Pratique fournisseur"),
-  lam01: rule("LAM-01", "Stratifié : pas de pliage", "Un stratifié (FR4, carbone, verre) ne se plie pas", "error", "Les fibres cassent.", "Pratique composites"),
+  lam01: rule("LAM-01", "Stratifié : pas de pliage", "Un stratifié (FR4, carbone, verre) ne se plie pas", "error", "Les fibres cassent.", "Pratique composites", { fix: true }),
   lam02: rule("LAM-02", "Stratifié : distance au bord", "Axe du trou au bord ≥ 3 × D", "warn", "Rupture en matage / cisaillement au bord (bearing, shear-out).", S.comp),
   lam03: rule("LAM-03", "Stratifié : pas entre trous", "Entraxe ≥ 4 × D", "warn", "Rupture de section nette entre les trous.", S.comp),
   lam04: rule("LAM-04", "Rayon de fraise (router)", "Angles intérieurs ≥ R1,5 (fraise Ø3)", "warn", "La fraise du router ne fait pas d'angle vif intérieur.", S.router, { fix: true }),
@@ -192,11 +192,11 @@ export function checkPlate(ctx) {
     if (!soft) return;                                          // metal laser / waterjet: the kerf radius is enough
     for (const p of facts.pockets) {
       const small = Math.min(p.w, p.h);
-      if (!(small > 0) || p.rMin >= small / 2 - 1e-6 || p.rMin >= 1.5 - 1e-6) continue;
+      if (!(small > 0) || p.rMin >= 1.5 - 1e-3) continue;
       const f = ctx.feature(p.source), path = f && f.op === "pocket" ? (f.rect ? "r" : f.profile && (f.profile.rect || f.profile.poly) ? "profile.r" : null) : null;
       const cut = p.iface && (ctx.built.interfaces || []).some((i) => i.id === p.iface && i.type === "cutout");
       ctx.add("LAM-04", { value: p.rMin, limit: 1.5, unit: "mm", feature: p.source, iface: p.iface,
-        message: `Découpe « ${p.source} » : angles intérieurs R${num(p.rMin)}${p.rMin < 1e-6 ? " (vifs)" : ""}, impossibles au router. Limite : R ≥ 1,5 mm (fraise Ø3). Correctif : passer les angles à R1,5.`,
+        message: `Découpe « ${p.source} » (${num(p.w)} × ${num(p.h)} mm) : angles intérieurs R${num(p.rMin)}${p.rMin < 1e-6 ? " (vifs)" : ""}, impossibles au router. Limite : R ≥ 1,5 mm (fraise Ø3). Correctif : ${small / 2 > 1.5 ? "passer les angles à R1,5" : "élargir la découpe à plus de 3 mm"}.`,
         fix: small / 2 > 1.5 ? ctx.fix("Passer les angles à R1,5", ctx.patch(p, path, 1.5, cut ? "params.r" : null)) : null });
     }
   });

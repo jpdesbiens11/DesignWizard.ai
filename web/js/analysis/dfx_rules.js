@@ -43,7 +43,7 @@ const FACT_LISTS = ["holes", "pockets", "bosses", "fillets", "chamfers", "shells
 function context(spec, built, geo) {
   const findings = [], ran = [], skipped = [];
   const facts = { ...(built.facts || {}) };
-  for (const k of FACT_LISTS) if (!Array.isArray(facts[k])) facts[k] = [];
+  for (const k of FACT_LISTS) facts[k] = Array.isArray(facts[k]) ? facts[k].filter((x) => x && typeof x === "object") : [];
   const mat = spec.material ? material(spec.material) : null, process = spec.process || null;
   const mainBody = (built.bodies || []).find((b) => b.name === (built.main || "main")) || (built.bodies || [])[0] || null;
   const bbox = (mainBody && mainBody.bbox) || built.bbox || null;
@@ -91,8 +91,9 @@ function context(spec, built, geo) {
           message: `Paroi (shell « ${s.source} ») de ${num(s.t)} mm : sous le minimum ${lim.what} de ${num(lim.rec)} mm${lim.min < lim.rec ? ` (limite absolue ${num(lim.min)} mm)` : ""}. Correctif : passer la paroi à ${num(lim.rec)} mm.`,
           fix: ctx.fix(`Passer la paroi à ${num(lim.rec)} mm`, ctx.patch(s, "t", lim.rec)) });
       }
-      const w = ctx.wall();
-      if (w && w.min < lim.rec - 1e-3 && !(fromShell <= w.min * 1.1)) {
+      // the mesh is faceted: a curved wall is measured within about one chord deflection (the kernel uses diag / 900, 0.02 to 0.15 mm)
+      const w = ctx.wall(), tol = bbox ? Math.max(0.02, Math.min(0.15, Math.hypot(bbox[3] - bbox[0], bbox[4] - bbox[1], bbox[5] - bbox[2]) / 900)) : 0.05;
+      if (w && w.min < lim.rec - tol && !(fromShell <= w.min * 1.1)) {
         ctx.add(id, { severity: w.min < 0.5 * lim.min ? "error" : "warn", value: Math.round(w.min * 100) / 100, limit: lim.rec, unit: "mm", where: w.at,
           message: `Épaisseur locale de ${num(w.min)} mm mesurée sur le maillage (voir le marqueur 3D) : sous le minimum ${lim.what} de ${num(lim.rec)} mm. Correctif : épaissir cette zone ou écarter les features voisines (trou, pocket, bord).` });
       }
@@ -107,6 +108,8 @@ function context(spec, built, geo) {
 export function checkPart(spec, built, geo) {
   spec = spec && typeof spec === "object" ? spec : {};
   built = built && typeof built === "object" ? built : {};
+  const objs = (l) => (Array.isArray(l) ? l.filter((x) => x && typeof x === "object") : []);
+  built = { ...built, interfaces: objs(built.interfaces), bodies: objs(built.bodies), log: objs(built.log) };
   const { ctx, findings, ran, skipped } = context(spec, built, geo);
   for (const fn of [...(RUNNERS[ctx.process] || []), checkInterfaces, checkGeneral]) {
     try { fn(ctx); } catch (e) { skipped.push({ id: fn.name, error: String(e && e.message || e) }); }

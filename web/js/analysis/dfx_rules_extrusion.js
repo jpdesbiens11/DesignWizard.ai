@@ -5,6 +5,7 @@
 
 import { PLANES } from "../cad/vec.js";
 import { flattenLoop } from "../cad/profile.js";
+import { convexHull } from "../cad/profile_metrics.js";
 import { rule, num, round } from "./dfx_core.js";
 
 const S = {
@@ -39,12 +40,12 @@ function boundarySamples(profile) {
   let per = 0;
   for (const pts of loops) for (let i = 0; i < pts.length; i++) { const b = pts[(i + 1) % pts.length]; per += Math.hypot(b[0] - pts[i][0], b[1] - pts[i][1]); }
   const pitch = Math.max(0.25, per / 1800), out = [];
-  for (const pts of loops) for (let i = 0; i < pts.length; i++) {
+  loops.forEach((pts, li) => { for (let i = 0; i < pts.length; i++) {
     const a = pts[i], b = pts[(i + 1) % pts.length], ex = b[0] - a[0], ey = b[1] - a[1], L = Math.hypot(ex, ey);
     if (L < 1e-9) continue;
     const n = Math.max(1, Math.round(L / pitch));
-    for (let k = 0; k < n; k++) { const t = (k + 0.5) / n; out.push([a[0] + ex * t, a[1] + ey * t, -ey / L, ex / L]); }   // material is on the left of every loop
-  }
+    for (let k = 0; k < n; k++) { const t = (k + 0.5) / n; out.push([a[0] + ex * t, a[1] + ey * t, -ey / L, ex / L, li]); }   // material is on the left of every loop
+  } });
   return { samples: out, loops };
 }
 /** Thickest spot of a section = diameter of the largest circle inscribed in the material (tangent at a boundary sample). */
@@ -60,6 +61,79 @@ export function sectionMaxThickness(profile) {
     if (Number.isFinite(r) && 2 * r > tMax) { tMax = 2 * r; at = [p[0] + p[2] * r, p[1] + p[3] * r]; }
   }
   return { tMax, at };
+}
+/* Ray o + t d against a list of segments [a, b]: smallest t > 0, or Infinity. With minCos, a first hit on a wall that does
+   not face the ray (more than 45° off for 0.7: a wedge, an acute corner) returns NaN: "no facing wall". */
+function cast(o, d, segs, minCos = 0) {
+  let best = Infinity, hit = null;
+  for (const sg of segs) {
+    const [a, b] = sg, ex = b[0] - a[0], ey = b[1] - a[1], den = d[0] * ey - d[1] * ex;
+    if (Math.abs(den) < 1e-12) continue;
+    const ax = a[0] - o[0], ay = a[1] - o[1], t = (ax * ey - ay * ex) / den, u = (ax * d[1] - ay * d[0]) / den;
+    if (t > 1e-7 && u >= -1e-9 && u <= 1 + 1e-9 && t < best) { best = t; hit = sg; }
+  }
+  if (hit && minCos > 0) { const ex = hit[1][0] - hit[0][0], ey = hit[1][1] - hit[0][1]; if (Math.abs(d[0] * ey - d[1] * ex) / (Math.hypot(ex, ey) || 1) < minCos) return NaN; }
+  return best;
+}
+const toSegs = (pts) => pts.map((p, i) => [p, pts[(i + 1) % pts.length]]);
+/** Wall thickness of a section measured between FACING walls only: {min, at (middle of the thinnest wall), median}; null if none.
+    (The builder's metric also counts the rays that graze an acute corner, which would report a zero wall on a dovetail.) */
+export function sectionWalls(profile) {
+  const { samples, loops } = boundarySamples(profile), segs = loops.flatMap(toSegs), ts = [];
+  let min = Infinity, at = null;
+  for (const s of samples) {
+    const t = cast(s, [s[2], s[3]], segs, 0.7);
+    if (!Number.isFinite(t)) continue;
+    ts.push(t);
+    if (t < min) { min = t; at = [s[0] + s[2] * t / 2, s[1] + s[3] * t / 2]; }
+  }
+  ts.sort((x, y) => x - y);
+  return ts.length ? { min, at, median: ts[ts.length >> 1] } : null;
+}
+/** Deepest open gap of the outer contour: {ratio = depth / width of the mouth, width, depth, at} — the "tongue ratio" of the
+    die. On each wall that faces another wall, the deepest point is kept; depth = distance from the middle of the gap to its
+    mouth (convex hull) along the gap, width = opening measured just inside the mouth (a V groove is judged on its opening,
+    not on its pointed bottom). A fin gap standing on a base plate is measured from its bottom (profile_metrics measures
+    from the hull, which the base plate brings close). */
+export function gapRatio(profile) {
+  const { samples, loops } = boundarySamples(profile), segs = loops.flatMap(toSegs), hull = toSegs(convexHull(loops[0])), picks = [];
+  let run = null;
+  const flush = () => { if (run) picks.push(run); run = null; };
+  for (const s of samples) {
+    const out = [-s[2], -s[3]], w = s[4] === 0 ? cast(s, out, segs, 0.7) : NaN;
+    if (!Number.isFinite(w) || w < 1e-6) { flush(); continue; }
+    const mid = [s[0] + out[0] * w / 2, s[1] + out[1] * w / 2], open = [[-out[1], out[0]], [out[1], -out[0]]].filter((d) => !Number.isFinite(cast(mid, d, segs)));
+    const depth = open.length === 1 ? cast(mid, open[0], hull) : NaN;      // not 1: closed pocket, or a channel open at both ends
+    if (!Number.isFinite(depth)) { flush(); continue; }
+    if (!run || depth > run.depth) run = { s, out, w, mid, dir: open[0], depth };
+  }
+  flush();
+  let best = { ratio: 0, width: null, depth: null, at: null };
+  for (const c of picks) {
+    let mouth = c.w;
+    for (let k = 1; k <= 12; k++) {
+      const q = [c.mid[0] + c.dir[0] * c.depth * k / 12, c.mid[1] + c.dir[1] * c.depth * k / 12], l = cast(q, c.out, segs), r = cast(q, [-c.out[0], -c.out[1]], segs);
+      if (!Number.isFinite(l) || !Number.isFinite(r)) break;
+      mouth = l + r;
+    }
+    if (c.depth / mouth > best.ratio) best = { ratio: c.depth / mouth, width: mouth, depth: c.depth, at: [c.s[0], c.s[1]] };
+  }
+  return best;
+}
+/* Does the profile boundary cross the envelope rectangle grown by its clearance? (the builder only probes 9 points) */
+function envelopeHit(profile, e) {
+  const hw = e.w / 2 + (e.clearance || 0) - 1e-6, hh = e.h / 2 + (e.clearance || 0) - 1e-6, x0 = e.at[0] - hw, x1 = e.at[0] + hw, y0 = e.at[1] - hh, y1 = e.at[1] + hh;
+  for (const pts of boundarySamples(profile).loops) for (let i = 0; i < pts.length; i++) {
+    const a = pts[i], b = pts[(i + 1) % pts.length], dx = b[0] - a[0], dy = b[1] - a[1];
+    let t0 = 0, t1 = 1, out = false;                            // Liang–Barsky clipping of the segment against the rectangle
+    for (const [p, q] of [[-dx, a[0] - x0], [dx, x1 - a[0]], [-dy, a[1] - y0], [dy, y1 - a[1]]]) {
+      if (Math.abs(p) < 1e-12) { if (q < 0) out = true; continue; }
+      const r = q / p;
+      if (p < 0) t0 = Math.max(t0, r); else t1 = Math.min(t1, r);
+    }
+    if (!out && t0 <= t1) return true;
+  }
+  return false;
 }
 /* Area centroid of the section (holes are clockwise, so their signed area is negative). */
 function centroid(profile) {
@@ -85,26 +159,31 @@ export function checkExtrusion(ctx) {
   if (!m) return;
   const P = PLANES[{ Y: "XZ", X: "YZ", Z: "XY" }[ex.axis] || "XZ"], len = ex.length || 0;
   const at3 = (p) => (Array.isArray(p) ? [0, 1, 2].map((k) => P.u[k] * p[0] + P.v[k] * p[1] + P.n[k] * len / 2) : null);
-  let thick = null;
+  let thick = null, sw;
+  const walls = () => { if (sw === undefined) { try { sw = ex.profile ? sectionWalls(ex.profile) : null; } catch (e) { sw = null; } } return sw || (m.wallMin > 0 ? { min: m.wallMin, at: m.wallAt, median: m.wallMedian } : null); };
   const maxT = () => { if (thick === null) { try { thick = ex.profile ? sectionMaxThickness(ex.profile) : { tMax: 0, at: null }; } catch (e) { thick = { tMax: 0, at: null }; } } return thick; };
 
   ctx.run("EXT-01", () => {
-    if (!(m.wallMin > 0)) return;
-    const lim = al ? (m.ccd <= 100 ? 1.2 : m.ccd <= 150 ? 1.5 : 2.0) : 1.0;
-    if (m.wallMin < lim - 1e-6) ctx.add("EXT-01", { severity: m.wallMin < 0.8 * lim ? "error" : "warn", value: round(m.wallMin), limit: lim, unit: "mm", where: at3(m.wallAt), feature: "extrusion",
-      message: `Paroi la plus mince de la section : ${num(m.wallMin)} mm (voir le marqueur). Limite ${what} : ≥ ${num(lim)} mm${al ? ` pour un cercle circonscrit (CCD) de ${num(m.ccd, 0)} mm` : ""}. Correctif : épaissir cette paroi à ${num(lim)} mm dans « extrusion.profile ».` });
+    const w = walls(), lim = al ? (m.ccd <= 100 ? 1.2 : m.ccd <= 150 ? 1.5 : 2.0) : 1.0;
+    if (w && w.min < lim - 1e-6) ctx.add("EXT-01", { severity: w.min < 0.8 * lim ? "error" : "warn", value: round(w.min), limit: lim, unit: "mm", where: at3(w.at), feature: "extrusion",
+      message: `Paroi la plus mince de la section : ${num(w.min)} mm (voir le marqueur). Limite ${what} : ≥ ${num(lim)} mm${al ? ` pour un cercle circonscrit (CCD) de ${num(m.ccd, 0)} mm` : ""}. Correctif : épaissir cette paroi à ${num(lim)} mm dans « extrusion.profile ».` });
   });
   ctx.run("EXT-02", () => {
-    if (!(m.wallMin > 0)) return;
-    const t = maxT(), tMax = t.tMax > 0 ? t.tMax : m.wallMedian, ratio = tMax / m.wallMin;
+    const w = walls();
+    if (!w) return;
+    const t = maxT(), tMax = t.tMax > 0 ? t.tMax : w.median, ratio = tMax / w.min;
     if (ratio > 2 + 1e-6) ctx.add("EXT-02", { value: round(ratio), limit: 2, unit: ": 1", where: at3(t.at), feature: "extrusion",
-      message: `Parois non uniformes : la zone la plus épaisse fait ${num(tMax)} mm, la plus mince ${num(m.wallMin)} mm, soit ${num(ratio, 1)}:1. Limite : 2:1. Correctif : amincir ou évider la zone épaisse, épaissir la paroi mince, et raccorder les épaisseurs par des rayons.` });
+      message: `Parois non uniformes : la zone la plus épaisse fait ${num(tMax)} mm, la plus mince ${num(w.min)} mm, soit ${num(ratio, 1)}:1. Limite : 2:1. Correctif : amincir ou évider la zone épaisse, épaissir la paroi mince, et raccorder les épaisseurs par des rayons.` });
   });
   ctx.run("EXT-03", () => {
-    const r = m.tongueRatio, warnAt = al ? 3 : 4;
+    let g = null;
+    try { if (ex.profile) g = gapRatio(ex.profile); } catch (e) { /* fall back on the metric of the builder */ }
+    // the builder's tongueRatio divides by the LOCAL width (a V groove looks infinitely deep): used only as a fallback, never as an error
+    const r = g ? g.ratio : m.tongueRatio, warnAt = al ? 3 : 4;
     if (!(r > warnAt + 1e-6)) return;
-    ctx.add("EXT-03", { severity: al && r > 4 ? "error" : "warn", value: round(r), limit: warnAt, unit: ": 1", where: at3(m.tongueAt), feature: "extrusion",
-      message: `Gorge trop profonde pour sa largeur : rapport profondeur / largeur = ${num(r, 1)}:1${m.gapMin ? ` (plus petite ouverture : ${num(m.gapMin)} mm)` : ""}. Limite : ${warnAt}:1${al ? " (4:1 avec précaution)" : ""}, sinon la languette de la filière casse. Correctif : élargir la gorge, réduire sa profondeur (ailettes plus courtes ou plus espacées) ou ajouter un rayon en fond de gorge.` });
+    ctx.add("EXT-03", { severity: al && g && r > 4 ? "error" : "warn", value: round(r), limit: warnAt, unit: ": 1", where: at3(g ? g.at : m.tongueAt), feature: "extrusion",
+      message: `Gorge trop profonde pour sa largeur : ${g ? `${num(g.depth)} mm de profondeur pour ${num(g.width)} mm d'ouverture, soit ` : "rapport profondeur / largeur = "}${num(r, 1)}:1. Limite : ${warnAt}:1${al ? " (4:1 avec précaution)" : ""}, sinon la languette de la filière casse. `
+        + "Correctif : élargir la gorge, réduire sa profondeur (ailettes plus courtes ou plus espacées) ou ajouter un rayon en fond de gorge." });
   });
   ctx.run("EXT-04", () => {
     const small = m.rMin > 0 && m.rMin < 0.4 - 1e-6;
@@ -140,7 +219,8 @@ export function checkExtrusion(ctx) {
       message: `Section sans axe de symétrie : son centre de gravité est décalé de ${num(ox * 100, 0)} % en largeur et ${num(oy * 100, 0)} % en hauteur par rapport au centre de l'enveloppe (repère : < 1 %). Correctif : si la fonction le permet, rendre la section symétrique par rapport à un axe (écoulement équilibré, profilé plus droit).` });
   });
   ctx.run("EXT-09", () => {
-    for (const e of ex.envelopes || []) if (e.collides) ctx.add("EXT-09", { value: e.name, limit: `jeu ${num(e.clearance)} mm`, where: at3(e.at), feature: "extrusion",
+    const hit = (e) => { try { return !!ex.profile && Array.isArray(e.at) && envelopeHit(ex.profile, e); } catch (err) { return false; } };
+    for (const e of ex.envelopes || []) if (e.collides || hit(e)) ctx.add("EXT-09", { value: e.name, limit: `jeu ${num(e.clearance)} mm`, where: at3(e.at), feature: "extrusion",
       message: `L'enveloppe ${e.kind === "inside" ? "intérieure" : "extérieure"} « ${e.name} » (${num(e.w)} × ${num(e.h)} mm, jeu ${num(e.clearance)} mm) touche la matière du profilé ; limite : aucune interférence, jeu compris. Correctif : ${e.kind === "inside" ? "agrandir le logement dans la section" : "dégager la section à cet endroit"} ou déplacer l'enveloppe (« at »).` });
   });
   ctx.run("EXT-10", () => {

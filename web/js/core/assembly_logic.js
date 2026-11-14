@@ -164,7 +164,7 @@ export function hardware(asm, built) {
     try { list = interfaceType(A.type).hardware(A.params, A.opts || {}, B.opts || {}, grip) || []; } catch (e) { list = []; }
     for (const h of list) {
       const r = rows.get(h.id) || { ...h, qty: 0, mates: [] };
-      r.qty += h.qty; r.mates.push(m.id);
+      r.qty += h.qty; r.mates.push(m.id); r.mate = r.mates.join(", ");
       rows.set(h.id, r);
     }
   }

@@ -45,8 +45,8 @@ export function prepareScene(bodies, opts = {}) {
   const scene = {
     bodies: list, diag, cache: {},
     contactTol: opts.contactTol ?? 0.02,
-    step: opts.step || opts.edgeSample || Math.min(1, Math.max(0.5, diag / 200)),
-    eps: Math.min(2e-3, Math.max(5e-4, diag * 1e-5)),          // outward offset of the bend points of the taut string
+    step: opts.step || opts.edgeSample || Math.round(20 * Math.min(1, Math.max(0.5, diag / 200))) / 20,
+    eps: Math.min(1e-3, Math.max(2e-4, diag * 3e-6)),          // outward offset of the bend points of the taut string
     solids: union(list, all), floats: pick("floating"), insul: pick("insulator"), nets: new Map(),
   };
   scene.cond = union(list, all.filter((i) => list[i].kind !== "insulator"));     // conductors and floating parts: contact tests

@@ -6,7 +6,7 @@
       A* with lazy visibility tests, bounded by the cap;
    3. tightening: every bend point slides along its edge until the polyline is the taut string. */
 
-import { meshDistance, segmentBlocked, sharpEdges, insideAny } from "./cc_geom.js";
+import { meshDistance, segmentBlocked, sharpEdges, insideAny, triNormals } from "./cc_geom.js";
 
 const MAX_NODES = 9000;
 
@@ -64,6 +64,23 @@ function bendPoints(scene, step) {
 
 const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 
+/** Point of a net seen from the bend point p: its closest point when the segment is in air, otherwise the foot of the
+    perpendicular on another face (non-convex conductors); edges and corners are covered by the bend points of the net. */
+function reach(scene, net, p, maxDist, first = null) {
+  const hit = { ignoreEndsEps: scene.eps / 4 }, tried = [];
+  let q = first || net.bvh.closestPoint(p, maxDist);
+  for (let k = 0; q && k < 4; k++) {
+    if (!scene.solids.segmentHits(p, q.point, hit)) return q;
+    tried.push(q.point);
+    const N = net.N || (net.N = triNormals(net.bvh.V, net.bvh.I).N);
+    q = net.bvh.closestPoint(p, maxDist, (t, x, y, z, d2) => {
+      const h = (p[0] - x) * N[3 * t] + (p[1] - y) * N[3 * t + 1] + (p[2] - z) * N[3 * t + 2];
+      return h > 0 && h * h > d2 * (1 - 1e-6) && tried.every((c) => Math.abs(c[0] - x) + Math.abs(c[1] - y) + Math.abs(c[2] - z) > 1e-6);
+    });
+  }
+  return null;
+}
+
 /** Leg between two path elements. An element is a bend point {p, e, t} or an anchor {bvh} (a net or a floating body).
     Returns {d, pts, ok}: length, the points to draw, and whether the leg is in air. */
 function leg(scene, x, y) {
@@ -101,7 +118,8 @@ function tighten(scene, els) {
 }
 
 /** One search on the bend points sampled at `step`, bounded by U. Returns the elements of the best path or null. */
-function search(scene, A, B, floats, step, U, direct) {
+function search(scene, netA, netB, floats, step, U, direct) {
+  const A = netA.bvh, B = netB.bvh;
   const all = bendPoints(scene, step), solids = scene.solids, hit = { ignoreEndsEps: scene.eps / 4 }, nf = floats.length;
   const FB = nf ? scene.floatBvh : null, hF = nf ? Math.min(...floats.map((f) => f.dB)) : Infinity;
   // corridor: only the points that can be on a path shorter than U
@@ -123,7 +141,7 @@ function search(scene, A, B, floats, step, U, direct) {
   for (let i = 0; i < n; i++) { P[3 * i] = all.P[3 * ids[i]]; P[3 * i + 1] = all.P[3 * ids[i] + 1]; P[3 * i + 2] = all.P[3 * ids[i] + 2]; }
   const pt = (i) => [P[3 * i], P[3 * i + 1], P[3 * i + 2]], h = (i) => (i < n ? hs[i] : i === T ? 0 : hF);
   const set = (i, d, from) => { g[i] = d; pred[i] = from; heap.push(d + h(i), i); };
-  for (let i = 0; i < n; i++) if (dA[i] < U && !solids.segmentHits(pt(i), cA[i], hit)) set(i, dA[i], -1);
+  for (let i = 0; i < n; i++) if (dA[i] < U) { const q = reach(scene, netA, pt(i), U - hs[i], { d: dA[i], point: cA[i] }); if (q) set(i, q.d, -1); }
   if (direct) set(T, direct, -1);
   floats.forEach((f, k) => { if (f.dA + f.dB < U && !segmentBlocked(solids, scene.bodies, f.mA.a, f.mA.b)) set(n + 1 + k, f.dA, -1); });
   const bound = () => Math.min(U, g[T]);
@@ -134,7 +152,7 @@ function search(scene, A, B, floats, step, U, direct) {
     if (gu > g[u] + 1e-12) continue;
     if (u < n) {
       const pu = pt(u), ux = pu[0], uy = pu[1], uz = pu[2];
-      if (gu + dB[u] < bound() && !solids.segmentHits(pu, cB[u], hit)) set(T, gu + dB[u], u);
+      if (gu + dB[u] < bound()) { const q = reach(scene, netB, pu, bound() - gu, { d: dB[u], point: cB[u] }); if (q && gu + q.d < bound()) set(T, gu + q.d, u); }
       floats.forEach((f, k) => {
         const q = f.bvh.closestPoint(pu, Math.min(g[n + 1 + k], bound()) - gu);
         if (q && gu + q.d < g[n + 1 + k] - 1e-12 && !solids.segmentHits(pu, q.point, hit)) set(n + 1 + k, gu + q.d, u);
@@ -183,7 +201,7 @@ export function clearance(scene, netA, netB, opts = {}) {
   if (free) { res.d = md.d; res.path = [md.a, md.b]; res.direct = true; if (!floats.length) return res; }
   let step = opts.clearanceStep || 2 * (opts.step || scene.step);
   while (bendPoints(scene, step).n > MAX_NODES) step *= 1.5;
-  const els = search(scene, A, B, floats, step, U, free ? md.d : 0);
+  const els = search(scene, scene.nets.get(netA), scene.nets.get(netB), floats, step, U, free ? md.d : 0);
   if (els) {
     const t = tighten(scene, els);
     if (t.d < U) { res.d = t.d; res.path = t.path; res.direct = false; res.via = els.filter((e) => e.id !== undefined).map((e) => e.id); }

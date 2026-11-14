@@ -26,10 +26,11 @@ export function rule(id, title, limit, severity, why, source, flags = {}) {
   return { id, title, limit, severity, why, source, ...flags };
 }
 
+const clean = (v) => (v === undefined || v === null ? null : typeof v === "number" ? (Number.isFinite(v) ? round(v, 4) : null) : v);   // no float noise in value / limit
 /** Normalise a finding (every field present, so the UI never tests for undefined). */
 export function makeFinding(o) {
   return { id: o.id, severity: RANK[o.severity] === undefined ? "info" : o.severity, category: o.category || "DFM", process: o.process || null,
-    title: o.title || o.id, message: o.message || "", value: o.value ?? null, limit: o.limit ?? null, unit: o.unit || "",
+    title: o.title || o.id, message: o.message || "", value: clean(o.value), limit: clean(o.limit), unit: o.unit || "",
     where: Array.isArray(o.where) && o.where.length === 3 && o.where.every(Number.isFinite) ? o.where.map((v) => round(v, 3)) : null,
     feature: o.feature ?? null, iface: o.iface ?? null, source: o.source || "", fix: o.fix && Array.isArray(o.fix.patch) && o.fix.patch.length ? o.fix : null };
 }
@@ -167,13 +168,13 @@ function buildBVH(pos, idx) {
 /** Wall thickness of a closed triangle mesh {pos, idx}: a ray is cast from the centroid of each (sampled) triangle along
     the inward normal to the first hit on the same mesh (hits closer than opts.eps = 1e-3 are ignored). Large triangles
     are split so that flat faces are sampled too; at most opts.maxRays (1500) rays. A hit on a surface that is far from
-    parallel to the source (|cos| < opts.minCos = 0.5) is a wedge, not a wall, and is left out.
+    parallel to the source (|cos| < opts.minCos = 0.7, i.e. more than 45°) is a wedge, not a wall, and is left out.
     Returns { min, p10, median, p90, max, at: [x,y,z] of the thinnest spot, rays } (area-weighted percentiles; null without hit). */
 export function meshWallThickness(mesh, opts = {}) {
   const none = { min: null, p10: null, median: null, p90: null, max: null, at: null, rays: 0 };
   if (!mesh || !mesh.pos || !mesh.idx || mesh.idx.length < 12) return none;
   const pos = mesh.pos, idx = mesh.idx, nt = Math.floor(idx.length / 3);
-  const maxRays = opts.maxRays || 1500, eps = opts.eps ?? 1e-3, minCos = opts.minCos ?? 0.5;
+  const maxRays = opts.maxRays || 1500, eps = opts.eps ?? 1e-3, minCos = opts.minCos ?? 0.7;
   const P = (t, c) => [pos[idx[t * 3 + c] * 3], pos[idx[t * 3 + c] * 3 + 1], pos[idx[t * 3 + c] * 3 + 2]];
   const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
   const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]], dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];

@@ -250,17 +250,23 @@ export function insideAny(bodies, p, skip = -1) {
   return false;
 }
 
-/** Robust test for a segment whose ends may lie on surfaces: is a part of [a b] strictly inside a solid?
-    The hits cut the segment in intervals; an interval is inside when its middle is inside a solid and off every surface. */
-export function segmentBlocked(solids, bodies, a, b, tol = 1e-4) {
-  const ts = [0, 1];
+/** Robust test for a segment whose ends may lie on surfaces: is a part of [a b] out of the air?
+    The hits cut the segment in intervals; an interval is blocked when its middle is strictly inside a solid, or lies on
+    a surface with solid on both sides (the zero-gap interface of two parts in contact; not tested when joints = false).
+    Grazing a face is not blocked. */
+export function segmentBlocked(solids, bodies, a, b, joints = true, tol = 1e-4) {
+  const ts = [0, 1], V = solids.V, I = solids.I;
   solids.segmentHits(a, b, { collect: ts, tol: 1e-6 });
-  if (ts.length === 2) return false;
   ts.sort((x, y) => x - y);
   for (let i = 1; i < ts.length; i++) {
     if (ts[i] - ts[i - 1] < 1e-9) continue;
-    const m = (ts[i] + ts[i - 1]) / 2, p = [a[0] + (b[0] - a[0]) * m, a[1] + (b[1] - a[1]) * m, a[2] + (b[2] - a[2]) * m];
-    if (!solids.closestPoint(p, tol) && insideAny(bodies, p)) return true;
+    const m = (ts[i] + ts[i - 1]) / 2, p = [a[0] + (b[0] - a[0]) * m, a[1] + (b[1] - a[1]) * m, a[2] + (b[2] - a[2]) * m], q = solids.closestPoint(p, tol);
+    if (!q) { if (ts.length > 2 && insideAny(bodies, p)) return true; continue; }
+    if (!joints) continue;
+    const u = 3 * I[3 * q.tri], v = 3 * I[3 * q.tri + 1], w = 3 * I[3 * q.tri + 2];
+    const e1 = [V[v] - V[u], V[v + 1] - V[u + 1], V[v + 2] - V[u + 2]], e2 = [V[w] - V[u], V[w + 1] - V[u + 1], V[w + 2] - V[u + 2]];
+    const n = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]], k = 20 * tol / (Math.hypot(n[0], n[1], n[2]) || 1);
+    if (insideAny(bodies, [p[0] + k * n[0], p[1] + k * n[1], p[2] + k * n[2]]) && insideAny(bodies, [p[0] - k * n[0], p[1] - k * n[1], p[2] - k * n[2]])) return true;
   }
   return false;
 }

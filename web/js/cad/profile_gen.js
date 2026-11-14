@@ -46,7 +46,7 @@ export const PROFILE_GENERATORS = {
   card_enclosure(o) {
     need(o, ["W", "H", "t"], "card_enclosure");
     const n = Math.max(0, Math.round(o.slots ?? 1)), st = o.slot_t ?? 1.9, sd = o.slot_d ?? 1.5, first = o.first ?? 6, pitch = o.pitch ?? 15;
-    const side = o.side ?? Math.max(o.t, sd + 1.2), r = o.r ?? 2, x0 = side, x1 = o.W - side, y0 = o.t, y1 = o.H - o.t, ri = 0.4;
+    const side = o.wall_side ?? Math.max(o.t, sd + 1.2), r = o.r ?? 2, x0 = side, x1 = o.W - side, y0 = o.t, y1 = o.H - o.t, ri = 0.4;
     if (x1 - x0 < 2 || y1 - y0 < 2) throw new Error("Profil « card_enclosure » : les parois sont plus épaisses que le profilé.");
     const inner = [[x0, y0, ri], [x1, y0, ri]];
     for (let i = 0; i < n; i++) { const y = y0 + first + i * pitch; if (y + st > y1 - 0.5) break; inner.push([x1, y], [x1 + sd, y, 0.2], [x1 + sd, y + st, 0.2], [x1, y + st]); }

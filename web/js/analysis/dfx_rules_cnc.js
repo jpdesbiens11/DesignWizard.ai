@@ -137,7 +137,7 @@ export function checkMilling(ctx) {
   ctx.run("CNC-01", () => {
     for (const p of facts.pockets) {
       const small = Math.min(p.w, p.h);
-      if (!(small > 0) || p.rMin >= small / 2 - 1e-6 || insideCorners(ctx, p) === 0) continue;   // round pocket / slot / open step
+      if (!(small > 0) || p.rMin >= small / 2 - 1e-3 || insideCorners(ctx, p) === 0) continue;   // round pocket / slot / open step
       const depth = pocketDepth(ctx, p);
       if (!(depth > 0)) continue;
       const need = Math.max(0.5, depth / 6), sharp = p.rMin < 1e-6;
@@ -156,7 +156,7 @@ export function checkMilling(ctx) {
   ctx.run("CNC-02", () => {
     for (const p of facts.pockets) {
       const small = Math.min(p.w, p.h), depth = p.through && ctx.hollow ? null : pocketDepth(ctx, p);
-      if (!(small > 0) || !(depth > 0) || p.rMin >= small / 2 - 1e-6 || depth <= 4 * small + 1e-9) continue;
+      if (!(small > 0) || !(depth > 0) || (p.rMin >= small / 2 - 1e-3 && Math.abs(p.w - p.h) < 1e-3) || depth <= 4 * small + 1e-9) continue;   // a round pocket is a bore
       ctx.add("CNC-02", { severity: depth > 6 * small ? "error" : "warn", value: round(depth / small), limit: 4, unit: "× largeur", feature: p.source, iface: p.iface,
         message: `Pocket « ${p.source} » : profondeur ${num(depth)} mm = ${num(depth / small, 1)} × sa largeur (${num(small)} mm). Limite : 4 × la largeur (${num(4 * small)} mm). Correctif : élargir le pocket, réduire sa profondeur ou l'ouvrir sur un côté.` });
     }

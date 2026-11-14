@@ -11,12 +11,13 @@ const S = {
   iso: "ISO 4762 / ISO 7089 (tête de vis, rondelle) ; règle de pouce pour l'accès outil",
 };
 const R = {
+  p00: rule("PCB-00", "Bloc « pcb » présent", "La carte est décrite dans le bloc « pcb » (size ou outline, t, components, zones, nets)", "warn", "Sans ce bloc, contour, composants et zones ne peuvent pas être vérifiés.", "DesignWizard part language"),
   p01: rule("PCB-01", "Trou au bord de carte", "Bord du trou au bord de carte ≥ épaisseur de la carte", "warn", "Le bord se fissure au détourage.", S.fab),
   p02: rule("PCB-02", "Couronne de tête de vis", "Couronne sans cuivre Ø ≈ rondelle (≈ 2 × trou) autour de chaque trou de fixation", "warn", "La tête de vis court-circuite le cuivre.", S.prac),
   p03: rule("PCB-03", "Rayon de détourage", "Angles intérieurs du contour ≥ R1,0 (fraise Ø2) ; angles extérieurs R1,0 conseillés", "warn", "La fraise de détourage ne fait pas d'angle vif intérieur ; un angle extérieur vif s'ébrèche.", S.fab, { fix: true }),
   p04: rule("PCB-04", "Carte plane", "Une carte est plane (épaisseur constante)", "error", "Un PCB ne se plie pas et ne s'usine pas en relief.", "", { manual: true }),
   p05: rule("PCB-05", "Épaisseur standard", "0,8 · 1,0 · 1,2 · 1,6 · 2,0 · 2,4 mm (1,6 mm par défaut)", "warn", "Une autre épaisseur coûte plus cher et allonge le délai.", S.fab, { fix: true }),
-  p06: rule("PCB-06", "Composant au bord de carte", "Composant à ≥ 2 mm du bord ; connecteurs et pièces hautes (≥ 5 mm) peuvent dépasser volontairement", "warn", "Dépanélisation, manutention et rails de convoyeur ont besoin d'une marge.", "IPC-2221 (edge clearance) ; règle de pouce"),
+  p06: rule("PCB-06", "Composant au bord de carte", "Composant à ≥ 2 mm du bord ; connecteurs et pièces hautes (≥ 5 mm) peuvent dépasser volontairement", "warn", "Dépanélisation, manutention et rails de convoyeur ont besoin d'une marge.", "IPC-2221 (edge clearance) ; règle de pouce", { fix: true }),
   p07: rule("PCB-07", "Composants superposés", "Deux empreintes du même côté ne se recouvrent pas", "warn", "Collision des boîtiers au placement.", S.prac),
   p08: rule("PCB-08", "Zones et nets déclarés", "Chaque zone de cuivre porte un net déclaré dans « pcb.nets » (tension)", "warn", "Sans tension déclarée, ni l'espacement IPC ni l'analyse d'isolation ne peuvent être vérifiés.", "DesignWizard part language"),
   p11: rule("PCB-11", "Espacement entre zones", "Distance ≥ IPC-2221B Table 6-1 à la tension entre les nets : B2 (externe nu), A5 (avec vernis), B1 (interne / à travers la carte)", "error", "Amorçage entre conducteurs.", S.ipc),
@@ -31,7 +32,7 @@ const R = {
 };
 export const BOOK_PCB = [
   { process: "pcb", category: "DFM", steps: ["Carte de 1,6 mm sauf raison contraire", "Trous de fixation = une interface bolt_pattern, avec une couronne sans cuivre pour la tête de vis", "Contour : angles ≥ R1,0 pour la fraise Ø2",
-    "Composants à ≥ 2 mm du bord, rien sous les têtes de vis", "Déclarer les nets (tension) : les zones HV respectent IPC-2221B"], rules: [R.p01, R.p02, R.p03, R.p04, R.p05, R.p06, R.p07, R.p08, R.p11, R.p12, R.p13, R.p20, R.p21] },
+    "Composants à ≥ 2 mm du bord, rien sous les têtes de vis", "Déclarer les nets (tension) : les zones HV respectent IPC-2221B"], rules: [R.p00, R.p01, R.p02, R.p03, R.p04, R.p05, R.p06, R.p07, R.p08, R.p11, R.p12, R.p13, R.p20, R.p21] },
   { process: "purchased", category: "DFx", steps: ["Choisir dans le catalogue avant de dessiner quoi que ce soit", "Vérifier la fiche technique de la référence exacte", "Connecteurs : télécharger le STEP du fournisseur"], rules: [R.l01, R.l02, R.l03, R.l04] },
 ];
 
@@ -62,7 +63,7 @@ const compRect = (c) => [c.at[0] - c.size[0] / 2, c.at[1] - c.size[1] / 2, c.at[
 
 export function checkPcb(ctx) {
   const pcb = ctx.facts.pcb, spec = ctx.spec, raw = spec.pcb || {};
-  if (!pcb) { ctx.run("PCB-04", () => ctx.add("PCB-04", { severity: "warn", value: "absent", limit: "bloc pcb", message: "Le process est « pcb » mais la pièce n'a pas de bloc « pcb » : contour, épaisseur, composants et zones ne peuvent pas être vérifiés (attendu : « pcb.size » ou « pcb.outline »). Correctif : décrire la carte dans le bloc « pcb »." })); return; }
+  if (!pcb) { ctx.run("PCB-00", () => ctx.add("PCB-00", { value: "absent", limit: "bloc pcb", message: "Le process est « pcb » mais la pièce n'a pas de bloc « pcb » : contour, épaisseur, composants et zones ne peuvent pas être vérifiés (attendu : « pcb.size » ou « pcb.outline »). Correctif : décrire la carte dans le bloc « pcb »." })); return; }
   const t = pcb.t, bb = pcb.bbox, comps = pcb.components || [], nets = pcb.nets || {}, coated = /conformal|vernis/i.test(String(raw.coating || raw.coat || ""));
   const zones = (pcb.zones || []).map((z, i) => { const b = (ctx.built.bodies || []).find((x) => x.name === z.body); return b && b.bbox ? { ...z, i, rect: [b.bbox[0], b.bbox[1], b.bbox[3], b.bbox[4]], exact: !!(raw.zones && raw.zones[i] && raw.zones[i].rect) } : null; }).filter(Boolean);
   // mounting holes: screw size from the bolt_pattern interface (washer = keep-out), else ring Ø ≈ 2 × hole
@@ -172,7 +173,7 @@ export function checkPcb(ctx) {
       const under = worst.gap < 0.5 - 1e-6, tall = c.size[2] >= 5 && worst.gap < 2.5 - 1e-6;
       if (!under && !tall) continue;
       ctx.add("PCB-21", { severity: under ? "warn" : "info", value: round(worst.gap), limit: under ? 0.5 : 2.5, unit: "mm", where: [c.at[0], c.at[1], t], feature: `pcb.${c.ref}`, iface: worst.m.h.iface,
-        message: under ? `${c.ref} à ${num(worst.gap)} mm de la couronne Ø${num(worst.m.ring)} du trou de fixation « ${worst.m.h.source} »${worst.m.screw ? ` (rondelle ${worst.m.screw})` : ""} : la tête de vis ou la rondelle le touche. Limite : ≥ 0,5 mm. Correctif : écarter le composant de ${num(0.5 - worst.gap)} mm.`
+        message: under ? `${c.ref} ${worst.gap < 0 ? `empiète de ${num(-worst.gap)} mm sur` : `à ${num(worst.gap)} mm de`} la couronne Ø${num(worst.m.ring)} du trou de fixation « ${worst.m.h.source} »${worst.m.screw ? ` (rondelle ${worst.m.screw})` : ""} : la tête de vis ou la rondelle le touche. Limite : ≥ 0,5 mm. Correctif : écarter le composant de ${num(0.5 - worst.gap)} mm.`
           : `${c.ref} (hauteur ${num(c.size[2])} mm) à ${num(worst.gap)} mm de la rondelle du trou « ${worst.m.h.source} » : accès de l'outil gêné. Limite : ≥ 2,5 mm pour une pièce haute (≥ 5 mm). Correctif : écarter le composant de ${num(2.5 - worst.gap)} mm.` });
     }
   });
