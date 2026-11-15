@@ -100,11 +100,13 @@ function voxelise(mesh, grid, cells, bodyIndex) {
 
 /**
  * Meshes the bodies with the voxel template.
- * @param {{bodies: Array, target?: number, h?: number}} options bodies: [{ name, pos, idx, matrix?, material }]; target: wanted
- *   number of cells (sets h from the volume of the bodies); h (mm) overrides it.
+ * @param {{bodies: Array, target?: number, h?: number, planes?: Array}} options bodies: [{ name, pos, idx, matrix?, material }]; target: wanted
+ *   number of cells (sets h from the volume of the bodies); h (mm) overrides it; planes: [{ axis: 0|1|2, at, keep: 1|-1 }] — the
+ *   cuts that will reduce the model (symmetry.js): the grid puts one of its planes exactly on each, and `target` counts the
+ *   cells of what is kept, so a half model is meshed twice as fine for the same budget.
  * @returns the model (see index.js for the field list).
  */
-export function buildModel({ bodies, target = 4000, h } = {}) {
+export function buildModel({ bodies, target = 4000, h, planes = [] } = {}) {
   if (!Array.isArray(bodies) || !bodies.length) throw new Error("Aucun corps à mailler : choisissez une pièce ou un assemblage.");
   if (bodies.length > 32000) throw new Error("Trop de corps pour le maillage simplifié (32 000 au plus).");
   const meshes = bodies.map(prepareBody);
@@ -117,19 +119,31 @@ export function buildModel({ bodies, target = 4000, h } = {}) {
       if (m.box[d + 3] - m.box[d] > 0) minDim = Math.min(minDim, m.box[d + 3] - m.box[d]);
     }
   }
-  const size = Number(h) > 0 ? Number(h) : chooseSize(volume, Number.isFinite(minDim) ? minDim : 0, target);
+  // What the cuts keep of the bounding box : the share of the volume the cell budget is spent on.
+  let kept = 1; const lo0 = box.slice(0, 3), hi0 = box.slice(3);
+  for (const pl of planes || []) { const d = pl.axis, a = Math.max(lo0[d], Math.min(hi0[d], pl.at)); if (pl.keep < 0) hi0[d] = a; else lo0[d] = a; }
+  for (let d = 0; d < 3; d++) if (box[d + 3] > box[d]) kept *= Math.max(0.02, (hi0[d] - lo0[d]) / (box[d + 3] - box[d]));
+  const size = Number(h) > 0 ? Number(h) : chooseSize(volume * kept, Number.isFinite(minDim) ? minDim : 0, target);
   if (!(size > 0) || !Number.isFinite(size)) throw new Error("Taille de maille invalide : les corps n'ont pas de volume mesurable.");
 
-  // The grid is centred on the bounding box and holds the nearest whole number of cells in each direction.
-  const n = [0, 1, 2].map((d) => Math.max(1, Math.round((box[d + 3] - box[d]) / size)));
+  // The grid is centred on the bounding box and holds the nearest whole number of cells in each direction — unless a cut asks
+  // for a grid plane where it passes : the grid then starts from that plane, a whole number of cells on each side.
+  const n = [0, 1, 2].map((d) => Math.max(1, Math.round((box[d + 3] - box[d]) / size))), origin = [0, 1, 2].map((d) => (box[d] + box[d + 3] - n[d] * size) / 2);
+  for (const pl of planes || []) { const d = pl.axis; if (!(pl.at > box[d] && pl.at < box[d + 3]) || origin[d] === undefined) continue;
+    const below = Math.max(1, Math.round((pl.at - box[d]) / size)), above = Math.max(1, Math.round((box[d + 3] - pl.at) / size)); n[d] = below + above; origin[d] = pl.at - below * size; }
   if (n[0] * n[1] * n[2] > MAX_GRID) throw new Error(`Maillage trop fin (${n.join(" × ")} cellules) : augmentez la taille de maille h.`);
-  const grid = { nx: n[0], ny: n[1], nz: n[2], h: size, origin: [0, 1, 2].map((d) => (box[d] + box[d + 3] - n[d] * size) / 2) };
+  const grid = { nx: n[0], ny: n[1], nz: n[2], h: size, origin };
   const { nx, ny, nz } = grid;
   const cells = new Int16Array(nx * ny * nz).fill(-1);
   const counts = meshes.map((m, b) => voxelise(m, grid, cells, b));
-  const nCells = counts.reduce((s, c) => s + c, 0);
-  if (!nCells) throw new Error("Maillage vide : aucune cellule n'a son centre dans un corps. Diminuez la taille de maille h ou vérifiez que les corps sont des volumes fermés.");
+  if (!counts.reduce((s, c) => s + c, 0)) throw new Error("Maillage vide : aucune cellule n'a son centre dans un corps. Diminuez la taille de maille h ou vérifiez que les corps sont des volumes fermés.");
+  return assemble(grid, cells, bodies);
+}
 
+/** The model of a grid and of its kept cells (cells[g] : the body of the cell, -1 when empty) : nodes, elements, bodies. */
+export function assemble(grid, cells, bodies) {
+  const { nx, ny, nz, h: size } = grid, counts = bodies.map(() => 0);
+  let nCells = 0; for (let g = 0; g < cells.length; g++) if (cells[g] >= 0) { nCells++; counts[cells[g]]++; }
   // Compact numbering: only the grid nodes touched by a kept cell exist, numbered in grid order.
   const nxn = nx + 1, nyn = ny + 1, nodeId = new Int32Array(nxn * nyn * (nz + 1)).fill(-1);
   const cornerStep = CORNER_OFFSETS.map(([di, dj, dk]) => di + nxn * (dj + nyn * dk));
@@ -159,7 +173,7 @@ export function buildModel({ bodies, target = 4000, h } = {}) {
   }
   const cellVolume = size * size * size;
   return {
-    grid, cells, nCells, nNodes, nodes, elems, elemBody, elemCell,
+    grid, cells, nCells, nNodes, nodes, elems, elemBody, elemCell, nodeGrid: nodeId,
     bodies: bodies.map((b, i) => ({ name: b.name, material: b.material, cells: counts[i], volume: counts[i] * cellVolume })),
     bbox: [...lo, ...hi], volume: nCells * cellVolume,
   };

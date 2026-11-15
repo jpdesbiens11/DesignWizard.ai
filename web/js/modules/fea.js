@@ -14,14 +14,16 @@ import { props } from "../analysis/physics/props.js";
 import { footprint } from "../core/shop_intent.js";
 import { patternPoints } from "../cad/interfaces.js";
 import { thread } from "../cad/standards.js";
-import { buildModel, skin } from "../analysis/fea/index.js";
+import { buildModel, skin, regionInfo } from "../analysis/fea/index.js";
+import { findSymmetries, reduceModel, loadSymmetry } from "../analysis/fea/symmetry.js";
+import { cutsSection, cutMenu, fraction } from "./fea_cuts.js";
 import { precheckStructure, precheckThermal, precheckThermo, compare } from "../analysis/fea/precheck.js";
 import { VERDICT, show } from "../analysis/fea/summary.js";
 import { lightSide, sideOf, sidePoints, arrow, clamp, gem, SIDES, LIT } from "../core/view_marks.js";
 
 const FACES = [["-X", "gauche (−X)"], ["+X", "droite (+X)"], ["-Y", "avant (−Y)"], ["+Y", "arrière (+Y)"], ["-Z", "dessous (−Z)"], ["+Z", "dessus (+Z)"]];
 const DIRS = { "+X": [1, 0, 0], "-X": [-1, 0, 0], "+Y": [0, 1, 0], "-Y": [0, -1, 0], "+Z": [0, 0, 1], "-Z": [0, 0, -1] };
-const st = { target: null, kind: "structure", cells: 3000, fixed: [], loads: [], power: [], fixedT: [], conv: { on: true, h: 10, Tamb: 25 }, thermo: { uniform: true, T: 80, Tref: 20 } };
+const st = { target: null, kind: "structure", cells: 3000, cuts: [], fixed: [], loads: [], power: [], fixedT: [], conv: { on: true, h: 10, Tamb: 25 }, thermo: { uniform: true, T: 80, Tref: 20 } };
 let seq = 0;
 
 /** Material of a body for the simulation (typical values; the data sheet of the grade prevails). */
@@ -41,16 +43,16 @@ function render(main, args) {
   main.append(root);
   if (!targets.length) { root.replaceWith(el("div", { class: "page" }, el("div", { class: "empty" }, el("h2", null, "Rien à simuler"), el("p", null, "Créez d'abord une pièce dans l'Atelier."), el("a", { class: "btn btn-primary", href: "#/shop" }, "Aller à l'Atelier")))); return null; }
   if (args[0] && targets.some((t) => t.id === args[0])) st.target = targets.find((t) => t.id === args[0]);
-  if (!st.target || !targets.some((t) => t.id === st.target.id)) { st.target = targets[0]; st.fixed = []; st.loads = []; st.power = []; st.fixedT = []; }
-  const vp = createViewport(view, { name: () => `${st.target.id}_simulation`, menuFor: (hit) => regionMenu(hit), onPick: (hit) => { if (!asking) return false; pickRegion(hit); return true; }, onHover: (hit) => { if (asking) { vp.viewer.clearOverlays("bchover"); const k = regionAt(hit); if (k) lightRegion(k, LIT.hover, "bchover"); } } }), info = el("span", { class: "chip" }, "—");
+  if (!st.target || !targets.some((t) => t.id === st.target.id)) { st.target = targets[0]; st.fixed = []; st.loads = []; st.power = []; st.fixedT = []; st.cuts = []; }
+  const vp = createViewport(view, { name: () => `${st.target.id}_simulation`, menuFor: (hit) => { const own = regionMenu(hit), cut = whole ? cutMenu(hit, st, () => { last = null; remesh(false); }) : []; return [...own, ...(own.length && cut.length ? ["—"] : []), ...cut]; }, onPick: (hit) => { if (!asking) return false; pickRegion(hit); return true; }, onHover: (hit) => { if (asking) { vp.viewer.clearOverlays("bchover"); const k = regionAt(hit); if (k) lightRegion(k, LIT.hover, "bchover"); } } }), info = el("span", { class: "chip" }, "—");
   vp.setStatus(info);
-  let geo = null, model = null, regions = [], estimate = null, last = null, worker = null, alive = true, asking = null;
+  let geo = null, model = null, whole = null, syms = [], regions = [], estimate = null, last = null, worker = null, alive = true, asking = null;      // whole : the product entire ; model : what is solved — the same, or what the cuts keep
 
   /* ---------- pointing at the part : a face or an interface is chosen in the view, and what is chosen shows ---------- */
   /** The region under a pick : an interface when the point is on one, otherwise the outer face the surface looks at. */
   function regionAt(hit) {
     if (!hit || !model) return null;
-    const p = hit.point, h = model.grid.h, b = model.bbox;
+    const p = hit.point, h = model.grid.h, b = whole.bbox;      // a face of the product, not the face of a cut
     for (const r of regions) if (r.key.startsWith("iface:")) for (const it of r.list) {
       if (it.near && Math.hypot(p[0] - it.near[0], p[1] - it.near[1], p[2] - it.near[2]) <= Math.max(1.5 * it.r, 2 * h)) return r.key;
       if (it.box && [0, 1, 2].every((i) => p[i] >= it.box[i] - h && p[i] <= it.box[3 + i] + h)) return r.key;
@@ -60,13 +62,17 @@ function render(main, args) {
     return Math.abs(p[a] - ext) <= 0.75 * h ? `face:${side}` : null;      // a face region is the outermost plane on that side
   }
   /** Where a region is, as points with their outward direction (for its symbols and its highlight). */
+  /* what the cuts keep of the box of the product ; a face of the product is still there when its side was not cut away */
+  const keptBox = () => { const b = Array.from(whole.bbox); for (const c of st.cuts) { if (c.keep < 0) b[c.axis + 3] = Math.min(b[c.axis + 3], c.at); else b[c.axis] = Math.max(b[c.axis], c.at); } return b; };
+  const stillThere = (face, kb) => { const i = "XYZ".indexOf(face[1]) + (face[0] === "+" ? 3 : 0); return Math.abs(kb[i] - whole.bbox[i]) < 1e-6; }, inside = (p, kb) => [0, 1, 2].every((i) => p[i] >= kb[i] - 1e-6 && p[i] <= kb[i + 3] + 1e-6);
   function spots(key, n = 3) {
     const r = regions.find((x) => x.key === key), out = []; if (!r || !model) return out;
-    for (const it of r.list) { if (it.face) out.push(...sidePoints(model.bbox, it.face, n).map((p) => ({ p, out: SIDES[it.face] }))); else if (it.near) out.push({ p: it.near, out: r.n || [0, 0, 1] }); else if (it.box) out.push({ p: [0, 1, 2].map((i) => (it.box[i] + it.box[3 + i]) / 2), out: r.n || [0, 0, 1] }); }
+    const kb = keptBox();      // a symbol is drawn only on what is solved : what the cuts removed is answered for by its twin
+    for (const it of r.list) { if (it.face) { if (stillThere(it.face, kb)) out.push(...sidePoints(kb, it.face, n).map((p) => ({ p, out: SIDES[it.face] }))); } else { const p = it.near || (it.box ? [0, 1, 2].map((i) => (it.box[i] + it.box[3 + i]) / 2) : null); if (p && inside(p, kb)) out.push({ p, out: r.n || [0, 0, 1] }); } }
     return out;
   }
   function lightRegion(key, color, tag) {
-    if (key.startsWith("face:")) lightSide(vp.viewer, key.slice(5), { tag, color, ids: ["fea"] }); else for (const s of spots(key)) vp.viewer.addMarker(s.p, color, tag, 2.2);
+    if (key.startsWith("face:")) { if (stillThere(key.slice(5), keptBox())) lightSide(vp.viewer, key.slice(5), { tag, color, ids: ["fea"] }); } else for (const s of spots(key)) vp.viewer.addMarker(s.p, color, tag, 2.2);
   }
   function pickRegion(hit) {
     if (!asking) return;
@@ -115,8 +121,9 @@ function render(main, args) {
     } catch (e) { vp.setBusy(""); info.textContent = e.message; info.className = "chip bad"; }
   }
   function remesh(first) {
-    try { model = buildModel({ bodies: geo.bodies, target: st.cells }); } catch (e) { vp.setBusy(""); info.textContent = e.message; info.className = "chip bad"; model = null; drawRight(); return; }
-    const b = model.bbox, h = model.grid.h;
+    try { whole = buildModel({ bodies: geo.bodies, target: st.cells, planes: st.cuts }); model = reduceModel(whole, st.cuts); syms = findSymmetries(whole); }
+    catch (e) { vp.setBusy(""); info.textContent = e.message; info.className = "chip bad"; if (st.cuts.length) { toast(`${e.message} Le dernier plan est retiré.`, "warn", 6000); st.cuts.pop(); return remesh(first); } model = null; whole = null; drawRight(); return; }
+    const b = whole.bbox, h = model.grid.h;
     regions = FACES.map(([k, l]) => ({ key: `face:${k}`, label: `Face ${l}`, list: [{ face: k }] }));
     for (const it of geo.interfaces) {
       const f = it.frame, sign = it.side === "B" ? -1 : 1, at = (pu, pv, pn = 0) => [0, 1, 2].map((i) => f.o[i] + pu * f.u[i] + pv * sign * f.v[i] + pn * f.n[i]);
@@ -142,7 +149,7 @@ function render(main, args) {
   function showMesh() {
     const s = skin(model, null), col = new Float32Array(s.pos.length).fill(0.72);
     vp.viewer.clear(); vp.viewer.addField("fea", { pos: s.pos, idx: s.idx, col, epos: s.epos, pickable: true });
-    info.textContent = `${model.nCells.toLocaleString("fr-CA")} cubes de ${fmt(model.grid.h, 2)} mm · ${model.nNodes.toLocaleString("fr-CA")} nœuds`; info.className = "chip";
+    info.textContent = `${model.cut ? `Modèle ${fraction(model.cut.copies)} · ` : ""}${model.nCells.toLocaleString("fr-CA")} cubes de ${fmt(model.grid.h, 2)} mm · ${model.nNodes.toLocaleString("fr-CA")} nœuds`; info.className = "chip";
   }
   /** The simple regions of a choice: one for a face, one per screw for a bolted interface (the effort is shared between them). */
   const listOf = (key) => (regions.find((r) => r.key === key) || regions[0]).list;
@@ -157,10 +164,18 @@ function render(main, args) {
   function structureCase() {
     return { fixed: st.fixed.flatMap(listOf), loads: st.loads.flatMap((l) => listOf(l.region).map((region, i, all) => (l.mode === "pressure" ? { region, pressure: l.p } : { region, force: DIRS[l.dir].map((c) => c * l.F / all.length) }))) };
   }
+  /** Is the case the same on both sides of a plane ? */
+  function symmetric(plane) {
+    const heat = st.kind === "thermal" || (st.kind === "thermo" && !st.thermo.uniform), entries = [];
+    if (st.kind !== "thermal") { st.fixed.forEach((k, i) => listOf(k).forEach((region) => entries.push({ what: "appui", label: `Appui ${i + 1}`, region })));
+      if (st.kind === "structure") st.loads.forEach((l, i) => listOf(l.region).forEach((region, j, all) => entries.push({ what: `effort ${l.mode}`, label: `Effort ${i + 1}`, region, vector: l.mode === "pressure" ? null : DIRS[l.dir].map((c) => c * l.F / all.length) }))); }
+    if (heat) { st.power.forEach((x, i) => listOf(x.region).forEach((region) => entries.push({ what: "chaleur", label: `Source ${i + 1}`, region }))); st.fixedT.forEach((x, i) => listOf(x.region).forEach((region) => entries.push({ what: "température", label: `Température ${i + 1}`, region }))); }
+    try { return loadSymmetry(entries, plane, (r) => regionInfo(whole, r), whole.grid.h); } catch (e) { return { ok: false, notes: [e.message] }; }
+  }
   function refreshEstimate() {
     if (!model) return;
     const mat = geo.bodies[0].material;
-    try { estimate = st.kind === "thermal" ? precheckThermal(model, loadCase(), mat) : st.kind === "thermo" ? precheckThermo(model, loadCase(), mat) : precheckStructure(model, loadCase(), mat); }
+    try { estimate = st.kind === "thermal" ? precheckThermal(whole, loadCase(), mat) : st.kind === "thermo" ? precheckThermo(whole, loadCase(), mat) : precheckStructure(whole, loadCase(), mat); }      // by hand, on the product entire : a cut changes the cost, not the answer
     catch (e) { estimate = { kind: "none", title: "Cas incomplet", steps: [e.message], values: {}, warnings: [] }; }
     const v = vp.viewer; v.clearOverlays("bc");
     if (estimate.where) v.addMarker(estimate.where, "#0c66e4", "bc", 1.6);
@@ -189,6 +204,7 @@ function render(main, args) {
         field("Finesse du maillage", el("input", { type: "range", min: 500, max: 16000, step: 500, value: st.cells, onChange: (e) => { st.cells = +e.target.value; last = null; remesh(false); } }), `Environ ${st.cells.toLocaleString("fr-CA")} cubes : grossier et rapide. Les détails plus petits qu'un cube sont ignorés.`)));
     const sec = el("div", { class: "side-section" });
     scroll.append(sec);
+    if (whole) scroll.append(cutsSection({ st, kind: st.kind, syms, bbox: whole.bbox, symmetric, apply: () => { last = null; remesh(false); } }));
     const heat = st.kind === "thermal" || (st.kind === "thermo" && !st.thermo.uniform);
     if (st.kind !== "thermal") {
       sec.append(el("h3", null, el("span", { class: "grow" }, "Appuis (encastrés)"), btn("", () => { st.fixed.push(regions[0].key); changed(); }, { small: true, icon: "plus", tip: "Ajouter un appui" })));
@@ -282,12 +298,12 @@ function render(main, args) {
       drawRight();
     };
     worker.onerror = (e) => { vp.setBusy(""); setStatus("Simulation impossible", "bad"); toast(`Le solveur s'est arrêté : ${e.message || "erreur inconnue"}.`, "error", 9000); };
-    worker.postMessage({ id, kind, bodies: geo.bodies, mesh: { target: st.cells }, load: loadCase() });
+    worker.postMessage({ id, kind, bodies: geo.bodies, mesh: { target: st.cells, planes: st.cuts }, cuts: st.cuts, load: loadCase() });
   }
   function keep() {
     if (!last) return;
     const r = last.result, mat = geo.bodies[0].material, thermal = st.kind === "thermal", nominal = r.nominalVm ? r.nominalVm.value : null;
-    store.commit(`Simulation gardée : ${st.target.id}`, (x) => { x.simulations = x.simulations || []; x.simulations.push({ id: `S${x.simulations.length + 1}`, kind: st.kind, target: st.target.id, cells: last.info.cells, h: last.info.h,
+    store.commit(`Simulation gardée : ${st.target.id}`, (x) => { x.simulations = x.simulations || []; x.simulations.push({ id: `S${x.simulations.length + 1}`, kind: st.kind, target: st.target.id, cells: last.info.cells, h: last.info.h, ...(last.info.cuts ? { cuts: last.info.cuts, copies: last.info.copies } : {}),
       estimate: thermal ? { Tmax: last.estimate.values.Tmax } : { sigma: (st.kind === "thermo" && last.estimate.values.sigmaPlate) || last.estimate.values.sigma, delta: last.estimate.values.delta },
       result: thermal ? { Tmax: r.maxT.value, Tmin: r.minT.value } : { sigma: r.maxVm.value, nominal, delta: r.maxU.value, sf: mat.Re ? mat.Re / r.maxVm.value : null, ...(st.kind === "thermo" ? { Tmax: r.maxT.value, core: r.coreVm ? r.coreVm.value : null } : {}) },
       worst: last.compare.rows.length ? last.compare.worst : null, verdict: last.compare.verdict, when: new Date().toISOString() }); });

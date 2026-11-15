@@ -10,6 +10,7 @@
 // region = { face: "+X" | "-X" | "+Y" | "-Y" | "+Z" | "-Z", body?: name } | { box: [x0, y0, z0, x1, y1, z1] } | { near: [x, y, z], r }
 // material = { name, E (MPa), nu, k (W/m.K), rho (kg/m3), Re (MPa or null), alpha (1/K, thermal expansion, optional) }
 
+import { cutFaces } from "./symmetry.js";
 import { buildModel, exposedFaces, sectionAt, skin, FACE_DIRS } from "./voxel.js";
 import { structureElement, conductionElement, vonMises } from "./hex8.js";
 import { pcg, structureOperator, thermalOperator, looseMotion, unmarkedBody } from "./solve.js";
@@ -31,6 +32,15 @@ function regionLabel(region) {
 /** Sorted, unique ids of the nodes of a region. */
 export function selectNodes(model, region) {
   const { nodes, nNodes, elems, elemBody, nCells, grid } = model, tol = 0.51 * grid.h, picked = [];
+  if (region?.plane) {   // the nodes of a grid plane : where a cut passes
+    const { axis, i } = region.plane, x = grid.origin[axis] + i * grid.h;
+    for (let k = 0; k < nNodes; k++) if (Math.abs(nodes[3 * k + axis] - x) < 0.01 * grid.h) picked.push(k);
+    return Int32Array.from(picked);
+  }
+  if (model.cut) {   // a reduced model : the region keeps the meaning it has on the whole product ; `whole` is its size there
+    const all = selectNodes(model.cut.full, region), sel = Int32Array.from(Array.from(all, (k) => model.cut.fromFull[k]).filter((k) => k >= 0));
+    sel.whole = all.length; return sel;
+  }
   if (region?.face) {
     const m = /^([+-])([XYZ])$/.exec(region.face);
     if (!m) throw new Error(`Face inconnue « ${region.face} » : utilisez +X, -X, +Y, -Y, +Z ou -Z.`);
@@ -69,6 +79,7 @@ export function selectNodes(model, region) {
 /** Nodes of a region, or a French error that names the region when it is empty. */
 function pickNodes(model, region) {
   const sel = selectNodes(model, region);
+  if (!sel.length && sel.whole) return sel;   // wholly on the side a cut removed : its twin on the kept side answers for it
   if (!sel.length) throw new Error(`La région « ${regionLabel(region)} » ne contient aucun nœud du maillage : déplacez-la sur la pièce ou choisissez une face.`);
   return sel;
 }
@@ -86,21 +97,23 @@ function facesOf(model, sel) {
 
 /** Exposed faces of a region ("exterior": all of them), or a French error when the region holds no complete face. */
 function pickFaces(model, region) {
-  if (region === "exterior") return Array.from({ length: exposedFaces(model).count }, (_, f) => f);
-  const list = facesOf(model, pickNodes(model, region));
+  const faces = exposedFaces(model), cut = cutFaces(model, faces), real = (f) => !cut || !cut[f];   // a cut face is inside the product : no pressure, no convection on it
+  if (region === "exterior") return Array.from({ length: faces.count }, (_, f) => f).filter(real);
+  const sel = pickNodes(model, region), list = facesOf(model, sel).filter(real);
+  if (!list.length && sel.whole) return list;
   if (!list.length) throw new Error(`La région « ${regionLabel(region)} » ne couvre aucune face extérieure du maillage : agrandissez-la ou choisissez une face.`);
   return list;
 }
 
-/** Size of a region: node count, centroid of its nodes, exposed area (mm2) and mean outward normal of its faces (or null). */
+/** Size of a region: node count, centroid of its nodes, the box that holds them (lo, hi), exposed area (mm2) and mean outward normal of its faces (or null). */
 export function regionInfo(model, region) {
-  const sel = selectNodes(model, region), { nodes, grid } = model, centroid = [0, 0, 0], sum = [0, 0, 0];
-  for (const i of sel) for (let d = 0; d < 3; d++) centroid[d] += nodes[3 * i + d];
+  const sel = selectNodes(model, region), { nodes, grid } = model, centroid = [0, 0, 0], sum = [0, 0, 0], lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
+  for (const i of sel) for (let d = 0; d < 3; d++) { const v = nodes[3 * i + d]; centroid[d] += v; if (v < lo[d]) lo[d] = v; if (v > hi[d]) hi[d] = v; }
   for (let d = 0; d < 3; d++) centroid[d] /= sel.length || 1;
   const faces = exposedFaces(model), list = facesOf(model, sel);
   for (const f of list) for (let d = 0; d < 3; d++) sum[d] += FACE_DIRS[faces.dir[f]][d];
   const len = Math.hypot(sum[0], sum[1], sum[2]);
-  return { count: sel.length, centroid, area: list.length * grid.h * grid.h, normal: len > 1e-9 ? sum.map((v) => v / len) : null };
+  return { count: sel.length, centroid, lo, hi, area: list.length * grid.h * grid.h, normal: len > 1e-9 ? sum.map((v) => v / len) : null };
 }
 
 /** Largest value of a nodal field as { value, node, at }; `sign` -1 gives the smallest. */
@@ -167,8 +180,8 @@ export function solveStructure(model, { fixed = [], loads = [], gravity, thermal
 
   for (const load of loads || []) {
     if (load.force) {   // total force shared equally by the nodes of the region
-      const sel = pickNodes(model, load.region);
-      for (const i of sel) for (let d = 0; d < 3; d++) f[3 * i + d] += load.force[d] / sel.length;
+      const sel = pickNodes(model, load.region), share = sel.whole || sel.length, w = model.cut ? model.cut.weight : null;   // on a reduced model : the share of the whole, halved on a cut plane
+      for (const i of sel) for (let d = 0; d < 3; d++) f[3 * i + d] += (load.force[d] / share) * (w ? w[i] : 1);
     } else if (Number.isFinite(load.pressure)) {   // every exposed face pushes -p A n, a quarter on each corner
       const faces = exposedFaces(model);
       for (const face of pickFaces(model, load.region)) {
@@ -267,9 +280,9 @@ export function solveThermal(model, { fixedT = [], power = [], convection = [], 
   let powerIn = 0, guess = 0, weight = 0;
 
   for (const item of power) {
-    const sel = pickNodes(model, item.region);
-    for (const i of sel) b[i] += item.P / sel.length;
-    powerIn += item.P;
+    const sel = pickNodes(model, item.region), share = sel.whole || sel.length, w = model.cut ? model.cut.weight : null;
+    let got = 0; for (const i of sel) { const q = (item.P / share) * (w ? w[i] : 1); b[i] += q; got += q; }
+    powerIn += w ? got : item.P;   // on a reduced model : what its side receives
   }
   const faces = exposedFaces(model);
   for (const item of convection) {

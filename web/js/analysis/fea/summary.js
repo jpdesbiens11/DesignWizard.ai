@@ -11,7 +11,7 @@ export const show = (v, d = 3) => {
 
 /** Rows of the design-review report: one per saved simulation (project.simulations). */
 export function simulationSummary(project) {
-  return ((project && project.simulations) || []).map((r) => ({ id: r.id, kind: r.kind === "thermal" ? "Thermique" : r.kind === "thermo" ? "Thermo-mécanique" : "Structure", target: r.target, mesh: `${r.cells} cubes de ${show(r.h, 2)} mm`,
+  return ((project && project.simulations) || []).map((r) => ({ id: r.id, kind: r.kind === "thermal" ? "Thermique" : r.kind === "thermo" ? "Thermo-mécanique" : "Structure", target: r.target, mesh: `${r.cells} cubes de ${show(r.h, 2)} mm${r.cuts && r.cuts.length ? ` — modèle 1/${show(r.copies, 1)} : ${r.cuts.map((c) => `${c.bc === "sym" ? "symétrie" : c.bc === "fixed" ? "coupe tenue" : c.bc === "temp" ? `coupe à ${show(c.T, 1)} °C` : "coupe libre"} ${c.axis} = ${show(c.at, 2)}`).join(", ")}` : ""}`,
     estimate: r.kind === "thermal" ? `${show(r.estimate.Tmax, 1)} °C` : r.kind === "thermo" ? `≤ ${show(r.estimate.sigma, 1)} MPa au cœur · ≤ ${show(r.estimate.delta)} mm` : `${show(r.estimate.sigma, 1)} MPa · ${show(r.estimate.delta)} mm`,
     result: r.kind === "thermal" ? `${show(r.result.Tmax, 1)} °C` : `${r.kind === "thermo" && typeof r.result.core === "number" ? `${show(r.result.core, 1)} MPa au cœur, pointe ` : ""}${show(r.result.sigma, 1)} MPa · ${show(r.result.delta)} mm${r.result.sf ? ` · marge ${show(r.result.sf, 2)}` : ""}`,
     verdict: r.verdict, verdictLabel: (VERDICT[r.verdict] || VERDICT.none)[0], deviation: typeof r.worst === "number" ? `${Math.round(r.worst * 100)} %` : "—", when: r.when || "" }));

@@ -95,7 +95,44 @@ le produit se fait élément par élément. Tout le code — maillage, élément
 Les régions des conditions aux frontières sont des **faces de l'enveloppe** ou des **interfaces** de la pièce : on
 tient une pièce par là où elle se fixe, on la charge par là où elle reçoit l'effort.
 
-## 4. Ce qui est vérifié
+## 4. Symétries et coupes : résoudre une partie au lieu du tout
+
+Un produit identique des deux côtés d'un plan, **tenu et chargé de même**, se résout sur un seul côté : rien ne
+traverse ce plan. Un demi, un quart ou un huitième des cubes donne la même réponse — ou des cubes plus fins pour le
+même temps de calcul. C'est le premier geste d'un analyste ; l'écran le fait avec lui.
+
+**Trouver les plans.** La section « Symétries et coupes » du volet de gauche lit le maillage : pour chaque axe, elle
+compare chaque cube à son vis-à-vis de l'autre côté du plan milieu (matière et matériau). Elle dit aussi si **le
+chargement** est symétrique : chaque appui, chaque effort, chaque source doit être sa propre image ou avoir son jumeau
+de l'autre côté ; un effort qui pousse *à travers* le plan est antisymétrique, et l'écran le dit. Deux réponses « oui » :
+le bouton **« Utiliser »** coupe le modèle. Un seul « oui » : « Forcer », en connaissance de cause.
+
+**Couper où l'on veut.** Le bouton « + », ou un clic droit sur la pièce (« Couper le modèle ici »), pose un plan à
+l'endroit choisi pour **isoler une zone**. Chaque plan se règle : son axe, sa position, le côté gardé, et ce que le
+plan porte :
+
+| Condition sur le plan | Structure | Thermique |
+|---|---|---|
+| **Symétrie** | aucun déplacement à travers le plan, glissement libre dans le plan | aucune chaleur ne traverse |
+| **Tenu** | le plan est encastré : ce que l'on a retiré est rigide | — |
+| **Libre** | rien de l'autre côté | aucune chaleur ne traverse |
+| **Température** | — | le plan est à la température donnée |
+
+**Ce que le calcul fait de la coupe** (`web/js/analysis/fea/symmetry.js`) :
+
+- le maillage place un de ses plans **exactement** sur chaque coupe, et le budget de cubes est dépensé sur ce qui
+  est gardé : au même réglage de finesse, un quart de modèle a des cubes plus petits ;
+- les appuis, les efforts et les sources gardent le sens qu'ils ont **sur le produit entier** : une force de 100 N sur
+  une face que le plan partage en deux vaut 50 N sur le demi-modèle ; un nœud du plan porte la moitié de sa part (le
+  quart sur l'arête où deux plans se croisent) ; ce qui est entièrement du côté retiré est porté par son jumeau ;
+- la **face de coupe est à l'intérieur du produit** : ni convection, ni pression dessus ;
+- l'estimation à la main reste faite **sur le produit entier** : une coupe change le coût, pas la réponse ;
+- le rapport dit quelle part du produit a été résolue, et avec quelles conditions.
+
+La vue montre ce qui est résolu : on voit l'intérieur du produit par la face de coupe, et les symboles ne sont
+dessinés que sur le côté gardé.
+
+## 5. Ce qui est vérifié
 
 Les tests (`tests/node/fea.test.mjs`, `tests/node/fea_precheck.test.mjs`) comparent le solveur à des solutions
 exactes :
@@ -117,6 +154,10 @@ exactes :
 | Bilame, deux couches égales — flèche en bout | 1,534 mm | Timoshenko, 1,5 mm | +2,3 % |
 | Même bilame — contrainte à la jonction | 71,4 MPa | E Δα ΔT / 2 (1 − ν) = 71,4 MPa | 0 |
 | Barre chauffée en bout (champ de température calculé, puis dilatation) — allongement | 0,05746 mm | 0,0575 mm | −0,1 % |
+| Poutre fléchie dans son plan de symétrie, **demi-modèle** — flèche et contrainte de pointe | celles du modèle entier | modèle entier, mêmes cubes | moins de 0,5 % |
+| Plaque encastrée sous pression, **quart de modèle** — flèche au centre | celle du modèle entier | modèle entier, mêmes cubes | moins de 0,2 % |
+| Bloc chauffé, refroidi par convection, **demi-modèle** — températures et bilan | celles du modèle entier, 2,5 W sur 5 | modèle entier | moins de 0,2 % |
+| Poutre coupée à mi-longueur, plan **tenu** — flèche | — | F L³ / 3 E I avec L = 50 mm | moins de 5 % |
 
 Un cas de 3 400 cubes (13 400 inconnues) se résout en environ 0,6 s ; une plaque mince tenue par des vis demande
 plus d'itérations (quelques secondes).
@@ -129,7 +170,7 @@ Sur le projet de démonstration, en thermo-mécanique (navigateur, de 2 800 à 4
 | Dissipateur tenu par quatre vis, champ de température calculé | au cœur ≤ 37,9 MPa ; ≤ 0,039 mm | au cœur 21,0 MPa ; 0,031 mm | bridage 55 % |
 | Assemblage complet (cuivre, aluminium, FR-4, plastique) tenu par une face, à 80 °C | déplacement de 0,16 à 4,9 mm | 2,6 mm | dans la fourchette ; 13 petits composants laissés de côté |
 
-## 5. Ce que la brique ne fait pas
+## 6. Ce que la brique ne fait pas
 
 - **Concentrations de contrainte** : la contrainte de pointe d'un maillage grossier est indicative. Au bord d'un
   encastrement, autour d'un trou ou dans un congé, la valeur locale réelle peut être deux à trois fois plus élevée.
@@ -139,5 +180,8 @@ Sur le projet de démonstration, en thermo-mécanique (navigateur, de 2 800 à 4
   pas avec la température et le coefficient de dilatation est isotrope.
 - **Matériaux isotropes**, valeurs typiques : la fiche de la nuance fait foi.
 - **Parois minces** : il faut au moins un cube dans l'épaisseur, donc beaucoup de cubes pour une grande pièce mince.
+- **Symétries** : planes et parallèles aux faces de l'enveloppe ; pas de symétrie cyclique (un secteur d'une pièce de
+  révolution), pas d'antisymétrie. Les réactions affichées sont celles de la partie résolue. Le contrôle du chargement
+  compare la position et la taille des régions, pas leur forme exacte : il se lit comme un garde-fou.
 
 Pour ces cas, la brique dit *où regarder* ; un calcul détaillé ou l'essai en laboratoire tranche.
