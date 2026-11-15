@@ -22,6 +22,7 @@ const M = {
   m07: rule("MLD-07", "Contre-dépouilles (side actions)", "Aucune ouverture sur les faces latérales si possible", "info", "Chaque ouverture latérale demande un tiroir : coût et entretien du moule.", S.bd),
   m08: rule("MLD-08", "Parois uniformes", "Épaisseurs dans un rapport ≤ 1,5:1 (transition progressive, ≤ 1,25 entre parois voisines)", "warn", "Retassures, vides et gauchissement aux changements d'épaisseur.", S.wall),
   m10: rule("MLD-10", "Broches de noyau (core pins)", "Trou borgne : profondeur ≤ 3 × Ø ; trou débouchant : ≤ 6 × Ø", "warn", "Une broche longue et fine fléchit sous la pression d'injection.", S.thumb),
+  m11: rule("MLD-11", "Clips élastiques", "Déformation de la lame ε = 1,5 × épaisseur × flèche / longueur² ≤ 2 % (1 % pour une matière chargée de fibres)", "warn", "Au-delà la lame blanchit, se déforme pour de bon ou casse au premier encliquetage.", S.thumb),
 };
 const H = {
   h01: rule("HSG-01", "Paroi au-dessus du minimum du process", "FDM ≥ 1,0 mm ; MJF PA12 ≥ 0,9 mm", "error", "Trous et casse dans la pièce imprimée.", S.proc, { fix: true }),
@@ -38,7 +39,7 @@ const H = {
 };
 export const BOOK_PLASTIC = [
   { process: "injection_molding", category: "DFM", steps: ["Parois uniformes dans la plage de la matière", "Dépouille sur toutes les parois parallèles au démoulage", "Nervures et bossages : 40 à 60 % de la paroi, bossage Ø ≥ 2 × trou",
-    "Rayons intérieurs ≥ 0,5 × paroi", "Pas d'ouverture latérale (tiroirs) si possible", "Classe de flamme à l'épaisseur réelle"], rules: [M.m01, M.m08, M.m02, M.m03, M.m04, M.m05, M.m06, M.m07, M.m10] },
+    "Rayons intérieurs ≥ 0,5 × paroi", "Pas d'ouverture latérale (tiroirs) si possible", "Classe de flamme à l'épaisseur réelle"], rules: [M.m01, M.m08, M.m02, M.m03, M.m04, M.m05, M.m06, M.m07, M.m10, M.m11] },
   { process: "fdm", category: "DFM", steps: ["Blocs de ce qui entre dans la pièce, du bas vers le haut", "Paroi ≥ minimum du process (≥ 1,5 mm pour la tenue au feu)", "Orienter pour limiter les supports", "Bossages hors de la cavité, inserts à chaud",
     "Jeux d'assemblage ≥ 0,3 mm par côté"], rules: [H.h01, H.h02, H.h04, H.h05, H.h07, H.h08, H.h10, H.h12, H.h13, H.h14] },
   { process: "mjf", category: "DFM", steps: ["Paroi ≥ 0,9 mm, sections ≤ 10 mm (évider)", "Trous ≥ Ø1, prévoir le dépoudrage des cavités", "Jeux d'assemblage ≥ 0,2 mm par côté", "Rayons intérieurs ≥ 0,5 × paroi", "PA12 : UL94 HB seulement"],
@@ -86,9 +87,9 @@ export function checkMolding(ctx) {
   ctx.run("MLD-08", () => {
     const w = ctx.wall();
     if (!w || !(w.p10 > 0) || w.p10 > lim[1]) return;           // massive part: already reported by MLD-01
-    const ratio = w.p90 / w.p10;
+    const ratio = w.p90 / w.median;                              // against the wall itself : a rib or a lip at half the wall is thin on purpose, a mass is not
     if (ratio > 1.5 + 1e-6) ctx.add("MLD-08", { value: round(ratio), limit: 1.5, unit: ": 1", where: w.at,
-      message: `Épaisseurs non uniformes : ${num(w.p10)} mm (10 % les plus minces) contre ${num(w.p90)} mm (10 % les plus épaisses), soit ${num(ratio, 1)}:1. Limite : 1,5:1. Correctif : évider les zones épaisses (core-out) et raccorder les épaisseurs progressivement.` });
+      message: `Épaisseurs non uniformes : des zones de ${num(w.p90)} mm (10 % les plus épaisses) pour une paroi de ${num(w.median)} mm, soit ${num(ratio, 1)}:1. Limite : 1,5:1. Correctif : évider les zones épaisses (core-out) et raccorder les épaisseurs progressivement.` });
   });
   ctx.run("MLD-02", () => {
     if (!dims) return;
@@ -120,6 +121,12 @@ export function checkMolding(ctx) {
     for (const x of [...facts.holes, ...facts.pockets]) if (x.face && FACES[x.face] && FACES[x.face].axis !== pull) side.add(x.face);
     if (side.size) ctx.add("MLD-07", { severity: side.size >= 3 ? "warn" : "info", value: side.size, limit: 0, unit: "faces latérales",
       message: `Ouvertures ou trous sur ${side.size} face(s) latérale(s) (${[...side].sort().join(", ")}), perpendiculaires au démoulage (axe ${"XYZ"[pull]}) : chaque face demande un tiroir (side action) ; limite conseillée : 0. Correctif : déplacer ces ouvertures sur la face de démoulage, les ouvrir jusqu'au plan de joint (encoche en U), ou accepter le coût du tiroir.` });
+  });
+  ctx.run("MLD-11", () => {
+    const c = ctx.spec.mold && ctx.spec.mold.clips; if (!c || !(c.lb > 0)) return;
+    const strain = 1.5 * c.t * c.y / (c.lb * c.lb), limit = c.limit || 0.02, over = strain > limit + 1e-9, need = Math.ceil(Math.sqrt(1.5 * c.t * c.y / limit) * 2) / 2;
+    ctx.add("MLD-11", { severity: over ? "warn" : "info", value: round(100 * strain), limit: round(100 * limit), unit: "%",
+      message: `Clips : lame de ${num(c.t)} mm d'épaisseur, ${num(c.lb)} mm de long, flèche de ${num(c.y)} mm → déformation ${num(100 * strain, 1)} % pour ${num(100 * limit, 1)} % admis.${over ? ` Correctif : allonger la lame à ${num(need)} mm, l'amincir ou réduire le crochet.` : ""}` });
   });
   ctx.run("MLD-10", () => {
     for (const g of groupBy(facts.holes, (h) => `${h.source}|${h.d}|${h.depth}`)) {

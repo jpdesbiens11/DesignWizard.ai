@@ -29,7 +29,7 @@ const BRICKS = [
   [4, "Artéfacts & commande", "STEP, DXF, STL, PDF, FeatureScript — et le dossier de commande.", "#/parts"],
   [5, "Physique & simulation", "21 modèles à la main, puis des éléments finis simplifiés recoupés par eux.", "#/physics"],
   [6, "Assemblage", "Les interfaces identiques s'accouplent seules et restent liées.", "#/assembly"],
-  [7, "Isolation & DFx", "Lignes de fuite, distances dans l'air, 118 règles de fabricabilité.", "#/dfx"],
+  [7, "Isolation & DFx", "Lignes de fuite, distances dans l'air, 119 règles de fabricabilité.", "#/dfx"],
   [8, "Dessins & rapport", "Dessin coté, GD&T tiré des interfaces, revue de conception.", "#/report"],
   [9, "Échange ouvert", "Votre Google Drive, Onshape, et un code libre sous licence MIT.", "#/account"],
 ];

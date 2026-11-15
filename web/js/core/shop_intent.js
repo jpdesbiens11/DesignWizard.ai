@@ -85,7 +85,7 @@ function prepare(brief, log) {
     const t = INTERFACE_TYPES[raw.type];
     if (!t) throw new Error(`Type d'interface inconnu « ${raw.type} ».`);
     const id = `IF${i + 1}`, name = raw.name || t.fr, key = raw.key || slug(`${brief.name || "piece"}_${raw.partner || name}_${id}`);
-    const it = { id, type: raw.type, name, key, partner: raw.partner || undefined, side: raw.side === "B" ? "B" : "A", where: raw.where || "+Z", inside: !!raw.inside, params: JSON.parse(JSON.stringify({ ...t.params, ...(raw.params || {}) })), opts: raw.opts ? { ...raw.opts } : undefined };
+    const it = { id, type: raw.type, name, key, partner: raw.partner || undefined, side: raw.side === "B" ? "B" : "A", where: raw.where || "+Z", inside: !!raw.inside, from: raw.from || undefined, params: JSON.parse(JSON.stringify({ ...t.params, ...(raw.params || {}) })), opts: raw.opts ? { ...raw.opts } : undefined };
     it.fp = footprint(it, brief.material);
     if (!raw.key) log.push(`Interface « ${name} » : clé « ${key} » créée ; la pièce voisine la reprendra telle quelle.`);
     return it;

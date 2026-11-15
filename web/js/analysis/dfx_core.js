@@ -200,8 +200,8 @@ export function meshWallThickness(mesh, opts = {}) {
   }
   const step = Math.max(1, Math.ceil(samples.length / maxRays));
   const { nodes, order } = buildBVH(pos, idx), stack = new Int32Array(128), hits = [];
-  for (let s = Math.floor(step / 2); s < samples.length; s += step) {
-    const sm = samples[s], d = [-nrm[sm.t * 3], -nrm[sm.t * 3 + 1], -nrm[sm.t * 3 + 2]], o = sm.o;
+  /** First hit of a ray from o along d, the triangle `skip` left out. → [distance, triangle] ([Infinity, -1] : none) */
+  const cast = (o, d, skip) => {
     const inv = d.map((v) => (Math.abs(v) > 1e-12 ? 1 / v : (v >= 0 ? 1e12 : -1e12)));
     let best = Infinity, bestTri = -1, sp = 0;
     stack[sp++] = 0;
@@ -218,7 +218,7 @@ export function meshWallThickness(mesh, opts = {}) {
       if (node.l >= 0) { stack[sp++] = node.l; stack[sp++] = node.r; continue; }
       for (let i = node.s; i < node.s + node.n; i++) {          // Möller–Trumbore, two-sided
         const t = order[i];
-        if (t === sm.t) continue;
+        if (t === skip) continue;
         const a = P(t, 0), e1 = sub(P(t, 1), a), e2 = sub(P(t, 2), a), h = cross(d, e2), det = dot(e1, h);
         if (Math.abs(det) < 1e-14) continue;
         const f = 1 / det, sv = sub(o, a), u = f * dot(sv, h);
@@ -229,13 +229,29 @@ export function meshWallThickness(mesh, opts = {}) {
         if (dist > eps && dist < best) { best = dist; bestTri = t; }
       }
     }
+    return [best, bestTri];
+  };
+  for (let s = Math.floor(step / 2); s < samples.length; s += step) {
+    const sm = samples[s], d = [-nrm[sm.t * 3], -nrm[sm.t * 3 + 1], -nrm[sm.t * 3 + 2]], o = sm.o, [best, bestTri] = cast(o, d, sm.t);
     if (bestTri < 0) continue;
     const cos = Math.abs(d[0] * nrm[bestTri * 3] + d[1] * nrm[bestTri * 3 + 1] + d[2] * nrm[bestTri * 3 + 2]);
     if (cos < minCos) continue;
-    hits.push({ d: best, w: sm.w, o });
+    hits.push({ d: best, w: sm.w, o, dir: d });
   }
   if (!hits.length) return none;
   hits.sort((a, b) => a.d - b.d);
+  /* A spot that looks thick is measured again across : from the middle of its ray, the extent of the material in the two directions
+     square to it. A ray that runs up a rib, or down a wall from its rim, crosses a thin section — a mass is thick every way. */
+  if (opts.across !== false) {
+    const mid = hits[Math.floor(hits.length / 2)].d;
+    for (const h of hits) {
+      if (h.d <= 1.5 * mid) continue;
+      const d = h.dir, c = [h.o[0] + d[0] * h.d / 2, h.o[1] + d[1] * h.d / 2, h.o[2] + d[2] * h.d / 2], k = [Math.abs(d[0]), Math.abs(d[1]), Math.abs(d[2])], ax = k[0] <= k[1] && k[0] <= k[2] ? [1, 0, 0] : k[1] <= k[2] ? [0, 1, 0] : [0, 0, 1];
+      let u = cross(d, ax); const lu = Math.hypot(u[0], u[1], u[2]) || 1; u = [u[0] / lu, u[1] / lu, u[2] / lu]; const v = cross(d, u);
+      for (const q of [u, v]) { const a1 = cast(c, q, -1)[0], a2 = cast(c, [-q[0], -q[1], -q[2]], -1)[0]; if (Number.isFinite(a1) && Number.isFinite(a2) && a1 + a2 < h.d) h.d = a1 + a2; }
+    }
+    hits.sort((a, b) => a.d - b.d);
+  }
   const wsum = hits.reduce((s, h) => s + h.w, 0);
   const pct = (p) => { let acc = 0; for (const h of hits) { acc += h.w; if (acc >= wsum * p - 1e-12) return h.d; } return hits[hits.length - 1].d; };
   const first = hits[0];

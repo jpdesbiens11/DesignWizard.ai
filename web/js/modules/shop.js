@@ -11,6 +11,7 @@ import { Viewer } from "../core/viewer.js";
 import { showBuilt } from "../core/viewport.js";
 import { synthesize, recommend, SHOP_FORMS, WHERE } from "../core/shop_intent.js";
 import { moldProcess, MOLD_RULES } from "../core/shop_mold.js";
+import { moldArch, hostOf } from "../core/shop_mold_more.js";
 import { routing } from "../cad/shop.js";
 import { STOCK_FORMS } from "../cad/stock.js";
 import { INTERFACE_TYPES, interfaceSignature } from "../cad/interfaces.js";
@@ -166,12 +167,22 @@ function render(main) {
     clear(moldBox);
     const moulded = (brief.form || rec.form) === "molded";
     if (moulded) {
-      const proc = moldProcess(brief.material), R = MOLD_RULES[proc], lim = (mat && mat.wall) || R.wall, again = () => propose();
-      brief.envelope = brief.envelope || { L: 100, W: 60, H: 25 };
-      moldBox.append(el("div", { class: "atelier-hint", style: { marginTop: ".6rem" } }, icon("cast"), el("div", null, el("b", null, `Pièce moulée — ${PROCESSES[proc].fr.toLowerCase()}`), el("p", { class: "small", style: { margin: ".2rem 0 0" } },
-        `Dites le volume à contenir ; cochez « à l'intérieur » les interfaces de ce qui se fixe dedans. La pièce se dessine seule : paroi de ${String(lim[0]).replace(".", ",")} à ${String(lim[1]).replace(".", ",")} mm pour cette matière, rayons, bossages${R.thread === "insert" ? " avec inserts" : " taraudés après coulée"}, nervures, dépouille de ${R.draft[0]}° déclarée.`))),
-        el("div", { class: "form-row tight" }, numIn(brief.envelope, "L", "Longueur à contenir", again), numIn(brief.envelope, "W", "Largeur à contenir", again), numIn(brief.envelope, "H", "Hauteur à contenir", again),
-          field("Colonnettes (mm)", el("input", { type: "number", value: brief.standoff ?? 6, step: 0.5, min: 3, onInput: (e) => { const v = parseFloat(e.target.value); if (v >= 3) { brief.standoff = v; again(); } } }))));
+      const proc = moldProcess(brief.material), R = MOLD_RULES[proc], lim = (mat && mat.wall) || R.wall, again = () => propose(), arch = moldArch(brief, brief.interfaces), metal = R.thread === "tapped";
+      const pick = (k, label, tip) => el("button", { class: "btn btn-small" + (arch === k ? " btn-primary" : ""), type: "button", "aria-pressed": arch === k ? "true" : "false", "data-tip": tip, onClick: () => { brief.arch = k; drawStock(); propose(); } }, label);
+      const wallTxt = `paroi de ${String(lim[0]).replace(".", ",")} à ${String(lim[1]).replace(".", ",")} mm pour cette matière`;
+      moldBox.append(el("div", { class: "atelier-hint", style: { marginTop: ".6rem" } }, icon("cast"), el("div", null, el("b", null, `Pièce moulée — ${PROCESSES[proc].fr.toLowerCase()}`),
+        el("div", { class: "form-actions", style: { justifyContent: "flex-start", margin: ".35rem 0", flexWrap: "wrap" } }, pick("shell", "Coque — elle contient", "Un boîtier, un carter : dessiné autour du volume à loger et de ce qui se fixe dedans"),
+          pick("cover", "Couvercle — il ferme", "Assorti au boîtier voisin : même contour, lèvre de centrage, trous au droit de ses bossages ou crochets dans ses fenêtres"), pick("plate", "Platine nervurée — elle porte", "Une pièce pleine : une paroi, une ceinture et des nervures croisées dessous, des bossages sous ses filets")),
+        el("p", { class: "small", style: { margin: ".2rem 0 0" } }, arch === "cover" ? `Cochez plus haut le boîtier que ce couvercle ferme : il en reprend le contour, les rayons, la dépouille et la fermeture (vis ou clips). Lèvre de centrage, nervures, ${wallTxt}.`
+          : arch === "plate" ? `Donnez la longueur et la largeur ; les interfaces se posent dessus. Une seule paroi (${wallTxt}), une ceinture et des nervures croisées dessous, des bossages${metal ? " taraudés après coulée" : " à inserts"} sous les filets.`
+          : `Dites le volume à contenir ; cochez « à l'intérieur » les interfaces de ce qui se fixe dedans. La pièce se dessine seule : ${wallTxt}, rayons, bossages${metal ? " taraudés après coulée" : " avec inserts"}, nervures, dépouille réelle.`))));
+      if (arch !== "cover") { brief.envelope = brief.envelope || { L: 100, W: 60, H: 25 };
+        moldBox.append(el("div", { class: "form-row tight" }, numIn(brief.envelope, "L", arch === "plate" ? "Longueur" : "Longueur à contenir", again), numIn(brief.envelope, "W", arch === "plate" ? "Largeur" : "Largeur à contenir", again),
+          arch === "shell" ? numIn(brief.envelope, "H", "Hauteur à contenir", again) : null,
+          arch === "shell" ? field("Colonnettes (mm)", el("input", { type: "number", value: brief.standoff ?? 6, step: 0.5, min: 3, onInput: (e) => { const v = parseFloat(e.target.value); if (v >= 3) { brief.standoff = v; again(); } } })) : null,
+          arch === "shell" ? field("Fermeture", el("select", { "data-tip": "Des vis dans des bossages, ou des clips : des fenêtres dans les grands côtés, où s'accrochent les crochets du couvercle", onChange: (e) => { brief.closure = e.target.value === "clips" ? "clips" : undefined; brief.cover = e.target.value === "none" ? false : undefined; again(); } },
+            [["screws", "Vis dans des bossages"], ["clips", metal ? "Clips (plastique seulement)" : "Clips, sans vis"], ["none", "Aucune"]].map(([k, l]) => el("option", { value: k, selected: k === (brief.cover === false ? "none" : brief.closure === "clips" ? "clips" : "screws") }, l)))) : null)); }
+      moldBox.append(el("label", { class: "check small" }, el("input", { type: "checkbox", checked: brief.draft !== false, onChange: (e) => { brief.draft = e.target.checked ? undefined : false; again(); } }), `Dépouille modélisée dans la géométrie (${Math.max(R.draft[0], R.draft[1])}°) — décochez pour un modèle droit, dépouille déclarée seulement`));
     }
     if (moulded !== wasMoulded) { wasMoulded = moulded; drawIfaces(); }
     stockWhy.textContent = brief.form && brief.form !== rec.form ? `Votre choix : ${STOCK_FORMS[brief.form].fr.toLowerCase()}. Le compagnon conseillait : ${STOCK_FORMS[rec.form].fr.toLowerCase()} — ${rec.why}` : rec.why;
@@ -180,6 +191,7 @@ function render(main) {
   async function build() {
     const mine = ++token;
     let res;
+    brief.hosts = Object.fromEntries(brief.neighbours.map((id) => [id, hostOf(store.part(id))]).filter(([, h]) => h));      // what a moulded cover reads of the housing it closes
     try { res = synthesize(brief, store.nextPartId()); } catch (e) { clear(out); out.append(el("p", { class: "form-error" }, e.message)); create.disabled = true; return; }
     try {
       const built = await kernel.build(res.spec, null, "~shop");

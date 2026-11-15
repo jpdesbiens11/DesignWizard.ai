@@ -9,9 +9,10 @@
 import { INTERFACE_TYPES, patternPoints } from "../cad/interfaces.js";
 import { thread } from "../cad/standards.js";
 import { material } from "../cad/materials.js";
+import { moldArch, moldedCover, moldedPlate, clipPlan } from "./shop_mold_more.js";
 
-const r1 = (x) => Math.round(x * 10) / 10, half = (x) => Math.ceil(x * 2 - 1e-9) / 2, fr = (x) => String(r1(x)).replace(".", ",");
-const P = (value, min, max, label, group = "Enveloppe", step = 0.5) => ({ value, min: r1(min), max: r1(max), step, unit: "mm", label, group });
+export const r1 = (x) => Math.round(x * 10) / 10, half = (x) => Math.ceil(x * 2 - 1e-9) / 2, fr = (x) => String(r1(x)).replace(".", ",");
+export const P = (value, min, max, label, group = "Enveloppe", step = 0.5) => ({ value, min: r1(min), max: r1(max), step, unit: "mm", label, group });
 
 /** The moulder's figures, by process. wall = [min, max] when the material gives none ; flow = flow length over wall ;
     inner = inside radius over wall ; rib = rib thickness over wall ; ribH = rib height over wall ; boss = boss
@@ -32,6 +33,9 @@ export function moldProcess(matId) {
 
 /** Writes the moulded part. items = prepared interfaces (shop_intent.prepare) with fp, where, inside. → the core of a spec. */
 export function molded(brief, items, log) {
+  const arch = moldArch(brief, items);                          // a shell that holds, a cover that closes, a ribbed plate that carries
+  if (arch === "cover") return moldedCover(brief, items, log);
+  if (arch === "plate") return moldedPlate(brief, items, log);
   const proc = brief.process && MOLD_RULES[brief.process] ? brief.process : moldProcess(brief.material), R = MOLD_RULES[proc], mat = material(brief.material) || { name: brief.material }, lim = mat.wall || R.wall, env = brief.envelope || {}, metal = R.thread === "tapped";
   const inside = items.filter((it) => it.inside), rim = items.filter((it) => !it.inside && it.where === "+Z"), under = items.filter((it) => !it.inside && it.where === "-Z"), sides = items.filter((it) => !it.inside && it.where[1] !== "Z");
   const boards = inside.filter((it) => it.type === "bolt_pattern"), so = boards.length ? r1(brief.standoff || 6) : 0;
@@ -67,8 +71,22 @@ export function molded(brief, items, log) {
   }
   for (const it of under) if (it.type === "bolt_pattern") for (const [px, py] of patternPoints(it.params.pattern)) for (const sx of [1, -1]) keep.push({ x: L / 2 + sx * px, y: W / 2 + py, r: thread(it.params.screw).d / 2 + 0.5 });
   /* what closes it : screws in bosses standing clear of the walls and tied to them by gussets, and the joint plane on the rim */
-  let cover = rim.find((it) => it.type === "bolt_pattern");
-  if (!cover && brief.cover !== false) { cover = { id: `IF${items.length + 1}`, type: "bolt_pattern", name: "Fixation du couvercle", key: `${String(brief.name || "piece").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "_")}_couvercle`, side: "B", where: "+Z", params: { ...INTERFACE_TYPES.bolt_pattern.params, screw: "M3" }, auto: true };
+  let cover = rim.find((it) => it.type === "bolt_pattern"), clips = null;
+  const slug = String(brief.name || "piece").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "_");
+  if (brief.closure === "clips" && !cover && brief.cover !== false) {
+    const plan = clipPlan(brief.material, wall, H - wall - so, Math.max(L, W) - 2 * wall);
+    if (metal) log.push("Clips demandés sur une pièce de métal coulé : un métal ne fléchit pas assez pour s'encliqueter — la fermeture reste vissée.");
+    else if (!plan.fits) log.push(`Clips demandés, mais la lame doit faire ${fr(plan.lb)} mm pour ne pas dépasser ${fr(100 * plan.eps)} % de déformation et le boîtier n'offre que ${fr(H - wall - so)} mm : la fermeture reste vissée.`);
+    else clips = plan;
+  }
+  if (clips) {
+    const alongL = L >= W, faces = alongL ? ["-Y", "+Y"] : ["-X", "+X"], at = clips.n === 3 ? [0.2, 0.5, 0.8] : [0.25, 0.75], ww = r1(clips.wb + 1), wh = r1(clips.hh + 0.8), zb = `H - ${r1(clips.lb + clips.hh + 0.8)}`;
+    for (const face of faces) at.forEach((k, i) => features.push({ op: "pocket", id: `clip${face[0] === "-" ? "a" : "b"}${i + 1}`, name: "Fenêtre de clip", face, rect: [`${alongL ? "L" : "W"} * ${k} - ${r1(ww / 2)}`, zb, ww, wh], depth: `wall + ${r1(0.5 + H * lean)}` }));
+    out.push({ id: `IF${items.length + 1}`, type: "planar", name: "Plan de joint", key: `${slug}_couvercle_joint`, side: "B", face: "+Z", at: ["L/2", "W/2"], params: { w: "L", h: "W" } });
+    log.push(`Fermeture par clips : ${2 * clips.n} fenêtres de ${fr(ww)} × ${fr(wh)} mm dans les grands côtés, à ${fr(clips.lb)} mm sous le bord. La lame du couvercle (${fr(clips.t)} mm d'épaisseur, ${fr(clips.lb)} mm de long) fléchit de ${fr(clips.y)} mm : déformation ${fr(100 * clips.strain)} % pour ${fr(100 * clips.eps)} % admis (règle : ε = 1,5 × épaisseur × flèche / longueur²).`);
+    log.push("Chaque rangée de fenêtres demande un tiroir dans le moule du boîtier, et chaque crochet un éjecteur incliné dans celui du couvercle : c'est le prix de l'absence de vis.");
+  }
+  if (!cover && !clips && brief.cover !== false) { cover = { id: `IF${items.length + 1}`, type: "bolt_pattern", name: "Fixation du couvercle", key: `${slug}_couvercle`, side: "B", where: "+Z", params: { ...INTERFACE_TYPES.bolt_pattern.params, screw: "M3" }, auto: true };
     log.push("Aucune fermeture déclarée : quatre vis M3 aux coins et un plan de joint sont proposés pour un couvercle (retirez-les s'il n'y en a pas)."); }
   if (cover) {
     const th = thread(cover.params.screw), slim = bossOf(cover.params.screw), d = Math.max(slim, half((H - wall) / 3)), gap = r1(Math.max(wall, 1.5) + 2 * (H - wall) * lean), c = r1(wall + gap + d / 2), rib = r1(Math.max(0.8, R.rib * wall)), gh = "(H - wall) * 0.7";
@@ -90,7 +108,6 @@ export function molded(brief, items, log) {
     const top = metal ? th.tap : th.insert[0], dt = metal ? r1(Math.max(2 * th.d, 6)) : r1(Math.max(th.insert[1] + 1.5, Math.min(3 * top, H - wall))), pin = Math.floor((d - 2 * 0.8 * wall) * 2) / 2, db = pin >= (proc === "sand_casting" ? 6 : 3) ? r1(Math.min(3 * pin, H - dt - wall)) : 0, left = r1(H - wall - dt - db);
     if (db >= 2) features.push({ op: "hole", id: "evid", name: "Évidement sous les bossages", face: "-Z", d: pin, depth: db, at: { grid } });
     out.push(ifo(cover, "+Z", ["L/2", "W/2"], { side: "B", opts: { ...(cover.opts || {}), ...(metal ? { depth: dt } : { thread: "insert", depth: dt }) } }));
-    if (d + 2 * (H - wall) * lean > 2 * wall + 0.05) log.push(`Pied des bossages : Ø ${fr(d + 2 * (H - wall) * lean)} mm avec la dépouille, plus de 2 fois la paroi — une masse locale${metal ? " : prévoir un refroidisseur ou une masselotte à cet endroit" : ""}, ou porter la fermeture sur le couvercle pour raccourcir les bossages.`);
     if (d > slim) log.push(`Bossages de fermeture portés de Ø ${fr(slim)} à Ø ${fr(d)} mm : hauts de ${fr(H - wall)} mm, ils ne doivent pas dépasser 3 fois leur diamètre.`);
     log.push(`Fermeture : 4 bossages Ø ${fr(d)} mm détachés des parois de ${fr(gap)} mm et reliés par des goussets de ${fr(rib)} mm — un bossage noyé dans l'angle ferait une masse, donc une retassure.`);
     log.push(db >= 2 ? `Bossages noyautés des deux côtés : ${metal ? `le taraudage ${cover.params.screw} descend de ${fr(dt)} mm` : `le trou d'insert descend de ${fr(dt)} mm (3 × Ø au plus pour une broche)`}, et un évidement Ø ${fr(pin)} × ${fr(db)} mm monte du dessous${left > 0.05 ? ` ; il reste ${fr(left + wall)} mm pleins entre les deux` : ` ; il ne reste qu'un voile de ${fr(wall)} mm`}. Les évidements se voient sous le fond.`
@@ -109,7 +126,7 @@ export function molded(brief, items, log) {
   /* outside : fixings under the floor, openings and fixings in the side walls */
   for (const it of under) out.push(ifo(it, "-Z", ["L/2", "W/2"], it.type === "bolt_pattern" ? { opts: { ...(it.opts || {}), ...(it.side === "B" ? hold(it.params.screw) : { depth: "wall + 0.5" }) } } : {}));
   const zc = so ? `wall + so + 1.6 + ${r1(4)}` : "H/2";
-  let slides = 0;
+  let slides = clips ? 2 : 0;
   for (const face of ["-Y", "+Y", "-X", "+X"]) { const on = sides.filter((it) => it.where === face), tot = on.reduce((s, it) => s + it.fp.w, 0) + 8 * (on.length - 1); let u = -tot / 2;
     for (const it of on) { const du = r1(u + it.fp.w / 2); u += it.fp.w + 8; slides++;
       out.push(ifo(it, face, [du ? `${face[1] === "Y" ? "L" : "W"}/2 ${du > 0 ? "+" : "-"} ${Math.abs(du)}` : `${face[1] === "Y" ? "L" : "W"}/2`, it.type === "cutout" ? `wall + ${so ? "so + 1.6 + " : ""}${r1((it.params.h || it.params.d || 8) / 2 + (so ? 0 : 4))}` : zc], it.type === "cutout" ? { opts: { ...(it.opts || {}), depth: `wall + ${r1(0.5 + H * lean)}` } } : {})); } }       // a leaning wall is further in at its foot : the opening goes that much deeper
@@ -119,5 +136,5 @@ export function molded(brief, items, log) {
     : `Dépouille ${fr(R.draft[0])}° à l'extérieur et ${fr(R.draft[1])}° à l'intérieur, déclarée pour le mouliste (modèle droit, à votre demande) : sur ${fr(H)} mm de haut, ${fr(H * Math.tan(R.draft[1] * Math.PI / 180))} mm par face.`);
   if (metal) log.push(`Métal coulé : aucun filetage ne vient de fonderie — taraudages et plans d'appui sont repris en usinage, avec ${fr(R.skim)} mm de surépaisseur.`);
   return { family: "enclosure", process: proc, params, stock: { form: "molded" }, features, interfaces: out, notes: R.notes,
-    mold: { process: proc, pull: "+Z", parting: "bord supérieur", wall, draft: dp || R.draft[0], draft_inside: dp || R.draft[1], modelled: dp > 0, slides, machined: metal ? R.skim : 0, gate: metal ? "attaque de coulée sur un petit côté, évents à l'opposé" : "seuil au centre du fond, côté intérieur", ejection: "éjecteurs sur les bossages, les nervures et le pourtour du fond" } };
+    mold: { process: proc, pull: "+Z", parting: "bord supérieur", wall, draft: dp || R.draft[0], draft_inside: dp || R.draft[1], modelled: dp > 0, arch: "shell", L, W, H, rc, ...(cover ? { closure: "screws", gap: r1(Math.max(wall, 1.5) + 2 * (H - wall) * lean) } : clips ? { closure: "clips", clips: { walls: L >= W ? "Y" : "X", at: clips.n === 3 ? [0.2, 0.5, 0.8] : [0.25, 0.75], lb: clips.lb, t: clips.t, y: clips.y, hh: clips.hh, wb: clips.wb, j: 0.25, strain: r1(1000 * clips.strain) / 1000, limit: clips.eps } } : {}), slides, machined: metal ? R.skim : 0, gate: metal ? "attaque de coulée sur un petit côté, évents à l'opposé" : "seuil au centre du fond, côté intérieur", ejection: "éjecteurs sur les bossages, les nervures et le pourtour du fond" } };
 }
