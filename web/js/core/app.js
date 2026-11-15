@@ -10,7 +10,7 @@ import { THEMES, currentTheme, applyTheme } from "./theme.js";
 import { toDwiz } from "./dwiz.js";
 import { dwizFileName } from "./dwiz_names.js";
 
-export const APP_VERSION = "0.30.0";
+export const APP_VERSION = "0.30.1";
 const modules = new Map();
 const ORDER = ["home", "shop", "parts", "pcb", "pcba", "assembly", "physics", "creepage", "dfx", "drawings", "review", "report"];
 const SHOP_SCREENS = new Set(["interfaces", "process", "extrusion", "library", "busbar", "flex"]);      // screens of the Shop : its tab stays lit on them (see modules/shop_tabs.js)

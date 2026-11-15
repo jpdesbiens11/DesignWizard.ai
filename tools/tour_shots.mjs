@@ -1,0 +1,42 @@
+/* DesignWizard.ai — the screenshots of the guided presentation (web/img/tour/*.jpg), taken on the demonstration projects.
+   Not part of the application and not run by the tests : it needs Playwright and a running local server.
+     python3 designwizard.py --port 8130 --no-browser --data <an empty folder>
+     node tools/tour_shots.mjs http://127.0.0.1:8130 web/img/tour [names, comma separated]
+   Each picture is the window of the application, 1600 × 1000, JPEG. Run it again after a release that changes a screen. */
+
+import { createRequire } from "node:module";
+const { chromium } = createRequire(import.meta.url)("playwright");
+const base = process.argv[2], out = process.argv[3], only = process.argv[4] ? process.argv[4].split(",") : null;
+if (!base || !out) { console.error("usage : node tools/tour_shots.mjs <base url> <output dir> [names]"); process.exit(2); }
+const browser = await chromium.launch(), errors = [];
+const page = await (await browser.newContext({ viewport: { width: 1600, height: 1000 }, deviceScaleFactor: 1 })).newPage();
+page.on("pageerror", (e) => errors.push(String(e).slice(0, 200)));
+const wait = (ms) => page.waitForTimeout(ms), want = (name) => !only || only.includes(name);
+const shot = async (name) => { await page.screenshot({ path: `${out}/${name}.jpg`, type: "jpeg", quality: 82 }); console.log("shot", name); };
+const open = async (hash, ms) => { await page.goto(`${base}/${hash}`); await wait(ms); };
+/* loads a demonstration ; when it is already there, the dialog offers to open it : the first button */
+const demo = async (label) => { await open("#/home", 600); await page.waitForSelector(".hero"); await page.getByText(label).first().click(); await wait(1800);
+  if (await page.locator(".modal").count()) { await page.locator(".modal").getByRole("button").first().click(); await wait(1500); } };
+const tab = async (text) => { await page.locator(".subtab", { hasText: text }).first().click().catch(() => {}); await wait(2500); };
+
+await demo("Charger la démonstration");
+if (want("idee")) { await open("#/home", 1200); await page.getByText("Premier design avec une IA").first().click(); await wait(1500); await shot("idee"); await page.keyboard.press("Escape"); }
+if (want("atelier")) { await open("#/shop", 2500); await page.getByRole("button", { name: /Je me visse sur/ }).click(); await wait(800); await page.getByRole("button", { name: /arbre/ }).first().click().catch(() => {}); await wait(9000); await shot("atelier"); }
+if (want("procedes")) { await open("#/process/impression", 1500); await shot("procedes"); }
+if (want("piece")) { await open("#/parts/DRV-BASE", 11000); await shot("piece"); }
+if (want("commande")) { await open("#/parts/DRV-BASE", 9000); await tab("Artéfacts"); await shot("commande"); }
+if (want("gamme")) { await open("#/parts/DRV-HEATSINK", 9000); await tab("Gamme"); await shot("gamme"); }
+if (want("pcba")) { await open("#/pcba", 6000); await shot("pcba"); }
+if (want("assemblage")) { await open("#/assembly/DRV-ASM", 14000); await shot("assemblage"); }
+if (want("simulation")) { await open("#/fea", 9000); await shot("simulation"); }
+if (want("dfx")) { await open("#/dfx", 12000); await shot("dfx"); }
+if (want("dessin")) { await open("#/drawings/DRV-BASE", 14000); await shot("dessin"); }
+if (want("revue")) { await open("#/review", 6000); await shot("revue"); }
+if (want("rapport")) { await open("#/report", 15000); await shot("rapport"); }
+if (want("isolation") || want("busbar")) {
+  await demo("DEMO-HVB");
+  if (want("isolation")) { await open("#/creepage/DEMO-HVB", 9000); await page.getByRole("button", { name: /Analyser/ }).first().click(); await wait(25000); await shot("isolation"); }
+  if (want("busbar")) { await open("#/busbar", 2500); await page.getByRole("button", { name: /Nouveau busbar/ }).first().click(); await wait(9000); await shot("busbar"); }
+}
+console.log("errors:", errors.length ? errors.join(" || ") : "none");
+await browser.close();
