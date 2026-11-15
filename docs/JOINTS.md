@@ -53,6 +53,25 @@ Ce que l'outil en tire :
 - **la gamme** : préparer les plages, déposer le cordon, appuyer jusqu'en butée sur les plots, maintenir, polymériser,
   chacun avec son contrôle ; un film hors de la plage de la colle devient une question à l'atelier.
 
+## La santé des accouplements
+
+Chaque joint porte un verdict (`web/js/core/joint_health.js`), recalculé après chaque montage et chaque recherche
+d'interférences :
+
+| Verdict | Quand |
+|---|---|
+| **Sain** | les deux côtés disent la même chose, la géométrie est d'accord |
+| **À vérifier** | les paramètres partagés ont divergé (joint non lié, pièce réimportée) ; deux côtés A ou deux côtés B ; clés différentes ; prise de filet plus courte que la matière ne le demande (acier 1 × d, aluminium et cuivre 1,5 × d, plastique 2 × d) ; filet taillé dans le plastique sans insert ; jeu d'une glissière hors de 0,1 à 0,5 mm par face, rainure de moins de 1 mm, languette posée devant la rainure ; film de colle hors de la plage de sa colle, ou sans plots de calage |
+| **Rompu** | une interface a disparu ; les deux interfaces ne sont pas du même genre ; le joint contredit les autres (sur-contraint) ; les deux pièces se traversent |
+
+L'assemblage a aussi son verdict d'ensemble : nombre de joints sains, à vérifier, rompus, interfaces **internes** encore
+sans jumelle, pièces qu'aucun joint ne tient. Il s'affiche sous la vue (cliquez-le pour ouvrir le registre), en tête de
+l'onglet Mates, sur chaque joint avec ses raisons en clair, dans le registre `.csv` (colonnes « Santé » et « Remarques »)
+et dans le rapport. C'est une aide pour régler vite un emboîtement, pas un calcul de tenue.
+
+Une **glissière** (`rail`) s'accouple « retournée » (`flip`) : les deux repères coïncident au lieu de se faire face, la
+languette est dans la rainure et affleure le bout du profilé ([EXTRUSION.md](EXTRUSION.md)).
+
 ## Boîtier et couvercle
 
 Créer une pièce dans l'Atelier à côté de ses voisines **crée l'assemblage** s'il n'existe pas, et l'accouple. Chaque

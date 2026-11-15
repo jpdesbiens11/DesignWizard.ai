@@ -56,6 +56,7 @@ export const INTERFACE_TYPES = {
     optsA: { fit: "medium", head: "none", depth: "through" }, optsB: { thread: "tapped", depth: null, standoff: null },
     compile(side, p, o) {
       const th = thread(p.screw), pts = patternPoints(p.pattern);
+      if (side === "B" && o.port) return [];                       // screw channels extruded with the profile : nothing to drill or tap
       if (side === "A") {
         const f = { op: "hole", uv: pts, d: clearanceHole(p.screw, o.fit || "medium"), depth: o.depth ?? "through", fit: "clearance" };
         if (o.head === "cbore") f.cbore = { d: th.cbore, depth: round2(th.head[1] + 0.4) };
@@ -156,7 +157,7 @@ export const INTERFACE_TYPES = {
     doc: "Une languette (bord de PCB, tôle, nervure) glisse dans une rainure. A = languette (aucune géométrie ajoutée) ; B = rainure usinée ou extrudée le long de u.",
     params: { t: 1.6, depth: 3, length: 60 }, optsA: {}, optsB: { clearance: 0.2 },
     compile(side, p, o) {
-      if (side === "A") return [];
+      if (side === "A" || o.extruded) return [];                    // extruded : the groove is in the section of the profile
       return [{ op: "pocket", rectUV: [p.length, round2(p.t + 2 * (o.clearance ?? 0.2))], r: 0, depth: p.depth }];
     },
     hardware: () => [],

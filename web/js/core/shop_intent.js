@@ -11,6 +11,8 @@ import { material } from "../cad/materials.js";
 import { STOCK_FORMS, PLATE_THICKNESS, ROUND_BARS, ANGLE_LEGS, ANGLE_THICKNESS, FLAT_THICKNESS, nextStd } from "../cad/stock.js";
 import { SHEET_GAUGES } from "../cad/standards.js";
 import { molded, moldProcess } from "./shop_mold.js";
+import { extruded, extrusionProcess } from "./shop_extrusion.js";
+import { engagement } from "./joint_health.js";
 
 const r1 = (x) => Math.round(x * 10) / 10;
 const up = (x, step = 5) => Math.ceil((x - 1e-9) / step) * step;
@@ -20,11 +22,8 @@ const off = (base, d) => (Math.abs(d) < 1e-6 ? base : d > 0 ? `${base} + ${r1(d)
 const slug = (s) => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "_").slice(0, 40).replace(/^_+|_+$/g, "");
 
 /** Forms the companion knows how to synthesise, with the process each one implies by default. */
-export const SHOP_FORMS = { plate: "cnc_milling", sheet: "laser_cut", block: "cnc_milling", bar_flat: "cnc_milling", angle: "cnc_milling", bar_round: "cnc_turning", print: "fdm", molded: "injection_molding" };
+export const SHOP_FORMS = { plate: "cnc_milling", sheet: "laser_cut", block: "cnc_milling", bar_flat: "cnc_milling", angle: "cnc_milling", bar_round: "cnc_turning", print: "fdm", molded: "injection_molding", profile: "extrusion_al" };
 export const WHERE = { "+Z": "dessus", "-Z": "dessous", "-Y": "avant", "+Y": "arrière", "-X": "gauche", "+X": "droite" };
-
-/** Thread engagement in diameters, by material class (steel 1 d, aluminium / copper 1.5 d, plastics 2 d). */
-function engagement(mat) { const m = material(mat); if (!m) return 1.5; if (m.cls !== "metal") return 2; return /^(SS|STEEL|BRASS)/.test(m.id) ? 1 : 1.5; }
 
 /** Footprint (u × v) of an interface on its face and the thickness it needs behind that face. */
 export function footprint(it, mat) {
@@ -67,6 +66,8 @@ export function recommend(brief) {
   const onlyAxis = (brief.interfaces || []).length > 0 && (brief.interfaces || []).every((i) => i.type === "fit" || (i.type === "bolt_pattern" && i.params && i.params.pattern && i.params.pattern.type === "circle"));
   const additive = plastic && ["fdm", "mjf"].find((k) => mat.processes.includes(k)), casts = mat && ["die_casting", "sand_casting"].find((k) => mat.processes.includes(k));
   const holds = (brief.interfaces || []).some((i) => i.inside) || (brief.envelope && (brief.envelope.L || brief.envelope.W || brief.envelope.H));
+  const extr = mat && mat.processes.find((k) => /^extrusion_/.test(k));
+  if (extr && ((brief.contents || []).length || (brief.interfaces || []).some((i) => i.type === "rail" && i.side === "B"))) return { form: "profile", process: extr, why: "La pièce guide ce qu'elle contient sur toute sa longueur : un profilé extrudé, dessiné autour de ce qui glisse dedans." };
   if (casts && !mat.processes.includes("cnc_milling")) return { form: "molded", process: casts, why: `${mat.name} : un alliage de fonderie, la pièce se moule.` };
   if (holds && (casts || (plastic && mat.processes.includes("injection_molding") && q > 50))) return { form: "molded", process: casts || "injection_molding", why: `La pièce contient et porte d'autres pièces, en ${q} exemplaires : une coque moulée, dessinée autour de ce qu'elle loge.` };
   if (additive && q <= 20) return { form: "print", process: additive, why: `Matière plastique et ${q} pièce(s) : l'impression 3D évite tout outillage.` };
@@ -103,16 +104,20 @@ function thickness(items, series, floor, log, what = "Épaisseur") {
   return t;
 }
 
-function flat(brief, items, log) {
+function flat(brief, all, log) {
+  const tongue = all.find((it) => it.type === "rail" && it.side !== "B"), items = all.filter((it) => it !== tongue);     // a tongue : the part slides in the groove of its neighbour
   const sheet = brief.form === "sheet", lay = arrange(items), env = brief.envelope || {};
-  const L = up(Math.max(lay.w + 2 * lay.edge, env.L || 0, 20)), W = up(Math.max(lay.h + 2 * lay.edge, env.W || 0, 15));
-  const t = thickness(items, sheet ? SHEET_GAUGES : PLATE_THICKNESS, sheet ? 1 : 3, log), r = Math.min(sheet ? 3 : 4, r1(lay.edge));
+  let L = up(Math.max(lay.w + 2 * lay.edge, env.L || 0, 20)), W = up(Math.max(lay.h + 2 * lay.edge, env.W || 0, 15));
+  let t = thickness(items, sheet ? SHEET_GAUGES : PLATE_THICKNESS, sheet ? 1 : 3, log), r = Math.min(sheet ? 3 : 4, r1(lay.edge));
   log.push(...lay.notes, `Enveloppe ${fr(L)} × ${fr(W)} mm : la plus petite qui porte les interfaces avec ${fr(lay.edge)} mm de matière au bord.`);
+  if (tongue) { L = r1(tongue.params.length); t = r1(tongue.params.t); W = Math.max(W, 30); r = 0.5;
+    log.push(`Languette « ${tongue.name} » : la pièce glisse dans la rainure de sa voisine — largeur ${fr(L)} mm et épaisseur ${fr(t)} mm imposées par la glissière ; l'interface est sur la tranche arrière, à mi-épaisseur, et la pièce s'accouple enfoncée jusqu'à affleurer.`); }
+  const minL = Math.min(L, lay.w + 2 * lay.edge);
   return { family: sheet ? "sheet" : "plate",
-    params: { L: P(L, lay.w + 2 * lay.edge, Math.max(400, 2 * L), "Longueur"), W: P(W, lay.h + 2 * lay.edge, Math.max(300, 2 * W), "Largeur"), t: P(t, sheet ? 0.5 : 3, sheet ? 6 : 50, "Épaisseur", "Enveloppe", 0.5), r: P(r, 0, 20, "Rayon des coins", "Détails", 0.5) },
+    params: { L: P(L, minL, Math.max(400, 2 * L), "Longueur"), W: P(W, Math.min(W, lay.h + 2 * lay.edge), Math.max(300, 2 * W), "Largeur"), t: P(t, sheet || tongue ? 0.5 : 3, sheet ? 6 : 50, "Épaisseur", "Enveloppe", tongue ? 0.1 : 0.5), r: P(r, 0, 20, "Rayon des coins", "Détails", 0.5) },
     stock: { form: brief.form, L: "L", W: "W", t: "t" },
     features: [{ op: "outline", id: "contour", name: "Contour", profile: { rect: [0, 0, "L", "W"], r: "r" } }, { op: "interfaces" }, { op: "deburr", id: "ebavurage" }],
-    interfaces: items.map((it) => ifaceOut(it, it.where === "-Z" ? "-Z" : "+Z", [off("L/2", it.du), off("W/2", it.dv)], tapped(it, true))) };
+    interfaces: [...items.map((it) => ifaceOut(it, it.where === "-Z" ? "-Z" : "+Z", [off("L/2", it.du), off("W/2", it.dv)], tapped(it, true))), ...(tongue ? [ifaceOut(tongue, "+Y", ["L/2", "t/2"])] : [])] };
 }
 
 function block(brief, items, log) {
@@ -176,16 +181,17 @@ function round(brief, items, log) {
 /** Write the part. Returns { spec, decisions, recommendation }. Throws with a French message when the brief cannot be built. */
 export function synthesize(brief, id = "PN-0001") {
   const log = [], rec = recommend(brief), form = brief.form && SHOP_FORMS[brief.form] ? brief.form : rec.form;
-  const b = { ...brief, form, process: brief.process || SHOP_FORMS[form], material: brief.material || (form === "print" ? "PA12" : form === "molded" ? "PC-ABS" : "AL6061-T6") };
+  const b = { ...brief, form, process: brief.process || SHOP_FORMS[form], material: brief.material || (form === "print" ? "PA12" : form === "molded" ? "PC-ABS" : form === "profile" ? "AL6063-T5" : "AL6061-T6") };
+  if (form === "profile") b.process = extrusionProcess(b.material);
   if (form === "molded") b.process = brief.process && /molding|casting/.test(brief.process) ? brief.process : moldProcess(b.material);
   if (form === "print" && !brief.process) b.process = material(b.material) && material(b.material).processes.includes("mjf") ? "mjf" : "fdm";
   log.push(`Matière première : ${STOCK_FORMS[form].fr.toLowerCase()} — ${form === rec.form ? rec.why : "choix de l'utilisateur."}`);
   const items = prepare(b, log);
   if (form === "angle" && !items.some((it) => it.where[1] === "Z")) log.push("Aucune interface sur le dessous : l'aile horizontale reste libre.");
-  const core = form === "molded" ? molded(b, items, log) : (form === "plate" || form === "sheet") ? flat(b, items.map((it) => ({ ...it, where: it.where === "-Z" ? "-Z" : "+Z" })), log) : form === "angle" ? angle(b, items, log) : form === "bar_round" ? round(b, items, log) : block(b, items, log);
+  const core = form === "profile" ? extruded(b, items, log) : form === "molded" ? molded(b, items, log) : (form === "plate" || form === "sheet") ? flat(b, items.map((it) => ({ ...it, where: it.where === "-Z" ? "-Z" : "+Z" })), log) : form === "angle" ? angle(b, items, log) : form === "bar_round" ? round(b, items, log) : block(b, items, log);
   const intent = {}; for (const k of ["loads", "environment", "quantity", "priority"]) if (brief[k] !== undefined && brief[k] !== "") intent[k] = brief[k];
   const spec = { dw: "part/1", id, name: brief.name || "Nouvelle pièce", function: brief.fn || "", family: core.family, process: core.process || b.process, material: b.material, ...(Object.keys(intent).length ? { intent } : {}),
-    params: core.params, interfaces: core.interfaces, stock: core.stock, features: core.features, ...(core.mold ? { mold: core.mold } : {}),
+    params: core.params, interfaces: core.interfaces, ...(core.stock ? { stock: core.stock } : {}), features: core.features, ...(core.mold ? { mold: core.mold } : {}), ...(core.extrusion ? { extrusion: core.extrusion } : {}),
     notes: core.notes || ["Casser les angles vifs 0,2 à 0,5 mm", "Tolérances générales ISO 2768-mK"], interview: { questions: [], assumptions: log } };
   return { spec, decisions: log, recommendation: rec, form };
 }

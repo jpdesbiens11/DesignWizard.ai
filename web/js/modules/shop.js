@@ -12,6 +12,7 @@ import { showBuilt } from "../core/viewport.js";
 import { synthesize, recommend, SHOP_FORMS, WHERE } from "../core/shop_intent.js";
 import { moldProcess, MOLD_RULES } from "../core/shop_mold.js";
 import { moldArch, hostOf } from "../core/shop_mold_more.js";
+import { extrusionProcess, EXTRUSION_RULES, DEFAULT_CONTENTS } from "../core/shop_extrusion.js";
 import { routing } from "../cad/shop.js";
 import { STOCK_FORMS } from "../cad/stock.js";
 import { INTERFACE_TYPES, interfaceSignature, ADHESIVES, BOND_PREPS } from "../cad/interfaces.js";
@@ -66,7 +67,7 @@ function render(main) {
   };
   const onMenu = (h, e) => { const side = h ? sideOf(h.normal) : null;
     popupMenu(e, side ? [{ title: `Face : ${WHERE[side]}` }, ...brief.interfaces.map((it) => ({ label: `Mettre « ${it.name || INTERFACE_TYPES[it.type].fr} » ici`, icon: "interfaces", disabled: it.where === side, run: () => put(it, side) })),
-      ...(brief.interfaces.length ? ["—"] : []), { title: "Ajouter une interface ici" }, ...SHAPES.map((sh) => ({ label: sh.title, icon: sh.icon, run: () => addShape(sh, side) }))]
+      "—", { label: "Vue normale à cette face", keys: "N", icon: "eye", run: () => viewer.lookAlong(h.normal) }, "—", { title: "Ajouter une interface ici" }, ...SHAPES.map((sh) => ({ label: sh.title, icon: sh.icon, run: () => addShape(sh, side) }))]
       : [{ title: "Vue" }, { label: "Cadrer tout", icon: "fit", run: () => viewer.fit() }, { label: "Vue isométrique", icon: "part", run: () => viewer.view("iso") }, { label: "Dessus", icon: "part", run: () => viewer.view("top") }, { label: "Face", icon: "part", run: () => viewer.view("front") }]); };
 
   /* 1 — intention */
@@ -93,9 +94,9 @@ function render(main) {
   /* 3 — material and raw stock */
   const matSel = el("select", { onChange: (e) => { brief.material = e.target.value; drawIfaces(); drawStock(); propose(); } },
     ["metal", "plastic"].map((cls) => el("optgroup", { label: cls === "metal" ? "Métaux" : "Plastiques" }, MATERIALS.filter((m) => m.cls === cls).map((m) => el("option", { value: m.id, selected: m.id === brief.material }, m.name)))));
-  const stockGrid = el("div", { class: "stock-grid" }), stockWhy = el("p", { class: "muted small" }), moldBox = el("div");
+  const stockGrid = el("div", { class: "stock-grid" }), stockWhy = el("p", { class: "muted small" }), moldBox = el("div"), profBox = el("div");
   left.append(el("section", { class: "card taped" }, el("h2", null, el("span", { class: "step-no" }, "3"), "Sa matière et sa matière première"),
-    el("div", { class: "form-row" }, field("Matériau", matSel)), el("h3", null, "Ce que l'on prend sur l'étagère"), stockGrid, stockWhy, moldBox));
+    el("div", { class: "form-row" }, field("Matériau", matSel)), el("h3", null, "Ce que l'on prend sur l'étagère"), stockGrid, stockWhy, moldBox, profBox));
 
   /* 4 — the proposal */
   const holder = el("div", { class: "viewport atelier-view" }), chips = el("div", { class: "atelier-chips" }), out = el("div");
@@ -164,9 +165,12 @@ function render(main) {
     const rec = recommend(brief), mat = material(brief.material), plastic = mat && mat.cls !== "metal";
     for (const [form, proc] of Object.entries(SHOP_FORMS)) {
       const mould = form === "molded", canMould = mat && ["injection_molding", "die_casting", "sand_casting"].some((k) => mat.processes.includes(k));
-      const f = STOCK_FORMS[form], on = (brief.form || rec.form) === form, odd = mould ? !canMould : form === "print" ? !plastic : (plastic && ["sheet", "angle"].includes(form));
-      stockGrid.append(el("button", { class: "stock-card" + (on ? " on" : "") + (odd ? " odd" : ""), type: "button", "aria-pressed": on ? "true" : "false", "data-tip": f.hint, onClick: () => { brief.form = form === rec.form ? "" : form; drawStock(); propose(); } },
-        icon(f.icon), el("b", null, f.fr), el("small", null, PROCESSES[mould ? moldProcess(brief.material) : proc].fr), form === rec.form ? badge("Conseillé", "ok") : null));
+      const prof = form === "profile", canExtrude = mat && mat.processes.some((k) => /^extrusion_/.test(k));
+      const f = STOCK_FORMS[form], on = (brief.form || rec.form) === form, odd = mould ? !canMould : prof ? !canExtrude : form === "print" ? !plastic : (plastic && ["sheet", "angle"].includes(form));
+      stockGrid.append(el("button", { class: "stock-card" + (on ? " on" : "") + (odd ? " odd" : ""), type: "button", "aria-pressed": on ? "true" : "false", "data-tip": f.hint, onClick: () => { brief.form = form === rec.form ? "" : form;
+        if (prof && brief.form && !canExtrude) { brief.material = plastic ? "PVC-U" : "AL6063-T5"; matSel.value = brief.material; toast(`Matière changée pour ${material(brief.material).name} : celle d'avant ne s'extrude pas.`, "info", 4500); }
+        drawStock(); propose(); } },
+        icon(f.icon), el("b", null, f.fr), el("small", null, PROCESSES[mould ? moldProcess(brief.material) : prof ? extrusionProcess(brief.material) : proc].fr), form === rec.form ? badge("Conseillé", "ok") : null));
     }
     /* a moulded part is drawn around what it holds : the designer gives the volume to contain, the rules of the moulder do the rest */
     clear(moldBox);
@@ -188,6 +192,21 @@ function render(main) {
           arch === "shell" ? field("Fermeture", el("select", { "data-tip": "Des vis dans des bossages, ou des clips : des fenêtres dans les grands côtés, où s'accrochent les crochets du couvercle", onChange: (e) => { brief.closure = e.target.value === "clips" ? "clips" : undefined; brief.cover = e.target.value === "none" ? false : undefined; again(); } },
             [["screws", "Vis dans des bossages"], ["clips", metal ? "Clips (plastique seulement)" : "Clips, sans vis"], ["none", "Aucune"]].map(([k, l]) => el("option", { value: k, selected: k === (brief.cover === false ? "none" : brief.closure === "clips" ? "clips" : "screws") }, l)))) : null)); }
       moldBox.append(el("label", { class: "check small" }, el("input", { type: "checkbox", checked: brief.draft !== false, onChange: (e) => { brief.draft = e.target.checked ? undefined : false; again(); } }), `Dépouille modélisée dans la géométrie (${Math.max(R.draft[0], R.draft[1])}°) — décochez pour un modèle droit, dépouille déclarée seulement`));
+    }
+    /* an extruded profile is drawn around what slides, rests or simply fits in it */
+    clear(profBox);
+    if ((brief.form || rec.form) === "profile") {
+      const R = EXTRUSION_RULES[extrusionProcess(brief.material)], again = () => propose(), list = brief.contents || (brief.contents = DEFAULT_CONTENTS()); brief.length = brief.length || 120;
+      profBox.append(el("div", { class: "atelier-hint", style: { marginTop: ".6rem" } }, icon("extrusion"), el("div", null, el("b", null, `Profilé sur mesure — ${R.fr}`),
+        el("p", { class: "small", style: { margin: ".2rem 0 0" } }, "Dites ce qu'il contient : ce qui glisse dans des rainures, ce qui se pose à plat, ce qui doit seulement tenir dedans. La section se dessine seule — une paroi, des rainures avec leur jeu, des nervures, des canaux de vis pour les flasques — et chaque glissière devient une interface que la pièce glissée reprend."))));
+      list.forEach((c, i) => profBox.append(el("div", { class: "form-row tight" }, field("Ce qu'il contient", el("input", { type: "text", value: c.name || "", placeholder: "Ex. : Carte de puissance", onInput: (e) => { c.name = e.target.value; again(); } })), numIn(c, "w", "Largeur", again, 0.5), numIn(c, "h", "Hauteur", again, 0.5),
+        field("Tenue", el("select", { "data-tip": "Glissé : dans deux rainures, avec son jeu. Posé à plat : sur le fond, les bossages ou deux nervures. Libre : il doit seulement tenir dedans", onChange: (e) => { c.hold = e.target.value; drawStock(); again(); } }, [["rail", "Glissé"], ["flat", "Posé à plat"], ["free", "Libre"]].map(([k, l]) => el("option", { value: k, selected: k === c.hold }, l)))),
+        c.hold === "rail" ? numIn(c, "edge", "Épaisseur du bord", again, 0.1) : null, c.hold === "rail" ? numIn(c, "below", "Hauteur sous le bord", again, 0.5) : null,
+        el("button", { class: "icon-btn", type: "button", "aria-label": "Retirer cet élément", "data-tip": "Retirer", onClick: () => { list.splice(i, 1); drawStock(); again(); } }, "×"))));
+      profBox.append(el("div", { class: "form-actions", style: { justifyContent: "flex-start" } }, btn("Ajouter un élément", () => { list.push({ name: `Élément ${list.length + 1}`, w: 60, h: 12, hold: "rail", edge: 1.6, below: 3 }); drawStock(); again(); }, { icon: "plus", small: true })),
+        el("div", { class: "form-row tight" }, numIn(brief, "length", "Longueur coupée", again),
+          field("Section", el("select", { "data-tip": "Fermée : un tube, la filière porte un mandrin. Ouverte : un U, sans creux — le moins cher en plastique", onChange: (e) => { brief.open = e.target.value === "open" ? true : undefined; again(); } }, [["closed", "Fermée (tube)"], ["open", "Ouverte sur le dessus (U)"]].map(([k, l]) => el("option", { value: k, selected: (k === "open") === !!brief.open }, l)))),
+          field("Flasques", el("select", { "data-tip": "Des canaux de vis ouverts en C dans les angles : les flasques des bouts s'y vissent, sans taraudage", onChange: (e) => { if (e.target.value === "none") brief.ports = false; else { brief.ports = undefined; brief.screw = e.target.value; } again(); } }, [["M3", "Canaux de vis M3"], ["M4", "Canaux de vis M4"], ["M5", "Canaux de vis M5"], ["none", "Sans canal de vis"]].map(([k, l]) => el("option", { value: k, selected: brief.ports === false ? k === "none" : k === (brief.screw || "M3") }, l))))));
     }
     if (moulded !== wasMoulded) { wasMoulded = moulded; drawIfaces(); }
     stockWhy.textContent = brief.form && brief.form !== rec.form ? `Votre choix : ${STOCK_FORMS[brief.form].fr.toLowerCase()}. Le compagnon conseillait : ${STOCK_FORMS[rec.form].fr.toLowerCase()} — ${rec.why}` : rec.why;

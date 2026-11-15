@@ -7,16 +7,16 @@ import { popupMenu, createSelection } from "./view_select.js";
 
 /* The gestures every 3D view answers, whatever it shows (a screen adds its own with opts.menuFor and opts.onKey). */
 export const VIEW_KEYS = [["Clic", "Sélectionner une face, une arête ou un point"], ["Ctrl + clic", "Ajouter à la sélection, ou en retirer"], ["Clic droit", "Menu : ce qui se fait ici"], ["Deux éléments choisis", "Leur distance, leur angle ou leur entraxe s'affiche"],
-  ["N", "Regarder la face choisie de face"], ["Ctrl + C", "Copier la mesure"], ["Échap", "Tout désélectionner"], ["F · 0 à 6", "Cadrer · vues"], ["X · M · S · Maj + S", "Rayons X · mesurer · coupe · inverser la coupe"], ["E", "Vue éclatée (assemblage)"]];
+  ["N", "Vue normale à la face choisie ou survolée ; N encore : l'autre côté"], ["Ctrl + C", "Copier la mesure"], ["Échap", "Tout désélectionner"], ["F · 0 à 6", "Cadrer · vues"], ["X · M · S · Maj + S", "Rayons X · mesurer · coupe · inverser la coupe"], ["E", "Vue éclatée (assemblage)"]];
 
 export function createViewport(host, opts = {}) {
   host.classList.add("viewport");
   /* opts.select !== false : the view keeps its own selection — a click selects a face, an edge or a point, Ctrl + click adds —
      unless the screen says it used the click (onPick returns true). A screen with its own selection (the part studio) passes false. */
-  let sel = null;
+  let sel = null, hovered = null;                                 // hovered : the face under the pointer, for the gestures that need no selection
   const viewer = new Viewer(host, {
     onPick: (h, e) => { if (opts.onPick && opts.onPick(h, e) === true) return; if (sel) sel.click(sel.at(h), !!(e && (e.ctrlKey || e.metaKey))); },
-    onHover: (h, e) => { if (opts.onHover) opts.onHover(h, e); if (sel) sel.hover(opts.hoverSelect === false ? null : sel.at(h)); },
+    onHover: (h, e) => { hovered = h && h.normal ? h : null; if (opts.onHover) opts.onHover(h, e); if (sel) sel.hover(opts.hoverSelect === false ? null : sel.at(h)); },
     onMenu: (h, e) => (opts.onMenu ? opts.onMenu(h, e) : popupMenu(e, contextMenu(h))), onMeasure: opts.onMeasure, onKey: (e) => onKey(e) });
   host._viewer = viewer;                                          // for whoever inspects the page (tests, the console)
   const picked = el("div", { class: "chip picked view-picked hidden", "data-tip": "Ce qui est sélectionné, et ce qu'il mesure. Ctrl + clic pour ajouter ; Échap pour tout désélectionner." });
@@ -29,7 +29,7 @@ export function createViewport(host, opts = {}) {
   const group = (...items) => { const g = el("div", { class: "group" }, items); tools.append(g); return g; };
   const vbtn = (label, tip, fn, ico) => btn(label, fn, { small: true, tip, icon: ico });
   group(vbtn("Iso", "Vue isométrique (touche 0)", () => viewer.view("iso")), vbtn("Face", "Vue de face (1)", () => viewer.view("front")), vbtn("Dessus", "Vue de dessus (5)", () => viewer.view("top")),
-    vbtn("Droite", "Vue de droite (4)", () => viewer.view("right")), vbtn("", "Cadrer tout (F)", () => viewer.fit(), "fit"));
+    vbtn("Droite", "Vue de droite (4)", () => viewer.view("right")), vbtn("Normale", "Vue normale à la face choisie ou survolée (N) — une seconde fois : l'autre côté de la face", () => normalView()), vbtn("", "Cadrer tout (F)", () => viewer.fit(), "fit"));
 
   const state = { xray: false, section: null, measure: false, flip: false };
   const bX = vbtn("", "Rayons X : voir à travers les pièces (X)", () => toggleXray(), "eye");
@@ -63,7 +63,7 @@ export function createViewport(host, opts = {}) {
     else if (k === "e" && explode) { explode.value = +explode.value > 0 ? "0" : "0.6"; explode.dispatchEvent(new Event("input")); }
     else if (k === "escape" && state.measure) toggleMeasure();
     else if (k === "escape" && sel && sel.count()) sel.clear();
-    else if (k === "n" && sel && lookAt(sel.items().find((x) => x.kind === "face"))) { /* the chosen face, seen square on */ }
+    else if (k === "n") normalView();
     else if (k === "c" && (e.ctrlKey || e.metaKey) && sel && sel.count()) copyMeasure();
     else if (e.key === "?" && sel) showKeys();
     else if (opts.onKey) opts.onKey(e);
@@ -76,6 +76,12 @@ export function createViewport(host, opts = {}) {
 
   const showKeys = () => modal("La vue 3D à la souris et au clavier", el("table", { class: "data" }, el("tbody", null, [...VIEW_KEYS, ...(opts.keys || [])].map(([k, t]) => el("tr", null, el("td", null, el("kbd", null, k)), el("td", null, t))))));
   const lookAt = (x) => { if (!x || !x.hit || !x.hit.normal) return false; viewer.lookAlong(x.hit.normal); return true; };
+  /** Square on the face chosen — or, with nothing chosen, the one under the pointer. Asked twice, the view turns round : front, back, front. */
+  function normalView() {
+    const x = sel ? sel.items().find((i) => i.kind === "face" && i.hit && i.hit.normal) : null, n = x ? x.hit.normal : hovered ? hovered.normal : null;
+    if (!n) { toast("Choisissez une face d'un clic (ou survolez-la), puis N : la vue se place perpendiculaire à elle. N encore : l'autre côté.", "info", 4500); return; }
+    if (viewer.lookAlong(n)) toast("Vue de dos de la face.", "info", 1500);
+  }
   const copyMeasure = async () => { const t = sel ? sel.measure() : ""; if (t && await copyText(t)) toast(`Copié : ${t}`, "success", 2500); };
   /** A cut through the point the designer shows, square to the axis the face looks along. */
   const cutAt = (x) => { const n = x.hit.normal.map(Math.abs), i = n.indexOf(Math.max(...n)); api.sectionAt("xyz"[i], x.hit.point[i]); };
@@ -84,9 +90,10 @@ export function createViewport(host, opts = {}) {
     const x = sel ? sel.at(h) : null;
     if (x && sel && !sel.has(x)) sel.click(x, false);                       // a right click on something not yet chosen chooses it
     const own = (opts.menuFor ? opts.menuFor(h, x, sel) : null) || [], on = sel && sel.count() ? [{ title: sel.measure() || "Sélection" },
-      ...(x && x.kind === "face" && x.hit.normal ? [{ label: "Regarder cette face", keys: "N", icon: "eye", run: () => lookAt(x) }, { label: "Couper ici", icon: "section", run: () => cutAt(x) }] : []),
+      ...(x && x.kind === "face" && x.hit.normal ? [{ label: "Vue normale à cette face", keys: "N", icon: "eye", run: () => lookAt(x) }, { label: "Couper ici", icon: "section", run: () => cutAt(x) }] : []),
       { label: "Copier la mesure", keys: "Ctrl+C", icon: "copy", run: copyMeasure }, { label: "Tout désélectionner", keys: "Échap", icon: "cross", run: () => sel.clear() }, "—"] : [];
-    return [...own, ...(own.length ? ["—"] : []), ...on, ...menu(), "—", { label: "Souris et raccourcis…", keys: "?", icon: "help", run: showKeys }];
+    const bare = !on.length && h && h.normal ? [{ label: "Vue normale à cette face", keys: "N", icon: "eye", run: () => viewer.lookAlong(h.normal) }, "—"] : [];      // a view with no selection of its own still looks square at what is under the pointer
+    return [...own, ...(own.length ? ["—"] : []), ...on, ...bare, ...menu(), "—", { label: "Souris et raccourcis…", keys: "?", icon: "help", run: showKeys }];
   }
 
   const api = {

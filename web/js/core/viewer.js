@@ -175,8 +175,8 @@ export class Viewer {
     this.canvas.style.width = w + "px"; this.canvas.style.height = h + "px";
     this.w = w; this.h = h; this.dirty = true;
   }
-  /** Looks straight at a face : n = its outward normal. */
-  lookAlong(n) { this.dir.set(n[0], n[1], n[2]).normalize(); this.camera.up.set(0, Math.abs(n[2]) > 0.9 ? 1 : 0, Math.abs(n[2]) > 0.9 ? 0 : 1); this.fit(); }
+  /** Looks straight at a face : n = its outward normal. Asked again while already square on it, the view turns round and shows the other side. → true when it shows the back. */
+  lookAlong(n) { const d = new THREE.Vector3(n[0], n[1], n[2]).normalize(), back = this.dir.dot(d) > 0.999; if (back) d.negate(); this.dir.copy(d); this.camera.up.set(0, Math.abs(d.z) > 0.9 ? 1 : 0, Math.abs(d.z) > 0.9 ? 0 : 1); this.fit(); return back; }
   view(name) { this.dir.set(...(VIEWS[name] || VIEWS.iso)).normalize(); this.camera.up.set(0, name === "top" ? 1 : name === "bottom" ? -1 : 0, name === "top" || name === "bottom" ? 0 : 1); this.fit(); }
   fit(margin = 1.25) {
     const bb = this.bbox(), c = bb.getCenter(new THREE.Vector3()), s = bb.getSize(new THREE.Vector3());
@@ -248,6 +248,7 @@ export class Viewer {
       const map = { f: () => this.fit(), 0: () => this.view("iso"), 1: () => this.view("front"), 2: () => this.view("back"), 3: () => this.view("left"), 4: () => this.view("right"), 5: () => this.view("top"), 6: () => this.view("bottom") };
       if (map[k] && !e.ctrlKey && !e.metaKey) { map[k](); e.preventDefault(); }
       else if (this.opts.onKey) this.opts.onKey(e);
+      else if (k === "n" && this.hoverHit && this.hoverHit.normal) this.lookAlong(this.hoverHit.normal);      // a bare view : N looks square at the face under the pointer
     });
   }
   _pick(e) {
@@ -268,7 +269,7 @@ export class Viewer {
   _hover(e) {
     if (!this.opts.onHover && this.mode !== "measure") return;
     if (this._hoverRaf) return;
-    this._hoverRaf = requestAnimationFrame(() => { this._hoverRaf = 0; const hit = this._pick(e); if (this.opts.onHover) this.opts.onHover(hit, e); });
+    this._hoverRaf = requestAnimationFrame(() => { this._hoverRaf = 0; const hit = this._pick(e); this.hoverHit = hit; if (this.opts.onHover) this.opts.onHover(hit, e); });
   }
   _click(e) {
     const hit = this._pick(e);

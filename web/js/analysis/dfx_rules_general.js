@@ -85,7 +85,7 @@ export function checkInterfaces(ctx) {
     if (ctx.process === "pcb") return;                          // boards: PCB-01
     for (const it of bolts) {
       const th = THREADS[String(it.params.screw).toUpperCase()], bb = bodyBBox(ctx, it), f = it.frame;
-      if (!th || !bb) continue;
+      if (!th || !bb || (it.opts && it.opts.port)) continue;      // a screw port of an extruded profile : the screw is held by its boss, not by an edge distance
       const sign = it.side === "B" ? -1 : 1, o = it.opts || {};
       const holeR = (it.side === "A" || o.thread === "clearance" ? clearanceHole(it.params.screw, o.fit || "medium") : o.thread === "insert" ? th.insert[0] : th.tap) / 2;
       let worst = null;

@@ -2,6 +2,7 @@
    assembly and of each part, BOM, interface register, isolation verdicts, DFM / DFA findings, drawings, and the
    review decisions. Printable (PDF through the browser) or saved as one self-contained HTML file. */
 
+import { assemblyHealth, HEALTH } from "../core/joint_health.js";
 import { el, clear, icon, btn, badge, table, fmt, fmtMass, download, toast } from "../core/dom.js";
 import { registerModule, setStatus } from "../core/app.js";
 import { store } from "../core/store.js";
@@ -96,8 +97,9 @@ function render(main) {
       sec.append(el("h3", { style: { marginTop: ".8rem" } }, "Nomenclature (BOM)"), table(["#", "Référence", "Désignation", "Qté", "Matériau", "Masse"], a.ctx.bom.map((r) => [String(r.item), r.id, r.name, String(r.qty), r.material || "—", r.mass === null ? "—" : fmtMass(r.mass)])));
       /* the joint register : each mated pair with its number, its kind and what holds it ; then the interfaces that look outside the product */
       const reg = joints(a.ctx.asm, a.ctx.built, Object.fromEntries(p.parts.map((x) => [x.id, x]))), linked = new Map((a.asm.mates || []).map((m) => [m.id, m.linked !== false]));
-      sec.append(el("h3", { style: { marginTop: ".8rem" } }, "Registre des joints"), table(["N°", "Joint", "Pièce A · interface", "Pièce B · interface", "Ce qui le tient", "Procédé", "Lien"],
-        reg.map((r) => [r.id, r.kind, r.a, r.b, r.hardware.map((h) => `${String(h.qty).replace(".", ",")}${h.unit ? ` ${h.unit}` : " ×"} ${h.name}`).join(" + ") || "—", r.process || "—", linked.get(r.id) ? "paramètres liés" : "non lié"])));
+      const H = assemblyHealth(a.ctx.asm, a.ctx.built, Object.fromEntries(p.parts.map((x) => [x.id, x])), a.ctx.sol), hOf = new Map(H.rows.map((r) => [r.id, r]));
+      sec.append(el("h3", { style: { marginTop: ".8rem" } }, "Registre des joints"), el("p", { class: "muted", style: { fontSize: ".84rem" } }, `Santé des accouplements — ${H.text}. Les interférences se cherchent dans l'écran Assemblage.`), table(["N°", "Joint", "Pièce A · interface", "Pièce B · interface", "Ce qui le tient", "Procédé", "Lien", "Santé"],
+        reg.map((r) => [r.id, r.kind, r.a, r.b, r.hardware.map((h) => `${String(h.qty).replace(".", ",")}${h.unit ? ` ${h.unit}` : " ×"} ${h.name}`).join(" + ") || "—", r.process || "—", linked.get(r.id) ? "paramètres liés" : "non lié", hOf.get(r.id) ? `${HEALTH[hOf.get(r.id).state].fr}${hOf.get(r.id).notes.length ? ` — ${hOf.get(r.id).notes.join(" ")}` : ""}` : "—"])));
       const outer = freeInterfaces(a.ctx.asm, a.ctx.built).filter((f) => f.external);
       if (outer.length) sec.append(el("h3", { style: { marginTop: ".8rem" } }, "Interfaces externes — le contrat avec l'extérieur du produit"), table(["Pièce", "Interface", "Type", "Vers"], outer.map((f) => [f.part, f.iface.name || f.iface.id, INTERFACE_TYPES[f.iface.type].fr, f.iface.partner || "—"])));
       const gamme = assemblyPlan(a.asm, p, { hardwareOf: (m) => mateHardware(a.ctx.asm, a.ctx.built, m), mass: a.ctx.mass.mass });

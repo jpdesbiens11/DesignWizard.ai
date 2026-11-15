@@ -98,7 +98,7 @@ export function candidates(asm, built, withRejected = false) {
     const [a, b] = x.iface.side === "B" ? [y, x] : [x, y];              // side A first
     const rej = rejected.has(pairKey({ inst: a.inst, iface: a.iface.id }, { inst: b.inst, iface: b.iface.id }));
     if (rej && !withRejected) continue;
-    out.push({ rejected: rej, a: { inst: a.inst, iface: a.iface.id }, b: { inst: b.inst, iface: b.iface.id }, by: c.by, same: c.same, type: a.iface.type,
+    out.push({ rejected: rej, a: { inst: a.inst, iface: a.iface.id }, b: { inst: b.inst, iface: b.iface.id }, by: c.by, same: c.same, type: a.iface.type, ...(a.iface.type === "rail" ? { flip: true } : {}),     // a tongue slides IN : the two frames coincide instead of facing each other
       score: (c.by === "key" ? 4 : 2) + (c.same ? 1 : 0), label: `${a.iface.name} ↔ ${b.iface.name}` });
   }
   return out.sort((p, q) => q.score - p.score);
@@ -113,7 +113,7 @@ export function autoMate(asm, built) {
     const ka = `${c.a.inst}/${c.a.iface}`, kb = `${c.b.inst}/${c.b.iface}`;
     if (used.has(ka) || used.has(kb)) continue;
     used.add(ka); used.add(kb);
-    const mate = { id: `M${++n}`, a: c.a, b: c.b, linked: true, by: c.by };
+    const mate = { id: `M${++n}`, a: c.a, b: c.b, linked: true, by: c.by, ...(c.flip ? { flip: true } : {}) };
     asm.mates.push(mate); added.push(mate);
   }
   if (added.length) asm.mseq = n;
@@ -139,8 +139,8 @@ export function joints(asm, built, specs = {}) {
 const patternCount = (p) => { try { return patternPoints(p.pattern).length; } catch (e) { return "?"; } };
 /** The register as a table for a spreadsheet. */
 export function jointsCsv(rows) {
-  const q = (v) => (/[;"\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v));
-  return `\ufeff${[["N°", "Joint", "Pièce A · interface", "Pièce B · interface", "Clé", "Ce qui le tient", "Procédé"], ...rows.map((r) => [r.id, r.kind, r.a, r.b, r.key, r.hardware.map((h) => `${h.qty}${h.unit ? ` ${h.unit}` : " ×"} ${h.name}`).join(" + "), r.process])].map((l) => l.map(q).join(";")).join("\r\n")}\r\n`;
+  const q = (v) => (/[;"\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v)), health = rows.some((r) => r.health);      // the health columns appear when the register carries them
+  return `\ufeff${[["N°", "Joint", "Pièce A · interface", "Pièce B · interface", "Clé", "Ce qui le tient", "Procédé", ...(health ? ["Santé", "Remarques"] : [])], ...rows.map((r) => [r.id, r.kind, r.a, r.b, r.key, r.hardware.map((h) => `${h.qty}${h.unit ? ` ${h.unit}` : " ×"} ${h.name}`).join(" + "), r.process, ...(health ? [r.health || "", (r.notes || []).join(" ")] : [])])].map((l) => l.map(q).join(";")).join("\r\n")}\r\n`;
 }
 
 /** After the shared params of an interface changed on one part: copy them to every linked partner (the dependency).

@@ -74,10 +74,28 @@ function render(main, args) {
     return null;
   }
   const asm = () => store.assembly(id);
-  const st = { ctx: null, bodies: null, results: null, sel: null, token: 0, running: false, ghost: true, worker: null };
+  const st = { ctx: null, bodies: null, results: null, sel: null, token: 0, running: false, ghost: true, worker: null, hidden: new Set() };      // hidden : bodies put aside to see behind them — still analysed
   const iso = () => ({ nets: collectNets(asm()), params: { ...DEFAULT_PARAMS, ...((asm().isolation || {}).params || {}) }, levels: (asm().isolation || {}).levels || {}, overrides: (asm().isolation || {}).overrides || {} });
   const save = (fn, label) => store.updateAssembly(id, (a) => { a.isolation = a.isolation || {}; a.isolation.nets = collectNets(a); fn(a.isolation); }, label);
-  const vp = createViewport(view, { name: () => `${id}_isolation`, explode: false });
+  /* ---- hide and bring back, roles and potentials : with the mouse, on the body itself ---- */
+  const ROLE_FR = { conductor: "conducteur", floating: "flottant", insulator: "isolant", ignore: "ignoré" }, LEVELS = [["3V3", 3.3], ["5V", 5], ["12V", 12], ["24V", 24], ["48V", 48], ["HV+", 400], ["HV-", 0], ["GND", 0]];
+  const hide = (bid, on = true) => { if (on) st.hidden.add(bid); else st.hidden.delete(bid); vp.viewer.setVisible(bid, !on); renderLeft(); };
+  const showAll = () => { for (const k of [...st.hidden]) vp.viewer.setVisible(k, true); st.hidden.clear(); renderLeft(); };
+  const setRole = (b, kind) => save((x) => { x.overrides = x.overrides || {}; const q = { ...(x.overrides[b.id] || {}) }; if (kind) q.kind = kind; else delete q.kind; x.overrides[b.id] = q; }, `Rôle de ${b.name}`);
+  const setNet = (b, net) => save((x) => { x.overrides = x.overrides || {}; x.overrides[b.id] = { ...(x.overrides[b.id] || {}), kind: "conductor", net }; }, `${b.name} : potentiel ${net}`);
+  const addLevel = (name, voltage, then) => save((x) => { if (!x.nets.some((n) => n.name === name)) x.nets.push({ name, kind: "dc", voltage }); if (then) then(x); }, `Potentiel ${name} ajouté`);
+  const bodyMenu = (h) => {
+    const b = h && st.bodies ? st.bodies.find((q) => q.id === h.id) : null;
+    if (!b) return st.hidden.size ? [{ label: `Ramener les ${st.hidden.size} corps masqué(s)`, keys: "Maj+H", icon: "eye", run: showAll }] : null;
+    const nets = iso().nets, missing = LEVELS.filter(([n]) => !nets.some((q) => q.name === n));
+    return [{ title: `${b.name} — ${ROLE_FR[b.kind]}${b.net ? ` · ${b.net}` : ""}` }, { label: "Masquer ce corps", keys: "H", icon: "eye", run: () => hide(b.id) }, ...(st.hidden.size ? [{ label: `Ramener les ${st.hidden.size} corps masqué(s)`, keys: "Maj+H", icon: "eye", run: showAll }] : []),
+      "—", { title: "Son rôle" }, ...Object.entries(ROLE_FR).map(([k, l]) => ({ label: `${l[0].toUpperCase()}${l.slice(1)}`, icon: k === "insulator" ? "layers" : k === "ignore" ? "cross" : "power", disabled: b.kind === k, run: () => setRole(b, k) })),
+      "—", { title: "Son potentiel" }, ...nets.map((n) => ({ label: `${n.name} — ${fmt(n.voltage, 1)} V`, icon: "power", disabled: b.net === n.name, run: () => setNet(b, n.name) })),
+      ...missing.slice(0, 5).map(([n, v]) => ({ label: `Nouveau potentiel ${n} (${String(v).replace(".", ",")} V)`, icon: "plus", run: () => addLevel(n, v, (x) => { x.overrides = x.overrides || {}; x.overrides[b.id] = { ...(x.overrides[b.id] || {}), kind: "conductor", net: n }; }) }))];
+  };
+  const hovered = () => { const h = vp.viewer.hoverHit; return h && st.bodies ? st.bodies.find((q) => q.id === h.id) : null; };
+  const vp = createViewport(view, { name: () => `${id}_isolation`, explode: false, menuFor: (h) => bodyMenu(h), keys: [["H", "Masquer le corps survolé"], ["Maj + H", "Ramener tous les corps masqués"]],
+    onKey: (e) => { const k = e.key.toLowerCase(); if (k === "h" && e.shiftKey) showAll(); else if (k === "h") { const b = hovered(); if (b) hide(b.id); else toast("Survolez un corps, puis H pour le masquer ; Maj + H les ramène tous.", "info", 3500); } } });
   const info = el("span", { class: "chip" }, "—");
   vp.setStatus(info);
   const bG = btn("Masse transparente", () => { st.ghost = !st.ghost; bG.classList.toggle("on", st.ghost); paint(); }, { small: true, icon: "layers", tip: "Isolants en transparence pour voir les conducteurs et les chemins" });
@@ -107,7 +125,7 @@ function render(main, args) {
     if (!st.ctx) return;
     const role = new Map(st.bodies.map((b) => [b.id, b]));
     showAssembly(vp.viewer, st.ctx, { skipHidden: false, colorOf: (inst, body) => { const r = role.get(`${inst.id}/${body.name}`); return r.kind === "conductor" ? cssColor(netColor(r.net)) : r.kind === "floating" ? "#c9a94f" : null; } });
-    for (const b of st.bodies) vp.viewer.setOpacity(b.id, b.kind === "insulator" && st.ghost ? 0.22 : b.kind === "ignore" ? 0.1 : 1);
+    for (const b of st.bodies) { vp.viewer.setOpacity(b.id, b.kind === "insulator" && st.ghost ? 0.22 : b.kind === "ignore" ? 0.1 : 1); if (st.hidden.has(b.id)) vp.viewer.setVisible(b.id, false); }
     drawPaths();
   }
   function drawPaths() {
@@ -169,7 +187,10 @@ function render(main, args) {
     const scroll = el("div", { class: "side-scroll" });
     left.append(scroll);
     scroll.append(field("Assemblage analysé", el("select", { onChange: (e) => go(`#/creepage/${encodeURIComponent(e.target.value)}`) }, store.assemblies.map((a) => el("option", { value: a.id, selected: a.id === id }, `${a.id} — ${a.name || ""}`)))));
-    const netSec = el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, "Nets"), btn("", () => save((x) => { x.nets.push({ name: `NET${x.nets.length + 1}`, kind: "dc", voltage: 0 }); }, "Net ajouté"), { small: true, icon: "plus", tip: "Ajouter un net" })));
+    const netSec = el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, "Potentiels (nets)"), btn("", () => save((x) => { x.nets.push({ name: `NET${x.nets.length + 1}`, kind: "dc", voltage: 0 }); }, "Net ajouté"), { small: true, icon: "plus", tip: "Ajouter un potentiel sans nom" })));
+    const lack = LEVELS.filter(([n]) => !I.nets.some((q) => q.name === n));
+    if (lack.length) netSec.append(el("div", { class: "form-actions", style: { justifyContent: "flex-start", flexWrap: "wrap", gap: ".25rem", margin: "0 0 .4rem" } }, el("small", { class: "muted", style: { width: "100%" } }, "Un même assemblage porte souvent plusieurs potentiels (logique, capteurs, puissance) — ajoutez les vôtres :"),
+      lack.map(([n, v]) => btn(n, () => addLevel(n, v), { small: true, tip: `Ajouter le potentiel ${n} à ${String(v).replace(".", ",")} V (la tension se corrige ensuite)` }))));
     for (const n of I.nets) {
       const upd = (key, val) => save((x) => { const q = x.nets.find((k) => k.name === n.name); q[key] = val; }, `Net ${n.name} : ${key}`);
       netSec.append(el("div", { class: "param", style: { gridTemplateColumns: "auto minmax(0,1fr) 78px auto" } }, el("span", { class: "swatch", style: { background: cssColor(netColor(n.name)) } }), el("label", null, n.name, el("small", null, n.kind === "ac" ? "V RMS" : "V DC")),
@@ -185,10 +206,13 @@ function render(main, args) {
       el("div", { class: "form-row" }, sel("level", "Isolation par défaut", [["functional", "Functional"], ["basic", "Basic"], ["reinforced", "Reinforced"]]), num("voltage_factor", "Facteur maison k", "0.5", "Tables lues à k × U")),
       el("p", { class: "muted", style: { fontSize: ".78rem" } }, "Règles : IEC 60664-1 (tables intégrées, à vérifier contre votre copie de la norme avant toute décision de certification).")));
     if (st.bodies) {
-      const sec = el("div", { class: "side-section" }, el("h3", null, "Rôle des corps"));
+      const sec = el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, "Rôle des corps"), st.hidden.size ? btn(`Ramener (${st.hidden.size})`, showAll, { small: true, icon: "eye", tip: "Ramener tous les corps masqués (Maj + H)" }) : null),
+        el("p", { class: "muted", style: { fontSize: ".78rem", margin: "0 0 .3rem" } }, "Clic droit sur un corps dans la vue : le masquer, lui donner son rôle et son potentiel. Un corps masqué reste analysé."));
       for (const b of st.bodies) {
-        const o = I.overrides[b.id] || {};
-        sec.append(el("div", { class: "param", style: { gridTemplateColumns: "minmax(0,1fr) 104px 74px" } }, el("label", { "data-tip": `${b.id} · ${b.material}${b.group ? ` · group ${b.group}` : ""}` }, b.name),
+        const o = I.overrides[b.id] || {}, off = st.hidden.has(b.id);
+        sec.append(el("div", { class: "param", style: { gridTemplateColumns: "auto minmax(0,1fr) 104px 74px", opacity: off ? 0.55 : 1 } },
+          el("button", { class: "icon-btn", type: "button", "aria-label": off ? `Ramener ${b.name}` : `Masquer ${b.name}`, "aria-pressed": off ? "true" : "false", "data-tip": off ? "Masqué — cliquez pour le ramener" : "Masquer ce corps", onClick: () => hide(b.id, !off) }, icon(off ? "cross" : "eye")),
+          el("label", { "data-tip": `${b.id} · ${b.material}${b.group ? ` · group ${b.group}` : ""}${off ? " · masqué" : ""}`, style: off ? { textDecoration: "line-through" } : null }, b.name),
           el("select", { "aria-label": `Rôle de ${b.name}`, style: { padding: ".15rem .2rem", fontSize: ".8rem" }, onChange: (e) => save((x) => { x.overrides = x.overrides || {}; const q = { ...(x.overrides[b.id] || {}) }; if (e.target.value) q.kind = e.target.value; else delete q.kind; x.overrides[b.id] = q; }, `Rôle de ${b.name}`) },
             [["", `auto (${{ conductor: "conducteur", floating: "flottant", insulator: "isolant", ignore: "ignoré" }[b.kind]})`], ["conductor", "conducteur"], ["floating", "flottant"], ["insulator", "isolant"], ["ignore", "ignoré"]].map(([v, l]) => el("option", { value: v, selected: (o.kind || "") === v }, l))),
           el("select", { "aria-label": `Net de ${b.name}`, style: { padding: ".15rem .2rem", fontSize: ".8rem" }, disabled: b.kind === "insulator" || b.kind === "ignore", onChange: (e) => save((x) => { x.overrides = x.overrides || {}; x.overrides[b.id] = { ...(x.overrides[b.id] || {}), net: e.target.value || null }; }, `Net de ${b.name}`) },
