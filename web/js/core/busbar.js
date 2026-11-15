@@ -22,7 +22,7 @@ export const blankBusbar = () => ({ name: "Busbar", material: "CU-C110", net: "H
 
 /** The legs as geometry, in the X–Z plane (the width runs along Y). → [{ i, C: [x, z] start of the centre line, d, n (left normal), L, from, to (the flat part : s between them), face(side), level(side) }] */
 export function legsOf(def) {
-  const out = [], t = def.t, set = def.r + t + 0.5; let C = [0, t / 2], d = [1, 0];
+  const out = [], t = def.t, set = def.r + t + 0.5; let C = [0, def.zc ?? t / 2], d = [1, 0];      // zc : the height of the centre line when it is not the middle of the strip (a track inside a flexible circuit)
   def.legs.forEach((leg, i) => {
     if (i) { const up = (leg.bend || 90) > 0; d = up ? [-d[1] + 0, d[0] + 0] : [d[1] + 0, -d[0] + 0]; }      // + 0 : never a negative zero
     const n = [-d[1] + 0, d[0] + 0], L = Number(leg.L) || 0, c = C;
@@ -57,7 +57,7 @@ export function stripProfile(def, grow = 0) {
     left.push([g.C[0] + m[0] * h, g.C[1] + m[1] * h, turnLeft ? rin : rout]); right.push([g.C[0] - m[0] * h, g.C[1] - m[1] * h, turnLeft ? rout : rin]);
   });
   left.push([E[0] + end.n[0] * h, E[1] + end.n[1] * h]); right.push([E[0] - end.n[0] * h, E[1] - end.n[1] * h]);
-  return { poly: [...right, ...left.reverse()].map((q) => q.map(r2)) };
+  return { poly: [...right, ...left.reverse()].map((q) => q.map((x) => Math.round(x * 1e4) / 1e4)) };      // to the tenth of a micron : a copper track is 35 µm thick
 }
 /** Insulations a solid busbar can wear : the material of the sleeve and its usual thickness (mm). */
 export const INSULATIONS = { "EPOXY": { fr: "Poudre époxy", t: 0.3 }, "PET-FILM": { fr: "Film polyester", t: 0.19 }, "PI-FILM": { fr: "Film polyimide", t: 0.1 } };

@@ -8,7 +8,7 @@ import { toDwiz } from "./dwiz.js";
 import { toFeatureScript } from "../cad/featurescript.js";
 import { expandSpec } from "../cad/shop.js";
 
-const PART_SCREENS = new Set(["parts", "extrusion", "pcb", "fea", "dfx"]);
+const PART_SCREENS = new Set(["parts", "extrusion", "pcb", "fea", "dfx", "busbar", "flex"]);
 const KIND_FR = { part: "la pièce", assembly: "l'assemblage", board: "la carte", project: "le projet" };
 const light = (d) => { const c = JSON.parse(JSON.stringify(d)); for (const p of c.parts && /^project/.test(c.dw || "") ? c.parts : [c]) if (p && p.step && typeof p.step === "object" && String(p.step.text || "").length > 2000) p.step = "(géométrie STEP importée)"; if (/^project/.test(c.dw || "")) { delete c.review; delete c.mvp; delete c.log; } return c; };
 

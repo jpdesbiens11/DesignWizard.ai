@@ -10,7 +10,7 @@ import { THEMES, currentTheme, applyTheme } from "./theme.js";
 import { toDwiz } from "./dwiz.js";
 import { dwizFileName } from "./dwiz_names.js";
 
-export const APP_VERSION = "0.21.0";
+export const APP_VERSION = "0.22.0";
 const modules = new Map();
 const ORDER = ["home", "shop", "parts", "extrusion", "pcb", "pcba", "assembly", "physics", "creepage", "dfx", "drawings", "review", "report"];
 const GROUP_BREAK = new Set(["shop", "assembly", "physics", "review"]);         // a pencil tick before these tabs
@@ -83,6 +83,7 @@ async function projectMenu(menu, close) {
     menu.append(item("Itérations MVP et revues…", "check", () => go("#/mvp"), close));
     menu.append(item("Bibliothèque électrique…", "power", () => go("#/library"), close));
     menu.append(item("Busbars et contacts…", "power", () => go("#/busbar"), close));
+    menu.append(item("Circuits flexibles…", "chip", () => go("#/flex"), close));
     menu.append(item("Exporter le projet (.dwiz)", "download", () => download(dwizFileName(p), toDwiz(p), "text/plain;charset=utf-8"), close));
     menu.append(item("Exporter en JSON", "download", () => download(`${p.id}.dwproject.json`, store.exportJson(), "application/json"), close));
   }
@@ -113,7 +114,7 @@ function route() {
   clear(main);
   app.context = {}; app.current = key; app.commands = [];
   document.documentElement.dataset.module = key;
-  document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.key === (key === "mvp" ? "review" : key === "library" || key === "busbar" ? "shop" : key)));
+  document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.key === (key === "mvp" ? "review" : key === "library" || key === "busbar" || key === "flex" ? "shop" : key)));
   const tab = document.querySelector(".tab.active"); if (tab && tab.scrollIntoView) tab.scrollIntoView({ block: "nearest", inline: "nearest" });      // the tool in use stays in sight in a narrow bar
   const m = modules.get(key);
   document.title = `${m.label} · DesignWizard.ai`;

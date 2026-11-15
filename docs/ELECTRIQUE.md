@@ -143,11 +143,46 @@ Le dialogue donne le volume (et celui de la cavité vide), la masse, la hauteur 
 pourcentage de la cavité. Le résultat devient une **pièce de l'assemblage** — géométrie exacte, masse, ligne de
 nomenclature, isolant pour l'analyse d'isolement. Quand les pièces autour changent, « Recalculer » reprend le volume.
 
+## Le circuit flexible
+
+Écran **Circuits flexibles** (`Atelier → Circuits flexibles`, ou menu Projet ; `web/js/core/flex.js`,
+`web/js/modules/flex.js`). Une bande de polyimide, pliée là où le produit le demande, qui porte **une piste par
+fonction** et de petits **capteurs** le long de son trajet. Sa définition reste dans la pièce (`flex`), et la pièce est
+réécrite à chaque changement — même squelette de branches et de plis que le busbar.
+
+- **La bande** : largeur, épaisseur, cuivre (18, 35 ou 70 µm), simple ou double face, rayon de pli, espace entre pistes.
+- **Les fonctions à relier** : pour chacune le signal ou le potentiel (`5V`, `GND`, `CAN-H`, `RS485-A`…), à quoi elle
+  sert, la largeur de piste et le courant.
+- **Les capteurs**, posés à la souris sur une face plane du film (clic droit ; clic pour déplacer, flèches, V pour le
+  verso, Suppr) :
+  - **sonde de température** (`TS1`…) : le composant est au dos, la face qui touche reste plane — une interface d'appui
+    que la cellule, le busbar ou le dissipateur reprend ;
+  - **prise de tension** (`VS1`…) : une patte de cuivre soudée (laser, résistance, ultrasons) sur un busbar ou une borne
+    de cellule — une interface soudée, et un conducteur au potentiel qu'elle ramène.
+  **Les pistes des capteurs s'ajoutent seules** : une par prise de tension, une par sonde, et un retour commun des sondes.
+- **Le raccordement à la carte** : une queue raidie à 0,3 mm qui entre dans un connecteur de la bibliothèque (Hirose
+  FH12, DF40…), ou une queue brasée. La pièce garde la référence du connecteur et le nombre de contacts.
+
+Une pièce, **un corps par piste** : le film isolant, chaque piste en cuivre avec son potentiel, le raidisseur, les
+capteurs. L'écran Isolation les lit tels quels — utile quand des prises de tension amènent côte à côte les potentiels
+d'un pack.
+
+**Ce que l'écran vérifie** : les pistes tiennent dans la largeur ; le rayon de pli vaut au moins 6 fois l'épaisseur en
+simple face, 12 fois en double face, pour un circuit posé une fois (100 fois s'il fléchit en service) ; chaque piste
+porte son courant (IPC-2221, piste couverte, échauffement de 20 K) ; largeur et espace d'au moins 0,1 mm ; les capteurs
+restent sur le plat, à l'écart des plis ; le connecteur porte le courant de chaque contact.
+
+**Avec une IA** : « Copier pour une IA » envoie la définition avec sa consigne (l'entrevue à mener, la réponse
+attendue) ; « Réimporter » lit la définition revenue, **liste ce qui a changé**, et réécrit la pièce en une étape
+annulable.
+
 ## Limites
 
 - Busbars : plis à 90° dans un seul plan, largeur constante. Le busbar laminé est plat, sans pli ni fenêtre dans ses
   couches ; il ne porte pas encore de circuit flexible entre ses couches, et se règle à la création seulement.
-- Pas encore de module de circuit flexible (pistes, capteurs de tension et de température).
+- Circuit flexible : géométrie de principe — pistes droites au cœur du film, sans plages, fenêtres de vernis ni
+  routage ; plis à 90° dans un seul plan ; il ne se glisse pas encore entre les couches d'un busbar laminé, et n'est
+  pas relié à l'arbre fonctionnel d'une carte (brique PCBA).
 - Le remplissage est une géométrie figée (STEP, lourde dans le fichier du projet) : il ne suit pas les pièces seul, il se
   recalcule. La gamme d'assemblage ne décrit pas encore la coulée.
 - Les rigidités diélectriques et les indices de résistance au cheminement des films sont des valeurs typiques.
