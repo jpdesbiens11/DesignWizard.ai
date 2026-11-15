@@ -48,12 +48,16 @@ class Store {
       author: "", parts: [], assemblies: [], log: [] };
   }
   async create(name, seed) {
-    const p = Object.assign(this.blank(name), seed ? clone(seed) : {});
-    if (seed && seed.id) p.id = `${seed.id}-${Date.now().toString(36)}`;
-    p.name = name || p.name;
-    this.adopt(p);
-    await this.saveNow();
-    return p;
+    if (this.creating) return this.creating;                    // a second click while the first project is still being written (a few seconds in Drive) : the same project, not a twin
+    this.creating = (async () => {
+      const p = Object.assign(this.blank(name), seed ? clone(seed) : {});
+      if (seed && seed.id) p.id = `${seed.id}-${Date.now().toString(36)}`;
+      p.name = name || p.name;
+      this.adopt(p);
+      await this.saveNow();
+      return p;
+    })();
+    try { return await this.creating; } finally { this.creating = null; }
   }
   async open(id) {
     let p;
@@ -197,5 +201,7 @@ class Store {
   exportJson() { return JSON.stringify(this.project, null, 1); }
 }
 
+/** A name no project bears yet : « name », then « name (2) », « name (3) »… */
+export const freshName = (name, taken) => { if (!taken.includes(name)) return name; let n = 2; while (taken.includes(`${name} (${n})`)) n++; return `${name} (${n})`; };
 export const store = new Store();
 export { clone };

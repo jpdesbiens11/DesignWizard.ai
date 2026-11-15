@@ -209,9 +209,9 @@ function render(main, args) {
       st.power.forEach((x, i) => sec.append(el("div", { class: "bc-row" }, regSel(x.region, (v) => { x.region = v; changed(); }), num(x.P, (v) => { x.P = v; changed(); }), el("small", null, "W"), st.power.length > 1 ? rm(st.power, i) : null)));
       sec.append(el("h3", { style: { marginTop: ".7rem" } }, el("span", { class: "grow" }, "Températures imposées"), btn("", () => { st.fixedT.push({ region: regions[5].key, T: 25 }); changed(); }, { small: true, icon: "plus", tip: "Ajouter une face tenue en température" })));
       st.fixedT.forEach((x, i) => sec.append(el("div", { class: "bc-row" }, regSel(x.region, (v) => { x.region = v; changed(); }), num(x.T, (v) => { x.T = v; changed(); }), el("small", null, "°C"), rm(st.fixedT, i))));
-      sec.append(el("h3", { style: { marginTop: ".7rem" } }, "Convection sur l'extérieur"), el("label", { class: "check" }, el("input", { type: "checkbox", checked: st.conv.on, onChange: (e) => { st.conv.on = e.target.checked; changed(); } }), "Toutes les faces exposées"),
+      sec.append(...[el("h3", { style: { marginTop: ".7rem" } }, "Convection sur l'extérieur"), el("label", { class: "check" }, el("input", { type: "checkbox", checked: st.conv.on, onChange: (e) => { st.conv.on = e.target.checked; changed(); } }), "Toutes les faces exposées"),
         st.conv.on ? el("div", { class: "bc-row" }, num(st.conv.h, (v) => { st.conv.h = v; changed(); }), el("small", null, "W/m²·K"), num(st.conv.Tamb, (v) => { st.conv.Tamb = v; changed(); }), el("small", null, "°C")) : null,
-        el("p", { class: "muted small" }, "Air calme : 5 à 15 W/m²·K ; air soufflé : 25 à 100 ; plaque froide à eau : 500 et plus."));
+        el("p", { class: "muted small" }, "Air calme : 5 à 15 W/m²·K ; air soufflé : 25 à 100 ; plaque froide à eau : 500 et plus.")].filter(Boolean));
     }
     const m = geo.bodies[0].material;
     scroll.append(el("div", { class: "side-section" }, el("h3", null, "Matériau"), el("p", { class: "small" }, geo.bodies.length > 1 ? `${geo.bodies.length} corps, chacun avec son matériau ; contacts collés, conduction parfaite.` : `${m.name} — E ${fmt(m.E / 1000, 1)} GPa, ν ${m.nu}, k ${fmt(m.k, 1)} W/m·K${m.alpha ? `, α ${fmt(m.alpha * 1e6, 1)} µm/m·K` : ""}${m.Re ? `, Re ${fmt(m.Re, 0)} MPa` : ""}.`),

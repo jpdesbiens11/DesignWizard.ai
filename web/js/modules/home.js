@@ -1,8 +1,8 @@
 /* DesignWizard.ai — Accueil: projects, the two demonstration projects, and the journey from the design intent to the report. */
 
-import { el, icon, btn, toast, promptBox, confirmBox, fmt } from "../core/dom.js";
-import { registerModule, go, app, refresh } from "../core/app.js";
-import { store } from "../core/store.js";
+import { el, icon, btn, toast, modal, promptBox, confirmBox, fmt } from "../core/dom.js";
+import { registerModule, go, app, refresh, setStatus } from "../core/app.js";
+import { store, freshName } from "../core/store.js";
 import { DEMO_DRIVE } from "../demo/demo_drive.js";
 import { demoBoard } from "../demo/demo_pcba.js";
 import { DEMO_HVB_PARTS, DEMO_HVB_ASSEMBLY } from "../demo/demo_hvb.js";
@@ -34,10 +34,24 @@ const BRICKS = [
   [9, "Échange ouvert", "Votre Google Drive, Onshape, et un code libre sous licence MIT.", "#/account"],
 ];
 
+const askDemo = (name) => new Promise((resolve) => { let out = null;
+  const m = modal("Démonstration déjà chargée", [el("p", null, `« ${name} » est déjà dans vos projets. Ouvrir la vôtre, telle que vous l'avez laissée, ou en charger une neuve à côté ?`),
+    el("div", { class: "form-actions" }, btn("Annuler", () => m.close()), btn("En charger une neuve", () => { out = "new"; m.close(); }, { icon: "plus" }), btn("Ouvrir la mienne", () => { out = "open"; m.close(); }, { primary: true, icon: "folder" }))], { onClose: () => resolve(out) }); });
+/* One click, one project. Writing a project in Drive takes a few seconds : the click answers at once and a second one is ignored — it used
+   to make a twin. A demonstration already among the projects is opened, unless the person asks for a fresh one, which is then numbered. */
+let loading = false;
 async function loadDemo(seed, target) {
-  const p = await store.create(seed.name, seed === DEMO_DRIVE ? { ...seed, boards: [demoBoard()] } : seed);       // the drive comes with its control board, designed from its functions
-  toast(`Projet « ${p.name} » chargé.`, "success");
-  go(target);
+  if (loading) return;
+  loading = true; setStatus("Chargement de la démonstration…", "busy");
+  try {
+    const list = await store.list(), mine = list.filter((x) => x.name === seed.name || String(x.name).startsWith(`${seed.name} (`));
+    const choice = mine.length ? await askDemo(seed.name) : "new";
+    if (!choice) { setStatus("Prêt", ""); return; }
+    if (choice === "open") { await store.open(mine[0].id); toast(`« ${mine[0].name} » ouvert, tel que vous l'avez laissé.`, "info"); go(target); return; }
+    const p = await store.create(freshName(seed.name, list.map((x) => x.name)), seed === DEMO_DRIVE ? { ...seed, boards: [demoBoard()] } : seed);       // the drive comes with its control board, designed from its functions
+    toast(`Projet « ${p.name} » chargé.`, "success");
+    go(target);
+  } catch (e) { toast(e.message || String(e), "error", 7000); setStatus("Prêt", ""); } finally { loading = false; }
 }
 const HVB_PROJECT = { dw: "project/1", id: "demo-hvb", name: "DEMO-HVB — busbars 800 V (référence creepage)", author: "DesignWizard.ai",
   description: "Le produit d'exemple de la formation Creepage & Clearance : distances connues par construction (16,56 / 26 mm entre HV+ et HV-).", parts: DEMO_HVB_PARTS, assemblies: [DEMO_HVB_ASSEMBLY], log: [] };

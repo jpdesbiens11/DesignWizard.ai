@@ -120,7 +120,7 @@ function render(main) {
     const a = session.account, canEdit = !session.hosted || (a && a.admin);
     if (!draft) draft = session.list || await loadAccess();
     if (!canEdit) {
-      access.append(el("p", null, "La démo en ligne est ouverte aux comptes Google approuvés par l'administrateur."), a && a.hash ? el("p", { class: "muted small" }, `Votre empreinte d'accès : ${a.hash}`) : null);
+      access.append(...[el("p", null, "La démo en ligne est ouverte aux comptes Google approuvés par l'administrateur."), a && a.hash ? el("p", { class: "muted small" }, `Votre empreinte d'accès : ${a.hash}`) : null].filter(Boolean));
       return;
     }
     const input = el("input", { type: "text", placeholder: "adresse@gmail.com — ou empreinte reçue d'une demande d'accès", spellcheck: false }), asAdmin = el("input", { type: "checkbox" });
@@ -134,7 +134,7 @@ function render(main) {
     input.addEventListener("keydown", (e) => { if (e.key === "Enter") add(); });
     const rows = [...(draft.admins || []).map((h) => [h, true]), ...(draft.approved || []).map((h) => [h, false])];
     access.append(el("p", { class: "muted small" }, "La liste ne contient aucune adresse : chaque compte y est une empreinte calculée dans ce navigateur. Elle vit dans le fichier public ", el("code", null, "web/acces.json"), " ; pour l'appliquer, téléchargez-le et commitez-le dans le dépôt."),
-      el("div", { class: "form-row" }, field("Approuver un compte", input), el("label", { class: "check" }, asAdmin, "administrateur"), btn("Ajouter", add, { icon: "plus" })),
+      el("div", { class: "form-row" }, el("div", { style: { flex: "1 1 100%" } }, field("Approuver un compte", input)), el("label", { class: "check" }, asAdmin, "administrateur"), btn("Ajouter", add, { icon: "plus" })),
       el("div", { class: "hash-list" }, rows.length ? rows.map(([h, adm]) => el("div", null, el("span", { class: "grow", "data-tip": h }, `${shortHash(h)}…`), adm ? badge("admin", "ok") : null, a && a.hash === h ? badge("vous", "info") : null,
         el("button", { class: "icon-btn", type: "button", "aria-label": "Retirer ce compte", onClick: () => { draft = revoke(draft, h); drawAccess(); } }, "×"))) : el("div", null, "Aucun compte approuvé.")),
       el("div", { class: "form-row" }, field("Ouverture", el("select", { onChange: (e) => { draft = { ...draft, mode: e.target.value }; } },

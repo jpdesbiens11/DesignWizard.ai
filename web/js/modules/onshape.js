@@ -109,10 +109,10 @@ function render(main, args) {
         const job = { did: state.doc.id, wid: state.doc.defaultWorkspaceId, assemblyName: `${asm.id} ${asm.name || ""}`.trim(), stepText, parts, options: { nativeDrawings: oNative.checked, attachPdf: oPdf.checked, setMetadata: oMeta.checked } };
         setStatus("Envoi prêt", "done"); mark(2);
         clear(out);
-        out.append(el("h3", { style: { marginTop: ".8rem" } }, `Ce qui sera créé dans « ${state.doc.name} »`), el("ul", { style: { fontSize: ".88rem", paddingLeft: "1.1rem" } }, planPush(job).map((l) => el("li", null, l))),
+        out.append(...[el("h3", { style: { marginTop: ".8rem" } }, `Ce qui sera créé dans « ${state.doc.name} »`), el("ul", { style: { fontSize: ".88rem", paddingLeft: "1.1rem" } }, planPush(job).map((l) => el("li", null, l))),
           state.doc.public ? el("p", { class: "form-error" }, "Ce document est PUBLIC : tout son contenu sera visible de tous.") : null,
           el("p", { class: "muted", style: { fontSize: ".82rem" } }, `STEP : ${fmt(stepText.length / 1024, 0)} Ko · ${parts.filter((x) => x.pdfBytes).length} PDF · rien n'est envoyé avant votre confirmation.`),
-          el("div", { class: "form-actions" }, btn("Envoyer vers Onshape", (e, b) => { b.disabled = true; run(job); }, { primary: true, icon: "onshape" })));
+          el("div", { class: "form-actions" }, btn("Envoyer vers Onshape", (e, b) => { b.disabled = true; run(job); }, { primary: true, icon: "onshape" }))].filter(Boolean));
       } catch (e) { clear(out); out.append(el("p", { class: "form-error" }, e.message)); setStatus("Préparation impossible", "bad"); }
     }
     async function run(job) {

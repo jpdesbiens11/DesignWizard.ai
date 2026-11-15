@@ -27,9 +27,9 @@ export function gate() {
           el("p", { class: "muted" }, "En attendant, l'application complète fonctionne sur votre poste, sans compte : clonez le dépôt et lancez « python designwizard.py »."));
         return;
       }
-      body.append(el("p", null, "La démo est ouverte aux comptes Google approuvés. Connectez-vous pour entrer : vos fichiers restent dans votre propre Google Drive, dans un dossier « DesignWizard.ai »."),
+      body.append(...[el("p", null, "La démo est ouverte aux comptes Google approuvés. Connectez-vous pour entrer : vos fichiers restent dans votre propre Google Drive, dans un dossier « DesignWizard.ai »."),
         message ? el("p", { class: "form-error" }, message) : null, el("div", { class: "gate-actions" }, google("Se connecter avec Google", false)),
-        el("p", { class: "muted small" }, "Permissions demandées : votre adresse (pour vérifier l'accès) et les seuls fichiers créés par cette application."));
+        el("p", { class: "muted small" }, "Permissions demandées : votre adresse (pour vérifier l'accès) et les seuls fichiers créés par cette application.")].filter(Boolean));       // append() would write a missing message as the word « null »
     }
     function denied(acc) {
       clear(body);

@@ -68,7 +68,7 @@ export function artifactsPanel(body, { st, id }) {
       try { s = await orderStatus(id, order); } catch (e) { orderBox.replaceChildren(el("p", { class: "form-error" }, e.message)); return; }
       const c = s.check, qty = el("input", { type: "number", min: 1, step: 1, value: order.quantity, onChange: (e) => { order.quantity = Math.max(1, parseInt(e.target.value, 10) || 1); keep(); } });
       const need = el("input", { type: "date", value: order.need_by || "", onChange: (e) => { if (e.target.value) order.need_by = e.target.value; else delete order.need_by; keep(); } });
-      orderBox.replaceChildren(el("p", null, badge(c.ready ? (c.express ? "Express" : "Prête") : "À corriger", c.ready ? (c.express ? "ok" : "info") : "danger"), " ", el("b", null, c.label)),
+      orderBox.replaceChildren(...[el("p", null, badge(c.ready ? (c.express ? "Express" : "Prête") : "À corriger", c.ready ? (c.express ? "ok" : "info") : "danger"), " ", el("b", null, c.label)),
         ...c.blockers.map((t) => el("p", { class: "form-error" }, t)), ...c.cautions.map((t) => el("p", { class: "atelier-hint warn" }, icon("warning"), " ", t)),
         c.drivers.length ? el("ul", { class: "decisions" }, c.drivers.map((t) => el("li", null, t))) : null,
         el("div", { class: "form-row tight" }, field("Quantité", qty), field("Livraison souhaitée", need)),
@@ -82,7 +82,7 @@ export function artifactsPanel(body, { st, id }) {
           catch (x) { toast(x.message, "error", 7000); }
           b.disabled = false;
         }, { small: true, icon: "cloud", disabled: !c.ready, tip: "05_Commandes / date, numéro, quantité : l'archive et la demande de prix, prêtes à partager" })) : null,
-        el("p", { class: "muted small" }, "Délais typiques d'ateliers de prototypage rapide, en jours ouvrables, hors transport : ils classent les options ; le devis de l'atelier fait foi."));
+        el("p", { class: "muted small" }, "Délais typiques d'ateliers de prototypage rapide, en jours ouvrables, hors transport : ils classent les options ; le devis de l'atelier fait foi.")].filter(Boolean));
     };
     drawOrder();
     const list = artifactsFor(st.spec);
