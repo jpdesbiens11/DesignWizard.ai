@@ -227,6 +227,8 @@ main h1 { font-family: var(--hand); display: inline; padding: 0 .2em; -webkit-bo
   box-shadow: var(--shadow-small); pointer-events: none; font-family: var(--font); color: var(--graphite); }
 button.dw-view-label { pointer-events: auto; cursor: pointer; }
 .dw-view-label.err { background: var(--danger-soft); border-color: var(--danger); color: var(--danger); } .dw-view-label.warn { background: var(--warn-soft); }
+.dw-view-label.pin { transform: translate(-50%, -50%); min-width: 1.45rem; height: 1.45rem; padding: 0 .3rem; border-radius: 999px; background: var(--primary); color: var(--on-primary); border: 1.6px solid var(--ink-strong); font-weight: 700; font-size: .78rem; line-height: 1; display: grid; place-items: center; }
+.dw-view-label.pin.done { background: var(--surface); color: var(--muted); border-color: var(--muted); }
 .dw-view-label.iface { background: color-mix(in srgb, var(--hl-violet) 28%, var(--surface)); } .dw-view-label.path { background: var(--surface); border-color: var(--path); color: var(--path-ink); font-weight: 650; }
 .view-tools { position: absolute; left: .6rem; top: .6rem; display: flex; flex-wrap: wrap; gap: .3rem; max-width: calc(100% - 1.2rem); align-items: center; }
 .view-tools .group { display: inline-flex; gap: .15rem; padding: .15rem; background: color-mix(in srgb, var(--surface) 88%, transparent); border: 1.3px solid color-mix(in srgb, var(--graphite) 25%, transparent); border-radius: var(--r-card); }

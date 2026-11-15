@@ -10,7 +10,7 @@ import { THEMES, currentTheme, applyTheme } from "./theme.js";
 import { toDwiz } from "./dwiz.js";
 import { dwizFileName } from "./dwiz_names.js";
 
-export const APP_VERSION = "0.25.1";
+export const APP_VERSION = "0.26.0";
 const modules = new Map();
 const ORDER = ["home", "shop", "parts", "extrusion", "pcb", "pcba", "assembly", "physics", "creepage", "dfx", "drawings", "review", "report"];
 const GROUP_BREAK = new Set(["shop", "assembly", "physics", "review"]);         // a pencil tick before these tabs

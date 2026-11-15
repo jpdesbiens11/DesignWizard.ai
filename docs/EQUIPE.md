@@ -67,6 +67,11 @@ miroir**, comme le reste.
 
 - `@nom` appelle un membre : le message apparaît chez lui sous « Pour moi », avec un compteur ;
 - la case **« fait »** dit que la demande est traitée — pour tout le monde, dès la fusion suivante ;
+- un message peut être **épinglé sur le 3D** : clic droit sur une face, dans le studio de pièce ou dans l'assemblage,
+  puis « Épingler un message ici… ». Il reste attaché à ce point de la pièce — dans un assemblage, à ce point de cette
+  pièce-là, qu'il suit quand l'assemblage bouge. Il se voit dans la vue comme un **repère numéroté** ; un clic ouvre sa
+  carte : le message, ses réponses, une réponse à écrire, la case « fait » (le repère pâlit). C'est un message du fil
+  de son artéfact comme les autres, marqué « épinglé sur le 3D » avec le lien vers la vue ;
 - dans la **Revue**, chaque artéfact d'un projet partagé porte une pastille `@ n` : ses messages ouverts, et le lien
   vers son fil ;
 - le **rapport** a une section « Équipe et messages » : les membres, la date de lecture de leur miroir, les messages
@@ -112,12 +117,15 @@ team id=t-… owner=jp
   conflicts …                              le document de l'autre, entier, tant que personne n'a tranché
 talk
   message id=… by=ami on="part:DRV-COVER" text="@jp …" mentions=[jp] done …
+  message id=… by=jp on="assembly:DRV-ASM" text="…" pin={at: [32.64, 0, 41.3], inst: i1}      épinglé : un point de la pièce, et son instance
+  message id=… by=ami on="part:DRV-COVER" text="…" re=…                                       une réponse à un message
 ```
 
 Le module est pur (`web/js/core/team.js`) : `joinTeam`, `forkMirror`, `stampLocal`, `mergeMirror`, `resolveConflict`,
-`post`, `setDone`, `inbox`, `threads`, `teamRows`. La lecture des miroirs liés est dans `web/js/core/team_sync.js`
+`post`, `setDone`, `inbox`, `threads`, `pinsOf`, `teamRows`. La lecture des miroirs liés est dans `web/js/core/team_sync.js`
 (`readMirrors`, `applyMirrors`, `linkMirror`, `parseMirror` : le lecteur est injecté, rien n'y connaît Google) ; le
-sélecteur dans `web/js/google/picker.js`. L'écran est `web/js/modules/team.js` (`#/team`, et `#/team/<artéfact>` pour un fil).
+sélecteur dans `web/js/google/picker.js`. L'écran est `web/js/modules/team.js` (`#/team`, et `#/team/<artéfact>` pour un fil) ;
+les repères de la vue 3D sont dans `web/js/modules/view_pins.js`.
 
 Un projet partagé **confié à une IA** part sans l'équipe ni les messages : l'aller-retour IA travaille sur la conception,
 et le retour est fusionné chez celui qui l'a demandé, puis part dans son miroir.
@@ -153,6 +161,9 @@ dans tous les cas.
 - La maille est **l'artéfact** : deux membres qui changent deux cotes différentes de la même pièce ont un conflit sur la
   pièce. La carte montre ce qui diffère ; on prend l'une des deux versions, puis on refait l'autre changement.
 - Pas de temps réel : on se met d'accord quand on synchronise, pas pendant qu'on dessine.
+- Un message épinglé garde les **coordonnées** de son point : si la pièce change de forme à cet endroit, le repère reste
+  où il était. Dans la vue éclatée, les repères ne suivent pas les pièces. Les autres vues 3D (Isolation, Simulation,
+  Atelier) ne montrent pas les repères.
 - Un miroir est le projet **entier** : celui à qui vous le partagez a tout. Retirer quelqu'un de l'équipe ne lui reprend
   pas ce qu'il a déjà ; lui retirer la lecture se fait dans Drive (Partager → retirer l'accès).
 - Chaque membre partage son miroir avec **chaque** autre membre : à trois, deux adresses chacun.

@@ -93,6 +93,7 @@ export function partGestures(ctx) {
       { label: "Regarder cette face", icon: "eye", keys: "N", run: () => lookAt(one) }, { label: "Couper à ce niveau", icon: "section", run: () => cutAt(one) }, "—");
     if (ed.length) items.push({ label: `Congé sur ${ed.length} arête${ed.length > 1 ? "s" : ""}…`, icon: "edit", keys: "R", run: () => dress("fillet") }, { label: `Chanfrein sur ${ed.length} arête${ed.length > 1 ? "s" : ""}…`, icon: "edit", keys: "C", run: () => dress("chamfer") }, "—");
     if (sel.count()) items.push({ label: "Tout désélectionner", icon: "cross", keys: "Échap", run: () => sel.clear() }, "—");
+    const more = ctx.menuExtra ? ctx.menuExtra(hit) : []; if (more.length) items.push(...more, "—");
     items.push(...vp.menu(), "—", { label: "Annuler", icon: "undo", keys: "Ctrl+Z", run: () => store.undo() }, { label: "Rétablir", icon: "redo", keys: "Ctrl+Y", run: () => store.redo() }, { label: "Raccourcis…", icon: "help", keys: "?", run: () => ctx.showKeys() });
     popupMenu(e, items);
   }

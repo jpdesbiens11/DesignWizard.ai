@@ -6,7 +6,8 @@
      project.team = { id, owner (whose mirror this is), members: [{ handle, hash, mirror, since }],
                       stamps: { key: { at, by, sig, gone, was: [sig…] } },     each artefact : who gave it its present form, and its lineage
                       conflicts: [{ key, by, at, sig, doc, was }] }           the same artefact changed on both sides : a person decides
-     project.talk = [{ id, at, by, on, text, mentions, done: { by, at } }]     messages, on an artefact or on the project
+     project.talk = [{ id, at, by, on, text, mentions, done: { by, at },      messages, on an artefact or on the project
+                      pin: { at: [x, y, z], inst }, re }]                     pinned on the 3D (a point of the part, of an instance in an assembly) ; an answer to a message
    The rule is the lineage : a version that counts mine among those it replaced is newer than mine and is taken without a
    word ; mine that counts theirs is kept ; neither — changed on both sides — is a conflict, and nothing is lost : mine
    stays, theirs waits beside it. The member who settles a conflict settles it for everyone : the choice is written in the
@@ -129,12 +130,22 @@ export function resolveConflict(project, key, by, choice, me, date) {
   return true;
 }
 
-/** A message, on an artefact or on the project ; « @name » calls a member. → the message. */
+/** A message, on an artefact or on the project ; « @name » calls a member. o.pin : where it is pinned on the 3D — { at: [x, y, z] } in the
+    coordinates of the part, with `inst` when the part is an instance of an assembly. o.re : the message it answers. → the message. */
 export function post(project, o) {
   teamOf(project); const text = String(o.text || "").trim(); if (!text) throw new Error("Un message vide ne dit rien.");
+  const parent = o.re ? project.talk.find((x) => x.id === o.re) : null; if (o.re && !parent) throw new Error("Le message auquel vous répondez n'existe plus.");
+  let pin = null;
+  if (o.pin && !parent) { const at = (o.pin.at || []).map(Number); if (at.length !== 3 || !at.every(Number.isFinite)) throw new Error("Un message épinglé demande un point de la pièce.");
+    pin = { at: at.map((v) => Math.round(v * 100) / 100 + 0), ...(o.pin.inst ? { inst: String(o.pin.inst) } : {}) }; }
   const known = new Set((project.team.members || []).map((m) => m.handle)), mentions = [...new Set((text.match(/@([a-z0-9][a-z0-9_.-]{1,23})/gi) || []).map((x) => x.slice(1).toLowerCase().replace(/[.-]+$/, "")))].filter((h) => known.has(h));
-  const at = iso(o.date), m = { id: `${o.by}-${Date.parse(at).toString(36)}-${project.talk.filter((x) => x.by === o.by).length + 1}`, at, by: o.by, on: o.on || "project", text, mentions };
+  const at = iso(o.date), m = { id: `${o.by}-${Date.parse(at).toString(36)}-${project.talk.filter((x) => x.by === o.by).length + 1}`, at, by: o.by, on: parent ? parent.on : o.on || "project", text, mentions, ...(pin ? { pin } : {}), ...(parent ? { re: parent.id } : {}) };
   project.talk.push(m); return m;
+}
+/** The messages pinned on the 3D of an artefact, numbered in the order they were written, each with its answers. → [{ n, msg, replies, open }] */
+export function pinsOf(project, key) {
+  const talk = (project && project.talk) || [];
+  return talk.filter((m) => m.on === key && m.pin).map((msg, i) => ({ n: i + 1, msg, replies: talk.filter((x) => x.re === msg.id), open: !msg.done }));
 }
 export function setDone(project, id, by, on = true, date) { const m = (project.talk || []).find((x) => x.id === id); if (!m) return false; if (on) { m.done = { by, at: iso(date) }; delete m.undone; } else { delete m.done; m.undone = iso(date); } return true; }
 /** What waits for a member : the open messages that call them. */
@@ -148,5 +159,5 @@ export function threads(project) {
 export function teamRows(project) {
   const t = project.team || {}, talk = project.talk || [];
   return { members: (t.members || []).map((m) => [`@${m.handle}`, String(m.since || "").slice(0, 10), (t.pulled || {})[m.handle] ? String(t.pulled[m.handle]).slice(0, 16).replace("T", " ") : m.handle === t.owner ? "ce miroir" : "jamais", String(talk.filter((x) => x.by === m.handle).length)]),
-    open: talk.filter((m) => !m.done).map((m) => [String(m.at).slice(0, 10), `@${m.by}`, labelOf(project, m.on), m.text]), conflicts: (t.conflicts || []).length };
+    open: talk.filter((m) => !m.done).map((m) => [String(m.at).slice(0, 10), `@${m.by}`, `${labelOf(project, m.on)}${m.pin ? " — épinglé sur le 3D" : ""}`, m.text]), conflicts: (t.conflicts || []).length };
 }

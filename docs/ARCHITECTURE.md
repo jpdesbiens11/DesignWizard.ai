@@ -122,8 +122,8 @@ tools/                     génération des icônes Carnet, de la doc du langage
 3. Mates et variables natifs Onshape, reliés aux paramètres de la plateforme.
 4. Chaînes de cotes le long des interfaces ; vues en coupe et cotes de détail dans les dessins.
 5. Bibliothèque de pièces standard insérées en 3D depuis la BOM.
-6. Revue à plusieurs : les messages par artéfact existent ([EQUIPE.md](EQUIPE.md)) ; restent les commentaires épinglés sur
-   le 3D.
+6. Revue à plusieurs : messages par artéfact et messages épinglés sur le 3D existent ([EQUIPE.md](EQUIPE.md)) ; restent
+   les annotations sur le rapport.
 
 
 ## Itération 2 — ce qui s'est ajouté, et où
@@ -143,7 +143,7 @@ tools/                     génération des icônes Carnet, de la doc du langage
 | Profilé extrudé | `web/js/core/shop_extrusion.js` (`EXTRUSION_RULES`, `extrusionProcess`, `extruded`), générateur de section `fitted` dans `web/js/cad/profile_gen.js` (rainures, crochets, nervures d'appui, canaux de vis en C) — voir [EXTRUSION.md](EXTRUSION.md) |
 | Santé des accouplements | `web/js/core/joint_health.js` (`jointHealth`, `assemblyHealth`, `HEALTH`, `engagement`) : pur, lit l'assemblage, les pièces construites, le résultat du solveur et les interférences — voir [JOINTS.md](JOINTS.md) |
 | Itérations MVP | `web/js/core/mvp.js` (`openIteration`, `freeze`, `snapshot`, `convergence`, `trend`, `criteria`, `recordReview`, `closeIteration`, `reviewPackage`, `readReviewAnswer`, `applyReview`, `agenda`), écran `web/js/modules/mvp.js` (`#/mvp`) — voir [ITERATIONS.md](ITERATIONS.md) |
-| Équipe (miroirs) | `web/js/core/team.js` (`joinTeam`, `forkMirror`, `stampLocal`, `mergeMirror`, `resolveConflict`, `post`, `setDone`, `inbox`, `threads`, `teamRows` : pur — lignée par artéfact, aucune copie centrale), `web/js/core/team_sync.js` (`readMirrors`, `applyMirrors`, `linkMirror`, `parseMirror` : lecteur injecté), `web/js/google/picker.js` (sélecteur de fichiers de Google : `loadPicker`, `pickFile`, `appIdOf`), `share` dans `web/js/google/drive.js`, écran `web/js/modules/team.js` (`#/team`) — voir [EQUIPE.md](EQUIPE.md) |
+| Équipe (miroirs) | `web/js/core/team.js` (`joinTeam`, `forkMirror`, `stampLocal`, `mergeMirror`, `resolveConflict`, `post`, `setDone`, `inbox`, `threads`, `teamRows` : pur — lignée par artéfact, aucune copie centrale), `web/js/core/team_sync.js` (`readMirrors`, `applyMirrors`, `linkMirror`, `parseMirror` : lecteur injecté), `web/js/google/picker.js` (sélecteur de fichiers de Google : `loadPicker`, `pickFile`, `appIdOf`), `share` dans `web/js/google/drive.js`, écran `web/js/modules/team.js` (`#/team`), messages épinglés sur le 3D : `pinsOf` et `web/js/modules/view_pins.js` (`mountPins`, monté par le studio de pièce et l'assemblage) — voir [EQUIPE.md](EQUIPE.md) |
 | Bibliothèque électrique | `web/js/cad/elec_library.js` (`CONNECTORS`, `CELLS`, `ELEC_STANDARDS`, `pickConnectors`), `web/js/core/elec_parts.js` (`connectorPart`, `cellPart`), `web/js/cad/interfaces_elec.js` (types `weld` et `contact`, `contactEstimate`, `weldEstimate`), écran `web/js/modules/library.js` (`#/library`) — voir [ELECTRIQUE.md](ELECTRIQUE.md) |
 | Bascule aperçu / code | `web/js/core/code_sources.js` (`elementFor`, `codeSources`, `aiCodePrompt` : pur), `web/js/core/code_view.js` (le bouton de la barre du haut et le panneau de code) — voir [IA.md](IA.md) |
 | Circuit flexible | `web/js/core/flex.js` (`flexPart`, `allTracks`, `layTracks`, `trackAmps`, `addSensor`, `fitSensor`, `flexChecks`), écran `web/js/modules/flex.js` (`#/flex`) ; géométrie de bande partagée avec `core/busbar.js` — voir [ELECTRIQUE.md](ELECTRIQUE.md) |

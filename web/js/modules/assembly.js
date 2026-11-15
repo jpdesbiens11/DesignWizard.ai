@@ -7,6 +7,7 @@ import { registerModule, go, setStatus, app } from "../core/app.js";
 import { store } from "../core/store.js";
 import { kernel } from "../cad/client.js";
 import { createViewport } from "../core/viewport.js";
+import { mountPins } from "./view_pins.js";
 import { buildAssembly, showAssembly } from "../core/asm_scene.js";
 import { autoMate, candidates, freeInterfaces, ifaceOf, pairKey, joints, jointsCsv, nextJoint } from "../core/assembly_logic.js";
 import { assemblyHealth, HEALTH } from "../core/joint_health.js";
@@ -33,8 +34,9 @@ function render(main, args) {
   const st = { ctx: null, sel: null, tab: "mates", token: 0, frames: false, dfa: null, interference: null };
   const asm = () => store.assembly(id);
   const vp = createViewport(view, { name: () => id, explode: true, explodeScale: () => (st.ctx ? Math.max(20, (st.ctx.bbox[5] - st.ctx.bbox[2] + st.ctx.bbox[3] - st.ctx.bbox[0]) * 0.25) : 50),
-    menuFor: (hit) => instMenu(hit && hit.def.data.inst ? hit.def.data.inst : null), onKey: (e) => instKey(e), keys: [["H · I · Maj + H", "Masquer la pièce choisie · l'isoler · tout afficher"], ["Entrée · Suppr", "Ouvrir la pièce choisie · la retirer de l'assemblage"]],
+    menuFor: (hit) => [...instMenu(hit && hit.def.data.inst ? hit.def.data.inst : null), ...(hit && hit.def.data.inst ? ["—", ...pins.menu(hit)] : [])], onKey: (e) => instKey(e), keys: [["H · I · Maj + H", "Masquer la pièce choisie · l'isoler · tout afficher"], ["Entrée · Suppr", "Ouvrir la pièce choisie · la retirer de l'assemblage"]],
     onPick: (hit) => { st.sel = hit && hit.def.data.inst ? hit.def.data.inst : null; vp.viewer.highlight(st.sel ? [...vp.viewer.objects.keys()].filter((k) => k.startsWith(st.sel + "/")) : []); renderLeft(); if (st.sel) { st.tab = "inst"; } renderRight(); } });
+  const pins = mountPins(vp, { key: () => `assembly:${id}` });      // the messages pinned on this assembly, each on its instance
   const info = el("span", { class: "chip" }, "—"), clash = el("span", { class: "chip", "data-tip": "Volumes communs entre pièces voisines, cherchés après chaque montage" }, "interférences : …");
   const healthChip = el("span", { class: "chip", style: { cursor: "pointer" }, onClick: () => { st.tab = "mates"; renderRight(); } }, "accouplements : …");
   vp.setStatus(info, clash, healthChip);
@@ -92,6 +94,7 @@ function render(main, args) {
       if (fa) v.addLabel(matPoint(sol.placements[ia.id], fa.frame.o), `${m.id}${m.linked === false ? "" : " 🔗"}`, "mate", "iface");
     }
     for (const x of st.interference || []) if (x.volume > 0 && x.at) { v.addMarker(x.at, "#ff5a4f", "mate", 1.6); v.addLabel(x.at, `Interférence ${fmt(x.volume, 0)} mm³`, "mate", "err"); }
+    pins.draw();
   }
   async function checkInterference(quiet = false) {
     if (!st.ctx) return;
@@ -284,7 +287,7 @@ function render(main, args) {
 
   app.commands = [{ label: "Assemblage : mater automatiquement", hint: "assemblage", icon: "sparkle", keys: "mate auto assembler", run: () => store.commit(`${id} : mates automatiques`, (p) => autoMate(p.assemblies.find((x) => x.id === id), st.ctx.built), { assembly: id }) },
     { label: "Assemblage : exporter le STEP", hint: "assemblage", icon: "step", keys: "step export", run: exportStep }, { label: "Assemblage : chercher les interférences", hint: "assemblage", icon: "warning", keys: "interference collision", run: checkInterference }];
-  return () => { off(); st.token++; vp.dispose(); };
+  return () => { off(); pins.dispose(); st.token++; vp.dispose(); };
 }
 
 registerModule({ key: "assembly", label: "Assemblage", icon: "assembly", tip: "Les pièces se matent par leurs interfaces ; mates liés, éclaté, BOM, interférences", render });

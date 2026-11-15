@@ -7,6 +7,7 @@ import { store } from "../core/store.js";
 import { app, go, setContext, setStatus } from "../core/app.js";
 import { kernel } from "../cad/client.js";
 import { createViewport, showBuilt } from "../core/viewport.js";
+import { mountPins } from "./view_pins.js";
 import { TEMPLATES, fromTemplate } from "../cad/templates.js";
 import { featureDialog, interfaceDialog, stockDialog, announceLinks, nextFeatureId, nextIfaceId, FEATURE_LABEL, FEATURE_DEFAULT, SHOP_DEFAULT } from "../core/part_edit.js";
 import { gammePanel, artifactsPanel } from "./part_gamme.js";
@@ -39,6 +40,7 @@ export function partStudio(main, args, cfg) {
 
   let gest = null;                                                // the mouse and the keys on the model (part_gestures.js)
   const vp = createViewport(view, { select: false, name: () => st.spec.id, onPick: (h, e) => gest.onPick(h, e), onHover: (h) => { gest.onHover(h); onHover(h); }, onMenu: (h, e) => gest.onMenu(h, e), onKey: (e) => gest.onKey(e) });
+  const pins = mountPins(vp, { key: () => `part:${id}` });      // the messages pinned on this part
   const info = el("span", { class: "chip" }, "—"), hover = el("span", { class: "chip hidden" }, ""), stage = el("span", { class: "chip stage hidden" }, "");
   const picked = el("span", { class: "chip picked hidden" }, "");
   vp.setStatus(info, stage, picked, hover);
@@ -106,6 +108,7 @@ export function partStudio(main, args, cfg) {
       v.addMarker(f.where, f.severity === "error" ? "#ff5a4f" : "#ffb020", "dfx");
       v.addLabel(f.where, f.id, "dfx", f.severity === "error" ? "err" : "warn", () => { st.tab = "dfx"; renderRight(); });
     }
+    pins.draw();
   }
 
   /* ---------- faces : the face a dialog names lights up ; the face under the cursor shows ; the face clicked turns green ---------- */
@@ -125,7 +128,7 @@ export function partStudio(main, args, cfg) {
     return { face, at: [r(hit.local[plane[0]]), r(hit.local[plane[1]])], level: Math.abs(lvl - ext) > 0.01 ? lvl : undefined };
   }
   const showKeys = () => modal("La pièce à la souris et au clavier", el("table", { class: "data" }, el("tbody", null, PART_KEYS.map(([k, t]) => el("tr", null, el("td", { class: "nowrap" }, el("kbd", null, k)), el("td", null, t))))));
-  gest = partGestures({ st, id, vp, view, chip: picked, faceOfHit, editFeature: (i) => editFeature(i), editIface: (iid) => editIface(iid), showKeys });
+  gest = partGestures({ st, id, vp, view, chip: picked, faceOfHit, editFeature: (i) => editFeature(i), editIface: (iid) => editIface(iid), showKeys, menuExtra: (h) => pins.menu(h) });
   function onHover(hit) {
     if (!hit || !hit.face) { hover.classList.add("hidden"); return; }
     const f = hit.face, p = hit.local.map((x) => fmt(x, 1)).join(" ; ");
@@ -208,7 +211,7 @@ export function partStudio(main, args, cfg) {
     else ({ params: paramsPanel, ifaces: interfacesPanel, gamme: gammePanel, files: artifactsPanel, dfx: dfxPanel, sheet: sheetPanel, json: jsonPanel })[st.tab](body, ctx);
   }
 
-  return () => { offChange(); st.token++; app.faces = null; vp.dispose(); kernel.forget(`${id}~live`).catch(() => {}); };
+  return () => { offChange(); pins.dispose(); st.token++; app.faces = null; vp.dispose(); kernel.forget(`${id}~live`).catch(() => {}); };
 }
 
 /** Gallery of starter parts. */

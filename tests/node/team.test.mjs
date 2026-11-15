@@ -1,7 +1,7 @@
 /* Working together in mirrors : two members, each with their own copy ; what one changes reaches the other, what both change waits for a person. */
 import test from "node:test";
 import assert from "node:assert/strict";
-import { teamOf, joinTeam, forkMirror, stampLocal, mergeMirror, resolveConflict, post, setDone, inbox, threads, artefacts, labelOf, isShared, cleanHandle, teamRows } from "../../web/js/core/team.js";
+import { teamOf, joinTeam, forkMirror, stampLocal, mergeMirror, resolveConflict, post, setDone, inbox, threads, pinsOf, artefacts, labelOf, isShared, cleanHandle, teamRows } from "../../web/js/core/team.js";
 import { signature, approve } from "../../web/js/core/review.js";
 import { toDwiz, fromDwiz } from "../../web/js/core/dwiz.js";
 
@@ -91,6 +91,23 @@ test("messages follow the design : « @name » calls a member, the message trave
   r = mergeMirror(jp, send(ami, "ami", 8), "jp", D(10)); assert.equal(r.messages, 0, "a message is never taken twice");
   const th = threads(jp); assert.deepEqual(th.map((t) => [t.on, t.items.length, t.open]), [["part:BASE", 2, 1], ["project", 1, 1]]); assert.equal(th[0].label, "Pièce BASE — BASE"); assert.equal(labelOf(jp, "project"), "Le projet");
   const rows = teamRows(jp); assert.deepEqual(rows.members.map((x) => x[0]), ["@jp", "@ami"]); assert.equal(rows.open.length, 2);
+});
+
+test("a message can be pinned on the 3D : it keeps its point, is answered where it is, and travels with the mirror", () => {
+  const { jp, ami } = pair(); mergeMirror(jp, send(ami, "ami", 1), "jp", D(2));
+  const a = post(jp, { by: "jp", on: "part:BASE", text: "@ami ce bord coupe : un congé de 1 mm ?", date: D(3), pin: { at: [12.3456, 0, 5] } });
+  const b = post(jp, { by: "jp", on: "assembly:ASM", text: "Jeu trop serré ici.", date: D(4), pin: { at: [50, 20, 5.004], inst: "i2" } });
+  assert.deepEqual([a.pin, b.pin, a.mentions], [{ at: [12.35, 0, 5] }, { at: [50, 20, 5], inst: "i2" }, ["ami"]], "a point of the part, to the hundredth ; in an assembly, of which instance");
+  assert.throws(() => post(jp, { by: "jp", on: "part:BASE", text: "x", pin: { at: [1, 2] } }), /demande un point/); assert.throws(() => post(jp, { by: "jp", text: "x", re: "nobody-1" }), /n'existe plus/);
+  /* she receives it, sees it called for her, answers on the pin itself, and closes it */
+  let r = mergeMirror(ami, send(jp, "jp", 5), "ami", D(6)); assert.equal(r.messages, 2); assert.deepEqual(inbox(ami, "ami").map((m) => m.id), [a.id]);
+  const c = post(ami, { by: "ami", re: a.id, text: "@jp fait : congé R1.", date: D(7), on: "project", pin: { at: [0, 0, 0] } }); assert.deepEqual([c.on, c.re, c.pin], ["part:BASE", a.id, undefined], "an answer goes where its message is, and is not a pin of its own");
+  setDone(ami, a.id, "ami", true, D(7)); post(ami, { by: "ami", on: "part:BASE", text: "Et ce trou ?", date: D(8), pin: { at: [30, 10, 5] } });
+  r = mergeMirror(jp, send(ami, "ami", 9), "jp", D(10)); assert.equal(r.messages, 2);
+  const pins = pinsOf(jp, "part:BASE"); assert.deepEqual(pins.map((x) => [x.n, x.msg.by, x.open, x.replies.map((q) => q.text)]), [[1, "jp", false, ["@jp fait : congé R1."]], [2, "ami", true, []]], "numbered in the order they were written, the same on both sides");
+  assert.deepEqual(pinsOf(ami, "part:BASE").map((x) => x.msg.id), pins.map((x) => x.msg.id)); assert.equal(pinsOf(jp, "assembly:ASM")[0].msg.pin.inst, "i2"); assert.deepEqual(pinsOf(jp, "part:CAPOT"), []); assert.deepEqual(pinsOf(null, "x"), []);
+  assert.equal(threads(jp).find((t) => t.on === "part:BASE").items.length, 3, "a pinned message is a message of the thread of its artefact"); assert.match(teamRows(jp).open.find((x) => x[3] === "Et ce trou ?")[2], /^Pièce BASE — BASE — épinglé sur le 3D$/);
+  const back = fromDwiz(toDwiz(jp)); assert.deepEqual(back.talk, jp.talk, "the pin survives the file");
 });
 
 test("guard rails : whose mirror it is, which team it belongs to, the names, the reviews, the file", () => {

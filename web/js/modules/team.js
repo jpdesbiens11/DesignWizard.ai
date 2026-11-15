@@ -33,6 +33,19 @@ async function pickInDrive(o) {
   return pickFile({ picker: P, token: await session.auth.token(), appId: appIdOf(CONFIG.clientId), key: CONFIG.pickerKey, mine: false, ...o });
 }
 
+/** The name under which the person writes in this project. Asked once, when the project has no team yet : the person becomes its first member. → the handle, or null. */
+export async function memberName() {
+  const p = store.project; if (!p) return null; if (p.team && p.team.owner) return p.team.owner;
+  const name = await promptBox("Votre nom pour les messages", "Votre nom dans l'équipe", suggest(), "2 à 24 caractères : lettres sans accent, chiffres, point, tiret. C'est par lui qu'on vous appelle : @nom."); if (!name) return null;
+  const h = cleanHandle(name); if (!HANDLE.test(h)) { toast("Un nom d'équipe a 2 à 24 caractères : lettres sans accent, chiffres, point, tiret.", "warn"); return null; }
+  const id = (p.team && p.team.id) || newTeamId(), hash = await hashOf(id);
+  if (!act("Nom d'équipe choisi", (x) => { x.team = { ...(x.team || {}), id }; joinTeam(x, { handle: h, hash }, new Date()); stampLocal(x, h, new Date()); })) return null;
+  remember(h); return h;
+}
+const SCREEN = { part: "#/parts/", assembly: "#/assembly/" };
+/* where a pinned message shows : the 3D screen of its artefact */
+const pinLink = (m) => { const i = m.on.indexOf(":"), base = SCREEN[m.on.slice(0, i)]; return base ? el("a", { class: "chip", style: { marginLeft: ".4rem" }, href: `${base}${encodeURIComponent(m.on.slice(i + 1))}`, "data-tip": "Ce message est épinglé sur la pièce : le voir dans la vue 3D" }, "épinglé sur le 3D") : null; };
+
 /** Someone invited starts from the mirror they were given : a project of their own, lineage included. `link` : where that mirror is, in Drive. */
 async function joinFromText(text, link) {
   let theirs; try { theirs = parseMirror(text); } catch (e) { toast(e.message, "error", 7000); return; }
@@ -162,7 +175,7 @@ function render(main, args) {
     const send = () => { if (!text.value.trim()) return; const v = text.value; if (act("Message envoyé", (x) => { post(x, { by: mine, on: st.on, text: v, date: new Date() }); })) text.value = ""; };
     text.addEventListener("keydown", (e) => { if (e.key === "Enter") send(); });
     const subject = el("select", { "aria-label": "Sujet du message", onChange: (e) => { st.on = e.target.value; } }, el("option", { value: "project", selected: st.on === "project" }, "Le projet"), keys.map((k) => el("option", { value: k, selected: k === st.on }, labelOf(p, k))));
-    const line = (m) => el("div", { class: "param", style: { gridTemplateColumns: "minmax(0,1fr) auto", alignItems: "start", opacity: m.done ? 0.55 : 1 }, "data-msg": m.id }, el("div", null, el("b", null, `@${m.by}`), el("small", { class: "muted" }, ` ${day(m.at)}`), el("div", { style: m.done ? { textDecoration: "line-through" } : null }, m.text), m.done ? el("small", { class: "muted" }, `fait — @${m.done.by}`) : null),
+    const line = (m) => el("div", { class: "param", style: { gridTemplateColumns: "minmax(0,1fr) auto", alignItems: "start", opacity: m.done ? 0.55 : 1 }, "data-msg": m.id }, el("div", { style: m.re ? { paddingLeft: "1.1rem" } : null }, el("b", null, `${m.re ? "↳ " : ""}@${m.by}`), el("small", { class: "muted" }, ` ${day(m.at)}`), m.pin ? pinLink(m) : null, el("div", { style: m.done ? { textDecoration: "line-through" } : null }, m.text), m.done ? el("small", { class: "muted" }, `fait — @${m.done.by}`) : null),
       el("label", { class: "check small", "data-tip": "Coché : la demande est traitée, pour tout le monde" }, el("input", { type: "checkbox", checked: !!m.done, onChange: (e) => act(e.target.checked ? "Message traité" : "Message rouvert", (x) => { setDone(x, m.id, mine, e.target.checked, new Date()); }) }), "fait"));
     sections.push(el("section", { class: "card" }, el("h2", null, "Messages ", box.length ? badge(`${box.length} pour moi`, "danger") : badge("rien ne m'attend", "ok")),
       box.length ? el("div", null, el("h3", null, "Pour moi"), box.map((m) => el("div", null, el("a", { class: "muted small", href: `#/team/${encodeURIComponent(m.on)}` }, labelOf(p, m.on)), line(m)))) : null,
