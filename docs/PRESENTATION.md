@@ -52,6 +52,13 @@ l'autre. `debut` : avant la première station ; `fin` : après la dernière.
 - `tests/node/presentation.test.mjs` vérifie que chaque page a son titre, ses notes et sa station, que chaque image
   existe et que rien ne vient de l'extérieur.
 
+## Où elle est déposée
+
+En ligne, la page est toujours celle de la dernière version publiée. Une copie datée — le PDF, le fichier HTML autonome
+(une seule page, qui s'ouvre sans réseau) et les notes du présentateur — va dans le Google Drive du projet, dossier
+« DesignWizard.ai — Communications et marketing », sous-dossier `Présentations`, avec les communications et le matériel
+marketing à mesure qu'ils sont produits.
+
 ## Ce que la présentation affirme
 
 Elle ne donne aucun chiffre de gain de temps : personne ne l'a mesuré. Elle dit ce que l'outil fait, et consacre une page

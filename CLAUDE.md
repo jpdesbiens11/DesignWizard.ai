@@ -12,6 +12,11 @@ Consignes permanentes de JP (propriétaire du dépôt). Elles s'appliquent à to
   dans le texte. Proposer deux à quatre choix, le conseillé en premier. Pas de question pour ce qui a une réponse
   évidente : choisir, le dire, continuer.
 - Dire ce qui est vérifié et ce qui ne l'est pas ; ne jamais annoncer comme fait ce qui n'a pas tourné.
+- **Communications et marketing** (demande de JP) : la présentation, les communications et le matériel marketing sont
+  déposés dans le Google Drive de JP, dossier « DesignWizard.ai — Communications et marketing » (sous-dossiers
+  `Présentations`, `Communications`, `Marketing`), au fur et à mesure qu'ils sont produits ; fichiers nommés
+  `Sujet_AAAA-MM-JJ`. Le dossier « DesignWizard.ai » du Drive est l'arbre de travail de l'application : ne rien y déposer
+  d'autre. Le connecteur Drive refuse un fichier de plus de 3 Mo environ : le dire à JP, ne pas contourner sans son accord.
 
 ## Publier (routine)
 
