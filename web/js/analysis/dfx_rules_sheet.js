@@ -42,6 +42,7 @@ const isLaminate = (ctx) => (ctx.mat && ctx.mat.cls === "pcb") || /FR-?4|G10|CFR
 /** Sheet thickness and where it comes from: {t, axis (thickness axis of a flat blank, -1 when folded), formed, patch}. */
 export function sheetThickness(ctx) {
   const { facts, dims, spec } = ctx;
+  if (spec.busbar && spec.busbar.t > 0) return { t: spec.busbar.t, axis: -1, formed: (spec.busbar.legs || []).length > 1, patch: () => null };      // a strip folded on its edge view : its thickness is the one it declares
   if (facts.shells.length) {
     const s = facts.shells.reduce((a, b) => (b.t < a.t ? b : a));
     return { t: s.t, axis: -1, formed: true, shell: s, patch: (v) => ctx.patch(s, "t", v) };

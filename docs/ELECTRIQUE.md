@@ -75,11 +75,47 @@ assignée. La santé du joint signale : un revêtement inadapté au signal, trop
 pièce non conductrice, et **l'absence de serrage** — un contact à pression demande une vis ou un clip entre les deux
 barres.
 
+## Busbars : la bande pliée, ses bornes, ses contacts
+
+Écran **Busbars** (`Atelier → Busbars`, ou menu Projet ; `web/js/core/busbar.js`, `web/js/modules/busbar.js`). Un
+busbar est une **bande** découpée, poinçonnée puis pliée : sa définition reste dans la pièce (`busbar`), et la pièce est
+réécrite à chaque changement.
+
+- **La bande** : matière conductrice, revêtement (nu, étamé, argenté, nickelé), potentiel (`HV+`, `48V`, `RS485-A`…),
+  courant, largeur, épaisseur, rayon de pli.
+- **Les branches** : une longueur chacune, et le pli à 90° — vers le haut ou vers le bas — qui la précède. Les longueurs
+  se prennent sur la fibre du milieu, d'un sommet de pli au suivant. Une seule branche : une barre droite, seulement
+  découpée.
+- **Les bornes** (`T1`, `T2`…) : un trou de passage pour une vis, une interface vissée que l'autre pièce reprend.
+- **Les contacts à lamelles** (`CT1`, `CT2`…) : posés seulement sur une **face plane** d'une branche, hors des plis.
+  Chacun garde son numéro pour toujours.
+
+**À la souris et au clavier**, dans la vue 3D :
+
+| Geste | Effet |
+|---|---|
+| Clic droit sur une face plane | « Poser un contact à lamelles ici », « Poser une borne vissée ici », ou « Déplacer CT1 ici » |
+| Clic sur une face | y déplacer le raccordement choisi |
+| ← → ↑ ↓ | le pousser de 1 mm le long de la branche ou en travers (Maj : 5 mm ; Alt : 0,1 mm) ; il reste sur le plat et dans la largeur |
+| R · V | tourner le contact d'un quart de tour · l'envoyer sur l'autre face de la branche |
+| + · − | un point de contact de plus, de moins |
+| Tab · Suppr | raccordement suivant · retirer celui qui est choisi |
+
+À droite, chaque raccordement se complète par des **listes déroulantes** : le côté que porte cette barre (les lamelles,
+ou la plage plane — l'autre barre porte l'autre moitié, avec la même clé), l'usage (puissance, signal), le revêtement,
+le ressort, puis la zone, le nombre de points, l'effort, la hauteur comprimée et le courant. L'estimation
+(résistance, courant) se lit sur la carte, avec les normes du revêtement et du ressort.
+
+**Ce que l'écran vérifie** : la section et la densité de courant (repère 2,5 A/mm² à l'air libre, 5 A/mm² au plus), le
+rayon de pli au moins égal à l'épaisseur pour le cuivre, des branches assez longues entre leurs plis, des trous à
+1,5 × d des bouts, un contact de puissance sur une plage revêtue. Il donne la résistance à 20 °C, les pertes, la chute de
+tension et le **développé** (facteur K 0,4, à confirmer par le plieur) ; l'échauffement se vérifie dans l'écran Physique.
+Les règles de tôlerie du bilan DFx lisent l'épaisseur que la bande déclare.
+
 ## Limites
 
-- Pas encore de module pour dessiner un busbar plié, un busbar laminé, un circuit flexible, un pad thermique ou un
-  remplissage de cavité ; le contact à lamelles se pose par l'Atelier ou le dialogue d'interface, pas encore à la souris
-  dans un écran dédié.
+- Busbars : plis à 90° dans un seul plan, largeur constante ; pas encore de busbar laminé (conducteurs, papier
+  aramide, enveloppe), de circuit flexible, de pad thermique ni de remplissage de cavité.
 - Les enveloppes des connecteurs sont indicatives ; aucune empreinte de carte ni modèle du fabricant n'est fourni.
 - Les lignes marquées « extrait » sont à relire sur la fiche du fabricant ; les titres des documents LV 214 et LV 215
   (constructeurs allemands) ne sont pas publics.
