@@ -50,7 +50,7 @@ function render(main) {
   const follow = () => { if (!iter) return; const ask = iterationRequest(store.project); iter.disabled = !ask; iter.classList.toggle("btn-primary", !!ask); };
 
   function draw() {
-    const p = store.project, items = reviewItems(p), prog = reviewProgress(p), ask = iterationRequest(p), brief = p.brief || {};
+    const p = store.project, items = reviewItems(p), prog = reviewProgress(p), ask = iterationRequest(p), brief = p.brief || {}, shared = !!(p.team && p.team.owner);
     cells.clear();
     const bar = el("div", { class: "review-bar", role: "img", "aria-label": `${prog.ok} artéfact(s) revus sur ${prog.total}` }, ["ok", "changed", "revise", "draft", "todo"].filter((k) => prog[k]).map((k) => el("span", { class: `rv-${k}`, style: { flexGrow: prog[k] }, "data-tip": `${prog[k]} — ${REVIEW_STATES[k].fr}` })));
     const head = el("div", { class: "page-head" }, el("div", { class: "grow" }, el("h1", null, "Revue de conception"),
@@ -59,7 +59,8 @@ function render(main) {
         btn("Premier design avec une IA…", () => import("./first_design.js").then((m) => m.openFirstDesign()), { icon: "wizard", tip: "Une description détaillée, une entrevue menée par l'assistant de votre choix, et un premier design complet à passer en revue" }),
         (iter = btn("Itération complète avec l'IA", () => app.aiLoop("project", { ask: iterationRequest(store.project) }), { primary: !!ask, icon: "sparkle", disabled: !ask, tip: "Envoie le projet entier avec toutes les notes de la revue ; la réponse revient avec la liste de ses changements, à appliquer en une étape. Écrivez d'abord une note sur au moins un artéfact." })),
         el("a", { class: "btn", href: "#/report", "data-tip": "Le dossier de revue de conception, à imprimer" }, icon("report"), el("span", null, "Rapport"))),
-      el("div", { class: "subtabs", style: { width: "100%" } }, el("a", { class: "subtab active", href: "#/review" }, "Artéfacts"), el("a", { class: "subtab", href: "#/mvp", "data-tip": "Geler une itération, la passer en revue, la clore — et mesurer la convergence d'un MVP à l'autre" }, "Itérations MVP")));
+      el("div", { class: "subtabs", style: { width: "100%" } }, el("a", { class: "subtab active", href: "#/review" }, "Artéfacts"), el("a", { class: "subtab", href: "#/mvp", "data-tip": "Geler une itération, la passer en revue, la clore — et mesurer la convergence d'un MVP à l'autre" }, "Itérations MVP"),
+        el("a", { class: "subtab", href: "#/team", "data-tip": "Travailler à plusieurs en miroir, et s'écrire sur chaque artéfact" }, "Équipe")));
     const sum = el("section", { class: "card taped" }, el("h2", null, `${prog.ok} / ${prog.total} revus`), bar,
       el("div", { class: "atelier-chips" }, ["draft", "revise", "changed", "todo", "ok"].filter((k) => prog[k]).map((k) => el("span", { class: "chip", "data-tip": REVIEW_STATES[k].text }, `${prog[k]} ${REVIEW_STATES[k].fr.toLowerCase()}`))),
       prog.total && !prog.left ? el("p", { class: "atelier-hint" }, icon("check"), " Tout est revu : le rapport peut partir en revue de conception.") : null);
@@ -78,7 +79,7 @@ function render(main) {
         if (kind === "part") { cells.set(it.key, facts); facts.append(el("span", { class: "muted small" }, "vérification…")); }
         else if (d.verdict) facts.append(badge((VERDICT[d.verdict] || VERDICT.warn)[0], (VERDICT[d.verdict] || VERDICT.warn)[1]));
         const hist = it.history.map((h) => `${h.rev ? `rév. ${h.rev} — ` : ""}${String(h.when).slice(0, 10)} : ${h.note}`).join(" · ");
-        return { attrs: { class: `rv-row rv-${it.state}`, "data-key": it.key }, cells: [badge(S.fr, S.tone), el("a", { href: hrefOf(it, d), "data-tip": "Ouvrir dans son écran" }, el("code", null, it.id)), el("div", null, it.name, el("small", { class: "muted", style: { display: "block" } }, it.facts)),
+        return { attrs: { class: `rv-row rv-${it.state}`, "data-key": it.key }, cells: [badge(S.fr, S.tone), el("a", { href: hrefOf(it, d), "data-tip": "Ouvrir dans son écran" }, el("code", null, it.id)), el("div", null, it.name, shared ? el("a", { class: "chip", style: { marginLeft: ".4rem" }, href: `#/team/${encodeURIComponent(it.key)}`, "data-tip": "Les messages de l'équipe sur cet artéfact" }, `@ ${(p.talk || []).filter((m) => m.on === it.key && !m.done).length}`) : null, el("small", { class: "muted", style: { display: "block" } }, it.facts)),
           it.rev ? el("span", { class: "chip", "data-tip": hist || "Pas encore revue" }, `rév. ${it.rev}`) : el("span", { class: "muted", "data-tip": hist || null }, "—"), facts, note,
           el("span", { class: "nowrap" },
             btn("Revu", () => { act(`Revue : ${it.id} validé`, (x) => { const r = approve(x, it.key); if (r && r.bumped) toast(`${it.id} : révision ${r.rev} validée.`, "success"); }); }, { small: true, primary: it.state !== "ok", icon: "check", disabled: it.state === "ok", tip: it.state === "changed" ? "Valider ce qui a changé : crée la révision suivante" : "Je l'ai lu et je le valide" }),

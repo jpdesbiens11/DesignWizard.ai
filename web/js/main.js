@@ -23,6 +23,7 @@ import "./modules/mvp.js";
 import "./modules/library.js";
 import "./modules/busbar.js";
 import "./modules/flex.js";
+import "./modules/team.js";
 import "./modules/report.js";
 import "./modules/onshape.js";
 import "./modules/help.js";

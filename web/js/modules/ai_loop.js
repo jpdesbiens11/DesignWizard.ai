@@ -17,7 +17,7 @@ import { adoptIteration } from "../core/first_design.js";
 let applying = null;
 store.hooks.push((p) => { if (applying) markDrafts(p, applying); });
 /** The whole project, without its review ledger : the notes travel in the request, the ledger stays here. */
-const shed = (d) => { delete d.review; delete d.mvp; return d; };      // the ledgers — review states, MVP iterations — stay here
+const shed = (d) => { delete d.review; delete d.mvp; delete d.team; delete d.talk; return d; };      // the ledgers — review states, MVP iterations — stay here
 
 const STEP_MARK = "(géométrie STEP importée, non modifiable)";
 /** A copy fit for reading : the imported STEP geometry of a part is replaced by a note. */

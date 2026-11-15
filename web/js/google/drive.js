@@ -58,6 +58,8 @@ export function createDrive({ token, fetch = globalThis.fetch.bind(globalThis) }
     rename: (id, name) => call(`${DRIVE}/files/${encodeURIComponent(id)}?${fields}`, { method: "PATCH", json: { name } }),
     text: (id) => call(`${DRIVE}/files/${encodeURIComponent(id)}?alt=media`, { as: "text" }),
     bytes: (id) => call(`${DRIVE}/files/${encodeURIComponent(id)}?alt=media`, { as: "bytes" }),
+    /** Let someone read (or write) a file this app created : Google tells them by e-mail. The address goes to Google only. */
+    share: (id, email, role = "reader") => call(`${DRIVE}/files/${encodeURIComponent(id)}/permissions?sendNotificationEmail=true&fields=id`, { method: "POST", json: { type: "user", role, emailAddress: String(email || "").trim() } }),
     trash: (id) => call(`${DRIVE}/files/${encodeURIComponent(id)}?${fields}`, { method: "PATCH", json: { trashed: true } }),
     /** Move a file or a folder to another folder (nothing is copied, links keep working). */
     move: (id, to, from) => call(`${DRIVE}/files/${encodeURIComponent(id)}?addParents=${encodeURIComponent(to)}${from ? `&removeParents=${encodeURIComponent(from)}` : ""}&${fields}`, { method: "PATCH", json: {} }),

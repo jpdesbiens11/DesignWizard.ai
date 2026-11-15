@@ -113,7 +113,8 @@ tools/                     génération des icônes Carnet, de la doc du langage
 - Pas de famille tôlerie pliée (déplié, rayon de pliage).
 - Mates : par interfaces uniquement ; pas de contraintes libres entre faces quelconques.
 - Une pièce importée en STEP n'a ni paramètres ni dessin ; les noms de ses solides sont lus au mieux.
-- Pas de multi-utilisateur : un projet = un fichier JSON, partagé par export / import.
+- À plusieurs : en miroir, par échange de fichiers ou par un fichier partagé dans Drive ([EQUIPE.md](EQUIPE.md)) ; pas de
+  temps réel, et la lecture du miroir d'un autre membre n'est pas encore automatique.
 
 ## Suite envisagée
 
@@ -122,7 +123,8 @@ tools/                     génération des icônes Carnet, de la doc du langage
 3. Mates et variables natifs Onshape, reliés aux paramètres de la plateforme.
 4. Chaînes de cotes le long des interfaces ; vues en coupe et cotes de détail dans les dessins.
 5. Bibliothèque de pièces standard insérées en 3D depuis la BOM.
-6. Revue à plusieurs : commentaires épinglés sur le 3D et sur le rapport.
+6. Revue à plusieurs : les messages par artéfact existent ([EQUIPE.md](EQUIPE.md)) ; restent les commentaires épinglés sur
+   le 3D, et la lecture automatique des miroirs dans Drive.
 
 
 ## Itération 2 — ce qui s'est ajouté, et où
@@ -142,6 +144,7 @@ tools/                     génération des icônes Carnet, de la doc du langage
 | Profilé extrudé | `web/js/core/shop_extrusion.js` (`EXTRUSION_RULES`, `extrusionProcess`, `extruded`), générateur de section `fitted` dans `web/js/cad/profile_gen.js` (rainures, crochets, nervures d'appui, canaux de vis en C) — voir [EXTRUSION.md](EXTRUSION.md) |
 | Santé des accouplements | `web/js/core/joint_health.js` (`jointHealth`, `assemblyHealth`, `HEALTH`, `engagement`) : pur, lit l'assemblage, les pièces construites, le résultat du solveur et les interférences — voir [JOINTS.md](JOINTS.md) |
 | Itérations MVP | `web/js/core/mvp.js` (`openIteration`, `freeze`, `snapshot`, `convergence`, `trend`, `criteria`, `recordReview`, `closeIteration`, `reviewPackage`, `readReviewAnswer`, `applyReview`, `agenda`), écran `web/js/modules/mvp.js` (`#/mvp`) — voir [ITERATIONS.md](ITERATIONS.md) |
+| Équipe (miroirs) | `web/js/core/team.js` (`joinTeam`, `forkMirror`, `stampLocal`, `mergeMirror`, `resolveConflict`, `post`, `setDone`, `inbox`, `threads`, `teamRows` : pur — lignée par artéfact, aucune copie centrale), écran `web/js/modules/team.js` (`#/team`), `share` dans `web/js/google/drive.js` — voir [EQUIPE.md](EQUIPE.md) |
 | Bibliothèque électrique | `web/js/cad/elec_library.js` (`CONNECTORS`, `CELLS`, `ELEC_STANDARDS`, `pickConnectors`), `web/js/core/elec_parts.js` (`connectorPart`, `cellPart`), `web/js/cad/interfaces_elec.js` (types `weld` et `contact`, `contactEstimate`, `weldEstimate`), écran `web/js/modules/library.js` (`#/library`) — voir [ELECTRIQUE.md](ELECTRIQUE.md) |
 | Bascule aperçu / code | `web/js/core/code_sources.js` (`elementFor`, `codeSources`, `aiCodePrompt` : pur), `web/js/core/code_view.js` (le bouton de la barre du haut et le panneau de code) — voir [IA.md](IA.md) |
 | Circuit flexible | `web/js/core/flex.js` (`flexPart`, `allTracks`, `layTracks`, `trackAmps`, `addSensor`, `fitSensor`, `flexChecks`), écran `web/js/modules/flex.js` (`#/flex`) ; géométrie de bande partagée avec `core/busbar.js` — voir [ELECTRIQUE.md](ELECTRIQUE.md) |

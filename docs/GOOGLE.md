@@ -45,6 +45,10 @@ les portées `openid`, `email` et `.../auth/drive.file`, déclarez les origines,
 - **Jeton** : gardé en mémoire seulement, jamais dans le stockage du navigateur ; valable une heure, renouvelé sans
   invite. Fermer l'onglet le fait disparaître.
 - **Aucun serveur** : le navigateur parle directement à Google. Rien ne passe par un service de DesignWizard.ai.
+- **Partage** : « Équipe → Partager mon miroir dans Drive… » donne à une adresse le droit de lire le fichier du projet
+  dans votre Drive. C'est le seul partage que fait l'application, et seulement à votre demande ; l'adresse va à Google,
+  pas dans le projet. Voir [EQUIPE.md](EQUIPE.md), qui dit aussi pourquoi `drive.file` ne permet pas de lire seul le
+  fichier partagé par un autre membre.
 - Le script de connexion Google n'est chargé qu'au premier clic sur « Se connecter avec Google » : tant que vous ne
   vous connectez pas, l'application ne contacte aucun site.
 

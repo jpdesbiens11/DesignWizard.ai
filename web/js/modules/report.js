@@ -17,6 +17,7 @@ import { orderCheck } from "../cad/order.js";
 import { makeDrawing, svgNode } from "./drawings.js";
 import { reviewRows, reviewProgress, revisionRows } from "../core/review.js";
 import { mvpRows, trlReached } from "../core/mvp.js";
+import { teamRows } from "../core/team.js";
 import { PROCESSES, materialOrDefault } from "../cad/materials.js";
 import { INTERFACE_TYPES } from "../cad/interfaces.js";
 import { LEVEL_LABEL } from "../analysis/cc_rules.js";
@@ -160,6 +161,11 @@ function render(main) {
     if (revs.length && store.assemblies.length) doc.append(el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, "Révisions et cas d'emploi"),
       el("p", { class: "muted" }, "Chaque pièce avec sa révision, les assemblages qui l'emploient, et la révision de la pièce avec laquelle chacun a été revu. Un assemblage revu avec une révision dépassée est à revalider : il prendra alors sa propre révision suivante. Les dessins portent toujours la révision de ce qu'ils dessinent."),
       table(["Pièce", "Nom", "Rév.", "État", "Employée dans"], revs)));
+    if (store.project.team && store.project.team.owner) { const tr = teamRows(store.project);
+      doc.append(el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, "Équipe et messages ", badge(tr.conflicts ? `${tr.conflicts} conflit(s) à trancher` : "aucun conflit", tr.conflicts ? "warn" : "ok")),
+        el("p", { class: "muted" }, `Miroir de @${store.project.team.owner}. Chaque membre garde le projet entier chez lui ; les miroirs se fusionnent par artéfact. Tenu dans l'écran Équipe.`),
+        table(["Membre", "Depuis", "Son miroir, lu le", "Messages"], tr.members), tr.open.length ? table(["Date", "De", "Sujet", "Message encore ouvert"], tr.open) : el("p", { class: "muted" }, "Aucun message ouvert.")));
+    }
     const iters = mvpRows(store.project);
     if (iters.length) doc.append(el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, "Itérations MVP ", badge(trlReached(store.project) ? `TRL ${trlReached(store.project)} atteint` : "aucun niveau atteint", trlReached(store.project) ? "ok" : "neutral")),
       el("p", { class: "muted" }, `Cible du projet : TRL ${(store.project.mvp || {}).target || 6}. Chaque itération est gelée, passée en revue puis close par une décision ; la convergence est la part de ce qui a bougé depuis l'itération gelée précédente. Tenu dans l'écran Itérations MVP.`),

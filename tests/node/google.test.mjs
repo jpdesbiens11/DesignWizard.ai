@@ -65,6 +65,11 @@ test("drive client: bearer token, appProperties queries, multipart upload, Googl
   const body = await up.init.body.text();
   assert.ok(body.includes('"name":"a.step"') && body.includes('"parents":["f1"]') && body.includes("ISO-10303-21;"));
   await assert.rejects(d.text("boom"), (e) => e instanceof GoogleError && e.status === 403 && /Forbidden/.test(e.message));
+  /* sharing a file of mine with one person, to read : the address goes to Google only */
+  await d.share("f 9", " ami@example.org ");
+  const sh = seen.at(-1), sent = JSON.parse(typeof sh.init.body === "string" ? sh.init.body : await sh.init.body.text());
+  assert.match(sh.url, /\/files\/f%209\/permissions\?sendNotificationEmail=true/); assert.equal(sh.init.method, "POST");
+  assert.deepEqual(sent, { type: "user", role: "reader", emailAddress: "ami@example.org" });
 });
 
 /** In-memory Drive with the calls drive_fs.js uses. */
