@@ -42,7 +42,7 @@ function render(main, args) {
   if (!targets.length) { root.replaceWith(el("div", { class: "page" }, el("div", { class: "empty" }, el("h2", null, "Rien à simuler"), el("p", null, "Créez d'abord une pièce dans l'Atelier."), el("a", { class: "btn btn-primary", href: "#/shop" }, "Aller à l'Atelier")))); return null; }
   if (args[0] && targets.some((t) => t.id === args[0])) st.target = targets.find((t) => t.id === args[0]);
   if (!st.target || !targets.some((t) => t.id === st.target.id)) { st.target = targets[0]; st.fixed = []; st.loads = []; st.power = []; st.fixedT = []; }
-  const vp = createViewport(view, { name: () => `${st.target.id}_simulation`, onPick: (hit) => pickRegion(hit), onHover: (hit) => { if (asking) { vp.viewer.clearOverlays("bchover"); const k = regionAt(hit); if (k) lightRegion(k, LIT.hover, "bchover"); } } }), info = el("span", { class: "chip" }, "—");
+  const vp = createViewport(view, { name: () => `${st.target.id}_simulation`, menuFor: (hit) => regionMenu(hit), onPick: (hit) => { if (!asking) return false; pickRegion(hit); return true; }, onHover: (hit) => { if (asking) { vp.viewer.clearOverlays("bchover"); const k = regionAt(hit); if (k) lightRegion(k, LIT.hover, "bchover"); } } }), info = el("span", { class: "chip" }, "—");
   vp.setStatus(info);
   let geo = null, model = null, regions = [], estimate = null, last = null, worker = null, alive = true, asking = null;
 
@@ -74,6 +74,17 @@ function render(main, args) {
     if (!k) { toast("Cliquez une face extérieure de la pièce (ou une de ses interfaces).", "info", 3000); return; }
     const set = asking; asking = null; view.style.cursor = ""; vp.viewer.clearOverlays("bchover");
     set(k); lightRegion(k, LIT.chosen, "bcpick"); setTimeout(() => { if (alive) vp.viewer.clearOverlays("bcpick"); }, 1400);
+  }
+  /** A right click on a face of the part : hold it there, push there, heat there — the load case is built where the designer points. */
+  function regionMenu(hit) {
+    const k = hit ? regionAt(hit) : null; if (!k || !model) return [];
+    const r = regions.find((x) => x.key === k), name = r ? r.label : k, face = k.startsWith("face:") ? k.slice(5) : "+Z", into = `${face[0] === "+" ? "-" : "+"}${face[1]}`, heat = st.kind === "thermal" || (st.kind === "thermo" && !st.thermo.uniform);
+    const add = (fn, text) => () => { fn(); changed(); lightRegion(k, LIT.chosen, "bcpick"); setTimeout(() => { if (alive) vp.viewer.clearOverlays("bcpick"); }, 1400); toast(text, "success", 2500); };
+    return [{ title: name },
+      ...(st.kind !== "thermal" ? [st.fixed.includes(k) ? { label: "Retirer l'appui d'ici", icon: "unlink", run: add(() => { st.fixed = st.fixed.filter((x) => x !== k); }, `Appui retiré de ${name}`) } : { label: "Appui ici (encastrement)", icon: "lock", run: add(() => { st.fixed.push(k); }, `Appui sur ${name}`) }] : []),
+      ...(st.kind === "structure" ? [{ label: `Effort ici : 100 N vers ${into}`, icon: "bolt", run: add(() => { st.loads.push({ region: k, mode: "force", F: 100, dir: into, p: 0.1 }); }, `Effort de 100 N sur ${name} : réglez sa valeur à gauche`) },
+        { label: "Pression ici : 0,1 MPa", icon: "flow", run: add(() => { st.loads.push({ region: k, mode: "pressure", F: 100, dir: into, p: 0.1 }); }, `Pression sur ${name}`) }] : []),
+      ...(heat ? [{ label: "Source de chaleur ici : 5 W", icon: "thermal", run: add(() => { st.power.push({ region: k, P: 5 }); }, `Source de 5 W sur ${name}`) }, { label: "Température imposée ici : 25 °C", icon: "thermal", run: add(() => { st.fixedT.push({ region: k, T: 25 }); }, `Température imposée sur ${name}`) }] : [])];
   }
   /** The symbols of the load case : clamps where the part is held, arrows where it is pushed and which way, marks for heat. */
   function drawSymbols() {

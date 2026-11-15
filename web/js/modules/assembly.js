@@ -32,6 +32,7 @@ function render(main, args) {
   const st = { ctx: null, sel: null, tab: "mates", token: 0, frames: false, dfa: null, interference: null };
   const asm = () => store.assembly(id);
   const vp = createViewport(view, { name: () => id, explode: true, explodeScale: () => (st.ctx ? Math.max(20, (st.ctx.bbox[5] - st.ctx.bbox[2] + st.ctx.bbox[3] - st.ctx.bbox[0]) * 0.25) : 50),
+    menuFor: (hit) => instMenu(hit && hit.def.data.inst ? hit.def.data.inst : null), onKey: (e) => instKey(e), keys: [["H · I · Maj + H", "Masquer la pièce choisie · l'isoler · tout afficher"], ["Entrée · Suppr", "Ouvrir la pièce choisie · la retirer de l'assemblage"]],
     onPick: (hit) => { st.sel = hit && hit.def.data.inst ? hit.def.data.inst : null; vp.viewer.highlight(st.sel ? [...vp.viewer.objects.keys()].filter((k) => k.startsWith(st.sel + "/")) : []); renderLeft(); if (st.sel) { st.tab = "inst"; } renderRight(); } });
   const info = el("span", { class: "chip" }, "—");
   vp.setStatus(info);
@@ -203,6 +204,29 @@ function render(main, args) {
       }, { assembly: id });
       toast(`Pièce ${spec.id} générée et ajoutée : elle se mate sur « ${f.iface.name} ».`, "success", 5000);
     } catch (e) { toast(e.message, "error"); }
+  }
+  /* ---- what a right click offers on a part of the assembly, and the same by keys ---- */
+  const hiddenOnes = () => asm().instances.filter((i) => i.hidden);
+  const showAll = () => store.updateAssembly(id, (x) => { for (const i of x.instances) delete i.hidden; }, `${id} : toutes les pièces affichées`);
+  const hide = (iid) => store.updateAssembly(id, (x) => { x.instances.find((q) => q.id === iid).hidden = true; }, `${iid} masquée`);
+  const isolate = (iid) => store.updateAssembly(id, (x) => { for (const i of x.instances) { if (i.id === iid) delete i.hidden; else i.hidden = true; } }, `${iid} isolée`);
+  const openPart = (iid) => { const inst = asm().instances.find((i) => i.id === iid), spec = inst && store.part(inst.part); if (spec) go(`#/${spec.family === "pcb" ? "pcb" : spec.family === "extrusion" ? "extrusion" : "parts"}/${encodeURIComponent(spec.id)}`); };
+  const dropInst = async (iid) => { const inst = asm().instances.find((i) => i.id === iid); if (!inst || !(await confirmBox("Retirer la pièce", `Retirer ${inst.part} de ${id} ? Ses liaisons partent avec elle. (Ctrl + Z pour revenir.)`, "Retirer", true))) return;
+    store.updateAssembly(id, (x) => { x.instances = x.instances.filter((q) => q.id !== iid); x.mates = (x.mates || []).filter((k) => k.a.inst !== iid && k.b.inst !== iid); }, `${inst.part} retirée de ${id}`); st.sel = null; };
+  function instMenu(iid) {
+    const inst = iid ? asm().instances.find((i) => i.id === iid) : null, hid = hiddenOnes(), back = hid.length ? [{ label: `Tout afficher (${hid.length} masquée${hid.length > 1 ? "s" : ""})`, keys: "Maj+H", icon: "eye", run: showAll }] : [];
+    if (!inst) return [...back, { label: "Ajouter une pièce…", icon: "plus", run: () => addDialog() }];
+    const spec = store.part(inst.part);
+    return [{ title: `${spec ? spec.name || spec.id : inst.part} · ${inst.id}` }, { label: "Ouvrir la pièce", keys: "Entrée", icon: "edit", run: () => openPart(iid) },
+      { label: inst.fixed ? "Libérer" : "Fixer", icon: "lock", run: () => store.updateAssembly(id, (x) => { const i = x.instances.find((q) => q.id === iid); if (i.fixed) delete i.fixed; else i.fixed = true; }, `${inst.part} ${inst.fixed ? "libérée" : "fixée"}`) },
+      { label: "Masquer", keys: "H", icon: "eye-off", run: () => hide(iid) }, { label: "Isoler", keys: "I", icon: "eye", run: () => isolate(iid) }, ...back,
+      { label: "Retirer de l'assemblage", keys: "Suppr", icon: "trash", run: () => dropInst(iid) }];
+  }
+  function instKey(e) {
+    const k = e.key.toLowerCase();
+    if (k === "h" && e.shiftKey) { if (hiddenOnes().length) showAll(); }
+    else if (!st.sel) return;
+    else if (k === "h") hide(st.sel); else if (k === "i") isolate(st.sel); else if (k === "enter") openPart(st.sel); else if (k === "delete" || k === "backspace") dropInst(st.sel);
   }
   function instTab(body, a) {
     const inst = a.instances.find((i) => i.id === st.sel);

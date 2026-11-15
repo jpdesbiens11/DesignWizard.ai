@@ -20,6 +20,8 @@ import { anticipatedInterfaces, shopPrompt } from "../core/prompts.js";
 import { importPart } from "../core/importer.js";
 import { runDfx } from "../analysis/dfx_api.js";
 import { orderCheck } from "../cad/order.js";
+import { lightSide, sideOf, LIT } from "../core/view_marks.js";
+import { popupMenu } from "../core/view_select.js";
 
 const blank = () => ({ name: "", fn: "", loads: "", environment: "", quantity: 10, priority: "", material: "AL6061-T6", form: "", neighbours: [], interfaces: [], addToAsm: true });
 let brief = blank(), uid = 0, wasMoulded = false;
@@ -41,7 +43,7 @@ const numIn = (obj, key, label, redraw, step = 1) => field(label, el("input", { 
 function render(main) {
   const p = store.project, page = el("div", { class: "page atelier" });
   main.append(page);
-  let viewer = null, token = 0, current = null;
+  let viewer = null, token = 0, current = null, active = null, flash = null;        // active : the interface whose face the mouse is choosing ; flash : the side just chosen, to confirm in green
   page.append(el("div", { class: "page-head" }, el("div", { class: "grow" }, el("h1", null, "Atelier"),
     el("p", { class: "muted" }, "Pas d'esquisse, pas de plan : dites à quoi sert la pièce, à quoi elle se raccorde, dans quoi elle est faite. Le compagnon d'atelier prend la matière première du commerce et écrit la pièce — vous la voyez naître à droite.")),
     el("div", { class: "subtabs" }, el("a", { class: "subtab active", href: "#/shop" }, "Intention d'abord"), el("a", { class: "subtab", href: "#/interfaces" }, "Entrevue avec Claude"), el("a", { class: "subtab", href: "#/interfaces/registre" }, "Registre des interfaces"))));
@@ -49,6 +51,21 @@ function render(main) {
   page.append(el("div", { class: "atelier-grid" }, left, right));
   const rebuild = debounce(() => build(), 220);
   const propose = () => { token++; create.disabled = true; rebuild(); };   // the shown part is stale from the first keystroke: no creation until it is rebuilt
+  /* ---- the faces of the proposal answer the lists, and the mouse answers the faces ---- */
+  const mark = (side, color, tag) => { if (!viewer) return; viewer.clearOverlays(tag); if (side) lightSide(viewer, side, { color, tag, ids: ["at"] }); };
+  const chosen = () => brief.interfaces.find((x) => x.uid === active) || null;
+  const named = () => { const it = chosen(); mark(it ? it.where : null, LIT.named, "named"); };
+  const put = (it, side) => { it.where = side; active = it.uid; flash = side; drawIfaces(); drawStock(); propose(); };
+  const onHover = (h) => { const side = h ? sideOf(h.normal) : null; mark(side, LIT.hover, "hover"); holder.style.cursor = side && chosen() ? "pointer" : ""; };
+  const onPick = (h) => {
+    const side = h ? sideOf(h.normal) : null, it = chosen(); if (!side) return;
+    if (!it) { toast("Choisissez d'abord une interface (cliquez sa carte à gauche), ou faites un clic droit sur la face pour en ajouter une.", "info", 4500); return; }
+    if (it.where === side) { mark(side, LIT.chosen, "chosen"); setTimeout(() => mark(null, null, "chosen"), 900); } else put(it, side);
+  };
+  const onMenu = (h, e) => { const side = h ? sideOf(h.normal) : null;
+    popupMenu(e, side ? [{ title: `Face : ${WHERE[side]}` }, ...brief.interfaces.map((it) => ({ label: `Mettre « ${it.name || INTERFACE_TYPES[it.type].fr} » ici`, icon: "interfaces", disabled: it.where === side, run: () => put(it, side) })),
+      ...(brief.interfaces.length ? ["—"] : []), { title: "Ajouter une interface ici" }, ...SHAPES.map((sh) => ({ label: sh.title, icon: sh.icon, run: () => addShape(sh, side) }))]
+      : [{ title: "Vue" }, { label: "Cadrer tout", icon: "fit", run: () => viewer.fit() }, { label: "Vue isométrique", icon: "part", run: () => viewer.view("iso") }, { label: "Dessus", icon: "part", run: () => viewer.view("top") }, { label: "Face", icon: "part", run: () => viewer.view("front") }]); };
 
   /* 1 — intention */
   const text = (key, label, ph, tag = "input") => { const i = el(tag, tag === "input" ? { type: "text", value: brief[key], placeholder: ph } : { rows: 2, value: brief[key], placeholder: ph }); i.addEventListener("input", () => { brief[key] = i.value; propose(); }); return field(label, i); };
@@ -96,9 +113,9 @@ function render(main) {
       brief.interfaces.push({ uid: ++uid, from: a.from, type: a.iface.type, name: a.iface.name, partner: a.iface.partner, key: a.iface.key, side: a.iface.side, params: a.iface.params, where: OPPOSITE[src.face || "+Z"] || "+Z" });
     }
   }
-  function addShape(s) {
+  function addShape(s, where = "+Z") {
     const t = INTERFACE_TYPES[s.type];
-    brief.interfaces.push({ uid: ++uid, type: s.type, side: s.side, name: s.name, partner: "", where: "+Z", params: JSON.parse(JSON.stringify(t.params)) });
+    brief.interfaces.push({ uid: ++uid, type: s.type, side: s.side, name: s.name, partner: "", where, params: JSON.parse(JSON.stringify(t.params)) }); active = uid; flash = where;
     if (s.type === "cutout") delete brief.interfaces.at(-1).params.fix;
     drawIfaces(); drawStock(); propose();
   }
@@ -122,10 +139,11 @@ function render(main) {
     clear(list);
     if (!brief.interfaces.length) list.append(el("p", { class: "atelier-hint" }, icon("info"), " Ajoutez une première interface : la pièce se dessine autour."));
     for (const it of brief.interfaces) {
-      const t = INTERFACE_TYPES[it.type], where = el("select", { "aria-label": "Face de la pièce", onChange: (e) => { it.where = e.target.value; drawStock(); propose(); } }, Object.entries(WHERE).map(([k, l]) => el("option", { value: k, selected: k === it.where }, `sur le ${l}`.replace("le avant", "l'avant").replace("le arrière", "l'arrière").replace("le gauche", "la gauche").replace("le droite", "la droite"))));
+      const t = INTERFACE_TYPES[it.type], where = el("select", { "aria-label": "Face de la pièce", "data-tip": "La face s'allume sur la pièce ; vous pouvez aussi la cliquer dans la vue", onFocus: () => mark(it.where, LIT.named, "named"), onChange: (e) => put(it, e.target.value) }, Object.entries(WHERE).map(([k, l]) => el("option", { value: k, selected: k === it.where }, `sur le ${l}`.replace("le avant", "l'avant").replace("le arrière", "l'arrière").replace("le gauche", "la gauche").replace("le droite", "la droite"))));
       const head = el("div", { class: "iface-head" }, badge(`côté ${it.side}`, it.side === "B" ? "b" : "a"), el("b", null, t.fr), where,
         el("button", { class: "icon-btn", type: "button", "aria-label": "Retirer l'interface", "data-tip": it.from ? "Retirer (décochez le voisin pour l'oublier)" : "Retirer", onClick: () => { brief.interfaces = brief.interfaces.filter((x) => x !== it); if (it.from) { brief.neighbours = brief.neighbours.filter((n) => brief.interfaces.some((x) => x.from && x.from.part === n)); [...neigh.querySelectorAll("input")].forEach((cb, i) => { cb.checked = brief.neighbours.includes(p.parts[i].id); }); } drawIfaces(); drawStock(); propose(); } }, "×"));
-      const card = el("div", { class: "iface-card" + (it.from ? " imposed" : "") }, head);
+      const card = el("div", { class: "iface-card" + (it.from ? " imposed" : "") + (it.uid === active ? " active" : ""), "data-uid": it.uid, onMouseenter: () => mark(it.where, LIT.named, "named"), onMouseleave: () => named(),
+        onPointerdown: () => { if (active === it.uid) return; active = it.uid; for (const c of list.children) c.classList.toggle("active", c === card); named(); } }, head);
       if (it.from) card.append(el("p", { class: "muted small" }, icon("lock"), ` Imposée par ${it.from.name} — ${it.name}, clé `, el("code", null, it.key), ` · ${interfaceSignature(it)}`));
       else {
         const nm = el("input", { type: "text", value: it.name, placeholder: "Nom de l'interface", onInput: (e) => { it.name = e.target.value; propose(); } }), pt = el("input", { type: "text", value: it.partner, placeholder: "Voisin (ex. : moteur, capot)", onInput: (e) => { it.partner = e.target.value; propose(); } });
@@ -167,10 +185,11 @@ function render(main) {
       const built = await kernel.build(res.spec, null, "~shop");
       if (mine !== token) return;
       current = { ...res, built };
-      if (!viewer) viewer = new Viewer(holder, {});
+      if (!viewer) { viewer = new Viewer(holder, { onHover, onPick, onMenu }); holder._viewer = viewer; }      // exposed for whoever inspects the page (tests, the console)
       viewer.clear(); showBuilt(viewer, built, { prefix: "at" });
       for (const it of built.interfaces) { viewer.addFrame(it.frame, it.side === "A" ? "#9b7bff" : "#2ec4b6"); viewer.addLabel(it.frame.o, `${it.name}`, "label", "iface"); }
       viewer.view("iso");
+      named(); if (flash) { const side = flash; flash = null; mark(side, LIT.chosen, "chosen"); setTimeout(() => { if (viewer) mark(null, null, "chosen"); }, 1400); }      // the face just chosen turns green, then keeps the colour of its interface
       drawProposal(res, built);
       runDfx(res.spec, built).then((dfx) => { if (mine === token) drawOrder(res, built, dfx); });
       const errs = built.log.filter((l) => l.level === "error");

@@ -30,3 +30,16 @@ test("what a selection measures : one entity, two, several", () => {
   const C = (o) => ({ kind: "face", at: o, face: { type: "cylinder", r: 2, o, axis: [0, 0, 1] } }); assert.equal(measureOf([C([0, 0, 0]), C([30, 40, 7])]), "Entraxe 50 mm");
   assert.equal(measureOf([E(40), E(20), F([0, 0, 0], [0, 0, 1]), V([0, 0, 0])]), "1 face · 2 arêtes · 1 point · 60 mm d'arêtes");
 });
+
+test("in an assembly a selection is measured where the parts stand, not where each was drawn", async () => {
+  const { inWorld, measureOf: measure } = await import("../../web/js/core/view_select.js");
+  const I = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], up = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 40, 1], turn = [0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 1, 0, 10, 0, 0, 1];      // column-major : lifted by 40 ; turned a quarter about Z and moved by 10 along X
+  const top = { kind: "face", key: "f:a:1", id: "a", at: [5, 5, 6], face: { type: "plane", n: [0, 0, 1], area: 100 } }, under = { kind: "face", key: "f:b:2", id: "b", at: [1, 1, 0], face: { type: "plane", n: [0, 0, -1], area: 50 } };
+  assert.deepEqual(inWorld(top, I), top); assert.equal(inWorld(null, I), null); assert.equal(inWorld(top, null), top);
+  assert.match(measure([top, under]), /^6 mm entre faces parallèles/, "each in its own frame : the 6 mm of the drawing");
+  assert.match(measure([inWorld(top, I), inWorld(under, up)]), /^34 mm entre faces parallèles/, "the second part stands 40 mm higher : 34 mm between the faces");
+  const side = inWorld({ kind: "face", key: "f:c:1", id: "c", at: [3, 0, 0], face: { type: "plane", n: [1, 0, 0], o: [3, 0, 0] } }, turn); assert.deepEqual(side.at, [10, 3, 0]); assert.deepEqual(side.face.n.map((c) => Math.round(c)), [0, 1, 0]); assert.deepEqual(side.face.o, [10, 3, 0]);
+  const hole = inWorld({ kind: "face", key: "f:c:2", id: "c", at: [0, 0, 0], face: { type: "cylinder", r: 2, o: [0, 5, 0], axis: [0, 0, 1] } }, up), other = { kind: "face", key: "f:a:3", id: "a", at: [0, 0, 0], face: { type: "cylinder", r: 2, o: [30, 5, 0], axis: [0, 0, 1] } };
+  assert.deepEqual(hole.face.o, [0, 5, 40]); assert.match(measure([hole, other]), /^Entraxe 30 mm/, "two axes lifted apart are still 30 mm apart");
+  const edge = inWorld({ kind: "edge", key: "e:c:1", id: "c", at: [1, 0, 0], edge: { type: "line", len: 2, p0: [0, 0, 0], p1: [2, 0, 0] } }, turn); assert.deepEqual(edge.edge.p0, [10, 0, 0]); assert.deepEqual(edge.edge.p1, [10, 2, 0]); assert.equal(edge.edge.len, 2);
+});

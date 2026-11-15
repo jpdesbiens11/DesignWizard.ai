@@ -56,6 +56,16 @@ export function measureOf(items) {
   return [part(n("face"), "face", "faces"), part(n("edge"), "arête", "arêtes"), part(n("vertex"), "point", "points")].filter(Boolean).join(" · ") + (len ? ` · ${f2(len)} mm d'arêtes` : "");
 }
 
+/** An entity seen in the frame of the view. m = the 16 elements of the matrix of its object (column-major) : points move and turn,
+    directions only turn. A part alone has the identity ; in an assembly each part stands where its mates put it. */
+export function inWorld(x, m) {
+  if (!x || !m) return x;
+  const pt = (p) => (p ? [m[0] * p[0] + m[4] * p[1] + m[8] * p[2] + m[12], m[1] * p[0] + m[5] * p[1] + m[9] * p[2] + m[13], m[2] * p[0] + m[6] * p[1] + m[10] * p[2] + m[14]] : p);
+  const dir = (d) => { if (!d) return d; const v = [m[0] * d[0] + m[4] * d[1] + m[8] * d[2], m[1] * d[0] + m[5] * d[1] + m[9] * d[2], m[2] * d[0] + m[6] * d[1] + m[10] * d[2]], l = Math.hypot(v[0], v[1], v[2]) || 1; return v.map((c) => c / l); };
+  return { ...x, at: pt(x.at), ...(x.face ? { face: { ...x.face, ...(x.face.n ? { n: dir(x.face.n) } : {}), ...(x.face.o ? { o: pt(x.face.o) } : {}), ...(x.face.axis ? { axis: dir(x.face.axis) } : {}) } } : {}),
+    ...(x.edge ? { edge: { ...x.edge, ...(x.edge.c ? { c: pt(x.edge.c) } : {}), ...(x.edge.axis ? { axis: dir(x.edge.axis) } : {}), ...(x.edge.p0 ? { p0: pt(x.edge.p0) } : {}), ...(x.edge.p1 ? { p1: pt(x.edge.p1) } : {}) } } : {}) };
+}
+
 /** The selection of a view. onChange(items) is called after each change. */
 export function createSelection(viewer, onChange) {
   const items = new Map(); let hovered = null;
@@ -76,7 +86,7 @@ export function createSelection(viewer, onChange) {
     set(list) { items.clear(); for (const x of list) items.set(x.key, x); draw(); },
     clear() { if (items.size) { items.clear(); draw(); } },
     hover(x) { const k = x ? x.key : null; if (k === hovered) return; hovered = k; viewer.clearOverlays("selhover"); if (x && !items.has(x.key)) paint(x, SEL.hover, "selhover"); },
-    redraw: draw, measure: () => measureOf([...items.values()]),
+    redraw: draw, measure: () => measureOf([...items.values()].map((x) => { const o = viewer.objects.get(x.id); return o ? inWorld(x, o.group.matrixWorld.elements) : x; })),
   };
 }
 

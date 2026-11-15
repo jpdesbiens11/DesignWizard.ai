@@ -38,7 +38,7 @@ export function partStudio(main, args, cfg) {
   }
 
   let gest = null;                                                // the mouse and the keys on the model (part_gestures.js)
-  const vp = createViewport(view, { name: () => st.spec.id, onPick: (h, e) => gest.onPick(h, e), onHover: (h) => { gest.onHover(h); onHover(h); }, onMenu: (h, e) => gest.onMenu(h, e), onKey: (e) => gest.onKey(e) });
+  const vp = createViewport(view, { select: false, name: () => st.spec.id, onPick: (h, e) => gest.onPick(h, e), onHover: (h) => { gest.onHover(h); onHover(h); }, onMenu: (h, e) => gest.onMenu(h, e), onKey: (e) => gest.onKey(e) });
   const info = el("span", { class: "chip" }, "—"), hover = el("span", { class: "chip hidden" }, ""), stage = el("span", { class: "chip stage hidden" }, "");
   const picked = el("span", { class: "chip picked hidden" }, "");
   vp.setStatus(info, stage, picked, hover);

@@ -35,6 +35,7 @@ html[data-module="account"] { --acc: var(--hl-green); }
 
 .iface-card { margin: .5rem 0; padding: .55rem .65rem; border: 1.5px solid var(--line); border-left: 5px solid var(--acc); border-radius: var(--r-field); background: var(--surface); }
 .iface-card.imposed { border-left-color: var(--graphite); background: var(--surface-2); }
+.iface-card.active { border-color: #ffb020; box-shadow: 0 0 0 2px color-mix(in srgb, #ffb020 35%, transparent); }       /* the interface whose face the mouse is choosing */
 .iface-head { display: flex; flex-wrap: wrap; gap: .45rem; align-items: center; }
 .iface-head select { width: auto; margin-left: auto; padding-block: .15rem; }
 .iface-card p { margin: .35rem 0 0; }
@@ -140,6 +141,7 @@ button.plan-pick { cursor: pointer; } button.plan-pick:hover { background: color
 .plan-step-btns { display: inline-flex; gap: .1rem; } .plan-step-btns .icon-btn { font-size: .95rem; padding: 0 .15rem; }
 .bc-pick { display: inline-flex; gap: .15rem; align-items: center; flex: 1; min-width: 0; } .bc-pick select { flex: 1; min-width: 0; } .bc-pick .icon-btn { font-size: 1rem; padding: 0 .2rem; }
 .fea-legend input[type="number"] { width: 5.2rem; padding: .15rem .3rem; font-size: .8rem; } .fea-scale { display: grid; gap: .15rem; margin: .3rem 0; } .fea-scale input { width: 100%; }
+.view-picked { position: absolute; left: .7rem; bottom: 2.7rem; z-index: 2; box-shadow: 0 1px 0 var(--line); }
 .chip.picked { background: color-mix(in srgb, #ff8a00 28%, var(--surface)); color: var(--graphite); max-width: 520px; font-weight: 600; }
 
 /* ---- Revue de conception : the ledger of the design review, and the preview of a first design ---- */
