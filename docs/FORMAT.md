@@ -164,6 +164,8 @@ d'atelier, opérations du noyau) est dans [PART_LANGUAGE.md](PART_LANGUAGE.md). 
 - **`team`** et **`talk`** (projet) — le travail à plusieurs en miroir : à qui est ce miroir, les membres, le tampon et la
   lignée de chaque artéfact, les conflits en attente ; puis les messages, chacun sur le projet ou sur un artéfact. Voir
   [EQUIPE.md](EQUIPE.md).
+- **`plm`** (projet), **`pn`** et **`derivedFrom`** (pièce, assemblage, carte) — les révisions libérées : le numéro de
+  l'article, celui dont il dérive, et chaque révision figée avec son contenu entier. Voir [REVISIONS.md](REVISIONS.md).
 - **`stock`** — `plate`, `sheet`, `block`, `bar_flat`, `bar_round`, `tube_round`, `tube_rect`, `angle`, `profile`,
   `print`, `molded` : ce que l'on prend sur l'étagère. Une pièce moulée porte aussi une ligne **`mold`** (procédé, sens de
   démoulage, plan de joint, paroi, dépouilles, tiroirs, surépaisseur d'usinage) : voir [MOULAGE.md](MOULAGE.md).

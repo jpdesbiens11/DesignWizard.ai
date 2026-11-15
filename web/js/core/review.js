@@ -21,7 +21,7 @@ export const REVIEW_STATES = {
 };
 export const REVIEW_KINDS = { part: "Pièce", assembly: "Assemblage", board: "Carte", physics: "Analyse", simulation: "Simulation" };
 const LISTS = { part: "parts", assembly: "assemblies", board: "boards", physics: "physics", simulation: "simulations" };
-const VOLATILE = new Set(["revision", "when", "updated", "log"]);                 // what changes without the design changing
+const VOLATILE = new Set(["revision", "when", "updated", "log", "pn", "derivedFrom"]);     // what changes without the design changing : its revision, its number (core/plm.js)
 const canon = (v) => (Array.isArray(v) ? v.map(canon) : v && typeof v === "object" ? Object.fromEntries(Object.keys(v).filter((k) => !VOLATILE.has(k)).sort().map((k) => [k, canon(v[k])])) : v);
 
 /** A short signature of the content of an artefact : the same content gives the same signature, whatever the order of its keys. */

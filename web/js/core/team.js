@@ -88,7 +88,7 @@ export function stampLocal(project, me, date) {
   return out;
 }
 /** Merges the mirror of another member into mine. Mutates `mine` ; `theirs` is only read.
-    → { from, added, taken, removed, kept, conflicts (keys), messages (new ones), members (new ones), nothing } */
+    → { from, added, taken, removed, kept, conflicts (keys), messages (new ones), members (new ones), releases (new ones), nothing } */
 export function mergeMirror(mine, theirs, me, date) {
   const from = theirs && theirs.team && theirs.team.owner; if (!from) throw new Error("Ce fichier n'est pas le miroir d'un membre : il ne dit pas à qui il est.");
   if (from === me) throw new Error("C'est votre propre miroir.");
@@ -114,8 +114,14 @@ export function mergeMirror(mine, theirs, me, date) {
   for (const m of theirs.team.members || []) { const known = T.members.find((x) => x.handle === m.handle || (m.hash && x.hash === m.hash)); if (!known) { T.members.push(clone(m)); rep.members.push(m.handle); } else if (m.handle === from) Object.assign(known, clone(m)); else if (m.mirror && !known.mirror) known.mirror = m.mirror; }
   const R = (theirs.review && theirs.review.items) || {};
   if (Object.keys(R).length) { mine.review = mine.review || { items: {} }; mine.review.items = mine.review.items || {}; for (const [k, e] of Object.entries(R)) { const x = mine.review.items[k]; if (!x || String(e.when || "") > String(x.when || "")) mine.review.items[k] = clone(e); } }
+  /* the released revisions : a release is never erased, so theirs are added to mine ; the artefact whose content is the one a release froze takes its number and its revision */
+  const theirRel = (theirs.plm && theirs.plm.releases) || []; rep.releases = 0;
+  if (theirRel.length) { mine.plm = mine.plm || { releases: [] }; mine.plm.releases = mine.plm.releases || []; const got = new Set(mine.plm.releases.map((r) => r.id)), now = artefacts(mine);
+    for (const r of theirRel) { if (got.has(r.id)) continue; mine.plm.releases.push(clone(r)); got.add(r.id); rep.releases++; }
+    mine.plm.releases.sort((p, q) => (p.at < q.at ? -1 : p.at > q.at ? 1 : 0));
+    for (const r of mine.plm.releases) { const d = now.get(r.key); if (d && signature(d) === r.sig) { d.pn = r.pn; d.revision = r.rev; if (r.doc && r.doc.derivedFrom) d.derivedFrom = clone(r.doc.derivedFrom); else delete d.derivedFrom; } } }
   T.pulled = { ...(T.pulled || {}), [from]: iso(date) };
-  rep.nothing = !rep.added.length && !rep.taken.length && !rep.removed.length && !rep.conflicts.length && !rep.messages && !rep.members.length;
+  rep.nothing = !rep.added.length && !rep.taken.length && !rep.removed.length && !rep.conflicts.length && !rep.messages && !rep.members.length && !rep.releases;
   return rep;
 }
 /** A person settles a conflict : keep mine, or take theirs. Either way the version kept is written as the one that replaces the

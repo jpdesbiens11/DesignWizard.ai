@@ -72,6 +72,7 @@ DesignWizard.ai/
     03_Analyses/                        physique.dwiz
     04_Rapports/
     05_Commandes/<date> <numéro> ×<quantité>/    dossier de commande .zip · demande_de_prix.txt
+    06_Revisions/<numéro>_<révision> <nom>/      le fichier .dwiz figé de chaque révision libérée (voir REVISIONS.md)
     99_Archives/                        dossiers des pièces retirées du projet
 ```
 

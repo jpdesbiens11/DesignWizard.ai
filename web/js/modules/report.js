@@ -18,6 +18,7 @@ import { makeDrawing, svgNode } from "./drawings.js";
 import { reviewRows, reviewProgress, revisionRows } from "../core/review.js";
 import { mvpRows, trlReached } from "../core/mvp.js";
 import { teamRows } from "../core/team.js";
+import { plmRows } from "../core/plm.js";
 import { PROCESSES, materialOrDefault } from "../cad/materials.js";
 import { INTERFACE_TYPES } from "../cad/interfaces.js";
 import { LEVEL_LABEL } from "../analysis/cc_rules.js";
@@ -161,6 +162,10 @@ function render(main) {
     if (revs.length && store.assemblies.length) doc.append(el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, "Révisions et cas d'emploi"),
       el("p", { class: "muted" }, "Chaque pièce avec sa révision, les assemblages qui l'emploient, et la révision de la pièce avec laquelle chacun a été revu. Un assemblage revu avec une révision dépassée est à revalider : il prendra alors sa propre révision suivante. Les dessins portent toujours la révision de ce qu'ils dessinent."),
       table(["Pièce", "Nom", "Rév.", "État", "Employée dans"], revs)));
+    const rel = plmRows(store.project);
+    if (rel.length) doc.append(el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, "Révisions libérées"),
+      el("p", { class: "muted" }, "Chaque libération fige une révision. Forme, ajustement et fonction conservés : la révision suivante du même numéro. Rompus : un nouveau numéro, avec celui dont il dérive. Un assemblage est libéré avec la révision de chacune de ses pièces. Tenu dans l'écran Révisions."),
+      table(["Numéro", "Rév.", "Nom", "Libérée le", "Dérive de", "Forme · ajustement · fonction", "Libéré avec"], rel)));
     if (store.project.team && store.project.team.owner) { const tr = teamRows(store.project);
       doc.append(el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, "Équipe et messages ", badge(tr.conflicts ? `${tr.conflicts} conflit(s) à trancher` : "aucun conflit", tr.conflicts ? "warn" : "ok")),
         el("p", { class: "muted" }, `Miroir de @${store.project.team.owner}. Chaque membre garde le projet entier chez lui ; les miroirs se fusionnent par artéfact. Tenu dans l'écran Équipe.`),

@@ -11,6 +11,7 @@
          03_Analyses/                      physique.dwiz
          04_Rapports/
          05_Commandes/<date> <numéro> ×<quantité>/     dossier de commande .zip · demande_de_prix.txt
+         06_Revisions/<numéro>_<révision> <nom>/       the frozen .dwiz of each released revision (core/plm.js)
          99_Archives/                      folders of the parts removed from the project — nothing is ever deleted
 
    Rules of the tree: numbered folders so they sort in the order of the work; « number — name » so a folder is found
@@ -21,7 +22,7 @@
 import { FOLDER } from "./drive.js";
 import { toDwiz, fromDwiz } from "../core/dwiz.js";
 
-export const TREE = { parts: "01_Pieces", assemblies: "02_Assemblages", analyses: "03_Analyses", reports: "04_Rapports", orders: "05_Commandes", archives: "99_Archives" };
+export const TREE = { parts: "01_Pieces", assemblies: "02_Assemblages", analyses: "03_Analyses", reports: "04_Rapports", orders: "05_Commandes", revisions: "06_Revisions", archives: "99_Archives" };
 const OLD_PROJECT_FILES = ["projet.dwiz", "projet.dwproject.json"];   // names written by the first versions; still read
 const README = "LISEZ-MOI.txt";
 /** A name Drive and every file system accept. */

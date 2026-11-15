@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createAuth, authMessage } from "../../web/js/google/auth.js";
 import { createDrive, GoogleError, FOLDER, APP_KEY } from "../../web/js/google/drive.js";
-import { createDriveFs, safeName, itemFolderName } from "../../web/js/google/drive_fs.js";
+import { createDriveFs, safeName, itemFolderName, TREE } from "../../web/js/google/drive_fs.js";
 import { accessHash, decide, approve, revoke, accessFileText, requestUrl, isHosted, isHash, shortHash, loadAccess } from "../../web/js/core/access.js";
 import { CONFIG } from "../../web/js/config.js";
 
@@ -143,6 +143,18 @@ test("drive tree: the product as an ergonomic folder — named, renamed, archive
   await fs2.trashProject("p1");
   assert.deepEqual((await fs2.listProjects()).map((p) => p.id), ["old"], "a deleted project goes to the Drive bin");
   assert.equal(safeName('a/b:c*?"<>|d'), "a b c d"); assert.equal(safeName(""), "sans nom"); assert.equal(itemFolderName("DW-1", "DW-1"), "DW-1");
+});
+
+test("drive tree: each released revision has a folder of its own, named after its number and its revision", async () => {
+  const { release, releaseFiles } = await import("../../web/js/core/plm.js"), { toDwiz, fromDwiz } = await import("../../web/js/core/dwiz.js");
+  const drive = fakeDrive(), fs = createDriveFs(drive, { root: "DesignWizard.ai" });
+  const project = { dw: "project/1", id: "p-rev", name: "Variateur", parts: [{ dw: "part/1", id: "DW-0001", name: "Support", material: "AL6061-T6", features: [{ op: "box", size: [1, 1, 1] }] }], assemblies: [] };
+  release(project, "part:DW-0001", { date: new Date(Date.UTC(2026, 0, 1, 12, 0)) }); project.parts[0].notes = ["Ébavurer."]; release(project, "part:DW-0001", { date: new Date(Date.UTC(2026, 0, 1, 12, 5)) });
+  await fs.saveProject(project); const r = await fs.publish(project, releaseFiles(project, toDwiz, TREE.revisions));
+  assert.equal(TREE.revisions, "06_Revisions"); assert.deepEqual(drive.names("06_Revisions"), ["PRT-46023-50000_A Support", "PRT-46023-50000_B Support"]);
+  assert.deepEqual(drive.names("PRT-46023-50000_B Support"), ["PRT-46023-50000_B Support.dwiz"]); assert.equal(r.files.length, 2);
+  const frozen = [...drive.files.values()].find((f) => f.name === "PRT-46023-50000_A Support.dwiz"); assert.equal(fromDwiz(frozen.content).notes, undefined, "revision A is the part as it was");
+  await fs.publish(project, releaseFiles(project, toDwiz, TREE.revisions)); assert.equal(drive.names("06_Revisions").length, 2, "published again : the same folders, no twin");
 });
 
 test("access: hashed addresses only, admin and approved rights, request without the address", async () => {

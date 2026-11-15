@@ -9,6 +9,9 @@ import { authMessage } from "../google/auth.js";
 import { THEMES, currentTheme, applyTheme } from "../core/theme.js";
 import { projectArtifacts } from "../core/artifacts.js";
 import { CONFIG } from "../config.js";
+import { releaseFiles } from "../core/plm.js";
+import { toDwiz } from "../core/dwiz.js";
+import { TREE } from "../google/drive_fs.js";
 
 const AUTO = "dw.drive.auto";
 const autoOn = () => { try { return localStorage.getItem(AUTO) === "1"; } catch (e) { return false; } };
@@ -49,6 +52,7 @@ export async function publishToDrive(onStep = () => {}) {
   if (!session.account && !(await connect())) return null;
   try {
     const { items, errors } = await projectArtifacts((t) => { setStatus(t, "busy"); onStep(t); });
+    items.push(...releaseFiles(store.project, toDwiz, TREE.revisions));      // each released revision in a folder of its own
     await session.fs.saveProject(store.project);
     const r = await session.fs.publish(store.project, items, (i, n, it) => { setStatus(`Drive : ${i} / ${n} — ${it.name}`, "busy"); onStep(`${i} / ${n} — ${it.name}`); });
     setStatus(`${r.files.length} fichier(s) publiés dans Drive`, "done");
