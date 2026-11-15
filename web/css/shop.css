@@ -107,6 +107,27 @@ html[data-module="fea"] { --acc: var(--hl-teal); }
 .bc-row { display: flex; gap: .35rem; align-items: center; margin: .3rem 0; }
 .bc-row select, .bc-row input { min-width: 0; flex: 1 1 4rem; padding: .28rem .4rem; font-size: .86rem; }
 .bc-row small { flex: none; color: var(--muted); }
+/* Isolation : the bodies grouped by what they are, each group in its colour */
+.cc-group { display: flex; align-items: center; gap: .4rem; width: 100%; margin-top: .5rem; padding: .25rem .2rem; border: 0; border-bottom: 1.4px solid var(--line); background: none; font: inherit; font-size: .88rem; color: var(--ink); text-align: left; cursor: pointer; }
+.cc-group:hover { background: var(--surface-2); } .cc-group small { color: var(--muted); } .cc-chev { color: var(--muted); width: .9rem; text-align: center; }
+.cc-body { display: flex; flex-wrap: wrap; align-items: center; gap: .2rem .35rem; margin: .18rem 0 0 .3rem; padding: .12rem .2rem .12rem .4rem; border-left: 4px solid var(--line); font-size: .84rem; }
+.cc-body.off { opacity: .55; } .cc-body.off .cc-name { text-decoration: line-through; }
+.cc-body .cc-name { flex: 1 1 calc(100% - 2rem); min-width: 0; overflow-wrap: anywhere; line-height: 1.25; }
+.cc-body select { flex: 1 1 6rem; min-width: 0; max-width: 14rem; padding: .15rem .2rem; font-size: .8rem; }
+/* the tree of the load case : a type, its items, the colour of the type on each */
+.bc-tree { margin: .2rem 0 .5rem; }
+.bc-ghead { display: flex; align-items: center; gap: .35rem; margin-top: .55rem; padding: .15rem 0; border-bottom: 1.4px solid var(--line); font-size: .88rem; }
+.bc-ghead .icon-btn { opacity: .55; } .bc-ghead .icon-btn.on { opacity: 1; }
+.bc-dot { flex: none; width: .72rem; height: .72rem; border-radius: 50%; border: 1.4px solid var(--graphite); }
+.bc-item { display: flex; align-items: center; gap: .4rem; margin: .22rem 0 0 .35rem; padding: .22rem .35rem; border: 1.6px solid transparent; border-radius: var(--r-field); cursor: pointer; font-size: .86rem; }
+.bc-item:hover, .bc-item:focus-visible { background: var(--surface-2); } .bc-item.sel { background: var(--surface); box-shadow: var(--shadow-sketch); }
+.bc-item .bc-text { flex: 1; min-width: 0; display: grid; line-height: 1.25; } .bc-item .bc-text small { color: var(--muted); overflow-wrap: anywhere; }
+.bc-item .icon-btn { flex: none; opacity: .5; } .bc-item:hover .icon-btn, .bc-item.sel .icon-btn { opacity: 1; }
+.bc-edit { margin: 0 0 .3rem .95rem; padding: .1rem .45rem .2rem; border-left: 4px solid var(--acc); background: var(--surface-2); border-radius: 0 var(--r-field) var(--r-field) 0; }
+.bc-val { display: inline-flex; align-items: center; gap: .25rem; flex: 1 1 4rem; min-width: 0; } .bc-val input { min-width: 0; flex: 1; }
+.bc-none { margin: .2rem 0 0 1.4rem; }
+.dw-view-label.bc { border-width: 2px; background: color-mix(in srgb, var(--bc, var(--acc)) 14%, var(--surface)); font-weight: 600; }
+.dw-view-label.bc.sel { background: var(--bc, var(--acc)); color: #fff; }
 .bc-card { margin: .35rem 0; padding: .1rem .45rem; border-left: 4px solid var(--acc); background: var(--surface-2); border-radius: var(--r-field); }
 .calc-steps { margin: .3rem 0 .5rem; padding-left: 1.15rem; font-size: .84rem; }
 .calc-steps li { margin-bottom: .32rem; }

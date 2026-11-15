@@ -9,8 +9,9 @@ import { session, signOut } from "./access.js";
 import { THEMES, currentTheme, applyTheme } from "./theme.js";
 import { toDwiz } from "./dwiz.js";
 import { dwizFileName } from "./dwiz_names.js";
+import { mountPanes } from "./panes.js";
 
-export const APP_VERSION = "0.30.1";
+export const APP_VERSION = "0.31.0";
 const modules = new Map();
 const ORDER = ["home", "shop", "parts", "pcb", "pcba", "assembly", "physics", "creepage", "dfx", "drawings", "review", "report"];
 const SHOP_SCREENS = new Set(["interfaces", "process", "extrusion", "library", "busbar", "flex"]);      // screens of the Shop : its tab stays lit on them (see modules/shop_tabs.js)
@@ -21,6 +22,14 @@ export const app = { modules, context: {}, version: APP_VERSION, current: null, 
 export function registerModule(def) { modules.set(def.key, def); }
 export function go(hash) { if (location.hash === hash) route(); else location.hash = hash; }
 export function setContext(ctx) { app.context = ctx || {}; }
+
+/* the borders of the side panels of a studio : put when a screen draws its studio, again when it rebuilds it */
+let panesWatch = null;
+function studioPanes(main, key) {
+  const put = () => main.querySelectorAll(":scope > .studio").forEach((s) => mountPanes(s, key));
+  if (panesWatch) panesWatch.disconnect();
+  put(); if (typeof MutationObserver !== "undefined") { panesWatch = new MutationObserver(put); panesWatch.observe(main, { childList: true }); }
+}
 
 let shellOff = [];                                             // listeners of the current top bar (it is rebuilt on a theme change)
 function topbar() {
@@ -130,6 +139,7 @@ function route() {
   }
   try { const c = m.render(main, parts.slice(1)); if (typeof c === "function") app.cleanup = c; }
   catch (e) { console.error(e); main.append(el("div", { class: "page" }, el("div", { class: "card" }, el("h2", null, "Cet écran n'a pas pu s'afficher"), el("p", { class: "form-error" }, e.message)))); }
+  studioPanes(main, key);
 }
 
 export async function start() {

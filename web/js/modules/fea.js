@@ -20,10 +20,12 @@ import { cutsSection, cutMenu, fraction } from "./fea_cuts.js";
 import { precheckStructure, precheckThermal, precheckThermo, compare } from "../analysis/fea/precheck.js";
 import { VERDICT, show } from "../analysis/fea/summary.js";
 import { lightSide, sideOf, sidePoints, arrow, clamp, gem, SIDES, LIT } from "../core/view_marks.js";
+import { bcTree, bcFind, bcLabels, BC_COLORS } from "../analysis/fea/bc_tree.js";
+import { bcSection } from "./fea_tree.js";
 
 const FACES = [["-X", "gauche (−X)"], ["+X", "droite (+X)"], ["-Y", "avant (−Y)"], ["+Y", "arrière (+Y)"], ["-Z", "dessous (−Z)"], ["+Z", "dessus (+Z)"]];
 const DIRS = { "+X": [1, 0, 0], "-X": [-1, 0, 0], "+Y": [0, 1, 0], "-Y": [0, -1, 0], "+Z": [0, 0, 1], "-Z": [0, 0, -1] };
-const st = { target: null, kind: "structure", cells: 3000, cuts: [], fixed: [], loads: [], power: [], fixedT: [], conv: { on: true, h: 10, Tamb: 25 }, thermo: { uniform: true, T: 80, Tref: 20 } };
+const st = { target: null, kind: "structure", cells: 3000, cuts: [], fixed: [], loads: [], power: [], fixedT: [], conv: { on: true, h: 10, Tamb: 25 }, thermo: { uniform: true, T: 80, Tref: 20 }, sel: null, show: {} };      // sel : the item of the load case that is selected (A1, E2…) ; show : the labels of a type, on or off
 let seq = 0;
 
 /** Material of a body for the simulation (typical values; the data sheet of the grade prevails). */
@@ -43,7 +45,7 @@ function render(main, args) {
   main.append(root);
   if (!targets.length) { root.replaceWith(el("div", { class: "page" }, el("div", { class: "empty" }, el("h2", null, "Rien à simuler"), el("p", null, "Créez d'abord une pièce dans l'Atelier."), el("a", { class: "btn btn-primary", href: "#/shop" }, "Aller à l'Atelier")))); return null; }
   if (args[0] && targets.some((t) => t.id === args[0])) st.target = targets.find((t) => t.id === args[0]);
-  if (!st.target || !targets.some((t) => t.id === st.target.id)) { st.target = targets[0]; st.fixed = []; st.loads = []; st.power = []; st.fixedT = []; st.cuts = []; }
+  if (!st.target || !targets.some((t) => t.id === st.target.id)) { st.target = targets[0]; st.fixed = []; st.loads = []; st.power = []; st.fixedT = []; st.cuts = []; st.sel = null; }
   const vp = createViewport(view, { name: () => `${st.target.id}_simulation`, menuFor: (hit) => { const own = regionMenu(hit), cut = whole ? cutMenu(hit, st, () => { last = null; remesh(false); }) : []; return [...own, ...(own.length && cut.length ? ["—"] : []), ...cut]; }, onPick: (hit) => { if (!asking) return false; pickRegion(hit); return true; }, onHover: (hit) => { if (asking) { vp.viewer.clearOverlays("bchover"); const k = regionAt(hit); if (k) lightRegion(k, LIT.hover, "bchover"); } } }), info = el("span", { class: "chip" }, "—");
   vp.setStatus(info);
   let geo = null, model = null, whole = null, syms = [], regions = [], estimate = null, last = null, worker = null, alive = true, asking = null;      // whole : the product entire ; model : what is solved — the same, or what the cuts keep
@@ -85,24 +87,31 @@ function render(main, args) {
   function regionMenu(hit) {
     const k = hit ? regionAt(hit) : null; if (!k || !model) return [];
     const r = regions.find((x) => x.key === k), name = r ? r.label : k, face = k.startsWith("face:") ? k.slice(5) : "+Z", into = `${face[0] === "+" ? "-" : "+"}${face[1]}`, heat = st.kind === "thermal" || (st.kind === "thermo" && !st.thermo.uniform);
-    const add = (fn, text) => () => { fn(); changed(); lightRegion(k, LIT.chosen, "bcpick"); setTimeout(() => { if (alive) vp.viewer.clearOverlays("bcpick"); }, 1400); toast(text, "success", 2500); };
+    const add = (fn, text, group) => () => { fn(); if (group) st.sel = `${group[0]}${st[group[1]].length}`; changed(); lightRegion(k, LIT.chosen, "bcpick"); setTimeout(() => { if (alive) vp.viewer.clearOverlays("bcpick"); }, 1400); toast(text, "success", 2500); };
     return [{ title: name },
-      ...(st.kind !== "thermal" ? [st.fixed.includes(k) ? { label: "Retirer l'appui d'ici", icon: "unlink", run: add(() => { st.fixed = st.fixed.filter((x) => x !== k); }, `Appui retiré de ${name}`) } : { label: "Appui ici (encastrement)", icon: "lock", run: add(() => { st.fixed.push(k); }, `Appui sur ${name}`) }] : []),
-      ...(st.kind === "structure" ? [{ label: `Effort ici : 100 N vers ${into}`, icon: "bolt", run: add(() => { st.loads.push({ region: k, mode: "force", F: 100, dir: into, p: 0.1 }); }, `Effort de 100 N sur ${name} : réglez sa valeur à gauche`) },
-        { label: "Pression ici : 0,1 MPa", icon: "flow", run: add(() => { st.loads.push({ region: k, mode: "pressure", F: 100, dir: into, p: 0.1 }); }, `Pression sur ${name}`) }] : []),
-      ...(heat ? [{ label: "Source de chaleur ici : 5 W", icon: "thermal", run: add(() => { st.power.push({ region: k, P: 5 }); }, `Source de 5 W sur ${name}`) }, { label: "Température imposée ici : 25 °C", icon: "thermal", run: add(() => { st.fixedT.push({ region: k, T: 25 }); }, `Température imposée sur ${name}`) }] : [])];
+      ...(st.kind !== "thermal" ? [st.fixed.includes(k) ? { label: "Retirer l'appui d'ici", icon: "unlink", run: add(() => { st.fixed = st.fixed.filter((x) => x !== k); }, `Appui retiré de ${name}`) } : { label: "Appui ici (encastrement)", icon: "lock", run: add(() => { st.fixed.push(k); }, `Appui sur ${name}`, ["A", "fixed"]) }] : []),
+      ...(st.kind === "structure" ? [{ label: `Effort ici : 100 N vers ${into}`, icon: "bolt", run: add(() => { st.loads.push({ region: k, mode: "force", F: 100, dir: into, p: 0.1 }); }, `Effort de 100 N sur ${name} : réglez sa valeur à gauche`, ["E", "loads"]) },
+        { label: "Pression ici : 0,1 MPa", icon: "flow", run: add(() => { st.loads.push({ region: k, mode: "pressure", F: 100, dir: into, p: 0.1 }); }, `Pression sur ${name}`, ["E", "loads"]) }] : []),
+      ...(heat ? [{ label: "Source de chaleur ici : 5 W", icon: "thermal", run: add(() => { st.power.push({ region: k, P: 5 }); }, `Source de 5 W sur ${name}`, ["Q", "power"]) }, { label: "Température imposée ici : 25 °C", icon: "thermal", run: add(() => { st.fixedT.push({ region: k, T: 25 }); }, `Température imposée sur ${name}`, ["T", "fixedT"]) }] : [])];
   }
-  /** The symbols of the load case : clamps where the part is held, arrows where it is pushed and which way, marks for heat. */
+  /** The symbols of the load case : clamps where the product is held, arrows where it is pushed and which way, marks for heat —
+      each in the colour of its type, with its number ; the labels of a type show when its eye is open, the selected item always. */
+  const regionName = (k) => (regions.find((r) => r.key === k) || { label: k }).label, loadTree = () => bcTree(st, regionName);
   function drawSymbols() {
-    const v = vp.viewer; v.clearOverlays("sym"); if (!model) return;
-    const tag = "sym", heat = st.kind === "thermal" || (st.kind === "thermo" && !st.thermo.uniform), note = (key, text, cls = "") => { const s = spots(key, 1)[0]; if (s) v.addLabel(s.p, text, tag, cls); };
-    if (st.kind !== "thermal") for (const k of st.fixed) for (const s of spots(k)) clamp(v, s.p, s.out, { tag });
-    if (st.kind === "structure") for (const l of st.loads) {
-      if (l.mode === "pressure") { for (const s of spots(l.region)) arrow(v, s.p, s.out.map((c) => -c), { tag, color: "#f59e0b", len: v._size() * 0.05 }); note(l.region, `${show(l.p, 3)} MPa`); }
-      else { for (const s of spots(l.region, 2)) arrow(v, s.p, DIRS[l.dir], { tag, color: "#e5484d" }); note(l.region, `${show(l.F, 1)} N ${l.dir}`, "err"); }
+    const v = vp.viewer; v.clearOverlays("sym"); v.clearOverlays("bcsel"); if (!model) return;
+    const tag = "sym", tree = loadTree();
+    for (const g of tree) for (const it of g.items) {
+      if (it.kind === "fixed") for (const s of spots(it.region)) clamp(v, s.p, s.out, { tag, color: it.color });
+      else if (it.kind === "pressure") for (const s of spots(it.region)) arrow(v, s.p, s.out.map((c) => -c), { tag, color: it.color, len: v._size() * 0.05 });
+      else if (it.kind === "force") for (const s of spots(it.region, 2)) arrow(v, s.p, DIRS[st.loads[it.index].dir], { tag, color: it.color });
+      else for (const s of spots(it.region, 2)) gem(v, s.p, { tag, color: it.color });
     }
-    if (heat) { for (const x of st.power) { for (const s of spots(x.region, 2)) gem(v, s.p, { tag, color: "#f97316" }); note(x.region, `${show(x.P, 1)} W`); } for (const x of st.fixedT) { for (const s of spots(x.region, 2)) gem(v, s.p, { tag, color: "#0ea5e9" }); note(x.region, `${show(x.T, 1)} °C`); } }
+    for (const it of bcLabels(tree, st.show, st.sel)) { const s = spots(it.region, 1)[0]; if (!s) continue;
+      const b = v.addLabel(s.p, it.short, tag, `bc${it.selected ? " sel" : ""}`, () => select(it.selected ? null : it.id)); b.style.borderColor = it.color; b.style.setProperty("--bc", it.color); b.dataset.tip = `${it.text} — ${it.where}`; b.setAttribute("aria-label", `${it.id} : ${it.text}, ${it.where}`); }
+    const cur = st.sel ? bcFind(tree, st.sel) : null; if (cur) lightRegion(cur.item.region, cur.item.color, "bcsel");
   }
+  /** Selects an item of the load case (null : none) : it lights up on the model and opens in the tree. */
+  function select(id) { st.sel = id; drawLeft(); drawSymbols(); }
 
   /* ---------- geometry and mesh ---------- */
   async function loadGeometry() {
@@ -186,14 +195,11 @@ function render(main, args) {
   /* ---------- left: what is simulated and how it is held and loaded ---------- */
   const sel = (value, opts, onChange) => el("select", { onChange: (e) => onChange(e.target.value) }, opts.map(([k, l]) => el("option", { value: k, selected: k === value }, l)));
   const num = (value, onChange, step = "any") => el("input", { type: "number", value, step, onChange: (e) => { const x = parseFloat(e.target.value); if (Number.isFinite(x)) onChange(x); } });
-  const regSel = (value, onChange) => {
-    const s = sel(value, regions.map((r) => [r.key, r.label]), onChange), aim = el("button", { class: "icon-btn", type: "button", "aria-label": "Choisir dans la vue", "data-tip": "Choisir à la souris : cliquez la face (ou l'interface) dans la vue 3D", onClick: () => { asking = onChange; view.style.cursor = "crosshair"; toast("Cliquez une face extérieure de la pièce : elle s'allume sous le curseur.", "info", 3000); } }, icon("fit"));
-    const row = el("span", { class: "bc-pick", onMouseenter: () => { vp.viewer.clearOverlays("bchover"); lightRegion(s.value, LIT.named, "bchover"); }, onMouseleave: () => { if (!asking) vp.viewer.clearOverlays("bchover"); } }, s, aim);
-    return row;
-  };
   const changed = () => { last = null; showMesh(); drawLeft(); refreshEstimate(); };
-  const rm = (list, i) => el("button", { class: "icon-btn", type: "button", "aria-label": "Retirer", onClick: () => { list.splice(i, 1); changed(); } }, "×");
-  function drawLeft() {
+  /* a field that loses the focus while the panel is redrawn asks for a redraw of its own : one at a time, the last one wins */
+  let drawing = false, again = false;
+  function drawLeft() { if (drawing) { again = true; return; } drawing = true; try { paintLeft(); } finally { drawing = false; if (again) { again = false; drawLeft(); } } }
+  function paintLeft() {
     clear(left);
     left.append(el("img", { class: "side-mark", src: "img/marks/physique.svg", alt: "" }), el("div", { class: "side-head" }, el("h2", null, "Simulation")));
     const scroll = el("div", { class: "side-scroll" });
@@ -206,29 +212,21 @@ function render(main, args) {
     scroll.append(sec);
     if (whole) scroll.append(cutsSection({ st, kind: st.kind, syms, bbox: whole.bbox, symmetric, apply: () => { last = null; remesh(false); } }));
     const heat = st.kind === "thermal" || (st.kind === "thermo" && !st.thermo.uniform);
-    if (st.kind !== "thermal") {
-      sec.append(el("h3", null, el("span", { class: "grow" }, "Appuis (encastrés)"), btn("", () => { st.fixed.push(regions[0].key); changed(); }, { small: true, icon: "plus", tip: "Ajouter un appui" })));
-      st.fixed.forEach((k, i) => sec.append(el("div", { class: "bc-row" }, regSel(k, (v) => { st.fixed[i] = v; changed(); }), st.fixed.length > 1 ? rm(st.fixed, i) : null)));
-      sec.append(el("p", { class: "muted small" }, "Chaque appui et chaque effort se choisit dans la liste ou à la souris (bouton cible) ; son symbole apparaît sur la pièce : cônes bleus = encastrement, flèches rouges = force et son sens, flèches orange = pression."));
-      if (st.kind === "thermo") sec.append(el("h3", { style: { marginTop: ".7rem" } }, "Température"),
-        el("div", { class: "bc-row" }, el("small", null, "Montage sans contrainte à"), num(st.thermo.Tref, (v) => { st.thermo.Tref = v; changed(); }), el("small", null, "°C")),
-        el("label", { class: "check" }, el("input", { type: "checkbox", checked: st.thermo.uniform, onChange: (e) => { st.thermo.uniform = e.target.checked; changed(); } }), "Pièce à température uniforme"),
-        st.thermo.uniform ? el("div", { class: "bc-row" }, num(st.thermo.T, (v) => { st.thermo.T = v; changed(); }), el("small", null, "°C en service")) : el("p", { class: "muted small" }, "Le champ de température est d'abord calculé avec les sources ci-dessous, puis appliqué à la structure."));
-      if (st.kind === "structure") sec.append(el("h3", { style: { marginTop: ".7rem" } }, el("span", { class: "grow" }, "Efforts"), btn("", () => { st.loads.push({ region: regions[1].key, mode: "force", F: 100, dir: "-Z", p: 0.1 }); changed(); }, { small: true, icon: "plus", tip: "Ajouter un effort" })));
-      if (st.kind === "structure") st.loads.forEach((l, i) => sec.append(el("div", { class: "bc-card" }, el("div", { class: "bc-row" }, regSel(l.region, (v) => { l.region = v; changed(); }), rm(st.loads, i)),
-        el("div", { class: "bc-row" }, sel(l.mode, [["force", "Force (N)"], ["pressure", "Pression (MPa)"]], (v) => { l.mode = v; changed(); }),
-          l.mode === "force" ? num(l.F, (v) => { l.F = v; changed(); }) : num(l.p, (v) => { l.p = v; changed(); }),
-          l.mode === "force" ? sel(l.dir, Object.keys(DIRS).map((d) => [d, `vers ${d}`]), (v) => { l.dir = v; changed(); }) : null))));
-    }
-    if (heat) {
-      sec.append(el("h3", { style: st.kind === "thermo" ? { marginTop: ".7rem" } : null }, el("span", { class: "grow" }, "Sources de chaleur"), btn("", () => { st.power.push({ region: regions[0].key, P: 5 }); changed(); }, { small: true, icon: "plus", tip: "Ajouter une source" })));
-      st.power.forEach((x, i) => sec.append(el("div", { class: "bc-row" }, regSel(x.region, (v) => { x.region = v; changed(); }), num(x.P, (v) => { x.P = v; changed(); }), el("small", null, "W"), st.power.length > 1 ? rm(st.power, i) : null)));
-      sec.append(el("h3", { style: { marginTop: ".7rem" } }, el("span", { class: "grow" }, "Températures imposées"), btn("", () => { st.fixedT.push({ region: regions[5].key, T: 25 }); changed(); }, { small: true, icon: "plus", tip: "Ajouter une face tenue en température" })));
-      st.fixedT.forEach((x, i) => sec.append(el("div", { class: "bc-row" }, regSel(x.region, (v) => { x.region = v; changed(); }), num(x.T, (v) => { x.T = v; changed(); }), el("small", null, "°C"), rm(st.fixedT, i))));
-      sec.append(...[el("h3", { style: { marginTop: ".7rem" } }, "Convection sur l'extérieur"), el("label", { class: "check" }, el("input", { type: "checkbox", checked: st.conv.on, onChange: (e) => { st.conv.on = e.target.checked; changed(); } }), "Toutes les faces exposées"),
-        st.conv.on ? el("div", { class: "bc-row" }, num(st.conv.h, (v) => { st.conv.h = v; changed(); }), el("small", null, "W/m²·K"), num(st.conv.Tamb, (v) => { st.conv.Tamb = v; changed(); }), el("small", null, "°C")) : null,
-        el("p", { class: "muted small" }, "Air calme : 5 à 15 W/m²·K ; air soufflé : 25 à 100 ; plaque froide à eau : 500 et plus.")].filter(Boolean));
-    }
+    if (st.sel && !bcFind(loadTree(), st.sel)) st.sel = null;
+    const DEFAULT = { fixed: () => regions[0].key, loads: () => ({ region: regions[1].key, mode: "force", F: 100, dir: "-Z", p: 0.1 }), power: () => ({ region: regions[0].key, P: 5 }), fixedT: () => ({ region: regions[5].key, T: 25 }) };
+    const aim = (set) => { asking = set; view.style.cursor = "crosshair"; toast("Cliquez une face extérieure du produit (ou une interface) : elle s'allume sous le curseur.", "info", 3200); };
+    sec.append(el("h3", null, "Cas de charge"), bcSection({ st, tree: loadTree(), regions, dirs: DIRS, select, changed, aim, relabel: () => { drawLeft(); drawSymbols(); },
+      hover: (k, color) => { vp.viewer.clearOverlays("bchover"); if (k && !asking) lightRegion(k, color || LIT.named, "bchover"); },
+      add: (key) => { st[key].push(DEFAULT[key]()); const g = loadTree().find((x) => x.key === key), it = g.items[g.items.length - 1]; st.sel = it.id; changed(); aim((k) => { if (key === "fixed") st.fixed[it.index] = k; else st[key][it.index].region = k; changed(); }); },
+      remove: (key, i) => { st[key].splice(i, 1); st.sel = null; changed(); } }),
+      el("p", { class: "muted small" }, "Un clic sur une ligne la montre sur le modèle et ouvre ses valeurs ; l'œil d'un type affiche ou masque ses étiquettes. Un clic droit sur une face du modèle y pose un appui, un effort ou une source."));
+    if (st.kind === "thermo") sec.append(el("h3", { style: { marginTop: ".7rem" } }, "Température"),
+      el("div", { class: "bc-row" }, el("small", null, "Montage sans contrainte à"), num(st.thermo.Tref, (v) => { st.thermo.Tref = v; changed(); }), el("small", null, "°C")),
+      el("label", { class: "check" }, el("input", { type: "checkbox", checked: st.thermo.uniform, onChange: (e) => { st.thermo.uniform = e.target.checked; changed(); } }), "Pièce à température uniforme"),
+      st.thermo.uniform ? el("div", { class: "bc-row" }, num(st.thermo.T, (v) => { st.thermo.T = v; changed(); }), el("small", null, "°C en service")) : el("p", { class: "muted small" }, "Le champ de température est d'abord calculé avec les sources ci-dessus, puis appliqué à la structure."));
+    if (heat) sec.append(...[el("h3", { style: { marginTop: ".7rem" } }, "Convection sur l'extérieur"), el("label", { class: "check" }, el("input", { type: "checkbox", checked: st.conv.on, onChange: (e) => { st.conv.on = e.target.checked; changed(); } }), "Toutes les faces exposées"),
+      st.conv.on ? el("div", { class: "bc-row" }, num(st.conv.h, (v) => { st.conv.h = v; changed(); }), el("small", null, "W/m²·K"), num(st.conv.Tamb, (v) => { st.conv.Tamb = v; changed(); }), el("small", null, "°C")) : null,
+      el("p", { class: "muted small" }, "Air calme : 5 à 15 W/m²·K ; air soufflé : 25 à 100 ; plaque froide à eau : 500 et plus.")].filter(Boolean));
     const m = geo.bodies[0].material;
     scroll.append(el("div", { class: "side-section" }, el("h3", null, "Matériau"), el("p", { class: "small" }, geo.bodies.length > 1 ? `${geo.bodies.length} corps, chacun avec son matériau ; contacts collés, conduction parfaite.` : `${m.name} — E ${fmt(m.E / 1000, 1)} GPa, ν ${m.nu}, k ${fmt(m.k, 1)} W/m·K${m.alpha ? `, α ${fmt(m.alpha * 1e6, 1)} µm/m·K` : ""}${m.Re ? `, Re ${fmt(m.Re, 0)} MPa` : ""}.`),
       el("p", { class: "muted small" }, "Valeurs typiques : la fiche de la nuance fait foi.")));

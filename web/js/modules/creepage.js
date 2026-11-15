@@ -9,6 +9,7 @@ import { store } from "../core/store.js";
 import { createViewport } from "../core/viewport.js";
 import { buildAssembly, showAssembly } from "../core/asm_scene.js";
 import { sceneBody } from "../analysis/cc_scene.js";
+import { bodyGroups } from "../analysis/cc_groups.js";
 import { BUILTIN, DEFAULT_PARAMS, requirement, floatingSpan, altLabel, LEVEL_LABEL, FT_PER_M } from "../analysis/cc_rules.js";
 import { netColor } from "../cad/materials.js";
 
@@ -74,7 +75,7 @@ function render(main, args) {
     return null;
   }
   const asm = () => store.assembly(id);
-  const st = { ctx: null, bodies: null, results: null, sel: null, token: 0, running: false, ghost: true, worker: null, hidden: new Set() };      // hidden : bodies put aside to see behind them — still analysed
+  const st = { ctx: null, bodies: null, results: null, sel: null, token: 0, running: false, ghost: true, worker: null, hidden: new Set(), fold: new Set() };      // hidden : bodies put aside to see behind them — still analysed
   const iso = () => ({ nets: collectNets(asm()), params: { ...DEFAULT_PARAMS, ...((asm().isolation || {}).params || {}) }, levels: (asm().isolation || {}).levels || {}, overrides: (asm().isolation || {}).overrides || {} });
   const save = (fn, label) => store.updateAssembly(id, (a) => { a.isolation = a.isolation || {}; a.isolation.nets = collectNets(a); fn(a.isolation); }, label);
   /* ---- hide and bring back, roles and potentials : with the mouse, on the body itself ---- */
@@ -208,15 +209,23 @@ function render(main, args) {
     if (st.bodies) {
       const sec = el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, "Rôle des corps"), st.hidden.size ? btn(`Ramener (${st.hidden.size})`, showAll, { small: true, icon: "eye", tip: "Ramener tous les corps masqués (Maj + H)" }) : null),
         el("p", { class: "muted", style: { fontSize: ".78rem", margin: "0 0 .3rem" } }, "Clic droit sur un corps dans la vue : le masquer, lui donner son rôle et son potentiel. Un corps masqué reste analysé."));
-      for (const b of st.bodies) {
-        const o = I.overrides[b.id] || {}, off = st.hidden.has(b.id);
-        sec.append(el("div", { class: "param", style: { gridTemplateColumns: "auto minmax(0,1fr) 104px 74px", opacity: off ? 0.55 : 1 } },
-          el("button", { class: "icon-btn", type: "button", "aria-label": off ? `Ramener ${b.name}` : `Masquer ${b.name}`, "aria-pressed": off ? "true" : "false", "data-tip": off ? "Masqué — cliquez pour le ramener" : "Masquer ce corps", onClick: () => hide(b.id, !off) }, icon(off ? "cross" : "eye")),
-          el("label", { "data-tip": `${b.id} · ${b.material}${b.group ? ` · group ${b.group}` : ""}${off ? " · masqué" : ""}`, style: off ? { textDecoration: "line-through" } : null }, b.name),
-          el("select", { "aria-label": `Rôle de ${b.name}`, style: { padding: ".15rem .2rem", fontSize: ".8rem" }, onChange: (e) => save((x) => { x.overrides = x.overrides || {}; const q = { ...(x.overrides[b.id] || {}) }; if (e.target.value) q.kind = e.target.value; else delete q.kind; x.overrides[b.id] = q; }, `Rôle de ${b.name}`) },
-            [["", `auto (${{ conductor: "conducteur", floating: "flottant", insulator: "isolant", ignore: "ignoré" }[b.kind]})`], ["conductor", "conducteur"], ["floating", "flottant"], ["insulator", "isolant"], ["ignore", "ignoré"]].map(([v, l]) => el("option", { value: v, selected: (o.kind || "") === v }, l))),
-          el("select", { "aria-label": `Net de ${b.name}`, style: { padding: ".15rem .2rem", fontSize: ".8rem" }, disabled: b.kind === "insulator" || b.kind === "ignore", onChange: (e) => save((x) => { x.overrides = x.overrides || {}; x.overrides[b.id] = { ...(x.overrides[b.id] || {}), net: e.target.value || null }; }, `Net de ${b.name}`) },
-            el("option", { value: "" }, "—"), I.nets.map((n) => el("option", { value: n.name, selected: b.net === n.name }, n.name)))));
+      /* grouped by what a body is for the analysis, each group in its colour : conductors by potential, then the rest */
+      for (const g of bodyGroups(st.bodies, I.nets)) {
+        const shut = st.fold.has(g.key), hiddenIn = g.bodies.filter((b) => st.hidden.has(b.id)).length;
+        const dot = el("span", { class: "swatch", "aria-hidden": "true", style: { background: cssColor(g.color) } });
+        sec.append(el("button", { class: "cc-group", type: "button", "aria-expanded": shut ? "false" : "true", "data-tip": g.hint, onClick: () => { if (shut) st.fold.delete(g.key); else st.fold.add(g.key); renderLeft(); } },
+          dot, el("b", { class: "grow" }, g.title), el("small", null, `${g.bodies.length}${hiddenIn ? ` · ${hiddenIn} masqué${hiddenIn > 1 ? "s" : ""}` : ""}`), el("span", { class: "cc-chev", "aria-hidden": "true" }, shut ? "▸" : "▾")));
+        if (shut) continue;
+        for (const b of g.bodies) {
+          const o = I.overrides[b.id] || {}, off = st.hidden.has(b.id), row = el("div", { class: "cc-body" + (off ? " off" : "") },
+            el("button", { class: "icon-btn", type: "button", "aria-label": off ? `Ramener ${b.name}` : `Masquer ${b.name}`, "aria-pressed": off ? "true" : "false", "data-tip": off ? "Masqué — cliquez pour le ramener" : "Masquer ce corps", onClick: () => hide(b.id, !off) }, icon(off ? "cross" : "eye")),
+            el("span", { class: "cc-name", "data-tip": `${b.id} · ${b.material}${b.group ? ` · group ${b.group}` : ""}${off ? " · masqué" : ""}` }, b.name),
+            el("select", { "aria-label": `Rôle de ${b.name}`, onChange: (e) => save((x) => { x.overrides = x.overrides || {}; const q = { ...(x.overrides[b.id] || {}) }; if (e.target.value) q.kind = e.target.value; else delete q.kind; x.overrides[b.id] = q; }, `Rôle de ${b.name}`) },
+              [["", `auto (${{ conductor: "conducteur", floating: "flottant", insulator: "isolant", ignore: "ignoré" }[b.kind]})`], ["conductor", "conducteur"], ["floating", "flottant"], ["insulator", "isolant"], ["ignore", "ignoré"]].map(([v, l]) => el("option", { value: v, selected: (o.kind || "") === v }, l))),
+            b.kind === "insulator" || b.kind === "ignore" ? null : el("select", { "aria-label": `Net de ${b.name}`, onChange: (e) => save((x) => { x.overrides = x.overrides || {}; x.overrides[b.id] = { ...(x.overrides[b.id] || {}), net: e.target.value || null }; }, `Net de ${b.name}`) },
+              el("option", { value: "" }, "—"), I.nets.map((n) => el("option", { value: n.name, selected: b.net === n.name }, n.name))));
+          row.style.borderLeftColor = cssColor(g.color); sec.append(row);
+        }
       }
       scroll.append(sec);
     }

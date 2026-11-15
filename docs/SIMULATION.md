@@ -64,6 +64,28 @@ Trois précisions qui comptent :
   limite. « Auto » revient à l'échelle qui couvre tout le résultat.
 - **Coupe** : comme dans toutes les vues 3D, un bouton inverse le côté coupé (Maj + S).
 
+### Le cas de charge est un arbre
+
+Dans le panneau de gauche, le cas de charge se lit comme l'arbre d'un outil de calcul, par type :
+
+| Type | Numéro | Couleur | Symbole sur le modèle |
+|---|---|---|---|
+| Appuis (encastrement) | A1, A2… | bleu | cônes |
+| Efforts — force | E1, E2… | rouge | flèches dans le sens de la force |
+| Efforts — pression | E… | orange | flèches normales à la face |
+| Sources de chaleur | Q1… | orange vif | losanges |
+| Températures imposées | T1… | cyan | losanges |
+
+- Un **clic sur une ligne** la sélectionne : sa face s'allume sur le modèle dans la couleur de son type, ses valeurs
+  s'ouvrent sous la ligne (« Choisir dans la vue » pour pointer la face à la souris ; la liste des régions reste là pour
+  une interface difficile à cliquer).
+- L'**œil d'un type** affiche ou masque ses étiquettes sur le modèle (`A1`, `E1 · 100 N −Z`…). L'élément sélectionné
+  garde toujours la sienne. Un clic sur une étiquette du modèle sélectionne sa ligne.
+- **+** ajoute un élément du type et attend le clic d'une face ; un clic droit sur une face du modèle fait de même.
+
+Le modèle de l'arbre est pur (`web/js/analysis/fea/bc_tree.js` : `bcTree`, `bcLabels`, `BC_COLORS`) ; le panneau le
+dessine (`web/js/modules/fea_tree.js`).
+
 ## 2. Le maillage : un seul gabarit, le cube
 
 La pièce est découpée en **cubes identiques** : une grille régulière posée sur son enveloppe, dont on garde les
