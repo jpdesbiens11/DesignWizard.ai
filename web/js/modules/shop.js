@@ -27,6 +27,7 @@ import { lightSide, sideOf, LIT } from "../core/view_marks.js";
 import { popupMenu } from "../core/view_select.js";
 import { shopTabs } from "./shop_tabs.js";
 import { specialCard } from "./shop_special.js";
+import { foldSides } from "../core/shop_folded.js";
 import { printProcess, amLimits } from "../cad/special_processes.js";
 import { rankDirections } from "../analysis/am_supports.js";
 
@@ -182,7 +183,7 @@ function render(main) {
       stockGrid.append(el("button", { class: "stock-card" + (on ? " on" : "") + (odd ? " odd" : ""), type: "button", "aria-pressed": on ? "true" : "false", "data-tip": f.hint, onClick: () => { brief.form = form === rec.form ? "" : form;
         if (prof && brief.form && !canExtrude) { brief.material = plastic ? "PVC-U" : "AL6063-T5"; matSel.value = brief.material; toast(`Matière changée pour ${material(brief.material).name} : celle d'avant ne s'extrude pas.`, "info", 4500); }
         drawStock(); propose(); } },
-        icon(f.icon), el("b", null, f.fr), el("small", null, PROCESSES[mould ? moldProcess(brief.material) : prof ? extrusionProcess(brief.material) : form === "print" ? printProcess(brief.material) || proc : proc].fr), form === rec.form ? badge("Conseillé", "ok") : null));
+        icon(f.icon), el("b", null, f.fr), el("small", null, PROCESSES[mould ? moldProcess(brief.material) : prof ? extrusionProcess(brief.material) : form === "print" ? printProcess(brief.material) || proc : form === "sheet" && foldSides(brief).length ? "sheet_metal" : proc].fr), form === rec.form ? badge("Conseillé", "ok") : null));
     }
     /* a moulded part is drawn around what it holds : the designer gives the volume to contain, the rules of the moulder do the rest */
     clear(moldBox);

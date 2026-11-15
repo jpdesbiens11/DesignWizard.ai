@@ -10,14 +10,15 @@ import { FACES, faceKey, bboxUnion } from "./vec.js";
 import { materialOrDefault, hexToRgb } from "./materials.js";
 import { compileExtrusion } from "./family_extrusion.js";
 import { compilePcb } from "./family_pcb.js";
+import { compileFolded } from "./family_folded.js";
 import { expandSpec } from "./shop.js";
-import { stockFacts } from "./stock.js";
+import { stockFacts, foldedStock } from "./stock.js";
 
 export const PART_VERSION = "part/1";
 
 function evaluated(spec, scope) {
   const ev = (x) => (x === undefined ? undefined : evalDeep(x, scope));
-  return { features: ev(spec.features) || [], interfaces: ev(spec.interfaces) || [], extrusion: ev(spec.extrusion), pcb: ev(spec.pcb), bodies: ev(spec.bodies) || {} };
+  return { features: ev(spec.features) || [], interfaces: ev(spec.interfaces) || [], extrusion: ev(spec.extrusion), pcb: ev(spec.pcb), folded: ev(spec.folded), bodies: ev(spec.bodies) || {} };
 }
 
 /** Build the kernel bodies of a part. Returns bodies with shapes (kernel objects), frames, facts and a log. */
@@ -36,6 +37,7 @@ export function buildPart(K, source, opts = {}) {
   let features = E.features.map((f, i) => ({ ...f, id: f.id || `f${i + 1}` }));
   if (E.pcb) { const c = compilePcb(E.pcb, spec); features = [...c.features, ...features]; Object.assign(bodyMeta, c.bodies); st.main = "board"; st.facts.pcb = c.facts; }
   if (E.extrusion) { const c = compileExtrusion(E.extrusion, spec); features = [...c.features, ...features]; st.facts.extrusion = c.facts; }
+  if (E.folded) { try { const c = compileFolded(E.folded); features = [...c.features, ...features]; st.facts.folded = c.facts; if (!st.facts.stock) st.facts.stock = foldedStock(c.facts, source.material); } catch (e) { st.log.push({ level: "error", feature: "folded", msg: `Tôle pliée : ${e.message}` }); } }
   Object.assign(bodyMeta, E.bodies);
 
   if (spec.step) {                                             // imported geometry (supplier STEP): one body per solid
@@ -104,7 +106,7 @@ export function validateSpec(spec) {
   if (spec.dw && !/^part\//.test(spec.dw)) errors.push(`« dw » vaut « ${spec.dw} » : ce n'est pas une pièce (attendu « ${PART_VERSION} »).`);
   if (!spec.id) warnings.push("« id » (numéro de pièce) manquant : un numéro sera attribué.");
   if (!spec.name) warnings.push("« name » manquant.");
-  if (!spec.features && !spec.extrusion && !spec.pcb && !spec.stock) errors.push("Aucune géométrie : il faut « stock », « features », « extrusion » ou « pcb ».");
+  if (!spec.features && !spec.extrusion && !spec.pcb && !spec.stock && !spec.folded) errors.push("Aucune géométrie : il faut « stock », « features », « extrusion », « folded » ou « pcb ».");
   if (spec.stock && (typeof spec.stock !== "object" || !spec.stock.form)) errors.push("« stock » doit être un objet avec sa forme, ex. {\"form\": \"plate\", \"L\": 120, \"W\": 80, \"t\": 6}.");
   if (spec.features && !Array.isArray(spec.features)) errors.push("« features » doit être une liste.");
   if (spec.interfaces && !Array.isArray(spec.interfaces)) errors.push("« interfaces » doit être une liste.");

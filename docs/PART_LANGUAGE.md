@@ -20,7 +20,7 @@ Functions: min max abs sqrt floor ceil round sin cos tan (degrees) hypot clamp(v
   "name": "Short name of the part",
   "function": "One sentence: what the part does in the product.",
   "family": "prismatic | plate | sheet | enclosure | extrusion | pcb | busbar | turned | purchased",
-  "process": "cnc_milling | cnc_turning | sheet_metal | laser_cut | extrusion_al | extrusion_plastic | injection_molding | die_casting | sand_casting | fdm | mjf | pcb | purchased",
+  "process": "cnc_milling | cnc_turning | sheet_metal | laser_cut | extrusion_al | extrusion_plastic | injection_molding | die_casting | sand_casting | fdm | mjf | sla | lpbf | pcb | purchased",
   "material": "AL6061-T6 | AL6063-T5 | AL5052-H32 | CU-C110 | BRASS-360 | SS-304 | STEEL-1018 | PA66-GF30 | PC | PC-ABS | ABS | PBT-GF30 | PPS-GF40 | POM | PEEK | PEI-9085 | PA12 | PVC-U | SILICONE | FR4 | FR4-CTI600",
   "elec": { "kind": "conductor | insulator | chassis | none", "net": "HV+" },   // electrical role (isolation analysis); optional
   "intent": { "loads": "20 N at the tip, vibration", "environment": "-20..60 °C, indoor", "quantity": 50, "priority": "cost | mass | stiffness | lead_time" },   // optional: why the part exists
@@ -29,6 +29,7 @@ Functions: min max abs sqrt floor ceil round sin cos tan (degrees) hypot clamp(v
   "stock": { ... },                     // section 4 — the raw material taken from the rack (replaces the first feature)
   "features": [ ... ],                  // sections 4 and 5 — Shop operations and kernel features, in order
   "extrusion": { ... },                 // section 6 (family extrusion) — replaces the first feature
+  "folded": { ... },                    // section 6b (folded sheet metal) — replaces the stock and the first feature
   "pcb": { ... },                       // section 7 (family pcb)
   "notes": ["Drawing note 1", "..."],   // notes printed on the 2D drawing
   "finish": "Anodised black 10 µm",
@@ -143,6 +144,20 @@ Extrusion design rules to respect in the profile: uniform walls (aluminium ≥ 1
 (≥ 0.4 mm), no gap deeper than 3 × its width (4 × with care), as few hollows as possible, symmetric when possible.
 Machining after extrusion (holes, cut-outs) goes in "features" and "interfaces".
 
+## 6b. Folded sheet metal (family "sheet", process "sheet_metal")
+"folded": {
+  "base": ["L", "W"],        // the flat base: min corner at the origin, thickness from z = 0 to z = t
+  "t": "t", "r": "r",        // sheet thickness; inside radius of EVERY bend (one tool) — at least the minimum of the material (1 × t)
+  "flanges": [ {"side":"+X","h":"h","dir":"up"}, {"side":"-Y","h":"h","dir":"up"} ],
+                             // one folded edge per side of the base (+X -X +Y -Y), at 90°, "up" or "down"; h = OUTSIDE height, from the far face of the base
+  "relief": 3.5,             // optional: square notch where two folded edges meet (default r + t + 0.5)
+  "k": 0.44                  // optional: neutral-fibre factor of the flat pattern (typical value; the shop has its own)
+}
+No "stock" with "folded": the blank is the flat pattern, computed by the platform with its bend lines (DXF).
+Holes and interfaces go in "features" / "interfaces": on the base (faces ±Z; an interface there takes "level": "t" on +Z, 0 on -Z) or on a
+folded edge (faces ±X ±Y, position [along the edge, z]); a hole in a folded edge takes the depth of the sheet ("through" also pierces the edge across).
+Rules checked on the block: r ≥ minimum of the material, h ≥ 4 × t, hole edge ≥ 2.5 × t + r from a bend and ≥ 2 × t from a free edge, relief ≥ r + t + 0.5.
+
 ## 7. PCB family
 "pcb": {
   "size": [100, 80], "r": 2, "t": 1.6,                    // or "outline": P. The bottom of the board is z = 0.
@@ -187,10 +202,12 @@ A .dwiz document is accepted as an answer in place of the JSON object; both are 
 | `cutout` | Découpe de panneau | Ouverture pour un connecteur, un afficheur, un évent. A = panneau (découpe + trous de fixation) ; B = composant qui s'y monte (trous filetés seulement). |
 | `rail` | Glissière / guide-carte | Une languette (bord de PCB, tôle, nervure) glisse dans une rainure. A = languette (aucune géométrie ajoutée) ; B = rainure usinée ou extrudée le long de u. |
 | `pins` | Goupilles de positionnement | Deux goupilles donnent la position précise. A = trous glissants ; B = trous serrés où les goupilles sont chassées. |
+| `weld` | Joint soudé ou câblé par fils | Liaison électrique permanente entre deux conducteurs sur une zone de w × h. A = le côté mince (languette, bout de busbar, départ des fils) ; B = la borne (capot de cellule, barre épaisse, plage). « process » : laser, resistance, ultrasonic, wirebond. « n » : cordons, points ou fils ; « t » : épaisseur de la languette ; « wire » et « wireMat » (Al, Cu) pour le wirebonding ; « i » : courant à porter (A). Aucune géométrie ajoutée. |
+| `contact` | Contact à lamelles | Contact à pression entre deux plages PLANES de conducteurs massifs (busbars) : zone de w × h. A = le côté qui porte la bande de lamelles estampées (« n » points) ; B = la plage plane revêtue. Pressées l'une sur l'autre, les lamelles fléchissent : « gap » est la hauteur comprimée, « force » l'effort par point (N). « plating » : Ag, Sn, Au, Ni ; « base » : CuBe, CuNiSi, CuSn ; « duty » : power ou signal ; « i » : courant à porter (A). Un serrage (vis, clip) doit tenir les deux barres. |
 
 ## Générateurs de profil
 
-`heatsink`, `channel`, `angle`, `tube`, `round_tube`, `card_enclosure`
+`heatsink`, `channel`, `angle`, `tube`, `round_tube`, `card_enclosure`, `fitted`
 
 ## Procédés
 
@@ -199,7 +216,7 @@ A .dwiz document is accepted as an answer in place of the JSON object; both are 
 | `cnc_milling` | Usinage CNC (fraisage) |
 | `cnc_turning` | Tournage CNC |
 | `sheet_metal` | Tôlerie (découpe laser + pliage) |
-| `laser_cut` | Plaque découpée (laser / jet d'eau) |
+| `laser_cut` | Découpe laser de précision (feuille, plaque) |
 | `extrusion_al` | Extrusion aluminium |
 | `extrusion_plastic` | Extrusion plastique |
 | `injection_molding` | Moulage par injection |
@@ -207,6 +224,8 @@ A .dwiz document is accepted as an answer in place of the JSON object; both are 
 | `sand_casting` | Fonderie par gravité (sable ou coquille) |
 | `fdm` | Impression 3D FDM |
 | `mjf` | Impression 3D MJF / SLS |
+| `sla` | Impression 3D résine (SLA) |
+| `lpbf` | Impression 3D métal (fusion laser sur lit de poudre) |
 | `pcb` | Fabrication de PCB |
 | `purchased` | Pièce achetée |
 
@@ -221,6 +240,12 @@ A .dwiz document is accepted as an answer in place of the JSON object; both are 
 | `BRASS-360` | Brass C360 | 8.5 | conducteur |
 | `SS-304` | Stainless steel 304 | 8 | conducteur |
 | `STEEL-1018` | Steel 1018 (zinc plated) | 7.87 | conducteur |
+| `SS-316L` | Inox 316L | 7.98 | conducteur |
+| `SS-17-4PH` | Inox 17-4 PH (durci par précipitation) | 7.8 | conducteur |
+| `ALSI10MG` | Aluminium AlSi10Mg (impression 3D métal) | 2.67 | conducteur |
+| `TI-6AL-4V` | Titane Ti-6Al-4V (grade 5 ; ELI : grade 23) | 4.43 | conducteur |
+| `IN718` | Alliage de nickel 718 (Inconel 718) | 8.19 | conducteur |
+| `IN625` | Alliage de nickel 625 (Inconel 625) | 8.44 | conducteur |
 | `AL-A380` | Aluminium A380 (fonderie sous pression) | 2.71 | conducteur |
 | `ZAMAK-3` | Zamak 3 (zinc, fonderie sous pression) | 6.6 | conducteur |
 | `AL-A356-T6` | Aluminium A356-T6 (fonderie par gravité) | 2.68 | conducteur |
@@ -233,11 +258,20 @@ A .dwiz document is accepted as an answer in place of the JSON object; both are 
 | `POM` | POM (acetal) | 1.41 | 600 |
 | `PEEK` | PEEK | 1.3 | 150 |
 | `PEI-9085` | PEI ULTEM 9085 (FDM) | 1.34 | 150 |
+| `PEKK` | PEKK (FDM haute température) | 1.28 | 150 |
 | `PA12` | PA12 (MJF / SLS) | 1.01 | 600 |
+| `PA11` | PA11 (MJF / SLS) | 1.04 | 600 |
+| `RESIN-SLA` | Résine photopolymère rigide (SLA) | 1.18 | 175 |
+| `PMMA` | Acrylique (PMMA) | 1.19 | 600 |
 | `PVC-U` | PVC rigid (extrusion) | 1.4 | 600 |
 | `SILICONE` | Silicone rubber | 1.15 | 600 |
 | `FR4` | FR4 PCB (standard, CTI 175) | 1.85 | 175 |
 | `FR4-CTI600` | FR4 PCB (high CTI 600) | 1.85 | 600 |
 | `NOMEX-410` | Nomex 410 (aramid paper) | 0.96 | 175 |
+| `PET-FILM` | Film polyester (PET) isolant | 1.39 | 250 |
+| `PI-FILM` | Film polyimide (PI) isolant | 1.42 | 150 |
+| `THERMAL-PAD` | Pad thermique silicone chargé | 2.5 | 600 |
+| `GAP-FILLER` | Composé thermique de remplissage (deux composants) | 2.8 | 600 |
 | `EPOXY` | Epoxy potting / body | 1.8 | 200 |
+| `LI-ION-CELL` | Cellule Li-ion cylindrique (homogénéisée) | 2.65 | conducteur |
 | `GENERIC-COMPONENT` | Electronic component (plastic body) | 1.6 | 175 |

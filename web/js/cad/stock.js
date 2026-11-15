@@ -115,6 +115,12 @@ export function stockFacts(stock, process, materialId) {
   const raw = form.raw(stock, a, materialId);
   return { form: stock.form, formName: form.fr, label: raw.label, raw: raw.size, rawVolume: raw.volume, exact: raw.exact, standard: raw.standard, allowance: a, advice: raw.advice, additive: !!form.additive };
 }
+/** The blank of a folded sheet-metal part (facts of family_folded.js) : the sheet at its thickness, cut to the flat pattern. */
+export function foldedStock(F, materialId) {
+  const series = materialId ? sheetSeries(materialId) : SHEET_GAUGES, [a, b] = F.flat.size;
+  return { form: "sheet", formName: STOCK_FORMS.sheet.fr, label: `${sheetWord(materialId)} de ${f1(F.t)} mm, flan développé ${f1(a)} × ${f1(b)} mm`, raw: { t: F.t, L: a, W: b }, rawVolume: F.t * a * b,
+    exact: true, standard: isStd(series, F.t), allowance: 0, advice: [], additive: false, folded: true };
+}
 /** Stock forms that suit a process, best first (used by the Shop). */
 export function formsFor(process) {
   return Object.entries(STOCK_FORMS).filter(([, f]) => f.processes.includes(process)).map(([k]) => k);

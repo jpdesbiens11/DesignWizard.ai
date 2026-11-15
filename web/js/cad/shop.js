@@ -11,6 +11,7 @@ import { AM_PROCESSES, printSteps, cutStep, DIR_WORDS, buildDir } from "./specia
 import { evalDeep } from "./expr.js";
 import { FACES, faceKey } from "./vec.js";
 import { PROCESSES } from "./materials.js";
+import { foldSteps } from "./family_folded.js";
 
 const BIG = 4000;                                              // "beyond the part" for open cuts (mm)
 const round2 = (x) => Math.round(x * 100) / 100;
@@ -140,10 +141,11 @@ const NEAR_NET = { fdm: [], mjf: [], sla: [], lpbf: [],      // printed : the st
 export function routing(spec, built) {
   const scope = (built && built.params && built.params.scope) || {}, facts = (built && built.facts) || {}, steps = [], tools = new Set(), faces = new Set(), advice = [];
   const add = (kind, text, o = {}) => { steps.push({ kind, text, face: o.face || null, source: o.source || null, iface: o.iface || null, tools: o.tools || [] }); (o.tools || []).forEach((t) => tools.add(t)); if (o.face && kind !== "stock") faces.add(o.face); };
+  const FO = facts.folded || null, thru = (h) => !!h.through || h.depth === "through" || h.depth === undefined || h.depth === null || (!!FO && typeof h.depth === "number" && h.depth >= FO.t - 1e-6);      // in a folded sheet, a hole as deep as the sheet is cut in the flat
   const st = facts.stock || null, proc = spec.process, nearNet = !!NEAR_NET[proc];   // moulded / printed: the shapes come out of the tool, only inserts and threads are operations
   if (st) {
     add("stock", `Approvisionner : ${st.label}`);
-    if (!st.additive) add("cut", `${proc === "laser_cut" ? cutStep(spec.material) : CUT_BY_PROCESS[proc] || "Débiter à la scie"}${st.allowance ? ` (surépaisseur d'usinage ${fr(st.allowance)} mm)` : ""}`);
+    if (!st.additive) add("cut", `${FO ? "Découper le développé au laser : contour, perçages et dégagements d'angle (DXF du développé, calque CUT)" : proc === "laser_cut" ? cutStep(spec.material) : CUT_BY_PROCESS[proc] || "Débiter à la scie"}${st.allowance ? ` (surépaisseur d'usinage ${fr(st.allowance)} mm)` : ""}`);
     if (!st.exact && !st.additive && st.raw && st.raw.t) add("machine", `Surfacer à l'épaisseur finie (brut de ${fr(st.raw.t)} mm)`, { tools: ["Fraise à surfacer"], face: "+Z" });
     advice.push(...(st.advice || []));
   } else if (spec.extrusion) { add("stock", "Extruder le profilé (filière dédiée)"); add("cut", "Couper à longueur"); }
@@ -164,7 +166,7 @@ export function routing(spec, built) {
         else if (h.thread) add("hole", `Tarauder ${n > 1 ? `${n} × ` : ""}${String(h.thread).toUpperCase()} en reprise${tail}`, { tools: [`Taraud ${String(h.thread).toUpperCase()}`], iface: h.iface });
         continue;
       }
-      if (BEAM.has(proc) && h.through && !h.thread && !h.cbore && !h.csink) add("cut", `Découper ${n > 1 ? `${n} × ` : ""}Ø${fr(h.d)} dans la même passe${tail}`, { iface: h.iface });
+      if (BEAM.has(proc) && (h.through || (FO && h.depth >= FO.t - 1e-6)) && !h.thread && !h.cbore && !h.csink) add("cut", `Découper ${n > 1 ? `${n} × ` : ""}Ø${fr(h.d)} dans la même passe${tail}`, { iface: h.iface });
       else add("hole", l.text + tail, { face: h.face, tools: l.tools, iface: h.iface });
     }
     if (nearNet) return;
@@ -184,7 +186,7 @@ export function routing(spec, built) {
       else if (nearNet && !["tap", "deburr", "finish"].includes(f.op) && !(f.op === "hole" && f.thread)) shaped++;
       else if (["drill", "tap", "cbore", "csink", "ream", "bore", "hole"].includes(f.op)) {
         const k = isShopVerb(f.op) ? SHOP_VERBS[f.op].expand(f, {})[0] : f;
-        const through = k.depth === "through" || k.depth === undefined, l = holeLine({ ...k, through }, f.op === "bore" ? 1 : n);
+        const through = thru(k), l = holeLine({ ...k, through }, f.op === "bore" ? 1 : n);
         if (BEAM.has(proc) && through && !k.thread && !k.cbore && !k.csink) add("cut", `Découper ${n > 1 ? `${n} × ` : ""}Ø${fr(k.d)} dans la même passe`, o);
         else add("hole", f.op === "bore" ? l.text.replace("Percer", "Percer dans l'axe") : l.text, { ...o, face: face || "+Z", tools: l.tools });
       } else if (f.op === "mill" || f.op === "pocket") { const l = pocketLine(f, "Fraiser une poche"); add("machine", l.text, { ...o, tools: l.tools }); }
@@ -204,11 +206,12 @@ export function routing(spec, built) {
     } catch (e) { advice.push(`Opération « ${f.id || f.op} » : ${e.message}`); }
   }
   if (!ifaceDone) ifaceSteps();
+  if (FO) { for (const b of foldSteps(FO)) add("bend", b.text, { tools: b.tools }); if (FO.flanges.length > 1) advice.push("Ordre des plis à confirmer par l'atelier : un bord déjà plié ne doit pas heurter l'outil ni la butée au pli suivant."); }
   if (nearNet && shaped) steps.splice(steps.findIndex((x) => x.text === nearLines[0]) + 1, 0, { kind: "machine", text: `${shaped} forme(s) venue(s) d'outillage ou d'impression (coque, bossages, ouvertures) : aucune reprise`, face: null, source: null, iface: null, tools: [] });
   if (!steps.some((s) => s.kind === "finish" && /bavur/i.test(s.text)) && proc !== "purchased") add("finish", "Ébavurer, casser les angles vifs 0,2 à 0,5 mm");
   if (spec.finish && !steps.some((s) => /^Finition/.test(s.text))) add("finish", `Finition : ${spec.finish}`);
   add("check", "Contrôler les cotes des interfaces (voir le dessin)");
-  const rank = { stock: 0, cut: 1, machine: 2, hole: 2, finish: 3, check: 4 };
+  const rank = { stock: 0, cut: 1, machine: 2, hole: 2, bend: 2.5, finish: 3, check: 4 };
   steps.sort((a, b) => rank[a.kind] - rank[b.kind]);           // stable: shop order is kept inside each stage
   steps.forEach((s, i) => { s.n = (i + 1) * 10; });
 

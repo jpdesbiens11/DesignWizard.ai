@@ -165,7 +165,7 @@ function render(main) {
       table(["Pièce", "Nom", "Rév.", "État", "Employée dans"], revs)));
     const spe = specialRows(store.parts);
     if (spe.length) doc.append(el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, "Procédés spéciaux"),
-      el("p", { class: "muted" }, "Les pièces découpées au laser ou imprimées : le laser ou le procédé de leur matière, ce qu'il demande au dessin, et ce qui se contrôle — l'état du bord coupé, la suite après impression. Valeurs typiques de guides publiés : le fournisseur et la fiche de la matière font foi (Atelier → Procédés spéciaux)."),
+      el("p", { class: "muted" }, "Les pièces découpées au laser, pliées ou imprimées : le laser ou le procédé de leur matière, ce qu'il demande au dessin, et ce qui se contrôle — l'état du bord coupé, la suite après impression. Valeurs typiques de guides publiés : le fournisseur et la fiche de la matière font foi (Atelier → Procédés spéciaux)."),
       table(["Pièce", "Nom", "Procédé", "Matière", "Laser · norme", "Ce que le procédé demande", "À contrôler · après"], spe)));
     const rel = plmRows(store.project);
     if (rel.length) doc.append(el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, "Révisions libérées"),

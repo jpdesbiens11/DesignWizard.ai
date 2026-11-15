@@ -12,6 +12,7 @@ import { STOCK_FORMS, PLATE_THICKNESS, ROUND_BARS, ANGLE_LEGS, ANGLE_THICKNESS, 
 import { SHEET_GAUGES } from "../cad/standards.js";
 import { molded, moldProcess } from "./shop_mold.js";
 import { extruded, extrusionProcess } from "./shop_extrusion.js";
+import { foldedSheet, foldSides } from "./shop_folded.js";
 import { engagement } from "./joint_health.js";
 import { sheetSeries, sheetDefault, sheetWord, printProcess, laserProfile, AM_PROCESSES } from "../cad/special_processes.js";
 
@@ -71,6 +72,7 @@ export function recommend(brief) {
   const extr = mat && mat.processes.find((k) => /^extrusion_/.test(k));
   if (mat && (mat.cls === "sheet" || mat.cls === "pcb")) return { form: "sheet", process: "laser_cut", why: `${mat.name} : une matière en feuille — la pièce se découpe à plat, au laser de précision.` };
   if (mat && mat.cls === "metal" && mat.processes.includes("lpbf") && !mat.processes.includes("cnc_milling")) return { form: "print", process: "lpbf", why: `${mat.name} : un alliage de fusion sur lit de poudre, la pièce s'imprime.` };
+  if (mat && mat.cls === "metal" && mat.processes.includes("sheet_metal") && !mat.processes.includes("cnc_milling")) return axes.size > 1 || foldSides(brief).length ? { form: "sheet", process: "sheet_metal", why: `${mat.name} : une tôle — chaque plan d'appui latéral devient un bord plié à la presse plieuse.` } : { form: "sheet", process: "laser_cut", why: `${mat.name} : une tôle, découpée à plat au laser.` };
   if (extr && ((brief.contents || []).length || (brief.interfaces || []).some((i) => i.type === "rail" && i.side === "B"))) return { form: "profile", process: extr, why: "La pièce guide ce qu'elle contient sur toute sa longueur : un profilé extrudé, dessiné autour de ce qui glisse dedans." };
   if (casts && !mat.processes.includes("cnc_milling")) return { form: "molded", process: casts, why: `${mat.name} : un alliage de fonderie, la pièce se moule.` };
   if (holds && (casts || (plastic && mat.processes.includes("injection_molding") && q > 50))) return { form: "molded", process: casts || "injection_molding", why: `La pièce contient et porte d'autres pièces, en ${q} exemplaires : une coque moulée, dessinée autour de ce qu'elle loge.` };
@@ -199,14 +201,15 @@ export function synthesize(brief, id = "PN-0001") {
   if (form === "profile") b.process = extrusionProcess(b.material);
   if (form === "molded") b.process = brief.process && /molding|casting/.test(brief.process) ? brief.process : moldProcess(b.material);
   if (form === "print" && !(brief.process && AM_PROCESSES[brief.process])) b.process = printProcess(b.material) || "fdm";
-  if (form === "sheet") b.process = "laser_cut";
+  const fold = form === "sheet" && foldSides(b).length > 0;      // a metal sheet with folded edges : the press brake after the laser
+  if (form === "sheet") b.process = fold ? "sheet_metal" : "laser_cut";
   log.push(`Matière première : ${STOCK_FORMS[form].fr.toLowerCase()} — ${form === rec.form ? rec.why : "choix de l'utilisateur."}`);
   const items = prepare(b, log);
   if (form === "angle" && !items.some((it) => it.where[1] === "Z")) log.push("Aucune interface sur le dessous : l'aile horizontale reste libre.");
-  const core = form === "profile" ? extruded(b, items, log) : form === "molded" ? molded(b, items, log) : (form === "plate" || form === "sheet") ? flat(b, items.map((it) => ({ ...it, where: it.where === "-Z" ? "-Z" : "+Z" })), log) : form === "angle" ? angle(b, items, log) : form === "bar_round" ? round(b, items, log) : block(b, items, log);
+  const core = form === "profile" ? extruded(b, items, log) : form === "molded" ? molded(b, items, log) : fold ? foldedSheet(b, items, log, { arrange, ifaceOut, tapped, P, off, up }) : (form === "plate" || form === "sheet") ? flat(b, items.map((it) => ({ ...it, where: it.where === "-Z" ? "-Z" : "+Z" })), log) : form === "angle" ? angle(b, items, log) : form === "bar_round" ? round(b, items, log) : block(b, items, log);
   const intent = {}; for (const k of ["loads", "environment", "quantity", "priority"]) if (brief[k] !== undefined && brief[k] !== "") intent[k] = brief[k];
   const spec = { dw: "part/1", id, name: brief.name || "Nouvelle pièce", function: brief.fn || "", family: core.family, process: core.process || b.process, material: b.material, ...(Object.keys(intent).length ? { intent } : {}),
-    params: core.params, interfaces: core.interfaces, ...(core.stock ? { stock: core.stock } : {}), features: core.features, ...(core.mold ? { mold: core.mold } : {}), ...(core.extrusion ? { extrusion: core.extrusion } : {}),
+    params: core.params, interfaces: core.interfaces, ...(core.stock ? { stock: core.stock } : {}), features: core.features, ...(core.mold ? { mold: core.mold } : {}), ...(core.extrusion ? { extrusion: core.extrusion } : {}), ...(core.folded ? { folded: core.folded } : {}),
     notes: core.notes || ["Casser les angles vifs 0,2 à 0,5 mm", "Tolérances générales ISO 2768-mK"], interview: { questions: [], assumptions: log } };
   return { spec, decisions: log, recommendation: rec, form };
 }

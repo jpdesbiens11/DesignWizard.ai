@@ -26,6 +26,8 @@ import { makeGen } from "./fs_gen.js";
 import { EMIT } from "./fs_features.js";
 import { emitExtrusionBlock, emitPcbBlock, emitInterface } from "./fs_interfaces.js";
 import { expandSpec } from "./shop.js";
+import { compileFolded } from "./family_folded.js";
+import { evalDeep } from "./expr.js";
 
 export { exprToFeatureScript } from "./fs_expr.js";
 export const FS_VERSION = "2014";
@@ -56,6 +58,7 @@ function boundSpec(d, kind) {
  * @param opts {overrides: {param: value} current values used as defaults, identifier: name of the exported feature constant}
  * @returns {code, warnings: string[] (French), converted, skipped: [{feature, why}], total, identifier}
  *          `converted + skipped.length === total` = features (without the {op:"interfaces"} marker) + interfaces
+ *          (+ the base and the folded edges of a « folded » block)
  *          + 1 for an "extrusion" block + 1 for a "pcb" block.
  * Throws (ExprError) when the parameters of the spec do not resolve.
  */
@@ -119,7 +122,9 @@ export function toFeatureScript(spec, opts = {}) {
   if (spec.pcb) G.main = "board";
   if (spec.extrusion) item("extrusion", "extrusion — section extrudée", () => emitExtrusionBlock(G, spec.extrusion));
   if (spec.pcb) item("pcb", "pcb — carte et composants", () => emitPcbBlock(G, spec.pcb));
-  const feats = (Array.isArray(spec.features) ? spec.features : []).map((f, i) => ({ ...(f || {}), id: (f && f.id) || `f${i + 1}` }));
+  let folded = [];                                             // a folded sheet : its base and its folded edges, with the sizes of today
+  if (spec.folded) { try { folded = compileFolded(evalDeep(spec.folded, scope)).features; G.warn("Tôle pliée : la base et les bords pliés sont écrits avec leurs dimensions du jour ; un paramètre changé dans Onshape ne les déplace pas."); } catch (e) { skipped.push({ feature: "folded", why: clean(e.message) }); } }
+  const feats = [...folded, ...(Array.isArray(spec.features) ? spec.features : [])].map((f, i) => ({ ...(f || {}), id: (f && f.id) || `f${i + 1}` }));
   const marker = feats.findIndex((f) => f.op === "interfaces");
   const runFeature = (f) => item(f.id, `${f.id} — ${f.op}${f.name ? " : " + f.name : ""}`, () => {
     if (f.suppressed) throw new Skip("fonction désactivée dans la pièce (suppressed)");

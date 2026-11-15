@@ -92,6 +92,7 @@ export function processPlan(spec, built, opts = {}) {
       { hold: proc === "cnc_turning" ? "mandrin trois mors, butée de longueur" : `étau ou bridage, appui sur la face opposée (${FACE_FR[OPPOSITE[f]] || OPPOSITE[f]})` }));
     if (!faces.length) phase("setup:free", "Usinage", stations[1], free);
   } else phase("rework", "Reprises", stations[1], of(["hole"]));
+  phase("bend", "Pliage", "Presse plieuse", of(["bend"]), { hold: "butée arrière réglée sur la cote du bord ; premier pli contrôlé à l'équerre avant la série" });
   const fin = of(["finish"]), surface = fin.filter((s) => /^Finition/.test(s.text));
   phase("deburr", "Ébavurage", "Établi", bare ? [] : fin.filter((s) => !/^Finition/.test(s.text)));
   phase("surface", "Traitement de surface", "Sous-traitant", surface, { outsourced: surface.length > 0 && !/brut|aucun|peinture maison/i.test(spec.finish || ""), checks: surface.length ? ["Épaisseur et teinte conformes ; zones épargnées respectées", "Certificat du sous-traitant joint"] : [] });

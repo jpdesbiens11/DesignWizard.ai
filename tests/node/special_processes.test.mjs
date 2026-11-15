@@ -146,7 +146,7 @@ test("the demonstration shows both processes : a laser-cut insulator mated on th
   const base = by("DRV-BASE"); assert.ok(iso.params.L.value < base.params.winL.value && iso.params.W.value < base.params.winW.value);
   const seat = sink.interfaces.find((i) => i.key === "thermal_iso_seat"), foot = iso.interfaces[0]; assert.deepEqual([seat.side, foot.side, seat.type, foot.type, foot.key], ["B", "A", "planar", "planar", "thermal_iso_seat"]);
   const asm = DEMO_DRIVE.assemblies[0]; assert.ok(asm.instances.some((i) => i.part === "DRV-ISO") && asm.mates.some((m) => m.a.inst === "i6" && m.b.inst === "i5")); assert.ok(!asm.instances.some((i) => i.part === "DRV-BRACKET"), "the bracket is a variant : in the project, not yet in the assembly");
-  assert.deepEqual(specialRows(DEMO_DRIVE.parts).map((r) => [r[0], r[2]]), [["DRV-ISO", "Découpe laser de précision"], ["DRV-BRACKET", "Fusion laser sur lit de poudre métallique (LPBF)"]], "the report of the demonstration has its section of special processes");
+  assert.deepEqual(specialRows(DEMO_DRIVE.parts).map((r) => [r[0], r[2]]), [["DRV-ISO", "Découpe laser de précision"], ["DRV-BRACKET", "Fusion laser sur lit de poudre métallique (LPBF)"], ["DRV-FOOT", "Tôlerie pliée"]], "the report of the demonstration has its section of special processes");
 });
 
 test("which cut edges the isolation analysis leaves out : insulating sheets cut by laser, nothing else", async () => {

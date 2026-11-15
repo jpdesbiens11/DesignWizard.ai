@@ -113,10 +113,24 @@ const BRACKET = {
   notes: ["Ti-6Al-4V imprimé par fusion laser sur lit de poudre (ASTM F2924).", "Détente sur le plateau ; compaction isostatique à chaud puis usinage des surfaces pour la tenue en fatigue.", "Taraudages M4 repris après traitement ; certificat du lot de poudre exigé."],
 };
 
+const FOOT = {
+  dw: "part/1", id: "DRV-FOOT", name: "Patte de fixation (tôle pliée)", family: "sheet", process: "sheet_metal", material: "AL5052-H32", revision: "A",
+  function: "Variante murale : deux pattes portent le variateur sur une cloison. Pas encore dans l'assemblage.", elec: { kind: "chassis", net: "Chassis" },
+  intent: { loads: "Masse du variateur, à plat contre la cloison", environment: "Armoire électrique", quantity: 2, priority: "cost" },
+  params: { L: P(65, 20, 400, "Longueur de la base"), W: P(50, 15, 300, "Largeur de la base"), h: P(24, 8, 100, "Hauteur du bord plié"),
+    t: { value: 1.5, min: 0.5, max: 6, step: 0.5, unit: "mm", label: "Épaisseur", group: "Enveloppe" }, r: { value: 1.5, min: 0, max: 6, step: 0.5, unit: "mm", label: "Rayon intérieur de pliage", group: "Enveloppe" } },
+  interfaces: [
+    { id: "IF1", type: "bolt_pattern", name: "Fixation sur la cloison", key: "foot_wall", partner: "Cloison", side: "A", external: true, face: "-Z", at: ["L/2", "W/2"], level: 0, params: { screw: "M5", pattern: { type: "rect", nx: 2, ny: 1, dx: 40, dy: 0 } } },
+    { id: "IF2", type: "bolt_pattern", name: "Reprise du variateur", key: "foot_drive", partner: "Variateur", side: "A", external: true, face: "+X", at: ["W/2", "(h + 2.3)/2"], params: { screw: "M4", pattern: { type: "rect", nx: 2, ny: 1, dx: 20, dy: 0 } }, opts: { depth: "t + 0.5" } }],
+  folded: { base: ["L", "W"], t: "t", r: "r", flanges: [{ side: "+X", h: "h", dir: "up" }] },
+  features: [{ op: "interfaces" }, { op: "deburr", id: "ebavurage" }],
+  notes: ["Tôle d'aluminium 5052-H32 de 1,5 mm, découpée au laser puis pliée à la presse plieuse.", "Pli à 90° ± 1°, rayon intérieur 1,5 mm ; développé indicatif (facteur k 0,44) : l'atelier corrige le flan.", "Casser les angles vifs 0,2 à 0,5 mm."],
+};
+
 export const DEMO_DRIVE = {
   dw: "project/1", id: "demo-variateur", name: "Variateur compact 400 V (démonstration)", author: "DesignWizard.ai",
   description: "Système mécatronique de démonstration : boîtier moulé, carte de puissance 400 V, carte de contrôle avec CPU et capteurs, dissipateur extrudé. Chaque pièce part de ses interfaces ; l'assemblage se monte seul.",
-  parts: [BASE, COVER, PWR, CTRL, SINK, ISO, BRACKET],
+  parts: [BASE, COVER, PWR, CTRL, SINK, ISO, BRACKET, FOOT],
   assemblies: [{ dw: "assembly/1", id: "DRV-ASM", name: "Variateur compact — assemblage général",
     instances: [{ id: "i1", part: "DRV-BASE", fixed: true, placement: { t: [0, 0, 0], r: [0, 0, 0] } }, { id: "i2", part: "DRV-PWR-PCB" }, { id: "i3", part: "DRV-CTRL-PCB" }, { id: "i4", part: "DRV-COVER" }, { id: "i5", part: "DRV-HEATSINK" }, { id: "i6", part: "DRV-ISO" }],
     mates: [{ id: "M1", a: { inst: "i2", iface: "IF1" }, b: { inst: "i1", iface: "IF1" }, linked: true, by: "key" }, { id: "M2", a: { inst: "i3", iface: "IF1" }, b: { inst: "i1", iface: "IF2" }, linked: true, by: "key" },

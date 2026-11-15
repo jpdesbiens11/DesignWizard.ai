@@ -14,6 +14,7 @@ import { gammePanel, artifactsPanel } from "./part_gamme.js";
 import { STOCK_FORMS } from "../cad/stock.js";
 import { paramsPanel, interfacesPanel, sheetPanel, jsonPanel, dfxPanel } from "./part_panels.js";
 import { printPanel, isPrinted } from "./part_print.js";
+import { foldPanel, isFolded } from "./part_fold.js";
 import { runDfx } from "../analysis/dfx_api.js";
 import { lightSide, LIT } from "../core/view_marks.js";
 import { partGestures, PART_KEYS } from "./part_gestures.js";
@@ -79,7 +80,7 @@ export function partStudio(main, args, cfg) {
       vp.setBusy("");
       if (!overrides) { st.findings = await runDfx(st.spec, built); if (token !== st.token) return; }
       overlays();
-      if (st.tab === "dfx" || st.tab === "sheet" || st.tab === "gamme" || first) renderRight();
+      if (st.tab === "dfx" || st.tab === "sheet" || st.tab === "gamme" || st.tab === "fold" || first) renderRight();
       if (cfg.onBuilt) cfg.onBuilt(st, vp);
     } catch (e) {
       if (token !== st.token) return;
@@ -199,8 +200,8 @@ export function partStudio(main, args, cfg) {
   /* ---------- right: inspector ---------- */
   function renderRight() {
     clear(right);
-    const tabs = [["params", "Paramètres"], ["ifaces", "Interfaces"], ["gamme", "Gamme"], ["dfx", "DFx"], ...(isPrinted(st.spec) ? [["print", "Impression"]] : []), ["files", "Artéfacts"], ["sheet", "Fiche"], ["json", "Fichier"], ...((cfg.tabs || []).map((t) => [t.key, t.label]))];
-    if (st.tab === "print" && !isPrinted(st.spec)) st.tab = "params";
+    const tabs = [["params", "Paramètres"], ["ifaces", "Interfaces"], ["gamme", "Gamme"], ["dfx", "DFx"], ...(isPrinted(st.spec) ? [["print", "Impression"]] : []), ...(isFolded(st.spec) ? [["fold", "Développé"]] : []), ["files", "Artéfacts"], ["sheet", "Fiche"], ["json", "Fichier"], ...((cfg.tabs || []).map((t) => [t.key, t.label]))];
+    if ((st.tab === "print" && !isPrinted(st.spec)) || (st.tab === "fold" && !isFolded(st.spec))) st.tab = "params";
     if (st.tab !== "print") vp.viewer.clearOverlays("am");      // the supports of a printed part show only on its tab
     const n = st.findings ? st.findings.findings.filter((f) => f.severity === "error").length : 0;
     right.append(el("div", { class: "side-head" }, el("h2", null, st.spec.name || st.spec.id)),
@@ -211,7 +212,7 @@ export function partStudio(main, args, cfg) {
     const ctx = { st, id, live, rebuild, vp, editIface, editStock, cfg, paint, overlays };
     const custom = (cfg.tabs || []).find((t) => t.key === st.tab);
     if (custom) custom.render(body, ctx);
-    else ({ params: paramsPanel, ifaces: interfacesPanel, gamme: gammePanel, files: artifactsPanel, dfx: dfxPanel, print: printPanel, sheet: sheetPanel, json: jsonPanel })[st.tab](body, ctx);
+    else ({ params: paramsPanel, ifaces: interfacesPanel, gamme: gammePanel, files: artifactsPanel, dfx: dfxPanel, print: printPanel, fold: foldPanel, sheet: sheetPanel, json: jsonPanel })[st.tab](body, ctx);
   }
 
   return () => { offChange(); pins.dispose(); st.token++; app.faces = null; vp.dispose(); kernel.forget(`${id}~live`).catch(() => {}); };

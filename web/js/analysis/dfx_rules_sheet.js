@@ -1,25 +1,27 @@
 /* DesignWizard.ai — DFM rules: sheet metal (laser cut + press brake) and flat cut plates (laser / waterjet / router),
-   carried over from the user's rule book (SM-, MAT-, PL-, LAM- rules). The part language has no bend feature: a
-   shelled part is read as a folded tray (walls = flanges, shell t = sheet thickness), a part without shell as a flat
-   blank whose thickness is its smallest dimension. Rules that need the real bend table stay reminders (info). */
+   carried over from the user's rule book (SM-, MAT-, PL-, LAM- rules). A part with a « folded » block declares its bends :
+   radius, edge heights, corner reliefs and holes near a bend are measured (dfx_rules_folded.js). Without the block, a
+   shelled part is read as a folded tray (walls = flanges, shell t = sheet thickness) and the bend rules stay reminders
+   (info) ; a part without shell is a flat blank whose thickness is its smallest dimension. */
 
 import { SHEET_GAUGES } from "../cad/standards.js";
 import { FACES } from "../cad/vec.js";
 import { rule, num, round, groupBy } from "./dfx_core.js";
 import { laserProfile, sheetSeries } from "../cad/special_processes.js";
+import { checkFolded } from "./dfx_rules_folded.js";
 
 const S = {
   sm: "Guides DFM de tôlerie (Protolabs, Xometry — sheet metal design guide)", thumb: "Règle de pouce (rule of thumb), à confirmer avec le fournisseur",
   stock: "Liste des épaisseurs en stock (standards.js — SHEET_GAUGES)", comp: "Pratique composites — joints boulonnés, à confirmer avec les admissibles", router: "Pratique CNC router",
 };
 const R = {
-  sm01: rule("SM-01", "Pli pas trop serré", "Rayon intérieur de pliage ≥ minimum matière (1 × t pour Al 5052-H32, cuivre, acier)", "info", "Un pli trop serré fissure les fibres extérieures.", S.sm, { manual: true }),
+  sm01: rule("SM-01", "Pli pas trop serré", "Rayon intérieur de pliage ≥ minimum matière (1 × t pour Al 5052-H32, cuivre, acier)", "warn", "Un pli trop serré fissure les fibres extérieures.", S.sm, { fix: true }),
   sm02: rule("SM-02", "Bord plié assez long", "Longueur extérieure du bord plié (flange) ≥ 4 × t", "error", "La matrice de la presse plieuse doit pouvoir tenir le bord.", `${S.sm} (Protolabs : 2,5 à 4 × t + R)`),
   sm03: rule("SM-03", "Trous loin des plis", "Bord du trou au pli ≥ 2,5 × t + R", "warn", "Un trou près d'un pli s'ovalise.", S.sm),
   sm04: rule("SM-04", "Trous loin des bords", "Bord du trou au bord de la pièce ≥ 2 × t", "warn", "Un pont de matière trop mince se déchire ou gonfle.", S.sm),
   sm05: rule("SM-05", "Matière entre les trous", "Voile entre deux trous ≥ 2 × t", "warn", "Un voile mince se déforme à la découpe ou au poinçonnage.", S.sm),
   sm06: rule("SM-06", "Trous pas trop petits", "Ø du trou ≥ t (poinçonnage) ; plus petit : laser seulement", "warn", "Un poinçon casse sous l'épaisseur de la tôle ; le laser perce mal un trou plus petit que t.", S.thumb),
-  sm07: rule("SM-07", "Dégagements d'angle", "Dégagements carrés là où deux bords pliés se rejoignent (R + t + 0,5)", "info", "Sans dégagement (corner relief) l'angle se déchire.", S.sm, { manual: true }),
+  sm07: rule("SM-07", "Dégagements d'angle", "Dégagements carrés là où deux bords pliés se rejoignent (R + t + 0,5)", "warn", "Sans dégagement (corner relief) l'angle se déchire.", S.sm, { fix: true }),
   sm08: rule("SM-08", "Largeur des découpes", "Largeur d'une fente ou découpe ≥ t", "warn", "Une fente plus étroite que la tôle ne se découpe pas proprement.", S.thumb),
   mat01: rule("MAT-01", "Épaisseur en stock", "Épaisseur dans la liste standard (0,5 · 0,8 · 1 · 1,2 · 1,5 · 2 · 2,5 · 3 · 4 · 5 · 6 mm)", "warn", "Épaisseur spéciale : coût et délai.", S.stock, { fix: true }),
   pl01: rule("PL-01", "Pliage des plastiques", "Une plaque plastique ne se plie qu'à chaud", "warn", "Le pliage à froid fissure ou revient (spring back).", "Pratique fournisseur"),
@@ -44,6 +46,7 @@ const isLaminate = (ctx) => (ctx.mat && ctx.mat.cls === "pcb") || /FR-?4|G10|CFR
 export function sheetThickness(ctx) {
   const { facts, dims, spec } = ctx;
   if (spec.busbar && spec.busbar.t > 0) return { t: spec.busbar.t, axis: -1, formed: (spec.busbar.legs || []).length > 1, patch: () => null };      // a strip folded on its edge view : its thickness is the one it declares
+  if (facts.folded) return { t: facts.folded.t, axis: -1, formed: true, folded: facts.folded, patch: (v) => ({ target: "spec", id: null, path: "folded.t", value: v }) };
   if (facts.shells.length) {
     const s = facts.shells.reduce((a, b) => (b.t < a.t ? b : a));
     return { t: s.t, axis: -1, formed: true, shell: s, patch: (v) => ctx.patch(s, "t", v) };
@@ -106,7 +109,7 @@ function common(ctx, T) {
 /* Distance from a hole to each of the 4 sides of its face, told apart as free edges or bends. */
 export function holeSides(ctx, h, T) {
   const m = mainAxis(h.axis), bb = ctx.bbox, out = [];
-  const open = new Set(T.formed ? T.shell.open || [] : []);
+  const open = new Set(T.formed && T.shell ? T.shell.open || [] : []);
   for (let k = 0; k < 3; k++) {
     if (k === m) continue;
     for (const [sign, dist] of [["-", h.at[k] - bb[k]], ["+", bb[3 + k] - h.at[k]]]) out.push({ dist, bend: T.formed && !open.has(sign + "XYZ"[k]) });
@@ -121,8 +124,9 @@ export function checkSheet(ctx) {
   ctx.run("LAM-01", () => { if (isLaminate(ctx)) ctx.add("LAM-01", { value: ctx.spec.material, limit: "métal", message: `Matériau « ${ctx.spec.material} » : un stratifié ne se plie pas (limite : aucun pli). Correctif : passer en process « laser_cut » (plaque plane) ou choisir une tôle métallique.`, fix: ctx.fix("Passer en plaque découpée (laser_cut)", { target: "spec", id: null, path: "process", value: "laser_cut" }) }); });
   ctx.run("PL-01", () => { if (ctx.cls === "plastic" && T.formed) ctx.add("PL-01", { value: ctx.spec.material, limit: "pliage à chaud", message: `Pièce pliée en « ${ctx.spec.material} » : une plaque plastique ne se plie qu'à chaud (limite : pas de pliage à froid). Correctif : prévoir un pliage à chaud (rayon ≥ 2 × t) ou passer en métal / en moulage.` }); });
   common(ctx, T);
-  ctx.run("SM-01", () => { if (T.formed) ctx.add("SM-01", { value: round(rIn), limit: round(rIn), unit: "mm", feature: T.shell.source, message: `Pièce pliée (épaisseur ${num(t)} mm) : le langage ne décrit pas les plis, vérifier au plan un rayon intérieur ≥ ${num(rIn)} mm (${num(rIn / t)} × t pour ${ctx.spec.material || "la matière"}). Correctif : imposer un seul rayon intérieur ≥ ${num(rIn)} mm pour tous les plis.` }); });
-  ctx.run("SM-07", () => { if (T.formed) ctx.add("SM-07", { value: 0, limit: round(rIn + t + 0.5), unit: "mm", feature: T.shell.source, message: `Angles de la pièce pliée : aucun dégagement (corner relief) n'est modélisé ; limite : dégagement carré de R + t + 0,5 = ${num(rIn + t + 0.5)} mm là où deux bords pliés se rejoignent. Correctif : les ajouter au développé (DXF).` }); });
+  if (T.folded) return checkFolded(ctx, T);
+  ctx.run("SM-01", () => { if (T.formed) ctx.add("SM-01", { severity: "info", value: round(rIn), limit: round(rIn), unit: "mm", feature: T.shell.source, message: `Pièce pliée (épaisseur ${num(t)} mm) : cette pièce ne déclare pas ses plis (bloc « folded »), vérifier au plan un rayon intérieur ≥ ${num(rIn)} mm (${num(rIn / t)} × t pour ${ctx.spec.material || "la matière"}). Correctif : imposer un seul rayon intérieur ≥ ${num(rIn)} mm pour tous les plis.` }); });
+  ctx.run("SM-07", () => { if (T.formed) ctx.add("SM-07", { severity: "info", value: 0, limit: round(rIn + t + 0.5), unit: "mm", feature: T.shell.source, message: `Angles de la pièce pliée : aucun dégagement (corner relief) n'est modélisé ; limite : dégagement carré de R + t + 0,5 = ${num(rIn + t + 0.5)} mm là où deux bords pliés se rejoignent. Correctif : les ajouter au développé (DXF).` }); });
   ctx.run("SM-02", () => {
     if (!T.formed || !ctx.dims) return;
     for (const o of T.shell.open || []) {
@@ -133,6 +137,7 @@ export function checkSheet(ctx) {
     }
   });
   for (const [id, bend] of [["SM-03", true], ["SM-04", false]]) ctx.run(id, () => {
+    if (T.formed && !T.shell) return;                             // a strip bent on its edge view (busbar) : its bends are not sides of a tray
     for (const g of groupBy(facts.holes, (h) => `${h.source}|${h.d}`)) {
       let worst = null;
       for (const h of g) { if (!h.at || !h.axis || !ctx.bbox) continue; for (const s of holeSides(ctx, h, T)) { if (s.bend !== bend) continue; const gap = s.dist - h.d / 2 - (bend ? t + rIn : 0); if (!worst || gap < worst.gap) worst = { gap, h }; } }
@@ -150,7 +155,7 @@ export function checkPlate(ctx) {
   if (!T || !(T.t > 0)) return;
   const { facts } = ctx, t = T.t, lam = isLaminate(ctx), soft = lam || ctx.cls === "plastic", LP = laserProfile(ctx.spec.material), byLaser = !!LP && LP.verdict === "ok" && t <= LP.t[1] + 1e-6;      // the laser sheet of the material (LAS- rules) then says the thickness and the inside radii
   ctx.run("LC-02", () => {
-    const notFlat = [facts.shells.length && "shell", facts.bosses.length && "boss", facts.revolves.length && "revolve"].filter(Boolean);
+    const notFlat = [facts.folded && "bords pliés (folded)", facts.shells.length && "shell", facts.bosses.length && "boss", facts.revolves.length && "revolve"].filter(Boolean);
     if (notFlat.length) ctx.add("LC-02", { value: notFlat.join(", "), limit: "plaque plane", message: `La pièce contient ${notFlat.join(", ")} : une plaque découpée est plane (limite : épaisseur constante, aucune forme 3D). Correctif : retirer ces features, ou changer de process (sheet_metal, cnc_milling).` });
     else if (!LP && t > 25 + 1e-6) ctx.add("LC-02", { value: round(t), limit: 25, unit: "mm", message: `Épaisseur ${num(t)} mm : au-delà de 25 mm la découpe laser n'est plus possible (jet d'eau : coupe conique et lente). Limite : ≤ 25 mm. Correctif : réduire l'épaisseur ou usiner la pièce (cnc_milling).` });
   });

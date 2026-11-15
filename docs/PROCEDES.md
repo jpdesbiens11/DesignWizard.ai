@@ -1,13 +1,14 @@
 # Procédés spéciaux de l'Atelier
 
-Quatre procédés où **la matière décide du dessin** : le moulage, l'extrusion, la découpe laser de précision et
-l'impression 3D. Ils vivent tous dans l'Atelier (*Shop*) :
+Cinq procédés où **la matière décide du dessin** : le moulage, l'extrusion, la découpe laser de précision, la tôlerie
+pliée et l'impression 3D. Ils vivent tous dans l'Atelier (*Shop*) :
 
 | Procédé | Où | Règles |
 |---|---|---|
 | Moulage (injection, fonderie) | Atelier → Intention d'abord → « Moulage » | [MOULAGE.md](MOULAGE.md) |
 | Extrusion (aluminium, plastique) | Atelier → Intention d'abord → « Profilé sur mesure », et Atelier → **Profilés extrudés** (le studio, qui était un onglet du haut jusqu'à la v0.29) | [EXTRUSION.md](EXTRUSION.md) |
 | Découpe laser de précision | Atelier → Intention d'abord → « Tôle ou feuille » | ce document |
+| Tôlerie pliée | Atelier → Intention d'abord → « Tôle ou feuille », côtés cochés ou interface sur un côté | [TOLERIE.md](TOLERIE.md) |
 | Impression 3D | Atelier → Intention d'abord → « Fabrication additive » | ce document |
 
 L'écran **Atelier → Procédés spéciaux** (`#/process`) montre, pour chacun, ce qu'il demande matière par matière, d'où
@@ -27,11 +28,14 @@ viennent les valeurs, et ouvre « Intention d'abord » avec la matière et le pr
 - **Aller-retour IA** : la consigne « Affiner avec Claude » de l'Atelier porte la fiche du procédé pour la matière de la
   pièce ; l'écran des procédés copie la fiche complète d'un procédé, matière par matière, avec sa consigne. La pièce
   revient par « Entrevue avec Claude », avec l'aperçu des changements et la validation habituels.
-- **Le rapport** liste les pièces découpées au laser ou imprimées, avec ce que leur procédé demande et ce qui se contrôle.
+- **Le rapport** liste les pièces découpées au laser, pliées ou imprimées, avec ce que leur procédé demande et ce qui se contrôle.
+- **La tôlerie pliée** est le cinquième procédé spécial : une base et des bords pliés (bloc `folded`), le développé à plat
+  et son DXF avec lignes de pliage, des règles de pliage mesurées. Elle a son document : [TOLERIE.md](TOLERIE.md).
 
 **Dans la démonstration** (« Variateur compact 400 V ») : `DRV-ISO`, un isolant en papier aramide de 0,25 mm découpé au
 laser, posé sur le dissipateur dans la fenêtre thermique de la base et maté par son interface ; `DRV-BRACKET`, un étrier en
-Ti-6Al-4V imprimé — une variante, présente dans le projet mais pas encore dans l'assemblage.
+Ti-6Al-4V imprimé — une variante, présente dans le projet mais pas encore dans l'assemblage ; `DRV-FOOT`, une patte de
+fixation en tôle d'aluminium pliée, autre variante hors assemblage.
 
 Tout est dans `web/js/cad/special_processes.js` (données et fonctions pures), `web/js/analysis/dfx_rules_special.js`
 (règles) et `web/js/modules/shop_special.js` (écran et carte de l'Atelier).

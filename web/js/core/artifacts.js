@@ -1,6 +1,7 @@
 /* DesignWizard.ai — artefacts: what a part or an assembly hands to the rest of the industry. One generator for the
    downloads, for the project tree in Google Drive and for the report:
-     part      .dwiz (source) · STEP AP214 · STL · DXF (views) · DXF (flat outline, plate and sheet) · PDF drawing ·
+     part      .dwiz (source) · STEP AP214 · STL · DXF (views) · DXF (flat outline, plate and sheet) · DXF (flat pattern
+               with bend lines, folded sheet) · PDF drawing ·
                FeatureScript (Onshape, experimental) · routing sheet
      assembly  .dwiz · STEP · bill of materials (CSV)
    DWG itself is a closed, undocumented format: the platform writes DXF, which every DWG tool opens. */
@@ -9,6 +10,8 @@ import { store } from "./store.js";
 import { kernel } from "../cad/client.js";
 import { meshesToStl } from "../cad/stl.js";
 import { viewsToDxf, flatOutlineDxf } from "../draw/dxf.js";
+import { foldedDxf } from "../draw/dxf_folded.js";
+import { evalDeep } from "../cad/expr.js";
 import { toFeatureScript } from "../cad/featurescript.js";
 import { expandSpec, routing } from "../cad/shop.js";
 import { STOCK_FORMS } from "../cad/stock.js";
@@ -23,7 +26,7 @@ import { orderCheck, rfqText } from "../cad/order.js";
 import { runDfx } from "../analysis/dfx_api.js";
 import { zip } from "./zip.js";
 
-const isFlat = (spec) => (spec.stock && STOCK_FORMS[spec.stock.form] && STOCK_FORMS[spec.stock.form].flat) || ["plate", "sheet", "busbar"].includes(spec.family);
+const isFlat = (spec) => !spec.folded && ((spec.stock && STOCK_FORMS[spec.stock.form] && STOCK_FORMS[spec.stock.form].flat) || ["plate", "sheet", "busbar"].includes(spec.family));
 
 /* key -> what it is, for whom, and how it is made. `when(spec)` hides an artefact that does not apply. */
 export const ARTIFACTS = [
@@ -37,6 +40,8 @@ export const ARTIFACTS = [
     make: async (spec) => { await kernel.build(spec); return viewsToDxf(await kernel.hlr(spec.id, viewRequest(), true), { title: `${spec.id} ${spec.name || ""}`.trim() }); } },
   { key: "flat", ext: "_decoupe.dxf", label: "DXF — contour de découpe", icon: "laser", mime: "image/vnd.dxf", text: "Le contour à plat et ses perçages, pour le laser ou le jet d'eau.", when: isFlat,
     make: async (spec) => { const b = await kernel.build(spec); return flatOutlineDxf(b, await kernel.hlr(spec.id, viewRequest(), true)); } },
+  { key: "unfold", ext: "_developpe.dxf", label: "DXF — développé à plat", icon: "laser", mime: "image/vnd.dxf", text: "La tôle avant pliage : contour et perçages à découper, lignes de pliage sur leur calque, sens, angle et rayon de chaque pli.", when: (spec) => !!spec.folded,
+    make: async (spec, out) => { const b = await kernel.build(spec); let feats = []; try { feats = evalDeep(spec.features || [], (b.params && b.params.scope) || {}); } catch (e) { out.warnings.push("Découpes non reportées au développé : une expression de la pièce n'a pas pu être évaluée."); } const r = foldedDxf(b, feats); out.warnings.push(...r.warnings); return r.text; } },
   { key: "pdf", ext: ".pdf", label: "Dessin PDF", icon: "pdf", mime: "application/pdf", text: "Le dessin coté : vues, GD&T tiré des interfaces, cartouche, notes.", when: (spec) => !spec.step,
     make: async (spec) => (await makeDrawing(spec.id)).pdfBytes() },
   { key: "fs", ext: ".fs", label: "FeatureScript Onshape", icon: "fs", mime: "text/plain", text: "Expérimental : la pièce reconstruite nativement dans Onshape, paramètres compris.", when: (spec) => !spec.step,

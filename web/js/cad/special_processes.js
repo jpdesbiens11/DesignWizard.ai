@@ -233,7 +233,9 @@ export function processBrief(kind, materials) {
 export function specialRows(parts) {
   const rows = [];
   for (const p of parts || []) {
-    if (p.process === "laser_cut") { const P = laserProfile(p.material), m = material(p.material); if (!P) continue;
+    if (p.folded) { const m = material(p.material), v = (x) => (typeof x === "number" ? x : p.params && p.params[x] !== undefined ? (p.params[x].value ?? p.params[x]) : x), k = (p.folded.flanges || []).length;
+      rows.push([p.id, p.name || "", "Tôlerie pliée", m ? m.name : p.material || "—", "Laser puis presse plieuse", `${k} pli${k > 1 ? "s" : ""} à 90° · tôle ${n(v(p.folded.t))} mm · rayon intérieur ${n(v(p.folded.r ?? p.folded.t))} mm`, "Développé indicatif (facteur k typique) : l'atelier corrige le flan ; angle et hauteur des bords à contrôler"]); }
+    else if (p.process === "laser_cut") { const P = laserProfile(p.material), m = material(p.material); if (!P) continue;
       rows.push([p.id, p.name || "", "Découpe laser de précision", m ? m.name : p.material, P.verdict === "forbidden" ? "Jamais au laser" : P.source, P.verdict === "ok" ? `Épaisseur ≤ ${n(P.t[1])} mm · trait ${n(P.kerf[0])} à ${n(P.kerf[1])} mm · ± ${n(P.tol)} mm` : P.why, P.verdict === "ok" ? P.edge : `À la place : ${P.instead}`]); }
     else if (AM_PROCESSES[p.process]) { const A = amLimits(p.process, p.material), M = amMaterial(p.material), mine = M && M.process === p.process ? M : null, m = material(p.material);
       rows.push([p.id, p.name || "", A.fr, m ? m.name : p.material || "—", mine && mine.std !== "—" ? mine.std : "—", `Paroi ≥ ${n(A.wall)} mm · trou ≥ Ø${n(A.hole)} · ${A.supports ? `supports sous ${A.overhang}°` : "sans support"} · ${A.tol}`,
@@ -262,6 +264,8 @@ export const SOURCES = [
   { id: "AMS7000", by: "SAE", title: "AMS7000A — Laser-Powder Bed Fusion (L-PBF) Produced Parts, Nickel Alloy 625, Stress Relieved, Hot Isostatic Pressed and Solution Annealed", how: "page", gives: "Chaîne après fusion de l'alliage 625" },
   { id: "AMS7028", by: "SAE", title: "AMS7028 — Titanium Alloy, Ti-6Al-4V, Hot Isostatically Pressed, Produced by Laser Powder Bed Fusion", how: "page", gives: "État compacté à chaud du Ti-6Al-4V" },
   { id: "metal-guides", by: "Renishaw, Protolabs, Hubs, Xometry, Materialise", title: "Guides de conception pour l'impression 3D métal", how: "lu", gives: "Paroi, surplomb, pont, trous, ouvertures, tolérance, rugosité, détente sur le plateau, compaction pour l'aéronautique" },
+  { id: "pliage-guides", by: "Ateliers de tôlerie en ligne et presse professionnelle", title: "Guides de conception de tôlerie pliée", how: "résumé", gives: "Bord plié d'au moins 4 × t (ou lié au vé) ; trou à 2 × t + R, 2,5 × t + R ou 3 × t + R d'un pli selon le guide" },
+  { id: "pliage-k", by: "Presse professionnelle, fabricants de presses plieuses", title: "Longueur développée d'un pli et facteur k", how: "résumé", gives: "Pli développé = angle × (R + k × t) ; k de 0,44 comme valeur de départ en pliage en l'air ; vé de 6 à 12 × t" },
   { id: "polymer-guides", by: "Hubs, Xometry, Protolabs, Formlabs", title: "Guides de conception FDM, SLS, MJF et SLA", how: "page", gives: "Paroi, trous, ouvertures, surplomb, tolérance" },
   { id: "pei", by: "SABIC", title: "Fiche technique du filament ULTEM AM9085F", how: "lu", gives: "FAR 25.853, OSU 65/65, UL 94 V-0 à 1,5 et 3 mm sur éprouvettes imprimées — valeurs typiques" },
   { id: "laser-metal", by: "TRUMPF, Linde, TWI, Xometry", title: "Découpe laser des métaux : épaisseurs d'une machine de 6 kW, gaz d'assistance, métaux réfléchissants, guide de conception des tôles découpées", how: "lu", gives: "Épaisseur maximale, trait de coupe, bord sans oxyde à l'azote, plus petits détails, ponts, tolérance" },

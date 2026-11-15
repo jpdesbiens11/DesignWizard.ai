@@ -195,7 +195,7 @@ function assertBalanced(code, what) {
   }
   assert.equal(stack.length, 0, `${what}: ${stack.length} bracket(s) left open`);
 }
-const itemCount = (spec) => (spec.features || []).filter((f) => f.op !== "interfaces").length + (spec.interfaces || []).length + (spec.extrusion ? 1 : 0) + (spec.pcb ? 1 : 0);
+const itemCount = (spec) => (spec.features || []).filter((f) => f.op !== "interfaces").length + (spec.interfaces || []).length + (spec.extrusion ? 1 : 0) + (spec.pcb ? 1 : 0) + (spec.folded ? (spec.folded.flanges || []).length : 0);      // a folded sheet : its base stands for the stock, each folded edge is one more extrusion
 const editableParams = (spec) => Object.entries(spec.params || {}).filter(([, d]) => typeof d === "number" || (d && d.expr === undefined && typeof d.value === "number")).map(([k]) => k);
 
 test("FeatureScript: every template and every demo part gives a well-formed Feature Studio source", () => {

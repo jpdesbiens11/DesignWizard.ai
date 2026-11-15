@@ -23,6 +23,7 @@ Functions: min max abs sqrt floor ceil round sin cos tan (degrees) hypot clamp(v
   "stock": { ... },                     // section 4 — the raw material taken from the rack (replaces the first feature)
   "features": [ ... ],                  // sections 4 and 5 — Shop operations and kernel features, in order
   "extrusion": { ... },                 // section 6 (family extrusion) — replaces the first feature
+  "folded": { ... },                    // section 6b (folded sheet metal) — replaces the stock and the first feature
   "pcb": { ... },                       // section 7 (family pcb)
   "notes": ["Drawing note 1", "..."],   // notes printed on the 2D drawing
   "finish": "Anodised black 10 µm",
@@ -136,6 +137,20 @@ P (profile) = {"rect":[x,y,w,h],"r":2} | {"circle":[cx,cy,d]} | {"slot":[x1,y1,x
 Extrusion design rules to respect in the profile: uniform walls (aluminium ≥ 1.2 mm, plastic ≥ 1.0 mm), radii on every corner
 (≥ 0.4 mm), no gap deeper than 3 × its width (4 × with care), as few hollows as possible, symmetric when possible.
 Machining after extrusion (holes, cut-outs) goes in "features" and "interfaces".
+
+## 6b. Folded sheet metal (family "sheet", process "sheet_metal")
+"folded": {
+  "base": ["L", "W"],        // the flat base: min corner at the origin, thickness from z = 0 to z = t
+  "t": "t", "r": "r",        // sheet thickness; inside radius of EVERY bend (one tool) — at least the minimum of the material (1 × t)
+  "flanges": [ {"side":"+X","h":"h","dir":"up"}, {"side":"-Y","h":"h","dir":"up"} ],
+                             // one folded edge per side of the base (+X -X +Y -Y), at 90°, "up" or "down"; h = OUTSIDE height, from the far face of the base
+  "relief": 3.5,             // optional: square notch where two folded edges meet (default r + t + 0.5)
+  "k": 0.44                  // optional: neutral-fibre factor of the flat pattern (typical value; the shop has its own)
+}
+No "stock" with "folded": the blank is the flat pattern, computed by the platform with its bend lines (DXF).
+Holes and interfaces go in "features" / "interfaces": on the base (faces ±Z; an interface there takes "level": "t" on +Z, 0 on -Z) or on a
+folded edge (faces ±X ±Y, position [along the edge, z]); a hole in a folded edge takes the depth of the sheet ("through" also pierces the edge across).
+Rules checked on the block: r ≥ minimum of the material, h ≥ 4 × t, hole edge ≥ 2.5 × t + r from a bend and ≥ 2 × t from a free edge, relief ≥ r + t + 0.5.
 
 ## 7. PCB family
 "pcb": {
