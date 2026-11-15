@@ -74,7 +74,7 @@ export function modal(title, content, opts = {}) {
   const body = el("div", { class: "modal-body" }, content);
   const box = el("div", { class: "modal" + (opts.wide ? " modal-wide" : "") + (opts.xl ? " modal-xl" : ""), role: "dialog", "aria-modal": "true", "aria-label": title },
     el("div", { class: "modal-head" }, el("h2", null, title), el("button", { class: "icon-btn", type: "button", "aria-label": "Fermer", onClick: () => close() }, "×")), body);
-  const back = el("div", { class: "modal-backdrop" }, box);
+  const back = el("div", { class: "modal-backdrop" + (opts.float ? " float" : "") }, box);      // float : the dialog stands aside and the screen behind stays live (the 3D view answers it)
   const onKey = (e) => { if (e.key === "Escape") { e.stopPropagation(); close(); } };
   function close(result) { back.remove(); document.removeEventListener("keydown", onKey, true); if (opts.onClose) opts.onClose(result); }
   back.addEventListener("mousedown", (e) => { if (e.target === back) close(); });

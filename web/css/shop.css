@@ -138,3 +138,6 @@ button.plan-pick { cursor: pointer; } button.plan-pick:hover { background: color
 .plan-bar { justify-content: flex-start; flex-wrap: wrap; gap: .3rem; margin: .3rem 0 .2rem; }
 .chip.stage { background: color-mix(in srgb, var(--hl-yellow) 45%, var(--surface)); color: var(--graphite); max-width: 420px; }
 .plan-step-btns { display: inline-flex; gap: .1rem; } .plan-step-btns .icon-btn { font-size: .95rem; padding: 0 .15rem; }
+.bc-pick { display: inline-flex; gap: .15rem; align-items: center; flex: 1; min-width: 0; } .bc-pick select { flex: 1; min-width: 0; } .bc-pick .icon-btn { font-size: 1rem; padding: 0 .2rem; }
+.fea-legend input[type="number"] { width: 5.2rem; padding: .15rem .3rem; font-size: .8rem; } .fea-scale { display: grid; gap: .15rem; margin: .3rem 0; } .fea-scale input { width: 100%; }
+.chip.picked { background: color-mix(in srgb, #ff8a00 28%, var(--surface)); color: var(--graphite); max-width: 520px; font-weight: 600; }

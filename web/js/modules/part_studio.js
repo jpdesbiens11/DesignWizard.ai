@@ -13,6 +13,8 @@ import { gammePanel, artifactsPanel } from "./part_gamme.js";
 import { STOCK_FORMS } from "../cad/stock.js";
 import { paramsPanel, interfacesPanel, sheetPanel, jsonPanel, dfxPanel } from "./part_panels.js";
 import { runDfx } from "../analysis/dfx_api.js";
+import { lightSide, LIT } from "../core/view_marks.js";
+import { partGestures, PART_KEYS } from "./part_gestures.js";
 
 const OP_ICON = { box: "part", cylinder: "part", extrude: "extrusion", revolve: "refresh", hole: "bolt", pocket: "section", pad: "layers", slot: "minus", boss: "bolt", shell: "layers", fillet: "edit", chamfer: "edit", interfaces: "interfaces",
   drill: "drill", tap: "tap", cbore: "drill", csink: "drill", ream: "drill", mill: "mill", groove: "mill", face: "mill", step: "mill", outline: "laser", turn: "lathe", bore: "lathe", break_edges: "deburr", deburr: "deburr", finish: "palette" };
@@ -35,13 +37,15 @@ export function partStudio(main, args, cfg) {
     return null;
   }
 
-  const vp = createViewport(view, { name: () => st.spec.id, onPick: onPick, onHover: onHover });
+  let gest = null;                                                // the mouse and the keys on the model (part_gestures.js)
+  const vp = createViewport(view, { name: () => st.spec.id, onPick: (h, e) => gest.onPick(h, e), onHover: (h) => { gest.onHover(h); onHover(h); }, onMenu: (h, e) => gest.onMenu(h, e), onKey: (e) => gest.onKey(e) });
   const info = el("span", { class: "chip" }, "—"), hover = el("span", { class: "chip hidden" }, ""), stage = el("span", { class: "chip stage hidden" }, "");
-  vp.setStatus(info, stage, hover);
+  const picked = el("span", { class: "chip picked hidden" }, "");
+  vp.setStatus(info, stage, picked, hover);
   const bFrames = btn("", () => { st.showFrames = !st.showFrames; bFrames.classList.toggle("on", st.showFrames); overlays(); }, { small: true, icon: "interfaces", tip: "Afficher les repères des interfaces" });
   bFrames.classList.add("on");
-  vp.group(bFrames, btn("Trou ici", () => place("hole"), { small: true, icon: "bolt", tip: "Cliquez ensuite une face plane : le trou est créé à cet endroit" }),
-    btn("Interface ici", () => place("iface"), { small: true, icon: "plus", tip: "Cliquez ensuite une face plane : l'interface est créée à cet endroit" }));
+  vp.group(bFrames, btn("Trou ici", () => gest.place("hole"), { small: true, icon: "bolt", tip: "Cliquez ensuite une face plane : le trou est créé à cet endroit" }),
+    btn("Interface ici", () => gest.place("iface"), { small: true, icon: "plus", tip: "Cliquez ensuite une face plane : l'interface est créée à cet endroit" }));
 
   const offChange = store.on("change", (c) => {
     const fresh = store.part(id);
@@ -62,7 +66,7 @@ export function partStudio(main, args, cfg) {
       if (token !== st.token) return;
       st.built = built;
       setContext({ spec: st.spec, built });
-      paint(built);
+      paint(built); if (gest) gest.sel.clear();
       if (first) vp.viewer.view("iso");
       const errs = built.log.filter((l) => l.level === "error").length, warns = built.log.filter((l) => l.level === "warn").length, bb = built.bbox;
       info.textContent = `${fmtMass(built.mass)} · ${fmt(bb[3] - bb[0], 1)} × ${fmt(bb[4] - bb[1], 1)} × ${fmt(bb[5] - bb[2], 1)} mm · ${fmt(built.volume / 1000, 1)} cm³ · ${built.ms} ms`;
@@ -104,8 +108,14 @@ export function partStudio(main, args, cfg) {
     }
   }
 
-  /* ---------- click in the 3D view ---------- */
-  function place(kind) { st.placing = kind; view.style.cursor = "crosshair"; toast("Cliquez une face plane de la pièce.", "info", 2500); }
+  /* ---------- faces : the face a dialog names lights up ; the face under the cursor shows ; the face clicked turns green ---------- */
+  const marks = (tag) => vp.viewer.clearOverlays(tag);
+  app.faces = {
+    light(side, level) { marks("face"); if (side && st.built) lightSide(vp.viewer, side, { tag: "face", color: LIT.named, level, ids: ["part"] }); },
+    listen(fn) { st.faceAsk = fn; view.style.cursor = fn ? "crosshair" : ""; marks("selhover"); },
+    stop() { st.faceAsk = null; view.style.cursor = st.placing ? "crosshair" : ""; marks("face"); marks("facehover"); },
+  };
+  /* ---------- the model under the mouse : selection, right-click menu, keys ---------- */
   function faceOfHit(hit) {
     if (!hit || !hit.face || hit.face.type !== "plane") return null;
     const n = hit.face.n, a = [0, 1, 2].reduce((m, i) => (Math.abs(n[i]) > Math.abs(n[m]) ? i : m), 0);
@@ -114,21 +124,8 @@ export function partStudio(main, args, cfg) {
     const bb = st.built.bbox, lvl = Math.round(hit.local[a] * 100) / 100, ext = n[a] > 0 ? bb[3 + a] : bb[a];
     return { face, at: [r(hit.local[plane[0]]), r(hit.local[plane[1]])], level: Math.abs(lvl - ext) > 0.01 ? lvl : undefined };
   }
-  function onPick(hit) {
-    if (!st.placing) return;
-    const kind = st.placing, f = faceOfHit(hit);
-    st.placing = null; view.style.cursor = "";
-    if (!f) { toast("Ce n'est pas une face plane alignée sur X, Y ou Z. Correctif : cliquez une face plane.", "warn"); return; }
-    if (kind === "hole") {
-      const feat = { ...FEATURE_DEFAULT.hole, id: nextFeatureId(st.spec, "h"), face: f.face, at: f.at };
-      if (f.level !== undefined) feat.start = f.level;
-      featureDialog(feat, (nf) => store.updatePart(id, (s) => { s.features = s.features || []; s.features.push(nf); }, `Trou ajouté sur ${f.face}`), "Nouveau trou");
-    } else {
-      const it = { id: nextIfaceId(st.spec), type: "bolt_pattern", side: "A", face: f.face, at: f.at };
-      if (f.level !== undefined) it.level = f.level;
-      interfaceDialog(it, (ni) => store.updatePart(id, (s) => { s.interfaces = s.interfaces || []; s.interfaces.push(ni); }, `Interface ${ni.id} ajoutée`), true);
-    }
-  }
+  const showKeys = () => modal("La pièce à la souris et au clavier", el("table", { class: "data" }, el("tbody", null, PART_KEYS.map(([k, t]) => el("tr", null, el("td", { class: "nowrap" }, el("kbd", null, k)), el("td", null, t))))));
+  gest = partGestures({ st, id, vp, view, chip: picked, faceOfHit, editFeature: (i) => editFeature(i), editIface: (iid) => editIface(iid), showKeys });
   function onHover(hit) {
     if (!hit || !hit.face) { hover.classList.add("hidden"); return; }
     const f = hit.face, p = hit.local.map((x) => fmt(x, 1)).join(" ; ");
@@ -211,7 +208,7 @@ export function partStudio(main, args, cfg) {
     else ({ params: paramsPanel, ifaces: interfacesPanel, gamme: gammePanel, files: artifactsPanel, dfx: dfxPanel, sheet: sheetPanel, json: jsonPanel })[st.tab](body, ctx);
   }
 
-  return () => { offChange(); st.token++; vp.dispose(); kernel.forget(`${id}~live`).catch(() => {}); };
+  return () => { offChange(); st.token++; app.faces = null; vp.dispose(); kernel.forget(`${id}~live`).catch(() => {}); };
 }
 
 /** Gallery of starter parts. */

@@ -162,6 +162,10 @@ table.data td.num, table.data th.num { text-align: right; font-variant-numeric: 
 .modal { position: relative; width: 100%; max-width: 520px; max-height: 92vh; overflow: auto; background: var(--surface); border-radius: var(--r-card); border: 1.6px solid var(--graphite);
   box-shadow: var(--shadow-modal); animation: sk-drop .32s var(--ease-pop) both; }
 .modal-wide { max-width: 860px; } .modal-xl { max-width: 1180px; }
+.modal-backdrop.float { background: none; pointer-events: none; place-items: start end; padding: 4.6rem 1rem 1rem; }
+.modal-backdrop.float .modal { pointer-events: auto; max-width: 430px; max-height: calc(100vh - 6rem); box-shadow: 0 10px 34px rgba(0, 0, 0, .28); }
+.modal-backdrop.float .form-row { display: block; } .face-pick { display: flex; gap: .35rem; align-items: center; } .face-pick select { flex: 1; }
+.face-pick .dot { flex: none; width: .8rem; height: .8rem; border-radius: 50%; background: #ffb020; box-shadow: 0 0 0 2px color-mix(in srgb, #ffb020 35%, transparent); } .face-pick .dot.ok { background: #2ec27e; box-shadow: 0 0 0 2px color-mix(in srgb, #2ec27e 35%, transparent); }
 .modal::before { content: ""; position: absolute; top: -10px; left: 36px; width: 84px; height: 20px; transform: rotate(calc(-4deg * var(--wobble))); background: color-mix(in srgb, var(--acc) 60%, transparent); border-radius: 2px; }
 @keyframes sk-drop { from { transform: translateY(-12px) rotate(calc(-1deg * var(--wobble))); opacity: 0; } to { transform: none; opacity: 1; } }
 .modal-head { display: flex; justify-content: space-between; align-items: center; padding: .8rem 1.15rem; border-bottom: 1px solid var(--line); }
@@ -266,3 +270,6 @@ button.dw-view-label { pointer-events: auto; cursor: pointer; }
 @media (max-width: 1100px) { .studio { grid-template-columns: 250px minmax(0, 1fr); } .studio > .side.right { display: none; } .hero { grid-template-columns: 1fr; } .brand-name small { display: none; } .tab span { display: none; } .tab.active span { display: inline; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 @media print { body { background: var(--sheet); } .topbar, .no-print, .toasts { display: none !important; } .page { max-width: none; padding: 0; } .card, .table-wrap, .kpi { box-shadow: none; } main h1 { animation: none; } }
+.ctx-menu { position: fixed; right: auto; top: auto; z-index: 300; min-width: 240px; max-height: 80vh; overflow: auto; } .ctx-menu .menu-item { padding: .3rem .55rem; font-size: .88rem; } .ctx-menu .menu-item:disabled { opacity: .45; cursor: default; }
+.ctx-menu kbd { font-family: var(--mono); font-size: .72rem; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 0 .3rem; } .ctx-line { height: 1px; margin: .25rem .3rem; background: var(--line); }
+.ctx-title { padding: .25rem .55rem .1rem; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }

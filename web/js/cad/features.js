@@ -206,6 +206,11 @@ const OPS = {
 
 /** Select edges of a body: "all", "vertical", or {dir, face, level, box, near, tol, type, r, len_min, len_max}. */
 export function selectEdges(K, shape, sel, f) {
+  if (Array.isArray(sel)) {                                     // several selections : their union (edges picked one by one in the view)
+    const seen = new Set(), out = [];
+    for (const one of sel) for (const e of selectEdges(K, shape, one, f)) { const k = e.mid.map((x) => x.toFixed(4)).join(","); if (!seen.has(k)) { seen.add(k); out.push(e); } }
+    return out;
+  }
   const bb = K.bbox(shape);
   // Seams of cylinders and tangent lines of existing fillets are smooth, not edges to dress up: leave them out.
   const cyl = K.facesInfo(shape).filter((fi) => fi.type === "cylinder");

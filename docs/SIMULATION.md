@@ -52,6 +52,18 @@ Trois précisions qui comptent :
   pointe locale qui dépend du maillage ; un calcul à la main ne la prédit pas. Le recoupement compare donc la
   contrainte **hors zones d'appui** (à deux cubes de distance). La pointe reste affichée, avec sa marge.
 
+### À la souris, sur la pièce
+
+- **Choisir une face** : chaque appui et chaque effort se choisit dans la liste — la région s'allume quand on survole
+  sa ligne — ou **à la souris** : le bouton cible, puis un clic sur la face (ou l'interface) dans la vue. La face
+  s'allume en bleu sous le curseur, puis en vert quand elle est choisie.
+- **Symboles** : des cônes bleus là où la pièce est tenue ; des flèches rouges pour une force, dans son sens, avec sa
+  valeur ; des flèches orange pour une pression ; des losanges pour la chaleur et les températures imposées.
+- **Échelle des couleurs** : son bas et son haut se règlent au curseur ou au clavier, la vue suit en direct. Ce qui
+  dépasse l'échelle passe en magenta, ce qui est dessous en gris — pour voir d'un coup d'œil où l'on dépasse une
+  limite. « Auto » revient à l'échelle qui couvre tout le résultat.
+- **Coupe** : comme dans toutes les vues 3D, un bouton inverse le côté coupé (Maj + S).
+
 ## 2. Le maillage : un seul gabarit, le cube
 
 La pièce est découpée en **cubes identiques** : une grille régulière posée sur son enveloppe, dont on garde les

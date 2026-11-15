@@ -119,7 +119,7 @@ export class Viewer {
     group.matrixAutoUpdate = false;
     mesh.userData = { id };
     this.root.add(group);
-    this.objects.set(id, { group, mesh, edges, def: { id, mesh: f, pickable: false }, base: null, opacity: 1 });
+    this.objects.set(id, { group, mesh, edges, def: { id, mesh: f, pickable: !!f.pickable }, base: null, opacity: 1 });      // pickable : a screen lets the designer point at the field (a face to hold, a face to load)
     this.dirty = true;
   }
   setOpacity(id, op) { const o = this.objects.get(id); if (o) { o.opacity = op; this._applyState(o); this.dirty = true; } }
@@ -175,6 +175,8 @@ export class Viewer {
     this.canvas.style.width = w + "px"; this.canvas.style.height = h + "px";
     this.w = w; this.h = h; this.dirty = true;
   }
+  /** Looks straight at a face : n = its outward normal. */
+  lookAlong(n) { this.dir.set(n[0], n[1], n[2]).normalize(); this.camera.up.set(0, Math.abs(n[2]) > 0.9 ? 1 : 0, Math.abs(n[2]) > 0.9 ? 0 : 1); this.fit(); }
   view(name) { this.dir.set(...(VIEWS[name] || VIEWS.iso)).normalize(); this.camera.up.set(0, name === "top" ? 1 : name === "bottom" ? -1 : 0, name === "top" || name === "bottom" ? 0 : 1); this.fit(); }
   fit(margin = 1.25) {
     const bb = this.bbox(), c = bb.getCenter(new THREE.Vector3()), s = bb.getSize(new THREE.Vector3());
@@ -229,7 +231,7 @@ export class Viewer {
       }
       this.dirty = true;
     });
-    c.addEventListener("pointerup", (e) => { const d = drag; drag = null; if (d && !d.moved) this._click(e); });
+    c.addEventListener("pointerup", (e) => { const d = drag; drag = null; if (!d || d.moved) return; if (e.button === 2) { if (this.opts.onMenu) this.opts.onMenu(this._pick(e), e); } else this._click(e); });      // a right click that did not drag opens the screen's menu
     c.addEventListener("wheel", (e) => {
       e.preventDefault();
       const f = Math.exp(Math.sign(e.deltaY) * 0.14), r = c.getBoundingClientRect();

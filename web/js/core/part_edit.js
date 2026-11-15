@@ -2,6 +2,7 @@
    language, with values typed as numbers, expressions or small JSON fragments. */
 
 import { el, field, btn, modal, toast } from "./dom.js";
+import { app } from "./app.js";
 import { store } from "./store.js";
 import { INTERFACE_TYPES } from "../cad/interfaces.js";
 import { FACES } from "../cad/vec.js";
@@ -70,6 +71,17 @@ export function parseValue(text, kind) {
 function faceSelect(value) {
   return el("select", null, Object.keys(FACES).map((k) => el("option", { value: k, selected: k === (value || "+Z") }, `${k}  ${{ "+Z": "dessus", "-Z": "dessous", "+X": "droite", "-X": "gauche", "+Y": "arrière", "-Y": "avant" }[k]}`)));
 }
+/** Ties a face list to the 3D view of the screen behind (app.faces, when a studio offers it) : the face the list names
+    lights up ; a click on a face of the part sets the list — and the level of its plane — and the face turns green.
+    level : the input that holds the level of the plane (optional). → { node, hint, stop() } */
+function faceLink(select, level) {
+  const faces = app.faces || null, dot = el("span", { class: "dot", "data-tip": "Orange : la face nommée par la liste. Vert : la face que vous venez de cliquer." }), node = el("div", { class: "face-pick" }, select, faces ? dot : null);
+  const lv = () => { const x = level ? parseFloat(String(level.value).replace(",", ".")) : NaN; return Number.isFinite(x) ? x : undefined; };
+  const light = () => { dot.classList.remove("ok"); if (faces) faces.light(select.value, lv()); };
+  select.addEventListener("change", light); if (level) level.addEventListener("change", light);
+  if (faces) { light(); faces.listen((f) => { select.value = f.face; if (level) level.value = f.level !== undefined ? String(f.level) : ""; dot.classList.add("ok"); }); }
+  return { node, hint: faces ? "Choisissez dans la liste (la face s'allume) ou cliquez-la dans la vue 3D." : null, float: !!faces, stop: () => { if (faces) faces.stop(); } };
+}
 
 /** Dialog to edit one feature. `onSave(feature)` receives the new feature object. */
 export function featureDialog(feature, onSave, title) {
@@ -77,10 +89,11 @@ export function featureDialog(feature, onSave, title) {
   const inputs = {}, err = el("p", { class: "form-error" });
   const name = el("input", { type: "text", value: f.name || "" });
   const rows = [field("Nom (libre)", name)];
+  let link = null;
+  for (const [key, , kind] of form) inputs[key] = { input: kind === "face" ? faceSelect(f[key]) : el("input", { type: "text", value: show(f[key]), spellcheck: false }), kind };
   for (const [key, label, kind, hint] of form) {
-    const input = kind === "face" ? faceSelect(f[key]) : el("input", { type: "text", value: show(f[key]), spellcheck: false });
-    inputs[key] = { input, kind };
-    rows.push(field(label, input, hint || (kind === "num" ? "Nombre, ou expression des paramètres (ex. L/2 - 5)" : null)));
+    if (kind === "face" && !link) { link = faceLink(inputs[key].input, inputs.start ? inputs.start.input : null); rows.push(field(label, link.node, link.hint)); continue; }
+    rows.push(field(label, inputs[key].input, hint || (kind === "num" ? "Nombre, ou expression des paramètres (ex. L/2 - 5)" : null)));
   }
   const save = () => {
     try {
@@ -89,7 +102,7 @@ export function featureDialog(feature, onSave, title) {
       m.close(); onSave(f);
     } catch (e) { err.textContent = e.message; }
   };
-  const m = modal(title || `${FEATURE_LABEL[f.op] || f.op} — ${f.id || ""}`, [el("div", { class: "form-row" }, rows), err, el("div", { class: "form-actions" }, btn("Annuler", () => m.close()), btn("Appliquer", save, { primary: true }))], { wide: true });
+  const m = modal(title || `${FEATURE_LABEL[f.op] || f.op} — ${f.id || ""}`, [el("div", { class: "form-row" }, rows), err, el("div", { class: "form-actions" }, btn("Annuler", () => m.close()), btn("Appliquer", save, { primary: true }))], { wide: !(link && link.float), float: !!(link && link.float), onClose: () => link && link.stop() });
 }
 
 /** Dialog to edit one interface. `onSave(iface)`. */
@@ -101,7 +114,7 @@ export function interfaceDialog(iface, onSave, isNew) {
   const face = faceSelect(it.face);
   const txt = (v) => el("input", { type: "text", value: show(v), spellcheck: false });
   const name = txt(it.name), key = txt(it.key), partner = txt(it.partner), at = txt(it.at || [0, 0]), level = txt(it.level), rot = txt(it.rot);
-  const params = el("textarea", { rows: 4, spellcheck: false }), opts = el("textarea", { rows: 3, spellcheck: false });
+  const params = el("textarea", { rows: 4, spellcheck: false }), opts = el("textarea", { rows: 3, spellcheck: false }), link = faceLink(face, level);
   const fill = (reset) => {
     const t = INTERFACE_TYPES[type.value];
     doc.textContent = t.doc;
@@ -121,11 +134,11 @@ export function interfaceDialog(iface, onSave, isNew) {
     } catch (e) { err.textContent = `Champ invalide : ${e.message}`; }
   };
   const m = modal(isNew ? "Nouvelle interface" : `Interface ${it.id}`, [doc,
-    el("div", { class: "form-row" }, field("Type", type), field("Côté", side, "A et B se font face"), field("Face de la pièce", face)),
+    el("div", { class: "form-row" }, field("Type", type), field("Côté", side, "A et B se font face"), field("Face de la pièce", link.node, link.hint)),
     el("div", { class: "form-row" }, field("Nom", name), field("Clé partagée", key, "La même clé sur l'autre pièce = la même interface"), field("Voisin", partner)),
     el("div", { class: "form-row" }, field("Position sur la face", at, "[x,y] sur ±Z · [x,z] sur ±Y · [y,z] sur ±X"), field("Niveau du plan d'appui", level, "Vide = extérieur de la pièce"), field("Rotation (°)", rot)),
     el("div", { class: "form-row" }, field("Paramètres partagés par les deux côtés", params), field("Options de ce côté", opts)),
-    err, el("div", { class: "form-actions" }, btn("Annuler", () => m.close()), btn(isNew ? "Ajouter" : "Appliquer", save, { primary: true }))], { wide: true });
+    err, el("div", { class: "form-actions" }, btn("Annuler", () => m.close()), btn(isNew ? "Ajouter" : "Appliquer", save, { primary: true }))], { wide: !link.float, float: link.float, onClose: () => link.stop() });
 }
 
 /** Dialog to choose or edit the raw stock of a part. `onSave(stock | null)` (null removes it). */
