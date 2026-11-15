@@ -37,6 +37,9 @@ Consignes permanentes de JP (propriétaire du dépôt). Elles s'appliquent à to
 - Étude de logiciels tiers : méthode REA (`docs/REA.md`) — seulement ce que l'on possède ou que l'on est autorisé à
   étudier ; jamais le code d'un service propriétaire.
 - Visuels : inspiration de principes, pas de portrait, pas de nom de personne vivante, pas de marque.
+- Procédés spéciaux (demande de JP) : moulage, extrusion, découpe laser de précision et impression 3D vivent dans
+  l'Atelier. Leurs valeurs sont des valeurs typiques de guides publiés ; chaque fiche dit ce qui a été lu et ce qui
+  ne l'a pas été (`basis`, `SOURCES`) — ne jamais donner pour vérifié un chiffre qui ne l'est pas.
 - Connecteurs et cellules (demande de JP) : la bibliothèque renvoie aux **séries standard de l'industrie des grands
   fabricants** et aux normes publiées — fabricant et série cités en texte, comme référence de compatibilité, sans logo
   ni dessin copié. Valeurs nominales publiées, avec la façon dont elles ont été vérifiées ; la fiche du fabricant fait foi.
@@ -44,4 +47,4 @@ Consignes permanentes de JP (propriétaire du dépôt). Elles s'appliquent à to
 ## Documents de référence
 
 `docs/VISION.md` (objectif et briques), `docs/ARCHITECTURE.md`, `docs/FORMAT.md`, `docs/SIMULATION.md`,
-`docs/PCBA.md`, `docs/GAMMES.md` (gammes de fabrication et d'assemblage), `docs/MOULAGE.md` (pièce moulée), `docs/EXTRUSION.md` (profilé extrudé), `docs/JOINTS.md` (registre des joints, joint collé, santé des accouplements), `docs/IA.md` (aller-retour IA), `docs/ITERATIONS.md` (itérations MVP, revues de passage, convergence), `docs/EQUIPE.md` (travail à plusieurs en miroir, fusion par artéfact, messages @membre), `docs/REVISIONS.md` (révisions libérées, numéros, règle 3F, pièces gelées dans l'assemblage), `docs/ELECTRIQUE.md` (bibliothèque de connecteurs et de cellules, joints soudés, contact à lamelles), `docs/DESSINS.md` (dessins, cotes à bulles, caractéristiques spéciales, révisions et cas d'emploi), `docs/GOOGLE.md`, `docs/REA.md`, `docs/BRAND.md`.
+`docs/PCBA.md`, `docs/GAMMES.md` (gammes de fabrication et d'assemblage), `docs/MOULAGE.md` (pièce moulée), `docs/EXTRUSION.md` (profilé extrudé), `docs/PROCEDES.md` (procédés spéciaux de l'Atelier : découpe laser par matière en feuille, impression 3D par matière, sources lues et non lues), `docs/JOINTS.md` (registre des joints, joint collé, santé des accouplements), `docs/IA.md` (aller-retour IA), `docs/ITERATIONS.md` (itérations MVP, revues de passage, convergence), `docs/EQUIPE.md` (travail à plusieurs en miroir, fusion par artéfact, messages @membre), `docs/REVISIONS.md` (révisions libérées, numéros, règle 3F, pièces gelées dans l'assemblage), `docs/ELECTRIQUE.md` (bibliothèque de connecteurs et de cellules, joints soudés, contact à lamelles), `docs/DESSINS.md` (dessins, cotes à bulles, caractéristiques spéciales, révisions et cas d'emploi), `docs/GOOGLE.md`, `docs/REA.md`, `docs/BRAND.md`.

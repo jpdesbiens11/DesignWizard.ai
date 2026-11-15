@@ -14,6 +14,7 @@ import { MATERIALS, PROCESSES } from "../cad/materials.js";
 import { Viewer } from "../core/viewer.js";
 import { showBuilt } from "../core/viewport.js";
 import { autoMate } from "../core/assembly_logic.js";
+import { shopTabs } from "./shop_tabs.js";
 
 const draft = { name: "", fn: "", neighbours: [], extras: [], family: "", process: "", material: "", constraints: "", mode: "interview", answer: "", revise: "", request: "" };
 
@@ -23,8 +24,7 @@ function render(main, args) {
   main.append(page);
   page.append(el("div", { class: "page-head" }, el("div", { class: "grow" }, el("h1", null, "Interfaces"),
     el("p", { class: "muted" }, "Une pièce commence par ses interfaces avec ses voisines. Décrivez-la, copiez le prompt générique dans Claude, répondez à l'entrevue, puis collez la réponse ici : la pièce est construite, prête à se mater."))),
-    el("div", { class: "subtabs" }, el("a", { class: "subtab", href: "#/shop" }, "Intention d'abord"), el("a", { class: "subtab" + (tab === "entrevue" ? " active" : ""), href: "#/interfaces" }, "Entrevue avec Claude"),
-      el("a", { class: "subtab" + (tab === "registre" ? " active" : ""), href: "#/interfaces/registre" }, "Registre des interfaces")));
+    shopTabs(tab));
   let cleanup = null;
   if (tab === "registre") register(page); else cleanup = interview(page);
   return cleanup;

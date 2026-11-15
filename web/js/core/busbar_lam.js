@@ -12,11 +12,12 @@
 
 import { material } from "../cad/materials.js";
 import { connector } from "../cad/elec_library.js";
+import { sheetSeries } from "../cad/special_processes.js";
 
 const r2 = (x) => Math.round(x * 100) / 100, r3 = (x) => Math.round(x * 1000) / 1000, fr = (x) => String(r2(x)).replace(".", ",");
 const slug = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 40);
 /** Aramid paper comes in these thicknesses (mm). */
-export const PAPER_THICKNESS = [0.05, 0.08, 0.13, 0.18, 0.25, 0.3, 0.38, 0.51, 0.76];
+export const PAPER_THICKNESS = sheetSeries("NOMEX-410");
 export const blankLaminate = () => ({ name: "Busbar laminé", L: 120, W: 40, e: 4, material: "CU-C110", layers: [{ net: "HV+", t: 1.5 }, { net: "HV-", t: 1.5 }], paper: { material: "NOMEX-410", t: 0.25 }, wrap: { material: "PET-FILM", t: 0.19 }, tab: { L: 18, screw: "M6", gap: 8 }, U: 800, I: 150 });
 
 /** The measuring circuit, as it is proposed : between the first two conductors, one probe, a tail for a board connector. */

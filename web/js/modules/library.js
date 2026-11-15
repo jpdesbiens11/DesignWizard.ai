@@ -11,6 +11,7 @@ import { CONNECTORS, CELLS, ELEC_STANDARDS, CONNECTOR_KINDS, pickConnectors } fr
 import { connectorPart, cellPart, connectorEnvelope, poleNets } from "../core/elec_parts.js";
 import { WELD_PROCESSES } from "../cad/interfaces_elec.js";
 import { thermalPadPart } from "../core/busbar_lam.js";
+import { shopTabs } from "./shop_tabs.js";
 
 const filter = { domain: "", amps: "", volts: "", sealed: false, hvil: false };
 const SEEN = { read: ["lu", "ok", "Valeurs lues sur la fiche ou la page du fabricant"], excerpt: ["extrait", "warn", "Valeurs vues en extrait de la page du fabricant : à relire sur la fiche"] };
@@ -52,7 +53,7 @@ function render(main) {
   main.append(page);
   page.append(el("div", { class: "page-head" }, el("div", { class: "grow" }, el("h1", null, "Bibliothèque électrique"),
     el("p", { class: "muted" }, "Des familles réelles de connecteurs — basse tension pour les capteurs et les signaux, haute tension et puissance pour ce qui sort du produit — et les cellules cylindriques. Filtrez par ce que la liaison doit porter, choisissez, dites le nombre de pôles et le potentiel : la pièce arrive avec ses conducteurs, ses potentiels et ses interfaces.")),
-    el("div", { class: "subtabs" }, el("a", { class: "subtab", href: "#/shop" }, "Intention d'abord"), el("a", { class: "subtab", href: "#/interfaces" }, "Entrevue avec Claude"), el("a", { class: "subtab", href: "#/interfaces/registre" }, "Registre des interfaces"), el("a", { class: "subtab active", href: "#/library" }, "Bibliothèque électrique"), el("a", { class: "subtab", href: "#/busbar" }, "Busbars"), el("a", { class: "subtab", href: "#/flex" }, "Circuits flexibles"))), body);
+    shopTabs("library")), body);
   function draw() {
     const need = { domain: filter.domain || undefined, amps: parseFloat(filter.amps) || undefined, volts: parseFloat(filter.volts) || undefined, sealed: filter.sealed, hvil: filter.hvil }, list = filter.domain === "cells" ? [] : pickConnectors(need);
     const set = (k) => (e) => { filter[k] = e.target.type === "checkbox" ? e.target.checked : e.target.value; draw(); };

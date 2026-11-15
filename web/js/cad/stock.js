@@ -8,6 +8,7 @@
    Sizes are common metric series held by distributors — to confirm with the supplier actually used. */
 
 import { SHEET_GAUGES, PCB_THICKNESS } from "./standards.js";
+import { sheetSeries, sheetWord } from "./special_processes.js";
 
 export const PLATE_THICKNESS = [3, 4, 5, 6, 8, 10, 12, 15, 16, 20, 25, 30, 35, 40, 50, 60, 80, 100];
 export const ROUND_BARS = [4, 5, 6, 8, 10, 12, 14, 15, 16, 18, 20, 22, 25, 28, 30, 32, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 90, 100, 110, 120, 130, 150];
@@ -25,16 +26,16 @@ const boxAlong = (axis, w, h, L) => (axis === "X" ? [L, w, h] : axis === "Y" ? [
 const isStd = (list, v) => list.some((x) => Math.abs(x - v) < 1e-6);
 /** Smallest standard value at or above `need` (null when the series does not go that far). */
 export const nextStd = (list, need) => { const v = list.find((x) => x >= need - 1e-6); return v === undefined ? null : v; };
-const f1 = (x) => (Math.round(x * 10) / 10).toLocaleString("fr-CA");
+const f1 = (x) => (Math.abs(x) < 1 ? Math.round(x * 1000) / 1000 : Math.round(x * 10) / 10).toLocaleString("fr-CA", { maximumFractionDigits: 3 });      // a film of 0,13 mm is not « 0,1 mm »
 
 /* form -> { fr, icon, dims: [[key, label]], processes it suits, features(s): structural kernel features, raw(s, a): commercial size } */
 export const STOCK_FORMS = {
   plate: { fr: "Plaque", icon: "plate", hint: "Plaque laminée, débitée à la scie ou au jet d'eau puis usinée.", dims: [["L", "Longueur"], ["W", "Largeur"], ["t", "Épaisseur"]],
     processes: ["cnc_milling", "laser_cut"], flat: true, features: (s) => [{ op: "box", size: [s.L, s.W, s.t ?? s.H] }],
     raw: (s, a) => flatRaw("Plaque", s, s.t ?? s.H, PLATE_THICKNESS, a, true) },
-  sheet: { fr: "Tôle", icon: "sheet", hint: "Tôle mince découpée au laser ; l'épaisseur reste celle du brut.", dims: [["L", "Longueur"], ["W", "Largeur"], ["t", "Épaisseur"]],
+  sheet: { fr: "Tôle ou feuille", icon: "sheet", hint: "Tôle, feuille isolante, stratifié ou plaque mince découpés au laser de précision ; l'épaisseur reste celle du brut.", dims: [["L", "Longueur"], ["W", "Largeur"], ["t", "Épaisseur"]],
     processes: ["sheet_metal", "laser_cut"], flat: true, features: (s) => [{ op: "box", size: [s.L, s.W, s.t] }],
-    raw: (s) => flatRaw("Tôle", s, s.t, SHEET_GAUGES, 0, false) },
+    raw: (s, a, mat) => flatRaw(sheetWord(mat), s, s.t, mat ? sheetSeries(mat) : SHEET_GAUGES, 0, false) },
   block: { fr: "Bloc scié", icon: "block", hint: "Bloc débité dans une plaque épaisse ou un méplat, usiné sur plusieurs faces.", dims: [["L", "Longueur"], ["W", "Largeur"], ["H", "Hauteur"]],
     processes: ["cnc_milling"], features: (s) => [{ op: "box", size: [s.L, s.W, s.H ?? s.t] }],
     raw: (s, a) => flatRaw("Bloc dans plaque", s, s.H ?? s.t, PLATE_THICKNESS, a, true) },
@@ -77,7 +78,7 @@ export const STOCK_FORMS = {
     raw: (s) => flatRaw("Stratifié", s, s.t, PCB_THICKNESS, 0, false) },
   molded: { fr: "Moulage", icon: "cast", hint: "Aucun brut : la matière remplit un moule. La pièce se dessine d'elle-même autour de ce qu'elle contient, avec les règles du mouleur — injection pour un plastique, fonderie pour un métal.", dims: [], processes: ["injection_molding", "die_casting", "sand_casting"], additive: true,
     features: () => [], raw: () => ({ label: "Matière à mouler (granulés ou lingots de la nuance) — aucun brut à débiter", size: {}, volume: null, exact: true, standard: true, advice: [] }) },
-  print: { fr: "Fabrication additive", icon: "print3d", hint: "Aucun brut : la forme est déposée couche par couche, les opérations ajoutent la matière.", dims: [], processes: ["fdm", "mjf", "injection_molding"], additive: true,
+  print: { fr: "Fabrication additive", icon: "print3d", hint: "Aucun brut : la forme est déposée couche par couche, les opérations ajoutent la matière.", dims: [], processes: ["fdm", "mjf", "sla", "lpbf", "injection_molding"], additive: true,
     features: () => [], raw: () => ({ label: "Aucun brut : forme obtenue au plus près (near net shape)", size: {}, volume: null, exact: true, standard: true, advice: [] }) },
 };
 function prevStd(list, v) { const below = list.filter((x) => x < v - 1e-6); return below.length ? below[below.length - 1] : null; }
@@ -100,8 +101,9 @@ export function stockFeatures(stock) {
   const form = stockForm(stock.form);
   return form.features(stock).map((f) => ({ id: "stock", name: `Brut : ${form.fr.toLowerCase()}`, ...f, shop: "stock" }));
 }
-/** Commercial size, cutting and advice for an EVALUATED stock block. allowance = machining stock per cut face (mm). */
-export function stockFacts(stock, process) {
+/** Commercial size, cutting and advice for an EVALUATED stock block. allowance = machining stock per cut face (mm).
+    materialId : a sheet is sold in the thicknesses of its material (paper, film, laminate, metal gauges). */
+export function stockFacts(stock, process, materialId) {
   const form = stockForm(stock.form);
   for (const [k] of form.dims) if (typeof stock[k] !== "number" || !(stock[k] > 0)) {
     if (k === "t" && typeof stock.H === "number") continue;
@@ -110,7 +112,7 @@ export function stockFacts(stock, process) {
   }
   const cutClean = process === "laser_cut" || process === "sheet_metal" || process === "pcb";
   const a = typeof stock.allowance === "number" ? stock.allowance : (cutClean || form.additive ? 0 : form.flat || stock.form === "block" ? 2 : 2);
-  const raw = form.raw(stock, a);
+  const raw = form.raw(stock, a, materialId);
   return { form: stock.form, formName: form.fr, label: raw.label, raw: raw.size, rawVolume: raw.volume, exact: raw.exact, standard: raw.standard, allowance: a, advice: raw.advice, additive: !!form.additive };
 }
 /** Stock forms that suit a process, best first (used by the Shop). */

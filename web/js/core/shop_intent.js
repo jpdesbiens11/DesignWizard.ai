@@ -13,10 +13,11 @@ import { SHEET_GAUGES } from "../cad/standards.js";
 import { molded, moldProcess } from "./shop_mold.js";
 import { extruded, extrusionProcess } from "./shop_extrusion.js";
 import { engagement } from "./joint_health.js";
+import { sheetSeries, sheetDefault, sheetWord, printProcess, laserProfile, AM_PROCESSES } from "../cad/special_processes.js";
 
 const r1 = (x) => Math.round(x * 10) / 10;
 const up = (x, step = 5) => Math.ceil((x - 1e-9) / step) * step;
-const fr = (x) => r1(x).toLocaleString("fr-CA");
+const fr = (x) => r1(x).toLocaleString("fr-CA"), fr2 = (x) => (Math.round(x * 1000) / 1000).toLocaleString("fr-CA");
 const P = (value, min, max, label, group = "Enveloppe", step = 1) => ({ value, min: r1(min), max: r1(max), step, unit: "mm", label, group });
 const off = (base, d) => (Math.abs(d) < 1e-6 ? base : d > 0 ? `${base} + ${r1(d)}` : `${base} - ${r1(-d)}`);
 const slug = (s) => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "_").slice(0, 40).replace(/^_+|_+$/g, "");
@@ -65,9 +66,11 @@ export function recommend(brief) {
   const faces = new Set((brief.interfaces || []).map((i) => i.where || "+Z")), axes = new Set([...faces].map((f) => f[1])), mat = material(brief.material);
   const q = Number(brief.quantity) || 1, plastic = mat && mat.cls !== "metal";
   const onlyAxis = (brief.interfaces || []).length > 0 && (brief.interfaces || []).every((i) => i.type === "fit" || (i.type === "bolt_pattern" && i.params && i.params.pattern && i.params.pattern.type === "circle"));
-  const additive = plastic && ["fdm", "mjf"].find((k) => mat.processes.includes(k)), casts = mat && ["die_casting", "sand_casting"].find((k) => mat.processes.includes(k));
+  const additive = plastic && ["fdm", "mjf", "sla"].find((k) => mat.processes.includes(k)), casts = mat && ["die_casting", "sand_casting"].find((k) => mat.processes.includes(k));
   const holds = (brief.interfaces || []).some((i) => i.inside) || (brief.envelope && (brief.envelope.L || brief.envelope.W || brief.envelope.H));
   const extr = mat && mat.processes.find((k) => /^extrusion_/.test(k));
+  if (mat && (mat.cls === "sheet" || mat.cls === "pcb")) return { form: "sheet", process: "laser_cut", why: `${mat.name} : une matière en feuille — la pièce se découpe à plat, au laser de précision.` };
+  if (mat && mat.cls === "metal" && mat.processes.includes("lpbf") && !mat.processes.includes("cnc_milling")) return { form: "print", process: "lpbf", why: `${mat.name} : un alliage de fusion sur lit de poudre, la pièce s'imprime.` };
   if (extr && ((brief.contents || []).length || (brief.interfaces || []).some((i) => i.type === "rail" && i.side === "B"))) return { form: "profile", process: extr, why: "La pièce guide ce qu'elle contient sur toute sa longueur : un profilé extrudé, dessiné autour de ce qui glisse dedans." };
   if (casts && !mat.processes.includes("cnc_milling")) return { form: "molded", process: casts, why: `${mat.name} : un alliage de fonderie, la pièce se moule.` };
   if (holds && (casts || (plastic && mat.processes.includes("injection_molding") && q > 50))) return { form: "molded", process: casts || "injection_molding", why: `La pièce contient et porte d'autres pièces, en ${q} exemplaires : une coque moulée, dessinée autour de ce qu'elle loge.` };
@@ -109,15 +112,24 @@ function flat(brief, all, log) {
   const tongue = all.find((it) => it.type === "rail" && it.side !== "B"), items = all.filter((it) => it !== tongue);     // a tongue : the part slides in the groove of its neighbour
   const sheet = brief.form === "sheet", lay = arrange(items), env = brief.envelope || {};
   let L = up(Math.max(lay.w + 2 * lay.edge, env.L || 0, 20)), W = up(Math.max(lay.h + 2 * lay.edge, env.W || 0, 15));
-  let t = thickness(items, sheet ? SHEET_GAUGES : PLATE_THICKNESS, sheet ? 1 : 3, log), r = Math.min(sheet ? 3 : 4, r1(lay.edge));
+  const series = sheet ? sheetSeries(brief.material) : PLATE_THICKNESS, usual = sheet ? sheetDefault(brief.material) : null, asked = sheet && Number(brief.t) > 0 ? Number(brief.t) : null, word = sheet ? sheetWord(brief.material) : "Plaque";
+  let t, r = Math.min(sheet ? 3 : 4, r1(lay.edge));
+  if (asked) { t = asked; log.push(`${word} de ${fr2(t)} mm : épaisseur choisie${series.some((x) => Math.abs(x - t) < 1e-6) ? ", dans la série du commerce" : " — hors de la série du commerce de cette matière"}.`); }
+  else if (usual) { t = usual; log.push(`${word} de ${fr2(t)} mm : l'épaisseur courante de cette matière — un isolant se choisit pour ce qu'il doit tenir, pas pour ses fixations.`); }
+  else t = thickness(items, series, sheet ? Math.max(1, series[0]) : 3, log);
+  const LP = sheet ? laserProfile(brief.material) : null;
+  if (LP) { log.push(`Découpe : ${LP.source}${LP.verdict === "ok" ? ` — ${LP.edge}` : ` — ${LP.why}.`}`); if (LP.corner > 0) r = Math.max(r, LP.corner); }
+  const soft = sheet && material(brief.material) && material(brief.material).cls !== "metal";      // paper, film, laminate, plastic : the edge is looked at, not deburred
   log.push(...lay.notes, `Enveloppe ${fr(L)} × ${fr(W)} mm : la plus petite qui porte les interfaces avec ${fr(lay.edge)} mm de matière au bord.`);
   if (tongue) { L = r1(tongue.params.length); t = r1(tongue.params.t); W = Math.max(W, 30); r = 0.5;
     log.push(`Languette « ${tongue.name} » : la pièce glisse dans la rainure de sa voisine — largeur ${fr(L)} mm et épaisseur ${fr(t)} mm imposées par la glissière ; l'interface est sur la tranche arrière, à mi-épaisseur, et la pièce s'accouple enfoncée jusqu'à affleurer.`); }
   const minL = Math.min(L, lay.w + 2 * lay.edge);
+  /* the thickness of a sheet is written as it is sold (a film from 0,025 mm) : no rounding to the tenth */
   return { family: sheet ? "sheet" : "plate",
-    params: { L: P(L, minL, Math.max(400, 2 * L), "Longueur"), W: P(W, Math.min(W, lay.h + 2 * lay.edge), Math.max(300, 2 * W), "Largeur"), t: P(t, sheet || tongue ? 0.5 : 3, sheet ? 6 : 50, "Épaisseur", "Enveloppe", tongue ? 0.1 : 0.5), r: P(r, 0, 20, "Rayon des coins", "Détails", 0.5) },
+    params: { L: P(L, minL, Math.max(400, 2 * L), "Longueur"), W: P(W, Math.min(W, lay.h + 2 * lay.edge), Math.max(300, 2 * W), "Largeur"), t: sheet && !tongue ? { value: t, min: Math.min(series[0], t), max: Math.max(series[series.length - 1], t), step: t < 0.5 ? 0.005 : t < 1 ? 0.05 : 0.5, unit: "mm", label: "Épaisseur", group: "Enveloppe" } : P(t, sheet || tongue ? 0.5 : 3, sheet ? 6 : 50, "Épaisseur", "Enveloppe", tongue ? 0.1 : 0.5), r: P(r, 0, 20, "Rayon des coins", "Détails", 0.5) },
     stock: { form: brief.form, L: "L", W: "W", t: "t" },
-    features: [{ op: "outline", id: "contour", name: "Contour", profile: { rect: [0, 0, "L", "W"], r: "r" } }, { op: "interfaces" }, { op: "deburr", id: "ebavurage" }],
+    features: [{ op: "outline", id: "contour", name: "Contour", profile: { rect: [0, 0, "L", "W"], r: "r" } }, { op: "interfaces" }, soft ? { op: "deburr", id: "bord", note: "Sans ébavurage : dépoussiérer, contrôler le bord coupé (propre, non carbonisé)" } : { op: "deburr", id: "ebavurage" }],
+    ...(soft ? { notes: ["Bord découpé au laser : propre, non carbonisé — contrôle visuel à la réception", `Tolérance de découpe ± ${fr2(LP ? LP.tol : 0.2)} mm, à convenir avec l'atelier`] } : {}),
     interfaces: [...items.map((it) => ifaceOut(it, it.where === "-Z" ? "-Z" : "+Z", [off("L/2", it.du), off("W/2", it.dv)], tapped(it, true))), ...(tongue ? [ifaceOut(tongue, "+Y", ["L/2", "t/2"])] : [])] };
 }
 
@@ -185,7 +197,8 @@ export function synthesize(brief, id = "PN-0001") {
   const b = { ...brief, form, process: brief.process || SHOP_FORMS[form], material: brief.material || (form === "print" ? "PA12" : form === "molded" ? "PC-ABS" : form === "profile" ? "AL6063-T5" : "AL6061-T6") };
   if (form === "profile") b.process = extrusionProcess(b.material);
   if (form === "molded") b.process = brief.process && /molding|casting/.test(brief.process) ? brief.process : moldProcess(b.material);
-  if (form === "print" && !brief.process) b.process = material(b.material) && material(b.material).processes.includes("mjf") ? "mjf" : "fdm";
+  if (form === "print" && !(brief.process && AM_PROCESSES[brief.process])) b.process = printProcess(b.material) || "fdm";
+  if (form === "sheet") b.process = "laser_cut";
   log.push(`Matière première : ${STOCK_FORMS[form].fr.toLowerCase()} — ${form === rec.form ? rec.why : "choix de l'utilisateur."}`);
   const items = prepare(b, log);
   if (form === "angle" && !items.some((it) => it.where[1] === "Z")) log.push("Aucune interface sur le dessous : l'aile horizontale reste libre.");

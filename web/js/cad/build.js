@@ -29,7 +29,7 @@ export function buildPart(K, source, opts = {}) {
   const st = newState();
   st.log.push(...shopLog);
   if (source.stock) {
-    try { st.facts.stock = stockFacts(evalDeep(source.stock, scope), source.process); }
+    try { st.facts.stock = stockFacts(evalDeep(source.stock, scope), source.process, source.material); }
     catch (e) { st.log.push({ level: "error", feature: "stock", msg: `Matière première : ${e.message}` }); }
   }
   const bodyMeta = {};

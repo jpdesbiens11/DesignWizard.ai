@@ -6,6 +6,7 @@
 import { SHEET_GAUGES } from "../cad/standards.js";
 import { FACES } from "../cad/vec.js";
 import { rule, num, round, groupBy } from "./dfx_core.js";
+import { laserProfile, sheetSeries } from "../cad/special_processes.js";
 
 const S = {
   sm: "Guides DFM de tôlerie (Protolabs, Xometry — sheet metal design guide)", thumb: "Règle de pouce (rule of thumb), à confirmer avec le fournisseur",
@@ -25,9 +26,9 @@ const R = {
   lam01: rule("LAM-01", "Stratifié : pas de pliage", "Un stratifié (FR4, carbone, verre) ne se plie pas", "error", "Les fibres cassent.", "Pratique composites", { fix: true }),
   lam02: rule("LAM-02", "Stratifié : distance au bord", "Axe du trou au bord ≥ 3 × D", "warn", "Rupture en matage / cisaillement au bord (bearing, shear-out).", S.comp),
   lam03: rule("LAM-03", "Stratifié : pas entre trous", "Entraxe ≥ 4 × D", "warn", "Rupture de section nette entre les trous.", S.comp),
-  lam04: rule("LAM-04", "Rayon de fraise (router)", "Angles intérieurs ≥ R1,5 (fraise Ø3)", "warn", "La fraise du router ne fait pas d'angle vif intérieur.", S.router, { fix: true }),
+  lam04: rule("LAM-04", "Rayon de fraise (router)", "Hors de portée du laser : angles intérieurs ≥ R1,5 (fraise Ø3)", "warn", "La fraise du router ne fait pas d'angle vif intérieur.", S.router, { fix: true }),
   lc01: rule("LC-01", "Découpe traversante seulement", "Pas de pocket ni de trou borgne, pas de lamage sur une plaque découpée", "warn", "Le laser et le jet d'eau coupent toute l'épaisseur : tout usinage borgne est une reprise.", S.thumb),
-  lc02: rule("LC-02", "Pièce plate, épaisseur découpable", "Plaque plane ; épaisseur ≤ 25 mm (laser acier ≈ 20–25 mm, aluminium ≈ 12–15 mm ; au-delà : jet d'eau)", "warn", "Au-delà, la coupe est conique et lente.", S.thumb),
+  lc02: rule("LC-02", "Pièce plate, épaisseur découpable", "Plaque plane ; épaisseur dans la plage du laser pour la matière (LAS-02), 25 mm au plus pour une matière sans fiche", "warn", "Au-delà, la coupe est conique et lente.", S.thumb),
 };
 const STEPS_SM = ["Choisir d'abord la tôle et l'épaisseur en stock", "Un seul rayon intérieur pour tous les plis (un outil)", "Les plis d'abord, les trous ensuite : trous loin des plis", "Vérifier le développé et les lignes de pliage (DXF)"];
 const STEPS_PL = ["Matière et épaisseur en stock", "Contour et rayon d'angle", "Trous cotés depuis un angle, motifs pour les rangées", "Découpes avec rayon intérieur", "Stratifiés : jamais de pli, trous loin des bords et les uns des autres"];
@@ -64,11 +65,12 @@ const mainAxis = (v) => { let m = 0; for (let k = 1; k < 3; k++) if (Math.abs(v[
 function common(ctx, T) {
   const { facts, bbox } = ctx, t = T.t, groups = groupBy(facts.holes, (h) => `${h.source}|${h.d}`);
   ctx.run("MAT-01", () => {
-    if (SHEET_GAUGES.some((g) => Math.abs(g - t) < 1e-6)) return;
-    const to = nearestGauge(t), big = t > SHEET_GAUGES[SHEET_GAUGES.length - 1] + 1e-6;
+    const GAUGES = sheetSeries(ctx.spec.material);                // a paper, a film, a laminate are sold in their own thicknesses ; a metal in the gauges of the Shop
+    if (GAUGES.some((g) => Math.abs(g - t) < 1e-6)) return;
+    const to = GAUGES.reduce((a, b) => (Math.abs(b - t) < Math.abs(a - t) - 1e-9 ? b : a)), big = t > GAUGES[GAUGES.length - 1] + 1e-6;
     ctx.add("MAT-01", { value: round(t, 3), limit: to, unit: "mm", feature: T.shell ? T.shell.source : null,
-      message: `Épaisseur ${num(t, 3)} mm : hors de la liste en stock (${SHEET_GAUGES.map((g) => num(g)).join(" · ")} mm). ${big ? "Au-delà de 6 mm, vérifier le stock de plaque du fournisseur. " : ""}Correctif : passer à ${num(to)} mm.`,
-      fix: big ? null : ctx.fix(`Passer à ${num(to)} mm (épaisseur en stock)`, T.patch(to)) });
+      message: `Épaisseur ${num(t, 3)} mm : hors de la liste en stock (${GAUGES.map((g) => num(g, 3)).join(" · ")} mm). ${big ? `Au-delà de ${num(GAUGES[GAUGES.length - 1])} mm, vérifier le stock de plaque du fournisseur. ` : ""}Correctif : passer à ${num(to, 3)} mm.`,
+      fix: big ? null : ctx.fix(`Passer à ${num(to, 3)} mm (épaisseur en stock)`, T.patch(to)) });
   });
   ctx.run("SM-06", () => {
     for (const g of groups) {
@@ -102,7 +104,7 @@ function common(ctx, T) {
 }
 
 /* Distance from a hole to each of the 4 sides of its face, told apart as free edges or bends. */
-function holeSides(ctx, h, T) {
+export function holeSides(ctx, h, T) {
   const m = mainAxis(h.axis), bb = ctx.bbox, out = [];
   const open = new Set(T.formed ? T.shell.open || [] : []);
   for (let k = 0; k < 3; k++) {
@@ -146,11 +148,11 @@ export function checkSheet(ctx) {
 export function checkPlate(ctx) {
   const T = sheetThickness(ctx);
   if (!T || !(T.t > 0)) return;
-  const { facts } = ctx, t = T.t, lam = isLaminate(ctx), soft = lam || ctx.cls === "plastic";
+  const { facts } = ctx, t = T.t, lam = isLaminate(ctx), soft = lam || ctx.cls === "plastic", LP = laserProfile(ctx.spec.material), byLaser = !!LP && LP.verdict === "ok" && t <= LP.t[1] + 1e-6;      // the laser sheet of the material (LAS- rules) then says the thickness and the inside radii
   ctx.run("LC-02", () => {
     const notFlat = [facts.shells.length && "shell", facts.bosses.length && "boss", facts.revolves.length && "revolve"].filter(Boolean);
     if (notFlat.length) ctx.add("LC-02", { value: notFlat.join(", "), limit: "plaque plane", message: `La pièce contient ${notFlat.join(", ")} : une plaque découpée est plane (limite : épaisseur constante, aucune forme 3D). Correctif : retirer ces features, ou changer de process (sheet_metal, cnc_milling).` });
-    else if (t > 25 + 1e-6) ctx.add("LC-02", { value: round(t), limit: 25, unit: "mm", message: `Épaisseur ${num(t)} mm : au-delà de 25 mm la découpe laser n'est plus possible (jet d'eau : coupe conique et lente). Limite : ≤ 25 mm. Correctif : réduire l'épaisseur ou usiner la pièce (cnc_milling).` });
+    else if (!LP && t > 25 + 1e-6) ctx.add("LC-02", { value: round(t), limit: 25, unit: "mm", message: `Épaisseur ${num(t)} mm : au-delà de 25 mm la découpe laser n'est plus possible (jet d'eau : coupe conique et lente). Limite : ≤ 25 mm. Correctif : réduire l'épaisseur ou usiner la pièce (cnc_milling).` });
   });
   ctx.run("LC-01", () => {
     const blind = [...facts.pockets.filter((p) => !p.through && p.depth < t - 1e-6).map((p) => `pocket « ${p.source} »`),
@@ -190,7 +192,7 @@ export function checkPlate(ctx) {
       message: `Stratifié : entraxe de ${num(worst.d)} mm entre « ${worst.a.source} » et « ${worst.b.source} ». Limite : ≥ 4 × D = ${num(worst.lim)} mm (section nette entre les trous). Correctif : écarter ces trous de ${num(worst.lim - worst.d)} mm.` });
   });
   ctx.run("LAM-04", () => {
-    if (!soft) return;                                          // metal laser / waterjet: the kerf radius is enough
+    if (!soft || byLaser) return;                               // metal laser / waterjet : the kerf radius is enough ; a laminate or a plastic within reach of the laser has no cutter radius either (LAS-05)
     for (const p of facts.pockets) {
       const small = Math.min(p.w, p.h);
       if (!(small > 0) || p.rMin >= 1.5 - 1e-3) continue;

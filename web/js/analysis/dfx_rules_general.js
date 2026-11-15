@@ -103,7 +103,7 @@ export function checkInterfaces(ctx) {
     }
   });
   ctx.run("IF-02", () => {
-    const soft = /^(AL|CU|BRASS)/i.test(String(ctx.spec.material || "")), k = soft ? 1.5 : 1, moulded = ["injection_molding", "fdm", "mjf"].includes(ctx.process);
+    const soft = /^(AL|CU|BRASS)/i.test(String(ctx.spec.material || "")), k = soft ? 1.5 : 1, moulded = ["injection_molding", "fdm", "mjf", "sla"].includes(ctx.process);
     for (const it of bolts) {
       const o = it.opts || {}, th = THREADS[String(it.params.screw).toUpperCase()];
       if (it.side !== "B" || !th || (o.thread || "tapped") !== "tapped") continue;
@@ -144,7 +144,7 @@ export function checkInterfaces(ctx) {
         fix: ctx.fix(`Passer le Ø à ${num(to)} mm`, ctx.patch(b, raw && raw.op === "boss" ? "d" : null, to, "opts.standoff.d")) });
     }
   });
-  ctx.run("IF-04", () => { if (!["injection_molding", "fdm", "mjf"].includes(ctx.process)) checkBossRatio(ctx, "IF-04"); });   // moulded / printed parts: MLD-03, HSG-07
+  ctx.run("IF-04", () => { if (!["injection_molding", "fdm", "mjf", "sla"].includes(ctx.process)) checkBossRatio(ctx, "IF-04"); });   // moulded / printed parts: MLD-03, HSG-07
   ctx.run("IF-05", () => {
     for (const it of bolts) {
       const o = it.opts || {}, th = THREADS[String(it.params.screw).toUpperCase()], n = patternPoints(it.params.pattern).length;

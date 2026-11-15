@@ -7,6 +7,7 @@
 
 import { thread, clearanceHole, END_MILLS } from "./standards.js";
 import { stockFeatures, stockForm } from "./stock.js";
+import { AM_PROCESSES, printSteps, cutStep } from "./special_processes.js";
 import { evalDeep } from "./expr.js";
 import { FACES, faceKey } from "./vec.js";
 import { PROCESSES } from "./materials.js";
@@ -131,7 +132,7 @@ function pocketLine(f, what) {
 
 const BEAM = new Set(["laser_cut", "sheet_metal"]);              // the contour and the through holes are cut in one pass
 const CUT_BY_PROCESS = { laser_cut: "Découper le contour au laser / jet d'eau", sheet_metal: "Découper le contour au laser", pcb: "Détourer le panneau", cnc_turning: "Tronçonner", extrusion_al: "Couper à longueur", extrusion_plastic: "Couper à longueur" };
-const NEAR_NET = { fdm: ["Imprimer en FDM (orienter la plus grande face sur le plateau)", "Retirer les supports"], mjf: ["Imprimer en MJF / SLS", "Dépoudrer et microbiller"],
+const NEAR_NET = { fdm: [], mjf: [], sla: [], lpbf: [],      // printed : the steps come from the process and the material (special_processes.js)
   injection_molding: ["Mouler par injection (outillage dédié)", "Dégrapper et contrôler les retassures"],
   die_casting: ["Couler sous pression (moule acier dédié)", "Détourer : carottes, masselottes et bavures ; contrôler la porosité"], sand_casting: ["Couler par gravité (moule sable ou coquille)", "Dessabler, ébarber, traiter thermiquement si la nuance le demande"] };
 
@@ -142,13 +143,14 @@ export function routing(spec, built) {
   const st = facts.stock || null, proc = spec.process, nearNet = !!NEAR_NET[proc];   // moulded / printed: the shapes come out of the tool, only inserts and threads are operations
   if (st) {
     add("stock", `Approvisionner : ${st.label}`);
-    if (!st.additive) add("cut", `${CUT_BY_PROCESS[proc] || "Débiter à la scie"}${st.allowance ? ` (surépaisseur d'usinage ${fr(st.allowance)} mm)` : ""}`);
+    if (!st.additive) add("cut", `${proc === "laser_cut" ? cutStep(spec.material) : CUT_BY_PROCESS[proc] || "Débiter à la scie"}${st.allowance ? ` (surépaisseur d'usinage ${fr(st.allowance)} mm)` : ""}`);
     if (!st.exact && !st.additive && st.raw && st.raw.t) add("machine", `Surfacer à l'épaisseur finie (brut de ${fr(st.raw.t)} mm)`, { tools: ["Fraise à surfacer"], face: "+Z" });
     advice.push(...(st.advice || []));
   } else if (spec.extrusion) { add("stock", "Extruder le profilé (filière dédiée)"); add("cut", "Couper à longueur"); }
   else if (spec.pcb) add("stock", "Fabriquer le circuit imprimé (panneau FR4), détourer");
   else if (!NEAR_NET[proc] && proc !== "purchased") add("stock", "Brut à définir : la pièce ne déclare pas sa matière première (« stock »)");
-  for (const line of NEAR_NET[proc] || []) add("machine", line);
+  const nearLines = AM_PROCESSES[proc] ? printSteps(proc, spec.material) : NEAR_NET[proc] || [];
+  for (const line of nearLines) add("machine", line);
 
   let feats = [];
   try { feats = evalDeep(spec.features || [], scope); } catch (e) { advice.push(`Gamme incomplète : ${e.message}`); }
@@ -166,7 +168,9 @@ export function routing(spec, built) {
       else add("hole", l.text + tail, { face: h.face, tools: l.tools, iface: h.iface });
     }
     if (nearNet) return;
-    for (const p of facts.pockets || []) if (p.iface) { const l = pocketLine({ r: p.rMin, depth: p.through ? "through" : p.depth }, `Fraiser l'ouverture ${fr(p.w)} × ${fr(p.h)}`); add("machine", `${l.text} — interface ${p.iface}`, { face: p.face, tools: l.tools, iface: p.iface }); }
+    for (const p of facts.pockets || []) if (p.iface) {
+      if (BEAM.has(proc) && p.through) { add("cut", `Découper l'ouverture ${fr(p.w)} × ${fr(p.h)} dans la même passe${p.rMin ? ` (rayons de coin ${fr(p.rMin)})` : ""} — interface ${p.iface}`, { iface: p.iface }); continue; }
+      const l = pocketLine({ r: p.rMin, depth: p.through ? "through" : p.depth }, `Fraiser l'ouverture ${fr(p.w)} × ${fr(p.h)}`); add("machine", `${l.text} — interface ${p.iface}`, { face: p.face, tools: l.tools, iface: p.iface }); }
     const bosses = new Map();
     for (const b of facts.bosses || []) if (b.iface) bosses.set(b.iface, (bosses.get(b.iface) || 0) + 1);
     for (const [id, n] of bosses) add("machine", `Laisser ${n} bossage(s) — interface ${id}`, { iface: id });
@@ -200,7 +204,7 @@ export function routing(spec, built) {
     } catch (e) { advice.push(`Opération « ${f.id || f.op} » : ${e.message}`); }
   }
   if (!ifaceDone) ifaceSteps();
-  if (nearNet && shaped) steps.splice(steps.findIndex((x) => x.text === NEAR_NET[proc][0]) + 1, 0, { kind: "machine", text: `${shaped} forme(s) venue(s) d'outillage ou d'impression (coque, bossages, ouvertures) : aucune reprise`, face: null, source: null, iface: null, tools: [] });
+  if (nearNet && shaped) steps.splice(steps.findIndex((x) => x.text === nearLines[0]) + 1, 0, { kind: "machine", text: `${shaped} forme(s) venue(s) d'outillage ou d'impression (coque, bossages, ouvertures) : aucune reprise`, face: null, source: null, iface: null, tools: [] });
   if (!steps.some((s) => s.kind === "finish" && /bavur/i.test(s.text)) && proc !== "purchased") add("finish", "Ébavurer, casser les angles vifs 0,2 à 0,5 mm");
   if (spec.finish && !steps.some((s) => /^Finition/.test(s.text))) add("finish", `Finition : ${spec.finish}`);
   add("check", "Contrôler les cotes des interfaces (voir le dessin)");

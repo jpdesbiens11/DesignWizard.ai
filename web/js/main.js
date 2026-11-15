@@ -7,6 +7,7 @@ import { openPalette } from "./core/palette.js";
 import { installImport, pickFile } from "./core/importer.js";
 import "./modules/home.js";
 import "./modules/shop.js";
+import "./modules/shop_special.js";
 import "./modules/interfaces.js";
 import "./modules/parts.js";
 import "./modules/extrusion.js";

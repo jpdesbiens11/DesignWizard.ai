@@ -10,9 +10,10 @@ import { THEMES, currentTheme, applyTheme } from "./theme.js";
 import { toDwiz } from "./dwiz.js";
 import { dwizFileName } from "./dwiz_names.js";
 
-export const APP_VERSION = "0.29.0";
+export const APP_VERSION = "0.30.0";
 const modules = new Map();
-const ORDER = ["home", "shop", "parts", "extrusion", "pcb", "pcba", "assembly", "physics", "creepage", "dfx", "drawings", "review", "report"];
+const ORDER = ["home", "shop", "parts", "pcb", "pcba", "assembly", "physics", "creepage", "dfx", "drawings", "review", "report"];
+const SHOP_SCREENS = new Set(["interfaces", "process", "extrusion", "library", "busbar", "flex"]);      // screens of the Shop : its tab stays lit on them (see modules/shop_tabs.js)
 const GROUP_BREAK = new Set(["shop", "assembly", "physics", "review"]);         // a pencil tick before these tabs
 export const app = { modules, context: {}, version: APP_VERSION, current: null, cleanup: null, commands: [] };
 
@@ -118,7 +119,7 @@ function route() {
   clear(main);
   app.context = {}; app.current = key; app.commands = [];
   document.documentElement.dataset.module = key;
-  document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.key === (key === "mvp" || key === "team" || key === "plm" ? "review" : key === "library" || key === "busbar" || key === "flex" ? "shop" : key)));
+  document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.key === (key === "mvp" || key === "team" || key === "plm" ? "review" : SHOP_SCREENS.has(key) ? "shop" : key)));
   const tab = document.querySelector(".tab.active"); if (tab && tab.scrollIntoView) tab.scrollIntoView({ block: "nearest", inline: "nearest" });      // the tool in use stays in sight in a narrow bar
   const m = modules.get(key);
   document.title = `${m.label} · DesignWizard.ai`;

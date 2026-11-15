@@ -15,7 +15,7 @@ export function companionSpec(hostSpec, hostBuilt, ifaceId, id) {
     u0 = Math.min(u0, a); u1 = Math.max(u1, a); w0 = Math.min(w0, b); w1 = Math.max(w1, b);
   }
   const r = (x) => Math.round(x * 100) / 100, L = r(u1 - u0), W = r(w1 - w0), side = it.side === "A" ? "B" : "A";
-  const plastic = /injection|fdm|mjf/.test(hostSpec.process || "");
+  const plastic = /injection|fdm|mjf|sla/.test(hostSpec.process || "");
   const t = plastic ? 2.5 : 4, type = INTERFACE_TYPES[it.type];
   const opts = side === "A" ? { ...type.optsA } : { ...type.optsB, ...(it.type === "bolt_pattern" ? { thread: plastic ? "insert" : "tapped", depth: "through" } : {}) };
   if (it.type === "cutout" && side === "A") opts.depth = "through";

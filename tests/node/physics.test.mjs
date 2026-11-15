@@ -424,8 +424,8 @@ test('material properties cover materials.js and stay consistent with it', () =>
   for (const m of MATERIALS) {
     const p = props(m.id); assert.ok(p && p.typical && p.note.includes('fiche technique'), m.id); for (const k of ['E', 'nu', 'G', 'cte', 'k', 'cp', 'rho', 'Rm']) assert.ok(Number.isFinite(p[k]) && p[k] > 0, `${m.id}.${k}`);
     near(p.rho, m.rho * 1000, 0.02, `${m.id} density`); near(p.G, p.E / (2 * (1 + p.nu)), 0.001); if (m.E) assert.equal(p.E, m.E, `${m.id}: same E as materials.js`); if (m.k) assert.equal(p.k, m.k, `${m.id}: same k as materials.js`);
-    if (m.rhoE) assert.equal(p.rhoE, m.rhoE); if (m.cls === 'metal') assert.ok(p.Re > 50 && p.Rm >= p.Re && p.rhoE > 1e-8 && p.rhoE < 1e-6 && p.alphaE > 0, `${m.id} metal`);
-    if (m.cls === 'plastic') assert.ok(p.Tmax >= 60 && p.Tmax <= 260 && p.rhoE === null, `${m.id} plastic`);
+    if (m.rhoE) assert.equal(p.rhoE, m.rhoE); if (m.cls === 'metal') assert.ok(p.Re > 50 && p.Rm >= p.Re && p.rhoE > 1e-8 && p.rhoE < 2e-6 && p.alphaE > 0, `${m.id} metal`);
+    if (m.cls === 'plastic') assert.ok(p.Tmax >= 50 && p.Tmax <= 260 && p.rhoE === null, `${m.id} plastic`);
   }
   assert.equal(props('al6061-t6').id, 'AL6061-T6'); assert.equal(props('UNOBTAINIUM'), null); assert.equal(props(undefined), null);
 });

@@ -14,11 +14,21 @@ import { BOOK_PCB, checkPcb, checkPurchased } from "./dfx_rules_pcb.js";
 import { BOOK_CASTING, checkCasting } from "./dfx_rules_casting.js";
 import { BOOK_GENERAL, checkInterfaces, checkGeneral } from "./dfx_rules_general.js";
 import { BOOK_ASSEMBLY } from "./dfa_rules.js";
+import { BOOK_SPECIAL, checkLaser, checkAdditive } from "./dfx_rules_special.js";
 
 /** Printable rule book: one entry per process {process, title, fr, steps[], rules[{id, title, limit, severity, why, source, fix?, manual?}]}.
     `fix: true` = a one-click auto-fix exists; `manual: true` = documented but not checked automatically. */
 const AFTER_EXTRUSION = BOOK_CNC[0].rules.filter((r) => r.id === "CNC-04" || r.id === "CNC-12");      // machining after extrusion: hole sizes
-export const RULEBOOK = [...BOOK_CNC, ...BOOK_SHEET, ...BOOK_EXTRUSION, ...BOOK_PLASTIC, ...BOOK_CASTING, ...BOOK_PCB, ...BOOK_GENERAL, ...BOOK_ASSEMBLY]
+/* a process may be written in two modules (laser cutting : the flat plate, then the sheet material) : one entry, the steps and the rules of both */
+function merged(books) {
+  const out = [], at = new Map();
+  for (const b of books) {
+    if (!at.has(b.process)) { at.set(b.process, out.length); out.push({ ...b, steps: [...(b.steps || [])], rules: [...b.rules] }); continue; }
+    const o = out[at.get(b.process)]; o.steps.push(...(b.steps || []).filter((x) => !o.steps.includes(x))); o.rules.push(...b.rules.filter((r) => !o.rules.some((q) => q.id === r.id)));
+  }
+  return out;
+}
+export const RULEBOOK = merged([...BOOK_CNC, ...BOOK_SHEET, ...BOOK_EXTRUSION, ...BOOK_PLASTIC, ...BOOK_SPECIAL, ...BOOK_CASTING, ...BOOK_PCB, ...BOOK_GENERAL, ...BOOK_ASSEMBLY])
   .map((b) => ({ ...b, title: b.title || (PROCESSES[b.process] || {}).label || b.process, fr: b.fr || (PROCESSES[b.process] || {}).fr || b.process,
     rules: /^extrusion_/.test(b.process) ? [...b.rules, ...AFTER_EXTRUSION] : b.rules }));
 
@@ -37,9 +47,9 @@ export function ruleInfo(id, process) {
 const categoryOf = (id) => { const e = INDEX.get(id); return e ? (e.rule.category || e.book.category || "DFM") : "DFM"; };
 
 const RUNNERS = {
-  cnc_milling: [checkMilling], cnc_turning: [checkTurning], sheet_metal: [checkSheet], laser_cut: [checkPlate],
+  cnc_milling: [checkMilling], cnc_turning: [checkTurning], sheet_metal: [checkSheet], laser_cut: [checkPlate, checkLaser],
   extrusion_al: [checkExtrusion, checkHoleSizes], extrusion_plastic: [checkExtrusion, checkHoleSizes],
-  injection_molding: [checkMolding], die_casting: [checkCasting], sand_casting: [checkCasting], fdm: [checkPrinting], mjf: [checkPrinting], pcb: [checkPcb], purchased: [checkPurchased],
+  injection_molding: [checkMolding], die_casting: [checkCasting], sand_casting: [checkCasting], fdm: [checkPrinting, checkAdditive], mjf: [checkPrinting, checkAdditive], sla: [checkPrinting, checkAdditive], lpbf: [checkAdditive], pcb: [checkPcb], purchased: [checkPurchased],
 };
 const FACT_LISTS = ["holes", "pockets", "bosses", "fillets", "chamfers", "shells", "extrudes", "revolves"];
 

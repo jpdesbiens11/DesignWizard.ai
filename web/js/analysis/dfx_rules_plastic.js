@@ -5,6 +5,7 @@
 import { FACES } from "../cad/vec.js";
 import { rule, num, round, groupBy } from "./dfx_core.js";
 import { checkBossRatio } from "./dfx_rules_general.js";
+import { AM_PROCESSES } from "../cad/special_processes.js";
 
 const S = {
   wall: "Malloy — Plastic Part Design for Injection Molding ; Covestro part design guide", pl: "Protolabs — injection molding design guidelines",
@@ -25,16 +26,16 @@ const M = {
   m11: rule("MLD-11", "Clips élastiques", "Déformation de la lame ε = 1,5 × épaisseur × flèche / longueur² ≤ 2 % (1 % pour une matière chargée de fibres)", "warn", "Au-delà la lame blanchit, se déforme pour de bon ou casse au premier encliquetage.", S.thumb),
 };
 const H = {
-  h01: rule("HSG-01", "Paroi au-dessus du minimum du process", "FDM ≥ 1,0 mm ; MJF PA12 ≥ 0,9 mm", "error", "Trous et casse dans la pièce imprimée.", S.proc, { fix: true }),
+  h01: rule("HSG-01", "Paroi au-dessus du minimum du process", "FDM ≥ 1,0 mm ; MJF PA12 ≥ 0,9 mm ; SLA ≥ 0,6 mm", "error", "Trous et casse dans la pièce imprimée.", S.proc, { fix: true }),
   h02: rule("HSG-02", "Classe de flamme", "PEI ULTEM 9085 : résultats UL94 V-0 à 1,5 mm → paroi ≥ 1,5 mm ; PA12 (MJF) et ABS : UL94 HB seulement", "warn", "Comportement au feu non démontré sous l'épaisseur testée.", "Stratasys ULTEM 9085 ; UL 94", { fix: true }),
   h04: rule("HSG-04", "Jeu avec le contenu / ajustements", "Jeu ≥ tolérance du process + 0,2 mm ; un ajustement ISO n'est pas tenu brut d'impression", "info", "Le contenu peut ne pas rentrer.", S.proc),
-  h05: rule("HSG-05", "Tient dans la machine", "Pièce dans le volume d'impression (FDM 914 × 610 × 914 mm ; MJF 380 × 284 × 380 mm)", "error", "Ne s'imprime pas en une pièce.", "Données machine"),
+  h05: rule("HSG-05", "Tient dans la machine", "Pièce dans le volume d'impression (FDM 914 × 610 × 914 mm ; MJF 380 × 284 × 380 mm ; SLA 145 × 145 × 185 mm)", "error", "Ne s'imprime pas en une pièce.", "Données machine"),
   h07: rule("HSG-07", "Bossages", "Ø extérieur ≈ 2 à 2,5 × Ø du trou d'insert", "warn", "Le trou débouche ou le bossage éclate à la pose de l'insert.", S.rm, { fix: true }),
-  h08: rule("HSG-08", "Trous", "Ø ≥ minimum du process (FDM 1,5 mm ; MJF 1,0 mm)", "warn", "Un petit trou se referme à l'impression.", S.proc, { fix: true }),
+  h08: rule("HSG-08", "Trous", "Ø ≥ minimum du process (FDM 1,5 mm ; MJF 1,0 mm ; SLA 0,5 mm)", "warn", "Un petit trou se referme à l'impression.", S.proc, { fix: true }),
   h10: rule("HSG-10", "Orientation et supports", "FDM : surplombs > 45° et trous horizontaux > Ø6 demandent des supports", "info", "Les supports marquent les surfaces et coûtent du temps.", S.proc),
-  h12: rule("HSG-12", "Jeu d'assemblage", "Jeu ≥ jeu d'assemblage du process par côté (FDM 0,3 mm ; MJF 0,2 mm)", "warn", "Les pièces ne s'emboîtent pas.", "HP MJF design guide (0,4 mm entre pièces assemblées)", { fix: true }),
+  h12: rule("HSG-12", "Jeu d'assemblage", "Jeu ≥ jeu d'assemblage du process par côté (FDM 0,3 mm ; MJF 0,2 mm ; SLA 0,2 mm)", "warn", "Les pièces ne s'emboîtent pas.", "HP MJF design guide (0,4 mm entre pièces assemblées)", { fix: true }),
   h13: rule("HSG-13", "Angles intérieurs arrondis", "R intérieur ≥ 0,5 × paroi (erreur sous 0,25 × paroi)", "warn", "Sous R/T = 0,5 la concentration de contraintes est forte : les fissures partent des angles vifs.", S.ge, { fix: true }),
-  h14: rule("HSG-14", "Congé imprimable", "R ≥ minimum machine (FDM 1,0 mm ; MJF 0,5 mm)", "warn", "Un rayon plus petit s'imprime en marches.", S.rm, { fix: true }),
+  h14: rule("HSG-14", "Congé imprimable", "R ≥ minimum machine (FDM 1,0 mm ; MJF et SLA 0,5 mm)", "warn", "Un rayon plus petit s'imprime en marches.", S.rm, { fix: true }),
   a02: rule("AM-02", "Sections massives (MJF)", "Épaisseur ≤ 10 mm : évider au-delà", "info", "Accumulation de chaleur, retrait et coût de poudre.", "HP MJF design guide"),
 };
 export const BOOK_PLASTIC = [
@@ -44,11 +45,11 @@ export const BOOK_PLASTIC = [
     "Jeux d'assemblage ≥ 0,3 mm par côté"], rules: [H.h01, H.h02, H.h04, H.h05, H.h07, H.h08, H.h10, H.h12, H.h13, H.h14] },
   { process: "mjf", category: "DFM", steps: ["Paroi ≥ 0,9 mm, sections ≤ 10 mm (évider)", "Trous ≥ Ø1, prévoir le dépoudrage des cavités", "Jeux d'assemblage ≥ 0,2 mm par côté", "Rayons intérieurs ≥ 0,5 × paroi", "PA12 : UL94 HB seulement"],
     rules: [H.h01, H.h02, H.h04, H.h05, H.h07, H.h08, H.h12, H.h13, H.h14, H.a02] },
+  { process: "sla", category: "DFM", steps: ["Paroi ≥ 0,6 mm, 1 mm conseillé", "Incliner la pièce : les supports hors des faces vues", "Une pièce creuse laisse couler la résine : ouverture en point bas", "Post-cuire aux UV avant de mesurer ou de charger",
+    "Résine : pas de pièce de structure durable"], rules: [H.h01, H.h02, H.h04, H.h05, H.h07, H.h08, H.h12, H.h13, H.h14] },
 ];
-const PRINT = {
-  fdm: { name: "FDM", wallMin: 1.0, filMin: 1.0, holeMin: 1.5, gap: 0.3, build: [914, 610, 914] },
-  mjf: { name: "MJF", wallMin: 0.9, filMin: 0.5, holeMin: 1.0, gap: 0.2, build: [380, 284, 380] },
-};
+/* printing limits : one source, cad/special_processes.js */
+const PRINT = Object.fromEntries(Object.entries(AM_PROCESSES).map(([k, p]) => [k, { name: p.short, wallMin: p.wall, filMin: p.fillet, holeMin: p.hole, gap: p.gap, build: p.build }]));
 const isElectrical = (ctx) => !!ctx.spec.elec || ctx.spec.family === "enclosure" || (ctx.built.interfaces || []).some((i) => i.type === "cutout" || i.type === "rail");
 const minShell = (ctx) => (ctx.facts.shells.length ? Math.min(...ctx.facts.shells.map((s) => s.t)) : null);
 const holeLabel = (g) => `Trou Ø${num(g[0].d)}${g.length > 1 ? ` (× ${g.length})` : ""} « ${g[0].source} »`;
@@ -171,10 +172,10 @@ export function checkPrinting(ctx) {
   ctx.run("HSG-10", () => {
     if (ctx.process !== "fdm") return;
     const items = [...groupBy(facts.holes.filter((h) => h.axis && Math.abs(h.axis[2]) < 0.5 && h.d > 6), (h) => h.source).map((g) => `trou horizontal Ø${num(g[0].d)} « ${g[0].source} »`),
-      ...facts.pockets.filter((p) => p.face && FACES[p.face] && FACES[p.face].axis !== 2 && Math.min(p.w, p.h) > 10).map((p) => `ouverture latérale « ${p.source} »`),
+      ...facts.pockets.filter((p) => p.face && FACES[p.face] && FACES[p.face].axis !== 2 && Math.min(p.w, p.h) > AM_PROCESSES.fdm.bridge).map((p) => `ouverture latérale « ${p.source} »`),
       ...[...facts.holes, ...facts.pockets, ...facts.bosses].filter((x) => x.face === "-Z" && !x.through).slice(0, 1).map(() => "features sur la face du dessous (−Z)")];
     if (items.length) ctx.add("HSG-10", { value: items.length, limit: 0, unit: "zones à supports",
-      message: `Impression FDM, pièce orientée Z vers le haut : ${items.slice(0, 4).join(", ")}${items.length > 4 ? "…" : ""} demandent des supports (limite : surplomb ≤ 45°, pont ≤ 10 mm, trou horizontal ≤ Ø6). Correctif : dessiner les trous horizontaux en goutte d'eau (teardrop), chanfreiner les surplombs à 45° ou réorienter la pièce.` });
+      message: `Impression FDM, pièce orientée Z vers le haut : ${items.slice(0, 4).join(", ")}${items.length > 4 ? "…" : ""} demandent des supports (limite : surplomb à 45° du plateau au moins, pont ≤ ${num(AM_PROCESSES.fdm.bridge)} mm, trou horizontal ≤ Ø6). Correctif : dessiner les trous horizontaux en goutte d'eau (teardrop), chanfreiner les surplombs à 45° ou réorienter la pièce.` });
   });
   ctx.run("HSG-12", () => {
     for (const it of ctx.built.interfaces || []) {

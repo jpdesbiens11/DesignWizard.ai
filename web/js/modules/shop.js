@@ -4,7 +4,7 @@
    interfaces, commercial thickness, routing sheet — and shows it live. The same intent can be handed to Claude. */
 
 import { el, clear, icon, btn, badge, field, toast, copyText, fmt, fmtMass, debounce } from "../core/dom.js";
-import { registerModule, go, setStatus, setContext } from "../core/app.js";
+import { registerModule, go, setStatus, setContext, app } from "../core/app.js";
 import { store } from "../core/store.js";
 import { kernel } from "../cad/client.js";
 import { Viewer } from "../core/viewer.js";
@@ -25,6 +25,9 @@ import { runDfx } from "../analysis/dfx_api.js";
 import { orderCheck } from "../cad/order.js";
 import { lightSide, sideOf, LIT } from "../core/view_marks.js";
 import { popupMenu } from "../core/view_select.js";
+import { shopTabs } from "./shop_tabs.js";
+import { specialCard } from "./shop_special.js";
+import { printProcess } from "../cad/special_processes.js";
 
 const blank = () => ({ name: "", fn: "", loads: "", environment: "", quantity: 10, priority: "", material: "AL6061-T6", form: "", neighbours: [], interfaces: [], addToAsm: true });
 let brief = blank(), uid = 0, wasMoulded = false;
@@ -47,12 +50,13 @@ const OPPOSITE = { "+Z": "-Z", "-Z": "+Z", "+X": "-X", "-X": "+X", "+Y": "-Y", "
 const numIn = (obj, key, label, redraw, step = 1) => field(label, el("input", { type: "number", value: obj[key] ?? "", step, min: 0, onInput: (e) => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) { obj[key] = v; redraw(); } } }));
 
 function render(main) {
+  if (app.shopPreset) { brief = { ...blank(), ...app.shopPreset }; app.shopPreset = null; }      // sent by the screen of the special processes : this material, this process
   const p = store.project, page = el("div", { class: "page atelier" });
   main.append(page);
   let viewer = null, token = 0, current = null, active = null, flash = null;        // active : the interface whose face the mouse is choosing ; flash : the side just chosen, to confirm in green
   page.append(el("div", { class: "page-head" }, el("div", { class: "grow" }, el("h1", null, "Atelier"),
     el("p", { class: "muted" }, "Pas d'esquisse, pas de plan : dites à quoi sert la pièce, à quoi elle se raccorde, dans quoi elle est faite. Le compagnon d'atelier prend la matière première du commerce et écrit la pièce — vous la voyez naître à droite.")),
-    el("div", { class: "subtabs" }, el("a", { class: "subtab active", href: "#/shop" }, "Intention d'abord"), el("a", { class: "subtab", href: "#/interfaces" }, "Entrevue avec Claude"), el("a", { class: "subtab", href: "#/interfaces/registre" }, "Registre des interfaces"), el("a", { class: "subtab", href: "#/library", "data-tip": "Connecteurs basse et haute tension de familles réelles, cellules Li-ion" }, "Bibliothèque électrique"), el("a", { class: "subtab", href: "#/busbar", "data-tip": "Un conducteur plié et poinçonné, ses bornes et ses contacts à lamelles" }, "Busbars"), el("a", { class: "subtab", href: "#/flex", "data-tip": "Une bande souple pliée, ses pistes et ses capteurs" }, "Circuits flexibles"))));
+    shopTabs("shop")));
   const left = el("div", { class: "atelier-brief" }), right = el("div", { class: "atelier-side" });
   page.append(el("div", { class: "atelier-grid" }, left, right));
   const rebuild = debounce(() => build(), 220);
@@ -96,10 +100,10 @@ function render(main) {
 
   /* 3 — material and raw stock */
   const matSel = el("select", { onChange: (e) => { brief.material = e.target.value; drawIfaces(); drawStock(); propose(); } },
-    ["metal", "plastic"].map((cls) => el("optgroup", { label: cls === "metal" ? "Métaux" : "Plastiques" }, MATERIALS.filter((m) => m.cls === cls).map((m) => el("option", { value: m.id, selected: m.id === brief.material }, m.name)))));
-  const stockGrid = el("div", { class: "stock-grid" }), stockWhy = el("p", { class: "muted small" }), moldBox = el("div"), profBox = el("div");
+    [["metal", "Métaux"], ["plastic", "Plastiques"], ["sheet", "Feuilles isolantes (papier, film)"], ["pcb", "Stratifiés (carte)"]].map(([cls, label]) => el("optgroup", { label }, MATERIALS.filter((m) => m.cls === cls && m.id !== "GENERIC-COMPONENT" && m.id !== "EPOXY").map((m) => el("option", { value: m.id, selected: m.id === brief.material }, m.name)))));
+  const stockGrid = el("div", { class: "stock-grid" }), stockWhy = el("p", { class: "muted small" }), moldBox = el("div"), profBox = el("div"), specBox = el("div");
   left.append(el("section", { class: "card taped" }, el("h2", null, el("span", { class: "step-no" }, "3"), "Sa matière et sa matière première"),
-    el("div", { class: "form-row" }, field("Matériau", matSel)), el("h3", null, "Ce que l'on prend sur l'étagère"), stockGrid, stockWhy, moldBox, profBox));
+    el("div", { class: "form-row" }, field("Matériau", matSel)), el("h3", null, "Ce que l'on prend sur l'étagère"), stockGrid, stockWhy, moldBox, profBox, specBox));
 
   /* 4 — the proposal */
   const holder = el("div", { class: "viewport atelier-view" }), chips = el("div", { class: "atelier-chips" }), out = el("div");
@@ -172,11 +176,12 @@ function render(main) {
     for (const [form, proc] of Object.entries(SHOP_FORMS)) {
       const mould = form === "molded", canMould = mat && ["injection_molding", "die_casting", "sand_casting"].some((k) => mat.processes.includes(k));
       const prof = form === "profile", canExtrude = mat && mat.processes.some((k) => /^extrusion_/.test(k));
-      const f = STOCK_FORMS[form], on = (brief.form || rec.form) === form, odd = mould ? !canMould : prof ? !canExtrude : form === "print" ? !plastic : (plastic && ["sheet", "angle"].includes(form));
+      const flatOnly = mat && (mat.cls === "sheet" || mat.cls === "pcb"), cuts = mat && (mat.processes.includes("laser_cut") || mat.processes.includes("sheet_metal"));
+      const f = STOCK_FORMS[form], on = (brief.form || rec.form) === form, odd = mould ? !canMould : prof ? !canExtrude : form === "print" ? !printProcess(brief.material) : form === "sheet" ? !cuts : flatOnly || (plastic && form === "angle");
       stockGrid.append(el("button", { class: "stock-card" + (on ? " on" : "") + (odd ? " odd" : ""), type: "button", "aria-pressed": on ? "true" : "false", "data-tip": f.hint, onClick: () => { brief.form = form === rec.form ? "" : form;
         if (prof && brief.form && !canExtrude) { brief.material = plastic ? "PVC-U" : "AL6063-T5"; matSel.value = brief.material; toast(`Matière changée pour ${material(brief.material).name} : celle d'avant ne s'extrude pas.`, "info", 4500); }
         drawStock(); propose(); } },
-        icon(f.icon), el("b", null, f.fr), el("small", null, PROCESSES[mould ? moldProcess(brief.material) : prof ? extrusionProcess(brief.material) : proc].fr), form === rec.form ? badge("Conseillé", "ok") : null));
+        icon(f.icon), el("b", null, f.fr), el("small", null, PROCESSES[mould ? moldProcess(brief.material) : prof ? extrusionProcess(brief.material) : form === "print" ? printProcess(brief.material) || proc : proc].fr), form === rec.form ? badge("Conseillé", "ok") : null));
     }
     /* a moulded part is drawn around what it holds : the designer gives the volume to contain, the rules of the moulder do the rest */
     clear(moldBox);
@@ -214,6 +219,8 @@ function render(main) {
           field("Section", el("select", { "data-tip": "Fermée : un tube, la filière porte un mandrin. Ouverte : un U, sans creux — le moins cher en plastique", onChange: (e) => { brief.open = e.target.value === "open" ? true : undefined; again(); } }, [["closed", "Fermée (tube)"], ["open", "Ouverte sur le dessus (U)"]].map(([k, l]) => el("option", { value: k, selected: (k === "open") === !!brief.open }, l)))),
           field("Flasques", el("select", { "data-tip": "Des canaux de vis ouverts en C dans les angles : les flasques des bouts s'y vissent, sans taraudage", onChange: (e) => { if (e.target.value === "none") brief.ports = false; else { brief.ports = undefined; brief.screw = e.target.value; } again(); } }, [["M3", "Canaux de vis M3"], ["M4", "Canaux de vis M4"], ["M5", "Canaux de vis M5"], ["none", "Sans canal de vis"]].map(([k, l]) => el("option", { value: k, selected: brief.ports === false ? k === "none" : k === (brief.screw || "M3") }, l))))));
     }
+    /* a laser-cut sheet and a printed part : what the process asks of this material, and the thickness of the sheet */
+    clear(specBox); const card = specialCard(brief, brief.form || rec.form, () => { drawStock(); propose(); }); if (card) specBox.append(card);
     if (moulded !== wasMoulded) { wasMoulded = moulded; drawIfaces(); }
     stockWhy.textContent = brief.form && brief.form !== rec.form ? `Votre choix : ${STOCK_FORMS[brief.form].fr.toLowerCase()}. Le compagnon conseillait : ${STOCK_FORMS[rec.form].fr.toLowerCase()} — ${rec.why}` : rec.why;
   }
@@ -242,7 +249,7 @@ function render(main) {
   function drawProposal(res, built) {
     const r = routing(res.spec, built), bb = built.bbox, st = built.facts.stock;
     clear(chips); clear(out);
-    chips.append(...[el("span", { class: "chip" }, fmtMass(built.mass)), el("span", { class: "chip" }, `${fmt(bb[3] - bb[0], 1)} × ${fmt(bb[4] - bb[1], 1)} × ${fmt(bb[5] - bb[2], 1)} mm`),
+    chips.append(...[el("span", { class: "chip" }, fmtMass(built.mass)), el("span", { class: "chip" }, `${fmt(bb[3] - bb[0], 1)} × ${fmt(bb[4] - bb[1], 1)} × ${fmt(bb[5] - bb[2], bb[5] - bb[2] < 1 ? 3 : 1)} mm`),
       r.utilisation !== null ? el("span", { class: "chip" + (r.utilisation < 0.25 ? " bad" : " done"), "data-tip": "Part du brut qui reste dans la pièce (l'inverse du ratio « buy-to-fly »)" }, `${Math.round(r.utilisation * 100)} % du brut utilisé`) : null,
       el("span", { class: "chip" }, `${r.setups.length || 1} posage(s) · ${r.tools.length} outil(s)`)].filter(Boolean));     // append(null) would write the word « null »
     for (const l of built.log.filter((x) => x.level === "error")) out.append(el("p", { class: "form-error" }, l.msg));

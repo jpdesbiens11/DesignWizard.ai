@@ -19,6 +19,7 @@ import { reviewRows, reviewProgress, revisionRows } from "../core/review.js";
 import { mvpRows, trlReached } from "../core/mvp.js";
 import { teamRows } from "../core/team.js";
 import { plmRows } from "../core/plm.js";
+import { specialRows } from "../cad/special_processes.js";
 import { PROCESSES, materialOrDefault } from "../cad/materials.js";
 import { INTERFACE_TYPES } from "../cad/interfaces.js";
 import { LEVEL_LABEL } from "../analysis/cc_rules.js";
@@ -162,6 +163,10 @@ function render(main) {
     if (revs.length && store.assemblies.length) doc.append(el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, "Révisions et cas d'emploi"),
       el("p", { class: "muted" }, "Chaque pièce avec sa révision, les assemblages qui l'emploient, et la révision de la pièce avec laquelle chacun a été revu. Un assemblage revu avec une révision dépassée est à revalider : il prendra alors sa propre révision suivante. Les dessins portent toujours la révision de ce qu'ils dessinent."),
       table(["Pièce", "Nom", "Rév.", "État", "Employée dans"], revs)));
+    const spe = specialRows(store.parts);
+    if (spe.length) doc.append(el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, "Procédés spéciaux"),
+      el("p", { class: "muted" }, "Les pièces découpées au laser ou imprimées : le laser ou le procédé de leur matière, ce qu'il demande au dessin, et ce qui se contrôle — l'état du bord coupé, la suite après impression. Valeurs typiques de guides publiés : le fournisseur et la fiche de la matière font foi (Atelier → Procédés spéciaux)."),
+      table(["Pièce", "Nom", "Procédé", "Matière", "Laser · norme", "Ce que le procédé demande", "À contrôler · après"], spe)));
     const rel = plmRows(store.project);
     if (rel.length) doc.append(el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, "Révisions libérées"),
       el("p", { class: "muted" }, "Chaque libération fige une révision. Forme, ajustement et fonction conservés : la révision suivante du même numéro. Rompus : un nouveau numéro, avec celui dont il dérive. Un assemblage est libéré avec la révision de chacune de ses pièces. Tenu dans l'écran Révisions."),

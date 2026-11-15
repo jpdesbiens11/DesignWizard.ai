@@ -19,6 +19,12 @@ const TABLE = {
   "BRASS-360": { E: 97, nu: 0.34, Re: 310, Rm: 400, fatigue: 140, cte: 20.5, k: 115, cp: 380, rho: 8500, rhoE: 6.6e-8, alphaE: 0.0015 },
   "SS-304": { E: 193, nu: 0.29, Re: 215, Rm: 505, fatigue: 240, cte: 17.3, k: 16, cp: 500, rho: 8000, rhoE: 7.2e-7, alphaE: 0.00094 },
   "STEEL-1018": { E: 205, nu: 0.29, Re: 370, Rm: 440, fatigue: 200, cte: 11.7, k: 52, cp: 486, rho: 7870, rhoE: 1.59e-7, alphaE: 0.0045 },
+  "SS-316L": { E: 193, nu: 0.29, Re: 205, Rm: 515, fatigue: 240, cte: 16.0, k: 15, cp: 500, rho: 7980, rhoE: 7.4e-7, alphaE: 0.00094 },       // wrought, annealed ; as printed : Re about 450, then lower once stress relieved
+  "SS-17-4PH": { E: 197, nu: 0.27, Re: 1000, Rm: 1100, fatigue: 500, cte: 10.8, k: 18, cp: 460, rho: 7800, rhoE: 8.0e-7, alphaE: 0.0009 },   // condition H1025 ; H900 : Re about 1170
+  "ALSI10MG": { E: 70, nu: 0.33, Re: 230, Rm: 350, fatigue: 90, cte: 21.0, k: 130, cp: 900, rho: 2670, rhoE: 5.0e-8, alphaE: 0.0030 },       // printed, stress relieved ; elongation about 6 %
+  "TI-6AL-4V": { E: 114, nu: 0.34, Re: 830, Rm: 900, fatigue: 500, cte: 8.6, k: 6.7, cp: 526, rho: 4430, rhoE: 1.7e-6, alphaE: 0.0004 },      // annealed ; printed : fatigue only after hot isostatic pressing and machined surfaces
+  "IN718": { E: 200, nu: 0.29, Re: 1030, Rm: 1240, fatigue: 500, cte: 13.0, k: 11.4, cp: 435, rho: 8190, rhoE: 1.25e-6, alphaE: 0.0001 },     // solution treated and aged ; as printed : Re about 650
+  "IN625": { E: 207, nu: 0.28, Re: 415, Rm: 830, fatigue: 350, cte: 12.8, k: 9.8, cp: 410, rho: 8440, rhoE: 1.29e-6, alphaE: 0.0001 },       // annealed
   "PA66-GF30": { E: 9.0, nu: 0.35, Re: 130, Rm: 170, cte: 30, k: 0.35, cp: 1500, rho: 1360, Tmax: 120 },
   "PC": { E: 2.35, nu: 0.37, Re: 62, Rm: 65, cte: 68, k: 0.20, cp: 1200, rho: 1200, Tmax: 115 },
   "PC-ABS": { E: 2.5, nu: 0.36, Re: 55, Rm: 55, cte: 75, k: 0.20, cp: 1300, rho: 1150, Tmax: 90 },
@@ -28,6 +34,10 @@ const TABLE = {
   "POM": { E: 2.8, nu: 0.35, Re: 65, Rm: 67, cte: 110, k: 0.31, cp: 1470, rho: 1410, Tmax: 90 },
   "PEEK": { E: 3.7, nu: 0.38, Re: 95, Rm: 100, cte: 47, k: 0.25, cp: 1340, rho: 1300, Tmax: 250 },
   "PEI-9085": { E: 2.2, nu: 0.36, Re: 47, Rm: 70, cte: 65, k: 0.22, cp: 1100, rho: 1340, Tmax: 150 },     // FDM, weakest (Z) direction for Re
+  "PEKK": { E: 3.0, nu: 0.38, Re: 60, Rm: 90, cte: 40, k: 0.25, cp: 1300, rho: 1280, Tmax: 150 },          // FDM, weakest (Z) direction for Re
+  "PA11": { E: 1.6, nu: 0.40, Re: 46, Rm: 48, cte: 110, k: 0.28, cp: 1700, rho: 1040, Tmax: 80 },
+  "RESIN-SLA": { E: 2.8, nu: 0.40, Re: 50, Rm: 65, cte: 90, k: 0.20, cp: 1400, rho: 1180, Tmax: 50 },      // standard rigid resin, post-cured ; creeps under sustained load
+  "PMMA": { E: 3.2, nu: 0.37, Re: 70, Rm: 72, cte: 70, k: 0.19, cp: 1470, rho: 1190, Tmax: 80 },
   "PA12": { E: 1.8, nu: 0.40, Re: 48, Rm: 48, cte: 100, k: 0.30, cp: 1650, rho: 1010, Tmax: 80 },
   "PVC-U": { E: 3.0, nu: 0.38, Re: 50, Rm: 52, cte: 70, k: 0.16, cp: 1000, rho: 1400, Tmax: 60 },
   "SILICONE": { E: 0.005, nu: 0.48, Re: null, Rm: 8, cte: 250, k: 0.20, cp: 1250, rho: 1150, Tmax: 200 },

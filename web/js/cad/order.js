@@ -8,9 +8,11 @@ import { PROCESSES, materialOrDefault } from "./materials.js";
 
 /* process -> [fastest, usual] working days for a simple part in 1 to 10 pieces, and what kind of route it is */
 export const LEAD = {
-  laser_cut: { days: [1, 3], proto: true, shop: "découpe laser / jet d'eau" },
+  laser_cut: { days: [1, 3], proto: true, shop: "découpe laser de précision" },
   fdm: { days: [1, 2], proto: true, shop: "impression 3D FDM" },
   mjf: { days: [2, 4], proto: true, shop: "impression 3D MJF / SLS" },
+  sla: { days: [1, 3], proto: true, shop: "impression 3D résine (SLA)" },
+  lpbf: { days: [7, 15], proto: true, shop: "impression 3D métal, traitement et reprise d'usinage compris" },
   cnc_milling: { days: [3, 6], proto: true, shop: "usinage CNC" },
   cnc_turning: { days: [3, 5], proto: true, shop: "tournage CNC" },
   sheet_metal: { days: [3, 6], proto: true, shop: "tôlerie fine" },
