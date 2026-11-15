@@ -24,12 +24,47 @@ toutes tant que la pièce ne change pas :
    **cotes de base** (encadrées) : le groupe est tolérancé en position par un seul cadre, `⌖ Ø0,2 Ⓜ | A | B | C`,
    comme le permet ASME Y14.5 ; un motif circulaire donne son diamètre de perçage ;
 3. les trous, groupés par face, diamètre et réalisation (`4× Ø 4,5 — débouchant`) ;
-4. les autres paramètres de conception, puis ce que chaque interface définit (largeur d'une plage, diamètre d'un
+4. les **cotes de détail** : chaque paramètre de conception qu'une opération utilise tel quel, coté **là où cette
+   opération le montre** (voir ci-dessous) ;
+5. les autres paramètres de conception, puis ce que chaque interface définit (largeur d'une plage, diamètre d'un
    ajustement, épaisseur d'une rainure…).
 
 Une cote est dessinée **sur une vue**, hors de la pièce et dans une rangée à elle, tant qu'il reste de la place sur le
 côté de la vue ; sinon elle va **au tableau**. Dans les deux cas elle porte une **bulle ronde** avec son numéro, juste
 après son texte. Rien n'est oublié : le volet de gauche liste les mêmes cotes, avec le même numéro.
+
+## Les cotes de détail, une à une
+
+`locateParams` lit les opérations de la pièce et situe chaque paramètre qu'une opération emploie **tel quel** :
+
+| Dans la pièce | Sur le dessin |
+|---|---|
+| la largeur ou la hauteur d'une poche ou d'un relief rectangulaire | une cote sur la vue qui fait face à cette opération, entre ses deux bords |
+| sa position écrite « `centre - taille / 2` » | la cote du **centre**, depuis le bord de référence |
+| sa position donnée directement | la cote du bord, depuis le bord de référence |
+| la paroi d'une coque ouverte vers le haut | l'épaisseur, sur la vue de dessus |
+| le rayon des coins d'un contour | `R 6`, par une ligne de repère depuis le coin |
+| la taille d'un bloc ajouté | sa longueur et sa largeur sur la vue de dessus, sa hauteur sur la vue de face |
+
+Un paramètre qui n'est atteint qu'à travers une formule (« `H - wall` ») reste au tableau : aucune arête ne le mesure à
+elle seule. Les cotes de détail passent **avant** celles des motifs de vis pour les rangées autour des vues — un motif
+peut être tabulé comme groupe, ASME Y14.5 le permet. Deux rangées de plus existent pour elles : sous la vue de dessus,
+et à droite de la vue de face.
+
+## La coupe A-A
+
+Une pièce qui a quelque chose à l'intérieur — coque, poche, trou, bossage — reçoit une **coupe A-A** : le plan passe en
+travers de la longueur, par le milieu ; ce qui est entre l'œil et le plan est retiré ; la **face coupée est hachurée**.
+La coupe prend la rangée de la vue de dessus, à sa droite, à l'échelle de la feuille quand elle tient (sinon à une
+échelle plus petite, écrite sous son titre). Le **plan de coupe** est tracé sur la vue de dessus, avec ses flèches dans
+le sens du regard et la lettre A.
+
+Dans l'écran Dessins, « Coupe A-A » règle le plan : automatique, en travers de la longueur ou de la largeur avec sa
+position en millimètres, ou aucune. Le choix est gardé dans la pièce (`section`) et voyage avec elle.
+
+Côté noyau : `web/js/cad/section_view.js` (`sectionView`, `sectionOf`) coupe le solide et projette ce qui reste ; les
+hachures sont dans `web/js/draw/hatch.js`, qui remplit entre les contours sans qu'on ait à lui dire lesquels sont des
+trous.
 
 ## Classer une cote
 
@@ -73,11 +108,13 @@ vérifie lui-même.
 
 ## Limites
 
-- Les cotes sur vue sont les cotes hors tout et celles des motifs de vis ; les autres sont tabulées. Pas de cote de
-  rayon, d'angle ou de chaîne placée automatiquement sur la géométrie.
+- Sont cotés sur vue : les cotes hors tout, les cotes de détail décrites plus haut et, s'il reste de la place, celles des
+  motifs de vis ; le reste est tabulé. Pas de cote d'angle ni de chaîne de cotes ; les trous hors motif, les bossages et
+  les profils quelconques gardent leurs cotes au tableau.
 - Les tolérances dimensionnelles viennent des tolérances générales (ISO 2768-mK) et des ajustements des interfaces ;
   pas de tolérance saisie cote par cote.
-- Pas de vues en coupe ni de détails ; une seule feuille par dessin. Quand les tableaux débordent, la feuille le dit et
+- Une seule coupe, plane, parallèle à une face ; pas de coupe brisée, de demi-coupe ni de vue de détail. Une pièce à
+  plusieurs corps est dessinée sans coupe si le noyau ne parvient pas à la couper. Une seule feuille par dessin. Quand les tableaux débordent, la feuille le dit et
   renvoie à la liste des cotes.
 - Le dessin natif envoyé à Onshape reste au format A3 ; seul le PDF est en tabloïd.
 - Un sous-assemblage dans un assemblage n'est pas encore géré : la structure a un seul niveau.

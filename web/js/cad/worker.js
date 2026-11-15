@@ -2,6 +2,7 @@
    Messages: {id, cmd, ...args} -> {id, ok, result} | {id, ok:false, error}. Progress: {stage: "text"}.
    Shapes stay in the worker, cached per part id; the page receives meshes and numbers only. */
 
+import { sectionView } from "./section_view.js";
 import { loadKernel } from "./occ.js";
 import { buildPart } from "./build.js";
 import { matIsIdentity, bboxTransform } from "./vec.js";
@@ -69,7 +70,8 @@ const COMMANDS = {
   hlr({ key, views, hidden }) {
     const shape = shapeOf(key);
     const out = {};
-    for (const v of views) out[v.name] = K.hlr(shape, v.dir, v.xdir, hidden !== false && v.hidden !== false);
+    for (const v of views) { if (!v.axis) { out[v.name] = K.hlr(shape, v.dir, v.xdir, hidden !== false && v.hidden !== false); continue; }
+      try { out[v.name] = sectionView(K, shape, v); } catch (e) { out[v.name] = null; } }                  // a section that cannot be cut is left out : the sheet is drawn without it
     K.flush();
     return { result: out };
   },

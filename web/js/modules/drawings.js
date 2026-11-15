@@ -9,6 +9,7 @@ import { store } from "../core/store.js";
 import { kernel } from "../cad/client.js";
 import { SvgSheet } from "../draw/svg.js";
 import { PdfSheet } from "../draw/pdf.js";
+import { sectionOf } from "../cad/section_view.js";
 import { composeDrawing, viewRequest, PAPER, drawingSemantics } from "../draw/part_drawing.js";
 import { composeAssemblyDrawing } from "../draw/asm_drawing.js";
 import { DIM_CLASSES, setDimClass, dimText } from "../draw/dim_model.js";
@@ -33,7 +34,7 @@ export async function makeDrawing(partId, extra = {}) {
   if (!spec) throw new Error(`Pièce « ${partId} » introuvable.`);
   const built = await kernel.build(spec);
   if (!built.bodies.length) throw new Error(`${partId} n'a pas de volume à dessiner.`);
-  const views = await kernel.hlr(partId, viewRequest(), true);
+  const views = await kernel.hlr(partId, viewRequest(sectionOf(spec, built)), true);
   return { ...render2(composeDrawing, { spec, built, views, project: store.project, opts: sheetOpts(`part:${partId}`, spec.revision, extra) }, `${spec.id} ${spec.name || ""}`), built, spec };
 }
 /** Build the drawing of an assembly : placed parts projected together, item balloons, parts list. Returns {svg, pdfBytes(), info, spec}. */
@@ -104,11 +105,19 @@ function render(main, args) {
     right.append(el("div", { class: "side-head" }, el("h2", null, spec.name || id), btn("PDF", pdf, { primary: true, small: true, icon: "pdf", tip: "Télécharger le dessin en PDF vectoriel (tabloïd, 11 × 17 po)" })));
     const body = el("div", { class: "side-scroll" });
     right.append(body);
+    /* the section A-A of a part : where the plane passes. « Automatique » : across the length, through the middle, when the part has something inside. */
+    const sectionRow = () => { const own = spec.section || null, bb = st.doc && st.doc.built ? st.doc.built.bbox : null, mode = !own ? "auto" : own.axis === "none" ? "none" : own.axis === "y" ? "y" : "x", i = mode === "y" ? 1 : 0;
+      const setSec = (v, label) => store.updatePart(id, (p) => { if (v) p.section = v; else delete p.section; }, `${id} : coupe A-A — ${label}`);
+      const lo = bb ? bb[i] : 0, hi = bb ? bb[i + 3] : 100, at = own && Number.isFinite(own.at) ? own.at : (lo + hi) / 2;
+      return el("div", { class: "form-row" }, field("Coupe A-A", el("select", { "aria-label": "Coupe A-A", onChange: (e) => { const m = e.target.value; setSec(m === "auto" ? null : m === "none" ? { axis: "none" } : { axis: m }, e.target.selectedOptions[0].textContent); } },
+          [["auto", "Automatique"], ["x", "En travers de la longueur (plan YZ)"], ["y", "En travers de la largeur (plan XZ)"], ["none", "Aucune"]].map(([v, l]) => el("option", { value: v, selected: v === mode }, l))), "Le plan est montré sur la vue de dessus ; la face coupée est hachurée"),
+        mode === "x" || mode === "y" ? field(`Position du plan (${mode.toUpperCase()}, mm)`, el("input", { type: "number", "aria-label": "Position du plan de coupe", value: Math.round(at * 100) / 100, min: lo, max: hi, step: 1, onChange: (e) => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) setSec({ axis: mode, at: Math.max(lo + 0.1, Math.min(hi - 0.1, v)) }, `plan ${mode.toUpperCase()} = ${v} mm`); } }), `Entre ${Math.round(lo)} et ${Math.round(hi)} mm`) : null); };
     const text = (key, label, hint) => field(label, el("input", { type: "text", value: d()[key] || "", onChange: (e) => setD(key, e.target.value, label) }), hint);
     const setRev = (v) => (isAsm ? store.updateAssembly(id, (x) => { x.revision = v || undefined; }, `${id} : révision`) : store.updatePart(id, (x) => { x.revision = v || undefined; }, `${id} : révision`));
     body.append(el("div", { class: "side-section" }, el("h3", null, "Cartouche"), el("div", { class: "form-row" }, text("drawnBy", "Dessiné"), text("checkedBy", "Vérifié")), el("div", { class: "form-row" }, text("approvedBy", "Approuvé"), text("status", "Statut", "Préliminaire, Pour revue, Émis…")),
       el("div", { class: "form-row" }, field("Projection", el("select", { onChange: (e) => setD("projection", e.target.value, "projection") }, [["third", "Troisième dièdre (Amérique du Nord)"], ["first", "Premier dièdre (ISO / Europe)"]].map(([v, l]) => el("option", { value: v, selected: (d().projection || "third") === v }, l)))),
         isAsm ? null : el("label", { class: "check" }, el("input", { type: "checkbox", checked: d().hidden !== false, onChange: (e) => setD("hidden", e.target.checked, "arêtes cachées") }), "Arêtes cachées")),
+      isAsm ? null : sectionRow(),
       field(isAsm ? "Révision de l'assemblage" : "Révision de la pièce", el("input", { type: "text", value: spec.revision || "", onChange: (e) => setRev(e.target.value.trim()) }), "Le dessin porte toujours la révision de ce qu'il dessine ; la revue la fait avancer (A → B) quand un artéfact validé a changé.")));
     if (!isAsm) { const used = whereUsed(store.project, id);
       body.append(el("div", { class: "side-section" }, el("h3", null, "Employée dans"), used.length ? used.map((u) => el("p", { style: { fontSize: ".84rem", margin: "0 0 .25rem" } }, el("a", { href: `#/drawings/asm/${encodeURIComponent(u.id)}` }, el("code", null, u.id)), ` rév. ${u.rev}${u.qty > 1 ? ` (× ${u.qty})` : ""} — `,

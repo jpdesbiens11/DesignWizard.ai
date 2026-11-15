@@ -108,8 +108,8 @@ tools/                     génération des icônes Carnet, de la doc du langage
 
 ## Limites de cette itération
 
-- Dessins : cotes d'enveloppe, tableau des trous, GD&T des interfaces ; pas encore de cotes de détail placées une à une,
-  ni de vues en coupe.
+- Dessins : cotes hors tout, cotes de détail des opérations simples, motifs de vis, tableau des trous, GD&T des
+  interfaces, une coupe A-A hachurée ([DESSINS.md](DESSINS.md)) ; pas de chaîne de cotes, de coupe brisée ni de vue de détail.
 - Pas de famille tôlerie pliée (déplié, rayon de pliage).
 - Mates : par interfaces uniquement ; pas de contraintes libres entre faces quelconques.
 - Une pièce importée en STEP n'a ni paramètres ni dessin ; les noms de ses solides sont lus au mieux.
@@ -120,7 +120,7 @@ tools/                     génération des icônes Carnet, de la doc du langage
 1. Entrevue dans l'application avec une clé d'API Claude, en plus du copier / coller.
 2. « Envelopper » : générer le boîtier autour des pièces choisies, colonnettes et découpes alignées sur leurs interfaces.
 3. Mates et variables natifs Onshape, reliés aux paramètres de la plateforme.
-4. Chaînes de cotes le long des interfaces ; vues en coupe et cotes de détail dans les dessins.
+4. Chaînes de cotes le long des interfaces ; coupes brisées et vues de détail dans les dessins.
 5. Bibliothèque de pièces standard insérées en 3D depuis la BOM.
 6. Revue à plusieurs : messages par artéfact et messages épinglés sur le 3D existent ([EQUIPE.md](EQUIPE.md)) ; restent
    les annotations sur le rapport.

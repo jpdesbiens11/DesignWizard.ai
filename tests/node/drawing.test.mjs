@@ -6,9 +6,11 @@ import { buildPart } from "../../web/js/cad/build.js";
 import { DEMO_DRIVE } from "../../web/js/demo/demo_drive.js";
 import { SvgSheet } from "../../web/js/draw/svg.js";
 import { PdfSheet } from "../../web/js/draw/pdf.js";
-import { composeDrawing, viewRequest, PAPER } from "../../web/js/draw/part_drawing.js";
+import { composeDrawing, viewRequest, bounds, PAPER } from "../../web/js/draw/part_drawing.js";
+import { hatch } from "../../web/js/draw/hatch.js";
+import { sectionOf, sectionView } from "../../web/js/cad/section_view.js";
 import { composeAssemblyDrawing, placeBalloons } from "../../web/js/draw/asm_drawing.js";
-import { dimensionList, setDimClass, dimText, classNotes, DIM_CLASSES } from "../../web/js/draw/dim_model.js";
+import { dimensionList, locateParams, setDimClass, dimText, classNotes, DIM_CLASSES } from "../../web/js/draw/dim_model.js";
 import { solve, bom } from "../../web/js/core/assembly_logic.js";
 import { matPoint } from "../../web/js/cad/vec.js";
 import { toDwiz, fromDwiz } from "../../web/js/core/dwiz.js";
@@ -50,6 +52,49 @@ test("a part drawing is a tabloid sheet : notes bottom left, isometric view top 
   for (const d of info.dims.filter((x) => info.onView.includes(x.key))) assert.match(text, new RegExp(`>${d.n}<`), `balloon ${d.n} is on the sheet`);
   assert.match(info.notes[0], /ASME Y14\.5/); assert.ok(info.notes.some((n) => /Triangle « CSC »/.test(n)));
   const pdf = new PdfSheet({ width: PAPER.TABLOID[0], height: PAPER.TABLOID[1], title: spec.id }); composeDrawing(pdf, { spec, built, views, project: DEMO_DRIVE, opts: {} }); assert.ok(pdf.toBytes().length > 20000);
+  K.flush();
+});
+
+test("a design parameter is dimensioned where its operation shows it : the wall, a window, its centre, a corner radius — a formula stays in the table", async () => {
+  const K = await kernel(), spec = DEMO_DRIVE.parts.find((p) => p.id === "DRV-BASE"), built = buildPart(K, spec), where = locateParams(spec, built), dims = dimensionList(spec, built), by = (k) => dims.find((d) => d.key === `param:${k}`);
+  assert.deepEqual([...where.keys()].sort(), ["L", "W", "pwrX", "rc", "wall", "winL", "winW"], "L and W are found too : they are the overall sizes, dimensioned as such");
+  assert.deepEqual(where.get("winL"), { on: "top", dir: "h", p1: [25, 80], p2: [69, 80] }, "the window of the floor, on the view that faces it"); assert.deepEqual(where.get("winW"), { on: "top", dir: "v", p1: [69, 30], p2: [69, 80] });
+  assert.deepEqual(where.get("pwrX"), { on: "top", dir: "h", p1: [0, 55], p2: [47, 55] }, "« pwrX - winL/2 » : the centre of the window, from the datum edge"); assert.deepEqual(where.get("wall"), { on: "top", dir: "h", p1: [0, 55], p2: [2.5, 55] }, "the wall of the shell, seen from its open side");
+  assert.deepEqual([where.get("rc").radius, where.get("rc").on, where.get("rc").leader.map((v) => Math.round(v * 100) / 100)], [true, "top", [158.24, 1.76]], "a radius : a leader from the middle of its corner");
+  assert.deepEqual(["wall", "rc", "pwrX", "winL", "winW", "so", "ctlX"].map((k) => by(k).kind), ["detail", "detail", "detail", "detail", "detail", "param", "param"], "what is only reached through a formula stays in the table");
+  assert.deepEqual([by("rc").text, by("so").table, by("winL").table, by("winL").text], ["R 6", "def", undefined, "44"]); assert.deepEqual(dims.map((d) => d.n), dims.map((d, i) => i + 1));
+  const moved = { ...spec, features: spec.features.map((f) => (f.id === "window" ? { ...f, face: "+Y" } : f)) }; assert.equal(locateParams(moved, built).get("winL").on, "front", "a pocket on a side face is dimensioned on the view of that face");
+  assert.equal(locateParams({ ...spec, features: [] }, built).size, 0); K.flush();
+});
+
+test("hatching fills what is cut and leaves the holes white, whatever the order of the outlines", () => {
+  const sq = (x, y, s) => [[x, y], [x + s, y], [x + s, y + s], [x, y + s], [x, y]], len = (h) => h.reduce((t, [a, b]) => t + Math.hypot(b[0] - a[0], b[1] - a[1]), 0);
+  const ring = hatch([sq(0, 0, 10), sq(3, 3, 4)], 1, 0); assert.equal(ring.length, 6 + 2 * 4, "ten lines ; the four that meet the hole are cut in two"); assert.ok(Math.abs(len(ring) - 84) < 1e-9, "length × spacing = the area of the ring");
+  assert.ok(Math.abs(len(hatch([sq(0, 0, 10), sq(3, 3, 4)], 0.5, 45)) * 0.5 - 84) < 1.5, "at 45° too");
+  const pieces = sq(0, 0, 10).slice(0, 4).map((p, i, l) => [l[(i + 3) % 4], l[(i + 2) % 4]].reverse()); assert.ok(Math.abs(len(hatch(pieces, 1, 30)) - 100) < 2, "the outline may come as loose segments, in any order");
+  assert.deepEqual(hatch([], 1), []); assert.deepEqual(hatch([sq(0, 0, 10)], 0), []);
+});
+
+test("a section view : the part cut across, what stays behind the plane, the cut outline closed and hatched — on the sheet, beside the top view", async () => {
+  const K = await kernel(), spec = DEMO_DRIVE.parts.find((p) => p.id === "DRV-BASE"), built = buildPart(K, spec), shape = built.bodies[0].shape, ask = sectionOf(spec, built), r = (x) => Math.round(x * 100) / 100;
+  assert.deepEqual([ask.axis, ask.dir, ask.xdir], ["x", [-1, 0, 0], [0, 1, 0]], "across the length, seen like the right view"); assert.ok(Math.abs(ask.at - 80) < 0.2, "through the middle");
+  const v = sectionView(K, shape, ask), ends = new Map(); for (const pl of v.cut) for (const q of [pl[0], pl.at(-1)]) { const k = q.map((x) => x.toFixed(3)).join(); ends.set(k, (ends.get(k) || 0) + 1); }
+  assert.ok(v.cut.length >= 8 && [...ends.values()].every((n) => n % 2 === 0), "every end of the cut outline meets another : closed loops"); assert.equal(v.hidden.length, 0);
+  const b = bounds(v); assert.deepEqual([b.x0, b.x1, b.y0, b.y1].map(r), [0, 110, 0, 42], "the width and the height of the part");
+  const area = hatch(v.cut, 0.25, 45).reduce((t, [p, q]) => t + Math.hypot(q[0] - p[0], q[1] - p[1]), 0) * 0.25; assert.ok(area > 450 && area < 560, `the cut is a thin U : two walls and a floor of 2,5 mm (${area.toFixed(0)} mm²)`);
+  assert.throws(() => sectionView(K, shape, { ...ask, at: 999 }), /ne traverse pas/);
+  /* what a part asks for : nothing when it has nothing inside, nothing when told so, another plane when given */
+  const plate = { dw: "part/1", id: "P", name: "Plaque", params: {}, features: [{ op: "box", id: "b", size: [40, 20, 5] }], interfaces: [] }; assert.equal(sectionOf(plate, buildPart(K, plate)), null);
+  assert.equal(sectionOf({ ...spec, section: { axis: "none" } }, built), null); assert.deepEqual([sectionOf({ ...spec, section: { axis: "y", at: 30 } }, built).at, sectionOf({ ...spec, section: { axis: "y", at: 30 } }, built).dir], [30, [0, 1, 0]]); assert.ok(Math.abs(sectionOf({ ...spec, section: { axis: "x", at: 999 } }, built).at - 80) < 0.2, "a plane outside the part falls back to the middle");
+  /* on the sheet */
+  const views = { ...hlr(K, shape), section: v }, svg = new SvgSheet({ width: PAPER.TABLOID[0], height: PAPER.TABLOID[1], title: spec.id }), info = composeDrawing(svg, { spec, built, views, project: DEMO_DRIVE, opts: { date: "2026-01-01" } }), S = info.section, L = info.layout, text = svg.toString(0);
+  assert.ok(S && S.scale === info.scale && S.axis === "x", "at the scale of the sheet"); assert.ok(clear(S, L.notes) && clear(S, L.iso) && S.x >= L.area.x && S.x + S.w <= L.area.x + L.area.w && S.y >= L.frame.y, "inside the room of the views, clear of the notes and of the isometric view");
+  assert.match(text, /COUPE A-A/); assert.match(text, />A</, "the letters of the cutting plane, on the top view");
+  for (const k of ["wall", "rc", "pwrX", "winL", "winW"]) assert.ok(info.onView.includes(`param:${k}`), `${k} is on a view`);
+  assert.ok(!text.includes("Fenêtre thermique (X)") && text.includes("Hauteur des colonnettes"), "a dimension drawn on a view is not repeated in the table ; the others are there");
+  for (const d of info.dims.filter((x) => info.onView.includes(x.key))) assert.match(text, new RegExp(`>${d.n}<`), `balloon ${d.n} is on the sheet`);
+  assert.equal(composeDrawing(new SvgSheet({ width: PAPER.TABLOID[0], height: PAPER.TABLOID[1], title: "x" }), { spec, built, views: hlr(K, shape), project: DEMO_DRIVE, opts: {} }).section, null, "no section asked, none drawn");
+  assert.deepEqual(viewRequest(ask).map((q) => q.name), ["front", "top", "right", "iso", "section"]); assert.equal(viewRequest().length, 4);
   K.flush();
 });
 
