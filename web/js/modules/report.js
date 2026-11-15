@@ -20,7 +20,7 @@ import { INTERFACE_TYPES } from "../cad/interfaces.js";
 import { LEVEL_LABEL } from "../analysis/cc_rules.js";
 import { processPlan } from "../cad/process_plan.js";
 import { assemblyPlan } from "../core/asm_plan.js";
-import { mateHardware } from "../core/assembly_logic.js";
+import { mateHardware, joints, freeInterfaces } from "../core/assembly_logic.js";
 import { planSummary } from "../core/plan_doc.js";
 
 const sevText = { error: "À corriger", warn: "À vérifier", info: "Conseil" };
@@ -94,10 +94,12 @@ function render(main) {
       const pic = pics.asms[a.asm.id];
       if (pic) sec.append(el("div", { class: "two-col" }, el("figure", { style: { margin: 0 } }, img(pic.assembled, `${a.asm.id} assemblé`), el("figcaption", { class: "muted", style: { fontSize: ".82rem" } }, "Vue assemblée")), el("figure", { style: { margin: 0 } }, img(pic.exploded, `${a.asm.id} éclaté`), el("figcaption", { class: "muted", style: { fontSize: ".82rem" } }, "Vue éclatée le long des interfaces"))));
       sec.append(el("h3", { style: { marginTop: ".8rem" } }, "Nomenclature (BOM)"), table(["#", "Référence", "Désignation", "Qté", "Matériau", "Masse"], a.ctx.bom.map((r) => [String(r.item), r.id, r.name, String(r.qty), r.material || "—", r.mass === null ? "—" : fmtMass(r.mass)])));
-      sec.append(el("h3", { style: { marginTop: ".8rem" } }, "Mates et interfaces"), table(["Mate", "Interface", "Côté A", "Côté B", "Lien"], (a.asm.mates || []).map((m) => {
-        const ia = a.asm.instances.find((i) => i.id === m.a.inst), ib = a.asm.instances.find((i) => i.id === m.b.inst), fa = ia && (a.ctx.built[ia.part].interfaces || []).find((i) => i.id === m.a.iface);
-        return [m.id, fa ? `${fa.name} (${INTERFACE_TYPES[fa.type].fr})` : "?", ia ? ia.part : "?", ib ? ib.part : "?", m.linked === false ? "non lié" : "paramètres liés"];
-      })));
+      /* the joint register : each mated pair with its number, its kind and what holds it ; then the interfaces that look outside the product */
+      const reg = joints(a.ctx.asm, a.ctx.built, Object.fromEntries(p.parts.map((x) => [x.id, x]))), linked = new Map((a.asm.mates || []).map((m) => [m.id, m.linked !== false]));
+      sec.append(el("h3", { style: { marginTop: ".8rem" } }, "Registre des joints"), table(["N°", "Joint", "Pièce A · interface", "Pièce B · interface", "Ce qui le tient", "Procédé", "Lien"],
+        reg.map((r) => [r.id, r.kind, r.a, r.b, r.hardware.map((h) => `${String(h.qty).replace(".", ",")}${h.unit ? ` ${h.unit}` : " ×"} ${h.name}`).join(" + ") || "—", r.process || "—", linked.get(r.id) ? "paramètres liés" : "non lié"])));
+      const outer = freeInterfaces(a.ctx.asm, a.ctx.built).filter((f) => f.external);
+      if (outer.length) sec.append(el("h3", { style: { marginTop: ".8rem" } }, "Interfaces externes — le contrat avec l'extérieur du produit"), table(["Pièce", "Interface", "Type", "Vers"], outer.map((f) => [f.part, f.iface.name || f.iface.id, INTERFACE_TYPES[f.iface.type].fr, f.iface.partner || "—"])));
       const gamme = assemblyPlan(a.asm, p, { hardwareOf: (m) => mateHardware(a.ctx.asm, a.ctx.built, m), mass: a.ctx.mass.mass });
       sec.append(el("h3", { style: { marginTop: ".8rem" } }, "Gamme d'assemblage"), el("p", { class: "muted", style: { fontSize: ".84rem" } }, planSummary(gamme)),
         table(["N°", "Étape", "Opérations", "Outillage", "Note de discussion"], gamme.phases.map((ph) => [String(ph.n), ph.title, ph.ops.map((o) => o.text).join(" ; ") || ph.checks.join(" ; "), ph.tools.join(" ; ") || "—", ph.note || "—"])));
