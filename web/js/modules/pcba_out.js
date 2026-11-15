@@ -2,7 +2,7 @@
    of a classic ECAD tool looks for : schematic, stack-up, rules, net classes, bill of materials. The same data as the
    natural flow, seen the classic way. */
 
-import { el, icon, btn, badge, field, table, toast, download, fmt, modal, svg } from "../core/dom.js";
+import { el, icon, btn, badge, field, table, toast, download, fmt, modal, svg, confirmBox } from "../core/dom.js";
 import { store } from "../core/store.js";
 import { session } from "../core/access.js";
 import { CLASSES, FAB, boardBom, resolveBoard } from "../pcba/model.js";
@@ -26,6 +26,7 @@ import { openAiLoopFor } from "./ai_loop.js";
 import { boardAssemblyPlan } from "../pcba/assembly_plan.js";
 import { followMoves, pruneCopper } from "../pcba/move.js";
 import { functionalStructure, structureCsv, structureDiagram, treeDiagram } from "../pcba/structure.js";
+import { toProjectStarter, importDiamond } from "../core/dynamite.js";
 import { drawio } from "../core/drawio.js";
 import { draftsOf } from "../core/ai_draft.js";
 import { autoroute } from "../pcba/route.js";
@@ -36,6 +37,20 @@ const pane = (view, title, sub, ...kids) => { const p = el("div", { class: "pcba
 const finding = (f, onClick) => el("div", { class: "finding", onClick, style: { cursor: onClick ? "pointer" : null } }, el("span", { class: `sev ${f.severity}` }), el("div", null, el("b", null, `${f.rule} · ${f.title}`), el("p", { class: "small" }, f.message), fixHints(f) ? el("p", { class: "muted small" }, `→ ${fixHints(f)}`) : null));
 
 /** What an AI needs to know to edit a board. */
+/** The functional tree of a DynamiteAgile file into this board : a preview in words, then one undoable step. */
+function pickStarter(board) {
+  const input = el("input", { type: "file", accept: ".json" });
+  input.addEventListener("change", async () => {
+    try {
+      const file = JSON.parse(await input.files[0].text()), dry = importDiamond(JSON.parse(JSON.stringify(board)), file, true);
+      if (dry.problems.length) { toast(`Fichier refusé — ${dry.problems.slice(0, 3).join(" ; ")}`, "error", 10000); return; }
+      if (!dry.added) { toast(`Rien de nouveau : les ${dry.same} fonction(s) du fichier sont déjà dans la carte.`, "info"); return; }
+      if (!(await confirmBox("Importer de DynamiteAgile", `${dry.added} fonction(s) nouvelle(s) arriveront en « Brouillon IA », ${dry.same} sont déjà là. Rien n'est retiré. Une étape, annulable.`, "Importer"))) return;
+      store.updateBoard(board.id, (x) => { importDiamond(x, file); }, `Carte ${board.id} : arbre fonctionnel importé de DynamiteAgile`); toast(`${dry.added} fonction(s) importée(s), à relire dans l'arbre fonctionnel.`, "success");
+    } catch (e) { toast(`Fichier illisible : ${e.message}`, "error", 8000); }
+  });
+  input.click();
+}
 export const boardAiHelp = () => [`Blocs disponibles (block <repère> <gabarit>, puis params) : ${Object.keys(BLOCKS).join(", ")}. Changer les « params » d'un bloc suffit : ses composants et ses nets seront reconstruits.`,
   "Un composant : part <repère> <composant de la bibliothèque> value=… at=[x, y] rot=0|90|180|270. Pour déplacer un composant ou un bloc, change seulement « at » (et « rot ») : ne touche pas aux lignes « track » et « via », l'outil fait suivre les pistes et refait les liaisons. Un net : net <NOM> class=signal|power|ground|hv pins=[U1.3, C2.1].", "Noms de nets en majuscules : rails +5V, +3V3 ; masses GND ; signaux FONCTION_SIGNAL."];
 /** Completes an answer : blocks whose parameters changed are built again so parts and nets follow ; says what the checks find. */
@@ -139,7 +154,10 @@ function revue(ctx, { left, view, right }) {
     btn("draw.io", () => download(`${board.id}-fonctions.drawio`, drawio([treeDiagram(ctx.rows, `${board.id} — ${board.name || ""}`, drafts), structureDiagram(structure())]), "application/xml"), { small: true, primary: true, icon: "download", tip: "Deux pages modifiables dans diagrams.net : l'arbre des fonctions et la structure fonctionnelle" }),
     btn("Flux (.csv)", () => download(`${board.id}-flux.csv`, structureCsv(structure()), "text/csv"), { small: true, icon: "download", tip: "Les flux d'énergie et d'information, bloc à bloc" }),
     btn("Tableur (.csv)", () => download(`${board.id}-fonctions.csv`, functionCsv(ctx.rows), "text/csv"), { small: true, icon: "download" }), btn("Texte", () => download(`${board.id}-fonctions.txt`, functionOutline(ctx.rows), "text/plain"), { small: true, icon: "download" }),
-    btn("JSON", () => download(`${board.id}-fonctions.json`, JSON.stringify(ctx.rows, null, 1), "application/json"), { small: true, icon: "download" }))));
+    btn("JSON", () => download(`${board.id}-fonctions.json`, JSON.stringify(ctx.rows, null, 1), "application/json"), { small: true, icon: "download" }),
+    btn("DynamiteAgile (.json)", () => { const { file, notes } = toProjectStarter(store.project), d = file.diamond; download(`${file.project.key}-project-starter.json`, JSON.stringify(file, null, 1), "application/json");
+      toast(`Fichier Project Starter écrit : ${d.functions.length} fonctions, ${d.ports.length} entrées et sorties, ${d.flows.length} flux, ${d.parts.length} pièces${notes.length ? ` — ${notes.join(" ; ")}` : ""}. Dans DynamiteAgile : ⚙ Admin → Spaces → Commencer.`, "success", 10000); }, { small: true, icon: "export", tip: "L'arbre fonctionnel, la structure fonctionnelle et les pièces du projet au format « dynamite-project-starter » : DynamiteAgile le lit dans Diamond, en Brouillon IA" }),
+    btn("Importer de DynamiteAgile…", () => pickStarter(board), { small: true, icon: "upload", tip: "Lit l'arbre fonctionnel d'un fichier Project Starter (ou d'un Space exporté) : les fonctions nouvelles arrivent en Brouillon IA, rien n'est retiré" }))));
   l.append(section("Artéfact de la carte", el("div", { class: "form-actions", style: { justifyContent: "flex-start", flexWrap: "wrap" } }, btn("Carte (.dwiz)", () => download(dwizFileName(board), toDwiz(board), "text/plain"), { small: true, icon: "download" }), btn("Copier pour l'IA", () => boardAiLoop(ctx), { small: true, icon: "sparkle", tip: "Copier la carte avec une demande, travailler avec l'assistant de son choix, réimporter avec un aperçu : ce que l'IA ajoute arrive en « Brouillon IA »" }))));
   const page = el("div", { class: "pcba-report" }, el("h1", null, doc.title), el("p", { class: "muted" }, `${doc.subtitle} — ${doc.reference}, révision ${doc.revision}`));
   for (const b of doc.blocks) {

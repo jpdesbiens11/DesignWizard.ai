@@ -9,7 +9,7 @@ d'un artisan, aidé par l'IA. Les règles DFM, DFA, DFx et d'isolation s'appliqu
 
 Libre sous **licence MIT**. Tout tourne dans le navigateur ; vos fichiers restent chez vous.
 
-> Dixième itération (v0.10.0 : un premier design complet demandé à une IA par entrevue, et la revue de conception qui le suit, artéfact par artéfact ; v0.9 : la pièce moulée, plastique ou métal, qui se dessine d'elle-même avec les règles du mouleur ; v0.8 : le modèle 3D sous la souris — sélection, clic droit, raccourcis, symboles de simulation ; v0.7 : garde-fous de co-intelligence et exports draw.io à la façon de DynamiteAgile ; v0.6 : tracé de piste à la main et routeur plus tenace ; v0.5 : bibliothèque PCBA étendue, blocs qui se déplacent avec leurs pistes ; v0.4 : gammes de fabrication et d'assemblage ; v0.3 : simulation, carte électronique, aller-retour IA), publiée pour recueillir vos commentaires. Voir [Vos commentaires](#vos-commentaires),
+> Onzième itération (v0.11.0 : l'analyse fonctionnelle s'échange avec DynamiteAgile dans son propre format de fichier ; v0.10 : un premier design complet demandé à une IA par entrevue, et la revue de conception qui le suit, artéfact par artéfact ; v0.9 : la pièce moulée, plastique ou métal, qui se dessine d'elle-même avec les règles du mouleur ; v0.8 : le modèle 3D sous la souris — sélection, clic droit, raccourcis, symboles de simulation ; v0.7 : garde-fous de co-intelligence et exports draw.io à la façon de DynamiteAgile ; v0.6 : tracé de piste à la main et routeur plus tenace ; v0.5 : bibliothèque PCBA étendue, blocs qui se déplacent avec leurs pistes ; v0.4 : gammes de fabrication et d'assemblage ; v0.3 : simulation, carte électronique, aller-retour IA), publiée pour recueillir vos commentaires. Voir [Vos commentaires](#vos-commentaires),
 > la [vision](docs/VISION.md) et le [format de fichier `.dwiz`](docs/FORMAT.md).
 > *English summary at the [end of this page](#english-summary).*
 
@@ -94,7 +94,7 @@ Partout : **Ctrl + K** ouvre *la baguette* (« 4 trous M4 aux coins à 8 mm », 
 
 ## Ce qui est vérifié, et comment
 
-- **241 tests Node** (`node --test tests/node/*.test.mjs`) : noyau CAO réel, matière première et verbes d'atelier,
+- **244 tests Node** (`node --test tests/node/*.test.mjs`) : noyau CAO réel, matière première et verbes d'atelier,
   synthèse de pièce depuis l'intention, format `.dwiz` (aller-retour sans perte sur toutes les pièces), 21 modèles de
   physique contre des valeurs de manuel, exports STL / DXF / FeatureScript, commande et délais, règles IEC 60664-1,
   moteur de chemins, moteur DFx, dessins PDF, connexion Google et Drive (contre des doubles, sans réseau).

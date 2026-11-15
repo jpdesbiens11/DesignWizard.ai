@@ -119,6 +119,26 @@ Valider un artéfact déjà validé dont le contenu a changé crée sa **révisi
 d'historique. Le registre (`project.review.items`, `web/js/core/review.js`) voyage dans le fichier du projet ; le
 rapport de revue en imprime l'état, artéfact par artéfact.
 
+## Le format de DynamiteAgile, tel quel
+
+L'analyse fonctionnelle d'un projet s'échange avec DynamiteAgile **dans son propre format de fichier**, le Project
+Starter (`"format": "dynamite-project-starter"`, version 1), celui que lit son écran « Commencer »
+(`web/js/core/dynamite.js`). Dans l'écran PCBA, étape Revue, « Structure fonctionnelle » :
+
+- **DynamiteAgile (.json)** écrit le fichier : `project` (clé de Space tirée du nom), et l'objet `diamond` —
+  l'**arbre fonctionnel** (la fonction primaire du produit, les fonctions de la carte en fonctions secondaires, celles
+  de ses blocs en fonctions *technique*, la fonction de chaque pièce mécanique), la **structure fonctionnelle** (les
+  connecteurs de bord deviennent des entrées et sorties, les flux d'énergie et d'information relient les fonctions
+  secondaires) et les **pièces** posées sur leurs fonctions (conçues ou achetées).
+- **Importer de DynamiteAgile…** lit l'arbre d'un tel fichier (ou d'un Space exporté) dans la carte : les fonctions
+  nouvelles arrivent en « Brouillon IA », celles qui y sont déjà sont laissées, rien n'est retiré — une étape annulable.
+
+Les règles vérifiées à l'écriture comme à la lecture sont celles du format : la première fonction sans parent est la
+fonction primaire, de type usage ; trois niveaux, une fonction technique seule au quatrième ; un flux part d'une entrée
+ou d'une fonction et arrive à une fonction ou à une sortie ; les pièces se posent sur des fonctions secondaires ou
+tertiaires ; 160 caractères par fonction, aucun balisage. Le lecteur a été éprouvé sur les trois fichiers d'exemple du
+dépôt de DynamiteAgile ; le validateur de DynamiteAgile lui-même n'a pas été exécuté sur les fichiers écrits ici.
+
 ## Pourquoi cela marche
 
 Le format `.dwiz` a été conçu pour cela : une instruction par ligne, des mots du métier, la plus importante d'abord,
