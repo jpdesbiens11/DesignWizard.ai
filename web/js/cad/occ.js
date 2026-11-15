@@ -204,6 +204,24 @@ export function makeKernel(oc) {
     return T(mk.Shape());
   }
 
+  /** Draft : every face that runs along the pull direction — planes, and cylinders about it — leans by `angle` (radians) about the
+      neutral plane through `neutral`, square to the pull. A positive angle makes the shape wider along the pull : a box open toward
+      +Z narrows toward its floor, as a moulded part narrows toward the bottom of its cavity. → { shape, faces : how many lean } */
+  function draft(shape, pull, angle, neutral) {
+    const d = v3.unit(pull), mk = T(new oc.BRepOffsetAPI_DraftAngle(shape)), pln = T(new oc.gp_Pln(pnt(neutral), dir(d)));
+    let n = 0;
+    for (const fi of facesInfo(shape)) {
+      const along = fi.type === "plane" ? Math.abs(v3.dot(fi.n, d)) < 1e-6 : fi.type === "cylinder" ? Math.abs(Math.abs(v3.dot(fi.axis, d)) - 1) < 1e-6 : false;
+      if (!along) continue;
+      mk.Add(fi.face, dir(d), -angle, pln, true); n++;                       // the kernel counts the other way round
+      if (!mk.AddDone()) { mk.Remove(fi.face); n--; }
+    }
+    if (!n) throw new KernelError("Dépouille : aucune face parallèle au sens de démoulage.");
+    mk.Build(PR());
+    if (!mk.IsDone()) throw new KernelError(`Dépouille de ${(angle * 180 / Math.PI).toFixed(1)}° impossible sur cette forme.`);
+    return { shape: T(mk.Shape()), faces: n };
+  }
+
   /* ---------- tessellation ---------- */
   function tessellate(shape, deflection) {
     const bb = bbox(shape), diag = Math.hypot(bb[3] - bb[0], bb[4] - bb[1], bb[5] - bb[2]) || 1;
@@ -356,7 +374,7 @@ export function makeKernel(oc) {
   }
 
   return { oc, flush, track: T, box, cylinder, cone, faceOfProfile, prism, revolve, fuse, cut, common, unify, compound, transform, isValid,
-    edgesInfo, facesInfo, bbox, props, distance, fillet, chamfer, shell, tessellate, stepWrite, stepRead, hlr, section, explore };
+    edgesInfo, facesInfo, bbox, props, distance, fillet, chamfer, shell, draft, tessellate, stepWrite, stepRead, hlr, section, explore };
 }
 
 /** Load the kernel. In the browser pass the URL of the vendor folder; in Node pass {wasmBinary}. */

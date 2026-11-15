@@ -114,6 +114,9 @@ Common fields: "op", optional "id", "name", "body" (default "main"), "mode": "ad
 - {"op":"slot", "face":"+Z", "from":[x,y], "to":[x,y], "w":5, "depth":3}
 - {"op":"boss", "face":"+Z", "at":POS, "d":8, "h":6, "start":z, "hole":{"thread":"M3","depth":6}}
 - {"op":"shell", "t":2.5, "open":["+Z"]}                              // hollow the part, removing the listed faces
+- {"op":"tub", "size":[L,W,H], "wall":2.5, "rc":4, "rf":4, "draft":1}   // moulded shell open on +Z: one wall everywhere, outside radii rc (corners) and rf (floor), real draft in degrees (the rim keeps L x W, the floor is narrower)
+- {"op":"draft", "angle":1, "pull":"+Z", "neutral":z}                    // lean the faces of the body that run along the pull; do it before the fillets
+  "draft": degrees is also accepted by "boss" (a cone, diameter kept at the top) and "pad" (wider at its foot): moulded bosses and ribs
 - {"op":"fillet", "r":2, "edges":SEL}   ·   {"op":"chamfer", "d":0.5, "edges":SEL}
 - {"op":"interfaces"}                                                 // optional marker: interface geometry is cut here (default: after all features)
 Face-based features (hole, pocket, pad, slot, boss) take 2D positions in MODEL coordinates of the face plane ([x,y] on ±Z, [x,z] on ±Y, [y,z] on ±X).

@@ -93,6 +93,9 @@ export function checkMolding(ctx) {
   ctx.run("MLD-02", () => {
     if (!dims) return;
     const pull = facts.shells.length && FACES[facts.shells[0].open && facts.shells[0].open[0]] ? FACES[facts.shells[0].open[0]].axis : 2, Hh = dims[pull];
+    const made = (facts.drafts || []).length ? Math.min(...facts.drafts.map((d) => d.angle)) : 0;
+    if (made > 0) { ctx.add("MLD-02", { severity: made < 0.5 - 1e-9 ? "warn" : "info", value: made, limit: 0.5, unit: "°", feature: facts.drafts[0].source,
+      message: `Dépouille modélisée : ${num(made)}° (${facts.drafts.map((d) => d.what).filter((v, i, all) => v && all.indexOf(v) === i).join(", ") || "corps"}) ; les bossages et nervures qui portent « draft » penchent aussi. Limite : ≥ 0,5° (1° conseillé, + 1° par 0,025 mm de grain) ; sur ${num(Hh)} mm de démoulage, ${num(made)}° représentent ${num(Hh * Math.tan(made * Math.PI / 180))} mm par face, déjà dans le modèle.${made < 0.5 - 1e-9 ? " Correctif : porter la dépouille à 1°." : ""}` }); return; }
     ctx.add("MLD-02", { value: 0, limit: 0.5, unit: "°",
       message: `Dépouille : le langage ne la décrit pas (0° modélisé). Limite : ≥ 0,5° (1° conseillé, + 1° par 0,025 mm de grain) ; sur ${num(Hh)} mm de hauteur de démoulage, 1° représente ${num(Hh * Math.tan(Math.PI / 180))} mm par face. Correctif : porter la dépouille au plan et en tenir compte dans les jeux.` });
   });

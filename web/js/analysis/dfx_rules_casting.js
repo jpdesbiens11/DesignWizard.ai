@@ -37,6 +37,9 @@ export function checkCasting(ctx) {
   ctx.run("CST-02", () => {
     if (!dims) return;
     const m = ctx.spec.mold || {}, out = m.draft || (gravity ? 2 : 1), inn = m.draft_inside || (gravity ? 3 : 2), pull = facts.shells.length && FACES[facts.shells[0].open && facts.shells[0].open[0]] ? FACES[facts.shells[0].open[0]].axis : 2, Hh = dims[pull];
+    const made = (facts.drafts || []).length ? Math.min(...facts.drafts.map((d) => d.angle)) : 0;
+    if (made > 0) { ctx.add("CST-02", { severity: made < inn - 1e-9 ? "warn" : "info", value: made, limit: inn, unit: "°", feature: facts.drafts[0].source,
+      message: `Dépouille modélisée : ${num(made)}° sur les parois, dehors comme sur les noyaux (une seule paroi, un seul angle). Limite : ${num(out)}° à l'extérieur, ${num(inn)}° sur les noyaux ; sur ${num(Hh)} mm de démoulage, ${num(made)}° représentent ${num(Hh * Math.tan(made * Math.PI / 180))} mm par face, déjà dans le modèle.${made < inn - 1e-9 ? ` Correctif : porter la dépouille à ${num(inn)}°.` : ""}` }); return; }
     ctx.add("CST-02", { value: 0, limit: out, unit: "°", message: `Dépouille : le modèle reste droit (0°). À porter au moule : ${num(out)}° à l'extérieur, ${num(inn)}° sur les noyaux ; sur ${num(Hh)} mm de démoulage, ${num(inn)}° représentent ${num(Hh * Math.tan(inn * Math.PI / 180))} mm par face — à compter dans les jeux.` });
   });
   ctx.run("CST-03", () => insideRadii(ctx, "CST-03", null));

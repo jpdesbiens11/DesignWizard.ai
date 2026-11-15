@@ -83,6 +83,9 @@ function profileFacts(profile) {
   return { w: bb[2] - bb[0], h: bb[3] - bb[1], area: profileArea(profile), perimeter: profilePerimeter(profile), rMin: Number.isFinite(rMin) ? rMin : 0, holes: profile.holes.length };
 }
 
+/** The draft a feature asks for, in degrees (0 : straight). */
+const leanOf = (f) => { const a = f.draft === undefined || f.draft === null || f.draft === false ? 0 : Number(f.draft); if (!Number.isFinite(a) || a < 0 || a > 15) throw new FeatureError(`« draft » = ${JSON.stringify(f.draft)} : un angle de 0 à 15 degrés est attendu.`, f); return a; };
+
 const OPS = {
   box(K, st, f) {
     const s = f.size || [f.x, f.y, f.z];
@@ -159,7 +162,9 @@ const OPS = {
     const profile = normalizeProfile(def), h = pos(f.h, "pad h", f);
     const u = [0, 0, 0], v = [0, 0, 0]; u[F.plane[0]] = 1; v[F.plane[1]] = 1;
     const sink = 0.05, o = v3.mul(F.n.map(Math.abs), level - sink * F.n[F.axis]);
-    apply(K, st, f, K.prism(K.faceOfProfile(profile, { o, u, v }), v3.mul(F.n, h + sink)), "add");
+    let tool = K.prism(K.faceOfProfile(profile, { o, u, v }), v3.mul(F.n, h + sink));
+    if (leanOf(f) > 0) tool = K.draft(tool, v3.neg(F.n), leanOf(f) * Math.PI / 180, v3.add(o, v3.mul(F.n, h + sink))).shape;       // drafted : its width kept at the top, wider at its foot
+    apply(K, st, f, tool, "add");
     st.facts.extrudes.push({ ...profileFacts(profile), length: h, plane: face, mode: "add", source: f.id, profile });
   },
   slot(K, st, f) {
@@ -169,10 +174,10 @@ const OPS = {
   },
   boss(K, st, f) {
     const face = faceKey(f.face || "+Z"), F = FACES[face], body = f.body || st.main, level = faceLevel(K, st, f, face, body);
-    const d = pos(f.d, "boss d", f), h = pos(f.h, "boss h", f), sink = 0.05, tools = [], cuts = [];
+    const d = pos(f.d, "boss d", f), h = pos(f.h, "boss h", f), sink = 0.05, tools = [], cuts = [], lean = Math.tan(leanOf(f) * Math.PI / 180);
     for (const p of positions(f.at, f)) {
       const o = facePoint(face, p, level);
-      tools.push(K.cylinder(v3.sub(o, v3.mul(F.n, sink)), F.n, d / 2, h + sink));
+      tools.push(lean > 0 ? K.cone(v3.sub(o, v3.mul(F.n, sink)), F.n, d / 2 + (h + sink) * lean, d / 2, h + sink) : K.cylinder(v3.sub(o, v3.mul(F.n, sink)), F.n, d / 2, h + sink));      // drafted : a cone, its diameter kept at the top
       if (f.hole) {
         const th = f.hole.thread ? THREADS[String(f.hole.thread).toUpperCase()] : null;
         const hd = f.hole.d !== undefined ? pos(f.hole.d, "boss hole d", f) : (th ? th.tap : null);
@@ -187,6 +192,28 @@ const OPS = {
     }
     for (const t of tools) apply(K, st, f, t, "add");
     if (cuts.length) apply(K, st, f, cuts, "cut");
+  },
+  /** A moulded tub : a rounded box open on +Z, one wall everywhere, with a real draft. The outside and the inside are each a block
+      that leans, then gets its corner radii and its floor radius ; one is taken out of the other — no offset surface, so it holds for
+      every wall and angle. size [L, W, H] is the outside at the rim ; rc, rf the outside radii of the corners and of the floor. */
+  tub(K, st, f) {
+    const s = f.size || [], L = pos(s[0], "tub size x", f), W = pos(s[1], "tub size y", f), H = pos(s[2], "tub size z", f), t = pos(f.wall ?? f.t, "tub wall", f), deg = leanOf(f), rc = Math.max(0, num(f.rc ?? 0, "tub rc", f)), rf = Math.max(0, num(f.rf ?? 0, "tub rf", f));
+    if (2 * t >= Math.min(L, W) - 1e-6 || t >= H - 1e-6) throw new FeatureError(`tub : une paroi de ${t} mm ne tient pas dans ${L} × ${W} × ${H} mm.`, f);
+    if (rc > Math.min(L, W) / 2 - 1e-6) throw new FeatureError(`tub : rayon des angles ${rc} mm trop grand pour ${L} × ${W} mm.`, f);
+    const block = (min, max, r1, r2) => { let b = K.box(min, max); if (deg > 0) b = K.draft(b, [0, 0, 1], deg * Math.PI / 180, [0, 0, H]).shape;
+      if (r1 > 0.05) b = K.fillet(b, selectEdges(K, b, { dir: "Z" }, f).map((e) => e.edge), r1); if (r2 > 0.05) b = K.fillet(b, selectEdges(K, b, { face: "-Z" }, f).map((e) => e.edge), r2); return b; };
+    apply(K, st, f, K.cut(block([0, 0, 0], [L, W, H], rc, rf), [block([t, t, t], [L - t, W - t, H + 1], rc - t, rf - t)]), "add");
+    st.facts.shells.push({ t, open: ["+Z"], source: f.id, tub: true });
+    if (rc > 0.05) st.facts.fillets.push({ size: rc - t, n: 4, source: f.id, inner: true }); if (rf > 0.05) st.facts.fillets.push({ size: rf - t, n: 4, source: f.id, inner: true });
+    if (deg > 0) st.facts.drafts.push({ angle: deg, pull: "+Z", source: f.id, what: "parois" });
+  },
+  /** Draft on what is there : the faces of the body that run along the pull lean about a neutral plane (default : its far end along the pull). */
+  draft(K, st, f) {
+    const name = f.body || st.main, s = st.bodies.get(name), face = faceKey(f.pull || "+Z"), F = FACES[face], deg = pos(f.angle, "draft angle", f);
+    if (!s) throw new FeatureError("draft : aucun volume à dépouiller.", f);
+    const bb = K.bbox(s), at = f.neutral !== undefined ? num(f.neutral, "draft neutral", f) : (F.n[F.axis] > 0 ? bb[3 + F.axis] : bb[F.axis]), o = [0, 0, 0]; o[F.axis] = at;
+    try { st.bodies.set(name, K.draft(s, F.n, deg * Math.PI / 180, o).shape); } catch (e) { throw new FeatureError(`${e.message} Correctif : dépouiller la forme avant ses congés, ou utiliser « tub », « boss » et « pad » avec leur « draft ».`, f); }
+    st.facts.drafts.push({ angle: deg, pull: face, source: f.id, what: "corps" });
   },
   fillet(K, st, f) { dressUp(K, st, f, "fillet"); },
   chamfer(K, st, f) { dressUp(K, st, f, "chamfer"); },
@@ -229,7 +256,7 @@ export function selectEdges(K, shape, sel, f) {
     else throw new FeatureError(`Sélection d'arêtes inconnue « ${sel} ». Formes : "all", "vertical", {dir:"Z"}, {face:"+Z"}, {box:[...]}, {near:[x,y,z]}.`, f);
   }
   return all.filter((e) => {
-    if (sel.dir) { const a = axisOf(sel.dir, f); if (e.type !== "line" || Math.abs(Math.abs(v3.dot(e.dir, a)) - 1) > 1e-4) return false; }
+    if (sel.dir) { const a = axisOf(sel.dir, f); if (e.type !== "line" || Math.abs(Math.abs(v3.dot(e.dir, a)) - 1) > 4e-3) return false; }      // within 5° : the corners of a drafted block lean by its draft
     if (sel.face) {
       const F = FACES[faceKey(sel.face)], lv = sel.level !== undefined ? sel.level : (F.n[F.axis] > 0 ? bb[3 + F.axis] : bb[F.axis]);
       if ([e.p0, e.p1, e.mid].some((p) => Math.abs(p[F.axis] - lv) > 1e-3)) return false;
@@ -279,7 +306,7 @@ function dressUp(K, st, f, kind) {
 }
 
 export function newState() {
-  return { bodies: new Map(), order: [], log: [], main: "main", facts: { holes: [], pockets: [], bosses: [], fillets: [], chamfers: [], shells: [], extrudes: [], revolves: [] } };
+  return { bodies: new Map(), order: [], log: [], main: "main", facts: { holes: [], pockets: [], bosses: [], fillets: [], chamfers: [], shells: [], extrudes: [], revolves: [], drafts: [] } };
 }
 
 /** Run a list of evaluated features on the state. A failing feature is reported and skipped (the part still builds). */

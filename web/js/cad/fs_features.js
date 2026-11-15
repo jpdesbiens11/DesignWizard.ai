@@ -61,6 +61,15 @@ const EMIT = {
     G.use("faces");
     G.call("opShell", `id + "shell${N}"`, [["entities", faces.length === 1 ? faces[0] : `qUnion([${faces.join(", ")}])`], ["thickness", mm(neg(t))]]);
   },
+  /* the moulded tub, written straight : a box, its radii, a shell. Its draft is left to Onshape (Draft on the side faces). */
+  tub(G, f) {
+    EMIT.box(G, { id: f.id, body: f.body, size: f.size });
+    if (f.rc) dressUp(G, { id: f.id, body: f.body, r: f.rc, edges: "vertical" }, "fillet");
+    if (f.rf) dressUp(G, { id: f.id, body: f.body, r: f.rf, edges: { face: "-Z" } }, "fillet");
+    EMIT.shell(G, { id: f.id, body: f.body, t: f.wall ?? f.t, open: ["+Z"] });
+    if (f.draft) G.emit(`// dépouille de ${typeof f.draft === "string" ? f.draft : `${f.draft}°`} : à appliquer dans Onshape (Draft, plan neutre au bord supérieur)`);
+  },
+  draft(G, f) { throw new Skip("dépouille : à appliquer dans Onshape (fonction Draft)"); },
   fillet(G, f) { dressUp(G, f, "fillet"); },
   chamfer(G, f) { dressUp(G, f, "chamfer"); },
 };
