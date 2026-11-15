@@ -4,6 +4,8 @@
    - sources / targets: surface points in contact with a conductor of net A / B (distance ≤ contactTol); a leg that leaves
      or enters a contact region only counts for its part outside (bisection on the distance to the conductor);
    - the footprint of a conductor of another net is not crossed; the footprint of a floating part is crossed for free;
+   - the cut edge of a sheet flagged `cutEdge` (an insulator cut by laser, whose edge may be charred) is walked for free,
+     like a floating conductor that runs all round the sheet: only the way to the edge and from the edge counts;
    - from a Steiner point the path may jump to the closest facing surface: another insulator in contact (uncemented
      joint, free) or, through air, a wall or another insulator closer than X (a groove narrower than X is bridged);
    - the outline of the footprints (sharp edges of the conductors that touch a surface) gives extra source and target
@@ -62,7 +64,20 @@ function surface(scene, step) {
     nC[i] = q.body + 1;                                          // conductor or floating part in contact (index + 1)
     if (scene.bodies[q.body].kind === "floating") { if (!floatNodes.has(q.body + 1)) floatNodes.set(q.body + 1, []); floatNodes.get(q.body + 1).push(i); }
   }
-  return (scene.cache[key] = { step, V, I, triBody, nt, triEdge, eV, eT, eN0, NP, nP, nE, nC, tF, vOff, vTri, floatNodes, N: triNormals(V, I).N, bvh: new BVH(V, I, triBody), jumps: new Map(), touch: new Map() });
+  /* the cut edge of a laser-cut sheet : the two faces of a sheet carry most of its area — what does not look their way is the
+     edge. Its nodes (those in contact with no conductor) form one group, walked for free like a floating part. */
+  const TN = triNormals(V, I), cutIds = new Map(), nB = scene.bodies.length;
+  for (const bi of scene.insul) {
+    if (!scene.bodies[bi].cutEdge) continue;
+    let big = -1; for (let t = 0; t < nt; t++) if (triBody[t] === bi && (big < 0 || TN.area[t] > TN.area[big])) big = t;
+    if (big < 0) continue;
+    const n0 = [TN.N[3 * big], TN.N[3 * big + 1], TN.N[3 * big + 2]], sum = [0, 0, 0];
+    for (let t = 0; t < nt; t++) if (triBody[t] === bi) { const d = TN.N[3 * t] * n0[0] + TN.N[3 * t + 1] * n0[1] + TN.N[3 * t + 2] * n0[2], w = TN.area[t] * (d < 0 ? -1 : 1); for (let c = 0; c < 3; c++) sum[c] += w * TN.N[3 * t + c]; }
+    const L = Math.hypot(sum[0], sum[1], sum[2]) || 1, id = nB + 1 + cutIds.size, nodes = [], onEdge = (t) => t >= 0 && triBody[t] === bi && Math.abs(TN.N[3 * t] * sum[0] + TN.N[3 * t + 1] * sum[1] + TN.N[3 * t + 2] * sum[2]) / L < 0.5;
+    for (let i = 0; i < NP; i++) if (!nC[i] && (onEdge(eT[2 * nE[i]]) || onEdge(eT[2 * nE[i] + 1]))) { nC[i] = id; nodes.push(i); }
+    if (nodes.length) { cutIds.set(id, bi); floatNodes.set(id, nodes); }
+  }
+  return (scene.cache[key] = { step, V, I, triBody, nt, triEdge, eV, eT, eN0, NP, nP, nE, nC, tF, vOff, vTri, floatNodes, cutIds, N: TN.N, bvh: new BVH(V, I, triBody), jumps: new Map(), touch: new Map() });
 }
 
 /** Triangles that contain the surface point c of triangle T (several when c lies on an edge or on a vertex of T). */
@@ -124,7 +139,7 @@ function jumpsOf(S, scene, u, X) {
 /** Creepage between two nets of a prepared scene (searched from the net that touches the insulators the least). */
 export function creepage(scene, netA, netB, opts = {}) {
   const S = surface(scene, opts.step || scene.step), n = { [netA]: touchOf(S, scene, netA).length, [netB]: touchOf(S, scene, netB).length };
-  for (let i = 0; i < S.NP; i++) if (S.nC[i]) { const b = scene.bodies[S.nC[i] - 1]; if (b.net === netA || b.net === netB) n[b.net]++; }
+  for (let i = 0; i < S.NP; i++) if (S.nC[i]) { const b = scene.bodies[S.nC[i] - 1]; if (b && (b.net === netA || b.net === netB)) n[b.net]++; }      // no body : the node is on the cut edge of a sheet
   if (n[netB] >= n[netA]) return run(scene, S, netA, netB, opts);
   const res = run(scene, S, netB, netA, opts);
   res.path.reverse(); res.bodies.reverse();
@@ -133,9 +148,10 @@ export function creepage(scene, netA, netB, opts = {}) {
 
 function run(scene, S, netA, netB, opts) {
   const step = S.step, X = opts.x ?? 1.0, cap = opts.maxCreepage ?? 120, ct = scene.contactTol, ws = step / 2;
-  const res = { d: null, path: [], group: null, printed: false, bridges: 0, bodies: [], capped: false, none: false };
+  const res = { d: null, path: [], group: null, printed: false, bridges: 0, bodies: [], cutEdges: [], capped: false, none: false };
   const { NP, nP, nE, eV, eT, eN0, triEdge, triBody, tF, nC, V } = S, bodies = scene.bodies, cond = scene.cond;
-  const role = new Uint8Array(bodies.length + 1);               // 0 free, 1 net A, 2 net B, 3 floating, 4 another net
+  const role = new Uint8Array(bodies.length + 1 + S.cutIds.size);   // 0 free, 1 net A, 2 net B, 3 floating (a part, or the cut edge of a sheet), 4 another net
+  for (const id of S.cutIds.keys()) role[id] = 3;
   bodies.forEach((b, i) => { role[i + 1] = b.kind === "floating" ? 3 : b.kind === "conductor" ? (b.net === netA ? 1 : b.net === netB ? 2 : 4) : 0; });
   const roleAt = (p) => { const q = cond.closestPoint(p, ct); return q ? role[q.body + 1] : 0; };
   const dist = new Float64Array(NP).fill(Infinity), pred = new Int32Array(NP).fill(-1), ptri = new Int32Array(NP).fill(-1);
@@ -228,7 +244,7 @@ function run(scene, S, netA, netB, opts) {
   if (!best.reset) for (let id = best.u; id !== -1; id = id < NP ? pred[id] : vPred[id - NP]) { chain.push(id); if (starts.has(id)) { startPt = starts.get(id); break; } }
   const els = startPt ? [{ p: startPt, id: -1, D: 0 }] : [], touched = [];
   for (const id of chain.reverse()) {
-    if (id >= NP && !vT[id - NP]) continue;
+    if (id >= NP && !vT[id - NP]) { const cut = S.cutIds.get(vP[id - NP]); if (cut !== undefined && !res.cutEdges.includes(bodies[cut].id)) res.cutEdges.push(bodies[cut].id); continue; }
     els.push({ p: pos(id), id, tri: id < NP ? ptri[id] : vPtri[id - NP], D: getD(id) });
     touched.push(triBody[id < NP ? eT[2 * nE[id]] : vT[id - NP][0]]);
   }

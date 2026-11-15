@@ -11,7 +11,7 @@ import { toDwiz } from "./dwiz.js";
 import { dwizFileName } from "./dwiz_names.js";
 import { mountPanes } from "./panes.js";
 
-export const APP_VERSION = "0.31.1";
+export const APP_VERSION = "0.32.0";
 const modules = new Map();
 const ORDER = ["home", "shop", "parts", "pcb", "pcba", "assembly", "physics", "creepage", "dfx", "drawings", "review", "report"];
 const SHOP_SCREENS = new Set(["interfaces", "process", "extrusion", "library", "busbar", "flex"]);      // screens of the Shop : its tab stays lit on them (see modules/shop_tabs.js)

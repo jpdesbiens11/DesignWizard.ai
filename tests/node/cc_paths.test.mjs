@@ -256,3 +256,18 @@ test("copper on both faces of a board: the board is solid insulation, the string
     assert.equal(r.creepage.printed, true);
   }
 });
+
+test("the cut edge of a laser-cut sheet is walked for free : only the way to the edge and back counts", () => {
+  // two conductors on a sheet, each 2 mm from the same edge and 35 mm from each other
+  const mk = (cutEdge, extra = []) => prepareScene([body("sheet", "insulator", [0, 0, 0, 60, 40, 0.5], { n: 4, cutEdge }), conductor("a", "A", [5, 2, 0.5, 10, 7, 2]), conductor("b", "B", [45, 2, 0.5, 50, 7, 2]), ...extra], { step: 0.5 });
+  const plain = measurePair(mk(false), "A", "B").creepage, cut = measurePair(mk(true), "A", "B").creepage;
+  near(plain.d, 35, "along the surface, edge counted"); assert.deepEqual(plain.cutEdges, []);
+  near(cut.d, 4, "to the edge, along it for free, and back"); assert.deepEqual(cut.cutEdges, ["sheet"], "the result says which edge was taken");
+  assert.ok(pathLength(cut.path) > 30, "the path drawn still goes round by the edge : it is its length that is not counted");
+  // far from any edge, the flag changes nothing
+  const mid = (cutEdge) => measurePair(prepareScene([body("sheet", "insulator", [0, 0, 0, 60, 40, 0.5], { n: 4, cutEdge }), conductor("a", "A", [20, 17, 0.5, 25, 23, 2]), conductor("b", "B", [33, 17, 0.5, 38, 23, 2])], { step: 0.5 }), "A", "B").creepage;
+  near(mid(false).d, 8, "in the middle of the sheet"); near(mid(true).d, 8, "in the middle of the sheet, edge flagged"); assert.deepEqual(mid(true).cutEdges, []);
+  // only an insulator has a cut edge ; the clearance does not change
+  const s = mk(true); assert.equal(s.bodies.find((x) => x.id === "sheet").cutEdge, true); assert.equal(s.bodies.find((x) => x.id === "a").cutEdge, false);
+  near(measurePair(mk(true), "A", "B").clearance.d, 35, "clearance through air, unchanged");
+});

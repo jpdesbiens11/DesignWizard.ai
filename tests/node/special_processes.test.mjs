@@ -146,3 +146,10 @@ test("the demonstration shows both processes : a laser-cut insulator mated on th
   const asm = DEMO_DRIVE.assemblies[0]; assert.ok(asm.instances.some((i) => i.part === "DRV-ISO") && asm.mates.some((m) => m.a.inst === "i6" && m.b.inst === "i5")); assert.ok(!asm.instances.some((i) => i.part === "DRV-BRACKET"), "the bracket is a variant : in the project, not yet in the assembly");
   assert.deepEqual(specialRows(DEMO_DRIVE.parts).map((r) => [r[0], r[2]]), [["DRV-ISO", "Découpe laser de précision"], ["DRV-BRACKET", "Fusion laser sur lit de poudre métallique (LPBF)"]], "the report of the demonstration has its section of special processes");
 });
+
+test("which cut edges the isolation analysis leaves out : insulating sheets cut by laser, nothing else", async () => {
+  const { charredEdge } = await import("../../web/js/cad/special_processes.js"), p = (process, material_) => ({ process, material: material_ });
+  assert.deepEqual([["laser_cut", "NOMEX-410"], ["laser_cut", "FR4"], ["laser_cut", "PI-FILM"], ["laser_cut", "PMMA"], ["laser_cut", "CU-C110"], ["laser_cut", "PVC-U"], ["cnc_milling", "FR4"], ["pcb", "FR4"]].map(([a, b]) => charredEdge(p(a, b))),
+    [true, true, true, false, false, false, false, false], "paper, laminate and film cut by laser ; not an acrylic, not a metal, not a routed or a fabricated board");
+  assert.equal(charredEdge(null), false); assert.equal(charredEdge({}), false);
+});

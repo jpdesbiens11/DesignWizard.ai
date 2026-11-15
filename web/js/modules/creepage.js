@@ -10,6 +10,7 @@ import { createViewport } from "../core/viewport.js";
 import { buildAssembly, showAssembly } from "../core/asm_scene.js";
 import { sceneBody } from "../analysis/cc_scene.js";
 import { bodyGroups } from "../analysis/cc_groups.js";
+import { charredEdge } from "../cad/special_processes.js";
 import { BUILTIN, DEFAULT_PARAMS, requirement, floatingSpan, altLabel, LEVEL_LABEL, FT_PER_M } from "../analysis/cc_rules.js";
 import { netColor } from "../cad/materials.js";
 
@@ -31,12 +32,13 @@ export function collectNets(asm) {
 
 /** Scene bodies (world meshes with roles) of a built assembly, with the overrides saved in the analysis. */
 export function sceneOf(asm, ctx) {
-  const ov = (asm.isolation || {}).overrides || {}, bodies = [];
+  const ov = (asm.isolation || {}).overrides || {}, bodies = [], free = ((asm.isolation || {}).params || {}).cut_edge !== "counted";      // the cut edge of a laser-cut insulator is left out of the creepage, unless told otherwise
   for (const inst of ctx.asm.instances) {
     const b = ctx.built[inst.part];
     for (const body of b.bodies) {
       const id = `${inst.id}/${body.name}`, o = ov[id] || {};
       bodies.push({ ...sceneBody(id, `${store.part(inst.part).name || inst.part}${b.bodies.length > 1 ? ` · ${body.label || body.name}` : ""}`, body, { pos: body.mesh.pos, idx: body.mesh.idx }, ctx.sol.placements[inst.id], o), inst: inst.id, part: inst.part, bodyName: body.name });
+      const last = bodies[bodies.length - 1]; last.cutEdge = free && last.kind === "insulator" && charredEdge(store.part(inst.part));
     }
   }
   return bodies;
@@ -111,7 +113,7 @@ function render(main, args) {
     try {
       const ctx = await buildAssembly(asm(), (t) => vp.setBusy(st.ctx ? "" : t));
       if (token !== st.token) return;
-      const bodies = sceneOf(asm(), ctx), sig = JSON.stringify([bodies.map((b) => [b.id, b.kind, b.net, b.group, b.pos.length]), Object.values(ctx.sol.placements)]);
+      const bodies = sceneOf(asm(), ctx), sig = JSON.stringify([bodies.map((b) => [b.id, b.kind, b.net, b.group, b.pos.length, b.cutEdge]), Object.values(ctx.sol.placements)]);
       if (st.sig && st.sig !== sig) { st.results = null; st.sel = null; }           // the geometry or the roles changed: measurements are stale
       st.sig = sig; st.ctx = ctx; st.bodies = bodies;
       paint();
@@ -175,7 +177,7 @@ function render(main, args) {
     };
     w.onerror = (e) => { w.terminate(); st.running = false; vp.setBusy(""); toast(`Le moteur de chemins n'a pas démarré : ${e.message || "erreur de chargement"}.`, "error", 8000); renderRight(); };
     const I = iso();
-    w.postMessage({ id: 1, bodies: st.bodies.map((b) => ({ id: b.id, name: b.name, kind: b.kind, net: b.net, group: b.group, printed: b.printed, pos: b.pos, idx: b.idx })),
+    w.postMessage({ id: 1, bodies: st.bodies.map((b) => ({ id: b.id, name: b.name, kind: b.kind, net: b.net, group: b.group, printed: b.printed, cutEdge: !!b.cutEdge, pos: b.pos, idx: b.idx })),
       pairs: ps.map((p) => ({ a: p.a, b: p.b, x: p.req.x_mm ?? 1, maxClearance: Math.max(40, (p.req.clearance_mm || 5) * 8), maxCreepage: Math.max(60, (Math.max(...Object.values(p.req.creepage_mm).filter((v) => v)) || 8) * 8) })), opts: {} });
     vp.setBusy("Préparation de la scène…");
   }
@@ -205,6 +207,7 @@ function render(main, args) {
       el("div", { class: "form-row" }, sel("pollution_degree", "Pollution degree", [[1, "PD1 — sous revêtement"], [2, "PD2 — boîtier propre et sec"], [3, "PD3 — condensation attendue"]]), sel("ovc", "Overvoltage category", [["I", "OVC I"], ["II", "OVC II"], ["III", "OVC III"], ["IV", "OVC IV"]])),
       el("div", { class: "form-row" }, num("altitude_m", "Altitude (m)", "100", `${fmt((P.altitude_m || 0) * FT_PER_M, 0)} ft`), sel("field", "Champ", [["A", "Cas A — inhomogène"], ["B", "Cas B — homogène"]])),
       el("div", { class: "form-row" }, sel("level", "Isolation par défaut", [["functional", "Functional"], ["basic", "Basic"], ["reinforced", "Reinforced"]]), num("voltage_factor", "Facteur maison k", "0.5", "Tables lues à k × U")),
+      st.bodies && st.bodies.some((b) => b.kind === "insulator" && charredEdge(store.part(b.part))) ? sel("cut_edge", "Chant d'un isolant découpé au laser", [["free", "Hors de la ligne de fuite (prudent)"], ["counted", "Compté comme une surface"]], "Un bord découpé au laser peut être carbonisé : par prudence, le chemin le longe sans rien compter. Tenue réelle à vérifier par essai.") : null,
       el("p", { class: "muted", style: { fontSize: ".78rem" } }, "Règles : IEC 60664-1 (tables intégrées, à vérifier contre votre copie de la norme avant toute décision de certification).")));
     if (st.bodies) {
       const sec = el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, "Rôle des corps"), st.hidden.size ? btn(`Ramener (${st.hidden.size})`, showAll, { small: true, icon: "eye", tip: "Ramener tous les corps masqués (Maj + H)" }) : null),
@@ -257,7 +260,7 @@ function render(main, args) {
       const r = res.get(st.sel), lvl = el("select", { onChange: (e) => save((x) => { x.levels = { ...(x.levels || {}), [st.sel]: e.target.value }; }, `Niveau ${selP.a} ↔ ${selP.b}`) }, ["functional", "basic", "reinforced"].map((k) => el("option", { value: k, selected: selP.level === k }, LEVEL_LABEL[k])));
       body.append(el("div", { class: "card", style: { marginTop: ".6rem" } }, el("h3", null, `${selP.a} ↔ ${selP.b}`), field("Niveau d'isolation de la paire", lvl),
         r && r.error && el("p", { class: "form-error" }, r.error),
-        r && r.verdict && el("p", { style: { fontSize: ".86rem" } }, r.verdict.crpNone ? "Creepage : aucune surface isolante ne relie les deux nets. " : `Creepage sur ${r.verdict.group === "PCB" ? "circuit imprimé" : `material group ${r.verdict.group}`}${r.creepage && r.creepage.bridges ? `, ${r.creepage.bridges} rainure(s) pontée(s) (X = ${fmt(selP.req.x_mm, 2)} mm)` : ""}. `,
+        r && r.verdict && el("p", { style: { fontSize: ".86rem" } }, r.verdict.crpNone ? "Creepage : aucune surface isolante ne relie les deux nets. " : `Creepage sur ${r.verdict.group === "PCB" ? "circuit imprimé" : `material group ${r.verdict.group}`}${r.creepage && r.creepage.bridges ? `, ${r.creepage.bridges} rainure(s) pontée(s) (X = ${fmt(selP.req.x_mm, 2)} mm)` : ""}.${cutNote(r, st.bodies)} `,
           r.clearance && r.clearance.via && r.clearance.via.length ? `Clearance à travers ${r.clearance.via.length} conducteur(s) flottant(s) (d1 + d2). ` : "", r.clearance && r.clearance.direct === false ? "Le chemin dans l'air contourne un obstacle." : ""),
         el("h3", { style: { marginTop: ".5rem" } }, "Calcul des distances requises"), el("ol", { style: { margin: "0 0 .5rem", paddingLeft: "1.1rem", fontSize: ".82rem" } }, selP.req.steps.map((s) => el("li", null, s))),
         selP.req.warnings.map((w) => el("p", { class: "form-error", style: { fontSize: ".82rem" } }, w)),
@@ -265,6 +268,12 @@ function render(main, args) {
     } else if (st.results) body.append(el("p", { class: "muted", style: { fontSize: ".84rem" } }, st.results.some((r) => r.verdict.ok === false) ? "Les chemins en défaut sont tracés en rouge dans la vue. Corrigez la géométrie (écart, nervure, rainure plus large que X) dans la pièce concernée, puis relancez l'analyse." : "Toutes les paires respectent les distances requises."));
   }
   return () => { off(); st.token++; if (st.worker) st.worker.terminate(); vp.dispose(); };
+}
+/** What to say when the creepage path of a pair takes the cut edge of a laser-cut insulator. */
+function cutNote(r, bodies) {
+  const ids = (r && r.creepage && r.creepage.cutEdges) || []; if (!ids.length) return "";
+  const names = ids.map((id) => { const b = (bodies || []).find((x) => x.id === id); return `« ${b ? b.name : id} »`; });
+  return ` Le chemin longe le chant découpé au laser de ${names.join(", ")} : ce trajet compte pour 0 mm (réglage « Chant d'un isolant découpé au laser »).`;
 }
 function cssColor(c) {
   if (!c.startsWith("hsl")) return c;

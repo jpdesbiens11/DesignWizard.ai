@@ -63,6 +63,22 @@ Règles vérifiées par le DFx :
 - `LAS-06` état du bord : un isolant dont le chant est carbonisé ne compte pas dans une ligne de fuite ; un conducteur
   s'ébavure avant d'être isolé ; sur une carte, le cuivre reste en retrait du trait de coupe.
 
+### Le chant découpé dans l'analyse d'Isolation
+
+La règle `LAS-06` n'est pas qu'un rappel. Quand un assemblage contient un isolant en feuille découpé au laser (papier
+aramide, film, stratifié), l'analyse d'Isolation traite son **chant** comme un conducteur flottant qui ferait le tour de
+la feuille : le chemin de fuite le longe **sans rien compter**. Il ne reste que la distance du premier conducteur au bord,
+et du bord au second. Deux conducteurs posés chacun à 2 mm du même bord, à 35 mm l'un de l'autre, ont ainsi une ligne
+de fuite de 4 mm, pas de 35.
+
+- Réglage dans « Conditions de l'analyse » : *Hors de la ligne de fuite (prudent)*, par défaut, ou *Compté comme une
+  surface* quand un essai a montré que le bord n'est pas carbonisé.
+- Le détail d'une paire dit quel chant le chemin a pris.
+- Le chant se reconnaît à la géométrie : ce qui ne regarde pas dans le sens des deux grandes faces de la feuille.
+- C'est une **prudence**, pas un fait mesuré : l'effet d'un bord bruni sur le papier aramide n'est publié nulle part
+  (section 4). Moteur : `web/js/analysis/cc_creepage.js` ; quelles pièces : `charredEdge` dans
+  `web/js/cad/special_processes.js`.
+
 ## 3. Impression 3D, par procédé et par matière
 
 | Procédé | Matières de la bibliothèque | Paroi | Trou | Supports | Cavité |

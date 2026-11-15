@@ -4,7 +4,7 @@
      - the CREEPAGE: shortest path along the insulating surfaces (cc_creepage.js, "the ant").
    Pure geometry: runs unchanged in a browser Web Worker and in Node; deterministic.
 
-   Scene body (input): { id, name, kind: "conductor" | "floating" | "insulator" | "ignore", net, group, printed,
+   Scene body (input): { id, name, kind: "conductor" | "floating" | "insulator" | "ignore", net, group, printed, cutEdge,
                          pos: Float32Array (x, y, z per vertex, world mm), idx: Uint32Array (outward CCW triangles) }. */
 
 import { weldMesh, triNormals, BVH } from "./cc_geom.js";
@@ -39,7 +39,7 @@ export function prepareScene(bodies, opts = {}) {
     const kind = b.kind === "conductor" && !b.net ? "floating" : b.kind, { V, I } = weldMesh(b.pos, b.idx);
     if (!I.length) continue;
     for (let i = 0; i < V.length; i++) { const k = i % 3; if (V[i] < lo[k]) lo[k] = V[i]; if (V[i] > hi[k]) hi[k] = V[i]; }
-    list.push({ id: b.id, name: b.name, kind, net: kind === "conductor" ? String(b.net) : null, group: b.group || null, printed: !!b.printed, V, I, N: triNormals(V, I).N, bvh: new BVH(V, I) });
+    list.push({ id: b.id, name: b.name, kind, net: kind === "conductor" ? String(b.net) : null, group: b.group || null, printed: !!b.printed, cutEdge: kind === "insulator" && !!b.cutEdge, V, I, N: triNormals(V, I).N, bvh: new BVH(V, I) });
   }
   const diag = list.length ? Math.hypot(hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]) : 1, all = list.map((_, i) => i), pick = (k) => all.filter((i) => list[i].kind === k);
   const scene = {
@@ -62,7 +62,7 @@ export function netsOf(scene) { return [...scene.nets.keys()]; }
 /** Clearance and creepage between two nets.
     opts: { x: groove width X in mm (1.0), maxClearance: 80, maxCreepage: 120, step: sampling spacing (auto), exact: bool,
             jointClearance: bool (false: the clearance is a pure air path) }.
-    Result: { clearance: { d, path, direct, via, capped }, creepage: { d, path, group, printed, bridges, bodies, capped, none }, ms };
+    Result: { clearance: { d, path, direct, via, capped }, creepage: { d, path, group, printed, bridges, bodies, cutEdges, capped, none }, ms };
     d = null with capped = true when nothing was found below the cap (for the clearance: also when no air path exists). */
 export function measurePair(scene, netA, netB, opts = {}) {
   const t0 = now();

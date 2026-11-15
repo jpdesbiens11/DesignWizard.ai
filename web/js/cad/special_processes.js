@@ -237,6 +237,10 @@ export function specialRows(parts) {
   return rows;
 }
 
+/** True when a part is an insulating sheet cut by laser whose edge may be charred (laminate, aramid paper, film) : the
+    isolation analysis then walks its cut edge for free, unless the designer says the edge counts. */
+export function charredEdge(spec) { const P = spec && spec.process === "laser_cut" ? laserProfile(spec.material) : null; return !!P && P.verdict === "ok" && ["laminate", "aramid", "film"].includes(P.key); }
+
 /* Where the figures come from. how : "lu" (the document itself was read), "page" (the page was read through an extraction),
    "résumé" (only a search summary : to read before relying on it). No link is opened by the application. */
 export const SOURCES = [

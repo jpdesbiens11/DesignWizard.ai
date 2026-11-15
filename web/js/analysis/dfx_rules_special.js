@@ -97,7 +97,7 @@ export function checkLaser(ctx) {
     }
   });
   ctx.run("LAS-06", () => {
-    if (["laminate", "aramid", "film"].includes(P.key)) ctx.add("LAS-06", { value: P.short, limit: "bord non carbonisé", message: `Isolant découpé au laser (${P.short}) : ${P.edge} Limite : un chant carbonisé ne compte pas dans une ligne de fuite${P.keepOut ? ` ; cuivre et composants en retrait du trait de coupe (des essais publiés ont tenu la tension dès ${mm(P.keepOut)}, aucune distance normalisée)` : ""}. Correctif : garder le débord d'isolant prévu au-delà des conducteurs, demander un bord propre (${src}) et le contrôler à la réception.` });
+    if (["laminate", "aramid", "film"].includes(P.key)) ctx.add("LAS-06", { value: P.short, limit: "bord non carbonisé", message: `Isolant découpé au laser (${P.short}) : ${P.edge} Limite : un chant carbonisé ne compte pas dans une ligne de fuite${P.keepOut ? ` ; cuivre et composants en retrait du trait de coupe (des essais publiés ont tenu la tension dès ${mm(P.keepOut)}, aucune distance normalisée)` : ""}. Correctif : garder le débord d'isolant prévu au-delà des conducteurs, demander un bord propre (${src}) et le contrôler à la réception. L'analyse d'Isolation longe ce chant sans le compter (réglable dans ses conditions).` });
     else if (isConductor(ctx)) ctx.add("LAS-06", { value: P.short, limit: "arêtes ébavurées", message: `Conducteur découpé au laser (${P.short}) : ${P.edge} Limite : aucune bavure sous un isolant. Correctif : ébavurer et arrondir les arêtes avant d'isoler ou de laminer ; nettoyer les plages de contact et de soudure.` });
   });
 }
