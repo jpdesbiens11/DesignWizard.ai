@@ -18,6 +18,8 @@ export const LEAD = {
   purchased: { days: [2, 10], proto: true, shop: "fournisseur" },
   extrusion_al: { days: [20, 40], proto: false, shop: "extrusion (filière dédiée)", instead: "usinez le prototype dans une barre ou une plaque (3 à 6 jours), gardez la filière pour la série" },
   extrusion_plastic: { days: [20, 40], proto: false, shop: "extrusion plastique (filière dédiée)", instead: "imprimez le prototype (1 à 4 jours), gardez la filière pour la série" },
+  die_casting: { days: [30, 60], proto: false, shop: "fonderie sous pression (moule dédié)", instead: "usinez le prototype dans la masse (3 à 6 jours) pour valider la physique, gardez le moule pour la série" },
+  sand_casting: { days: [15, 30], proto: false, shop: "fonderie par gravité (modèle et moule)", instead: "usinez le prototype dans la masse (3 à 6 jours), ou faites imprimer le modèle de fonderie" },
   injection_molding: { days: [25, 50], proto: false, shop: "injection (moule dédié)", instead: "imprimez le prototype en MJF PA12 ou usinez-le (2 à 6 jours) pour valider la physique, gardez le moule pour la série" },
 };
 const SLOW_FINISH = /anodis|peint|paint|chrom|nickel|zingu|zinc|galvan|passiv|poudre|powder|plating|trait/i;

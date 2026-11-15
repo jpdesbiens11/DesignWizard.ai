@@ -62,14 +62,16 @@ La plateforme se construit par étages. Chaque brique est utile seule, testée, 
 | B4 | **Artéfacts & commande** | STEP, DXF, STL, PDF, FeatureScript ; verdict de commande, délai, dossier pour l'atelier | En place (FeatureScript expérimental) |
 | B5 | **Physique & simulation** | Modèles analytiques (poutre, flambage, boulon, écoulement, thermique, conducteur) ; éléments finis simplifiés — structure, thermique et thermo-mécanique — recoupés par le calcul à la main | En place |
 | B6 | **Assemblage** | Accouplement automatique des interfaces, dépendances liées, nomenclature | En place |
-| B7 | **Isolation & DFx** | Lignes de fuite et distances dans l'air (IEC 60664-1), 110 règles DFM/DFA | En place |
+| B7 | **Isolation & DFx** | Lignes de fuite et distances dans l'air (IEC 60664-1), 118 règles DFM/DFA | En place |
 | B8 | **Dessins & rapport** | 2D coté avec GD&T dérivé des interfaces, rapport de revue de conception | En place |
 | B9 | **Échange ouvert** | Google Drive (arborescence de projet), Onshape (envoi natif) | Drive en place ; Onshape à valider sur un compte réel |
 | B10 | **Carte électronique (PCBA)** | Des fonctions aux Gerber : bibliothèque du métier, blocs dimensionnés, implantation conceptuelle puis détaillée, règles, dossier de fabrication, revue Word et PDF | En place ; dossier à faire relire par un atelier |
 | B11 | **Gammes** | Fabrication d'une pièce pas à pas (pour le fournisseur), assemblage d'un produit et d'une carte (pour le prototypage) : phases, outils, contrôles, questions, notes, Word et PDF | En place ; à faire relire par un atelier |
 
+| B12 | **Pièce moulée** | Plastique injecté, métal coulé sous pression ou par gravité : la coque se dessine d'elle-même autour de ce qu'elle contient, avec les règles du mouleur ; livre de règles de fonderie | En place ; dépouille déclarée, non modélisée — à faire relire par un mouliste |
+
 Briques suivantes envisagées : tôlerie pliée et mise à plat, tournage, usinage 5 axes (accessibilité d'outil),
-moulage, soudure ; cinématique d'assemblage ; chaînes de cotes ; faisceaux et micrologiciel liés à la carte ; coût et empreinte.
+soudure ; cinématique d'assemblage ; chaînes de cotes ; faisceaux et micrologiciel liés à la carte ; coût et empreinte.
 
 **L'aller-retour avec une IA est partout** : tout artéfact — pièce, assemblage, carte — s'exporte en `.dwiz` avec une
 demande, comme on confie une tâche à un technicien ; la réponse se réimporte, l'écran liste les changements, l'humain

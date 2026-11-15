@@ -75,7 +75,9 @@ export const STOCK_FORMS = {
   laminate: { fr: "Stratifié (PCB)", icon: "sheet", hint: "Stratifié FR4 détouré : l'épaisseur est celle du panneau.", dims: [["L", "Longueur"], ["W", "Largeur"], ["t", "Épaisseur"]], processes: ["pcb"], flat: true,
     features: (s) => [{ op: "box", size: [s.L, s.W, s.t] }],
     raw: (s) => flatRaw("Stratifié", s, s.t, PCB_THICKNESS, 0, false) },
-  print: { fr: "Fabrication additive / moulage", icon: "print3d", hint: "Aucun brut : la forme est déposée ou moulée au plus près, les opérations ajoutent la matière.", dims: [], processes: ["fdm", "mjf", "injection_molding"], additive: true,
+  molded: { fr: "Moulage", icon: "cast", hint: "Aucun brut : la matière remplit un moule. La pièce se dessine d'elle-même autour de ce qu'elle contient, avec les règles du mouleur — injection pour un plastique, fonderie pour un métal.", dims: [], processes: ["injection_molding", "die_casting", "sand_casting"], additive: true,
+    features: () => [], raw: () => ({ label: "Matière à mouler (granulés ou lingots de la nuance) — aucun brut à débiter", size: {}, volume: null, exact: true, standard: true, advice: [] }) },
+  print: { fr: "Fabrication additive", icon: "print3d", hint: "Aucun brut : la forme est déposée couche par couche, les opérations ajoutent la matière.", dims: [], processes: ["fdm", "mjf", "injection_molding"], additive: true,
     features: () => [], raw: () => ({ label: "Aucun brut : forme obtenue au plus près (near net shape)", size: {}, volume: null, exact: true, standard: true, advice: [] }) },
 };
 function prevStd(list, v) { const below = list.filter((x) => x < v - 1e-6); return below.length ? below[below.length - 1] : null; }

@@ -9,7 +9,7 @@ d'un artisan, aidé par l'IA. Les règles DFM, DFA, DFx et d'isolation s'appliqu
 
 Libre sous **licence MIT**. Tout tourne dans le navigateur ; vos fichiers restent chez vous.
 
-> Huitième itération (v0.8.0 : le modèle 3D sous la souris — sélection, clic droit, raccourcis, symboles de simulation ; v0.7 : garde-fous de co-intelligence et exports draw.io à la façon de DynamiteAgile ; v0.6 : tracé de piste à la main et routeur plus tenace ; v0.5 : bibliothèque PCBA étendue, blocs qui se déplacent avec leurs pistes ; v0.4 : gammes de fabrication et d'assemblage ; v0.3 : simulation, carte électronique, aller-retour IA), publiée pour recueillir vos commentaires. Voir [Vos commentaires](#vos-commentaires),
+> Neuvième itération (v0.9.0 : la pièce moulée, plastique ou métal, qui se dessine d'elle-même avec les règles du mouleur ; v0.8 : le modèle 3D sous la souris — sélection, clic droit, raccourcis, symboles de simulation ; v0.7 : garde-fous de co-intelligence et exports draw.io à la façon de DynamiteAgile ; v0.6 : tracé de piste à la main et routeur plus tenace ; v0.5 : bibliothèque PCBA étendue, blocs qui se déplacent avec leurs pistes ; v0.4 : gammes de fabrication et d'assemblage ; v0.3 : simulation, carte électronique, aller-retour IA), publiée pour recueillir vos commentaires. Voir [Vos commentaires](#vos-commentaires),
 > la [vision](docs/VISION.md) et le [format de fichier `.dwiz`](docs/FORMAT.md).
 > *English summary at the [end of this page](#english-summary).*
 
@@ -71,7 +71,7 @@ Sans Python, le dossier `web/` fonctionne aussi tel quel derrière n'importe que
 
 | Onglet | Ce que vous y faites |
 |---|---|
-| **Atelier** (*Shop*) | Vous dites l'**intention** : à quoi sert la pièce, ses interfaces (par leur forme : « je me visse sur… », « je reçois un arbre »…), sa matière, ce que l'on prend **sur l'étagère** (plaque, tôle, rond, cornière…). La pièce se construit sous vos yeux : plus petite enveloppe, épaisseur du commerce, **gamme de fabrication**, verdict DFx et délai de prototype. Sous-onglets : **entrevue avec Claude** (prompt générique, réponse collée) et registre des interfaces. |
+| **Atelier** (*Shop*) | Vous dites l'**intention** : à quoi sert la pièce, ses interfaces (par leur forme : « je me visse sur… », « je reçois un arbre »…), sa matière, ce que l'on prend **sur l'étagère** (plaque, tôle, rond, cornière…). La pièce se construit sous vos yeux : plus petite enveloppe, épaisseur du commerce, **gamme de fabrication**, verdict DFx et délai de prototype. **Pièce moulée** : vous donnez le volume à contenir et ce qui se fixe dedans ; la coque se dessine seule avec les règles du mouleur — paroi unique choisie pour la matière et la longueur d'écoulement, rayons, bossages détachés et noyautés, goussets, nervures, inserts (plastique) ou taraudages repris (métal), dépouille déclarée ; injection, fonderie sous pression ou par gravité selon la matière ([MOULAGE.md](docs/MOULAGE.md)). Sous-onglets : **entrevue avec Claude** (prompt générique, réponse collée) et registre des interfaces. |
 | **Pièces** | Studio de pièce : curseurs sur chaque paramètre (reconstruction en direct), arbre de construction avec **verbes d'atelier** (percer, tarauder, lamer, épauler, charioter…), « Trou ici » / « Interface ici » en cliquant une face, DFM en direct avec **correctifs en un clic**. Onglets **Gamme** (brut, opérations, outils), **Artéfacts** (STEP, STL, DXF, PDF, FeatureScript, **dossier de commande**) et **Fichier** (`.dwiz`). **Tout se fait aussi à la souris sur le modèle** : un clic sélectionne une face, une arête ou un point (Ctrl + clic pour plusieurs) et en donne la mesure ; le clic droit ouvre le menu de ce qui se fait là (trou, poche, bossage, interface, congé, chanfrein, coupe à ce niveau…) ; les raccourcis usuels font de même (H, P, B, I, R, C, N, Échap). Une face nommée dans un dialogue s'allume, et se choisit d'un clic dans la vue. |
 | **Extrusion** | Profilés aluminium ou plastique : vous listez ce qui va *dedans* et *dehors*, Claude propose la section, la plateforme l'extrude et vérifie parois, gorges, cavités et cercle circonscrit. |
 | **PCB** | Cartes : composants avec leurs hauteurs, zones de cuivre HV / LV, nets. La carte se fixe par ses interfaces comme une autre pièce. |
@@ -82,7 +82,7 @@ Sans Python, le dossier `web/` fonctionne aussi tel quel derrière n'importe que
 | **Physique → Simulation** | Éléments finis **volontairement simples**, structure et thermique : la pièce ou l'assemblage est maillé en cubes identiques, tenu et chargé par ses faces ou ses interfaces. Trois physiques : structure, thermique, et **thermo-mécanique** (la dilatation d'une pièce tenue). **Avant de calculer**, l'écran écrit le calcul à la main du modèle simple équivalent (poutre, barre, conduction, bilan de convection, dilatation libre et borne de bridage) ; **après**, il compare les deux. Voir [docs/SIMULATION.md](docs/SIMULATION.md). |
 | **Physique** | 21 modèles analytiques — poutres, flambage, torsion, plaque, assemblage boulonné, emmanchement, écoulement en conduite, conduction, dissipateur, busbar, piste de PCB… Les cotes sont reprises de la pièce ; le calcul est montré pas à pas, avec ses hypothèses, son domaine de validité et sa source. |
 | **Isolation** | Creepage et clearance mesurés sur **l'assemblage complet**, comparés aux distances requises par IEC 60664-1 (pollution degree, altitude, OVC, system IT). Chemins tracés en rouge. |
-| **DFx** | Bilan DFM de chaque pièce, DFA de chaque assemblage, livre des règles imprimable (110 règles). |
+| **DFx** | Bilan DFM de chaque pièce, DFA de chaque assemblage, livre des règles imprimable (118 règles, dont celles de la fonderie). |
 | **Dessins** | Dessin 2D généré : vues à arêtes cachées, tableau des trous, références A / B / C et **GD&T calculé depuis les interfaces**, cartouche, notes — en PDF vectoriel. |
 | **Rapport** | Le dossier de revue de conception : images, BOM, interfaces, physique, isolation, constats, matière première, verdict de commande, dessins, décisions et actions. |
 | **Compte** (menu) | Connexion Google : en ligne, **votre Google Drive est le stockage de l'application** — un dossier par produit, rangé par numéro (pièces, assemblages, analyses, rapports, commandes). Thèmes. Pour l'administrateur : comptes approuvés de la démo en ligne. Voir [docs/GOOGLE.md](docs/GOOGLE.md). |
@@ -93,7 +93,7 @@ Partout : **Ctrl + K** ouvre *la baguette* (« 4 trous M4 aux coins à 8 mm », 
 
 ## Ce qui est vérifié, et comment
 
-- **149 tests Node** (`node --test tests/node/*.test.mjs`) : noyau CAO réel, matière première et verbes d'atelier,
+- **236 tests Node** (`node --test tests/node/*.test.mjs`) : noyau CAO réel, matière première et verbes d'atelier,
   synthèse de pièce depuis l'intention, format `.dwiz` (aller-retour sans perte sur toutes les pièces), 21 modèles de
   physique contre des valeurs de manuel, exports STL / DXF / FeatureScript, commande et délais, règles IEC 60664-1,
   moteur de chemins, moteur DFx, dessins PDF, connexion Google et Drive (contre des doubles, sans réseau).
@@ -162,7 +162,8 @@ design loop before production starts.**
 
 - **The Shop** (« Atelier »): a part is not a sketch you extrude. You state its **design intent** — what it is for,
   its interfaces with its neighbours, its material and the raw stock taken from the rack — and the platform writes
-  the part: smallest envelope, commercial thickness, routing sheet, DFx verdict and prototype lead time. An interview
+  the part: smallest envelope, commercial thickness, routing sheet, DFx verdict and prototype lead time. A **moulded part**
+  (plastic or metal) draws itself from the volume it must hold and the moulder's rules of thumb. An interview
   with Claude (generic prompt, pasted answer) goes further.
 - **One file format, `.dwiz`**: one instruction per line, read the same way by an engineer, a shop and an AI;
   lossless twin of the JSON model; its vocabulary grows module by module (`part`, `assembly`, `project` today;

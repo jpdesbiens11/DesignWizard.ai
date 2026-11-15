@@ -20,7 +20,7 @@ Functions: min max abs sqrt floor ceil round sin cos tan (degrees) hypot clamp(v
   "name": "Short name of the part",
   "function": "One sentence: what the part does in the product.",
   "family": "prismatic | plate | sheet | enclosure | extrusion | pcb | busbar | turned | purchased",
-  "process": "cnc_milling | cnc_turning | sheet_metal | laser_cut | extrusion_al | extrusion_plastic | injection_molding | fdm | mjf | pcb | purchased",
+  "process": "cnc_milling | cnc_turning | sheet_metal | laser_cut | extrusion_al | extrusion_plastic | injection_molding | die_casting | sand_casting | fdm | mjf | pcb | purchased",
   "material": "AL6061-T6 | AL6063-T5 | AL5052-H32 | CU-C110 | BRASS-360 | SS-304 | STEEL-1018 | PA66-GF30 | PC | PC-ABS | ABS | PBT-GF30 | PPS-GF40 | POM | PEEK | PEI-9085 | PA12 | PVC-U | SILICONE | FR4 | FR4-CTI600",
   "elec": { "kind": "conductor | insulator | chassis | none", "net": "HV+" },   // electrical role (isolation analysis); optional
   "intent": { "loads": "20 N at the tip, vibration", "environment": "-20..60 °C, indoor", "quantity": 50, "priority": "cost | mass | stiffness | lead_time" },   // optional: why the part exists
@@ -82,7 +82,8 @@ The platform builds the solid, picks the commercial size to buy, writes the rout
     | "bar_round" {"d","L"}                round bar, centred on its axis, Z by default — the stock of turned parts
     | "tube_round" {"d","t","L"} | "tube_rect" {"w","h","t","L"} | "angle" {"a","b","t","L"}     // commercial sections
     | "profile"   {"profile":P,"L"}        custom extruded section
-    | "print"     {}                       additive / moulded: no blank, the features below ADD the material
+    | "print"     {}                       additive: no blank, the features below ADD the material
+    | "molded"    {}                       moulded (injection, die casting, gravity casting): no blank either
 Shop verbs (entries of "features", same common fields and face / position conventions as section 5):
 - {"op":"drill", "face":"+Z", "at":POS, "d":5.5, "depth":"through"|12}
 - {"op":"tap", "face":"+Z", "at":POS, "thread":"M4", "depth":8}            // tap drill + thread
@@ -197,6 +198,8 @@ A .dwiz document is accepted as an answer in place of the JSON object; both are 
 | `extrusion_al` | Extrusion aluminium |
 | `extrusion_plastic` | Extrusion plastique |
 | `injection_molding` | Moulage par injection |
+| `die_casting` | Fonderie sous pression |
+| `sand_casting` | Fonderie par gravité (sable ou coquille) |
 | `fdm` | Impression 3D FDM |
 | `mjf` | Impression 3D MJF / SLS |
 | `pcb` | Fabrication de PCB |
@@ -213,6 +216,9 @@ A .dwiz document is accepted as an answer in place of the JSON object; both are 
 | `BRASS-360` | Brass C360 | 8.5 | conducteur |
 | `SS-304` | Stainless steel 304 | 8 | conducteur |
 | `STEEL-1018` | Steel 1018 (zinc plated) | 7.87 | conducteur |
+| `AL-A380` | Aluminium A380 (fonderie sous pression) | 2.71 | conducteur |
+| `ZAMAK-3` | Zamak 3 (zinc, fonderie sous pression) | 6.6 | conducteur |
+| `AL-A356-T6` | Aluminium A356-T6 (fonderie par gravité) | 2.68 | conducteur |
 | `PA66-GF30` | PA66-GF30 | 1.36 | 400 |
 | `PC` | Polycarbonate | 1.2 | 250 |
 | `PC-ABS` | PC/ABS | 1.15 | 250 |

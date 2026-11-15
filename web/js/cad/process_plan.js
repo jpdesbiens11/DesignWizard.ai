@@ -14,9 +14,9 @@ const fr = (v, d = 2) => (typeof v === "number" && Number.isFinite(v) ? String(M
 const OPPOSITE = { "+X": "-X", "-X": "+X", "+Y": "-Y", "-Y": "+Y", "+Z": "-Z", "-Z": "+Z" };
 const STATION = { cnc_milling: ["Scie à ruban", "Centre d'usinage 3 axes"], cnc_turning: ["Scie ou embarreur", "Tour à commande numérique"], laser_cut: ["Découpe laser ou jet d'eau", "Perceuse, taraudeuse"], sheet_metal: ["Découpe laser", "Presse plieuse, taraudeuse"],
   extrusion_al: ["Presse à filer, scie", "Centre d'usinage (reprises)"], extrusion_plastic: ["Extrudeuse, scie", "Perceuse (reprises)"], fdm: ["Imprimante 3D (dépôt de fil)", "Établi (reprises)"], mjf: ["Imprimante 3D (lit de poudre)", "Établi (reprises)"],
-  injection_molding: ["Presse à injecter", "Établi (reprises)"], pcb: ["Fabricant de circuits imprimés", "Fabricant de circuits imprimés"] };
-const NEAR_NET = new Set(["fdm", "mjf", "injection_molding"]);
-const RAW = { extrusion_al: "profilé filé sur une filière dédiée", extrusion_plastic: "profilé extrudé sur une filière dédiée", injection_molding: "matière en granulés", fdm: "filament", mjf: "poudre", pcb: "panneau FR-4" };
+  injection_molding: ["Presse à injecter", "Établi (reprises)"], die_casting: ["Fonderie sous pression", "Centre d'usinage (reprises)"], sand_casting: ["Fonderie", "Centre d'usinage (reprises)"], pcb: ["Fabricant de circuits imprimés", "Fabricant de circuits imprimés"] };
+const NEAR_NET = new Set(["fdm", "mjf", "injection_molding", "die_casting", "sand_casting"]);
+const RAW = { extrusion_al: "profilé filé sur une filière dédiée", extrusion_plastic: "profilé extrudé sur une filière dédiée", injection_molding: "matière en granulés", die_casting: "alliage en lingots", sand_casting: "alliage en lingots", fdm: "filament", mjf: "poudre", pcb: "panneau FR-4" };
 /** How an operation is checked, read from what it says. */
 function controlOf(text) {
   if (/Tarauder|taraud|insert/i.test(text)) return "Tampon fileté entre / n'entre pas";
@@ -68,6 +68,7 @@ function questions(spec, r, facts, opts) {
   if (proc === "laser_cut" || proc === "sheet_metal") add("Découpe", "Laser, jet d'eau ou poinçonnage ? Bavure et zone affectée acceptables près des trous taraudés ?");
   if (proc === "fdm" || proc === "mjf") add("Impression", "Orientation d'impression proposée ? Supports sur quelles faces ? Tenue des cotes d'interface sans reprise ?");
   if (proc === "injection_molding") add("Outillage", "Plan de joint, points d'injection et éjecteurs proposés ? Dépouilles suffisantes ? Moule prototype (aluminium) ou série ?");
+  if (proc === "die_casting" || proc === "sand_casting") { add("Outillage", "Plan de joint, attaques de coulée, évents et éjecteurs proposés ? Dépouilles suffisantes ? Prix et durée de vie du moule ?"); add("Fonderie", "Quelle porosité garantissez-vous dans les zones taraudées et étanches ? Contrôle par radiographie ou par ressuage ?"); add("Reprises", "Quelles surépaisseurs d'usinage sur les plans d'appui et les alésages ? Les reprises sont-elles faites chez vous ?"); }
   if (proc === "extrusion_al" || proc === "extrusion_plastic") add("Outillage", "Prix et délai de la filière ? Longueur minimale de commande ? Tolérances du profil (EN 755-9) ?");
   if (proc === "pcb") add("Circuit imprimé", "Classe de fabrication, finition et délai ? Essai électrique à 100 % ?");
   add("Contrôle", "Fournissez-vous un relevé des cotes d'interface avec la première pièce ?");

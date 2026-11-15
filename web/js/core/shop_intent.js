@@ -10,6 +10,7 @@ import { thread } from "../cad/standards.js";
 import { material } from "../cad/materials.js";
 import { STOCK_FORMS, PLATE_THICKNESS, ROUND_BARS, ANGLE_LEGS, ANGLE_THICKNESS, FLAT_THICKNESS, nextStd } from "../cad/stock.js";
 import { SHEET_GAUGES } from "../cad/standards.js";
+import { molded, moldProcess } from "./shop_mold.js";
 
 const r1 = (x) => Math.round(x * 10) / 10;
 const up = (x, step = 5) => Math.ceil((x - 1e-9) / step) * step;
@@ -19,7 +20,7 @@ const off = (base, d) => (Math.abs(d) < 1e-6 ? base : d > 0 ? `${base} + ${r1(d)
 const slug = (s) => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "_").slice(0, 40).replace(/^_+|_+$/g, "");
 
 /** Forms the companion knows how to synthesise, with the process each one implies by default. */
-export const SHOP_FORMS = { plate: "cnc_milling", sheet: "laser_cut", block: "cnc_milling", bar_flat: "cnc_milling", angle: "cnc_milling", bar_round: "cnc_turning", print: "fdm" };
+export const SHOP_FORMS = { plate: "cnc_milling", sheet: "laser_cut", block: "cnc_milling", bar_flat: "cnc_milling", angle: "cnc_milling", bar_round: "cnc_turning", print: "fdm", molded: "injection_molding" };
 export const WHERE = { "+Z": "dessus", "-Z": "dessous", "-Y": "avant", "+Y": "arrière", "-X": "gauche", "+X": "droite" };
 
 /** Thread engagement in diameters, by material class (steel 1 d, aluminium / copper 1.5 d, plastics 2 d). */
@@ -63,7 +64,10 @@ export function recommend(brief) {
   const faces = new Set((brief.interfaces || []).map((i) => i.where || "+Z")), axes = new Set([...faces].map((f) => f[1])), mat = material(brief.material);
   const q = Number(brief.quantity) || 1, plastic = mat && mat.cls !== "metal";
   const onlyAxis = (brief.interfaces || []).length > 0 && (brief.interfaces || []).every((i) => i.type === "fit" || (i.type === "bolt_pattern" && i.params && i.params.pattern && i.params.pattern.type === "circle"));
-  const additive = plastic && ["fdm", "mjf"].find((k) => mat.processes.includes(k));
+  const additive = plastic && ["fdm", "mjf"].find((k) => mat.processes.includes(k)), casts = mat && ["die_casting", "sand_casting"].find((k) => mat.processes.includes(k));
+  const holds = (brief.interfaces || []).some((i) => i.inside) || (brief.envelope && (brief.envelope.L || brief.envelope.W || brief.envelope.H));
+  if (casts && !mat.processes.includes("cnc_milling")) return { form: "molded", process: casts, why: `${mat.name} : un alliage de fonderie, la pièce se moule.` };
+  if (holds && (casts || (plastic && mat.processes.includes("injection_molding") && q > 50))) return { form: "molded", process: casts || "injection_molding", why: `La pièce contient et porte d'autres pièces, en ${q} exemplaires : une coque moulée, dessinée autour de ce qu'elle loge.` };
   if (additive && q <= 20) return { form: "print", process: additive, why: `Matière plastique et ${q} pièce(s) : l'impression 3D évite tout outillage.` };
   if (plastic && q <= 50) return { form: axes.size > 1 ? "block" : "plate", process: "cnc_milling", why: "Plastique en petite série : usinage dans une plaque ou un bloc." };
   if (onlyAxis && axes.size === 1 && axes.has("Z")) return { form: "bar_round", process: "cnc_turning", why: "Toutes les interfaces sont de révolution autour d'un même axe : pièce de tour, prise dans un rond." };
@@ -81,7 +85,7 @@ function prepare(brief, log) {
     const t = INTERFACE_TYPES[raw.type];
     if (!t) throw new Error(`Type d'interface inconnu « ${raw.type} ».`);
     const id = `IF${i + 1}`, name = raw.name || t.fr, key = raw.key || slug(`${brief.name || "piece"}_${raw.partner || name}_${id}`);
-    const it = { id, type: raw.type, name, key, partner: raw.partner || undefined, side: raw.side === "B" ? "B" : "A", where: raw.where || "+Z", params: JSON.parse(JSON.stringify({ ...t.params, ...(raw.params || {}) })), opts: raw.opts ? { ...raw.opts } : undefined };
+    const it = { id, type: raw.type, name, key, partner: raw.partner || undefined, side: raw.side === "B" ? "B" : "A", where: raw.where || "+Z", inside: !!raw.inside, params: JSON.parse(JSON.stringify({ ...t.params, ...(raw.params || {}) })), opts: raw.opts ? { ...raw.opts } : undefined };
     it.fp = footprint(it, brief.material);
     if (!raw.key) log.push(`Interface « ${name} » : clé « ${key} » créée ; la pièce voisine la reprendra telle quelle.`);
     return it;
@@ -171,15 +175,16 @@ function round(brief, items, log) {
 /** Write the part. Returns { spec, decisions, recommendation }. Throws with a French message when the brief cannot be built. */
 export function synthesize(brief, id = "PN-0001") {
   const log = [], rec = recommend(brief), form = brief.form && SHOP_FORMS[brief.form] ? brief.form : rec.form;
-  const b = { ...brief, form, process: brief.process || SHOP_FORMS[form], material: brief.material || (form === "print" ? "PA12" : "AL6061-T6") };
+  const b = { ...brief, form, process: brief.process || SHOP_FORMS[form], material: brief.material || (form === "print" ? "PA12" : form === "molded" ? "PC-ABS" : "AL6061-T6") };
+  if (form === "molded") b.process = brief.process && /molding|casting/.test(brief.process) ? brief.process : moldProcess(b.material);
   if (form === "print" && !brief.process) b.process = material(b.material) && material(b.material).processes.includes("mjf") ? "mjf" : "fdm";
   log.push(`Matière première : ${STOCK_FORMS[form].fr.toLowerCase()} — ${form === rec.form ? rec.why : "choix de l'utilisateur."}`);
   const items = prepare(b, log);
   if (form === "angle" && !items.some((it) => it.where[1] === "Z")) log.push("Aucune interface sur le dessous : l'aile horizontale reste libre.");
-  const core = (form === "plate" || form === "sheet") ? flat(b, items.map((it) => ({ ...it, where: it.where === "-Z" ? "-Z" : "+Z" })), log) : form === "angle" ? angle(b, items, log) : form === "bar_round" ? round(b, items, log) : block(b, items, log);
+  const core = form === "molded" ? molded(b, items, log) : (form === "plate" || form === "sheet") ? flat(b, items.map((it) => ({ ...it, where: it.where === "-Z" ? "-Z" : "+Z" })), log) : form === "angle" ? angle(b, items, log) : form === "bar_round" ? round(b, items, log) : block(b, items, log);
   const intent = {}; for (const k of ["loads", "environment", "quantity", "priority"]) if (brief[k] !== undefined && brief[k] !== "") intent[k] = brief[k];
-  const spec = { dw: "part/1", id, name: brief.name || "Nouvelle pièce", function: brief.fn || "", family: core.family, process: b.process, material: b.material, ...(Object.keys(intent).length ? { intent } : {}),
-    params: core.params, interfaces: core.interfaces, stock: core.stock, features: core.features,
-    notes: ["Casser les angles vifs 0,2 à 0,5 mm", "Tolérances générales ISO 2768-mK"], interview: { questions: [], assumptions: log } };
+  const spec = { dw: "part/1", id, name: brief.name || "Nouvelle pièce", function: brief.fn || "", family: core.family, process: core.process || b.process, material: b.material, ...(Object.keys(intent).length ? { intent } : {}),
+    params: core.params, interfaces: core.interfaces, stock: core.stock, features: core.features, ...(core.mold ? { mold: core.mold } : {}),
+    notes: core.notes || ["Casser les angles vifs 0,2 à 0,5 mm", "Tolérances générales ISO 2768-mK"], interview: { questions: [], assumptions: log } };
   return { spec, decisions: log, recommendation: rec, form };
 }

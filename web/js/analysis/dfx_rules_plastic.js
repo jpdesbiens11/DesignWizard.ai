@@ -53,7 +53,7 @@ const minShell = (ctx) => (ctx.facts.shells.length ? Math.min(...ctx.facts.shell
 const holeLabel = (g) => `Trou Ø${num(g[0].d)}${g.length > 1 ? ` (× ${g.length})` : ""} « ${g[0].source} »`;
 
 /* Inside radii of a hollow part against its wall: a fillet made BEFORE the shell leaves r − t inside, one made after leaves r. */
-function insideRadii(ctx, id, errBelow) {
+export function insideRadii(ctx, id, errBelow) {
   const { facts } = ctx, t = minShell(ctx);
   if (!(t > 0)) return;
   const shellAt = Math.min(...facts.shells.map((s) => ctx.featureIndex(s.source)).filter((i) => i >= 0), Infinity);

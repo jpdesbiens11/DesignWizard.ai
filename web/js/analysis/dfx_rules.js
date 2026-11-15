@@ -11,13 +11,14 @@ import { BOOK_SHEET, checkSheet, checkPlate } from "./dfx_rules_sheet.js";
 import { BOOK_EXTRUSION, checkExtrusion } from "./dfx_rules_extrusion.js";
 import { BOOK_PLASTIC, checkMolding, checkPrinting } from "./dfx_rules_plastic.js";
 import { BOOK_PCB, checkPcb, checkPurchased } from "./dfx_rules_pcb.js";
+import { BOOK_CASTING, checkCasting } from "./dfx_rules_casting.js";
 import { BOOK_GENERAL, checkInterfaces, checkGeneral } from "./dfx_rules_general.js";
 import { BOOK_ASSEMBLY } from "./dfa_rules.js";
 
 /** Printable rule book: one entry per process {process, title, fr, steps[], rules[{id, title, limit, severity, why, source, fix?, manual?}]}.
     `fix: true` = a one-click auto-fix exists; `manual: true` = documented but not checked automatically. */
 const AFTER_EXTRUSION = BOOK_CNC[0].rules.filter((r) => r.id === "CNC-04" || r.id === "CNC-12");      // machining after extrusion: hole sizes
-export const RULEBOOK = [...BOOK_CNC, ...BOOK_SHEET, ...BOOK_EXTRUSION, ...BOOK_PLASTIC, ...BOOK_PCB, ...BOOK_GENERAL, ...BOOK_ASSEMBLY]
+export const RULEBOOK = [...BOOK_CNC, ...BOOK_SHEET, ...BOOK_EXTRUSION, ...BOOK_PLASTIC, ...BOOK_CASTING, ...BOOK_PCB, ...BOOK_GENERAL, ...BOOK_ASSEMBLY]
   .map((b) => ({ ...b, title: b.title || (PROCESSES[b.process] || {}).label || b.process, fr: b.fr || (PROCESSES[b.process] || {}).fr || b.process,
     rules: /^extrusion_/.test(b.process) ? [...b.rules, ...AFTER_EXTRUSION] : b.rules }));
 
@@ -38,7 +39,7 @@ const categoryOf = (id) => { const e = INDEX.get(id); return e ? (e.rule.categor
 const RUNNERS = {
   cnc_milling: [checkMilling], cnc_turning: [checkTurning], sheet_metal: [checkSheet], laser_cut: [checkPlate],
   extrusion_al: [checkExtrusion, checkHoleSizes], extrusion_plastic: [checkExtrusion, checkHoleSizes],
-  injection_molding: [checkMolding], fdm: [checkPrinting], mjf: [checkPrinting], pcb: [checkPcb], purchased: [checkPurchased],
+  injection_molding: [checkMolding], die_casting: [checkCasting], sand_casting: [checkCasting], fdm: [checkPrinting], mjf: [checkPrinting], pcb: [checkPcb], purchased: [checkPurchased],
 };
 const FACT_LISTS = ["holes", "pockets", "bosses", "fillets", "chamfers", "shells", "extrudes", "revolves"];
 
@@ -95,7 +96,7 @@ function context(spec, built, geo) {
       }
       // the mesh is faceted: a curved wall is measured within about one chord deflection (the kernel uses diag / 900, 0.02 to 0.15 mm)
       const w = ctx.wall(), tol = bbox ? Math.max(0.02, Math.min(0.15, Math.hypot(bbox[3] - bbox[0], bbox[4] - bbox[1], bbox[5] - bbox[2]) / 900)) : 0.05;
-      if (w && w.min < lim.rec - tol && !(fromShell <= w.min * 1.1)) {
+      if (w && w.min < lim.rec - tol && !(fromShell <= w.min * 1.1) && !(lim.ignore && w.at && lim.ignore(w.at))) {
         ctx.add(id, { severity: w.min < 0.5 * lim.min ? "error" : "warn", value: Math.round(w.min * 100) / 100, limit: lim.rec, unit: "mm", where: w.at,
           message: `Épaisseur locale de ${num(w.min)} mm mesurée sur le maillage (voir le marqueur 3D) : sous le minimum ${lim.what} de ${num(lim.rec)} mm. Correctif : épaissir cette zone ou écarter les features voisines (trou, pocket, bord).` });
       }

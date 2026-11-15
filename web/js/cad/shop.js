@@ -132,7 +132,8 @@ function pocketLine(f, what) {
 const BEAM = new Set(["laser_cut", "sheet_metal"]);              // the contour and the through holes are cut in one pass
 const CUT_BY_PROCESS = { laser_cut: "Découper le contour au laser / jet d'eau", sheet_metal: "Découper le contour au laser", pcb: "Détourer le panneau", cnc_turning: "Tronçonner", extrusion_al: "Couper à longueur", extrusion_plastic: "Couper à longueur" };
 const NEAR_NET = { fdm: ["Imprimer en FDM (orienter la plus grande face sur le plateau)", "Retirer les supports"], mjf: ["Imprimer en MJF / SLS", "Dépoudrer et microbiller"],
-  injection_molding: ["Mouler par injection (outillage dédié)", "Dégrapper et contrôler les retassures"] };
+  injection_molding: ["Mouler par injection (outillage dédié)", "Dégrapper et contrôler les retassures"],
+  die_casting: ["Couler sous pression (moule acier dédié)", "Détourer : carottes, masselottes et bavures ; contrôler la porosité"], sand_casting: ["Couler par gravité (moule sable ou coquille)", "Dessabler, ébarber, traiter thermiquement si la nuance le demande"] };
 
 /** Routing sheet of a part. `built` = result of the kernel build (params.scope, facts). */
 export function routing(spec, built) {
@@ -199,7 +200,7 @@ export function routing(spec, built) {
     } catch (e) { advice.push(`Opération « ${f.id || f.op} » : ${e.message}`); }
   }
   if (!ifaceDone) ifaceSteps();
-  if (nearNet && shaped) steps.splice(1, 0, { kind: "machine", text: `${shaped} forme(s) venue(s) d'outillage ou d'impression (coque, bossages, ouvertures) : aucune reprise`, face: null, source: null, iface: null, tools: [] });
+  if (nearNet && shaped) steps.splice(steps.findIndex((x) => x.text === NEAR_NET[proc][0]) + 1, 0, { kind: "machine", text: `${shaped} forme(s) venue(s) d'outillage ou d'impression (coque, bossages, ouvertures) : aucune reprise`, face: null, source: null, iface: null, tools: [] });
   if (!steps.some((s) => s.kind === "finish" && /bavur/i.test(s.text)) && proc !== "purchased") add("finish", "Ébavurer, casser les angles vifs 0,2 à 0,5 mm");
   if (spec.finish && !steps.some((s) => /^Finition/.test(s.text))) add("finish", `Finition : ${spec.finish}`);
   add("check", "Contrôler les cotes des interfaces (voir le dessin)");

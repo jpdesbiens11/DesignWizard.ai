@@ -12,6 +12,9 @@ const TABLE = {
   "AL6061-T6": { E: 69, nu: 0.33, Re: 276, Rm: 310, fatigue: 96, cte: 23.6, k: 167, cp: 896, rho: 2700, rhoE: 3.99e-8, alphaE: 0.0036 },
   "AL6063-T5": { E: 69, nu: 0.33, Re: 145, Rm: 186, fatigue: 68, cte: 23.4, k: 209, cp: 900, rho: 2700, rhoE: 3.16e-8, alphaE: 0.0039 },
   "AL5052-H32": { E: 70, nu: 0.33, Re: 193, Rm: 228, fatigue: 117, cte: 23.8, k: 138, cp: 880, rho: 2680, rhoE: 4.99e-8, alphaE: 0.0033 },
+  "AL-A380": { E: 71, nu: 0.33, Re: 159, Rm: 317, fatigue: 138, cte: 21.8, k: 96, cp: 963, rho: 2710, rhoE: 7.5e-8, alphaE: 0.0020 },     // as cast ; elongation about 3 % : no plastic reserve
+  "ZAMAK-3": { E: 86, nu: 0.30, Re: 221, Rm: 283, fatigue: 48, cte: 27.4, k: 113, cp: 419, rho: 6600, rhoE: 6.4e-8, alphaE: 0.0030 },      // creeps under sustained load above 50 °C
+  "AL-A356-T6": { E: 72, nu: 0.33, Re: 165, Rm: 228, fatigue: 60, cte: 21.5, k: 151, cp: 963, rho: 2680, rhoE: 4.4e-8, alphaE: 0.0030 },   // sand cast ; permanent mould: Re about 185
   "CU-C110": { E: 117, nu: 0.34, Re: 250, Rm: 290, fatigue: 90, cte: 17.0, k: 388, cp: 385, rho: 8890, rhoE: 1.724e-8, alphaE: 0.00393 },   // H02 (half hard); annealed: Re ~ 70
   "BRASS-360": { E: 97, nu: 0.34, Re: 310, Rm: 400, fatigue: 140, cte: 20.5, k: 115, cp: 380, rho: 8500, rhoE: 6.6e-8, alphaE: 0.0015 },
   "SS-304": { E: 193, nu: 0.29, Re: 215, Rm: 505, fatigue: 240, cte: 17.3, k: 16, cp: 500, rho: 8000, rhoE: 7.2e-7, alphaE: 0.00094 },

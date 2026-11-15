@@ -10,6 +10,7 @@ import { kernel } from "../cad/client.js";
 import { Viewer } from "../core/viewer.js";
 import { showBuilt } from "../core/viewport.js";
 import { synthesize, recommend, SHOP_FORMS, WHERE } from "../core/shop_intent.js";
+import { moldProcess, MOLD_RULES } from "../core/shop_mold.js";
 import { routing } from "../cad/shop.js";
 import { STOCK_FORMS } from "../cad/stock.js";
 import { INTERFACE_TYPES, interfaceSignature } from "../cad/interfaces.js";
@@ -21,7 +22,7 @@ import { runDfx } from "../analysis/dfx_api.js";
 import { orderCheck } from "../cad/order.js";
 
 const blank = () => ({ name: "", fn: "", loads: "", environment: "", quantity: 10, priority: "", material: "AL6061-T6", form: "", neighbours: [], interfaces: [], addToAsm: true });
-let brief = blank(), uid = 0;
+let brief = blank(), uid = 0, wasMoulded = false;
 
 /* Interfaces offered by their shape — what the part DOES with its neighbour — rather than by a CAD feature. */
 const SHAPES = [
@@ -73,9 +74,9 @@ function render(main) {
   /* 3 — material and raw stock */
   const matSel = el("select", { onChange: (e) => { brief.material = e.target.value; drawIfaces(); drawStock(); propose(); } },
     ["metal", "plastic"].map((cls) => el("optgroup", { label: cls === "metal" ? "Métaux" : "Plastiques" }, MATERIALS.filter((m) => m.cls === cls).map((m) => el("option", { value: m.id, selected: m.id === brief.material }, m.name)))));
-  const stockGrid = el("div", { class: "stock-grid" }), stockWhy = el("p", { class: "muted small" });
+  const stockGrid = el("div", { class: "stock-grid" }), stockWhy = el("p", { class: "muted small" }), moldBox = el("div");
   left.append(el("section", { class: "card taped" }, el("h2", null, el("span", { class: "step-no" }, "3"), "Sa matière et sa matière première"),
-    el("div", { class: "form-row" }, field("Matériau", matSel)), el("h3", null, "Ce que l'on prend sur l'étagère"), stockGrid, stockWhy));
+    el("div", { class: "form-row" }, field("Matériau", matSel)), el("h3", null, "Ce que l'on prend sur l'étagère"), stockGrid, stockWhy, moldBox));
 
   /* 4 — the proposal */
   const holder = el("div", { class: "viewport atelier-view" }), chips = el("div", { class: "atelier-chips" }), out = el("div");
@@ -130,6 +131,7 @@ function render(main) {
         const nm = el("input", { type: "text", value: it.name, placeholder: "Nom de l'interface", onInput: (e) => { it.name = e.target.value; propose(); } }), pt = el("input", { type: "text", value: it.partner, placeholder: "Voisin (ex. : moteur, capot)", onInput: (e) => { it.partner = e.target.value; propose(); } });
         card.append(el("div", { class: "form-row tight" }, field("Nom", nm), field("Avec", pt)), quick(it, () => { drawStock(); propose(); }));
       }
+      if (wasMoulded) card.append(el("label", { class: "check small" }, el("input", { type: "checkbox", checked: !!it.inside, onChange: (e) => { it.inside = e.target.checked; propose(); } }), "À l'intérieur : ce qui se fixe au fond de la pièce (carte, module) — sur colonnettes"));
       list.append(card);
     }
   }
@@ -137,10 +139,23 @@ function render(main) {
     clear(stockGrid);
     const rec = recommend(brief), mat = material(brief.material), plastic = mat && mat.cls !== "metal";
     for (const [form, proc] of Object.entries(SHOP_FORMS)) {
-      const f = STOCK_FORMS[form], on = (brief.form || rec.form) === form, odd = form === "print" ? !plastic : (plastic && ["sheet", "angle"].includes(form));
+      const mould = form === "molded", canMould = mat && ["injection_molding", "die_casting", "sand_casting"].some((k) => mat.processes.includes(k));
+      const f = STOCK_FORMS[form], on = (brief.form || rec.form) === form, odd = mould ? !canMould : form === "print" ? !plastic : (plastic && ["sheet", "angle"].includes(form));
       stockGrid.append(el("button", { class: "stock-card" + (on ? " on" : "") + (odd ? " odd" : ""), type: "button", "aria-pressed": on ? "true" : "false", "data-tip": f.hint, onClick: () => { brief.form = form === rec.form ? "" : form; drawStock(); propose(); } },
-        icon(f.icon), el("b", null, f.fr), el("small", null, PROCESSES[proc].fr), form === rec.form ? badge("Conseillé", "ok") : null));
+        icon(f.icon), el("b", null, f.fr), el("small", null, PROCESSES[mould ? moldProcess(brief.material) : proc].fr), form === rec.form ? badge("Conseillé", "ok") : null));
     }
+    /* a moulded part is drawn around what it holds : the designer gives the volume to contain, the rules of the moulder do the rest */
+    clear(moldBox);
+    const moulded = (brief.form || rec.form) === "molded";
+    if (moulded) {
+      const proc = moldProcess(brief.material), R = MOLD_RULES[proc], lim = (mat && mat.wall) || R.wall, again = () => propose();
+      brief.envelope = brief.envelope || { L: 100, W: 60, H: 25 };
+      moldBox.append(el("div", { class: "atelier-hint", style: { marginTop: ".6rem" } }, icon("cast"), el("div", null, el("b", null, `Pièce moulée — ${PROCESSES[proc].fr.toLowerCase()}`), el("p", { class: "small", style: { margin: ".2rem 0 0" } },
+        `Dites le volume à contenir ; cochez « à l'intérieur » les interfaces de ce qui se fixe dedans. La pièce se dessine seule : paroi de ${String(lim[0]).replace(".", ",")} à ${String(lim[1]).replace(".", ",")} mm pour cette matière, rayons, bossages${R.thread === "insert" ? " avec inserts" : " taraudés après coulée"}, nervures, dépouille de ${R.draft[0]}° déclarée.`))),
+        el("div", { class: "form-row tight" }, numIn(brief.envelope, "L", "Longueur à contenir", again), numIn(brief.envelope, "W", "Largeur à contenir", again), numIn(brief.envelope, "H", "Hauteur à contenir", again),
+          field("Colonnettes (mm)", el("input", { type: "number", value: brief.standoff ?? 6, step: 0.5, min: 3, onInput: (e) => { const v = parseFloat(e.target.value); if (v >= 3) { brief.standoff = v; again(); } } }))));
+    }
+    if (moulded !== wasMoulded) { wasMoulded = moulded; drawIfaces(); }
     stockWhy.textContent = brief.form && brief.form !== rec.form ? `Votre choix : ${STOCK_FORMS[brief.form].fr.toLowerCase()}. Le compagnon conseillait : ${STOCK_FORMS[rec.form].fr.toLowerCase()} — ${rec.why}` : rec.why;
   }
 
@@ -166,9 +181,9 @@ function render(main) {
   function drawProposal(res, built) {
     const r = routing(res.spec, built), bb = built.bbox, st = built.facts.stock;
     clear(chips); clear(out);
-    chips.append(el("span", { class: "chip" }, fmtMass(built.mass)), el("span", { class: "chip" }, `${fmt(bb[3] - bb[0], 1)} × ${fmt(bb[4] - bb[1], 1)} × ${fmt(bb[5] - bb[2], 1)} mm`),
+    chips.append(...[el("span", { class: "chip" }, fmtMass(built.mass)), el("span", { class: "chip" }, `${fmt(bb[3] - bb[0], 1)} × ${fmt(bb[4] - bb[1], 1)} × ${fmt(bb[5] - bb[2], 1)} mm`),
       r.utilisation !== null ? el("span", { class: "chip" + (r.utilisation < 0.25 ? " bad" : " done"), "data-tip": "Part du brut qui reste dans la pièce (l'inverse du ratio « buy-to-fly »)" }, `${Math.round(r.utilisation * 100)} % du brut utilisé`) : null,
-      el("span", { class: "chip" }, `${r.setups.length || 1} posage(s) · ${r.tools.length} outil(s)`));
+      el("span", { class: "chip" }, `${r.setups.length || 1} posage(s) · ${r.tools.length} outil(s)`)].filter(Boolean));     // append(null) would write the word « null »
     for (const l of built.log.filter((x) => x.level === "error")) out.append(el("p", { class: "form-error" }, l.msg));
     if (st) out.append(el("div", { class: "atelier-stock" }, icon(STOCK_FORMS[st.form].icon), el("div", null, el("b", null, st.label), el("small", null, `${material(res.spec.material).name} · ${PROCESSES[res.spec.process].fr}`))));
     out.append(el("h3", null, "Gamme de fabrication"), el("ol", { class: "gamme" }, r.steps.map((s) => el("li", { class: `g-${s.kind}` }, el("span", { class: "g-n" }, s.n), el("span", { class: "grow" }, s.text), s.face && s.kind !== "stock" ? badge(WHERE[s.face] || s.face, "neutral") : null))));
@@ -179,8 +194,8 @@ function render(main) {
   /** Born manufacturable: the DFx verdict and the prototype lead time of the proposal, before the part even exists. */
   function drawOrder(res, built, dfx) {
     const c = orderCheck(res.spec, built, dfx, routing(res.spec, built), { quantity: brief.quantity });
-    chips.append(el("span", { class: "chip" + (c.ready ? " done" : " bad"), "data-tip": [...c.blockers, ...c.drivers].join(" · ") || null }, c.ready ? `Prototype : ${c.days[0]} à ${c.days[1]} j` : "À corriger avant commande"),
-      dfx && dfx.summary ? el("span", { class: "chip" + (dfx.summary.errors ? " bad" : " done") }, dfx.summary.errors ? `DFx : ${dfx.summary.errors} à corriger` : `DFx : fabricable${dfx.summary.warnings ? `, ${dfx.summary.warnings} à vérifier` : ""}`) : null);
+    chips.append(...[el("span", { class: "chip" + (c.ready ? " done" : " bad"), "data-tip": [...c.blockers, ...c.drivers].join(" · ") || null }, c.ready ? `Prototype : ${c.days[0]} à ${c.days[1]} j` : "À corriger avant commande"),
+      dfx && dfx.summary ? el("span", { class: "chip" + (dfx.summary.errors ? " bad" : " done") }, dfx.summary.errors ? `DFx : ${dfx.summary.errors} à corriger` : `DFx : fabricable${dfx.summary.warnings ? `, ${dfx.summary.warnings} à vérifier` : ""}`) : null].filter(Boolean));
     for (const t of c.cautions.filter((x) => /prototype/.test(x))) out.prepend(el("p", { class: "atelier-hint warn" }, icon("warning"), " ", t));
   }
   function createPart() {
