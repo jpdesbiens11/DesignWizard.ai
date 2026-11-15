@@ -25,7 +25,7 @@ const part = {
     ["Ce qui se dit avec le fournisseur — la gamme annotée : une note par phase, les points à voir", ["plan"]],
   ],
   kids: {
-    intent: {}, order: {}, elec: {}, mold: {},
+    intent: {}, order: {}, elec: {}, mold: {}, characteristics: {},
     interfaces: { word: "interface", head: ["id", "type"], first: ["side", "face", "at", "level", "rot", "key", "partner", "name"], kids: { params: {}, opts: {} } },
     stock: { head: ["form"] },
     params: { word: "param", keyed: true, head: ["value"] },

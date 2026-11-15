@@ -72,6 +72,14 @@ const COMMANDS = {
     K.flush();
     return { result: out };
   },
+  /** Hidden-line views of an assembly : every instance placed, projected as one shape. args: {items:[{key, matrix}], views, hidden} */
+  hlrAsm({ items, views, hidden }) {
+    const shapes = items.map((it) => (it.matrix && !matIsIdentity(it.matrix) ? K.transform(shapeOf(it.key), it.matrix) : shapeOf(it.key)));
+    const shape = shapes.length === 1 ? shapes[0] : K.compound(shapes), out = {};
+    for (const v of views) out[v.name] = K.hlr(shape, v.dir, v.xdir, hidden === true && v.hidden !== false);
+    K.flush();
+    return { result: out };
+  },
   /** Interference between instances. args: {pairs:[{a:{key, matrix}, b:{key, matrix}}]} -> volumes in mm3 */
   interference({ pairs }) {
     const out = [];

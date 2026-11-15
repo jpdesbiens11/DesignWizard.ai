@@ -1,5 +1,7 @@
-/* DesignWizard.ai — Dessins: the 2D drawing of each part, generated from the 3D and the interfaces — views with hidden
-   lines, overall dimensions, hole table, datums and GD&T, notes, title block — shown as SVG and exported as a vector PDF. */
+/* DesignWizard.ai — Dessins: the 2D drawing of each part and of each assembly, generated from the 3D and the interfaces,
+   on a tabloid sheet (11 × 17 in) : standard views fitted in the middle, a small isometric view top right, notes bottom
+   left, title block bottom right — with the parts list above it for an assembly. Every dimension has its balloon ; the
+   left pane lists them all and gives each its class (normal, reference, SC, CSC). Shown as SVG, exported as a vector PDF. */
 
 import { el, clear, icon, btn, badge, field, toast, download, fmt } from "../core/dom.js";
 import { registerModule, go, setStatus, app } from "../core/app.js";
@@ -8,21 +10,42 @@ import { kernel } from "../cad/client.js";
 import { SvgSheet } from "../draw/svg.js";
 import { PdfSheet } from "../draw/pdf.js";
 import { composeDrawing, viewRequest, PAPER, drawingSemantics } from "../draw/part_drawing.js";
+import { composeAssemblyDrawing } from "../draw/asm_drawing.js";
+import { DIM_CLASSES, setDimClass, dimText } from "../draw/dim_model.js";
+import { buildAssembly } from "../core/asm_scene.js";
+import { matPoint } from "../cad/vec.js";
+import { whereUsed, reviewItems } from "../core/review.js";
 
-/** Build the drawing of a part. Returns {svg, pdfBytes(), info, built}. Shared with Rapport and Onshape. */
+const [PW, PH] = PAPER.TABLOID;
+/** The title-block fields of the project, and the revisions the review ledger remembers for an artefact. */
+function sheetOpts(key, rev, extra) {
+  const d = (store.project.drawing || {}), led = ((store.project.review || {}).items || {})[key] || {}, now = (reviewItems(store.project).find((x) => x.key === key) || {}).state;      // the state as it is today : a reviewed artefact that changed — or whose parts moved on — is no longer « reviewed »
+  const revisions = (led.history || []).filter((h) => h.rev).map((h) => ({ rev: h.rev, description: h.note || "", date: String(h.when || "").slice(0, 10), by: led.by || d.checkedBy || "" }));
+  return { projection: d.projection || "third", hidden: d.hidden !== false, drawnBy: d.drawnBy || store.project.author || "", checkedBy: d.checkedBy || "", approvedBy: d.approvedBy || "",
+    status: d.status || (now === "ok" ? "Revu" : now === "changed" ? "À revalider" : "Préliminaire"), date: new Date().toISOString().slice(0, 10), revisions, ...extra };
+}
+const render2 = (compose, data, title) => { const svg = new SvgSheet({ width: PW, height: PH, title }), info = compose(svg, data);
+  return { svg: svg.toString(0), info, pdfBytes: () => { const pdf = new PdfSheet({ width: PW, height: PH, title }); compose(pdf, data); return pdf.toBytes(); } }; };
+
+/** Build the drawing of a part. Returns {svg, pdfBytes(), info, built, spec}. Shared with Rapport and Onshape. */
 export async function makeDrawing(partId, extra = {}) {
   const spec = store.part(partId);
   if (!spec) throw new Error(`Pièce « ${partId} » introuvable.`);
   const built = await kernel.build(spec);
   if (!built.bodies.length) throw new Error(`${partId} n'a pas de volume à dessiner.`);
   const views = await kernel.hlr(partId, viewRequest(), true);
-  const d = (store.project.drawing || {}), opts = { size: "A3", projection: d.projection || "third", hidden: d.hidden !== false, drawnBy: d.drawnBy || store.project.author || "", checkedBy: d.checkedBy || "", approvedBy: d.approvedBy || "",
-    status: d.status || "Préliminaire", date: new Date().toISOString().slice(0, 10), ...extra };
-  const data = { spec, built, views, project: store.project, opts };
-  const svg = new SvgSheet({ width: PAPER.A3[0], height: PAPER.A3[1], title: `${spec.id} ${spec.name || ""}` });
-  const info = composeDrawing(svg, data);
-  return { svg: svg.toString(0), info, built, spec,
-    pdfBytes: () => { const pdf = new PdfSheet({ width: PAPER.A3[0], height: PAPER.A3[1], title: `${spec.id} ${spec.name || ""}` }); composeDrawing(pdf, data); return pdf.toBytes(); } };
+  return { ...render2(composeDrawing, { spec, built, views, project: store.project, opts: sheetOpts(`part:${partId}`, spec.revision, extra) }, `${spec.id} ${spec.name || ""}`), built, spec };
+}
+/** Build the drawing of an assembly : placed parts projected together, item balloons, parts list. Returns {svg, pdfBytes(), info, spec}. */
+export async function makeAssemblyDrawing(asmId, extra = {}) {
+  const asm = store.assembly(asmId);
+  if (!asm) throw new Error(`Assemblage « ${asmId} » introuvable.`);
+  const ctx = await buildAssembly(asm), shown = ctx.asm.instances.filter((i) => !i.hidden);
+  if (!shown.length) throw new Error(`${asmId} n'a aucune pièce à dessiner.`);
+  const views = await kernel.hlrAsm(shown.map((i) => ({ key: i.part, matrix: ctx.sol.placements[i.id] })), viewRequest(), false), centers = {};
+  for (const i of shown) if (!centers[i.part]) { const b = ctx.built[i.part].bbox; centers[i.part] = matPoint(ctx.sol.placements[i.id], [(b[0] + b[3]) / 2, (b[1] + b[4]) / 2, (b[2] + b[5]) / 2]); }
+  const rows = ctx.bom.map((r) => ({ ...r, rev: r.kind === "part" ? (store.part(r.id) || {}).revision || "A" : "" }));
+  return { ...render2(composeAssemblyDrawing, { asm, project: store.project, views, bbox: ctx.bbox, rows, centers, mass: ctx.mass.mass, opts: sheetOpts(`assembly:${asmId}`, asm.revision, extra) }, `${asm.id} ${asm.name || ""}`), spec: asm };
 }
 export function svgNode(markup) {
   const doc = new DOMParser().parseFromString(markup, "image/svg+xml"), node = document.importNode(doc.documentElement, true);
@@ -31,57 +54,79 @@ export function svgNode(markup) {
 }
 
 function render(main, args) {
-  const parts = store.parts.filter((p) => !p.step);
-  const id = args[0] && store.part(args[0]) ? args[0] : (parts[0] && parts[0].id) || null;
+  const parts = store.parts.filter((p) => !p.step), asms = store.assemblies, isAsm = args[0] === "asm";
+  const id = isAsm ? (store.assembly(args[1]) ? args[1] : null) : args[0] && store.part(args[0]) ? args[0] : (parts[0] && parts[0].id) || null;
   const left = el("aside", { class: "side" }), right = el("aside", { class: "side right" }), center = el("div", { style: { overflow: "auto", padding: "1rem" } });
   const root = el("div", { class: "studio" }, left, center, right);
+  root.style.setProperty("--left-w", "340px");
   main.append(root);
   left.append(el("img", { class: "side-mark", src: "img/marks/drawings.svg", alt: "" }), el("div", { class: "side-head" }, el("h2", null, "Dessins")));
-  const scroll = el("div", { class: "side-scroll" });
+  const scroll = el("div", { class: "side-scroll" }), dimBox = el("div");
   left.append(scroll);
-  scroll.append(el("div", { class: "side-section" }, el("h3", null, `Pièces (${parts.length})`), parts.map((p) => el("a", { class: "nav-item" + (p.id === id ? " active" : ""), href: `#/drawings/${encodeURIComponent(p.id)}` }, icon("drawing"), el("span", { class: "grow" }, p.name || p.id), el("small", null, p.id)))));
-  if (!id) { center.append(el("div", { class: "empty" }, el("h2", null, "Aucune pièce à dessiner"), el("p", null, "Créez une pièce : son dessin se génère tout seul."), el("a", { class: "btn btn-primary", href: "#/shop" }, "Démarrer par les interfaces"))); right.remove(); root.classList.add("no-right"); return null; }
-  const st = { doc: null, token: 0 };
+  const pick = el("select", { "aria-label": "Dessin affiché", onChange: (e) => go(`#/drawings/${e.target.value}`) },
+    el("optgroup", { label: `Pièces (${parts.length})` }, parts.map((p) => el("option", { value: encodeURIComponent(p.id), selected: !isAsm && p.id === id }, `${p.id} — ${p.name || ""}`))),
+    asms.length ? el("optgroup", { label: `Assemblages (${asms.length})` }, asms.map((a) => el("option", { value: `asm/${encodeURIComponent(a.id)}`, selected: isAsm && a.id === id }, `${a.id} — ${a.name || ""}`))) : null);
+  scroll.append(el("div", { class: "side-section" }, field("Dessin de", pick)), dimBox);
+  if (!id) { center.append(el("div", { class: "empty" }, el("h2", null, "Rien à dessiner"), el("p", null, "Créez une pièce : son dessin se génère tout seul."), el("a", { class: "btn btn-primary", href: "#/shop" }, "Démarrer par les interfaces"))); right.remove(); root.classList.add("no-right"); return null; }
+  const st = { doc: null, token: 0 }, artefact = () => (isAsm ? store.assembly(id) : store.part(id));
   const d = () => store.project.drawing || {};
   const setD = (key, val, label) => store.commit(`Dessins : ${label}`, (p) => { p.drawing = { ...(p.drawing || {}), [key]: val }; });
-  const off = store.on("change", () => { if (!store.part(id)) { go("#/drawings"); return; } build(); });
+  const off = store.on("change", () => { if (!artefact()) { go("#/drawings"); return; } build(); });
   async function build() {
     const token = ++st.token;
     if (!st.doc) { clear(center); center.append(el("p", { class: "muted" }, "Projection des vues et mise en page…")); }
     try {
-      const doc = await makeDrawing(id);
+      const doc = isAsm ? await makeAssemblyDrawing(id) : await makeDrawing(id);
       if (token !== st.token) return;
       st.doc = doc;
       clear(center); center.append(svgNode(doc.svg));
       setStatus(`Dessin de ${id} à l'échelle ${doc.info.scale}`, "done");
-      renderRight();
+      renderDims(); renderRight();
     } catch (e) { if (token !== st.token) return; clear(center); center.append(el("div", { class: "card" }, el("h2", null, "Dessin impossible"), el("p", { class: "form-error" }, e.message))); }
   }
-  function pdf() { if (!st.doc) return; download(`${id}_rev${st.doc.spec.revision || "A"}.pdf`, st.doc.pdfBytes(), "application/pdf"); toast("PDF vectoriel téléchargé.", "success"); }
+  /* every dimension of the sheet, with its balloon number : each can stay normal, become a reference, or a special characteristic */
+  function renderDims() {
+    clear(dimBox); if (!st.doc) return;
+    const dims = st.doc.info.dims || [];
+    if (isAsm) { dimBox.append(el("div", { class: "side-section" }, el("h3", null, `Repères (${st.doc.info.items.length}) et cotes (${dims.length})`), st.doc.info.items.map((x) => el("p", { class: "small", style: { margin: "0 0 .2rem" } }, badge(String(x.item), "info"), ` ${x.id}`, x.view ? null : el("small", { class: "muted" }, " — masquée"))),
+      dims.map((x) => el("p", { class: "small", style: { margin: "0 0 .2rem" } }, badge(String(x.n), "neutral"), ` ${x.label} : ${fmt(x.value, 2)} mm`)))); return; }
+    const n = (c) => dims.filter((x) => x.cls === c).length;
+    dimBox.append(el("div", { class: "side-section" }, el("h3", null, `Cotes (${dims.length})`), el("p", { class: "muted", style: { fontSize: ".78rem", margin: "0 0 .4rem" } }, `Le numéro est celui de la bulle sur le dessin. ${n("sc")} SC · ${n("csc")} CSC · ${n("ref")} référence(s).`),
+      dims.map((x) => el("div", { class: "param", style: { gridTemplateColumns: "26px minmax(0,1fr) 92px", alignItems: "center" } }, badge(String(x.n), x.cls === "csc" ? "danger" : x.cls === "sc" ? "warn" : "neutral"),
+        el("label", { "data-tip": `${x.label} — ${st.doc.info.onView.includes(x.key) ? "sur une vue" : x.table === "holes" ? "au tableau des trous" : "au tableau des cotes de définition"}${x.basic ? " · cote de base (encadrée)" : ""}` }, dimText(x), el("small", null, x.label)),
+        el("select", { "aria-label": `Classe de la cote ${x.n}`, style: { padding: ".15rem .2rem", fontSize: ".8rem" }, onChange: (e) => store.updatePart(id, (p) => { setDimClass(p, x.key, e.target.value); }, `${id} : cote ${x.n} — ${DIM_CLASSES[e.target.value].fr}`) },
+          Object.entries(DIM_CLASSES).map(([k, c]) => el("option", { value: k, selected: k === x.cls }, c.short || "Normale")))))));
+  }
+  function pdf() { if (!st.doc) return; download(`${id}_rev${st.doc.spec.revision || "A"}.pdf`, st.doc.pdfBytes(), "application/pdf"); toast("PDF vectoriel téléchargé (tabloïd, 11 × 17 po).", "success"); }
   function renderRight() {
     clear(right);
-    const spec = store.part(id), sem = st.doc ? { datums: st.doc.info.datums, gdt: st.doc.info.gdt } : drawingSemantics(spec, { interfaces: [], bbox: [0, 0, 0, 0, 0, 0] });
-    right.append(el("div", { class: "side-head" }, el("h2", null, spec.name || id), btn("PDF", pdf, { primary: true, small: true, icon: "pdf", tip: "Télécharger le dessin en PDF vectoriel (A3)" })));
+    const spec = artefact(), sem = isAsm ? { datums: [], gdt: [] } : st.doc ? { datums: st.doc.info.datums, gdt: st.doc.info.gdt } : drawingSemantics(spec, { interfaces: [], bbox: [0, 0, 0, 0, 0, 0] });
+    right.append(el("div", { class: "side-head" }, el("h2", null, spec.name || id), btn("PDF", pdf, { primary: true, small: true, icon: "pdf", tip: "Télécharger le dessin en PDF vectoriel (tabloïd, 11 × 17 po)" })));
     const body = el("div", { class: "side-scroll" });
     right.append(body);
     const text = (key, label, hint) => field(label, el("input", { type: "text", value: d()[key] || "", onChange: (e) => setD(key, e.target.value, label) }), hint);
+    const setRev = (v) => (isAsm ? store.updateAssembly(id, (x) => { x.revision = v || undefined; }, `${id} : révision`) : store.updatePart(id, (x) => { x.revision = v || undefined; }, `${id} : révision`));
     body.append(el("div", { class: "side-section" }, el("h3", null, "Cartouche"), el("div", { class: "form-row" }, text("drawnBy", "Dessiné"), text("checkedBy", "Vérifié")), el("div", { class: "form-row" }, text("approvedBy", "Approuvé"), text("status", "Statut", "Préliminaire, Pour revue, Émis…")),
       el("div", { class: "form-row" }, field("Projection", el("select", { onChange: (e) => setD("projection", e.target.value, "projection") }, [["third", "Troisième dièdre (Amérique du Nord)"], ["first", "Premier dièdre (ISO / Europe)"]].map(([v, l]) => el("option", { value: v, selected: (d().projection || "third") === v }, l)))),
-        el("label", { class: "check" }, el("input", { type: "checkbox", checked: d().hidden !== false, onChange: (e) => setD("hidden", e.target.checked, "arêtes cachées") }), "Arêtes cachées")),
-      field("Révision de la pièce", el("input", { type: "text", value: spec.revision || "", onChange: (e) => store.updatePart(id, (x) => { x.revision = e.target.value.trim() || undefined; }, `${id} : révision`) }))));
-    body.append(el("div", { class: "side-section" }, el("h3", null, "Références et GD&T (tirés des interfaces)"),
+        isAsm ? null : el("label", { class: "check" }, el("input", { type: "checkbox", checked: d().hidden !== false, onChange: (e) => setD("hidden", e.target.checked, "arêtes cachées") }), "Arêtes cachées")),
+      field(isAsm ? "Révision de l'assemblage" : "Révision de la pièce", el("input", { type: "text", value: spec.revision || "", onChange: (e) => setRev(e.target.value.trim()) }), "Le dessin porte toujours la révision de ce qu'il dessine ; la revue la fait avancer (A → B) quand un artéfact validé a changé.")));
+    if (!isAsm) { const used = whereUsed(store.project, id);
+      body.append(el("div", { class: "side-section" }, el("h3", null, "Employée dans"), used.length ? used.map((u) => el("p", { style: { fontSize: ".84rem", margin: "0 0 .25rem" } }, el("a", { href: `#/drawings/asm/${encodeURIComponent(u.id)}` }, el("code", null, u.id)), ` rév. ${u.rev}${u.qty > 1 ? ` (× ${u.qty})` : ""} — `,
+        u.reviewedWith === null ? "pas encore revu" : u.upToDate ? badge(`revu avec la rév. ${u.reviewedWith}`, "ok") : badge(`revu avec la rév. ${u.reviewedWith} : à revalider`, "warn"))) : el("p", { class: "muted", style: { fontSize: ".84rem" } }, "Aucun assemblage n'emploie encore cette pièce."))); }
+    if (!isAsm) body.append(el("div", { class: "side-section" }, el("h3", null, "Références et GD&T (tirés des interfaces, ASME Y14.5)"),
       sem.datums.map((x) => el("p", { style: { fontSize: ".84rem", margin: "0 0 .25rem" } }, badge(x.letter, "info"), ` face ${x.face} — ${x.why}`)),
       sem.gdt.map((g) => el("p", { style: { fontSize: ".84rem", margin: "0 0 .25rem" } }, badge(g.symbol, "neutral"), ` ${g.diameter ? "Ø" : ""}${fmt(g.tolerance, 2)}${g.modifier === "mmc" ? " Ⓜ" : ""}${g.datums.length ? ` | ${g.datums.join(" | ")}` : ""} — ${g.name}`, g.rule ? el("small", { class: "muted" }, ` (${g.rule})`) : null)),
       !sem.gdt.length && el("p", { class: "muted", style: { fontSize: ".84rem" } }, "Aucune interface : pas de tolérance géométrique générée.")));
     const notes = el("textarea", { rows: 6, value: (spec.notes || []).join("\n"), placeholder: "Une note par ligne (traitement, marquage, contrôle…)" });
     notes.style.fontFamily = "var(--font)"; notes.style.fontSize = ".88rem";
-    body.append(el("div", { class: "side-section" }, el("h3", null, "Notes propres à la pièce"), notes, el("div", { class: "form-actions" }, btn("Appliquer les notes", () => store.updatePart(id, (x) => { x.notes = notes.value.split("\n").map((s) => s.trim()).filter(Boolean); }, `${id} : notes du dessin`), { small: true })),
-      el("p", { class: "muted", style: { fontSize: ".8rem" } }, "Les notes générales (matériau, tolérances ISO 2768-mK, ébavurage) sont ajoutées automatiquement.")));
-    if (st.doc) body.append(el("div", { class: "side-section" }, el("h3", null, "Envoi"), el("p", { class: "muted", style: { fontSize: ".84rem" } }, "Le PDF et le dessin natif Onshape partent avec l'assemblage."), el("a", { class: "btn btn-small", href: "#/onshape" }, icon("onshape"), "Envoyer vers Onshape")));
+    const saveNotes = () => { const list = notes.value.split("\n").map((s) => s.trim()).filter(Boolean); if (isAsm) store.updateAssembly(id, (x) => { x.notes = list; }, `${id} : notes du dessin`); else store.updatePart(id, (x) => { x.notes = list; }, `${id} : notes du dessin`); };
+    body.append(el("div", { class: "side-section" }, el("h3", null, isAsm ? "Notes propres à l'assemblage" : "Notes propres à la pièce"), notes, el("div", { class: "form-actions" }, btn("Appliquer les notes", saveNotes, { small: true })),
+      el("p", { class: "muted", style: { fontSize: ".8rem" } }, "Les notes générales (ASME Y14.5, matériau, tolérances, classes de cotes) sont ajoutées seules, toujours en bas à gauche de la feuille.")));
+    if (st.doc && !isAsm) body.append(el("div", { class: "side-section" }, el("h3", null, "Envoi"), el("p", { class: "muted", style: { fontSize: ".84rem" } }, "Le PDF et le dessin natif Onshape partent avec l'assemblage."), el("a", { class: "btn btn-small", href: "#/onshape" }, icon("onshape"), "Envoyer vers Onshape")));
   }
   app.commands = [{ label: "Dessin : télécharger le PDF", hint: "dessin", icon: "pdf", keys: "pdf dessin drawing", run: pdf }];
   renderRight(); build();
   return () => { off(); st.token++; };
 }
 
-registerModule({ key: "drawings", label: "Dessins", icon: "drawing", tip: "Dessin 2D de chaque pièce : vues, cotes, GD&T tiré des interfaces, cartouche, notes — PDF vectoriel", render });
+registerModule({ key: "drawings", label: "Dessins", icon: "drawing", tip: "Dessin 2D de chaque pièce et de chaque assemblage, au format tabloïd : vues, cotes à bulles, classes SC / CSC, GD&T selon ASME Y14.5, nomenclature, cartouche — PDF vectoriel", render });

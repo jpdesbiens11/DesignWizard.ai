@@ -43,4 +43,4 @@ Consignes permanentes de JP (propriétaire du dépôt). Elles s'appliquent à to
 ## Documents de référence
 
 `docs/VISION.md` (objectif et briques), `docs/ARCHITECTURE.md`, `docs/FORMAT.md`, `docs/SIMULATION.md`,
-`docs/PCBA.md`, `docs/GAMMES.md` (gammes de fabrication et d'assemblage), `docs/MOULAGE.md` (pièce moulée), `docs/EXTRUSION.md` (profilé extrudé), `docs/JOINTS.md` (registre des joints, joint collé, santé des accouplements), `docs/IA.md` (aller-retour IA), `docs/ITERATIONS.md` (itérations MVP, revues de passage, convergence), `docs/GOOGLE.md`, `docs/REA.md`, `docs/BRAND.md`.
+`docs/PCBA.md`, `docs/GAMMES.md` (gammes de fabrication et d'assemblage), `docs/MOULAGE.md` (pièce moulée), `docs/EXTRUSION.md` (profilé extrudé), `docs/JOINTS.md` (registre des joints, joint collé, santé des accouplements), `docs/IA.md` (aller-retour IA), `docs/ITERATIONS.md` (itérations MVP, revues de passage, convergence), `docs/DESSINS.md` (dessins, cotes à bulles, caractéristiques spéciales, révisions et cas d'emploi), `docs/GOOGLE.md`, `docs/REA.md`, `docs/BRAND.md`.

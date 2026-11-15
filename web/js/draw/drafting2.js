@@ -4,7 +4,7 @@
    backends. Units: mm, y down. Re-exported by drafting.js. */
 
 /** Landscape paper sizes [width, height] in mm. */
-export const PAPER = { A4: [297, 210], A3: [420, 297], A2: [594, 420] };
+export const PAPER = { A4: [297, 210], A3: [420, 297], A2: [594, 420], TABLOID: [431.8, 279.4] };      // TABLOID : 11 × 17 in (ANSI B), landscape
 
 /** Line widths (mm), ISO 128 series. */
 export const LW = { frame: 0.7, visible: 0.5, medium: 0.35, thin: 0.25, fine: 0.18 };

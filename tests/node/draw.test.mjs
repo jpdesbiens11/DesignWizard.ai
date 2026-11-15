@@ -262,7 +262,7 @@ test("drafting helpers use only Sheet primitives and return their documented val
   assert.deepEqual(D.drawTable(r, 0, 0, [{ title: "A", width: 10 }, { title: "B", width: 30, align: "right" }], [[1, 2], [3, 4]], { size: 2.5 }), { w: 40, h: 15 });
   assert.deepEqual(D.drawTable(r, 0, 0, [{ width: 10 }], [["x"]], { rowH: 6, title: "T" }), { w: 10, h: 12 });
   assert.deepEqual(D.drawRevisionTable(r, 410, 10, [{ rev: "A", description: "Émission", date: "2026-11-14", by: "ATR" }], { align: "right" }), { w: 120, h: 15 });
-  assert.deepEqual(D.PAPER, { A4: [297, 210], A3: [420, 297], A2: [594, 420] });
+  assert.deepEqual(D.PAPER, { A4: [297, 210], A3: [420, 297], A2: [594, 420], TABLOID: [431.8, 279.4] });
   assert.equal(r.count("image") + r.count("newPage"), 0);
   assert.ok(r.count("line") > 100 && r.count("text") > 60 && r.count("polyline") > 20);
 });

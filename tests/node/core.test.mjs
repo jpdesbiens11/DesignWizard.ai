@@ -159,7 +159,7 @@ test("drawing: views, hole table and GD&T end in a valid PDF", async () => {
   const K = await kernel(), spec = DEMO_DRIVE.parts[0], built = buildPart(K, spec), views = {};
   for (const v of viewRequest()) views[v.name] = K.hlr(built.bodies[0].shape, v.dir, v.xdir, v.hidden);
   assert.ok(views.front.visible.length > 5 && views.top.visible.length > 5);
-  const sheet = new PdfSheet({ width: PAPER.A3[0], height: PAPER.A3[1], title: spec.id });
+  const sheet = new PdfSheet({ width: PAPER.TABLOID[0], height: PAPER.TABLOID[1], title: spec.id });
   const info = composeDrawing(sheet, { spec, built, views, project: DEMO_DRIVE, opts: { date: "2026-01-01" } });
   assert.equal(info.holes.length, holeTable(built).length);
   assert.ok(info.gdt.some((g) => g.symbol === "position" && g.tolerance === 0.2 && g.modifier === "mmc"));      // M3: (3.4 - 3) / 2

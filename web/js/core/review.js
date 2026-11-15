@@ -3,7 +3,10 @@
    the reviewer asks for a change (« À réviser », with a note), or it is reviewed. A reviewed artefact remembers its
    signature : when its content changes afterwards — by hand or through an AI — it says so, and approving it again
    makes the next revision (A → B) with a line in its history.
-   project.review = { items: { "part:ID": { state, note, sig, rev, when, by, history: [{ rev, when, note }] } } }
+   project.review = { items: { "part:ID": { state, note, sig, rev, when, by, history: [{ rev, when, note }], parts } } }
+   An assembly also remembers WHICH REVISION OF EACH PART it was reviewed with (parts : { id: { rev, sig } }) : when a part
+   moves on, every assembly that uses it says so and asks to be reviewed again — its own next revision. A drawing always
+   carries the revision of what it draws. This is the baseline of the product structure : where used, reviewed with what.
    Pure functions : the caller applies them inside one undoable step. */
 
 import { model } from "../analysis/physics/index.js";
@@ -48,15 +51,43 @@ function describe(project, kind, d) {
   if (kind === "physics") { const m = model(d.model); return { name: m ? m.title : d.model, facts: [d.part, d.why].filter(Boolean).join(" — ") }; }
   return { name: `${d.kind || "structure"} — ${d.target || ""}`, facts: d.cells ? `${d.cells} cellules` : "" };
 }
-/** Every artefact of the project with its review state. → [{ key, kind, id, name, facts, rev, state, note, when, by, history, sig }] */
+/** The parts an assembly uses, each with its revision and its signature as they are now. */
+export function partsOf(project, asm) {
+  const out = {};
+  for (const id of new Set((asm.instances || []).map((i) => i.part))) { const p = (project.parts || []).find((x) => x.id === id); if (p) out[id] = { rev: p.revision || "A", sig: signature(p) }; }
+  return out;
+}
+/** What moved under an assembly since it was reviewed : [{ part, from, to }] (from : the revision it was reviewed with ; to : the one of today ; gone : the part left the project). */
+export function staleParts(project, asm, entry) {
+  const was = (entry && entry.parts) || null; if (!was) return [];
+  const now = partsOf(project, asm), out = [];
+  for (const [id, w] of Object.entries(was)) { const n = now[id]; if (!n) { if (!(asm.instances || []).some((i) => i.part === id)) continue; out.push({ part: id, from: w.rev, to: null, gone: true }); } else if (n.sig !== w.sig) out.push({ part: id, from: w.rev, to: n.rev }); }
+  for (const id of Object.keys(now)) if (!was[id]) out.push({ part: id, from: null, to: now[id].rev });
+  return out;
+}
+const staleText = (list) => list.map((x) => (x.gone ? `${x.part} retirée` : x.from === null ? `${x.part} ajoutée` : x.from === x.to ? `${x.part} modifiée (rév. ${x.to} pas encore revue)` : `${x.part} rév. ${x.from} → ${x.to}`)).join(", ");
+/** Every artefact of the project with its review state. → [{ key, kind, id, name, facts, rev, state, note, when, by, history, sig, stale }] */
 export function reviewItems(project) {
   const out = [], items = (project && project.review && project.review.items) || {};
   for (const kind of Object.keys(LISTS)) for (const d of (project && project[LISTS[kind]]) || []) {
-    const key = `${kind}:${d.id}`, e = items[key] || {}, sig = signature(d);
-    const state = e.state === "ok" ? (e.sig && e.sig !== sig ? "changed" : "ok") : e.state === "draft" || e.state === "revise" ? e.state : "todo";
-    out.push({ key, kind, id: String(d.id), ...describe(project, kind, d), rev: d.revision || (kind === "physics" || kind === "simulation" ? "" : "A"), state, note: e.note || "", when: e.when || "", by: e.by || "", history: e.history || [], sig });
+    const key = `${kind}:${d.id}`, e = items[key] || {}, sig = signature(d), stale = kind === "assembly" ? staleParts(project, d, e) : [], desc = describe(project, kind, d);
+    const state = e.state === "ok" ? ((e.sig && e.sig !== sig) || stale.length ? "changed" : "ok") : e.state === "draft" || e.state === "revise" ? e.state : "todo";
+    if (stale.length && e.state === "ok") desc.facts += ` · à revalider : ${staleText(stale)}`;
+    out.push({ key, kind, id: String(d.id), ...desc, rev: d.revision || (kind === "physics" || kind === "simulation" ? "" : "A"), state, note: e.note || "", when: e.when || "", by: e.by || "", history: e.history || [], sig, stale });
   }
   return out;
+}
+/** Where a part is used : each assembly, how many times, and whether that assembly was reviewed with the part as it is today. */
+export function whereUsed(project, partId) {
+  const items = (project.review && project.review.items) || {}, p = (project.parts || []).find((x) => x.id === partId), now = p ? signature(p) : null;
+  return (project.assemblies || []).filter((a) => (a.instances || []).some((i) => i.part === partId)).map((a) => { const e = items[`assembly:${a.id}`] || {}, w = e.state === "ok" && e.parts ? e.parts[partId] : null;
+    return { id: a.id, name: a.name || "", qty: a.instances.filter((i) => i.part === partId).length, rev: a.revision || "A", reviewedWith: w ? w.rev : null, upToDate: !!w && w.sig === now }; });
+}
+/** The product structure with its revisions, for the report : one row per part. */
+export function revisionRows(project) {
+  const state = new Map(reviewItems(project).map((x) => [x.key, x]));
+  return (project.parts || []).map((p) => { const it = state.get(`part:${p.id}`), used = whereUsed(project, p.id);
+    return [p.id, p.name || "", p.revision || "A", it ? REVIEW_STATES[it.state].fr : "—", used.length ? used.map((u) => `${u.id} rév. ${u.rev}${u.qty > 1 ? ` (× ${u.qty})` : ""} — ${u.reviewedWith === null ? "pas encore revu" : u.upToDate ? `revu avec la rév. ${u.reviewedWith}` : `revu avec la rév. ${u.reviewedWith} : à revalider`}`).join(" ; ") : "aucun assemblage"]; });
 }
 /** How far the review is. → { total, ok, draft, todo, revise, changed, left, ratio } */
 export function reviewProgress(project) {
@@ -70,11 +101,11 @@ export function reviewProgress(project) {
 export function approve(project, key, o = {}) {
   const d = artefactOf(project, key); if (!d) return null;
   const items = ledger(project), e = items[key] || (items[key] = {}), sig = signature(d), [kind] = split(key), lettered = kind !== "physics" && kind !== "simulation", when = (o.date || new Date()).toISOString();
-  const bumped = !!(lettered && e.sig && e.sig !== sig);
+  const stale = kind === "assembly" ? staleParts(project, d, e) : [], bumped = !!(lettered && e.sig && (e.sig !== sig || stale.length));
   e.history = e.history || [];
-  if (bumped) { const from = d.revision || "A"; d.revision = nextRevision(from); e.history.push({ rev: d.revision, when, note: e.note || o.note || `Révision ${d.revision} validée (suite de la ${from})` }); }
+  if (bumped) { const from = d.revision || "A"; d.revision = nextRevision(from); e.history.push({ rev: d.revision, when, note: e.note || o.note || `Révision ${d.revision} validée (suite de la ${from})${stale.length ? ` — ${staleText(stale)}` : ""}` }); }
   else if (!e.sig) { if (lettered) d.revision = d.revision || "A"; e.history.push({ rev: lettered ? d.revision : "", when, note: e.note || o.note || "Première revue" }); }
-  Object.assign(e, { state: "ok", sig, when, note: "", ...(o.by ? { by: o.by } : {}), ...(lettered ? { rev: d.revision } : {}) });
+  Object.assign(e, { state: "ok", sig: signature(d), when, note: "", ...(o.by ? { by: o.by } : {}), ...(lettered ? { rev: d.revision } : {}), ...(kind === "assembly" ? { parts: partsOf(project, d) } : {}) });
   return { rev: lettered ? d.revision : "", bumped };
 }
 /** The reviewer asks for a change, in plain words. */

@@ -15,7 +15,7 @@ import { simulationSummary } from "../analysis/fea/summary.js";
 import { routing } from "../cad/shop.js";
 import { orderCheck } from "../cad/order.js";
 import { makeDrawing, svgNode } from "./drawings.js";
-import { reviewRows, reviewProgress } from "../core/review.js";
+import { reviewRows, reviewProgress, revisionRows } from "../core/review.js";
 import { mvpRows, trlReached } from "../core/mvp.js";
 import { PROCESSES, materialOrDefault } from "../cad/materials.js";
 import { INTERFACE_TYPES } from "../cad/interfaces.js";
@@ -156,6 +156,10 @@ function render(main) {
     if (led.length) doc.append(el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, "État de la revue, artéfact par artéfact ", badge(`${prog.ok} / ${prog.total} revus`, prog.left ? "warn" : "ok")),
       el("p", { class: "muted" }, "Un « Brouillon IA » a été écrit ou modifié par une IA et n'a pas été relu ; « Revu » engage la personne qui l'a validé. Tenu dans l'écran Revue."),
       table(["Genre", "Repère", "Nom", "Rév.", "État", "Note"], led)));
+    const revs = revisionRows(store.project);
+    if (revs.length && store.assemblies.length) doc.append(el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, "Révisions et cas d'emploi"),
+      el("p", { class: "muted" }, "Chaque pièce avec sa révision, les assemblages qui l'emploient, et la révision de la pièce avec laquelle chacun a été revu. Un assemblage revu avec une révision dépassée est à revalider : il prendra alors sa propre révision suivante. Les dessins portent toujours la révision de ce qu'ils dessinent."),
+      table(["Pièce", "Nom", "Rév.", "État", "Employée dans"], revs)));
     const iters = mvpRows(store.project);
     if (iters.length) doc.append(el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, "Itérations MVP ", badge(trlReached(store.project) ? `TRL ${trlReached(store.project)} atteint` : "aucun niveau atteint", trlReached(store.project) ? "ok" : "neutral")),
       el("p", { class: "muted" }, `Cible du projet : TRL ${(store.project.mvp || {}).target || 6}. Chaque itération est gelée, passée en revue puis close par une décision ; la convergence est la part de ce qui a bougé depuis l'itération gelée précédente. Tenu dans l'écran Itérations MVP.`),
