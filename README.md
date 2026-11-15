@@ -9,7 +9,7 @@ d'un artisan, aidé par l'IA. Les règles DFM, DFA, DFx et d'isolation s'appliqu
 
 Libre sous **licence MIT**. Tout tourne dans le navigateur ; vos fichiers restent chez vous.
 
-> Neuvième itération (v0.9.0 : la pièce moulée, plastique ou métal, qui se dessine d'elle-même avec les règles du mouleur ; v0.8 : le modèle 3D sous la souris — sélection, clic droit, raccourcis, symboles de simulation ; v0.7 : garde-fous de co-intelligence et exports draw.io à la façon de DynamiteAgile ; v0.6 : tracé de piste à la main et routeur plus tenace ; v0.5 : bibliothèque PCBA étendue, blocs qui se déplacent avec leurs pistes ; v0.4 : gammes de fabrication et d'assemblage ; v0.3 : simulation, carte électronique, aller-retour IA), publiée pour recueillir vos commentaires. Voir [Vos commentaires](#vos-commentaires),
+> Dixième itération (v0.10.0 : un premier design complet demandé à une IA par entrevue, et la revue de conception qui le suit, artéfact par artéfact ; v0.9 : la pièce moulée, plastique ou métal, qui se dessine d'elle-même avec les règles du mouleur ; v0.8 : le modèle 3D sous la souris — sélection, clic droit, raccourcis, symboles de simulation ; v0.7 : garde-fous de co-intelligence et exports draw.io à la façon de DynamiteAgile ; v0.6 : tracé de piste à la main et routeur plus tenace ; v0.5 : bibliothèque PCBA étendue, blocs qui se déplacent avec leurs pistes ; v0.4 : gammes de fabrication et d'assemblage ; v0.3 : simulation, carte électronique, aller-retour IA), publiée pour recueillir vos commentaires. Voir [Vos commentaires](#vos-commentaires),
 > la [vision](docs/VISION.md) et le [format de fichier `.dwiz`](docs/FORMAT.md).
 > *English summary at the [end of this page](#english-summary).*
 
@@ -82,6 +82,7 @@ Sans Python, le dossier `web/` fonctionne aussi tel quel derrière n'importe que
 | **Physique → Simulation** | Éléments finis **volontairement simples**, structure et thermique : la pièce ou l'assemblage est maillé en cubes identiques, tenu et chargé par ses faces ou ses interfaces. Trois physiques : structure, thermique, et **thermo-mécanique** (la dilatation d'une pièce tenue). **Avant de calculer**, l'écran écrit le calcul à la main du modèle simple équivalent (poutre, barre, conduction, bilan de convection, dilatation libre et borne de bridage) ; **après**, il compare les deux. Voir [docs/SIMULATION.md](docs/SIMULATION.md). |
 | **Physique** | 21 modèles analytiques — poutres, flambage, torsion, plaque, assemblage boulonné, emmanchement, écoulement en conduite, conduction, dissipateur, busbar, piste de PCB… Les cotes sont reprises de la pièce ; le calcul est montré pas à pas, avec ses hypothèses, son domaine de validité et sa source. |
 | **Isolation** | Creepage et clearance mesurés sur **l'assemblage complet**, comparés aux distances requises par IEC 60664-1 (pollution degree, altitude, OVC, system IT). Chemins tracés en rouge. |
+| **Revue** | La **revue de conception** de tout le projet : chaque pièce, assemblage, carte et analyse avec son état (« Brouillon IA », « À réviser », « Revu », « Modifié depuis la revue »), sa révision, ce que l'outil y constate et votre note. Une IA écrit le **premier design complet** après une entrevue (Accueil → « Premier design avec une IA… ») ; vous révisez une pièce à la fois ou relancez une **itération complète**, avec la liste des changements avant d'appliquer ([IA.md](docs/IA.md)). |
 | **DFx** | Bilan DFM de chaque pièce, DFA de chaque assemblage, livre des règles imprimable (118 règles, dont celles de la fonderie). |
 | **Dessins** | Dessin 2D généré : vues à arêtes cachées, tableau des trous, références A / B / C et **GD&T calculé depuis les interfaces**, cartouche, notes — en PDF vectoriel. |
 | **Rapport** | Le dossier de revue de conception : images, BOM, interfaces, physique, isolation, constats, matière première, verdict de commande, dessins, décisions et actions. |
@@ -93,7 +94,7 @@ Partout : **Ctrl + K** ouvre *la baguette* (« 4 trous M4 aux coins à 8 mm », 
 
 ## Ce qui est vérifié, et comment
 
-- **236 tests Node** (`node --test tests/node/*.test.mjs`) : noyau CAO réel, matière première et verbes d'atelier,
+- **241 tests Node** (`node --test tests/node/*.test.mjs`) : noyau CAO réel, matière première et verbes d'atelier,
   synthèse de pièce depuis l'intention, format `.dwiz` (aller-retour sans perte sur toutes les pièces), 21 modèles de
   physique contre des valeurs de manuel, exports STL / DXF / FeatureScript, commande et délais, règles IEC 60664-1,
   moteur de chemins, moteur DFx, dessins PDF, connexion Google et Drive (contre des doubles, sans réseau).
@@ -163,7 +164,8 @@ design loop before production starts.**
 - **The Shop** (« Atelier »): a part is not a sketch you extrude. You state its **design intent** — what it is for,
   its interfaces with its neighbours, its material and the raw stock taken from the rack — and the platform writes
   the part: smallest envelope, commercial thickness, routing sheet, DFx verdict and prototype lead time. A **moulded part**
-  (plastic or metal) draws itself from the volume it must hold and the moulder's rules of thumb. An interview
+  (plastic or metal) draws itself from the volume it must hold and the moulder's rules of thumb. A **first complete
+  design** can be asked from an AI through an interview, then reviewed piece by piece in the **Review** screen. An interview
   with Claude (generic prompt, pasted answer) goes further.
 - **One file format, `.dwiz`**: one instruction per line, read the same way by an engineer, a shop and an AI;
   lossless twin of the JSON model; its vocabulary grows module by module (`part`, `assembly`, `project` today;

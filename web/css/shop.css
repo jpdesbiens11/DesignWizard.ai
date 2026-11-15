@@ -141,3 +141,15 @@ button.plan-pick { cursor: pointer; } button.plan-pick:hover { background: color
 .bc-pick { display: inline-flex; gap: .15rem; align-items: center; flex: 1; min-width: 0; } .bc-pick select { flex: 1; min-width: 0; } .bc-pick .icon-btn { font-size: 1rem; padding: 0 .2rem; }
 .fea-legend input[type="number"] { width: 5.2rem; padding: .15rem .3rem; font-size: .8rem; } .fea-scale { display: grid; gap: .15rem; margin: .3rem 0; } .fea-scale input { width: 100%; }
 .chip.picked { background: color-mix(in srgb, #ff8a00 28%, var(--surface)); color: var(--graphite); max-width: 520px; font-weight: 600; }
+
+/* ---- Revue de conception : the ledger of the design review, and the preview of a first design ---- */
+.review-bar { display: flex; height: .7rem; border-radius: 99px; overflow: hidden; border: 1.4px solid var(--line); margin: .3rem 0 .6rem; background: var(--surface-2); }
+.review-bar span { min-width: 4px; } .review-bar .rv-ok { background: var(--ok); } .review-bar .rv-draft { background: var(--warn); } .review-bar .rv-changed { background: color-mix(in srgb, var(--warn) 55%, var(--ok)); }
+.review-bar .rv-revise { background: var(--danger); } .review-bar .rv-todo { background: var(--line); }
+.review-table td { vertical-align: middle; } .review-table td:nth-child(6) { min-width: 15rem; } .review-table td:nth-child(6) input { width: 100%; }
+.review-table tr.rv-ok td:first-child { box-shadow: inset 3px 0 0 var(--ok); } .review-table tr.rv-revise td:first-child { box-shadow: inset 3px 0 0 var(--danger); }
+.review-table tr.rv-draft td:first-child, .review-table tr.rv-changed td:first-child { box-shadow: inset 3px 0 0 var(--warn); }
+.review-facts { display: flex; flex-wrap: wrap; gap: .25rem; } .review-table .btn-small { margin-left: .2rem; }
+.review-brief { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: .4rem 1.4rem; } .review-brief h3 { margin: .3rem 0 .2rem; font-size: .9rem; }
+.fd-preview table { width: 100%; border-collapse: collapse; margin: .4rem 0; } .fd-preview th, .fd-preview td { text-align: left; padding: .25rem .45rem; border-top: 1px dashed var(--line); vertical-align: top; font-size: .84rem; }
+.fd-preview th { border-top: 0; color: var(--muted); font-weight: 600; }

@@ -94,7 +94,7 @@ a { color: var(--primary); }
 .tab[data-key="home"] { --tab-acc: var(--hl-yellow); } .tab[data-key="interfaces"] { --tab-acc: var(--hl-violet); } .tab[data-key="parts"] { --tab-acc: var(--hl-blue); }
 .tab[data-key="extrusion"] { --tab-acc: var(--hl-teal); } .tab[data-key="pcb"] { --tab-acc: var(--hl-green); } .tab[data-key="assembly"] { --tab-acc: var(--hl-orange); }
 .tab[data-key="creepage"] { --tab-acc: var(--hl-red); } .tab[data-key="dfx"] { --tab-acc: var(--hl-cyan); } .tab[data-key="drawings"] { --tab-acc: var(--hl-pink); }
-.tab[data-key="report"] { --tab-acc: var(--hl-yellow); }
+.tab[data-key="report"] { --tab-acc: var(--hl-yellow); } .tab[data-key="review"] { --tab-acc: var(--hl-green); }
 .top-tools { display: flex; align-items: center; gap: .4rem; flex: none; }
 .wand { display: inline-flex; align-items: center; gap: .45rem; min-width: 210px; padding: .34rem .7rem; border: 1.6px solid var(--graphite); border-radius: var(--r-hand); background: var(--surface);
   color: var(--muted); font: inherit; font-size: .88rem; cursor: text; transition: box-shadow .2s ease; }
@@ -266,7 +266,8 @@ button.dw-view-label { pointer-events: auto; cursor: pointer; }
 
 .wand-text { flex: 1; text-align: left; }
 @media (max-width: 1760px) { .wand { min-width: 0; } .wand-text { display: none; } #save-chip { display: none; } .chip { max-width: 170px; } }
-@media (max-width: 1620px) { .top-tools .menu-wrap > .btn > span { display: none; } .tab:not(.active) span { display: none; } .tab { padding-left: .5rem; padding-right: .5rem; } }
+@media (max-width: 1980px) { .tab:not(.active) span { display: none; } .tab { padding-left: .5rem; padding-right: .5rem; } }       /* thirteen tools : their names show on a wide screen only */
+@media (max-width: 1620px) { .top-tools .menu-wrap > .btn > span { display: none; } }
 @media (max-width: 1100px) { .studio { grid-template-columns: 250px minmax(0, 1fr); } .studio > .side.right { display: none; } .hero { grid-template-columns: 1fr; } .brand-name small { display: none; } .tab span { display: none; } .tab.active span { display: inline; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 @media print { body { background: var(--sheet); } .topbar, .no-print, .toasts { display: none !important; } .page { max-width: none; padding: 0; } .card, .table-wrap, .kpi { box-shadow: none; } main h1 { animation: none; } }

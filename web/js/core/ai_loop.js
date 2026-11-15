@@ -27,11 +27,12 @@ export function aiRead(text) {
   throw new Error("Aucun artéfact trouvé dans la réponse : elle doit contenir le document complet, commençant par « dwiz … ».");
 }
 
+const sorted = (v) => (Array.isArray(v) ? v.map(sorted) : v && typeof v === "object" ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, sorted(v[k])])) : v);
 const keyOf = (x) => (x && typeof x === "object" ? x.id ?? x.ref ?? x.name ?? x.key ?? null : null);
 const show = (v) => { const s = typeof v === "string" ? v : JSON.stringify(v); return s.length > 70 ? `${s.slice(0, 67)}…` : s; };
 /** Differences between two versions of an artefact. → [{ kind: "added" | "removed" | "changed", path, text }] */
 export function aiDiff(before, after, path = "", out = [], depth = 0) {
-  if (JSON.stringify(before) === JSON.stringify(after)) return out;
+  if (JSON.stringify(sorted(before)) === JSON.stringify(sorted(after))) return out;                 // the order of the keys is not a change
   const isObj = (v) => v !== null && typeof v === "object";
   if (Array.isArray(before) && Array.isArray(after)) {
     const keyed = [...before, ...after].every((x) => keyOf(x) !== null) && before.length + after.length > 0;

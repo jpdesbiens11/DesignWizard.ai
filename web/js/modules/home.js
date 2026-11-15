@@ -16,6 +16,7 @@ const STEPS = [
   ["creepage", "Isolation", "Creepage et clearance mesurés sur l'assemblage complet, comparés à IEC 60664-1."],
   ["dfx", "DFx", "DFM par procédé, DFA de l'assemblage, correctifs en un clic."],
   ["drawings", "Dessins", "Vues, cotes, GD&T tiré des interfaces, cartouche et notes — en PDF."],
+  ["review", "Revue", "Chaque pièce, assemblage, carte et analyse : son état, vos notes, sa révision. Une IA écrit le premier jet ou la révision ; vous validez."],
   ["report", "Rapport", "Le dossier de design review : images, analyses, verdicts."],
 ];
 
@@ -28,7 +29,7 @@ const BRICKS = [
   [4, "Artéfacts & commande", "STEP, DXF, STL, PDF, FeatureScript — et le dossier de commande.", "#/parts"],
   [5, "Physique & simulation", "21 modèles à la main, puis des éléments finis simplifiés recoupés par eux.", "#/physics"],
   [6, "Assemblage", "Les interfaces identiques s'accouplent seules et restent liées.", "#/assembly"],
-  [7, "Isolation & DFx", "Lignes de fuite, distances dans l'air, 110 règles de fabricabilité.", "#/dfx"],
+  [7, "Isolation & DFx", "Lignes de fuite, distances dans l'air, 118 règles de fabricabilité.", "#/dfx"],
   [8, "Dessins & rapport", "Dessin coté, GD&T tiré des interfaces, revue de conception.", "#/report"],
   [9, "Échange ouvert", "Votre Google Drive, Onshape, et un code libre sous licence MIT.", "#/account"],
 ];
@@ -50,6 +51,7 @@ function render(main) {
       el("p", null, "DesignWizard.ai réinvente la conception mécatronique : une pièce naît de son intention — ses interfaces, sa matière, sa matière première — comme dans l'atelier d'un artisan. Les assemblages se montent d'eux-mêmes, la physique se vérifie par des modèles simples, et les règles DFM, DFA et d'isolation s'appliquent dès la première minute. Libre, sous licence MIT."),
       el("div", { class: "form-actions", style: { justifyContent: "flex-start" } },
         btn("Charger la démonstration « Variateur 400 V »", () => loadDemo(DEMO_DRIVE, "#/assembly/DRV-ASM"), { primary: true, icon: "sparkle", tip: "Boîtier moulé, deux PCB, dissipateur extrudé : tout est déjà relié par ses interfaces" }),
+        btn("Premier design avec une IA…", () => app.firstDesign(), { icon: "wizard", tip: "Décrivez le produit : l'assistant de votre choix mène l'entrevue et rend un premier design complet — pièces, assemblage, carte, analyses — à passer en revue ici" }),
         btn("Nouveau projet", async () => { const name = await promptBox("Nouveau projet", "Nom du projet", "Mon produit"); if (name) { await store.create(name); go("#/shop"); } }, { icon: "plus" }),
         btn("Importer…", () => app.pickFile(), { icon: "upload", tip: "Projet .json, pièce JSON d'une entrevue, ou fichier STEP — vous pouvez aussi coller (Ctrl+V) ou déposer un fichier n'importe où" }))),
     el("img", { src: `img/sketch/hero-${document.documentElement.dataset.theme || "carnet"}.svg`, alt: "" })));

@@ -9,10 +9,10 @@ import { THEMES, currentTheme, applyTheme } from "./theme.js";
 import { toDwiz } from "./dwiz.js";
 import { dwizFileName } from "./dwiz_names.js";
 
-export const APP_VERSION = "0.9.0";
+export const APP_VERSION = "0.10.0";
 const modules = new Map();
-const ORDER = ["home", "shop", "parts", "extrusion", "pcb", "pcba", "assembly", "physics", "creepage", "dfx", "drawings", "report"];
-const GROUP_BREAK = new Set(["shop", "assembly", "physics", "report"]);         // a pencil tick before these tabs
+const ORDER = ["home", "shop", "parts", "extrusion", "pcb", "pcba", "assembly", "physics", "creepage", "dfx", "drawings", "review", "report"];
+const GROUP_BREAK = new Set(["shop", "assembly", "physics", "review"]);         // a pencil tick before these tabs
 export const app = { modules, context: {}, version: APP_VERSION, current: null, cleanup: null, commands: [] };
 
 /** Register a tool: {key, label, icon, tip, hidden, render(main, args) -> cleanup?}. */
@@ -74,6 +74,7 @@ async function projectMenu(menu, close) {
   menu.append(el("div", { class: "menu-title" }, p ? p.name : "Aucun projet ouvert"));
   menu.append(item("Tous les projets", "folder", () => go("#/home"), close));
   menu.append(item("Nouveau projet…", "plus", async () => { const name = await promptBox("Nouveau projet", "Nom du projet", "Mon produit"); if (name) { await store.create(name); go("#/shop"); } }, close));
+  menu.append(item("Premier design avec une IA…", "wizard", () => app.firstDesign && app.firstDesign(), close));
   if (p) {
     menu.append(el("hr"));
     menu.append(item("Renommer le projet…", "edit", async () => { const name = await promptBox("Renommer", "Nom du projet", p.name); if (name) store.commit(`Projet renommé : ${name}`, (x) => { x.name = name; }); }, close));
@@ -109,6 +110,7 @@ function route() {
   app.context = {}; app.current = key; app.commands = [];
   document.documentElement.dataset.module = key;
   document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.key === key));
+  const tab = document.querySelector(".tab.active"); if (tab && tab.scrollIntoView) tab.scrollIntoView({ block: "nearest", inline: "nearest" });      // the tool in use stays in sight in a narrow bar
   const m = modules.get(key);
   document.title = `${m.label} · DesignWizard.ai`;
   if (!store.project && !["home", "help", "account"].includes(key)) {

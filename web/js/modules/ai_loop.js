@@ -10,6 +10,14 @@ import { dwizFileName } from "../core/dwiz_names.js";
 import { store } from "../core/store.js";
 import { validateSpec } from "../cad/build.js";
 import { markAiDraft } from "../core/ai_draft.js";
+import { markDrafts, changedKeys } from "../core/review.js";
+import { adoptIteration } from "../core/first_design.js";
+
+/* What an answer changes goes back to « Brouillon IA » in the review ledger, inside the very step that applies it. */
+let applying = null;
+store.hooks.push((p) => { if (applying) markDrafts(p, applying); });
+/** The whole project, without its review ledger : the notes travel in the request, the ledger stays here. */
+const shed = (d) => { delete d.review; return d; };
 
 const STEP_MARK = "(géométrie STEP importée, non modifiable)";
 /** A copy fit for reading : the imported STEP geometry of a part is replaced by a note. */
@@ -37,8 +45,8 @@ export function aiTargets() {
     check: (d) => asmCheck(d, new Set(store.parts.map((x) => x.id))), apply: (d) => store.updateAssembly(a.id, (x) => replace(x, d), `Assemblage ${a.id} mis à jour par l'IA`) }) });
   for (const s of p.parts || []) out.push({ key: `part:${s.id}`, label: `Pièce ${s.id} — ${s.name || ""}`, open: async () => ({ doc: lighten(s), title: `Confier la pièce ${s.id} à l'IA`, help: ["Garde les « key » des interfaces : elles lient la pièce à ses voisines.", "Une cote s'écrit par un paramètre (param) plutôt que par un nombre répété."],
     check: partCheck, apply: (d) => store.updatePart(s.id, (x) => replace(x, restoreSteps(d, s)), `Pièce ${s.id} mise à jour par l'IA`) }) });
-  out.push({ key: "project", label: `Projet entier — ${p.name || p.id}`, open: async () => ({ doc: lighten(p), title: "Confier le projet à l'IA",
-    help: ["Le projet porte ses pièces, ses assemblages et ses cartes à la suite, chacun commençant par sa ligne « dwiz … » ; ses analyses (physics, simulation) sont dans le premier document.", "Ne retire aucun document sans que la demande le dise ; garde les numéros."],
+  out.push({ key: "project", label: `Projet entier — ${p.name || p.id}`, open: async () => ({ doc: shed(lighten(p)), title: "Confier le projet à l'IA",
+    help: ["Le projet porte ses pièces, ses assemblages et ses cartes à la suite, chacun commençant par sa ligne « dwiz … » ; ses analyses (physics, simulation) sont dans le premier document.", "Ne retire aucun document sans que la demande le dise ; garde les numéros.", "Pour une analyse (physics), ne change que ses données d'entrée (inputs) : la plateforme recalcule ses résultats."],
     check: async (d) => {
       const notes = [], ids = new Set((d.parts || []).map((x) => x.id));
       for (const x of d.parts || []) notes.push(...partCheck(x.step === STEP_MARK ? { ...x, step: undefined } : x));
@@ -46,7 +54,7 @@ export function aiTargets() {
       if ((d.boards || []).length) { const { boardAiCheck } = await import("./pcba_out.js"); for (const b of d.boards) notes.push(...boardAiCheck((p.boards || []).find((q) => q.id === b.id) || { blocks: [] }, b).filter((n) => n.severity === "block").map((n) => ({ ...n, text: `${b.id} : ${n.text}` }))); }
       return notes;
     }, draft: (d) => { const all = { drafts: [], norms: [] }; for (const nb of d.boards || []) { const m = markAiDraft((p.boards || []).find((q) => q.id === nb.id) || {}, nb, "board"); all.drafts.push(...m.drafts.map((x) => ({ ...x, key: `${nb.id} ${x.key}` }))); all.norms.push(...m.norms); } return all; },
-      apply: (d) => store.commit("Projet mis à jour par l'IA", (x) => replace(x, restoreSteps(d, p))) }) });
+      apply: (d) => store.commit("Projet mis à jour par l'IA", (x) => { const before = JSON.parse(JSON.stringify(x)); replace(x, adoptIteration(before, restoreSteps(d, p))); markDrafts(x, changedKeys(before, x)); }) }) });
   return out;
 }
 /** Key of the artefact the current screen shows. */
@@ -103,7 +111,10 @@ export function openAiLoop(opts) {
 export async function openAiLoopFor(key, more = {}) {
   if (!store.project) { toast("Ouvrez d'abord un projet.", "info"); return null; }
   const targets = aiTargets(), t = targets.find((x) => x.key === key) || targets[targets.length - 1], o = await t.open();
-  return openAiLoop({ ...o, help: [...(o.help || []), ...(more.help || [])], context: more.context || "", targets, target: t.key });
+  const apply = o.apply, own = t.key === "project" ? null : [t.key];           // the project marks its own changes, artefact by artefact
+  const dlg = openAiLoop({ ...o, apply: (d) => { applying = own; try { return apply(d); } finally { applying = null; } }, help: [...(o.help || []), ...(more.help || [])], context: more.context || "", targets, target: t.key });
+  if (more.ask && dlg) dlg.ask.value = more.ask;                                // the note of the review becomes the request
+  return dlg;
 }
 /** The round trip for whatever the current screen shows : a board, a part, an assembly — otherwise the whole project. */
 export const openCurrentAiLoop = () => openAiLoopFor(currentAiTarget());

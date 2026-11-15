@@ -77,6 +77,11 @@ export async function importAny(text, filename = "") {
   }
   const obj = extractJson(text), kind = kindOf(obj);
   if (!kind) { toast(extractJson.error ? `Fichier .dwiz illisible — ${extractJson.error}` : "Texte non reconnu : ni pièce, ni profil, ni projet DesignWizard (.dwiz ou JSON), ni STEP. Correctif : collez la réponse complète de l'entrevue.", "error", 8000); return null; }
+  if (kind === "project" && ((obj.boards || []).some((b) => b && Array.isArray(b.functions) && !Array.isArray(b.parts)) || (obj.physics || []).some((r) => r && !r.values))) {
+    const { readFirstDesign } = await import("./first_design.js"), r = readFirstDesign(obj), p = await store.create(r.project.name, r.project);      // a first design written by an AI : built, computed, and filed as a draft
+    toast(`Premier design « ${p.name} » importé : ${r.counts.parts} pièce(s), ${r.counts.boards} carte(s), ${r.counts.physics} analyse(s) calculée(s)${r.counts.refused ? `, ${r.counts.refused} élément(s) refusé(s)` : ""} — tout est en brouillon, à passer en revue.`, r.counts.refused ? "info" : "success", 9000);
+    return { kind, id: p.id, review: true };
+  }
   if (kind === "project") {
     const p = await store.create(obj.name || "Projet importé", obj);
     toast(`Projet « ${p.name} » importé (${p.parts.length} pièce(s)).`, "success");

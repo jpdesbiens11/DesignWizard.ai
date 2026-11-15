@@ -65,7 +65,7 @@ export function molded(brief, items, log) {
   for (const it of under) if (it.type === "bolt_pattern") for (const [px, py] of patternPoints(it.params.pattern)) for (const sx of [1, -1]) keep.push({ x: L / 2 + sx * px, y: W / 2 + py, r: thread(it.params.screw).d / 2 + 0.5 });
   /* what closes it : screws in bosses standing clear of the walls and tied to them by gussets, and the joint plane on the rim */
   let cover = rim.find((it) => it.type === "bolt_pattern");
-  if (!cover && brief.cover !== false) { cover = { id: `IF${items.length + 1}`, type: "bolt_pattern", name: "Fixation du couvercle", key: `${String(brief.name || "piece").toLowerCase().replace(/[^a-z0-9]+/g, "_")}_couvercle`, side: "B", where: "+Z", params: { ...INTERFACE_TYPES.bolt_pattern.params, screw: "M3" }, auto: true };
+  if (!cover && brief.cover !== false) { cover = { id: `IF${items.length + 1}`, type: "bolt_pattern", name: "Fixation du couvercle", key: `${String(brief.name || "piece").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "_")}_couvercle`, side: "B", where: "+Z", params: { ...INTERFACE_TYPES.bolt_pattern.params, screw: "M3" }, auto: true };
     log.push("Aucune fermeture déclarée : quatre vis M3 aux coins et un plan de joint sont proposés pour un couvercle (retirez-les s'il n'y en a pas)."); }
   if (cover) {
     const th = thread(cover.params.screw), slim = bossOf(cover.params.screw), d = Math.max(slim, half((H - wall) / 3)), gap = Math.max(wall, 1.5), c = r1(wall + gap + d / 2), rib = r1(Math.max(0.8, R.rib * wall)), gh = "(H - wall) * 0.7";

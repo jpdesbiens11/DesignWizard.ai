@@ -18,6 +18,7 @@ import "./modules/fea.js";
 import "./modules/creepage.js";
 import "./modules/dfx.js";
 import "./modules/drawings.js";
+import "./modules/review.js";
 import "./modules/report.js";
 import "./modules/onshape.js";
 import "./modules/help.js";
@@ -31,11 +32,12 @@ app.onImported = (r) => {
   if (!r) return;
   if (r.kind === "part" || r.kind === "step") { const p = store.part(r.id); go(`#/${p && p.family === "pcb" ? "pcb" : p && p.family === "extrusion" ? "extrusion" : "parts"}/${encodeURIComponent(r.id)}`); }
   else if (r.kind === "assembly") go(`#/assembly/${encodeURIComponent(r.id)}`);
-  else if (r.kind === "project") go("#/home");
+  else if (r.kind === "project") go(r.review ? "#/review" : "#/home");
   else if (r.kind === "profile") { app.pendingProfile = r.profile; go("#/extrusion/new"); }
 };
 app.pickFile = () => pickFile(app.onImported);
 app.connect = connect; app.saveToDrive = saveToDrive; app.openFromDrive = openFromDrive;
+app.firstDesign = (seed) => import("./modules/first_design.js").then((m) => m.openFirstDesign(seed));      // a detailed description, an interview led by an AI, a first complete design to review
 app.aiLoop = (key, more) => import("./modules/ai_loop.js").then((m) => (key ? m.openAiLoopFor(key, more) : m.openCurrentAiLoop()));     // from any screen : the artefact it shows goes to an AI and comes back
 installImport(app.onImported);
 // On this machine the application opens at once. Hosted: approved Google accounts only, and their own Google Drive is the store.

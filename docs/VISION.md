@@ -69,6 +69,7 @@ La plateforme se construit par étages. Chaque brique est utile seule, testée, 
 | B11 | **Gammes** | Fabrication d'une pièce pas à pas (pour le fournisseur), assemblage d'un produit et d'une carte (pour le prototypage) : phases, outils, contrôles, questions, notes, Word et PDF | En place ; à faire relire par un atelier |
 
 | B12 | **Pièce moulée** | Plastique injecté, métal coulé sous pression ou par gravité : la coque se dessine d'elle-même autour de ce qu'elle contient, avec les règles du mouleur ; livre de règles de fonderie | En place ; dépouille déclarée, non modélisée — à faire relire par un mouliste |
+| B13 | **Premier design & revue** | Une description détaillée, une entrevue menée par une IA, un premier design complet (pièces, assemblage, carte, analyses) lu sans être cru ; registre de revue par artéfact, révisions, itération complète | En place ; éprouvé avec des réponses simulées |
 
 Briques suivantes envisagées : tôlerie pliée et mise à plat, tournage, usinage 5 axes (accessibilité d'outil),
 soudure ; cinématique d'assemblage ; chaînes de cotes ; faisceaux et micrologiciel liés à la carte ; coût et empreinte.

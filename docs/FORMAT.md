@@ -158,6 +158,9 @@ d'atelier, opérations du noyau) est dans [PART_LANGUAGE.md](PART_LANGUAGE.md). 
 - **`order`** — `quantity`, `need_by`, `note` : la commande du prototype.
 - **`interface`** — `bolt_pattern`, `planar`, `fit`, `cutout`, `rail`, `pins` ; côté `A` ou `B`, même `key` et mêmes
   `params` sur la pièce voisine.
+- **`brief`** et **`review`** (projet) — ce que l'IA a retenu de l'entrevue d'un premier design (réponses, hypothèses,
+  questions ouvertes), et le registre de la revue de conception : l'état, la note, la révision et l'historique de chaque
+  artéfact. Voir [IA.md](IA.md).
 - **`stock`** — `plate`, `sheet`, `block`, `bar_flat`, `bar_round`, `tube_round`, `tube_rect`, `angle`, `profile`,
   `print`, `molded` : ce que l'on prend sur l'étagère. Une pièce moulée porte aussi une ligne **`mold`** (procédé, sens de
   démoulage, plan de joint, paroi, dépouilles, tiroirs, surépaisseur d'usinage) : voir [MOULAGE.md](MOULAGE.md).
