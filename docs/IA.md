@@ -148,3 +148,30 @@ d'usage (aucun requis, aucun backlog, aucun code de temps, que DesignWizard n'ex
 Le format `.dwiz` a été conçu pour cela : une instruction par ligne, des mots du métier, la plus importante d'abord,
 sans perte par rapport au modèle interne. Une IA le lit sans notice ; un humain relit sa réponse sans outil. Toute
 nouvelle brique de la plateforme naît avec ses mots dans le format — donc avec son aller-retour.
+
+## La bascule aperçu / code
+
+Dans la barre du haut, deux boutons côte à côte — l'œil et `</>` — comme dans une conversation avec Claude. `</>`
+(ou **Alt + C**) remplace l'écran par **le code de ce qu'il montre** ; l'œil (ou Échap) rend l'écran, intact.
+
+| Ce que montre l'écran | Code proposé |
+|---|---|
+| une pièce (studio, profilé, carte PCB, dessin, simulation) ou la proposition de l'Atelier | **FeatureScript** — la même définition qu'Onshape : à coller dans un Feature Studio — et **`.dwiz`** |
+| un assemblage (assemblage, isolation, dessin d'assemblage) | `.dwiz` de l'assemblage, et le FeatureScript de chacune de ses pièces à la suite |
+| une carte électronique | `.dwiz` |
+| tout autre écran | `.dwiz` du projet entier, sans ses registres de revue |
+
+Trois gestes : **Copier** (le texte tel quel), **Télécharger**, et **Copier pour une IA**. Ce dernier place devant le
+code une consigne courte et formelle (`web/js/core/code_sources.js`, `aiCodePrompt`) :
+
+1. **l'entrevue** — au plus cinq questions, une à la fois, puis un résumé en trois lignes et l'accord de l'ingénieur ;
+2. **la réponse attendue** — un seul bloc ```` ```dwiz ```` contenant l'élément en entier, mêmes repères, mêmes clés
+   d'interface, puis la liste des changements ; aucun résultat d'analyse ;
+3. **le retour** — coller la réponse dans « Confier à l'IA » : les changements se voient avant d'être appliqués.
+
+Quand le code copié est du FeatureScript, le `.dwiz` l'accompagne : l'IA lit la géométrie exacte dans le premier et
+répond dans le format du second. La boucle de mise à jour reste donc celle de la spécification de haut niveau ; le
+FeatureScript sert à lire, à reconstruire dans Onshape, ou à demander une variante à part.
+
+Limites : le FeatureScript n'est pas relu en sens inverse (une réponse en FeatureScript ne revient pas dans
+DesignWizard.ai), et il reste expérimental — généré, non exécuté dans Onshape.

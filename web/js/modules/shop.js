@@ -4,7 +4,7 @@
    interfaces, commercial thickness, routing sheet — and shows it live. The same intent can be handed to Claude. */
 
 import { el, clear, icon, btn, badge, field, toast, copyText, fmt, fmtMass, debounce } from "../core/dom.js";
-import { registerModule, go, setStatus } from "../core/app.js";
+import { registerModule, go, setStatus, setContext } from "../core/app.js";
 import { store } from "../core/store.js";
 import { kernel } from "../cad/client.js";
 import { Viewer } from "../core/viewer.js";
@@ -226,7 +226,7 @@ function render(main) {
     try {
       const built = await kernel.build(res.spec, null, "~shop");
       if (mine !== token) return;
-      current = { ...res, built };
+      current = { ...res, built }; setContext({ spec: res.spec, built });      // what the code view and the AI round trip read
       if (!viewer) { viewer = new Viewer(holder, { onHover, onPick, onMenu }); holder._viewer = viewer; }      // exposed for whoever inspects the page (tests, the console)
       viewer.clear(); showBuilt(viewer, built, { prefix: "at" });
       for (const it of built.interfaces) { viewer.addFrame(it.frame, it.side === "A" ? "#9b7bff" : "#2ec4b6"); viewer.addLabel(it.frame.o, `${it.name}`, "label", "iface"); }

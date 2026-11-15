@@ -1,6 +1,7 @@
 /* DesignWizard.ai — application shell: top bar, hash router (#/module/arg/...), module registry, kernel status,
    project menu, global shortcuts (undo / redo, Ctrl+K wand, paste or drop anything to import). */
 
+import { mountCodeSwitch } from "./code_view.js";
 import { el, clear, icon, btn, toast, modal, installTips, download, confirmBox, promptBox } from "./dom.js";
 import { store } from "./store.js";
 import { kernel } from "../cad/client.js";
@@ -9,7 +10,7 @@ import { THEMES, currentTheme, applyTheme } from "./theme.js";
 import { toDwiz } from "./dwiz.js";
 import { dwizFileName } from "./dwiz_names.js";
 
-export const APP_VERSION = "0.18.0";
+export const APP_VERSION = "0.19.0";
 const modules = new Map();
 const ORDER = ["home", "shop", "parts", "extrusion", "pcb", "pcba", "assembly", "physics", "creepage", "dfx", "drawings", "review", "report"];
 const GROUP_BREAK = new Set(["shop", "assembly", "physics", "review"]);         // a pencil tick before these tabs
@@ -38,7 +39,7 @@ function topbar() {
   shellOff.push(store.on("saved", showSave), store.on("project", () => showSave(store.project ? store.saveState : null)), session.on(() => rebuildShell()));
   const wand = el("button", { class: "wand", type: "button", "data-tip": "La baguette : tapez ce que vous voulez faire (« 4 trous M4 aux coins », « longueur 150 », « aller à Assemblage »…)", onClick: () => app.openPalette && app.openPalette() },
     icon("wizard"), el("span", { class: "wand-text" }, "Que voulez-vous faire ?"), el("kbd", null, "Ctrl K"));
-  const tools = el("div", { class: "top-tools" }, wand, chip, save,
+  const tools = el("div", { class: "top-tools" }, wand, chip, save, mountCodeSwitch(app),
     btn("", () => app.aiLoop && app.aiLoop(), { icon: "sparkle", small: true, tip: "Confier à l'IA : exporter ce que montre l'écran (pièce, assemblage, carte) avec une demande, réimporter la réponse et voir les changements avant de les appliquer" }),
     btn("", () => store.undo() || toast("Rien à annuler."), { icon: "undo", small: true, tip: "Annuler (Ctrl+Z)" }),
     btn("", () => store.redo() || toast("Rien à rétablir."), { icon: "redo", small: true, tip: "Rétablir (Ctrl+Y)" }),
