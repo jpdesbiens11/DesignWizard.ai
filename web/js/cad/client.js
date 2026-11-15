@@ -50,6 +50,7 @@ export const kernel = { call, build, forget, onStage,
   step: (items, name) => call("step", { items, name }),
   hlr: (key, views, hidden) => call("hlr", { key, views, hidden }),
   hlrAsm: (items, views, hidden) => call("hlrAsm", { items, views, hidden }),
+  fill: (container, others, level, name) => call("fill", { container, others, level, name }),
   interference: (pairs) => call("interference", { pairs }),
   distance: (a, b) => call("distance", { a, b }),
 };

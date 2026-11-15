@@ -63,3 +63,42 @@ test("two bars pressed together through a lamella contact : same key, a healthy 
   assert.doesNotMatch(h.notes.join(" "), /demande une vis ou un clip/, "the screw next to it clamps the contact");
   K.flush();
 });
+
+import { blankLaminate, laminatePart, laminateChecks, thermalPadPart, PAPER_THICKNESS } from "../../web/js/core/busbar_lam.js";
+
+test("an insulated busbar wears a sleeve of its own body, open by a window at each terminal and each contact", async () => {
+  const K = await kernel(), def = blankBusbar(); addContact(def, { leg: 2, side: 1, s: 25, y: 10 }); def.insulation = { material: "EPOXY", t: 0.3 };
+  const s = busbarPart(def, "BB-I"), b = buildPart(K, s); assert.equal(b.log.filter((l) => l.level === "error").length, 0);
+  assert.deepEqual(b.bodies.map((x) => [x.name, x.material, x.conductive, x.net]), [["main", "CU-C110", true, "HV+"], ["isolant", "EPOXY", false, null]]);
+  const iso = b.bodies.find((x) => x.name === "isolant"), main = b.bodies.find((x) => x.name === "main"); assert.ok(K.props(K.common(iso.shape, main.shape)).volume < 0.001, "the sleeve is around the metal, not in it");
+  assert.deepEqual(b.bbox.slice(0, 3).map((x) => Math.round(x * 100) / 100), [-0.3, -0.3, -0.3], "it covers the edges and the ends too");
+  assert.equal(s.features.filter((f) => /^fen_/.test(f.id)).length, 3, "two windows for the screw (head side and lug side), one for the contact"); assert.match(s.notes.join(" "), /Isolant : poudre époxy de 0,3 mm, ouvert par une fenêtre/);
+  const bare = buildPart(K, busbarPart({ ...def, insulation: null }, "BB-N")); assert.equal(bare.bodies.length, 1);
+  assert.ok(iso.volume < 0.3 * 2 * (110 + 30) * 20 * 1.3 && iso.volume > 1000, `a thin skin : ${iso.volume.toFixed(0)} mm³`);
+  K.flush();
+});
+
+test("a laminated busbar : conductors of opposite potentials, aramid paper between, a film outside — one body per layer, tabs side by side", async () => {
+  const K = await kernel(), def = blankLaminate(), s = laminatePart(def, "LAM-1"), b = buildPart(K, s);
+  assert.deepEqual(validateSpec(s).errors, []); assert.equal(b.log.filter((l) => l.level === "error").length, 0);
+  assert.deepEqual(b.bodies.map((x) => [x.name, x.material, x.net]).sort(), [["c2", "CU-C110", "HV-"], ["enveloppe", "PET-FILM", null], ["main", "CU-C110", "HV+"], ["p1", "NOMEX-410", null]]);
+  const z = (name) => { const x = b.bodies.find((q) => q.name === name).bbox; return [Math.round(x[2] * 100) / 100, Math.round(x[5] * 100) / 100]; };
+  assert.deepEqual([z("main"), z("p1"), z("c2")], [[0.19, 1.69], [1.69, 1.94], [1.94, 3.44]], "film, conductor, paper, conductor, film"); assert.ok(Math.abs(b.bbox[5] - 3.63) < 0.01);
+  const cu = b.bodies.find((q) => q.name === "main"), cu2 = b.bodies.find((q) => q.name === "c2"), paper = b.bodies.find((q) => q.name === "p1");
+  assert.ok(K.props(K.common(cu.shape, cu2.shape)).volume < 1e-6 && K.props(K.common(cu.shape, paper.shape)).volume < 1e-6, "no layer enters another");
+  assert.ok(paper.bbox[0] === -4 && paper.bbox[1] === -4 && paper.bbox[3] === 124, "the paper overhangs the conductors by 4 mm all round"); assert.ok(cu.bbox[0] === -18 && cu.bbox[3] === 138, "the tabs come out past the insulation");
+  assert.deepEqual(s.interfaces.map((i) => [i.id, i.body || "main", i.level]), [["T1a", "main", 1.69], ["T1b", "main", 1.69], ["T2a", "c2", 3.44], ["T2b", "c2", 3.44]]);
+  assert.deepEqual(s.interfaces.map((i) => i.at[1]), [8, 8, 32, 32], "each conductor has its own tab, side by side across the width");
+  const c = laminateChecks(def); assert.deepEqual([c.tabW, c.creep, c.ok], [16, 8.25, true]); assert.ok(c.withstand > c.test, "0,25 mm of aramid paper holds the dielectric test of 800 V");
+  assert.match(laminateChecks({ ...def, paper: { ...def.paper, t: 0.05 } }).notes[0].text, /il tient environ 1,35 kV, pour un essai diélectrique de 2 U \+ 1000 V = 2,6 kV/);
+  assert.match(laminateChecks({ ...def, W: 20 }).notes.map((n) => n.text).join(" "), /Pattes de 6 mm de large pour une vis M6/); assert.ok(PAPER_THICKNESS.includes(0.25));
+  assert.deepEqual(fromDwiz(toDwiz(s)), s);
+  K.flush();
+});
+
+test("a thermal pad is drawn squeezed, with its thermal resistance", async () => {
+  const K = await kernel(), s = thermalPadPart({ id: "PAD-1", L: 50, W: 40, t: 1, squeeze: 0.2 }), b = buildPart(K, s);
+  assert.equal(b.log.filter((l) => l.level === "error").length, 0); assert.ok(Math.abs(b.bbox[5] - 0.8) < 1e-6); assert.equal(s.thermal.R, 0.13, "0,8 mm / (3 W/m·K × 2000 mm²)");
+  assert.deepEqual(s.interfaces.map((i) => [i.type, i.face]), [["planar", "-Z"], ["planar", "+Z"]]); assert.match(s.function, /≈ 0,13 K\/W une fois écrasé à 0,8 mm/);
+  K.flush();
+});

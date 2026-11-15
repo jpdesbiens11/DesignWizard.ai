@@ -46,16 +46,28 @@ export function locate(def, point, normal) {
   }
   return null;
 }
-/** The section of the strip : a closed outline with its bend radii, for the « extrude » of the part. */
-export function stripProfile(def) {
-  const legs = legsOf(def), h = def.t / 2, left = [], right = [], end = legs.at(-1), E = [end.C[0] + end.d[0] * end.L, end.C[1] + end.d[1] * end.L];
+/** The section of the strip : a closed outline with its bend radii, for the « extrude » of the part. grow : the same outline, larger by that much
+    all round the same centre line — the sleeve of an insulation. */
+export function stripProfile(def, grow = 0) {
+  const legs = legsOf(def), h = def.t / 2 + grow, left = [], right = [], first = legs[0], end = legs.at(-1), S = [first.C[0] - first.d[0] * grow, first.C[1] - first.d[1] * grow], E = [end.C[0] + end.d[0] * (end.L + grow), end.C[1] + end.d[1] * (end.L + grow)];
+  const rin = Math.max(0.2, def.r - grow), rout = def.r + def.t + grow;
   legs.forEach((g, i) => {
-    if (!i) { left.push([g.C[0] + g.n[0] * h, g.C[1] + g.n[1] * h]); right.push([g.C[0] - g.n[0] * h, g.C[1] - g.n[1] * h]); return; }
+    if (!i) { left.push([S[0] + g.n[0] * h, S[1] + g.n[1] * h]); right.push([S[0] - g.n[0] * h, S[1] - g.n[1] * h]); return; }
     const p = legs[i - 1], turnLeft = p.d[0] * g.d[1] - p.d[1] * g.d[0] > 0, m = [p.n[0] + g.n[0], p.n[1] + g.n[1]];
-    left.push([g.C[0] + m[0] * h, g.C[1] + m[1] * h, turnLeft ? def.r : def.r + def.t]); right.push([g.C[0] - m[0] * h, g.C[1] - m[1] * h, turnLeft ? def.r + def.t : def.r]);
+    left.push([g.C[0] + m[0] * h, g.C[1] + m[1] * h, turnLeft ? rin : rout]); right.push([g.C[0] - m[0] * h, g.C[1] - m[1] * h, turnLeft ? rout : rin]);
   });
   left.push([E[0] + end.n[0] * h, E[1] + end.n[1] * h]); right.push([E[0] - end.n[0] * h, E[1] - end.n[1] * h]);
   return { poly: [...right, ...left.reverse()].map((q) => q.map(r2)) };
+}
+/** Insulations a solid busbar can wear : the material of the sleeve and its usual thickness (mm). */
+export const INSULATIONS = { "EPOXY": { fr: "Poudre époxy", t: 0.3 }, "PET-FILM": { fr: "Film polyester", t: 0.19 }, "PI-FILM": { fr: "Film polyimide", t: 0.1 } };
+/** The windows of the sleeve : one where each terminal and each contact must touch the metal. → features of the body « isolant ». */
+function windows(def, legs, ti, m) {
+  const out = [], box = (id, leg, side, s, y, a, b) => { const g = legs[leg], q = onLeg(def, legs, leg, side, s, y), lo = side * (Math.abs(g.n[1]) > 0.5 ? g.n[1] : g.n[0]) > 0 ? q.level - 0.1 : q.level - ti - 0.1;      // a : along the leg, b : across
+    out.push(q.face[1] === "Z" ? { op: "box", id, body: "isolant", mode: "cut", size: [r2(a), r2(b), r2(ti + 0.2)], at: [r2(q.at[0] - a / 2), r2(q.at[1] - b / 2), r2(lo)] } : { op: "box", id, body: "isolant", mode: "cut", size: [r2(ti + 0.2), r2(b), r2(a)], at: [r2(lo), r2(q.at[0] - b / 2), r2(q.at[1] - a / 2)] }); };
+  for (const t of def.terminals) { if (!legs[t.leg]) continue; const d = (parseFloat(String(t.screw).replace(/[^0-9.]/g, "")) || 6) * 2 + 2 * m; for (const side of [1, -1]) box(`fen_${t.id}_${side > 0 ? "a" : "b"}`, t.leg, side, t.s, t.y ?? def.W / 2, d, Math.min(d, def.W)); }
+  for (const c of def.contacts) { if (!legs[c.leg]) continue; box(`fen_${c.id}`, c.leg, c.side, c.s, c.y, (c.turn ? c.h : c.w) + 2 * m, (c.turn ? c.w : c.h) + 2 * m); }
+  return out;
 }
 const nextId = (list, prefix) => `${prefix}${list.reduce((m, x) => Math.max(m, parseInt(String(x.id).replace(/\D/g, ""), 10) || 0), 0) + 1}`;
 /** A new terminal or contact where the designer pointed : it takes the next number of its kind, for good. where : { leg, side, s, y }. */
@@ -97,11 +109,16 @@ export function busbarPart(def, id, before = null) {
   const contacts = def.contacts.filter((c) => legs[c.leg]).map((c) => { const q = onLeg(def, legs, c.leg, c.side, c.s, c.y), rot = (q.along + (c.turn ? 90 : 0)) % 180;
     return { id: c.id, type: "contact", name: `Contact à lamelles ${c.id} — ${def.net}`, key: c.key || `${key}_${c.id.toLowerCase()}`, side: c.role === "B" ? "B" : "A", face: q.face, level: q.level, at: q.at, ...(rot ? { rot } : {}), ...(c.external ? { external: true } : {}),
       params: { w: c.w, h: c.h, n: c.n, gap: c.gap, force: c.force, plating: c.plating, base: c.base, duty: c.duty, i: c.i }, opts: { band: c.band || "insert" } }; });
+  const ins = def.insulation && def.insulation.t > 0 && material(def.insulation.material) ? def.insulation : null;
   const kept = ((before && before.interfaces) || []).filter((i) => !mine.has(i.id) && !/^(T|CT)\d+$/.test(i.id)), ch = busbarChecks(def);
   return { ...(before ? { revision: before.revision, characteristics: before.characteristics } : {}), dw: "part/1", id, name: def.name || "Busbar", function: `Conduit ${def.net}${def.I ? ` : ${fr(def.I)} A` : ""} entre ${def.terminals.length + def.contacts.length} point(s) de raccordement`,
     family: "busbar", process: legs.length > 1 ? "sheet_metal" : "laser_cut", material: def.material, ...(def.finish && def.finish !== "none" ? { finish: FINISHES[def.finish] } : {}), elec: { kind: "conductor", net: def.net }, busbar: JSON.parse(JSON.stringify(def)),
     params: { W: { value: def.W, min: Math.max(2, def.W / 4), max: def.W * 4, step: 0.5, unit: "mm", label: "Largeur", group: "Bande" }, t: fix(def.t, "Épaisseur (se règle dans l'écran Busbars)", "Bande"), ...(legs.length > 1 ? { r: fix(def.r, "Rayon de pliage intérieur", "Bande") } : {}) },
-    features: [{ op: "extrude", id: "bande", name: "Bande", profile: stripProfile(def), plane: "XZ", length: "W" }, { op: "interfaces" }], interfaces: [...terminals, ...contacts, ...kept],
+    ...(ins ? { bodies: { isolant: { material: ins.material, kind: "insulator", label: INSULATIONS[ins.material] ? INSULATIONS[ins.material].fr : "Isolant" } } } : {}),
+    features: [{ op: "extrude", id: "bande", name: "Bande", profile: stripProfile(def), plane: "XZ", length: "W" },
+      ...(ins ? [{ op: "extrude", id: "gaine", name: "Isolant", body: "isolant", profile: stripProfile(def, ins.t), plane: "XZ", at: -ins.t, length: `W + ${r2(2 * ins.t)}` }, { op: "extrude", id: "gaine_ame", body: "isolant", mode: "cut", profile: stripProfile(def), plane: "XZ", length: "W" }, ...windows(def, legs, ins.t, ins.margin ?? 2)] : []),
+      { op: "interfaces" }], interfaces: [...terminals, ...contacts, ...kept],
     notes: [`Section ${fr(ch.S)} mm², ${fr(ch.J)} A/mm² à ${fr(def.I || 0)} A ; résistance à 20 °C ≈ ${fr(ch.R)} µΩ.`, ...(ch.bends ? [`Développé ≈ ${fr(ch.flat)} mm (${ch.bends} pli(s) à 90°, rayon intérieur ${fr(def.r)} mm, facteur K ${String(KFACTOR).replace(".", ",")}) : à confirmer par le plieur.`] : []),
+      ...(ins ? [`Isolant : ${(INSULATIONS[ins.material] || { fr: ins.material }).fr.toLowerCase()} de ${fr(ins.t)} mm, ouvert par une fenêtre à chaque borne et à chaque contact (${fr(ins.margin ?? 2)} mm de marge).`] : []),
       ...(def.contacts.length ? ["Plages de contact : planéité 0,05 mm, sans bavure ni rayure ; revêtement selon la nomenclature du contact."] : [])] };
 }

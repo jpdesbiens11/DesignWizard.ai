@@ -5,6 +5,7 @@
 import { loadKernel } from "./occ.js";
 import { buildPart } from "./build.js";
 import { matIsIdentity, bboxTransform } from "./vec.js";
+import { fillCavity } from "./fill.js";
 
 let K = null, loading = null;
 const cache = new Map();          // partId -> { bodies: [{name, shape}], rgb: {name: [r,g,b]} }
@@ -79,6 +80,15 @@ const COMMANDS = {
     for (const v of views) out[v.name] = K.hlr(shape, v.dir, v.xdir, hidden === true && v.hidden !== false);
     K.flush();
     return { result: out };
+  },
+  /** The volume a filler takes when it is poured in a housing with everything in place : the box of the container up to `level`, less the
+      container and every other part. The largest solid left is kept — what the walls enclose ; slivers outside drafted or rounded walls are dropped.
+      args: {container:{key, matrix}, others:[{key, matrix}], level, name} -> {step, volume, bbox} */
+  fill({ container, others, level, name }) {
+    const out = fillCavity(K, (it) => (it.matrix && !matIsIdentity(it.matrix) ? K.transform(shapeOf(it.key), it.matrix) : shapeOf(it.key)), container, others, level);
+    const step = K.stepWrite([{ key: "fill", name: name || "Remplissage", instanceName: name || "Remplissage", shape: out.shape, matrix: null }], name || "Remplissage");
+    K.flush();
+    return { result: { step, volume: out.volume, bbox: out.bbox } };
   },
   /** Interference between instances. args: {pairs:[{a:{key, matrix}, b:{key, matrix}}]} -> volumes in mm3 */
   interference({ pairs }) {

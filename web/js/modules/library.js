@@ -10,6 +10,7 @@ import { importPart } from "../core/importer.js";
 import { CONNECTORS, CELLS, ELEC_STANDARDS, CONNECTOR_KINDS, pickConnectors } from "../cad/elec_library.js";
 import { connectorPart, cellPart, connectorEnvelope, poleNets } from "../core/elec_parts.js";
 import { WELD_PROCESSES } from "../cad/interfaces_elec.js";
+import { thermalPadPart } from "../core/busbar_lam.js";
 
 const filter = { domain: "", amps: "", volts: "", sealed: false, hvil: false };
 const SEEN = { read: ["lu", "ok", "Valeurs lues sur la fiche ou la page du fabricant"], excerpt: ["extrait", "warn", "Valeurs vues en extrait de la page du fabricant : à relire sur la fiche"] };
@@ -68,6 +69,9 @@ function render(main) {
     if (!filter.domain || filter.domain === "cells") sections.push(el("section", { class: "card" }, el("h2", null, "Cellules Li-ion cylindriques"),
       table(["Format", "Désignation IEC", "Ø × L au plus", "Masse", "Capacité", "Tension", "Décharge continue", "Essais", ""], CELLS.map((c) => [el("b", null, c.id), c.iec, `${fr(c.d)} × ${fr(c.L)} mm`, `${c.mass[0]}–${c.mass[1]} g`, `${fr(c.capacity[0])}–${fr(c.capacity[1])} Ah`, `${fr(c.vMin)}–${fr(c.vMax)} V (${fr(c.vNom)} nominal)`, `${c.discharge[0]}–${c.discharge[1]} A`, c.std, btn("Ajouter", () => addCell(c), { small: true, icon: "plus", primary: true })])),
       el("p", { class: "muted small" }, "Plages relevées sur les fiches de plusieurs fabricants ; l'enveloppe est la plus grande publiée, pour dimensionner le logement. « 18650 » et « 21700 » sont des noms d'usage : la désignation de la norme arrondit les dimensions au-dessus.")));
+    if (!filter.domain) { const pad = { L: 40, W: 40, t: 1 }, n = (k, label, step = 1) => field(label, el("input", { type: "number", value: pad[k], step, min: 0.1, onInput: (e) => { const v = parseFloat(e.target.value); if (v > 0) pad[k] = v; } }));
+      sections.push(el("section", { class: "card" }, el("h2", null, "Interface thermique"), el("p", { class: "muted small" }, "Un pad thermique entre deux faces planes : dessiné écrasé de 20 %, avec sa résistance thermique. Les busbars, nus, isolés ou laminés, se dessinent dans l'écran Busbars."),
+        el("div", { class: "form-row" }, n("L", "Longueur"), n("W", "Largeur"), n("t", "Épaisseur libre", 0.1), el("div", { class: "form-actions", style: { alignItems: "flex-end" } }, btn("Ajouter le pad", () => { const id = create(thermalPadPart({ id: store.nextPartId(), ...pad }), !!store.project.assemblies.length); if (id) go(`#/parts/${encodeURIComponent(id)}`); }, { primary: true, icon: "plus" }))))); }
     sections.push(el("details", { class: "card" }, el("summary", null, el("b", null, "Les normes citées")), table(["Norme", "Titre", "Ce qu'elle couvre", ""], ELEC_STANDARDS.map((s) => [s.id, s.title, s.covers, badge(SEEN[s.seen][0], SEEN[s.seen][1])]))));
     body.replaceChildren(...sections);
   }

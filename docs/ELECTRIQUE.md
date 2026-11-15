@@ -112,10 +112,45 @@ rayon de pli au moins égal à l'épaisseur pour le cuivre, des branches assez l
 tension et le **développé** (facteur K 0,4, à confirmer par le plieur) ; l'échauffement se vérifie dans l'écran Physique.
 Les règles de tôlerie du bilan DFx lisent l'épaisseur que la bande déclare.
 
+## Isolant, busbar laminé, pad thermique
+
+**Un isolant sur un busbar massif.** Dans l'écran Busbars, « Isolant » habille la barre d'une gaine — poudre époxy
+(0,3 mm), film polyester (0,19 mm) ou film polyimide (0,1 mm) : un corps à part, autour du métal, bords et bouts
+compris. Elle s'ouvre par une **fenêtre** à chaque borne (des deux côtés : la tête de vis et la cosse) et à chaque
+contact, avec 2 mm de marge : c'est là que le métal se touche, par la surface ou par l'interface vissée.
+
+**Le busbar laminé** (bouton « Busbar laminé » de l'écran Busbars ; `web/js/core/busbar_lam.js`). Des conducteurs de
+potentiels opposés posés l'un sur l'autre, un **papier aramide** entre eux sur toute l'épaisseur (0,05 à 0,76 mm), un
+**film polymère** en enveloppe. Une pièce, **un corps par couche** : chaque conducteur avec son potentiel, chaque
+isolant avec sa matière — l'écran Isolation les lit tels quels. L'isolant **déborde** les conducteurs tout autour : la
+ligne de fuite entre deux voisins vaut deux débords plus l'épaisseur du papier. Chaque conducteur sort aux deux bouts
+par sa propre patte, côte à côte dans la largeur, avec sa vis. Le dialogue vérifie avant de créer : la tenue du papier
+(rigidité diélectrique × épaisseur) contre un essai de 2 U + 1000 V, la largeur des pattes pour leur vis, la densité de
+courant de chaque conducteur.
+
+**Le pad thermique** (Bibliothèque électrique → Interface thermique). Une plaque de silicone chargé entre deux faces
+planes, dessinée **écrasée** de 20 %, avec sa résistance thermique : épaisseur / (k × surface).
+
+## Remplir une cavité, comme en production
+
+Écran Assemblage : choisissez le boîtier, puis **« Remplir sa cavité… »**. Le produit — composé thermique de
+remplissage, résine époxy d'enrobage, silicone souple — se coule une fois tout en place et prend **la place qui
+reste** (`web/js/cad/fill.js`) : la boîte du contenant jusqu'au niveau choisi, moins le contenant, moins toutes les
+autres pièces posées. Seul le plus grand volume est gardé — ce que les parois enferment ; les copeaux d'air hors de
+parois dépouillées ou arrondies sont écartés.
+
+Le dialogue donne le volume (et celui de la cavité vide), la masse, la hauteur atteinte ; le niveau se règle en
+pourcentage de la cavité. Le résultat devient une **pièce de l'assemblage** — géométrie exacte, masse, ligne de
+nomenclature, isolant pour l'analyse d'isolement. Quand les pièces autour changent, « Recalculer » reprend le volume.
+
 ## Limites
 
-- Busbars : plis à 90° dans un seul plan, largeur constante ; pas encore de busbar laminé (conducteurs, papier
-  aramide, enveloppe), de circuit flexible, de pad thermique ni de remplissage de cavité.
+- Busbars : plis à 90° dans un seul plan, largeur constante. Le busbar laminé est plat, sans pli ni fenêtre dans ses
+  couches ; il ne porte pas encore de circuit flexible entre ses couches, et se règle à la création seulement.
+- Pas encore de module de circuit flexible (pistes, capteurs de tension et de température).
+- Le remplissage est une géométrie figée (STEP, lourde dans le fichier du projet) : il ne suit pas les pièces seul, il se
+  recalcule. La gamme d'assemblage ne décrit pas encore la coulée.
+- Les rigidités diélectriques et les indices de résistance au cheminement des films sont des valeurs typiques.
 - Les enveloppes des connecteurs sont indicatives ; aucune empreinte de carte ni modèle du fabricant n'est fourni.
 - Les lignes marquées « extrait » sont à relire sur la fiche du fabricant ; les titres des documents LV 214 et LV 215
   (constructeurs allemands) ne sont pas publics.
