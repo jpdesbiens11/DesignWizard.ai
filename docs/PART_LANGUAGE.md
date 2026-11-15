@@ -52,6 +52,7 @@ parameters (change one side, the other follows), adds the screws to the BOM and 
   "id": "IF1", "type": "bolt_pattern", "name": "PCB mounting",
   "key": "ctrl_pcb_mount",              // same key on the partner part = same interface
   "partner": "Control PCB",             // who is on the other side (name of the neighbour)
+  "external": true,                     // only when it looks outside the product (customer chassis, wall, cable): no part of the project mates with it
   "side": "A",                          // "A" or "B" (see each type)
   "face": "+Z",                         // face carrying the interface: "+Z" top, "-Z" bottom, "+X" right, "-X" left, "+Y" back, "-Y" front
   "at": ["L/2", "W/2"],                 // position of the interface origin on that face, in MODEL coordinates of the face plane:
@@ -181,6 +182,7 @@ A .dwiz document is accepted as an answer in place of the JSON object; both are 
 |---|---|---|
 | `bolt_pattern` | Motif de vis | Fixation vissée. A = côté trous de passage (la vis entre par ce côté) ; B = côté fileté (taraudage, insert, ou colonnette « standoff »). |
 | `planar` | Appui plan | Deux faces planes en appui (appui thermique, plan de joint, face de référence). A et B sont symétriques ; « pad » ajoute une surface surélevée côté B. |
+| `bond` | Joint collé | Collage entre deux plages planes de w × h. A = plage lisse ; B = plage qui porte les plots de calage : ils tiennent l'épaisseur du film de colle (« gap », mm). « adhesive » (epoxy, acrylic, polyurethane, cyanoacrylate, silicone, tape), « prep » (degrease, abrade, primer, plasma) et « cure » (texte libre) décrivent le procédé ; la colle entre dans la nomenclature. |
 | `fit` | Ajustement arbre / alésage | Centrage cylindrique. A = arbre (bossage cylindrique) ; B = alésage. « fit » = ajustement ISO (ex. H7/g6). |
 | `cutout` | Découpe de panneau | Ouverture pour un connecteur, un afficheur, un évent. A = panneau (découpe + trous de fixation) ; B = composant qui s'y monte (trous filetés seulement). |
 | `rail` | Glissière / guide-carte | Une languette (bord de PCB, tôle, nervure) glisse dans une rainure. A = languette (aucune géométrie ajoutée) ; B = rainure usinée ou extrudée le long de u. |

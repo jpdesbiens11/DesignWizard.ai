@@ -4,7 +4,7 @@
    `built` = map partId -> result of the kernel build (interfaces with frames, bbox, mass...). */
 
 import { frameMatrix, matMul, matInvRigid, matFromPlacement, matRotAxis, matTranslate, matDir, matPoint, v3, IDENTITY } from "../cad/vec.js";
-import { compatible, interfaceType, interfaceSignature } from "../cad/interfaces.js";
+import { compatible, interfaceType, interfaceSignature, patternPoints } from "../cad/interfaces.js";
 
 const FLIP = [1, 0, 0, 0, 0, -1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1];      // half turn about u: faces meet, normals opposed
 const clone = (o) => JSON.parse(JSON.stringify(o));
@@ -80,7 +80,7 @@ export function freeInterfaces(asm, built) {
   const used = new Set();
   for (const m of asm.mates || []) { used.add(`${m.a.inst}/${m.a.iface}`); used.add(`${m.b.inst}/${m.b.iface}`); }
   const out = [];
-  for (const inst of asm.instances) for (const it of (built[inst.part] && built[inst.part].interfaces) || []) if (!used.has(`${inst.id}/${it.id}`)) out.push({ inst: inst.id, part: inst.part, iface: it });
+  for (const inst of asm.instances) for (const it of (built[inst.part] && built[inst.part].interfaces) || []) if (!used.has(`${inst.id}/${it.id}`)) out.push({ inst: inst.id, part: inst.part, iface: it, external: !!it.external });
   return out;
 }
 
@@ -107,7 +107,7 @@ export function candidates(asm, built, withRejected = false) {
 /** Add every unambiguous mate (each interface used once, best score first). Returns the mates added. */
 export function autoMate(asm, built) {
   const added = [], used = new Set();
-  let n = (asm.mates || []).reduce((mx, m) => Math.max(mx, parseInt(String(m.id).replace(/\D/g, ""), 10) || 0), 0);
+  let n = nextJoint(asm) - 1;
   asm.mates = asm.mates || [];
   for (const c of candidates(asm, built)) {
     const ka = `${c.a.inst}/${c.a.iface}`, kb = `${c.b.inst}/${c.b.iface}`;
@@ -116,7 +116,31 @@ export function autoMate(asm, built) {
     const mate = { id: `M${++n}`, a: c.a, b: c.b, linked: true, by: c.by };
     asm.mates.push(mate); added.push(mate);
   }
+  if (added.length) asm.mseq = n;
   return added;
+}
+/** The number the next joint takes : a joint keeps its number for ever, a joint removed does not give it back (asm.mseq). */
+export function nextJoint(asm) {
+  return Math.max(asm.mseq || 0, (asm.mates || []).reduce((mx, m) => Math.max(mx, parseInt(String(m.id).replace(/\D/g, ""), 10) || 0), 0)) + 1;
+}
+const JOINT_FR = { bolt_pattern: "Boulonné", bond: "Collé", fit: "Emmanché", planar: "En appui", pins: "Goupillé", cutout: "Traversant", rail: "Guidé" };
+/** The joint register of an assembly : one row per mated pair of interfaces, with what holds it. specs : part id → spec (to tell a snapped joint).
+    → [{ id, type, kind (in French), a, b (instance · part · interface name), key, by, hardware: [{ name, qty, unit }], process }] */
+export function joints(asm, built, specs = {}) {
+  const inst = new Map(asm.instances.map((i) => [i.id, i]));
+  return (asm.mates || []).map((m) => {
+    const ia = inst.get(m.a.inst), ib = inst.get(m.b.inst), A = ia && ifaceOf(built, ia.part, m.a.iface), B = ib && ifaceOf(built, ib.part, m.b.iface);
+    if (!A || !B) return { id: m.id, type: "?", kind: "Rompu", a: `${m.a.inst}/${m.a.iface}`, b: `${m.b.inst}/${m.b.iface}`, key: "", by: m.by || "", hardware: [], process: "une interface a disparu" };
+    const hw = mateHardware(asm, built, m), snap = A.type === "planar" && [specs[ia.part], specs[ib.part]].some((s) => s && s.mold && (s.mold.closure === "clips" || s.mold.lifters > 0)), p = A.params || {};
+    const process = A.type === "bolt_pattern" ? `${patternCount(p)} × ${p.screw}` : A.type === "bond" ? `film ${p.gap} mm · ${p.w} × ${p.h} mm · ${p.adhesive || "epoxy"} · préparation ${p.prep || "degrease"}${p.cure ? ` · ${p.cure}` : ""}` : A.type === "fit" ? `Ø ${p.d} ${p.fit || ""}`.trim() : snap ? "crochets dans les fenêtres" : "";
+    return { id: m.id, type: A.type, kind: snap ? "Encliqueté" : JOINT_FR[A.type] || A.type, a: `${ia.part} · ${A.name || A.id}`, b: `${ib.part} · ${B.name || B.id}`, key: A.key || B.key || "", by: m.by || "", hardware: hw.map((h) => ({ name: h.name, qty: h.qty, unit: h.unit || "" })), process };
+  });
+}
+const patternCount = (p) => { try { return patternPoints(p.pattern).length; } catch (e) { return "?"; } };
+/** The register as a table for a spreadsheet. */
+export function jointsCsv(rows) {
+  const q = (v) => (/[;"\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v));
+  return `\ufeff${[["N°", "Joint", "Pièce A · interface", "Pièce B · interface", "Clé", "Ce qui le tient", "Procédé"], ...rows.map((r) => [r.id, r.kind, r.a, r.b, r.key, r.hardware.map((h) => `${h.qty}${h.unit ? ` ${h.unit}` : " ×"} ${h.name}`).join(" + "), r.process])].map((l) => l.map(q).join(";")).join("\r\n")}\r\n`;
 }
 
 /** After the shared params of an interface changed on one part: copy them to every linked partner (the dependency).
@@ -171,7 +195,7 @@ export function hardware(asm, built) {
   for (const m of asm.mates || []) {
     for (const h of mateHardware(asm, built, m)) {
       const r = rows.get(h.id) || { ...h, qty: 0, mates: [] };
-      r.qty += h.qty; r.mates.push(m.id); r.mate = r.mates.join(", ");
+      r.qty = Math.round((r.qty + h.qty) * 100) / 100; r.mates.push(m.id); r.mate = r.mates.join(", ");
       rows.set(h.id, r);
     }
   }
@@ -187,7 +211,7 @@ export function bom(project, asm, built) {
     const spec = project.parts.find((p) => p.id === pid) || {}, b = built[pid];
     rows.push({ item: item++, id: pid, name: spec.name || "", qty, material: spec.material || "", process: spec.process || "", mass: b ? b.mass : null, kind: "part" });
   }
-  for (const h of hardware(asm, built)) rows.push({ item: item++, id: h.id, name: h.name, qty: h.qty, material: "", process: "purchased", mass: null, kind: "hardware" });
+  for (const h of hardware(asm, built)) rows.push({ item: item++, id: h.id, name: `${h.name}${h.unit ? ` (${h.unit})` : ""}`, qty: h.qty, material: "", process: "purchased", mass: null, kind: "hardware" });
   return rows;
 }
 

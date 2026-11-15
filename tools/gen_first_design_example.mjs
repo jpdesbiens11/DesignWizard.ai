@@ -18,12 +18,12 @@ Série visée : 2 000 pièces par an ; un prototype fonctionnel en dix jours.`;
 const fit = (list, test, where) => list.filter((a) => test(a.iface)).map((a) => ({ from: a.from, type: a.iface.type, name: a.iface.name, partner: a.iface.partner, key: a.iface.key, side: a.iface.side, params: a.iface.params, where }));
 const housing = synthesize({ name: "Boîtier du module", fn: "Loge et protège la carte de mesure, la tient par quatre vis et se pose sur la platine.", quantity: 2000, environment: "0 à 60 °C, poussière", material: "PC-ABS", form: "molded", envelope: { L: 100, W: 68, H: 24 },
   interfaces: [{ type: "bolt_pattern", side: "B", name: "Fixation de la carte", partner: "Carte de mesure", key: "tmp_carte", where: "+Z", inside: true, params: { screw: "M3", pattern: { type: "rect", nx: 2, ny: 2, dx: 80, dy: 50 } } },
-    { type: "cutout", side: "A", name: "Passage du connecteur", partner: "Bornier de la carte", key: "tmp_connecteur", where: "-Y", params: { shape: "rect", w: 24, h: 10, r: 1 } },
+    { type: "cutout", side: "A", name: "Passage du connecteur", partner: "Bornier de la carte", key: "tmp_connecteur", where: "-Y", external: true, params: { shape: "rect", w: 24, h: 10, r: 1 } },
     { type: "bolt_pattern", side: "A", name: "Fixation sur la platine", partner: "Platine", key: "tmp_platine", where: "-Z", params: { screw: "M4", pattern: { type: "rect", nx: 2, ny: 1, dx: 50, dy: 0 } } }] }, "TMP-BOITIER").spec;
 const free = anticipatedInterfaces({ parts: [housing], assemblies: [] }, ["TMP-BOITIER"]);
 const cover = synthesize({ name: "Couvercle", fn: "Ferme le boîtier et laisse voir le voyant.", quantity: 2000, material: "PC", form: "plate", interfaces: fit(free, (i) => /couvercle/.test(i.key), "-Z") }, "TMP-COUVERCLE").spec;
 const plate = synthesize({ name: "Platine de fixation", fn: "Porte le boîtier et se visse au fond de l'armoire.", quantity: 2000, loads: "Poids du module et effort des câbles : 30 N", material: "AL6061-T6", form: "plate",
-  interfaces: [...fit(free, (i) => i.key === "tmp_platine", "+Z"), { type: "bolt_pattern", side: "A", name: "Fixation à l'armoire", partner: "Fond de l'armoire", key: "tmp_armoire", where: "+Z", params: { screw: "M5", pattern: { type: "rect", nx: 2, ny: 1, dx: 110, dy: 0 } } }] }, "TMP-PLATINE").spec;
+  interfaces: [...fit(free, (i) => i.key === "tmp_platine", "+Z"), { type: "bolt_pattern", side: "A", name: "Fixation à l'armoire", partner: "Fond de l'armoire", key: "tmp_armoire", where: "+Z", external: true, params: { screw: "M5", pattern: { type: "rect", nx: 2, ny: 1, dx: 110, dy: 0 } } }] }, "TMP-PLATINE").spec;
 const card = fromTemplate("pcb", "TMP-CARTE");
 Object.assign(card, { name: "Carte de mesure", function: "Mesure quatre températures et les publie sur le bus CAN." });
 card.params.L.value = 90; card.params.W.value = 60; card.params.pcbL.value = 80; card.params.pcbW.value = 50;

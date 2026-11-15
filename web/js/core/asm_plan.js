@@ -5,7 +5,7 @@
    screws, lowered for boards and for threads in light alloy or plastic : indicative, to confirm by a tightening test. */
 
 import { resolveParams, evalDeep } from "../cad/expr.js";
-import { patternPoints, interfaceType } from "../cad/interfaces.js";
+import { patternPoints, interfaceType, ADHESIVES, BOND_PREPS } from "../cad/interfaces.js";
 import { finishPlan } from "./plan_doc.js";
 
 const TORQUE = { M2: 0.3, "M2.5": 0.6, M3: 1.1, M4: 2.6, M5: 5.2, M6: 9, M8: 22, M10: 43, M12: 75 };      // N·m, steel class 8.8, dry
@@ -42,7 +42,7 @@ export function assemblyPlan(asm, project, ctx = {}) {
   const nameOf = (id) => { const s = parts.get((inst.get(id) || {}).part) || {}; return s.name ? `${s.name} (${s.id})` : (inst.get(id) || {}).part || id; }, specOf = (id) => parts.get((inst.get(id) || {}).part) || {};
   const phases = [], totals = new Map(), sizes = new Set(), q = [], ask = (topic, text) => q.push({ topic, text }), loose = [];
   const hw = (m, A, B) => { let list = []; try { list = ctx.hardwareOf ? ctx.hardwareOf(m) : interfaceType(A.type).hardware(A.params, A.opts, B.opts, specOf(m.a.inst).pcb ? 1.6 : 3) || []; } catch (e) { list = []; } return list; };
-  let thermal = false, boards = 0;
+  let thermal = false, boards = 0, bonded = 0, snapped = 0;
   order.forEach((id, k) => {
     const spec = specOf(id), before = order.slice(0, k), ops = [], checks = [], tools = [], isBoard = spec.family === "pcb";
     if (isBoard) { boards++; checks.push("Protection contre les décharges : bracelet et tapis ; tenir la carte par ses bords"); }
@@ -63,6 +63,17 @@ export function assemblyPlan(asm, project, ctx = {}) {
         for (const h of list) { const row = totals.get(h.id) || { id: h.id, name: (HW[h.kind] || ((x) => x.name))(h), qty: 0 }; row.qty += h.qty; totals.set(h.id, row); }
         if (isBoard || specOf(other).family === "pcb") checks.push("Aucun composant ni piste sous les têtes de vis");
       } else if (A.type === "fit") { const cls = String(A.params.fit || "H7/g6").split("/")[1] || "g6", how = /^[a-h]/.test(cls) ? "à la main" : /^[j-n]/.test(cls) ? "au maillet" : "à la presse"; ops.push({ text: `Emmancher ${nameOf(ia)} dans ${nameOf(ib)} ${how} — Ø ${fr(A.params.d)} ${A.params.fit}`, tools: how === "à la main" ? [] : [how === "au maillet" ? "Maillet" : "Presse"], control: "Portée en butée, sans jeu" }); }
+      else if (A.type === "bond") {                              // a bonded joint : prepare, lay the adhesive, press onto the gap-control pips, hold, cure
+        const ad = ADHESIVES[A.params.adhesive] || ADHESIVES.epoxy, list = hw(m, A, B), dose = list.find((h) => h.kind === "adhesive"), tape = A.params.adhesive === "tape", lo = ad.gap[0], hi = ad.gap[1]; bonded++;
+        ops.push({ text: `${BOND_PREPS[A.params.prep] || BOND_PREPS.degrease} — ${label}`, tools: ["Isopropanol et chiffons non pelucheux"], control: "Plages propres et sèches ; coller dans l'heure" },
+          tape ? { text: `Poser le ruban sur la plage de ${nameOf(ib)} (${fr(A.params.w)} × ${fr(A.params.h)} mm), maroufler, retirer le film protecteur`, tools: [ad.tool] }
+            : { text: `Déposer ${dose ? `${fr(dose.qty)} mL de ` : ""}${ad.fr.toLowerCase()} en cordon continu sur la plage de ${nameOf(ib)} (${fr(A.params.w)} × ${fr(A.params.h)} mm)`, tools: [ad.tool], control: "Cordon continu, sans bulle" },
+          { text: `Présenter ${nameOf(id)} sur ${nameOf(other)} et appuyer ${tape ? "fermement sur toute la plage" : `jusqu'en butée sur les plots de calage : film de ${fr(A.params.gap)} mm`}`, tools: [], control: tape ? "Contact sur toute la surface" : "Bourrelet régulier sur le pourtour ; essuyer l'excès" },
+          { text: `Maintenir : ${ad.hold}. Polymérisation : ${A.params.cure || ad.cure}`, tools: tape ? [] : ["Pinces ou gabarit de maintien"], control: "Ne pas charger le joint avant la fin de la polymérisation" });
+        if (!tape && (A.params.gap < lo - 1e-9 || A.params.gap > hi + 1e-9)) ask("Collage", `${label} : film de ${fr(A.params.gap)} mm pour une ${ad.fr.toLowerCase()}, dont la plage usuelle est ${fr(lo)} à ${fr(hi)} mm — changer l'épaisseur ou la colle ?`);
+        for (const h of list) { const row = totals.get(h.id) || { id: h.id, name: `${h.name}${h.unit ? ` (${h.unit})` : ""}`, qty: 0 }; row.qty = Math.round((row.qty + h.qty) * 100) / 100; totals.set(h.id, row); }
+      } else if (A.type === "planar" && [specOf(ia), specOf(ib)].some((sp) => sp.mold && (sp.mold.closure === "clips" || sp.mold.lifters > 0))) { snapped++;
+        ops.push({ text: `Encliqueter ${nameOf(id)} sur ${nameOf(other)} : présenter les crochets en face des fenêtres, appuyer jusqu'au clic — ${label}`, tools: [], control: "Tous les crochets engagés ; plan de joint sans jour" }); }
       else if (A.type === "planar") ops.push({ text: `Mettre ${nameOf(id)} en appui sur ${nameOf(other)} — ${label}`, tools: [], control: "Appui sans jour" });
       else if (A.type === "pins") { ops.push({ text: `Chasser ${A.params.n || 2} goupilles Ø ${fr(A.params.d)} dans ${nameOf(ib)}`, tools: ["Maillet ou presse"] }, { text: `Présenter ${nameOf(ia)} sur les goupilles`, tools: [], control: "Engagement sans forcer" }); for (const h of hw(m, A, B)) { const row = totals.get(h.id) || { id: h.id, name: h.name, qty: 0 }; row.qty += h.qty; totals.set(h.id, row); } }
       else if (A.type === "cutout") { ops.push({ text: `Passer ${nameOf(ib)} dans la découpe de ${nameOf(ia)} et le fixer — ${label}`, tools: [] }); for (const h of hw(m, A, B)) { const row = totals.get(h.id) || { id: h.id, name: (HW[h.kind] || ((x) => x.name))(h), qty: 0 }; row.qty += h.qty; totals.set(h.id, row); } }
@@ -82,6 +93,8 @@ export function assemblyPlan(asm, project, ctx = {}) {
   if (boards) ask("Cartes", "Dans quel ordre monter et raccorder les cartes ? Les connecteurs restent-ils accessibles une fois tout en place ?");
   if (thermal) ask("Thermique", "Quelle interface thermique, quelle épaisseur, quel couple pour l'écraser sans voiler la carte ou la semelle ?");
   if (covers.length) ask("Essai", "Peut-on essayer le produit avant de fermer le capot ? Que faut-il pouvoir mesurer capot ouvert ?");
+  if (bonded) ask("Collage", "Colle, préparation de surface et polymérisation sont à valider par un essai de cisaillement sur éprouvettes ; quelle durée de vie en pot, quelle température et quelle humidité à l'atelier ?");
+  if (snapped) ask("Clips", "Le produit doit-il pouvoir se rouvrir ? Combien de fois, et avec quel outil pour dégager les crochets sans les blanchir ?");
   ask("Couples", "Les couples indiqués sont des valeurs usuelles : lesquels faut-il confirmer par un essai de serrage, et faut-il un frein-filet ?");
   for (const f of ((ctx.dfa && ctx.dfa.findings) || []).filter((x) => x.severity !== "info").slice(0, 6)) ask("Montage", `${f.title} — ${f.message}`);
   return finishPlan({ kind: "assemblage", id: asm.id, name: asm.name || "", revision: asm.revision || "A",

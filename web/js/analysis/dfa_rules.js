@@ -123,7 +123,7 @@ export function checkAssembly(asm, ctx = {}) {
   run("DFA-02", () => {
     const used = new Set(mates.flatMap((m) => [m.a, m.b].filter(Boolean).map((r) => `${r.inst}|${r.iface}`)));
     for (const i of instances) {
-      const p = partOf(i.id), list = ((p && p.built && p.built.interfaces) || (p && p.spec && p.spec.interfaces) || []).map((x, k) => ({ ...x, id: x.id || `IF${k + 1}` })).filter((x) => !used.has(`${i.id}|${x.id}`));
+      const p = partOf(i.id), list = ((p && p.built && p.built.interfaces) || (p && p.spec && p.spec.interfaces) || []).map((x, k) => ({ ...x, id: x.id || `IF${k + 1}` })).filter((x) => !x.external && !used.has(`${i.id}|${x.id}`));        // an external interface waits for nothing inside the product
       if (list.length) add("DFA-02", { severity: list.some((x) => x.key || x.partner) ? "warn" : "info", value: list.length, limit: 0, unit: "interfaces libres", feature: i.id,
         message: `${nameOf(i.id)} : ${list.length} interface(s) sans liaison — ${list.map((x) => `${x.id} (${x.type}${x.partner ? ` → ${x.partner}` : ""})`).join(", ")} ; limite : 0. Correctif : ajouter la pièce partenaire et la liaison, ou supprimer l'interface si elle ne sert pas.` });
     }

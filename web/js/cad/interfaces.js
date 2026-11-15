@@ -30,6 +30,24 @@ export function patternPoints(pattern = {}) {
 
 /* Each type: label, what it is for, the shared parameters, the options of each side, and compile(side, p, o) which
    returns features in FRAME coordinates ({op, uv:[[u,v]...], ...}); build.js maps them onto the part's face. */
+/** Adhesive families for a bonded joint : usual bond line (mm), typical lap shear on prepared aluminium (MPa, to size — the data
+    sheet of the product bought prevails), how it is held and cured. Generic classes : no brand, no reference. */
+export const ADHESIVES = {
+  epoxy: { fr: "Colle époxy bicomposant", gap: [0.1, 0.3], shear: 20, hold: "30 min sous pinces", cure: "24 h à 23 °C, ou 1 h à 80 °C", tool: "Cartouche double et buse mélangeuse" },
+  acrylic: { fr: "Colle acrylique structurale (MMA)", gap: [0.2, 1.0], shear: 18, hold: "10 min sous pinces", cure: "24 h à 23 °C", tool: "Cartouche double et buse mélangeuse" },
+  polyurethane: { fr: "Colle polyuréthane", gap: [0.5, 3.0], shear: 8, hold: "2 h sous pinces", cure: "48 h à 23 °C", tool: "Pistolet à cartouche" },
+  cyanoacrylate: { fr: "Colle cyanoacrylate", gap: [0.02, 0.1], shear: 15, hold: "30 s à la main", cure: "24 h à 23 °C", tool: "Flacon doseur" },
+  silicone: { fr: "Mastic silicone (étanchéité)", gap: [0.5, 3.0], shear: 1.5, hold: "sans effort, pièce posée", cure: "24 h par 3 mm d'épaisseur", tool: "Pistolet à cartouche" },
+  tape: { fr: "Ruban double face acrylique", gap: [0.25, 1.1], shear: 0.5, hold: "pression de 15 s au rouleau", cure: "72 h pour la tenue complète", tool: "Rouleau presseur" },
+};
+/** Surface preparations, in the words of the routing sheet. */
+export const BOND_PREPS = {
+  degrease: "Dégraisser les deux plages à l'isopropanol, chiffon non pelucheux",
+  abrade: "Dégraisser, poncer au grain 180 à 320, dépoussiérer, dégraisser de nouveau",
+  primer: "Dégraisser, appliquer le primaire d'adhérence, laisser sécher le temps indiqué",
+  plasma: "Dégraisser, traiter au plasma ou à la flamme, coller dans l'heure",
+};
+
 export const INTERFACE_TYPES = {
   bolt_pattern: {
     label: "Bolt pattern", fr: "Motif de vis",
@@ -80,6 +98,24 @@ export const INTERFACE_TYPES = {
     hardware: () => [],
     gdt: (p) => ({ symbol: "flatness", tolerance: round2(Math.max(0.05, Math.max(p.w || 0, p.h || 0) * 0.001)) }),
     signature: (p) => `${round2(p.w || 0)}x${round2(p.h || 0)}`,
+  },
+  bond: {
+    label: "Bonded joint", fr: "Joint collé",
+    doc: "Collage entre deux plages planes de w × h. A = plage lisse ; B = plage qui porte les plots de calage : ils tiennent l'épaisseur du film de colle (« gap », mm). « adhesive » (epoxy, acrylic, polyurethane, cyanoacrylate, silicone, tape), « prep » (degrease, abrade, primer, plasma) et « cure » (texte libre) décrivent le procédé ; la colle entre dans la nomenclature.",
+    params: { w: 30, h: 12, gap: 0.2, adhesive: "epoxy", prep: "abrade", cure: "" }, optsA: {}, optsB: { pips: true },
+    compile(side, p, o) {                                       // the gap is built in : pips of the height of the bond line, the mating plane on their tops
+      if (side !== "B" || o.pips === false || !(p.gap > 0) || p.adhesive === "tape") return [];
+      const d = round2(Math.max(1.2, Math.min(3, Math.min(p.w, p.h) / 4))), ex = round2(p.w / 2 - d), ey = round2(p.h / 2 - d);
+      const pts = ex >= d && ey >= d ? [[-ex, -ey], [ex, -ey], [ex, ey], [-ex, ey]] : ex >= d ? [[-ex, 0], [0, 0], [ex, 0]] : ey >= d ? [[0, -ey], [0, 0], [0, ey]] : [[0, 0]];
+      return [{ op: "boss", uv: pts, d, h: p.gap, lift: p.gap }];
+    },
+    hardware(p) {
+      const a = ADHESIVES[p.adhesive] || ADHESIVES.epoxy, tape = p.adhesive === "tape";
+      return [{ id: `ADH-${String(p.adhesive || "epoxy").toUpperCase()}`, name: a.fr, kind: "adhesive", adhesive: p.adhesive || "epoxy", unit: tape ? "cm²" : "mL",
+        qty: tape ? Math.max(0.1, round2(p.w * p.h / 100)) : Math.max(0.05, round2(p.w * p.h * (p.gap || 0.2) / 1000 * 1.3)) }];   // 30 % more than the film : the squeeze-out
+    },
+    gdt: (p) => ({ symbol: "flatness", tolerance: round2(Math.max(0.05, (p.gap || 0.2) / 2)) }),
+    signature: (p) => `${round2(p.w || 0)}x${round2(p.h || 0)}@${round2(p.gap || 0)}|${p.adhesive || "epoxy"}`,
   },
   fit: {
     label: "Shaft / bore fit", fr: "Ajustement arbre / alésage",
@@ -167,7 +203,7 @@ export function compileInterface(iface, level) {
   type.compile(side, p, o).forEach((raw, k) => {
     const f = { ...raw, id: `${iface.id}.${k + 1}`, iface: iface.id, face, body: iface.body };
     if (raw.uv) { f.at = raw.uv.map(toFace); delete f.uv; }
-    if (raw.op === "boss") { f.start = raw.below ? level - raw.h : level; delete f.below; }
+    if (raw.op === "boss") { f.start = raw.below ? level - raw.h : level; delete f.below; if (raw.lift) { fr.o = v3.add(fr.o, v3.mul(fr.n, raw.lift)); delete f.lift; } }      // lift : the mating plane is on the tops (gap-control pips)
     else if (raw.op === "pad") { Object.assign(f, padFeature(raw, fr, F, level)); fr.o = v3.add(fr.o, v3.mul(fr.n, raw.t)); }   // the mating plane is the top of the pad
     else f.start = level;
     if (raw.rectUV) {

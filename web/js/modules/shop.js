@@ -14,7 +14,7 @@ import { moldProcess, MOLD_RULES } from "../core/shop_mold.js";
 import { moldArch, hostOf } from "../core/shop_mold_more.js";
 import { routing } from "../cad/shop.js";
 import { STOCK_FORMS } from "../cad/stock.js";
-import { INTERFACE_TYPES, interfaceSignature } from "../cad/interfaces.js";
+import { INTERFACE_TYPES, interfaceSignature, ADHESIVES, BOND_PREPS } from "../cad/interfaces.js";
 import { THREADS } from "../cad/standards.js";
 import { MATERIALS, PROCESSES, material } from "../cad/materials.js";
 import { anticipatedInterfaces, shopPrompt } from "../core/prompts.js";
@@ -32,6 +32,7 @@ const SHAPES = [
   { type: "bolt_pattern", side: "A", icon: "bolt", name: "Fixation vissée", title: "Je me visse sur…", text: "Trous de passage : mes vis entrent dans le voisin." },
   { type: "bolt_pattern", side: "B", icon: "tap", name: "Fixation taraudée", title: "On se visse sur moi", text: "Taraudages ou inserts : je reçois les vis du voisin." },
   { type: "planar", side: "A", icon: "layers", name: "Appui plan", title: "Je m'appuie sur…", text: "Deux faces planes en contact : appui, joint, pad thermique." },
+  { type: "bond", side: "B", icon: "layers", name: "Plage de collage", title: "Je me colle sur…", text: "Un joint collé : plage, épaisseur du film tenue par des plots, colle, préparation." },
   { type: "fit", side: "A", icon: "lathe", name: "Portée d'ajustement", title: "Je m'emmanche dans…", text: "Une portée cylindrique centrée dans un alésage." },
   { type: "fit", side: "B", icon: "drill", name: "Alésage d'ajustement", title: "Je reçois un arbre", text: "Un alésage ajusté qui centre le voisin." },
   { type: "cutout", side: "A", icon: "section", name: "Ouverture", title: "Je laisse passer…", text: "Une ouverture : connecteur, câble, afficheur, évent." },
@@ -101,7 +102,7 @@ function render(main) {
   const create = btn("Créer la pièce", () => createPart(), { primary: true, icon: "check", disabled: true });
   const asmBox = el("input", { type: "checkbox", checked: brief.addToAsm, onChange: (e) => { brief.addToAsm = e.target.checked; } });
   right.append(el("section", { class: "card taped" }, el("h2", null, el("span", { class: "step-no" }, "4"), "La pièce proposée"), holder, chips, out,
-    el("div", { class: "form-actions" }, p.assemblies.length ? el("label", { class: "check", style: { marginRight: "auto" } }, asmBox, `Ajouter à ${p.assemblies[0].id} et mater`) : null,
+    el("div", { class: "form-actions" }, el("label", { class: "check", style: { marginRight: "auto" } }, asmBox, p.assemblies.length ? `Ajouter à ${p.assemblies[0].id} et mater` : "Assembler avec ses voisines et mater"),
       btn("Affiner avec Claude", async () => { if (!current) return; toast((await copyText(shopPrompt(p, brief, current.spec))) ? "Prompt copié : collez-le dans Claude, puis collez sa réponse dans « Entrevue avec Claude »." : "Copie impossible.", "success", 6000); }, { icon: "wizard", tip: "Copie un prompt qui contient l'intention et cette proposition : Claude l'améliore sans toucher aux interfaces" }),
       create)));
 
@@ -130,6 +131,9 @@ function render(main) {
       if (pat.type === "circle") row.append(numIn(pat, "n", "Nombre", redraw), numIn(pat, "pcd", "Ø de perçage", redraw, 0.5));
       else if (pat.type !== "single") row.append(numIn(pat, "nx", "En X", redraw), numIn(pat, "ny", "En Y", redraw), numIn(pat, "dx", "Entraxe X", redraw, 0.5), numIn(pat, "dy", "Entraxe Y", redraw, 0.5));
     } else if (it.type === "planar") row.append(numIn(q, "w", "Largeur", redraw), numIn(q, "h", "Hauteur", redraw));
+    else if (it.type === "bond") { const a = ADHESIVES[q.adhesive] || ADHESIVES.epoxy, pickOf = (key, list) => el("select", { onChange: (e) => { q[key] = e.target.value; if (key === "adhesive") { const g = ADHESIVES[q.adhesive].gap; if (q.gap < g[0] || q.gap > g[1]) q.gap = g[0] <= 0.2 && g[1] >= 0.2 ? 0.2 : g[0]; drawIfaces(); } redraw(); } }, list.map(([k, l]) => el("option", { value: k, selected: k === q[key] }, l)));
+      row.append(numIn(q, "w", "Longueur de la plage", redraw, 0.5), numIn(q, "h", "Largeur", redraw, 0.5), field("Film de colle (mm)", el("input", { type: "number", value: q.gap, step: 0.05, min: 0.02, "data-tip": `Tenu par des plots de calage dans la pièce. Plage usuelle de cette colle : ${String(a.gap[0]).replace(".", ",")} à ${String(a.gap[1]).replace(".", ",")} mm`, onInput: (e) => { const v = parseFloat(e.target.value); if (v > 0) { q.gap = v; redraw(); } } })),
+        field("Colle", pickOf("adhesive", Object.entries(ADHESIVES).map(([k, v]) => [k, v.fr]))), field("Préparation", pickOf("prep", Object.entries(BOND_PREPS).map(([k, v]) => [k, v.split(",")[0].split(" à ")[0]])))); }
     else if (it.type === "fit") row.append(numIn(q, "d", "Diamètre", redraw, 0.5), numIn(q, "length", "Longueur", redraw, 0.5));
     else if (it.type === "cutout") row.append(numIn(q, "w", "Largeur", redraw, 0.5), numIn(q, "h", "Hauteur", redraw, 0.5), numIn(q, "r", "Rayon", redraw, 0.5));
     else if (it.type === "rail") row.append(numIn(q, "t", "Épaisseur", redraw, 0.1), numIn(q, "depth", "Profondeur", redraw, 0.5), numIn(q, "length", "Longueur", redraw));
@@ -150,6 +154,7 @@ function render(main) {
         const nm = el("input", { type: "text", value: it.name, placeholder: "Nom de l'interface", onInput: (e) => { it.name = e.target.value; propose(); } }), pt = el("input", { type: "text", value: it.partner, placeholder: "Voisin (ex. : moteur, capot)", onInput: (e) => { it.partner = e.target.value; propose(); } });
         card.append(el("div", { class: "form-row tight" }, field("Nom", nm), field("Avec", pt)), quick(it, () => { drawStock(); propose(); }));
       }
+      if (!it.from) card.append(el("label", { class: "check small" }, el("input", { type: "checkbox", checked: !!it.external, onChange: (e) => { if (e.target.checked) it.external = true; else delete it.external; propose(); } }), "Externe : vers l'extérieur du produit (aucune pièce du projet ne s'y accouple)"));
       if (wasMoulded) card.append(el("label", { class: "check small" }, el("input", { type: "checkbox", checked: !!it.inside, onChange: (e) => { it.inside = e.target.checked; propose(); } }), "À l'intérieur : ce qui se fixe au fond de la pièce (carte, module) — sur colonnettes"));
       list.append(card);
     }
@@ -233,8 +238,10 @@ function render(main) {
     if (!current) return;
     const r = importPart(current.spec, { replace: false });
     if (r.errors && r.errors.length) { toast(r.errors.join(" "), "error"); return; }
-    const mate = brief.addToAsm && p.assemblies.length && brief.neighbours.length;
-    if (mate) store.updateAssembly(p.assemblies[0].id, (a) => { a.instances.push({ id: `i${Date.now().toString(36)}`, part: r.id, placement: { t: [0, 0, 0], r: [0, 0, 0] } }); a.pendingAutoMate = true; }, `${r.id} ajoutée à ${p.assemblies[0].id}`);
+    const mate = brief.addToAsm && brief.neighbours.length;
+    if (mate && !p.assemblies.length) store.commit(`Assemblage créé autour de ${r.id}`, (x) => { x.assemblies.push({ dw: "assembly/1", id: store.uniqueId(`${String(x.name || "ASM").normalize("NFD").replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 16).toUpperCase() || "ASM"}-ASM`), name: "Assemblage général",
+      instances: [...brief.neighbours, r.id].map((part, n) => ({ id: `i${n + 1}`, part, ...(n ? {} : { fixed: true }), placement: { t: [0, 0, 0], r: [0, 0, 0] } })), mates: [], pendingAutoMate: true }); });
+    else if (mate) store.updateAssembly(p.assemblies[0].id, (a) => { a.instances.push({ id: `i${Date.now().toString(36)}`, part: r.id, placement: { t: [0, 0, 0], r: [0, 0, 0] } }); a.pendingAutoMate = true; }, `${r.id} ajoutée à ${p.assemblies[0].id}`);
     toast(`Pièce ${r.id} créée depuis son intention.`, "success");
     brief = blank();
     go(mate ? `#/assembly/${encodeURIComponent(p.assemblies[0].id)}` : `#/parts/${encodeURIComponent(r.id)}`);

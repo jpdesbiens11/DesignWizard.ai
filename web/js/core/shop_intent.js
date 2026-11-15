@@ -37,6 +37,7 @@ export function footprint(it, mat) {
       why: side === "A" ? `passage ${p.screw} : au moins ${fr(need)} mm sous la tête` : plastic ? `insert ${p.screw} : ${fr(need)} mm` : `taraudage ${p.screw} : ${fr(k)} × d = ${fr(need)} mm en prise` };
   }
   if (it.type === "planar") return { w: p.w, h: p.h, need: 2, clear: [0, 0], edge: 0, why: "appui plan" };
+  if (it.type === "bond") return { w: p.w, h: p.h, need: 2, clear: [0, 0], edge: 1, why: `plage de collage ${fr(p.w)} × ${fr(p.h)} mm, film de ${fr(p.gap)} mm` };
   if (it.type === "fit") return side === "A" ? { w: p.d, h: p.d, need: Math.max(3, 0.3 * p.d), clear: [0, 0], edge: 2, why: `épaulement de l'arbre Ø${fr(p.d)}`, spigot: p.length }
     : { w: p.d + 2 * Math.max(3, 0.4 * p.d), h: p.d + 2 * Math.max(3, 0.4 * p.d), need: p.length + 1.5, clear: [0, 0], edge: 0, why: `alésage Ø${fr(p.d)} de ${fr(p.length)} mm + fond` };
   if (it.type === "cutout") { const fix = p.fix && p.fix.screw ? (p.fix.pitch || (p.w || p.d) + 8) + thread(p.fix.screw).washer : 0;
@@ -85,7 +86,7 @@ function prepare(brief, log) {
     const t = INTERFACE_TYPES[raw.type];
     if (!t) throw new Error(`Type d'interface inconnu « ${raw.type} ».`);
     const id = `IF${i + 1}`, name = raw.name || t.fr, key = raw.key || slug(`${brief.name || "piece"}_${raw.partner || name}_${id}`);
-    const it = { id, type: raw.type, name, key, partner: raw.partner || undefined, side: raw.side === "B" ? "B" : "A", where: raw.where || "+Z", inside: !!raw.inside, from: raw.from || undefined, params: JSON.parse(JSON.stringify({ ...t.params, ...(raw.params || {}) })), opts: raw.opts ? { ...raw.opts } : undefined };
+    const it = { id, type: raw.type, name, key, partner: raw.partner || undefined, side: raw.side === "B" ? "B" : "A", where: raw.where || "+Z", inside: !!raw.inside, from: raw.from || undefined, external: raw.external ? true : undefined, params: JSON.parse(JSON.stringify({ ...t.params, ...(raw.params || {}) })), opts: raw.opts ? { ...raw.opts } : undefined };
     it.fp = footprint(it, brief.material);
     if (!raw.key) log.push(`Interface « ${name} » : clé « ${key} » créée ; la pièce voisine la reprendra telle quelle.`);
     return it;
@@ -93,7 +94,7 @@ function prepare(brief, log) {
 }
 /** Tapped side of a bolt pattern: through in a thin wall, blind at the engagement the material needs in a block. */
 const tapped = (it, through) => (it.type === "bolt_pattern" && it.side === "B" && !(it.opts && (it.opts.depth !== undefined || it.opts.thread === "insert" || it.opts.standoff)) ? { opts: { ...(it.opts || {}), depth: through ? "through" : r1(it.fp.need) } } : {});
-const ifaceOut = (it, face, at, extra = {}) => { const o = { id: it.id, type: it.type, name: it.name, key: it.key, partner: it.partner, side: it.side, face, at, params: it.params, opts: it.opts, ...extra }; for (const k of Object.keys(o)) if (o[k] === undefined) delete o[k]; return o; };
+const ifaceOut = (it, face, at, extra = {}) => { const o = { id: it.id, type: it.type, name: it.name, key: it.key, partner: it.partner, side: it.side, external: it.external, face, at, params: it.params, opts: it.opts, ...extra }; for (const k of Object.keys(o)) if (o[k] === undefined) delete o[k]; return o; };
 function thickness(items, series, floor, log, what = "Épaisseur") {
   let need = floor, why = `minimum d'atelier ${fr(floor)} mm`;
   for (const it of items) if (it.fp.need > need) { need = it.fp.need; why = `${it.fp.why} (« ${it.name} »)`; }

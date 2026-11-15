@@ -8,7 +8,7 @@ import { store } from "../core/store.js";
 import { kernel } from "../cad/client.js";
 import { createViewport } from "../core/viewport.js";
 import { buildAssembly, showAssembly } from "../core/asm_scene.js";
-import { autoMate, candidates, freeInterfaces, ifaceOf, pairKey } from "../core/assembly_logic.js";
+import { autoMate, candidates, freeInterfaces, ifaceOf, pairKey, joints, jointsCsv, nextJoint } from "../core/assembly_logic.js";
 import { announceLinks } from "../core/part_edit.js";
 import { companionSpec } from "../core/companion.js";
 import { runDfa } from "../analysis/dfx_api.js";
@@ -34,8 +34,8 @@ function render(main, args) {
   const vp = createViewport(view, { name: () => id, explode: true, explodeScale: () => (st.ctx ? Math.max(20, (st.ctx.bbox[5] - st.ctx.bbox[2] + st.ctx.bbox[3] - st.ctx.bbox[0]) * 0.25) : 50),
     menuFor: (hit) => instMenu(hit && hit.def.data.inst ? hit.def.data.inst : null), onKey: (e) => instKey(e), keys: [["H · I · Maj + H", "Masquer la pièce choisie · l'isoler · tout afficher"], ["Entrée · Suppr", "Ouvrir la pièce choisie · la retirer de l'assemblage"]],
     onPick: (hit) => { st.sel = hit && hit.def.data.inst ? hit.def.data.inst : null; vp.viewer.highlight(st.sel ? [...vp.viewer.objects.keys()].filter((k) => k.startsWith(st.sel + "/")) : []); renderLeft(); if (st.sel) { st.tab = "inst"; } renderRight(); } });
-  const info = el("span", { class: "chip" }, "—");
-  vp.setStatus(info);
+  const info = el("span", { class: "chip" }, "—"), clash = el("span", { class: "chip", "data-tip": "Volumes communs entre pièces voisines, cherchés après chaque montage" }, "interférences : …");
+  vp.setStatus(info, clash);
   const bF = btn("", () => { st.frames = !st.frames; bF.classList.toggle("on", st.frames); overlays(); }, { small: true, icon: "interfaces", tip: "Afficher les interfaces et les mates" });
   vp.group(bF, btn("Interférences", () => checkInterference(), { small: true, icon: "warning", tip: "Chercher les volumes communs entre pièces" }));
 
@@ -70,6 +70,7 @@ function render(main, args) {
       st.dfa = await runDfa(ctx.asm, { parts: Object.fromEntries(Object.keys(ctx.built).map((k) => [k, { spec: store.part(k), built: ctx.built[k] }])), hardware: ctx.hardware, interference: st.interference, placements: s.placements });
       if (token !== st.token) return;
       overlays(); renderLeft(); renderRight();
+      if (ctx.asm.instances.length > 1 && ctx.asm.instances.length <= 14) checkInterference(true); else { clash.textContent = ctx.asm.instances.length > 14 ? "interférences : à lancer" : ""; clash.className = "chip"; }      // every solve is checked, quietly
     } catch (e) { if (token === st.token) { vp.setBusy(""); info.textContent = e.message; info.className = "chip bad"; } }
   }
   function overlays() {
@@ -87,7 +88,7 @@ function render(main, args) {
     }
     for (const x of st.interference || []) if (x.volume > 0 && x.at) { v.addMarker(x.at, "#ff5a4f", "mate", 1.6); v.addLabel(x.at, `Interférence ${fmt(x.volume, 0)} mm³`, "mate", "err"); }
   }
-  async function checkInterference() {
+  async function checkInterference(quiet = false) {
     if (!st.ctx) return;
     const { asm: a, built, sol } = st.ctx, pairs = [], names = [];
     const boxes = a.instances.map((i) => bboxTransform(built[i.part].bbox, sol.placements[i.id]));
@@ -97,14 +98,15 @@ function render(main, args) {
       pairs.push({ a: { key: a.instances[i].part, matrix: sol.placements[a.instances[i].id] }, b: { key: a.instances[j].part, matrix: sol.placements[a.instances[j].id] } });
       names.push([a.instances[i], a.instances[j]]);
     }
-    vp.setBusy(`Recherche d'interférences sur ${pairs.length} paire(s)…`);
+    const mine = st.token; if (!quiet) vp.setBusy(`Recherche d'interférences sur ${pairs.length} paire(s)…`);
     try {
-      const res = await kernel.interference(pairs);
+      const res = await kernel.interference(pairs); if (mine !== st.token) return;
       st.interference = res.map((r, k) => ({ ...r, a: names[k][0].part, b: names[k][1].part })).filter((r) => r.volume > 0.5);
-      toast(st.interference.length ? `${st.interference.length} interférence(s) trouvée(s).` : "Aucune interférence entre les pièces.", st.interference.length ? "warn" : "success");
-      st.tab = "dfa";
-    } catch (e) { toast(e.message, "error"); }
-    vp.setBusy(""); overlays(); renderRight();
+      clash.textContent = st.interference.length ? `${st.interference.length} interférence(s)` : "aucune interférence"; clash.className = `chip ${st.interference.length ? "bad" : "done"}`; clash.dataset.tip = st.interference.length ? st.interference.map((r) => `${r.a} ∩ ${r.b} : ${fmt(r.volume, 1)} mm³`).join(" · ") : `${pairs.length} paire(s) de pièces voisines comparées`;
+      if (!quiet || st.interference.length) toast(st.interference.length ? `${st.interference.length} interférence(s) trouvée(s) : ${st.interference.map((r) => `${r.a} ∩ ${r.b}`).slice(0, 3).join(", ")}.` : "Aucune interférence entre les pièces.", st.interference.length ? "warn" : "success");
+      if (!quiet) st.tab = "dfa";
+    } catch (e) { if (!quiet) toast(e.message, "error"); }
+    if (!quiet) vp.setBusy(""); overlays(); renderRight();
   }
 
   /* ---------- left ---------- */
@@ -174,22 +176,27 @@ function render(main, args) {
     body.append(el("p", { class: "muted", style: { fontSize: ".84rem" } }, "Un mate relie deux interfaces identiques (côté A et côté B). S'il est lié 🔗, les deux pièces partagent les paramètres de l'interface : modifiez un côté, l'autre s'adapte."));
     if (cand.length) {
       body.append(el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, `Mates possibles (${cand.length})`), btn("Tout mater", () => { store.commit(`${id} : mates automatiques`, (p) => autoMate(p.assemblies.find((x) => x.id === id), built), { assembly: id, part: (a.instances.find((i) => i.fixed) || a.instances[0]).part }); }, { small: true, icon: "sparkle" })),
-        cand.slice(0, 12).map((c) => el("div", { class: "finding", onClick: () => store.updateAssembly(id, (x) => { x.mates = x.mates || []; x.mates.push({ id: `M${Date.now().toString(36).slice(-4)}`, a: c.a, b: c.b, linked: true, by: c.by });
+        cand.slice(0, 12).map((c) => el("div", { class: "finding", onClick: () => store.updateAssembly(id, (x) => { x.mates = x.mates || []; const n = nextJoint(x); x.mates.push({ id: `M${n}`, a: c.a, b: c.b, linked: true, by: c.by }); x.mseq = n;
           x.rejected = (x.rejected || []).filter((k) => k !== pairKey(c.a, c.b)); }, `Mate ajouté : ${c.label}`) },
           el("span", { class: "sev" }), el("div", null, el("b", null, `${instName(a, c.a.inst)} ↔ ${instName(a, c.b.inst)}`)), el("p", null, `${c.label} · ${c.by === "key" ? "même clé" : "même géométrie"}${c.same ? "" : " · paramètres différents : le côté B s'adaptera"}${c.rejected ? " · retiré à la main : cliquez pour le remettre" : ""}`)))));
     }
-    body.append(el("div", { class: "side-section" }, el("h3", null, `Mates (${(a.mates || []).length})`)));
+    /* the joint register : each mated pair keeps its number, says what kind of joint it is and what holds it */
+    const reg = joints(st.ctx.asm, built, Object.fromEntries(store.parts.map((x) => [x.id, x]))), byId = new Map(reg.map((r) => [r.id, r]));
+    body.append(el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, `Joints (${(a.mates || []).length})`), reg.length ? btn("Registre (.csv)", () => download(`${id}-joints.csv`, jointsCsv(reg), "text/csv"), { small: true, icon: "download", tip: "Le registre des joints : numéro, genre, pièces, clé, visserie ou colle, procédé" }) : null)));
     for (const m of a.mates || []) {
       const ia = a.instances.find((i) => i.id === m.a.inst), fa = ia && ifaceOf(built, ia.part, m.a.iface), pb = sol.problems.find((p) => p.mate === m.id);
       body.append(el("div", { class: "card", style: { marginBottom: ".5rem", padding: ".5rem .65rem" } },
-        el("div", { style: { display: "flex", gap: ".35rem", alignItems: "center", flexWrap: "wrap" } }, el("b", null, m.id), badge(fa ? INTERFACE_TYPES[fa.type].fr : "?", "neutral"), m.linked === false ? badge("non lié", "warn") : badge("lié 🔗", "ok"), pb && badge("à vérifier", "danger")),
+        el("div", { style: { display: "flex", gap: ".35rem", alignItems: "center", flexWrap: "wrap" } }, el("b", null, m.id), badge(byId.get(m.id) ? byId.get(m.id).kind : fa ? INTERFACE_TYPES[fa.type].fr : "?", byId.get(m.id) && byId.get(m.id).type === "bond" ? "info" : "neutral"), m.linked === false ? badge("non lié", "warn") : badge("lié 🔗", "ok"), pb && badge("à vérifier", "danger")),
         el("p", { style: { margin: ".25rem 0", fontSize: ".84rem" } }, `${instName(a, m.a.inst)} (${m.a.iface}) ↔ ${instName(a, m.b.inst)} (${m.b.iface})`), pb && el("p", { class: "form-error", style: { fontSize: ".8rem" } }, pb.msg),
+        byId.get(m.id) && (byId.get(m.id).hardware.length || byId.get(m.id).process) ? el("p", { class: "muted", style: { margin: ".15rem 0", fontSize: ".8rem" } }, [byId.get(m.id).hardware.map((h) => `${String(h.qty).replace(".", ",")}${h.unit ? ` ${h.unit}` : " ×"} ${h.name}`).join(" + "), byId.get(m.id).process].filter(Boolean).join(" — ")) : null,
         el("div", { class: "form-actions", style: { justifyContent: "flex-start", marginTop: ".2rem" } },
           btn(m.linked === false ? "Lier" : "Délier", () => store.updateAssembly(id, (x) => { const q = x.mates.find((k) => k.id === m.id); q.linked = q.linked === false; }, `${m.id} ${m.linked === false ? "lié" : "délié"}`), { small: true, icon: m.linked === false ? "link" : "unlink", tip: "Lié : les paramètres de l'interface sont partagés" }),
           btn("90°", () => store.updateAssembly(id, (x) => { const q = x.mates.find((k) => k.id === m.id); q.angle = ((q.angle || 0) + 90) % 360; }, `${m.id} tourné de 90°`), { small: true, icon: "refresh", tip: "Tourner la pièce B de 90° autour de la normale de l'interface" }),
           btn("", () => store.updateAssembly(id, (x) => { x.mates = x.mates.filter((k) => k.id !== m.id); x.rejected = [...new Set([...(x.rejected || []), pairKey(m.a, m.b)])]; }, `${m.id} supprimé`), { small: true, icon: "trash", danger: true, tip: "Supprimer ce mate (il ne sera pas recréé automatiquement)" }))));
     }
-    const free = freeInterfaces(st.ctx.asm, built);
+    const open = freeInterfaces(st.ctx.asm, built), free = open.filter((f) => !f.external), outer = open.filter((f) => f.external);
+    if (outer.length) body.append(el("div", { class: "side-section" }, el("h3", null, `Interfaces externes (${outer.length})`), el("p", { class: "muted small" }, "Le contrat du produit avec ce qui l'entoure : elles n'attendent aucune pièce du projet."),
+      outer.map((f) => el("p", { style: { fontSize: ".84rem", margin: "0 0 .25rem" } }, badge("externe", "info"), " ", el("b", null, f.iface.name || f.iface.id), el("span", { class: "muted" }, ` — ${f.part} · ${INTERFACE_TYPES[f.iface.type].fr}${f.iface.partner ? ` → ${f.iface.partner}` : ""}`)))));
     if (free.length) body.append(el("div", { class: "side-section" }, el("h3", null, `Interfaces libres (${free.length})`),
       free.map((f) => el("div", { class: "finding", onClick: () => makeCompanion(f) }, el("span", { class: "sev" }), el("div", null, el("b", null, f.iface.name), el("span", { class: "id" }, `${f.part} · ${f.iface.id} · côté ${f.iface.side}`)),
         el("p", null, `Aucun voisin ne porte encore le côté ${f.iface.side === "A" ? "B" : "A"}. Cliquez pour générer la pièce complémentaire, ou décrivez-la par l'entrevue.`)))));

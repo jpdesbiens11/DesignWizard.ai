@@ -115,6 +115,7 @@ export function interfaceDialog(iface, onSave, isNew) {
   const txt = (v) => el("input", { type: "text", value: show(v), spellcheck: false });
   const name = txt(it.name), key = txt(it.key), partner = txt(it.partner), at = txt(it.at || [0, 0]), level = txt(it.level), rot = txt(it.rot);
   const params = el("textarea", { rows: 4, spellcheck: false }), opts = el("textarea", { rows: 3, spellcheck: false }), link = faceLink(face, level);
+  const external = el("input", { type: "checkbox", checked: !!it.external });
   const fill = (reset) => {
     const t = INTERFACE_TYPES[type.value];
     doc.textContent = t.doc;
@@ -130,6 +131,7 @@ export function interfaceDialog(iface, onSave, isNew) {
       it.name = name.value.trim() || INTERFACE_TYPES[it.type].fr;
       for (const [k, input, kind] of [["key", key, "text"], ["partner", partner, "text"], ["at", at, "json"], ["level", level, "num"], ["rot", rot, "num"]]) { const v = parseValue(input.value, kind); if (v === undefined) delete it[k]; else it[k] = v; }
       it.params = JSON.parse(params.value || "{}"); it.opts = JSON.parse(opts.value || "{}");
+      if (external.checked) it.external = true; else delete it.external;
       m.close(); onSave(it);
     } catch (e) { err.textContent = `Champ invalide : ${e.message}`; }
   };
@@ -138,6 +140,7 @@ export function interfaceDialog(iface, onSave, isNew) {
     el("div", { class: "form-row" }, field("Nom", name), field("Clé partagée", key, "La même clé sur l'autre pièce = la même interface"), field("Voisin", partner)),
     el("div", { class: "form-row" }, field("Position sur la face", at, "[x,y] sur ±Z · [x,z] sur ±Y · [y,z] sur ±X"), field("Niveau du plan d'appui", level, "Vide = extérieur de la pièce"), field("Rotation (°)", rot)),
     el("div", { class: "form-row" }, field("Paramètres partagés par les deux côtés", params), field("Options de ce côté", opts)),
+    el("label", { class: "check small" }, external, "Interface externe : elle regarde l'extérieur du produit (châssis du client, mur, opérateur) — aucune pièce du projet ne viendra s'y accoupler"),
     err, el("div", { class: "form-actions" }, btn("Annuler", () => m.close()), btn(isNew ? "Ajouter" : "Appliquer", save, { primary: true }))], { wide: !link.float, float: link.float, onClose: () => link.stop() });
 }
 

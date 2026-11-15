@@ -38,6 +38,7 @@ const HOW = [
 ];
 const DESIGN = [
   "Les INTERFACES d'abord. Deux pièces qui se touchent partagent une interface : même \"type\", même \"key\", mêmes \"params\" ; \"side\": \"A\" sur l'une, \"B\" sur l'autre. C'est ce qui permet à l'assemblage de s'accoupler seul : une clé qui n'apparaît que sur une pièce est une interface vers l'extérieur du produit.",
+  "Une interface qui regarde l'extérieur du produit (châssis du client, mur, câble) porte \"external\": true. Un collage est une interface de type \"bond\" (plage w × h, film \"gap\", \"adhesive\", \"prep\") : la plateforme y met les plots de calage et compte la colle.",
   "Chaque cote utile est un paramètre nommé (\"params\"), jamais un nombre répété. Les repères sont courts et en majuscules, avec un préfixe commun au produit (ex. CAP-BOITIER, CAP-CARTE).",
   "Reste sobre pour un premier jet : 3 à 12 pièces conçues. Une pièce achetée est une pièce de \"family\": \"purchased\" réduite à son enveloppe et à ses interfaces.",
   "Chaque pièce dit sa \"function\" en une phrase, sa matière, son procédé et sa matière première (\"stock\") : une plaque, une tôle, un rond du commerce, ou \"molded\" pour une pièce moulée.",
@@ -147,10 +148,10 @@ export function readFirstDesign(text, o = {}) {
   }
   /* an interface key met once looks outside the product ; met twice it must face itself : A against B, same type */
   const keys = new Map();
-  for (const p of project.parts) for (const i of list(p.interfaces)) if (i.key) (keys.get(i.key) || keys.set(i.key, []).get(i.key)).push({ part: p.id, side: i.side || "A", type: i.type });
+  for (const p of project.parts) for (const i of list(p.interfaces)) if (i.key) (keys.get(i.key) || keys.set(i.key, []).get(i.key)).push({ part: p.id, side: i.side || "A", type: i.type, external: !!i.external });
   let pairs = 0; const outside = [];
   for (const [key, uses] of keys) {
-    if (uses.length === 1) outside.push(`${uses[0].part} « ${key} »`);
+    if (uses.length === 1) { outside.push(`${uses[0].part} « ${key} »`); if (!uses[0].external) items.find((x) => x.key === `part:${uses[0].part}`).notes.push(`interface « ${key} » sans vis-à-vis dans le fichier : si elle regarde l'extérieur du produit, la marquer "external": true`); }
     else if (uses.length === 2 && uses[0].side !== uses[1].side && uses[0].type === uses[1].type) pairs++;
     else for (const u of uses) items.find((x) => x.key === `part:${u.part}`).notes.push(`interface « ${key} » : ${uses.length} pièces la portent (${uses.map((x) => `${x.part} côté ${x.side}`).join(", ")}) — attendu : deux pièces, un côté A et un côté B, même type`);
   }

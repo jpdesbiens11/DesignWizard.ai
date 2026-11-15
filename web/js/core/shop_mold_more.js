@@ -26,7 +26,7 @@ export function clipPlan(matId, wall, depth, long) {
 
 const head = (brief) => { const proc = brief.process && MOLD_RULES[brief.process] ? brief.process : moldProcess(brief.material), R = MOLD_RULES[proc], mat = material(brief.material) || { name: brief.material }; return { proc, R, mat, lim: mat.wall || R.wall, metal: R.thread === "tapped" }; };
 const nominal = (R, lim, flow) => Math.min(lim[1], Math.max(lim[0], half(Math.max(Math.min(R.nominal, half((lim[0] + lim[1]) / 2)), flow / R.flow))));
-const ifo = (it, face, at, extra = {}) => { const o = { id: it.id, type: it.type, name: it.name, key: it.key, partner: it.partner, side: it.side, face, at, params: it.params, opts: it.opts, ...extra }; for (const k of Object.keys(o)) if (o[k] === undefined) delete o[k]; return o; };
+const ifo = (it, face, at, extra = {}) => { const o = { id: it.id, type: it.type, name: it.name, key: it.key, partner: it.partner, side: it.side, external: it.external, face, at, params: it.params, opts: it.opts, ...extra }; for (const k of Object.keys(o)) if (o[k] === undefined) delete o[k]; return o; };
 const r2 = (x) => Math.round(x * 100) / 100;                    // clearances are counted in hundredths
 const angle = (dp) => ({ value: dp, min: 0.5, max: 5, step: 0.5, unit: "°", label: "Dépouille", group: "Moulage" });
 
