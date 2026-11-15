@@ -24,7 +24,8 @@ Consignes permanentes de JP (propriétaire du dépôt). Elles s'appliquent à to
 ## Règles du projet
 
 - Application statique : modules ES, aucun outil de construction, aucune dépendance npm, aucune ressource externe
-  sauf le service de connexion de Google. Fichiers source de moins de 500 lignes. DOM par `el()` et `textContent`.
+  sauf le service de connexion de Google et son sélecteur de fichiers (Équipe : lire le miroir partagé par un membre —
+  choix de JP, la permission reste `drive.file`). Fichiers source de moins de 500 lignes. DOM par `el()` et `textContent`.
 - Une brique = un module pur et testé, un écran, une entrée dans le rapport, ses mots dans `web/js/core/dwiz_names.js`.
 - Format de fichier : `.dwiz` (voir `docs/FORMAT.md`) ; le JSON reste accepté. Nom anglais de l'Atelier : « Shop ».
 - **Aller-retour IA partout** (demande de JP) : chaque module doit pouvoir exporter son artéfact sous une forme qu'une IA

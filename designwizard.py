@@ -53,11 +53,11 @@ onshape_mod = _load("onshape")
 # « Se connecter avec Google » (the script is loaded on demand, see web/js/google/auth.js).
 SECURITY_HEADERS = (
     ("Content-Security-Policy",
-     "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://accounts.google.com/gsi/client; "
+     "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://accounts.google.com/gsi/client https://apis.google.com; "
      "style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; "
      "img-src 'self' data: blob:; worker-src 'self' blob:; "
      "connect-src 'self' https://accounts.google.com/gsi/ https://www.googleapis.com; "
-     "frame-src https://accounts.google.com/gsi/; object-src 'none'; frame-ancestors 'none'; "
+     "frame-src https://accounts.google.com/gsi/ https://docs.google.com; object-src 'none'; frame-ancestors 'none'; "
      "base-uri 'self'; form-action 'self'"),
     ("X-Content-Type-Options", "nosniff"),
     ("Referrer-Policy", "strict-origin-when-cross-origin"),

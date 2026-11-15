@@ -8,19 +8,25 @@ L'écran est sous **Revue → Équipe** (ou menu Projet → « Équipe et messag
 
 ## Démarrer
 
+Par Google Drive (chacun connecté à **son** compte) :
+
 | Qui | Fait quoi |
 |---|---|
-| Celui qui a le projet | **Équipe → « Partager ce projet »**, choisit son nom d'équipe (`jp`), puis **« Télécharger mon miroir »** et donne le fichier `…​.miroir-jp.dwiz` à la personne invitée — ou **« Partager mon miroir dans Drive… »** (voir plus bas) |
-| La personne invitée | menu Projet → **« Rejoindre un projet partagé… »**, choisit le fichier reçu et son nom d'équipe (`ami`). Elle a maintenant **son** projet, copie du miroir reçu |
-| La personne invitée | **« Télécharger mon miroir »** et le renvoie : en le fusionnant, le premier membre la voit entrer dans l'équipe |
+| Celui qui a le projet | **Équipe → « Partager ce projet »**, choisit son nom d'équipe (`jp`), puis **« Partager mon miroir dans Drive… »** avec l'adresse Google de la personne invitée |
+| La personne invitée | menu Projet → **« Rejoindre un projet partagé (Drive)… »** : le sélecteur de Google lui montre le fichier qu'on lui a partagé ; elle le désigne et choisit son nom d'équipe (`ami`). Elle a maintenant **son** projet, dans **son** Drive |
+| La personne invitée | **« Partager mon miroir dans Drive… »** avec l'adresse du premier membre |
+| Le premier membre | **« Lire un miroir dans Drive… »** : il désigne **une fois** le fichier qu'elle lui a partagé, voit l'aperçu, fusionne. Elle est dans l'équipe |
 
-Ensuite, à chaque fois que l'on veut se remettre d'accord : chacun donne son miroir, chacun **fusionne** celui de
-l'autre. L'ordre n'a pas d'importance, et l'on peut être deux, trois ou dix.
+Ensuite, des deux côtés, un seul bouton : **« Synchroniser »**. L'ordre n'a pas d'importance, et l'on peut être deux,
+trois ou dix.
+
+Sans Drive, la même chose se fait par fichier : « Télécharger mon miroir », « Rejoindre un projet partagé (fichier)… »,
+« Fusionner un fichier… ».
 
 ## Fusionner un miroir
 
-« Fusionner le miroir d'un membre… » lit le fichier, **montre ce qui va arriver**, et n'applique rien avant que vous
-ayez dit oui. La fusion est une seule étape, annulable (`Ctrl + Z`).
+« Synchroniser » (ou « Fusionner un fichier… ») lit le miroir des autres, **montre ce qui va arriver**, et n'applique
+rien avant que vous ayez dit oui. La fusion est une seule étape, annulable (`Ctrl + Z`).
 
 La fusion se fait **artéfact par artéfact** : chaque pièce, assemblage, carte, analyse, plus la fiche du projet et ses
 itérations MVP.
@@ -71,23 +77,30 @@ miroir**, comme le reste.
 Chaque membre se connecte à **son** compte Google : son projet est enregistré dans **son** Drive (dossier
 « DesignWizard.ai »), comme toujours. Personne n'écrit dans le Drive d'un autre.
 
-**« Partager mon miroir dans Drive… »** enregistre le projet dans votre Drive et donne à une adresse le droit de **lire**
-ce fichier. Google lui envoie le lien. L'adresse est envoyée à Google seulement ; elle n'est gardée ni dans le projet ni
-dans le miroir. Comme le fichier du Drive est celui que l'application tient à jour, **le même lien donne toujours votre
-dernier état**.
-
-Ce qui reste manuel aujourd'hui : la personne **télécharge** le fichier depuis son Drive, puis le choisit dans
-« Rejoindre… » ou « Fusionner… ». La raison est un choix de vie privée : l'application ne demande à Google que la
-permission `drive.file`, qui ne lui laisse voir **que les fichiers qu'elle a créés pour ce compte**, ou que la personne
-lui ouvre un par un. Elle ne peut donc pas lire d'elle-même le fichier qu'un autre membre a partagé.
-
-Pour que la lecture devienne automatique, il y a trois voies ; aucune n'est en place :
-
-| Voie | Ce qu'elle demande |
+| Bouton | Ce qu'il fait |
 |---|---|
-| Le **sélecteur de fichiers de Google** | une clé d'API du projet Google, et que la page charge le sélecteur depuis Google (la règle « aucune ressource externe » s'élargit d'autant). La permission reste `drive.file` : la personne désigne une fois le miroir de chaque membre, ensuite l'application le relit seule |
-| « Ouvrir avec » depuis Drive | déclarer l'application dans l'intégration à l'interface de Drive du projet Google, et une permission de plus (`drive.install`) |
-| Une permission plus large (`drive.readonly`) | l'application verrait tout le Drive : contraire au principe du projet, et soumis à une vérification de Google |
+| **Partager mon miroir dans Drive…** | enregistre le projet dans votre Drive et donne à une adresse le droit de **lire** ce fichier. Google lui envoie le lien. L'adresse va à Google seulement ; elle n'est gardée ni dans le projet ni dans le miroir |
+| **Lire un miroir dans Drive…** | ouvre le sélecteur de fichiers de Google sur ce que l'on vous a partagé. Vous désignez le miroir d'un membre : il est lu, montré, fusionné — et **lié** : l'application sait désormais où il est |
+| **Synchroniser** | enregistre votre miroir dans votre Drive, **relit tous les miroirs liés**, montre ce que chacun apporte, fusionne en une étape, puis enregistre le résultat. S'il n'y a rien de nouveau, il le dit et ne touche à rien |
+
+En ouvrant l'écran Équipe, l'application **regarde seule** les miroirs liés, sans rien changer : la colonne « Dans
+Drive » dit pour chaque membre *à jour*, *du nouveau*, *conflit à trancher*, ou *à désigner*.
+
+### Pourquoi désigner une fois
+
+L'application ne demande à Google que la permission `drive.file` : elle ne voit **que les fichiers qu'elle a créés pour
+ce compte, et ceux que la personne lui ouvre un par un**. Le fichier qu'un autre membre vous a partagé est visible de
+vous, pas encore de l'application. Le **sélecteur de fichiers de Google** est la façon prévue par Google de le lui
+ouvrir : vous le désignez une fois, et l'application peut ensuite le relire seule, à chaque synchronisation. Elle ne
+voit toujours rien d'autre de votre Drive.
+
+Si un membre apparaît « à désigner », c'est que ce compte n'a pas encore ouvert son fichier à l'application : bouton
+« Désigner… », le sélecteur s'ouvre sur ce fichier précis. Si la liste est vide, c'est que le membre ne vous a pas
+encore partagé son miroir.
+
+Le sélecteur est chargé depuis Google **au premier usage seulement** (`https://apis.google.com`, puis sa fenêtre servie
+par `https://docs.google.com`) : c'est, avec le service de connexion, la seule ressource externe de l'application. Ce
+que cela demande côté projet Google est dans [GOOGLE.md](GOOGLE.md), section 6.
 
 ## Ce qui est écrit dans le projet
 
@@ -102,8 +115,9 @@ talk
 ```
 
 Le module est pur (`web/js/core/team.js`) : `joinTeam`, `forkMirror`, `stampLocal`, `mergeMirror`, `resolveConflict`,
-`post`, `setDone`, `inbox`, `threads`, `teamRows`. L'écran est `web/js/modules/team.js` (`#/team`, et
-`#/team/<artéfact>` pour un fil).
+`post`, `setDone`, `inbox`, `threads`, `teamRows`. La lecture des miroirs liés est dans `web/js/core/team_sync.js`
+(`readMirrors`, `applyMirrors`, `linkMirror`, `parseMirror` : le lecteur est injecté, rien n'y connaît Google) ; le
+sélecteur dans `web/js/google/picker.js`. L'écran est `web/js/modules/team.js` (`#/team`, et `#/team/<artéfact>` pour un fil).
 
 Un projet partagé **confié à une IA** part sans l'équipe ni les messages : l'aller-retour IA travaille sur la conception,
 et le retour est fusionné chez celui qui l'a demandé, puis part dans son miroir.
@@ -111,28 +125,36 @@ et le retour est fusionné chez celui qui l'a demandé, puis part dans son miroi
 ## Un essai à deux
 
 1. **Accès** : la personne doit pouvoir se connecter à la démo — son compte dans les utilisateurs test du projet Google
-   et son empreinte dans `web/acces.json` (voir [GOOGLE.md](GOOGLE.md), sections 1 et 4). Sans compte Google, l'essai se
-   fait aussi bien avec le serveur local (`python designwizard.py`) : le miroir est un fichier.
-2. Vous : chargez un projet, **Équipe → Partager ce projet**, puis « Partager mon miroir dans Drive… » avec son adresse
-   (ou envoyez-lui le fichier téléchargé).
-3. Elle : télécharge le fichier, **Rejoindre un projet partagé…**, change une pièce, vous écrit `@vous …` sur cette
-   pièce, puis partage son miroir avec vous.
-4. Vous : changez une autre pièce — et la même, pour voir un conflit —, puis **Fusionner** son miroir : l'aperçu doit
-   dire une pièce reprise, une gardée, une en conflit, un message pour vous.
-5. Tranchez, cochez « fait », renvoyez votre miroir : chez elle, tout arrive sans conflit et les deux projets disent la
-   même chose.
+   et son empreinte dans `web/acces.json` (voir [GOOGLE.md](GOOGLE.md), sections 1 et 4) ; l'API « Google Picker » doit
+   être activée dans le projet Google (section 6).
+2. Vous : chargez un projet, **Équipe → Partager ce projet**, puis « Partager mon miroir dans Drive… » avec son adresse.
+3. Elle : **Rejoindre un projet partagé (Drive)…**, désigne votre fichier, change une pièce, vous écrit `@vous …` sur
+   cette pièce, puis « Partager mon miroir dans Drive… » avec votre adresse.
+4. Vous : changez une autre pièce — et la même, pour voir un conflit —, puis **« Lire un miroir dans Drive… »** : l'aperçu
+   doit dire une pièce reprise, une gardée, une en conflit, un message pour vous.
+5. Tranchez, cochez « fait ». Chez elle, **« Synchroniser »** : tout arrive sans conflit, sans fichier et sans sélecteur,
+   et les deux projets disent la même chose. À partir de là, « Synchroniser » suffit des deux côtés.
+
+Si le sélecteur affiche une erreur de clé d'API, ou reste vide alors qu'un fichier vous a été partagé : notez le message,
+c'est le point que seul un essai sur de vrais comptes peut confirmer (voir les limites). L'échange par fichier marche
+dans tous les cas.
 
 ## Limites, dites comme elles sont
 
 - **Vérifié** : la fusion, par des tests à deux et à trois membres (changements croisés, retraits, conflits des deux
-  côtés, premier échange, annulation d'un changement, miroir non tamponné) ; le scénario entier rejoué dans le navigateur
-  avec deux postes séparés qui s'échangent des fichiers. L'appel de partage Drive est vérifié contre un Google simulé.
-- **Pas vérifié** : le partage Drive sur un vrai compte (aucune connexion Google n'est possible depuis l'atelier de
-  développement) — c'est l'objet de l'essai à deux.
+  côtés, premier échange, annulation d'un changement, miroir non tamponné) ; la lecture des miroirs liés et le sélecteur,
+  contre des doubles ; le scénario entier rejoué dans le navigateur avec deux comptes séparés, d'abord par fichiers, puis
+  par Drive contre un **Google simulé qui applique la règle `drive.file`** (rejoindre, désigner une fois, synchroniser
+  ensuite sans fichier ni sélecteur, cas « à désigner »). La bibliothèque du sélecteur de Google, la vraie, se charge et
+  ouvre sa fenêtre sous la politique de sécurité de la page, sans violation.
+- **Pas vérifié** : tout ce qui demande un vrai compte Google — le partage, le sélecteur une fois connecté (ce qu'il
+  liste, s'il exige une clé d'API), la relecture d'un fichier désigné. Aucune connexion Google n'est possible depuis
+  l'atelier de développement : c'est l'objet de l'essai à deux.
 - La maille est **l'artéfact** : deux membres qui changent deux cotes différentes de la même pièce ont un conflit sur la
   pièce. La carte montre ce qui diffère ; on prend l'une des deux versions, puis on refait l'autre changement.
-- Pas de temps réel : on se met d'accord quand on échange les miroirs, pas pendant qu'on dessine.
-- Un miroir est le projet **entier** : celui à qui vous le donnez a tout. Retirer quelqu'un de l'équipe ne lui reprend
-  pas ce qu'il a déjà.
+- Pas de temps réel : on se met d'accord quand on synchronise, pas pendant qu'on dessine.
+- Un miroir est le projet **entier** : celui à qui vous le partagez a tout. Retirer quelqu'un de l'équipe ne lui reprend
+  pas ce qu'il a déjà ; lui retirer la lecture se fait dans Drive (Partager → retirer l'accès).
+- Chaque membre partage son miroir avec **chaque** autre membre : à trois, deux adresses chacun.
 - Les heures viennent de l'horloge de chaque poste ; elles ne servent qu'à départager deux décisions contraires sur un
   même conflit.

@@ -25,11 +25,11 @@ ROOT = HERE.parents[1]
 sys.path.insert(0, str(HERE))
 import mock_onshape  # noqa: E402
 
-CSP = ("default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://accounts.google.com/gsi/client; "
+CSP = ("default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://accounts.google.com/gsi/client https://apis.google.com; "
        "style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; "
        "img-src 'self' data: blob:; worker-src 'self' blob:; "
        "connect-src 'self' https://accounts.google.com/gsi/ https://www.googleapis.com; "
-       "frame-src https://accounts.google.com/gsi/; object-src 'none'; frame-ancestors 'none'; "
+       "frame-src https://accounts.google.com/gsi/ https://docs.google.com; object-src 'none'; frame-ancestors 'none'; "
        "base-uri 'self'; form-action 'self'")
 STEP = """ISO-10303-21;
 HEADER;

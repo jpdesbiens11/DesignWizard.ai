@@ -47,10 +47,12 @@ les portées `openid`, `email` et `.../auth/drive.file`, déclarez les origines,
 - **Aucun serveur** : le navigateur parle directement à Google. Rien ne passe par un service de DesignWizard.ai.
 - **Partage** : « Équipe → Partager mon miroir dans Drive… » donne à une adresse le droit de lire le fichier du projet
   dans votre Drive. C'est le seul partage que fait l'application, et seulement à votre demande ; l'adresse va à Google,
-  pas dans le projet. Voir [EQUIPE.md](EQUIPE.md), qui dit aussi pourquoi `drive.file` ne permet pas de lire seul le
-  fichier partagé par un autre membre.
+  pas dans le projet.
+- **Fichiers des autres** : l'application ne lit le miroir qu'un membre vous a partagé qu'après que vous l'avez désigné,
+  une fois, dans le sélecteur de fichiers de Google (section 6). La permission reste `drive.file`.
 - Le script de connexion Google n'est chargé qu'au premier clic sur « Se connecter avec Google » : tant que vous ne
-  vous connectez pas, l'application ne contacte aucun site.
+  vous connectez pas, l'application ne contacte aucun site. Le sélecteur de fichiers n'est chargé qu'à son premier
+  usage, dans l'écran Équipe.
 
 ## 3. Google Drive, le stockage de l'application en ligne
 
@@ -128,3 +130,31 @@ Google (section 1). Aucune donnée d'un utilisateur n'est exposée par la porte 
 | « Google a refusé l'accès » | compte absent des utilisateurs test, ou permissions refusées | section 1, utilisateurs test |
 | « Ce compte n'est pas encore approuvé » | empreinte absente de `web/acces.json` | section 4 |
 | « … demande une page servie en HTTPS » | page servie en `http://` ailleurs que sur `localhost` | servir en HTTPS |
+| Le sélecteur affiche « The API developer key is invalid » | pas de clé d'API, ou clé qui n'autorise pas `https://docs.google.com/*` | section 6 |
+| Le sélecteur est vide | le membre ne vous a pas partagé son miroir, ou vous êtes sur un autre compte | [EQUIPE.md](EQUIPE.md) |
+| Un membre est « à désigner » dans l'écran Équipe | ce compte n'a pas encore ouvert son fichier à l'application | bouton « Désigner… » |
+
+## 6. Le sélecteur de fichiers de Google (Équipe)
+
+Pour lire le miroir qu'un autre membre vous a partagé, l'application passe par le **sélecteur de fichiers de Google**
+(Google Picker) : c'est le moyen prévu par Google pour qu'une personne ouvre un fichier précis à une application qui n'a
+que la permission `drive.file`. Voir [EQUIPE.md](EQUIPE.md).
+
+- **Ce qui est chargé, et quand** : au premier usage dans l'écran Équipe, le script `https://apis.google.com/js/api.js`
+  (et les morceaux qu'il appelle sur le même site) ; la fenêtre du sélecteur est une page de `https://docs.google.com`.
+  La politique de sécurité de la page (`web/index.html`, `designwizard.py`) autorise ces deux adresses de plus, et rien
+  d'autre.
+- **Ce qu'il reçoit** : le jeton de la personne connectée, et le **numéro du projet Google** — les chiffres qui ouvrent
+  l'identifiant client. Les deux doivent venir du même projet Google : c'est ce qui donne à l'application le droit de
+  relire le fichier désigné.
+- **À faire une fois dans le projet Google** : activer l'API « Google Picker »
+  (https://console.cloud.google.com/apis/library/picker.googleapis.com).
+- **Clé d'API : facultative au départ.** La documentation de Google cite une clé de navigateur parmi ce que reçoit le
+  sélecteur, et son exemple de référence en construit un sans clé. `pickerKey` est donc vide dans `web/js/config.js`.
+  Si le sélecteur affiche « The API developer key is invalid » : créer une clé (Identifiants → Créer des identifiants →
+  Clé API), la restreindre aux sites `https://jpdesbiens11.github.io/*` **et** `https://docs.google.com/*` (la fenêtre
+  du sélecteur y est servie) et à l'API Google Picker, puis l'écrire dans `pickerKey`. Une clé de navigateur ainsi
+  restreinte est publique par nature, comme l'identifiant client : ce n'est pas un secret.
+- **Vérifié** : la vraie bibliothèque se charge et ouvre sa fenêtre sous la politique de sécurité de la page, sans
+  violation ; tout le parcours est rejoué contre un Google simulé. **Pas vérifié** : le sélecteur une fois connecté à un
+  vrai compte.
