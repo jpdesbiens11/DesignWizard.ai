@@ -7,6 +7,7 @@
 
 import { v3, FACES, faceKey, facePoint, rotateFrame } from "./vec.js";
 import { thread, clearanceHole, screwLength } from "./standards.js";
+import { ELEC_INTERFACES } from "./interfaces_elec.js";
 
 const round2 = (x) => Math.round(x * 100) / 100;
 
@@ -178,6 +179,8 @@ export const INTERFACE_TYPES = {
     signature: (p) => `d${round2(p.d)}|${round2(p.pitch)}|${Math.round(p.n || 2)}`,
   },
 };
+
+Object.assign(INTERFACE_TYPES, ELEC_INTERFACES);                  // welded / wire-bonded joints and lamella pressure contacts (interfaces_elec.js)
 
 export function interfaceType(type) {
   const t = INTERFACE_TYPES[type];

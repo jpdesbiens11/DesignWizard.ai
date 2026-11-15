@@ -29,6 +29,7 @@ export const MATERIALS = [
   { id: "FR4-CTI600", name: "FR4 PCB (high CTI 600)", cls: "pcb", rho: 1.85, conductive: false, cti: 600, printedWiring: true, color: "#2a6e7d", processes: ["pcb"] },
   { id: "NOMEX-410", name: "Nomex 410 (aramid paper)", cls: "sheet", rho: 0.96, conductive: false, cti: 175, color: "#e8dcb0", dielectricKvMm: 27, processes: ["laser_cut"] },
   { id: "EPOXY", name: "Epoxy potting / body", cls: "plastic", rho: 1.80, conductive: false, cti: 200, color: "#22262b", processes: ["purchased"] },
+  { id: "LI-ION-CELL", name: "Cellule Li-ion cylindrique (homogénéisée)", cls: "component", rho: 2.65, conductive: true, color: "#3d6e8f", k: 3, processes: ["purchased"] },
   { id: "GENERIC-COMPONENT", name: "Electronic component (plastic body)", cls: "plastic", rho: 1.60, conductive: false, cti: 175, color: "#2b2f35", processes: ["purchased"] },
 ];
 

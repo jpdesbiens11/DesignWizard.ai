@@ -17,6 +17,7 @@ import { routing } from "../cad/shop.js";
 import { STOCK_FORMS } from "../cad/stock.js";
 import { INTERFACE_TYPES, interfaceSignature, ADHESIVES, BOND_PREPS } from "../cad/interfaces.js";
 import { THREADS } from "../cad/standards.js";
+import { WELD_PROCESSES, PLATINGS } from "../cad/interfaces_elec.js";
 import { MATERIALS, PROCESSES, material } from "../cad/materials.js";
 import { anticipatedInterfaces, shopPrompt } from "../core/prompts.js";
 import { importPart } from "../core/importer.js";
@@ -39,6 +40,8 @@ const SHAPES = [
   { type: "cutout", side: "A", icon: "section", name: "Ouverture", title: "Je laisse passer…", text: "Une ouverture : connecteur, câble, afficheur, évent." },
   { type: "pins", side: "A", icon: "ruler", name: "Goupilles de positionnement", title: "Je me positionne par goupilles", text: "Deux goupilles donnent la position exacte." },
   { type: "rail", side: "B", icon: "minus", name: "Glissière", title: "Je guide une carte", text: "Une rainure où glisse le bord d'un PCB ou d'une tôle." },
+  { type: "weld", side: "A", icon: "power", name: "Soudure", title: "Je me soude sur…", text: "Liaison électrique permanente : laser, résistance, ultrasons ou fils câblés (wirebonding)." },
+  { type: "contact", side: "A", icon: "power", name: "Contact à lamelles", title: "Je fais contact par pression", text: "Une bande de lamelles estampées sur une plage plane de busbar : signal ou puissance." },
 ];
 const OPPOSITE = { "+Z": "-Z", "-Z": "+Z", "+X": "-X", "-X": "+X", "+Y": "-Y", "-Y": "+Y" };
 const numIn = (obj, key, label, redraw, step = 1) => field(label, el("input", { type: "number", value: obj[key] ?? "", step, min: 0, onInput: (e) => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) { obj[key] = v; redraw(); } } }));
@@ -49,7 +52,7 @@ function render(main) {
   let viewer = null, token = 0, current = null, active = null, flash = null;        // active : the interface whose face the mouse is choosing ; flash : the side just chosen, to confirm in green
   page.append(el("div", { class: "page-head" }, el("div", { class: "grow" }, el("h1", null, "Atelier"),
     el("p", { class: "muted" }, "Pas d'esquisse, pas de plan : dites à quoi sert la pièce, à quoi elle se raccorde, dans quoi elle est faite. Le compagnon d'atelier prend la matière première du commerce et écrit la pièce — vous la voyez naître à droite.")),
-    el("div", { class: "subtabs" }, el("a", { class: "subtab active", href: "#/shop" }, "Intention d'abord"), el("a", { class: "subtab", href: "#/interfaces" }, "Entrevue avec Claude"), el("a", { class: "subtab", href: "#/interfaces/registre" }, "Registre des interfaces"))));
+    el("div", { class: "subtabs" }, el("a", { class: "subtab active", href: "#/shop" }, "Intention d'abord"), el("a", { class: "subtab", href: "#/interfaces" }, "Entrevue avec Claude"), el("a", { class: "subtab", href: "#/interfaces/registre" }, "Registre des interfaces"), el("a", { class: "subtab", href: "#/library", "data-tip": "Connecteurs basse et haute tension de familles réelles, cellules Li-ion" }, "Bibliothèque électrique"))));
   const left = el("div", { class: "atelier-brief" }), right = el("div", { class: "atelier-side" });
   page.append(el("div", { class: "atelier-grid" }, left, right));
   const rebuild = debounce(() => build(), 220);
@@ -138,6 +141,9 @@ function render(main) {
     else if (it.type === "fit") row.append(numIn(q, "d", "Diamètre", redraw, 0.5), numIn(q, "length", "Longueur", redraw, 0.5));
     else if (it.type === "cutout") row.append(numIn(q, "w", "Largeur", redraw, 0.5), numIn(q, "h", "Hauteur", redraw, 0.5), numIn(q, "r", "Rayon", redraw, 0.5));
     else if (it.type === "rail") row.append(numIn(q, "t", "Épaisseur", redraw, 0.1), numIn(q, "depth", "Profondeur", redraw, 0.5), numIn(q, "length", "Longueur", redraw));
+    else if (it.type === "weld") row.append(field("Procédé", el("select", { onChange: (e) => { q.process = e.target.value; redraw(); } }, Object.entries(WELD_PROCESSES).map(([k, w]) => el("option", { value: k, selected: k === q.process }, w.fr)))), numIn(q, "w", "Longueur de la zone", redraw, 0.5), numIn(q, "h", "Largeur", redraw, 0.5), numIn(q, "n", "Cordons, points ou fils", redraw), numIn(q, "i", "Courant (A)", redraw));
+    else if (it.type === "contact") row.append(numIn(q, "w", "Longueur de la plage", redraw, 0.5), numIn(q, "h", "Largeur", redraw, 0.5), numIn(q, "n", "Points de contact", redraw), numIn(q, "i", "Courant (A)", redraw),
+      field("Revêtement", el("select", { onChange: (e) => { q.plating = e.target.value; redraw(); } }, Object.entries(PLATINGS).map(([k, v]) => el("option", { value: k, selected: k === q.plating }, v.fr)))), field("Usage", el("select", { onChange: (e) => { q.duty = e.target.value; redraw(); } }, [["power", "Puissance"], ["signal", "Signal"]].map(([k, l]) => el("option", { value: k, selected: k === q.duty }, l)))));
     else if (it.type === "pins") row.append(numIn(q, "d", "Ø goupille", redraw, 0.5), numIn(q, "pitch", "Entraxe", redraw), numIn(q, "n", "Nombre", redraw));
     return row;
   }

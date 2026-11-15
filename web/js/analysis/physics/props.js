@@ -35,6 +35,7 @@ const TABLE = {
   "FR4-CTI600": { E: 22, nu: 0.15, Re: 310, Rm: 310, cte: 15, k: 0.30, cp: 1100, rho: 1850, Tmax: 130 },
   "NOMEX-410": { E: 3.0, nu: 0.30, Re: 80, Rm: 100, cte: 20, k: 0.14, cp: 1300, rho: 960, Tmax: 220 },
   "EPOXY": { E: 8.0, nu: 0.30, Re: 60, Rm: 60, cte: 35, k: 0.80, cp: 1000, rho: 1800, Tmax: 130 },
+  "LI-ION-CELL": { E: 1.0, nu: 0.30, Re: 50, Rm: 50, cte: 20, k: 3.0, cp: 1000, rho: 2650, Tmax: 60 },      // homogenised : radial conductivity of a jelly roll, the usual upper temperature of use
   "GENERIC-COMPONENT": { E: 15, nu: 0.30, Re: 100, Rm: 100, cte: 20, k: 0.70, cp: 900, rho: 1600, Tmax: 125 },
 };
 

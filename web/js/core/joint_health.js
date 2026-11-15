@@ -7,6 +7,7 @@ import { interfaceSignature, ADHESIVES } from "../cad/interfaces.js";
 import { thread } from "../cad/standards.js";
 import { material } from "../cad/materials.js";
 import { ifaceOf, freeInterfaces } from "./assembly_logic.js";
+import { contactEstimate, weldEstimate } from "../cad/interfaces_elec.js";
 
 export const HEALTH = { ok: { fr: "Sain", tone: "ok" }, check: { fr: "À vérifier", tone: "warn" }, broken: { fr: "Rompu", tone: "danger" } };
 const RANK = { ok: 0, check: 1, broken: 2 }, fr = (x) => String(Math.round(x * 100) / 100).replace(".", ",");
@@ -43,6 +44,11 @@ export function jointHealth(asm, built, specs = {}, sol = null, clashes = []) {
         const g = ADHESIVES[p.adhesive || "epoxy"];
         if (g && (p.gap < g.gap[0] - 1e-9 || p.gap > g.gap[1] + 1e-9)) say("check", `Film de colle de ${fr(p.gap)} mm hors de la plage de cette colle (${fr(g.gap[0])} à ${fr(g.gap[1])} mm).`);
         if (o.pips === false && p.adhesive !== "tape") say("check", "Aucun plot de calage : l'épaisseur du film n'est pas tenue par la pièce.");
+      } else if (A.type === "contact" || A.type === "weld") {
+        for (const id of [ia.part, ib.part]) { const mat = material(specs[id] && specs[id].material); if (mat && !mat.conductive) say("broken", `${id} est en ${mat.name} : un joint électrique relie deux conducteurs.`); }
+        for (const t of (A.type === "contact" ? contactEstimate(A.params || {}) : weldEstimate(A.params || {})).notes) say("check", t);
+        if (A.type === "contact" && !(asm.mates || []).some((x) => x !== m && [x.a.inst, x.b.inst].includes(m.a.inst) && [x.a.inst, x.b.inst].includes(m.b.inst) && ["bolt_pattern", "pins"].includes((ifaceOf(built, (inst.get(x.a.inst) || {}).part, x.a.iface) || {}).type)))
+          say("check", "Aucun serrage entre les deux barres : un contact à pression demande une vis ou un clip qui tienne l'effort.");
       }
     }
     for (const q of (sol && sol.problems) || []) if (q.mate === m.id) say("broken", q.kind === "conflict" ? `Sur-contraint : ce joint place la pièce à ${fr(q.dev)} mm de là où les autres joints la mettent.` : q.msg);

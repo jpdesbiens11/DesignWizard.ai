@@ -20,6 +20,7 @@ import "./modules/dfx.js";
 import "./modules/drawings.js";
 import "./modules/review.js";
 import "./modules/mvp.js";
+import "./modules/library.js";
 import "./modules/report.js";
 import "./modules/onshape.js";
 import "./modules/help.js";

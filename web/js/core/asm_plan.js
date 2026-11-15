@@ -7,6 +7,7 @@
 import { resolveParams, evalDeep } from "../cad/expr.js";
 import { patternPoints, interfaceType, ADHESIVES, BOND_PREPS } from "../cad/interfaces.js";
 import { finishPlan } from "./plan_doc.js";
+import { WELD_PROCESSES, PLATINGS, CONTACT_TESTS, contactEstimate } from "../cad/interfaces_elec.js";
 
 const TORQUE = { M2: 0.3, "M2.5": 0.6, M3: 1.1, M4: 2.6, M5: 5.2, M6: 9, M8: 22, M10: 43, M12: 75 };      // N·m, steel class 8.8, dry
 const BOARD = { M2: 0.2, "M2.5": 0.4, M3: 0.6, M4: 1.2 }, HEX = { M2: 1.5, "M2.5": 2, M3: 2.5, M4: 3, M5: 4, M6: 5, M8: 6, M10: 8, M12: 10 };
@@ -42,7 +43,7 @@ export function assemblyPlan(asm, project, ctx = {}) {
   const nameOf = (id) => { const s = parts.get((inst.get(id) || {}).part) || {}; return s.name ? `${s.name} (${s.id})` : (inst.get(id) || {}).part || id; }, specOf = (id) => parts.get((inst.get(id) || {}).part) || {};
   const phases = [], totals = new Map(), sizes = new Set(), q = [], ask = (topic, text) => q.push({ topic, text }), loose = [];
   const hw = (m, A, B) => { let list = []; try { list = ctx.hardwareOf ? ctx.hardwareOf(m) : interfaceType(A.type).hardware(A.params, A.opts, B.opts, specOf(m.a.inst).pcb ? 1.6 : 3) || []; } catch (e) { list = []; } return list; };
-  let thermal = false, boards = 0, bonded = 0, snapped = 0;
+  let thermal = false, boards = 0, bonded = 0, snapped = 0, welded = 0, pressed = 0;
   order.forEach((id, k) => {
     const spec = specOf(id), before = order.slice(0, k), ops = [], checks = [], tools = [], isBoard = spec.family === "pcb";
     if (isBoard) { boards++; checks.push("Protection contre les décharges : bracelet et tapis ; tenir la carte par ses bords"); }
@@ -77,6 +78,12 @@ export function assemblyPlan(asm, project, ctx = {}) {
       else if (A.type === "planar") ops.push({ text: `Mettre ${nameOf(id)} en appui sur ${nameOf(other)} — ${label}`, tools: [], control: "Appui sans jour" });
       else if (A.type === "pins") { ops.push({ text: `Chasser ${A.params.n || 2} goupilles Ø ${fr(A.params.d)} dans ${nameOf(ib)}`, tools: ["Maillet ou presse"] }, { text: `Présenter ${nameOf(ia)} sur les goupilles`, tools: [], control: "Engagement sans forcer" }); for (const h of hw(m, A, B)) { const row = totals.get(h.id) || { id: h.id, name: h.name, qty: 0 }; row.qty += h.qty; totals.set(h.id, row); } }
       else if (A.type === "cutout") { ops.push({ text: `Passer ${nameOf(ib)} dans la découpe de ${nameOf(ia)} et le fixer — ${label}`, tools: [] }); for (const h of hw(m, A, B)) { const row = totals.get(h.id) || { id: h.id, name: (HW[h.kind] || ((x) => x.name))(h), qty: 0 }; row.qty += h.qty; totals.set(h.id, row); } }
+      else if (A.type === "weld") { const W = WELD_PROCESSES[A.params.process] || WELD_PROCESSES.laser, n = Math.round(A.params.n || 1); welded++;      // a permanent electrical joint : prepare, clamp, weld, prove
+        ops.push({ text: `${W.prep} — ${label}`, tools: [] }, { text: `${W.fr} : ${n} ${W.unit}${n > 1 ? "s" : ""} entre ${nameOf(ia)} et ${nameOf(ib)}, zone de ${fr(A.params.w)} × ${fr(A.params.h)} mm`, tools: [W.tool], control: W.control });
+        for (const h of hw(m, A, B)) { const row = totals.get(h.id) || { id: h.id, name: h.name, qty: 0 }; row.qty += h.qty; totals.set(h.id, row); } }
+      else if (A.type === "contact") { const P = PLATINGS[A.params.plating] || PLATINGS.Ag, e = contactEstimate(A.params); pressed++;
+        ops.push({ text: `Vérifier les deux plages de contact (${P.fr.toLowerCase()}) : propres, sans rayure ni trace de doigt — ${label}`, tools: ["Gants"] }, { text: `Presser ${nameOf(ia)} sur ${nameOf(ib)} jusqu'en butée : les ${Math.round(A.params.n || 1)} lamelles fléchissent`, tools: [], control: `Résistance de la liaison en 4 fils : environ ${fr(e.rTotal)} mΩ attendus` });
+        for (const h of hw(m, A, B)) { const row = totals.get(h.id) || { id: h.id, name: h.name, qty: 0 }; row.qty += h.qty; totals.set(h.id, row); } }
       else if (A.type === "rail") ops.push({ text: `Glisser ${nameOf(ia)} dans la glissière de ${nameOf(ib)} jusqu'en butée — ${label}`, tools: [], control: "Butée atteinte, pas de point dur" });
     }
     const conns = isBoard ? ((spec.pcb && spec.pcb.components) || []).filter((c) => c.kind === "connector" || c.kind === "terminal") : [];
@@ -93,6 +100,8 @@ export function assemblyPlan(asm, project, ctx = {}) {
   if (boards) ask("Cartes", "Dans quel ordre monter et raccorder les cartes ? Les connecteurs restent-ils accessibles une fois tout en place ?");
   if (thermal) ask("Thermique", "Quelle interface thermique, quelle épaisseur, quel couple pour l'écraser sans voiler la carte ou la semelle ?");
   if (covers.length) ask("Essai", "Peut-on essayer le produit avant de fermer le capot ? Que faut-il pouvoir mesurer capot ouvert ?");
+  if (welded) ask("Soudure", "Les paramètres de soudure ou de câblage sont à qualifier sur éprouvettes (arrachement, coupe, résistance) avant la série ; quel contrôle en ligne, à quelle fréquence ?");
+  if (pressed) ask("Contacts", `Quel serrage tient les barres pressées, et avec quel effort par point de contact ? Essais à prévoir — ${CONTACT_TESTS}.`);
   if (bonded) ask("Collage", "Colle, préparation de surface et polymérisation sont à valider par un essai de cisaillement sur éprouvettes ; quelle durée de vie en pot, quelle température et quelle humidité à l'atelier ?");
   if (snapped) ask("Clips", "Le produit doit-il pouvoir se rouvrir ? Combien de fois, et avec quel outil pour dégager les crochets sans les blanchir ?");
   ask("Couples", "Les couples indiqués sont des valeurs usuelles : lesquels faut-il confirmer par un essai de serrage, et faut-il un frein-filet ?");

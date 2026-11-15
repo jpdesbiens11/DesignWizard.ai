@@ -41,6 +41,7 @@ export function footprint(it, mat) {
     : { w: p.d + 2 * Math.max(3, 0.4 * p.d), h: p.d + 2 * Math.max(3, 0.4 * p.d), need: p.length + 1.5, clear: [0, 0], edge: 0, why: `alésage Ø${fr(p.d)} de ${fr(p.length)} mm + fond` };
   if (it.type === "cutout") { const fix = p.fix && p.fix.screw ? (p.fix.pitch || (p.w || p.d) + 8) + thread(p.fix.screw).washer : 0;
     return p.shape === "round" ? { w: Math.max(p.d, fix), h: p.d, need: 1, clear: [0, 0], edge: 4, why: "ouverture" } : { w: Math.max(p.w, fix), h: p.h, need: 1, clear: [0, 0], edge: 4, why: "ouverture" }; }
+  if (it.type === "weld" || it.type === "contact") return { w: p.w, h: p.h, need: it.type === "contact" ? 1.5 : 0.2, clear: [0, 0], edge: 1, why: it.type === "contact" ? `plage de contact ${fr(p.w)} × ${fr(p.h)} mm` : `zone de soudure ${fr(p.w)} × ${fr(p.h)} mm` };
   if (it.type === "rail") return { w: p.length, h: p.t + 3, need: side === "B" ? p.depth + 1.5 : 1, clear: [0, 0], edge: 2, why: `rainure de ${fr(p.depth)} mm + fond` };
   if (it.type === "pins") { const n = Math.max(1, Math.round(p.n || 2)); return { w: (n - 1) * p.pitch + 4 * p.d, h: 4 * p.d, need: side === "A" ? p.d : 1.5 * p.d, clear: [0, 0], edge: 2 * p.d, why: `goupilles Ø${fr(p.d)} : ${fr(side === "A" ? p.d : 1.5 * p.d)} mm de portée` }; }
   return { w: 10, h: 10, need: 2, clear: [0, 0], edge: 3, why: "" };
