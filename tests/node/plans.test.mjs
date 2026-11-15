@@ -25,7 +25,7 @@ test("manufacturing routing: phases with station, work holding, tools and checks
   const mill = plan.phases[1]; assert.match(mill.title, /posage 1, dessous/); assert.match(mill.hold, /face opposée \(dessus\)/); assert.deepEqual(mill.tools, ["Foret Ø3,3", "Taraud M4"]);
   assert.equal(mill.ops[0].n, "20.1"); assert.match(mill.ops[0].text, /Percer 4 × Ø3,3 et tarauder M4/); assert.match(mill.ops[0].control, /Tampon fileté/); assert.equal(mill.ops[0].iface, "IF1");
   assert.equal(plan.phases[3].outsourced, true); assert.match(plan.phases[3].ops[0].text, /Anodisé noir/);
-  assert.equal(plan.characteristics.length, 1); assert.match(plan.characteristics[0].text, /4 × M4 taraudés, entraxes 60 × 66/); assert.ok(plan.phases[4].checks.some((c) => /4 × M4 taraudés/.test(c)));
+  assert.equal(plan.characteristics.length, 2, "the tapped pattern, and the seat of the insulator"); assert.match(plan.characteristics[0].text, /4 × M4 taraudés, entraxes 60 × 66/); assert.ok(plan.phases[4].checks.some((c) => /4 × M4 taraudés/.test(c)));
   const topics = plan.questions.map((q) => q.topic); for (const t of ["Délai et prix", "Matière", "Filetages", "Finition", "Outillage", "Contrôle"]) assert.ok(topics.includes(t), t);
   assert.match(plan.questions[0].text, /pour 5 pièces \?/); assert.deepEqual(plan.facts[0], ["Matériau", "Aluminium 6063-T5 (extrusion)"]);
   const raw = stateSpec(spec, plan, 0); assert.ok(raw && raw.interfaces.length === 0, "after the first phase : the cut profile, no hole yet"); assert.ok(buildPart(K, raw).volume > built.volume);
@@ -38,7 +38,12 @@ test("manufacturing routing: phases with station, work holding, tools and checks
 });
 
 test("assembly routing: order from the mated interfaces, screws, torques, tools, checks ; reordered by hand", () => {
-  const asm = JSON.parse(JSON.stringify(DEMO_DRIVE.assemblies[0])), plan = assemblyPlan(asm, DEMO_DRIVE, { mass: 812 });
+  const asm = JSON.parse(JSON.stringify(DEMO_DRIVE.assemblies[0]));
+  /* the demonstration gives its own order : the insulator goes in its window before the power board covers it */
+  const shipped = assemblyPlan(JSON.parse(JSON.stringify(asm)), DEMO_DRIVE, {}); assert.deepEqual(shipped.order, ["i1", "i5", "i6", "i2", "i3", "i4"]); assert.match(shipped.phases[2].title, /Isolant de la fenêtre thermique/);
+  /* the order found alone, on the five screwed parts */
+  asm.instances = asm.instances.filter((i) => i.id !== "i6"); asm.mates = asm.mates.filter((m) => m.id !== "M6"); delete asm.plan;
+  const plan = assemblyPlan(asm, DEMO_DRIVE, { mass: 812 });
   assert.deepEqual(plan.order, ["i1", "i2", "i3", "i5", "i4"], "base, the two boards, the heat sink, the cover last"); assert.equal(plan.phases.length, 6); assert.equal(plan.phases[5].key, "final");
   const pwr = plan.phases[1]; assert.match(pwr.title, /Monter Carte de puissance/); assert.equal(pwr.ops.length, 3); assert.match(pwr.ops[1].text, /Engager 4 vis .* M3 × \d+ dans les inserts de Base du boîtier/); assert.match(pwr.ops[2].text, /Serrer en croix à 0,6 N·m/);
   assert.ok(pwr.checks.some((c) => /décharges/.test(c)) && pwr.checks.some((c) => /Raccorder J3/.test(c))); assert.ok(pwr.tools.includes("Clé six pans de 2,5 mm"));

@@ -132,3 +132,17 @@ test("the sheet of a process goes to an AI : in the prompt of the Shop, and as a
   assert.deepEqual(rows.map((r) => r[0]), ["ISO-1", "BRK-1", "P", "Q"], "the report lists the laser-cut and the printed parts, not the milled ones"); assert.match(rows[0].join(" | "), /Découpe laser de précision \| Nomex.*laser CO2.*Épaisseur ≤ 0,76 mm/); assert.match(rows[1].join(" | "), /ASTM F2924.*Paroi ≥ 0,4 mm.*détendre sur le plateau.*compaction/s); assert.match(rows[2].join(" | "), /Jamais au laser/); assert.match(rows[3][6], /à confirmer avec le fournisseur/);
   assert.match(am, /^Voici ce que l'IMPRESSION 3D/); for (const id of Object.keys(AM_MATERIALS)) assert.ok(am.includes(`## ${id} — `), id); assert.match(am, /## IN718 — .*\(process « lpbf »\)/); assert.ok(!am.includes("## NOMEX-410"));
 });
+
+test("the demonstration shows both processes : a laser-cut insulator mated on the heat sink, a printed titanium bracket", async () => {
+  const { DEMO_DRIVE } = await import("../../web/js/demo/demo_drive.js"), by = (id) => DEMO_DRIVE.parts.find((p) => p.id === id), iso = by("DRV-ISO"), br = by("DRV-BRACKET"), sink = by("DRV-HEATSINK");
+  assert.deepEqual([iso.process, iso.material, iso.params.t.value, br.process, br.material], ["laser_cut", "NOMEX-410", 0.25, "lpbf", "TI-6AL-4V"]);
+  const a = check(iso), b = check(br);
+  assert.equal(a.built.log.filter((l) => l.level === "error").length, 0); assert.equal(a.summary.errors + a.summary.warnings, 0, ids(a).join(" ")); assert.match(find(a, "LAS-06").message, /papier aramide/); assert.match(a.built.facts.stock.label, /^Feuille de 0,25 mm/);
+  assert.equal(b.summary.errors, 0, ids(b).join(" ")); assert.match(find(b, "AM-17").message, /compaction isostatique/); assert.match(b.findings.find((f) => f.id === "AM-12" && f.severity === "info").message, /2 trou\(s\) taraudé\(s\) \(M4\)/);
+  assert.match(routing(br, b.built).steps.map((s) => s.text).join(" | "), /Fusionner sur lit de poudre.*Détendre.*Séparer du plateau.*Tarauder 2 × M4 en reprise/s);
+  /* the insulator fits the thermal window of the base with a clearance, and shares its key with the seat on the heat sink */
+  const base = by("DRV-BASE"); assert.ok(iso.params.L.value < base.params.winL.value && iso.params.W.value < base.params.winW.value);
+  const seat = sink.interfaces.find((i) => i.key === "thermal_iso_seat"), foot = iso.interfaces[0]; assert.deepEqual([seat.side, foot.side, seat.type, foot.type, foot.key], ["B", "A", "planar", "planar", "thermal_iso_seat"]);
+  const asm = DEMO_DRIVE.assemblies[0]; assert.ok(asm.instances.some((i) => i.part === "DRV-ISO") && asm.mates.some((m) => m.a.inst === "i6" && m.b.inst === "i5")); assert.ok(!asm.instances.some((i) => i.part === "DRV-BRACKET"), "the bracket is a variant : in the project, not yet in the assembly");
+  assert.deepEqual(specialRows(DEMO_DRIVE.parts).map((r) => [r[0], r[2]]), [["DRV-ISO", "Découpe laser de précision"], ["DRV-BRACKET", "Fusion laser sur lit de poudre métallique (LPBF)"]], "the report of the demonstration has its section of special processes");
+});

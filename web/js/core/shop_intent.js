@@ -148,11 +148,12 @@ function block(brief, items, log) {
   const L = up(dim("X", env.L)), W = up(dim("Y", env.W)), Hn = dim("Z", env.H), H = additive ? up(Hn, 1) : (nextStd(brief.form === "bar_flat" ? FLAT_THICKNESS : PLATE_THICKNESS, Hn) ?? up(Hn));
   log.push(`Bloc ${fr(L)} × ${fr(W)} × ${fr(H)} mm : chaque face porte ses interfaces${additive ? "" : " ; la hauteur est une épaisseur du commerce, les deux grandes faces restent brutes"}.`);
   const centre = { X: "L/2", Y: "W/2", Z: "H/2" };
-  for (const it of items) { const [a, b] = axesOf[it.where[1]]; out.push(ifaceOut(it, it.where, [off(centre[a], it.du), off(centre[b], it.dv)], additive ? {} : tapped(it, false))); }
+  const metal = material(brief.material) && material(brief.material).cls === "metal";      // a printed polymer takes heat-set inserts ; a printed metal is tapped after the print
+  for (const it of items) { const [a, b] = axesOf[it.where[1]]; out.push(ifaceOut(it, it.where, [off(centre[a], it.du), off(centre[b], it.dv)], additive && !metal ? {} : tapped(it, false))); }
   const params = { L: P(L, need.X[0], Math.max(400, 2 * L), "Longueur"), W: P(W, need.Y[0], Math.max(300, 2 * W), "Largeur"), H: P(H, need.Z[0], Math.max(200, 2 * H), "Hauteur") };
   const stock = additive ? { form: "print" } : brief.form === "bar_flat" ? { form: "bar_flat", w: "W", h: "H", L: "L" } : { form: "block", L: "L", W: "W", H: "H" };
   const features = additive ? [{ op: "extrude", id: "corps", name: "Corps", profile: { rect: [0, 0, "L", "W"], r: 2 }, plane: "XY", length: "H" }, { op: "interfaces" }] : [{ op: "interfaces" }, { op: "deburr", id: "ebavurage" }];
-  if (additive) for (const o of out) if (o.type === "bolt_pattern" && o.side === "B") o.opts = { thread: "insert", ...(o.opts || {}) };
+  if (additive && !metal) for (const o of out) if (o.type === "bolt_pattern" && o.side === "B") o.opts = { thread: "insert", ...(o.opts || {}) };
   return { family: "prismatic", params, stock, features, interfaces: out };
 }
 

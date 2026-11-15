@@ -29,6 +29,10 @@ viennent les valeurs, et ouvre « Intention d'abord » avec la matière et le pr
   revient par « Entrevue avec Claude », avec l'aperçu des changements et la validation habituels.
 - **Le rapport** liste les pièces découpées au laser ou imprimées, avec ce que leur procédé demande et ce qui se contrôle.
 
+**Dans la démonstration** (« Variateur compact 400 V ») : `DRV-ISO`, un isolant en papier aramide de 0,25 mm découpé au
+laser, posé sur le dissipateur dans la fenêtre thermique de la base et maté par son interface ; `DRV-BRACKET`, un étrier en
+Ti-6Al-4V imprimé — une variante, présente dans le projet mais pas encore dans l'assemblage.
+
 Tout est dans `web/js/cad/special_processes.js` (données et fonctions pures), `web/js/analysis/dfx_rules_special.js`
 (règles) et `web/js/modules/shop_special.js` (écran et carte de l'Atelier).
 

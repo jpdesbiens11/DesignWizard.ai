@@ -25,6 +25,7 @@ import { FS_KEYWORDS, FS_USED, fsString, clean, HELPERS } from "./fs_helpers.js"
 import { makeGen } from "./fs_gen.js";
 import { EMIT } from "./fs_features.js";
 import { emitExtrusionBlock, emitPcbBlock, emitInterface } from "./fs_interfaces.js";
+import { expandSpec } from "./shop.js";
 
 export { exprToFeatureScript } from "./fs_expr.js";
 export const FS_VERSION = "2014";
@@ -59,6 +60,7 @@ function boundSpec(d, kind) {
  * Throws (ExprError) when the parameters of the spec do not resolve.
  */
 export function toFeatureScript(spec, opts = {}) {
+  spec = expandSpec(spec);                                       // a part born in the Shop : its raw stock and its Shop verbs become plain operations first
   spec = spec || {};
   const { defs, scope } = resolveParams(spec.params || {}, opts.overrides || {});
   // FeatureScript names: fields of `definition` keep the parameter name (unless it is a keyword), locals avoid what the body uses

@@ -1,5 +1,5 @@
 /* DesignWizard.ai — demonstration project: a compact 400 V motor drive (mechatronic system with power, control,
-   sensors, a CPU, two PCBs, a moulded housing and an extruded heat sink). Every part starts from its interfaces;
+   sensors, a CPU, two PCBs, a moulded housing, an extruded heat sink, a laser-cut insulator, a printed bracket). Every part starts from its interfaces;
    the assembly mates itself from them. The HV+ / HV- gap on the power board is deliberately a little short, so the
    isolation analysis has something to find (parameter "gapHV" of DRV-PWR-PCB). */
 
@@ -83,22 +83,47 @@ const SINK = {
   params: { W: P(80, 50, 140, "Largeur"), base: P(7, 3, 12, "Épaisseur de la semelle", "Profil", 0.5), fin: P(20, 8, 50, "Hauteur des ailettes", "Profil"), tf: P(2.4, 1.2, 4, "Épaisseur d'ailette", "Profil", 0.1),
     n: { value: 10, min: 4, max: 20, step: 1, unit: "", label: "Nombre d'ailettes", group: "Profil" }, L: P(86, 40, 200, "Longueur coupée") },
   interfaces: [{ id: "IF1", type: "bolt_pattern", name: "Fixation sous la base", key: "heatsink_mount", partner: "Base du boîtier", side: "B", face: "-Z", at: ["W/2", "L/2"],
-    params: { screw: "M4", pattern: { type: "rect", nx: 2, ny: 2, dx: 60, dy: 66 } }, opts: { thread: "tapped", depth: "base - 1" } }],
+    params: { screw: "M4", pattern: { type: "rect", nx: 2, ny: 2, dx: 60, dy: 66 } }, opts: { thread: "tapped", depth: "base - 1" } },
+    { id: "IF2", type: "planar", name: "Appui de l'isolant", key: "thermal_iso_seat", partner: "Isolant de la fenêtre thermique", side: "B", face: "-Z", at: ["W/2", "L/2"], params: { w: 42, h: 48 } }],
   extrusion: { axis: "Y", length: "L", profile: { gen: "heatsink", W: "W", base: "base", fin: "fin", tf: "tf", n: "n" },
     outside: [{ name: "Plage thermique du module", w: 44, h: 1, at: ["W/2", -1], clearance: 0.2 }] },
   features: [], notes: ["Profilé 6063-T5 coupé à longueur, ébavuré.", "Planéité de la face d'appui 0,1 mm."],
 };
 
+/* Two parts made by special processes of the Shop : a sheet of aramid paper cut by laser, and a bracket printed in titanium. */
+const ISO = {
+  dw: "part/1", id: "DRV-ISO", name: "Isolant de la fenêtre thermique", family: "sheet", process: "laser_cut", material: "NOMEX-410", revision: "A",
+  function: "Isole le dissipateur (Chassis) de l'étage de puissance, dans la fenêtre thermique de la base.", elec: { kind: "insulator" },
+  params: { L: P(42, 20, 60, "Longueur"), W: P(48, 20, 70, "Largeur"), t: { value: 0.25, min: 0.05, max: 0.76, step: 0.005, unit: "mm", label: "Épaisseur", group: "Enveloppe" }, r: P(3, 0.5, 10, "Rayon des coins", "Détails", 0.5) },
+  interfaces: [{ id: "IF1", type: "planar", name: "Appui sur le dissipateur", key: "thermal_iso_seat", partner: "Dissipateur extrudé", side: "A", face: "-Z", at: ["L/2", "W/2"], params: { w: 42, h: 48 } }],
+  stock: { form: "sheet", L: "L", W: "W", t: "t" },
+  features: [{ op: "outline", id: "contour", name: "Contour", profile: { rect: [0, 0, "L", "W"], r: "r" } }, { op: "interfaces" }, { op: "deburr", id: "bord", note: "Sans ébavurage : dépoussiérer, contrôler le bord coupé (propre, non carbonisé)" }],
+  notes: ["Papier aramide de 0,25 mm, découpé au laser CO2.", "Bord découpé : propre, non carbonisé — contrôle visuel à la réception.", "Le chant coupé ne compte pas dans la ligne de fuite ; tenue diélectrique à vérifier par essai."],
+};
+const BRACKET = {
+  dw: "part/1", id: "DRV-BRACKET", name: "Étrier de montage (titane imprimé)", family: "prismatic", process: "lpbf", material: "TI-6AL-4V", revision: "A",
+  function: "Variante aéronautique : fixe le variateur à la structure porteuse. Pas encore dans l'assemblage.", elec: { kind: "chassis", net: "Chassis" },
+  intent: { loads: "Masse du variateur sous vibrations", environment: "Baie avionique", quantity: 2, priority: "mass" },
+  params: { L: P(95, 95, 400, "Longueur"), W: P(25, 25, 300, "Largeur"), H: P(8, 6, 200, "Hauteur") },
+  interfaces: [
+    { id: "IF1", type: "bolt_pattern", name: "Fixation sur la structure", key: "bracket_structure", partner: "Structure porteuse", side: "A", external: true, face: "-Z", at: ["L/2", "W/2"], params: { screw: "M5", pattern: { type: "rect", nx: 2, ny: 1, dx: 70, dy: 0 } } },
+    { id: "IF2", type: "bolt_pattern", name: "Reprise du variateur", key: "bracket_drive", partner: "Variateur", side: "B", external: true, face: "+Z", at: ["L/2", "W/2"], params: { screw: "M4", pattern: { type: "rect", nx: 2, ny: 1, dx: 40, dy: 0 } }, opts: { depth: 6 } }],
+  stock: { form: "print" },
+  features: [{ op: "extrude", id: "corps", name: "Corps", profile: { rect: [0, 0, "L", "W"], r: 2 }, plane: "XY", length: "H" }, { op: "interfaces" }],
+  notes: ["Ti-6Al-4V imprimé par fusion laser sur lit de poudre (ASTM F2924).", "Détente sur le plateau ; compaction isostatique à chaud puis usinage des surfaces pour la tenue en fatigue.", "Taraudages M4 repris après traitement ; certificat du lot de poudre exigé."],
+};
+
 export const DEMO_DRIVE = {
   dw: "project/1", id: "demo-variateur", name: "Variateur compact 400 V (démonstration)", author: "DesignWizard.ai",
   description: "Système mécatronique de démonstration : boîtier moulé, carte de puissance 400 V, carte de contrôle avec CPU et capteurs, dissipateur extrudé. Chaque pièce part de ses interfaces ; l'assemblage se monte seul.",
-  parts: [BASE, COVER, PWR, CTRL, SINK],
+  parts: [BASE, COVER, PWR, CTRL, SINK, ISO, BRACKET],
   assemblies: [{ dw: "assembly/1", id: "DRV-ASM", name: "Variateur compact — assemblage général",
-    instances: [{ id: "i1", part: "DRV-BASE", fixed: true, placement: { t: [0, 0, 0], r: [0, 0, 0] } }, { id: "i2", part: "DRV-PWR-PCB" }, { id: "i3", part: "DRV-CTRL-PCB" }, { id: "i4", part: "DRV-COVER" }, { id: "i5", part: "DRV-HEATSINK" }],
+    instances: [{ id: "i1", part: "DRV-BASE", fixed: true, placement: { t: [0, 0, 0], r: [0, 0, 0] } }, { id: "i2", part: "DRV-PWR-PCB" }, { id: "i3", part: "DRV-CTRL-PCB" }, { id: "i4", part: "DRV-COVER" }, { id: "i5", part: "DRV-HEATSINK" }, { id: "i6", part: "DRV-ISO" }],
     mates: [{ id: "M1", a: { inst: "i2", iface: "IF1" }, b: { inst: "i1", iface: "IF1" }, linked: true, by: "key" }, { id: "M2", a: { inst: "i3", iface: "IF1" }, b: { inst: "i1", iface: "IF2" }, linked: true, by: "key" },
       { id: "M3", a: { inst: "i4", iface: "IF1" }, b: { inst: "i1", iface: "IF3" }, linked: true, by: "key" }, { id: "M4", a: { inst: "i4", iface: "IF2" }, b: { inst: "i1", iface: "IF4" }, linked: true, by: "key" },
-      { id: "M5", a: { inst: "i1", iface: "IF5" }, b: { inst: "i5", iface: "IF1" }, linked: true, by: "key" }],
+      { id: "M5", a: { inst: "i1", iface: "IF5" }, b: { inst: "i5", iface: "IF1" }, linked: true, by: "key" }, { id: "M6", a: { inst: "i6", iface: "IF1" }, b: { inst: "i5", iface: "IF2" }, linked: true, by: "key" }],
     isolation: { nets: [{ name: "HV+", kind: "dc", voltage: 400, floating: true }, { name: "HV-", kind: "dc", voltage: 0, floating: true }, { name: "LV", kind: "dc", voltage: 12 }, { name: "Chassis", kind: "dc", voltage: 0 }],
-      params: { pollution_degree: 2, altitude_m: 2000, ovc: "II", field: "A", level: "basic" }, levels: { "HV+|LV": "reinforced", "HV-|LV": "reinforced" } } }],
+      params: { pollution_degree: 2, altitude_m: 2000, ovc: "II", field: "A", level: "basic" }, levels: { "HV+|LV": "reinforced", "HV-|LV": "reinforced" } } ,
+    plan: { order: ["i1", "i5", "i6", "i2", "i3", "i4"] } }],      // the heat sink, then the insulator in its window, before the power board covers it
   log: [],
 };

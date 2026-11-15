@@ -89,7 +89,7 @@ test("demo drive: parts build, the assembly mates itself and nothing collides in
   assert.equal(candidates(asm, built).length, 0);            // the demo ships with its mates
   const shipped = JSON.stringify(asm.mates.map((m) => [m.a, m.b]));
   asm.mates = [];
-  assert.equal(autoMate(asm, built).length, 5);              // and the automatic mating finds the same ones
+  assert.equal(autoMate(asm, built).length, 6);              // and the automatic mating finds the same ones (five screwed or seated joints, and the insulator on the heat sink)
   assert.equal(JSON.stringify(asm.mates.map((m) => [m.a, m.b])), shipped);
   assert.equal(candidates(asm, built).length, 0);
   const sol = solve(asm, built);
