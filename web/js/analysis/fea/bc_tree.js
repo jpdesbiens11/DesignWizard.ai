@@ -14,11 +14,11 @@ const heated = (st) => st.kind === "thermal" || (st.kind === "thermo" && !(st.th
 /** The groups a physics shows : a structure has supports and loads, a thermal case sources and temperatures. */
 export function bcGroups(st) { const heat = heated(st); return BC_GROUPS.filter((g) => (g.key === "fixed" ? st.kind !== "thermal" : g.key === "loads" ? st.kind === "structure" : heat)); }
 const n = (v, d = 3) => String(Math.round(v * 10 ** d) / 10 ** d).replace(".", ","), dirFr = (d) => `${d[0] === "-" ? "−" : "+"}${d[1]}`;
-/** The tree : [{ ...group, items: [{ id, index, region, where, text, short, color, kind }] }].
+/** The tree : [{ ...group, items: [{ id, index, region, where, text, short, color, kind, ask (values still to enter) }] }].
     labelOf(regionKey) → the plain name of a region (a face, an interface). */
 export function bcTree(st, labelOf = (k) => k) {
   return bcGroups(st).map((g) => ({ ...g, items: (st[g.key] || []).map((x, i) => {
-    const id = `${g.tag}${i + 1}`, region = g.key === "fixed" ? x : x.region, base = { id, index: i, region, where: labelOf(region) };
+    const id = `${g.tag}${i + 1}`, region = g.key === "fixed" ? x : x.region, base = { id, index: i, region, where: labelOf(region), ask: g.key === "fixed" || !Array.isArray(x.ask) ? [] : x.ask };
     if (g.key === "fixed") return { ...base, text: "Encastrement", short: id, color: g.color, kind: "fixed" };
     if (g.key === "loads") return x.mode === "pressure" ? { ...base, text: `Pression ${n(x.p)} MPa`, short: `${id} · ${n(x.p)} MPa`, color: BC_COLORS.pressure, kind: "pressure" }
       : { ...base, text: `Force ${n(x.F, 1)} N vers ${dirFr(x.dir)}`, short: `${id} · ${n(x.F, 1)} N ${dirFr(x.dir)}`, color: BC_COLORS.force, kind: "force" };

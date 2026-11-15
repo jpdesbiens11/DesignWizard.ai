@@ -19,11 +19,15 @@ import { findSymmetries, reduceModel, loadSymmetry } from "../analysis/fea/symme
 import { cutsSection, cutMenu, fraction } from "./fea_cuts.js";
 import { precheckStructure, precheckThermal, precheckThermo, compare } from "../analysis/fea/precheck.js";
 import { VERDICT, show } from "../analysis/fea/summary.js";
-import { lightSide, sideOf, sidePoints, arrow, clamp, gem, SIDES, LIT } from "../core/view_marks.js";
+import { lightSide, lightTriangles, sideOf, sidePoints, arrow, clamp, gem, SIDES, LIT } from "../core/view_marks.js";
+import { patchAt, patchKey, parsePatchKey, patchInfo, patchSpots, patchFlags } from "../analysis/fea/patch.js";
+import { caseIssues, blocking } from "../analysis/fea/case_check.js";
+import { guideBox, guideSummary, nudge } from "../core/guide.js";
 import { bcTree, bcFind, bcLabels, BC_COLORS } from "../analysis/fea/bc_tree.js";
 import { bcSection } from "./fea_tree.js";
 
 const FACES = [["-X", "gauche (−X)"], ["+X", "droite (+X)"], ["-Y", "avant (−Y)"], ["+Y", "arrière (+Y)"], ["-Z", "dessous (−Z)"], ["+Z", "dessus (+Z)"]];
+const TOWARD = { "-X": "la gauche (−X)", "+X": "la droite (+X)", "-Y": "l'avant (−Y)", "+Y": "l'arrière (+Y)", "-Z": "le bas (−Z)", "+Z": "le haut (+Z)" };
 const DIRS = { "+X": [1, 0, 0], "-X": [-1, 0, 0], "+Y": [0, 1, 0], "-Y": [0, -1, 0], "+Z": [0, 0, 1], "-Z": [0, 0, -1] };
 const st = { target: null, kind: "structure", cells: 3000, cuts: [], fixed: [], loads: [], power: [], fixedT: [], conv: { on: true, h: 10, Tamb: 25 }, thermo: { uniform: true, T: 80, Tref: 20 }, sel: null, show: {} };      // sel : the item of the load case that is selected (A1, E2…) ; show : the labels of a type, on or off
 let seq = 0;
@@ -51,52 +55,76 @@ function render(main, args) {
   let geo = null, model = null, whole = null, syms = [], regions = [], estimate = null, last = null, worker = null, alive = true, asking = null;      // whole : the product entire ; model : what is solved — the same, or what the cuts keep
 
   /* ---------- pointing at the part : a face or an interface is chosen in the view, and what is chosen shows ---------- */
-  /** The region under a pick : an interface when the point is on one, otherwise the outer face the surface looks at. */
+  /* a face the designer pointed at — an inner wall, a floor, a step — is a region too : its key finds it again on every mesh */
+  const patches = new Map();
+  function patchRegion(key) {
+    if (patches.has(key)) return patches.get(key);
+    const p = parsePatchKey(key); if (!p || !whole) return null;
+    const i = patchInfo(whole, p), r = { key, patch: p, n: SIDES[p.dir], gone: !i, list: [{ patch: p }],
+      label: i ? `Face pointée, tournée vers ${TOWARD[p.dir]}${i.level !== null ? ` — ${"xyz"["XYZ".indexOf(p.dir[1])]} = ${fmt(i.level, 1)} mm` : ""}, ${fmt(i.area / 100, 1)} cm²` : "Face pointée — introuvable sur ce maillage" };
+    patches.set(key, r); return r;
+  }
+  const regionOf = (key) => regions.find((r) => r.key === key) || patchRegion(key);
+  const usedPatches = () => [...new Set([...st.fixed, ...st.loads.map((x) => x.region), ...st.power.map((x) => x.region), ...st.fixedT.map((x) => x.region)].filter((k) => String(k).startsWith("patch:")))].map(patchRegion).filter(Boolean);
+  /** The region under a pick : an interface when the point is on one ; the whole side of the product when the point is on its
+      outermost plane ; otherwise the face pointed at, whatever it is — inside a housing, under a cover, at the bottom of a pocket. */
   function regionAt(hit) {
     if (!hit || !model) return null;
     const p = hit.point, h = model.grid.h, b = whole.bbox;      // a face of the product, not the face of a cut
     for (const r of regions) if (r.key.startsWith("iface:")) for (const it of r.list) {
       if (it.near && Math.hypot(p[0] - it.near[0], p[1] - it.near[1], p[2] - it.near[2]) <= Math.max(1.5 * it.r, 2 * h)) return r.key;
-      if (it.box && [0, 1, 2].every((i) => p[i] >= it.box[i] - h && p[i] <= it.box[3 + i] + h)) return r.key;
+      /* a plane interface is its own face : a wall beside it, though inside its box on a thin part, is not the interface */
+      if (it.box && (!r.n || !hit.normal || Math.abs(hit.normal[0] * r.n[0] + hit.normal[1] * r.n[1] + hit.normal[2] * r.n[2]) > 0.7) && [0, 1, 2].every((i) => p[i] >= it.box[i] - h && p[i] <= it.box[3 + i] + h)) return r.key;
     }
     const side = sideOf(hit.normal); if (!side) return null;
     const a = "XYZ".indexOf(side[1]), ext = side[0] === "+" ? b[3 + a] : b[a];
-    return Math.abs(p[a] - ext) <= 0.75 * h ? `face:${side}` : null;      // a face region is the outermost plane on that side
+    if (Math.abs(p[a] - ext) <= 0.75 * h) return `face:${side}`;      // the outermost plane on that side : the whole side of the product
+    const pt = patchAt(whole, p, hit.normal); if (!pt) return null;
+    const i = patchInfo(whole, pt); return i && i.outer ? `face:${pt.dir}` : patchKey(pt);
   }
   /** Where a region is, as points with their outward direction (for its symbols and its highlight). */
   /* what the cuts keep of the box of the product ; a face of the product is still there when its side was not cut away */
   const keptBox = () => { const b = Array.from(whole.bbox); for (const c of st.cuts) { if (c.keep < 0) b[c.axis + 3] = Math.min(b[c.axis + 3], c.at); else b[c.axis] = Math.max(b[c.axis], c.at); } return b; };
   const stillThere = (face, kb) => { const i = "XYZ".indexOf(face[1]) + (face[0] === "+" ? 3 : 0); return Math.abs(kb[i] - whole.bbox[i]) < 1e-6; }, inside = (p, kb) => [0, 1, 2].every((i) => p[i] >= kb[i] - 1e-6 && p[i] <= kb[i + 3] + 1e-6);
   function spots(key, n = 3) {
-    const r = regions.find((x) => x.key === key), out = []; if (!r || !model) return out;
+    const r = regionOf(key), out = []; if (!r || !model) return out;
     const kb = keptBox();      // a symbol is drawn only on what is solved : what the cuts removed is answered for by its twin
-    for (const it of r.list) { if (it.face) { if (stillThere(it.face, kb)) out.push(...sidePoints(kb, it.face, n).map((p) => ({ p, out: SIDES[it.face] }))); } else { const p = it.near || (it.box ? [0, 1, 2].map((i) => (it.box[i] + it.box[3 + i]) / 2) : null); if (p && inside(p, kb)) out.push({ p, out: r.n || [0, 0, 1] }); } }
+    for (const it of r.list) { if (it.face) { if (stillThere(it.face, kb)) out.push(...sidePoints(kb, it.face, n).map((p) => ({ p, out: SIDES[it.face] }))); } else if (it.patch) out.push(...patchSpots(whole, it.patch, n === 1 ? 1 : 2 * n).filter((p) => inside(p, kb)).map((p) => ({ p, out: SIDES[it.patch.dir] }))); else { const p = it.near || (it.box ? [0, 1, 2].map((i) => (it.box[i] + it.box[3 + i]) / 2) : null); if (p && inside(p, kb)) out.push({ p, out: r.n || [0, 0, 1] }); } }
     return out;
   }
   function lightRegion(key, color, tag) {
-    if (key.startsWith("face:")) { if (stillThere(key.slice(5), keptBox())) lightSide(vp.viewer, key.slice(5), { tag, color, ids: ["fea"] }); } else for (const s of spots(key)) vp.viewer.addMarker(s.p, color, tag, 2.2);
+    if (key.startsWith("face:")) { if (stillThere(key.slice(5), keptBox())) lightSide(vp.viewer, key.slice(5), { tag, color, ids: ["fea"] }); }
+    else if (key.startsWith("patch:")) { const r = patchRegion(key); if (r && !r.gone && model) lightTriangles(vp.viewer, "fea", patchFlags(model, r.patch), 1, { color, tag, opacity: 0.6 }); }
+    else for (const s of spots(key)) vp.viewer.addMarker(s.p, color, tag, 2.2);
   }
   function pickRegion(hit) {
     if (!asking) return;
     const k = regionAt(hit);
-    if (!k) { toast("Cliquez une face extérieure de la pièce (ou une de ses interfaces).", "info", 3000); return; }
+    if (!k) { toast("Cliquez une face du produit — extérieure ou intérieure — ou une de ses interfaces.", "info", 3000); return; }
     const set = asking; asking = null; view.style.cursor = ""; vp.viewer.clearOverlays("bchover");
     set(k); lightRegion(k, LIT.chosen, "bcpick"); setTimeout(() => { if (alive) vp.viewer.clearOverlays("bcpick"); }, 1400);
   }
   /** A right click on a face of the part : hold it there, push there, heat there — the load case is built where the designer points. */
   function regionMenu(hit) {
     const k = hit ? regionAt(hit) : null; if (!k || !model) return [];
-    const r = regions.find((x) => x.key === k), name = r ? r.label : k, face = k.startsWith("face:") ? k.slice(5) : "+Z", into = `${face[0] === "+" ? "-" : "+"}${face[1]}`, heat = st.kind === "thermal" || (st.kind === "thermo" && !st.thermo.uniform);
-    const add = (fn, text, group) => () => { fn(); if (group) st.sel = `${group[0]}${st[group[1]].length}`; changed(); lightRegion(k, LIT.chosen, "bcpick"); setTimeout(() => { if (alive) vp.viewer.clearOverlays("bcpick"); }, 1400); toast(text, "success", 2500); };
-    return [{ title: name },
-      ...(st.kind !== "thermal" ? [st.fixed.includes(k) ? { label: "Retirer l'appui d'ici", icon: "unlink", run: add(() => { st.fixed = st.fixed.filter((x) => x !== k); }, `Appui retiré de ${name}`) } : { label: "Appui ici (encastrement)", icon: "lock", run: add(() => { st.fixed.push(k); }, `Appui sur ${name}`, ["A", "fixed"]) }] : []),
-      ...(st.kind === "structure" ? [{ label: `Effort ici : 100 N vers ${into}`, icon: "bolt", run: add(() => { st.loads.push({ region: k, mode: "force", F: 100, dir: into, p: 0.1 }); }, `Effort de 100 N sur ${name} : réglez sa valeur à gauche`, ["E", "loads"]) },
-        { label: "Pression ici : 0,1 MPa", icon: "flow", run: add(() => { st.loads.push({ region: k, mode: "pressure", F: 100, dir: into, p: 0.1 }); }, `Pression sur ${name}`, ["E", "loads"]) }] : []),
-      ...(heat ? [{ label: "Source de chaleur ici : 5 W", icon: "thermal", run: add(() => { st.power.push({ region: k, P: 5 }); }, `Source de 5 W sur ${name}`, ["Q", "power"]) }, { label: "Température imposée ici : 25 °C", icon: "thermal", run: add(() => { st.fixedT.push({ region: k, T: 25 }); }, `Température imposée sur ${name}`, ["T", "fixedT"]) }] : [])];
+    const r = regionOf(k), name = r ? r.label : k, face = k.startsWith("face:") ? k.slice(5) : r && r.patch ? r.patch.dir : "+Z", into = `${face[0] === "+" ? "-" : "+"}${face[1]}`, heat = st.kind === "thermal" || (st.kind === "thermo" && !st.thermo.uniform);
+    const add = (fn, text, group) => () => { fn(); if (group) st.sel = `${group[0]}${st[group[1]].length}`; changed(); lightRegion(k, LIT.chosen, "bcpick"); setTimeout(() => { if (alive) vp.viewer.clearOverlays("bcpick"); }, 1400); toast(text, "success", 2500); toEnter(); };
+    /* what is already on this face : set it or take it away from here, as in the Isolation */
+    const here = loadTree().flatMap((g) => g.items.filter((it) => it.region === k).flatMap((it) => [{ label: `Régler ${it.id} — ${it.text}`, icon: "edit", run: () => { select(it.id); toEnter(); } },
+      { label: `Retirer ${it.id}`, icon: "trash", run: () => { st[g.key].splice(it.index, 1); st.sel = null; changed(); toast(`${it.id} retiré de ${name}`, "success", 2500); } }]));
+    return [{ title: name }, ...here, ...(here.length ? ["—"] : []),
+      ...(st.kind !== "thermal" && !st.fixed.includes(k) ? [{ label: "Appui ici (encastrement)", icon: "lock", run: add(() => { st.fixed.push(k); }, `Appui sur ${name}`, ["A", "fixed"]) }] : []),
+      ...(st.kind === "structure" ? [{ label: `Effort ici : 100 N vers ${into}`, icon: "bolt", run: add(() => { st.loads.push({ region: k, mode: "force", F: 100, dir: into, p: 0.1, ask: ["F"] }); }, `Effort sur ${name} : entrez sa valeur à gauche`, ["E", "loads"]) },
+        { label: "Pression ici : 0,1 MPa", icon: "flow", run: add(() => { st.loads.push({ region: k, mode: "pressure", F: 100, dir: into, p: 0.1, ask: ["p"] }); }, `Pression sur ${name} : entrez sa valeur à gauche`, ["E", "loads"]) }] : []),
+      ...(heat ? [{ label: "Source de chaleur ici : 5 W", icon: "thermal", run: add(() => { st.power.push({ region: k, P: 5, ask: ["P"] }); }, `Source sur ${name} : entrez sa puissance à gauche`, ["Q", "power"]) }, { label: "Température imposée ici : 25 °C", icon: "thermal", run: add(() => { st.fixedT.push({ region: k, T: 25, ask: ["T"] }); }, `Température imposée sur ${name} : entrez-la à gauche`, ["T", "fixedT"]) }] : [])];
   }
   /** The symbols of the load case : clamps where the product is held, arrows where it is pushed and which way, marks for heat —
       each in the colour of its type, with its number ; the labels of a type show when its eye is open, the selected item always. */
-  const regionName = (k) => (regions.find((r) => r.key === k) || { label: k }).label, loadTree = () => bcTree(st, regionName);
+  const regionName = (k) => (regionOf(k) || { label: k }).label, loadTree = () => bcTree(st, regionName);
+  /** What the case still lacks or gets wrong, as the guide lists it. */
+  const issues = () => (whole ? caseIssues(st, { regionOk: (k) => { const r = regionOf(k); return !!r && !r.gone; }, regionName }) : []);
+  /* brings the first value that waits to the eye of the designer : its field blinks in the left panel */
+  const toEnter = () => setTimeout(() => { if (alive) nudge(left.querySelector(".bc-edit input.need")); }, 90);
   function drawSymbols() {
     const v = vp.viewer; v.clearOverlays("sym"); v.clearOverlays("bcsel"); if (!model) return;
     const tag = "sym", tree = loadTree();
@@ -132,7 +160,7 @@ function render(main, args) {
   function remesh(first) {
     try { whole = buildModel({ bodies: geo.bodies, target: st.cells, planes: st.cuts }); model = reduceModel(whole, st.cuts); syms = findSymmetries(whole); }
     catch (e) { vp.setBusy(""); info.textContent = e.message; info.className = "chip bad"; if (st.cuts.length) { toast(`${e.message} Le dernier plan est retiré.`, "warn", 6000); st.cuts.pop(); return remesh(first); } model = null; whole = null; drawRight(); return; }
-    const b = whole.bbox, h = model.grid.h;
+    const b = whole.bbox, h = model.grid.h; patches.clear();
     regions = FACES.map(([k, l]) => ({ key: `face:${k}`, label: `Face ${l}`, list: [{ face: k }] }));
     for (const it of geo.interfaces) {
       const f = it.frame, sign = it.side === "B" ? -1 : 1, at = (pu, pv, pn = 0) => [0, 1, 2].map((i) => f.o[i] + pu * f.u[i] + pv * sign * f.v[i] + pn * f.n[i]);
@@ -145,11 +173,12 @@ function render(main, args) {
         regions.push({ key: `iface:${it.id}`, n: f.n, label: `Interface ${it.id} — ${it.name}`, list: [{ box: [0, 1, 2].map((i) => Math.min(...pts.map((q) => q[i]))).concat([0, 1, 2].map((i) => Math.max(...pts.map((q) => q[i])))) }] });
       }
     }
-    if (!st.fixed.length || !st.fixed.every((k) => regions.some((r) => r.key === k))) {            // a sensible first case: held at one end of the longest side, loaded at the other
+    if (!st.fixed.length || !st.fixed.every((k) => regionOf(k))) {            // a sensible first case: held at one end of the longest side, loaded at the other
       const dims = [b[3] - b[0], b[4] - b[1], b[5] - b[2]], a = dims.indexOf(Math.max(...dims)), ax = "XYZ"[a], iface = regions.find((r) => r.key.startsWith("iface:"));
       st.fixed = [iface ? iface.key : `face:-${ax}`];
       st.loads = [{ region: iface ? `face:${dims[2] <= Math.min(dims[0], dims[1]) ? "+Z" : `+${ax}`}` : `face:+${ax}`, mode: iface && dims[2] <= Math.min(dims[0], dims[1]) ? "pressure" : "force", F: 100, dir: a === 2 ? "-Y" : "-Z", p: 0.002 }];
-      st.power = [{ region: "face:-Z", P: 5 }]; st.fixedT = [];
+      st.loads[0].ask = [st.loads[0].mode === "pressure" ? "p" : "F"];      // a first case to start from : its values are examples, the designer enters his own
+      st.power = [{ region: "face:-Z", P: 5, ask: ["P"] }]; st.fixedT = []; st.sel = st.kind === "structure" ? "E1" : st.kind === "thermal" ? "Q1" : st.sel;      // the value that waits is open, where the eye falls
     }
     showMesh(); drawLeft(); refreshEstimate();
     if (first) vp.viewer.view("iso");
@@ -161,7 +190,7 @@ function render(main, args) {
     info.textContent = `${model.cut ? `Modèle ${fraction(model.cut.copies)} · ` : ""}${model.nCells.toLocaleString("fr-CA")} cubes de ${fmt(model.grid.h, 2)} mm · ${model.nNodes.toLocaleString("fr-CA")} nœuds`; info.className = "chip";
   }
   /** The simple regions of a choice: one for a face, one per screw for a bolted interface (the effort is shared between them). */
-  const listOf = (key) => (regions.find((r) => r.key === key) || regions[0]).list;
+  const listOf = (key) => (regionOf(key) || regions[0]).list;
   function loadCase() {
     if (st.kind === "thermo") return { fixed: st.fixed.flatMap(listOf), loads: [], Tref: st.thermo.Tref, thermal: st.thermo.uniform ? { uniform: st.thermo.T } : { case: thermalCase() } };
     return st.kind === "thermal" ? thermalCase() : structureCase();
@@ -213,13 +242,14 @@ function render(main, args) {
     if (whole) scroll.append(cutsSection({ st, kind: st.kind, syms, bbox: whole.bbox, symmetric, apply: () => { last = null; remesh(false); } }));
     const heat = st.kind === "thermal" || (st.kind === "thermo" && !st.thermo.uniform);
     if (st.sel && !bcFind(loadTree(), st.sel)) st.sel = null;
-    const DEFAULT = { fixed: () => regions[0].key, loads: () => ({ region: regions[1].key, mode: "force", F: 100, dir: "-Z", p: 0.1 }), power: () => ({ region: regions[0].key, P: 5 }), fixedT: () => ({ region: regions[5].key, T: 25 }) };
-    const aim = (set) => { asking = set; view.style.cursor = "crosshair"; toast("Cliquez une face extérieure du produit (ou une interface) : elle s'allume sous le curseur.", "info", 3200); };
-    sec.append(el("h3", null, "Cas de charge"), bcSection({ st, tree: loadTree(), regions, dirs: DIRS, select, changed, aim, relabel: () => { drawLeft(); drawSymbols(); },
+    const DEFAULT = { fixed: () => regions[0].key, loads: () => ({ region: regions[1].key, mode: "force", F: 100, dir: "-Z", p: 0.1, ask: ["F"] }), power: () => ({ region: regions[0].key, P: 5, ask: ["P"] }), fixedT: () => ({ region: regions[5].key, T: 25, ask: ["T"] }) };
+    const aim = (set) => { asking = set; view.style.cursor = "crosshair"; toast("Cliquez une face du produit, extérieure ou intérieure, ou une interface : elle s'allume sous le curseur. Face cachée ? Tournez la vue ou coupez-la.", "info", 4200); };
+    const go = (x) => { if (x.id && st.sel !== x.id) select(x.id); setTimeout(() => { if (alive) nudge(left.querySelector(x.field ? `.bc-edit [data-field="${x.field}"]` : x.id ? `[data-bc="${x.id}"]` : ".bc-tree")); }, 90); };
+    sec.append(el("h3", null, "Cas de charge"), ...[guideBox(issues(), { go })].filter(Boolean), bcSection({ st, tree: loadTree(), regions: [...regions, ...usedPatches()], dirs: DIRS, select, changed, aim, relabel: () => { drawLeft(); drawSymbols(); },
       hover: (k, color) => { vp.viewer.clearOverlays("bchover"); if (k && !asking) lightRegion(k, color || LIT.named, "bchover"); },
-      add: (key) => { st[key].push(DEFAULT[key]()); const g = loadTree().find((x) => x.key === key), it = g.items[g.items.length - 1]; st.sel = it.id; changed(); aim((k) => { if (key === "fixed") st.fixed[it.index] = k; else st[key][it.index].region = k; changed(); }); },
+      add: (key) => { st[key].push(DEFAULT[key]()); const g = loadTree().find((x) => x.key === key), it = g.items[g.items.length - 1]; st.sel = it.id; changed(); aim((k) => { if (key === "fixed") st.fixed[it.index] = k; else st[key][it.index].region = k; changed(); toEnter(); }); },
       remove: (key, i) => { st[key].splice(i, 1); st.sel = null; changed(); } }),
-      el("p", { class: "muted small" }, "Un clic sur une ligne la montre sur le modèle et ouvre ses valeurs ; l'œil d'un type affiche ou masque ses étiquettes. Un clic droit sur une face du modèle y pose un appui, un effort ou une source."));
+      el("p", { class: "muted small" }, "Un clic sur une ligne la montre sur le modèle et ouvre ses valeurs ; l'œil d'un type affiche ou masque ses étiquettes. Un clic droit sur une face du modèle — intérieure aussi : tournez la vue, ou coupez-la — y pose un appui, un effort ou une source, et règle ou retire ce qui s'y trouve. Une valeur qui clignote est un exemple : entrez la vôtre."));
     if (st.kind === "thermo") sec.append(el("h3", { style: { marginTop: ".7rem" } }, "Température"),
       el("div", { class: "bc-row" }, el("small", null, "Montage sans contrainte à"), num(st.thermo.Tref, (v) => { st.thermo.Tref = v; changed(); }), el("small", null, "°C")),
       el("label", { class: "check" }, el("input", { type: "checkbox", checked: st.thermo.uniform, onChange: (e) => { st.thermo.uniform = e.target.checked; changed(); } }), "Pièce à température uniforme"),
@@ -241,9 +271,10 @@ function render(main, args) {
     if (!model || !estimate) { body.append(el("p", { class: "muted" }, "Préparation…")); return; }
     body.append(el("div", { class: "side-section" }, el("h3", null, "1. Avant de calculer — l'estimation à la main"), el("p", { class: "small" }, el("b", null, estimate.title)),
       el("ol", { class: "calc-steps" }, estimate.steps.map((s) => el("li", null, s))), ...estimate.warnings.map((w) => el("p", { class: "atelier-hint warn" }, icon("warning"), " ", w))));
-    const go = btn(last ? "Relancer la simulation" : "Lancer la simulation", () => run(), { primary: true, icon: "play" });
+    const go = btn(last ? "Relancer la simulation" : "Lancer la simulation", () => run(), { primary: true, icon: "play" }), wait = blocking(issues());
     body.append(el("div", { class: "side-section" }, el("h3", null, "2. La simulation"), el("p", { class: "muted small" }, "Cubes identiques, hexaèdre à modes incompatibles (flexion juste même avec un élément dans l'épaisseur), gradient conjugué. Tout le code du solveur est dans ce dépôt, sous licence MIT."),
-      el("div", { class: "form-actions", style: { justifyContent: "flex-start" } }, go)));
+      el("div", { class: "form-actions", style: { justifyContent: "flex-start" } }, go),
+      ...(wait.length ? [el("p", { class: "atelier-hint warn" }, icon("warning"), ` Avant de lancer — ${guideSummary(wait)}, dans le cas de charge à gauche.`)] : [])));
     if (!last) return;
     const r = last.result, c = last.compare, mat = geo.bodies[0].material, sf = st.kind !== "thermal" && mat.Re ? mat.Re / r.maxVm.value : null;
     body.append(el("div", { class: "kpis" }, ...(st.kind === "thermal"
@@ -277,6 +308,8 @@ function render(main, args) {
   }
   function run() {
     if (!model) return;
+    const wait = blocking(issues());      // what must be entered or put right first : the guide takes the designer there
+    if (wait.length) { const x = wait[0]; if (x.id) st.sel = x.id; drawLeft(); drawSymbols(); toast(`Avant de lancer : ${x.text}`, "warn", 8000); setTimeout(() => { if (alive) nudge(left.querySelector(x.field ? `.bc-edit [data-field="${x.field}"]` : x.id ? `[data-bc="${x.id}"]` : ".guide")); }, 90); return; }
     if (worker) worker.terminate();
     worker = new Worker(new URL("../analysis/fea/worker.js", import.meta.url), { type: "module" });
     const id = ++seq, kind = st.kind, est = estimate;

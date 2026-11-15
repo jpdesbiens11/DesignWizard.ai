@@ -56,7 +56,8 @@ Trois précisions qui comptent :
 
 - **Choisir une face** : chaque appui et chaque effort se choisit dans la liste — la région s'allume quand on survole
   sa ligne — ou **à la souris** : le bouton cible, puis un clic sur la face (ou l'interface) dans la vue. La face
-  s'allume en bleu sous le curseur, puis en vert quand elle est choisie.
+  s'allume en bleu sous le curseur, puis en vert quand elle est choisie. Toute face se pointe, intérieure comprise
+  (voir plus bas).
 - **Symboles** : des cônes bleus là où la pièce est tenue ; des flèches rouges pour une force, dans son sens, avec sa
   valeur ; des flèches orange pour une pression ; des losanges pour la chaleur et les températures imposées.
 - **Échelle des couleurs** : son bas et son haut se règlent au curseur ou au clavier, la vue suit en direct. Ce qui
@@ -85,6 +86,50 @@ Dans le panneau de gauche, le cas de charge se lit comme l'arbre d'un outil de c
 
 Le modèle de l'arbre est pur (`web/js/analysis/fea/bc_tree.js` : `bcTree`, `bcLabels`, `BC_COLORS`) ; le panneau le
 dessine (`web/js/modules/fea_tree.js`).
+
+### Pointer une face — intérieure aussi
+
+Une condition ne vise plus seulement les six côtés du produit et ses interfaces : **toute face du modèle** se pointe.
+
+- Un clic (ou un clic droit) sur le **fond d'un boîtier**, une **paroi intérieure**, le **dessous d'un couvercle**, un
+  gradin ou le fond d'une poche désigne cette face : elle s'allume en entier, et la ligne de l'arbre dit où elle est —
+  « Face pointée, tournée vers le haut (+Z) — z = 3,2 mm, 132 cm² ».
+- **Face cachée ?** Tournez la vue, ou coupez-la (« Coupe » dans la barre de la vue, Maj + S pour changer de côté) : ce
+  qui est derrière la coupe se clique.
+- Un clic sur le plan le plus extérieur d'un côté désigne toujours ce côté entier, comme avant ; un clic près des vis
+  d'une interface, l'interface. Une paroi voisine d'un plan de joint se pointe pour elle-même.
+- Le **clic droit** sur une face, comme dans l'Isolation : « Appui ici », « Effort ici », « Pression ici », « Source de
+  chaleur ici » — et, pour ce qui s'y trouve déjà, « Régler E2 — Force 250 N vers −Z » (ouvre ses valeurs à gauche) et
+  « Retirer E2 ».
+
+Sur ce maillage de cubes, une face pointée est l'ensemble des faces de cubes exposées qui regardent du même côté et se
+touchent — dans leur plan, ou d'une couche à la suivante : une paroi en dépouille ou en pente douce, qui est un escalier
+ici, reste une seule face ; le fond d'un boîtier et le dessus de son rebord ne se confondent pas. La face est retrouvée
+par sa position à chaque maillage ; si la pièce a changé et qu'elle n'existe plus, l'arbre le dit.
+Code : `web/js/analysis/fea/patch.js` (pur) — `patchAt`, `patchFaces`, `patchInfo`, `patchSpots` ; le solveur lit la
+région `{ patch: { at, dir } }`.
+
+### Les valeurs à entrer clignotent
+
+Quand une condition est posée, l'outil lui donne une valeur d'**exemple** (100 N, 0,1 MPa, 5 W, 25 °C) — comme pour le
+premier cas proposé à l'ouverture. Ce n'est pas la vôtre : tant qu'elle n'est pas entrée, sa ligne clignote dans le
+volet de gauche avec la mention « à entrer », son champ clignote, et **la simulation ne se lance pas**. Tapez votre
+valeur, ou gardez l'exemple (Entrée, ou la coche à côté du champ).
+
+### Ce que le cas de charge signale, pendant qu'on le construit
+
+En tête du cas de charge, le guide liste ce qui manque ou ce qui cloche, le plus grave d'abord ; un clic sur une ligne
+mène à l'endroit, qui clignote un instant.
+
+| Niveau | Exemples | Bloque le lancement |
+|---|---|---|
+| À corriger | Produit tenu nulle part ; aucun effort ; chaleur sans sortie (ni convection ni température imposée) ; face disparue du maillage ; température sous le zéro absolu | oui |
+| À entrer | Valeur d'exemple pas encore entrée ni confirmée | oui |
+| À vérifier | Effort sur une face encastrée ; valeur nulle ; pression de plus de 50 MPa (unité ?) ; source sur une face tenue en température ; dilatation nulle | non |
+| Conseil | Deux appuis sur la même face ; force négative ; pression négative | non |
+
+Les règles sont pures et testées (`web/js/analysis/fea/case_check.js`, `caseIssues`) ; l'affichage est celui du guide
+commun à tous les écrans (`web/js/core/guide.js`).
 
 ## 2. Le maillage : un seul gabarit, le cube
 

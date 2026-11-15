@@ -8,9 +8,11 @@
 //   nodes Float32Array(3 * nNodes), elems Int32Array(8 * nCells) (hex8 order: bottom face counter-clockwise, then top),
 //   elemBody, elemCell, bodies [{ name, material, cells, volume }], bbox (of the kept cells), volume.
 // region = { face: "+X" | "-X" | "+Y" | "-Y" | "+Z" | "-Z", body?: name } | { box: [x0, y0, z0, x1, y1, z1] } | { near: [x, y, z], r }
+//        | { patch: { at: [x, y, z], dir: "+X"… } } : the face the designer pointed at, inner faces included (patch.js)
 // material = { name, E (MPa), nu, k (W/m.K), rho (kg/m3), Re (MPa or null), alpha (1/K, thermal expansion, optional) }
 
 import { cutFaces } from "./symmetry.js";
+import { patchNodes } from "./patch.js";
 import { buildModel, exposedFaces, sectionAt, skin, FACE_DIRS } from "./voxel.js";
 import { structureElement, conductionElement, vonMises } from "./hex8.js";
 import { pcg, structureOperator, thermalOperator, looseMotion, unmarkedBody } from "./solve.js";
@@ -26,6 +28,7 @@ function regionLabel(region) {
   if (region?.face) return `face ${region.face}${region.body ? ` du corps « ${region.body} »` : ""}`;
   if (region?.box) return `boîte [${Array.from(region.box, round3).join(", ")}]`;
   if (region?.near) return `voisinage du point [${Array.from(region.near, round3).join(", ")}]`;
+  if (region?.patch) return `face pointée ${region.patch.dir} près de [${Array.from(region.patch.at || [], round3).join(", ")}]`;
   return `région ${JSON.stringify(region)}`;
 }
 
@@ -70,8 +73,10 @@ export function selectNodes(model, region) {
       if (d < bestD) { bestD = d; best = i; }
     }
     if (!picked.length && best >= 0) picked.push(best);   // at least the nearest node
+  } else if (region?.patch) {
+    return patchNodes(model, region.patch);
   } else {
-    throw new Error(`Région invalide (${regionLabel(region)}) : attendu { face }, { box } ou { near, r }.`);
+    throw new Error(`Région invalide (${regionLabel(region)}) : attendu { face }, { box }, { near, r } ou { patch }.`);
   }
   return Int32Array.from(picked);
 }

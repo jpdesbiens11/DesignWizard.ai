@@ -299,3 +299,20 @@ button.dw-view-label { pointer-events: auto; cursor: pointer; }
 .code-notes { margin: 0; padding: .45rem 1rem .45rem 2.2rem; font-size: .8rem; color: var(--muted); border-bottom: 1px dashed color-mix(in srgb, var(--graphite) 18%, transparent); }
 .code-text { flex: 1; margin: 0; padding: 1rem 1.2rem 3rem; overflow: auto; font-family: var(--mono); font-size: .8rem; line-height: 1.5; white-space: pre; tab-size: 4; }
 @media print { .code-view, .seg { display: none !important; } }
+
+/* the guide : what a screen tells the designer while he works (core/guide.js) */
+.guide { margin: .35rem 0 .5rem; display: grid; gap: .22rem; }
+.guide-head { display: flex; align-items: baseline; gap: .5rem; font-size: .86rem; } .guide-head small { color: var(--muted); }
+.guide-line { display: flex; gap: .4rem; align-items: flex-start; width: 100%; margin: 0; padding: .28rem .45rem; border: 0; border-left: 4px solid var(--line); border-radius: 0 var(--r-field) var(--r-field) 0; background: var(--surface-2); color: var(--ink); font: inherit; font-size: .84rem; line-height: 1.35; text-align: left; }
+button.guide-line { cursor: pointer; } button.guide-line:hover, button.guide-line:focus-visible { background: var(--surface); box-shadow: var(--shadow-sketch); }
+.guide-line .sk-icon { flex: none; margin-top: .12rem; } .guide-text { min-width: 0; overflow-wrap: anywhere; }
+.guide-line.error { border-left-color: var(--danger); } .guide-line.error b { color: var(--danger); }
+.guide-line.todo { border-left-color: var(--warn); animation: need-edge-g 1.1s ease-in-out infinite; } .guide-line.todo b { color: var(--warn-ink); }
+.guide-line.warn { border-left-color: var(--warn); } .guide-line.warn b { color: var(--warn-ink); }
+.guide-line.tip { border-left-color: var(--info); } .guide-line.tip b { color: var(--info); }
+.guide-fix { display: flex; gap: .3rem; align-items: stretch; } .guide-fix .guide-line { flex: 1; } .guide-ok { color: var(--ok); margin: .3rem 0; }
+input.need, select.need, textarea.need { border-color: var(--warn); animation: need-pulse 1.1s ease-in-out infinite; }
+.nudge { animation: need-pulse .6s ease-in-out 4; }
+@keyframes need-pulse { 0%, 100% { box-shadow: 0 0 0 0 transparent; background-color: var(--surface); } 50% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--hl-yellow) 80%, transparent); background-color: color-mix(in srgb, var(--hl-yellow) 38%, var(--surface)); } }
+@keyframes need-edge-g { 0%, 100% { border-left-color: var(--warn); } 50% { border-left-color: transparent; } }
+@media (prefers-reduced-motion: reduce) { input.need, select.need, textarea.need { box-shadow: 0 0 0 3px color-mix(in srgb, var(--hl-yellow) 80%, transparent); } }
