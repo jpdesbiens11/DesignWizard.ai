@@ -126,6 +126,7 @@ html[data-module="fea"] { --acc: var(--hl-teal); }
 .bc-edit { margin: 0 0 .3rem .95rem; padding: .1rem .45rem .2rem; border-left: 4px solid var(--acc); background: var(--surface-2); border-radius: 0 var(--r-field) var(--r-field) 0; }
 .bc-val { display: inline-flex; align-items: center; gap: .25rem; flex: 1 1 4rem; min-width: 0; } .bc-val input { min-width: 0; flex: 1; }
 .bc-none { margin: .2rem 0 0 1.4rem; }
+button.bc-item { width: calc(100% - .35rem); background: none; font: inherit; font-size: .86rem; color: var(--ink); text-align: left; } button.bc-item.sel { border-color: var(--graphite); }
 .dw-view-label.bc { border-width: 2px; background: color-mix(in srgb, var(--bc, var(--acc)) 14%, var(--surface)); font-weight: 600; }
 .dw-view-label.bc.sel { background: var(--bc, var(--acc)); color: #fff; }
 .bc-card { margin: .35rem 0; padding: .1rem .45rem; border-left: 4px solid var(--acc); background: var(--surface-2); border-radius: var(--r-field); }

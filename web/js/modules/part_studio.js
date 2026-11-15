@@ -13,6 +13,7 @@ import { featureDialog, interfaceDialog, stockDialog, announceLinks, nextFeature
 import { gammePanel, artifactsPanel } from "./part_gamme.js";
 import { STOCK_FORMS } from "../cad/stock.js";
 import { paramsPanel, interfacesPanel, sheetPanel, jsonPanel, dfxPanel } from "./part_panels.js";
+import { printPanel, isPrinted } from "./part_print.js";
 import { runDfx } from "../analysis/dfx_api.js";
 import { lightSide, LIT } from "../core/view_marks.js";
 import { partGestures, PART_KEYS } from "./part_gestures.js";
@@ -198,7 +199,9 @@ export function partStudio(main, args, cfg) {
   /* ---------- right: inspector ---------- */
   function renderRight() {
     clear(right);
-    const tabs = [["params", "Paramètres"], ["ifaces", "Interfaces"], ["gamme", "Gamme"], ["dfx", "DFx"], ["files", "Artéfacts"], ["sheet", "Fiche"], ["json", "Fichier"], ...((cfg.tabs || []).map((t) => [t.key, t.label]))];
+    const tabs = [["params", "Paramètres"], ["ifaces", "Interfaces"], ["gamme", "Gamme"], ["dfx", "DFx"], ...(isPrinted(st.spec) ? [["print", "Impression"]] : []), ["files", "Artéfacts"], ["sheet", "Fiche"], ["json", "Fichier"], ...((cfg.tabs || []).map((t) => [t.key, t.label]))];
+    if (st.tab === "print" && !isPrinted(st.spec)) st.tab = "params";
+    if (st.tab !== "print") vp.viewer.clearOverlays("am");      // the supports of a printed part show only on its tab
     const n = st.findings ? st.findings.findings.filter((f) => f.severity === "error").length : 0;
     right.append(el("div", { class: "side-head" }, el("h2", null, st.spec.name || st.spec.id)),
       el("div", { class: "subtabs", style: { margin: "0 .6rem" } }, tabs.map(([k, label]) => el("button", { class: "subtab" + (st.tab === k ? " active" : ""), type: "button", onClick: () => { st.tab = k; renderRight(); } }, label, k === "dfx" && n ? ` (${n})` : ""))));
@@ -208,7 +211,7 @@ export function partStudio(main, args, cfg) {
     const ctx = { st, id, live, rebuild, vp, editIface, editStock, cfg, paint, overlays };
     const custom = (cfg.tabs || []).find((t) => t.key === st.tab);
     if (custom) custom.render(body, ctx);
-    else ({ params: paramsPanel, ifaces: interfacesPanel, gamme: gammePanel, files: artifactsPanel, dfx: dfxPanel, sheet: sheetPanel, json: jsonPanel })[st.tab](body, ctx);
+    else ({ params: paramsPanel, ifaces: interfacesPanel, gamme: gammePanel, files: artifactsPanel, dfx: dfxPanel, print: printPanel, sheet: sheetPanel, json: jsonPanel })[st.tab](body, ctx);
   }
 
   return () => { offChange(); pins.dispose(); st.token++; app.faces = null; vp.dispose(); kernel.forget(`${id}~live`).catch(() => {}); };

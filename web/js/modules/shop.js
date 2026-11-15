@@ -27,7 +27,8 @@ import { lightSide, sideOf, LIT } from "../core/view_marks.js";
 import { popupMenu } from "../core/view_select.js";
 import { shopTabs } from "./shop_tabs.js";
 import { specialCard } from "./shop_special.js";
-import { printProcess } from "../cad/special_processes.js";
+import { printProcess, amLimits } from "../cad/special_processes.js";
+import { rankDirections } from "../analysis/am_supports.js";
 
 const blank = () => ({ name: "", fn: "", loads: "", environment: "", quantity: 10, priority: "", material: "AL6061-T6", form: "", neighbours: [], interfaces: [], addToAsm: true });
 let brief = blank(), uid = 0, wasMoulded = false;
@@ -268,6 +269,9 @@ function render(main) {
   }
   function createPart() {
     if (!current) return;
+    /* a printed part is born standing the way that asks the least support */
+    const AM = amLimits(current.spec.process, current.spec.material), body0 = current.built.bodies[0];
+    if (AM && AM.supports && body0 && body0.mesh) current.spec.print = { dir: rankDirections(body0.mesh, AM.overhang, { hole: AM.hHole })[0].dir };
     const r = importPart(current.spec, { replace: false });
     if (r.errors && r.errors.length) { toast(r.errors.join(" "), "error"); return; }
     const mate = brief.addToAsm && brief.neighbours.length;

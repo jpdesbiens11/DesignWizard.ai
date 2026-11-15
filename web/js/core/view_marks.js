@@ -50,6 +50,13 @@ export function lightSide(viewer, side, o = {}) {
   }
   return lit;
 }
+/** Lights up the triangles of an object whose flag has a value (flags : one entry per triangle of its mesh). → triangles lit */
+export function lightTriangles(viewer, id, flags, value, o = {}) {
+  const ob = viewer.objects.get(id); if (!ob || !flags) return 0;
+  const idx = ob.mesh.geometry.getIndex().array, keep = [];
+  for (let t = 0; t < flags.length && 3 * t + 2 < idx.length; t++) if (flags[t] === value) keep.push(idx[3 * t], idx[3 * t + 1], idx[3 * t + 2]);
+  return overlay(viewer, ob, keep, o.color || LIT.named, o.tag || "face", o.opacity ?? 0.75);
+}
 /** Lights up one face of the B-Rep of an object (the one a pick returned : hit.id, hit.faceId). */
 export function lightFace(viewer, id, faceId, o = {}) {
   const ob = viewer.objects.get(id), f = ob && ob.def.mesh && ob.def.mesh.faceOf; if (!f || faceId < 0) return 0;

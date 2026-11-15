@@ -169,6 +169,8 @@ d'atelier, opérations du noyau) est dans [PART_LANGUAGE.md](PART_LANGUAGE.md). 
 - **`stock`** — `plate`, `sheet`, `block`, `bar_flat`, `bar_round`, `tube_round`, `tube_rect`, `angle`, `profile`,
   `print`, `molded` : ce que l'on prend sur l'étagère. Une pièce moulée porte aussi une ligne **`mold`** (procédé, sens de
   démoulage, plan de joint, paroi, dépouilles, tiroirs, surépaisseur d'usinage) : voir [MOULAGE.md](MOULAGE.md).
+- **`print`** — `dir` : le côté de la pièce qui regarde vers le haut de la machine quand elle est imprimée (`+Z`, `-Z`,
+  `+X`, `-X`, `+Y`, `-Y`). Voir [PROCEDES.md](PROCEDES.md).
 - **`do`** — verbes d'atelier `drill`, `tap`, `cbore`, `csink`, `ream`, `mill`, `groove`, `face`, `step`, `outline`,
   `turn`, `bore`, `break_edges`, `deburr`, `finish` ; opérations du noyau `box`, `cylinder`, `extrude`, `revolve`,
   `hole`, `pocket`, `pad`, `slot`, `boss`, `shell`, `fillet`, `chamfer` ; `do interfaces` marque l'endroit où la

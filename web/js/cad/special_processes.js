@@ -155,6 +155,11 @@ export const AM_MATERIALS = {
   "RESIN-SLA": { process: "sla", use: "Maquettes d'aspect, pièces à détails fins, maîtres-modèles.", std: "—",
     relief: null, post: ["Post-cuire aux UV : la pièce n'a ses propriétés qu'après"], critical: null, watch: ["Tenue en température basse : fiche de la résine obligatoire."] },
 };
+/** The side of a part that looks UP in the machine, and how to say it. */
+export const BUILD_DIRS = { "+Z": [0, 0, 1], "-Z": [0, 0, -1], "+X": [1, 0, 0], "-X": [-1, 0, 0], "+Y": [0, 1, 0], "-Y": [0, -1, 0] };
+export const DIR_WORDS = { "+Z": "dessus vers le haut (+Z)", "-Z": "retournée, dessous vers le haut (−Z)", "+X": "debout, côté droit vers le haut (+X)", "-X": "debout, côté gauche vers le haut (−X)", "+Y": "debout, arrière vers le haut (+Y)", "-Y": "debout, avant vers le haut (−Y)" };
+/** The direction a part is printed in : the one it declares (spec.print.dir), else +Z. */
+export const buildDir = (spec) => (spec && spec.print && BUILD_DIRS[spec.print.dir] ? spec.print.dir : "+Z");
 /** How a material prints : { id, ...entry, proc (its process, with what the material overrides) } — null when it does not print. */
 export function amMaterial(materialId) {
   const m = material(materialId), id = m ? m.id : String(materialId || "").toUpperCase(), e = AM_MATERIALS[id];

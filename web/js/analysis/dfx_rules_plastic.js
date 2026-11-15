@@ -170,7 +170,7 @@ export function checkPrinting(ctx) {
     }
   });
   ctx.run("HSG-10", () => {
-    if (ctx.process !== "fdm") return;
+    if (ctx.process !== "fdm" || (ctx.geo && ctx.geo.mesh)) return;      // with the mesh of the part, AM-13 measures the supports instead of guessing them
     const items = [...groupBy(facts.holes.filter((h) => h.axis && Math.abs(h.axis[2]) < 0.5 && h.d > 6), (h) => h.source).map((g) => `trou horizontal Ø${num(g[0].d)} « ${g[0].source} »`),
       ...facts.pockets.filter((p) => p.face && FACES[p.face] && FACES[p.face].axis !== 2 && Math.min(p.w, p.h) > AM_PROCESSES.fdm.bridge).map((p) => `ouverture latérale « ${p.source} »`),
       ...[...facts.holes, ...facts.pockets, ...facts.bosses].filter((x) => x.face === "-Z" && !x.through).slice(0, 1).map(() => "features sur la face du dessous (−Z)")];

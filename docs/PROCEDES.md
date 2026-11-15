@@ -88,6 +88,20 @@ de fuite de 4 mm, pas de 35.
 | Résine (SLA) | résine rigide | ≥ 0,6 mm | ≥ Ø0,5 | sous 19°, débord ≤ 1 mm | ouverture ≥ Ø3,5 |
 | Fusion laser sur lit de poudre métallique (LPBF) | AlSi10Mg, inox 316L et 17-4 PH, **Ti-6Al-4V**, **alliages de nickel 718 et 625** | ≥ 0,4 mm, 1 mm conseillé | ≥ Ø1 | sous 45° (55° pour le 316L), pont ≤ 2 mm, trou horizontal rond ≤ Ø8 | 2 ouvertures ≥ Ø3 |
 
+### Le sens d'impression
+
+Une pièce imprimée a un onglet **Impression** dans le studio de pièce. Sur le maillage de la pièce, une face qui regarde
+vers le bas et fait moins que l'angle limite du procédé avec le plateau (45° ; 55° pour l'inox 316L ; 19° en résine)
+demande un support, sauf si elle repose sur le plateau. Un trou horizontal jusqu'au diamètre que le procédé imprime rond
+(Ø8 en métal, Ø6 en FDM) ne compte pas.
+
+- Les **six sens** sont mesurés et classés : le moins de surface à supporter d'abord, puis la plus faible hauteur.
+- Sur le modèle : en rouge ce qui se supporte, en bleu ce qui repose sur le plateau, une flèche pour le haut de la machine.
+- Un clic sur un sens l'écrit dans la pièce (`print.dir`) ; la gamme le dit, la règle `AM-13` le mesure et propose le
+  meilleur sens en un clic. Une pièce née dans l'Atelier prend d'office le sens le moins coûteux.
+- C'est une **borne haute** : un pont court entre deux parois s'imprime sans support, et un support peut s'appuyer sur
+  la pièce. Le logiciel de l'imprimeur a le dernier mot. Calcul : `web/js/analysis/am_supports.js`.
+
 Ce que chaque métal demande après la fusion (c'est dans la gamme de la pièce et dans la règle `AM-17`) :
 
 | Matière | Norme | Suite |

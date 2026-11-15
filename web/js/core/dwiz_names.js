@@ -18,14 +18,14 @@ const part = {
   sections: [
     ["Pourquoi — l'intention de conception", ["function", "intent", "order"]],
     ["À quoi elle se raccorde — ses interfaces, le contrat avec les pièces voisines", ["interfaces"]],
-    ["De quoi elle est faite — matière, procédé, matière première, moulage", ["material", "process", "family", "finish", "elec", "stock", "mold"]],
+    ["De quoi elle est faite — matière, procédé, matière première, moulage", ["material", "process", "family", "finish", "elec", "stock", "mold", "print"]],
     ["Ses poignées — les paramètres que l'on règle", ["params"]],
     ["Comment elle se fait — les opérations, dans l'ordre de l'atelier", ["extrusion", "pcb", "features", "bodies"]],
     ["Ce qu'il faut savoir — notes du dessin, révision, hypothèses", ["notes", "revision", "interview"]],
     ["Ce qui se dit avec le fournisseur — la gamme annotée : une note par phase, les points à voir", ["plan"]],
   ],
   kids: {
-    intent: {}, order: {}, elec: {}, mold: {}, characteristics: {}, library: {}, busbar: {}, laminate: {}, thermal: {}, fill: {}, flex: {},
+    intent: {}, order: {}, elec: {}, mold: {}, print: {}, characteristics: {}, library: {}, busbar: {}, laminate: {}, thermal: {}, fill: {}, flex: {},
     interfaces: { word: "interface", head: ["id", "type"], first: ["side", "face", "at", "level", "rot", "key", "partner", "name"], kids: { params: {}, opts: {} } },
     stock: { head: ["form"] },
     params: { word: "param", keyed: true, head: ["value"] },

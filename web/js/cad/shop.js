@@ -7,7 +7,7 @@
 
 import { thread, clearanceHole, END_MILLS } from "./standards.js";
 import { stockFeatures, stockForm } from "./stock.js";
-import { AM_PROCESSES, printSteps, cutStep } from "./special_processes.js";
+import { AM_PROCESSES, printSteps, cutStep, DIR_WORDS, buildDir } from "./special_processes.js";
 import { evalDeep } from "./expr.js";
 import { FACES, faceKey } from "./vec.js";
 import { PROCESSES } from "./materials.js";
@@ -149,7 +149,7 @@ export function routing(spec, built) {
   } else if (spec.extrusion) { add("stock", "Extruder le profilé (filière dédiée)"); add("cut", "Couper à longueur"); }
   else if (spec.pcb) add("stock", "Fabriquer le circuit imprimé (panneau FR4), détourer");
   else if (!NEAR_NET[proc] && proc !== "purchased") add("stock", "Brut à définir : la pièce ne déclare pas sa matière première (« stock »)");
-  const nearLines = AM_PROCESSES[proc] ? printSteps(proc, spec.material) : NEAR_NET[proc] || [];
+  const nearLines = AM_PROCESSES[proc] ? printSteps(proc, spec.material).map((x, i) => (i === 0 && spec.print && spec.print.dir ? `${x} — ${DIR_WORDS[buildDir(spec)]}` : x)) : NEAR_NET[proc] || [];
   for (const line of nearLines) add("machine", line);
 
   let feats = [];

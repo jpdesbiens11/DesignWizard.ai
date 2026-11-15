@@ -8,6 +8,7 @@ import { rule, num, round, groupBy } from "./dfx_core.js";
 import { LASER_FAMILIES, laserProfile, laserLimits, AM_PROCESSES, AM_MATERIALS, amMaterial, amLimits } from "../cad/special_processes.js";
 import { sheetThickness, holeSides } from "./dfx_rules_sheet.js";
 import { PROCESSES, material } from "../cad/materials.js";
+import { supportReport, rankDirections, buildDir, DIR_WORDS } from "./am_supports.js";
 
 const S = { laser: "Fabricants de machines laser, gazier, guide de conception des tôles découpées, publications sur la découpe laser des cartes — docs/PROCEDES.md",
   am: "ISO/ASTM 52911-1 (titre lu, texte non lu) ; guides de conception de fabricants de machines et de services d'impression — docs/PROCEDES.md",
@@ -40,7 +41,7 @@ const STEPS_METAL = ["Choisir la matière pour sa norme et son traitement, pas p
   "Laisser de la matière sur chaque surface fonctionnelle, et dire comment la pièce se reprend", "Écrire la chaîne après fusion : détente, séparation, compaction, traitement, usinage, contrôle"];
 export const BOOK_SPECIAL = [
   { process: "laser_cut", category: "DFM", steps: STEPS_LASER, rules: LASER_RULES },
-  { process: "fdm", category: "DFM", steps: [], rules: [A.a10, A.a17] }, { process: "mjf", category: "DFM", steps: [], rules: [A.a10, A.a14, A.a17] },
+  { process: "fdm", category: "DFM", steps: [], rules: [A.a10, A.a13, A.a17] }, { process: "mjf", category: "DFM", steps: [], rules: [A.a10, A.a14, A.a17] },
   { process: "sla", category: "DFM", steps: [], rules: [A.a10, A.a13, A.a14, A.a17] },
   { process: "lpbf", category: "DFM", steps: STEPS_METAL, rules: [A.a10, A.a11, A.a12, A.a13, A.a14, A.a15, A.a16, A.a17] },
 ];
@@ -141,7 +142,17 @@ export function checkAdditive(ctx) {
     });
   }
   ctx.run("AM-13", () => {
-    if (!P.supports || proc === "fdm") return;                    // FDM : HSG-10 says it
+    if (!P.supports) return;
+    const mesh = ctx.geo && ctx.geo.mesh;
+    if (mesh && mesh.pos && mesh.idx) {                          // measured on the real geometry, in the direction the part is printed
+      const dir = buildDir(ctx.spec), o = { hole: P.hHole }, R = supportReport(mesh, dir, P.overhang, o), best = rankDirections(mesh, P.overhang, o)[0], better = best.dir !== dir && best.area < 0.8 * R.area - 1;
+      if (R.area < 1) return;
+      ctx.add("AM-13", { value: Math.round(R.area), limit: 0, unit: "mm² à supporter",
+        message: `Imprimée ${DIR_WORDS[dir]} : ${num(R.area, 0)} mm² de surfaces à moins de ${P.overhang}° du plateau demandent des supports (${num(100 * R.share, 0)} % de la surface de la pièce${R.faces ? `, sur ${R.faces} face(s)` : ""}) ; hauteur de fabrication ${num(R.height, 1)} mm. Limite : surplomb ≥ ${P.overhang}° du plateau.${better ? ` Imprimée ${DIR_WORDS[best.dir]}, il n'en reste que ${num(best.area, 0)} mm².` : ""} Correctif : ${better ? "changer le sens d'impression (onglet Impression), ou " : ""}${metal ? "chanfreiner les surplombs, dessiner les trous horizontaux en goutte d'eau — chaque support est du métal à retirer" : "chanfreiner les surplombs, ou accepter les marques de supports hors des faces vues"}.`,
+        fix: better ? ctx.fix(`Imprimer ${DIR_WORDS[best.dir]}`, { target: "spec", id: null, path: "print.dir", value: best.dir }) : null });
+      return;
+    }
+    if (proc === "fdm") return;                                  // no mesh : for FDM the housing rule HSG-10 reads the operations
     const big = P.hHole;
     const items = [...(big > 0 ? groupBy(facts.holes.filter((h) => h.axis && Math.abs(h.axis[2]) < 0.5 && h.d > big), (h) => h.source).map((g) => `trou horizontal Ø${num(g[0].d)} « ${g[0].source} »`) : []),
       ...facts.pockets.filter((p) => p.face && FACES[p.face] && FACES[p.face].axis !== 2 && Math.min(p.w, p.h) > P.bridge).map((p) => `ouverture latérale « ${p.source} » (linteau de ${mm(Math.min(p.w, p.h))})`),
