@@ -208,7 +208,8 @@ main h1 { font-family: var(--hand); display: inline; padding: 0 .2em; -webkit-bo
 .studio.left-off > .split.left { left: 0; } .studio.right-off > .split.right { right: 0; }
 .split::after { content: ""; position: absolute; left: 4px; top: 0; bottom: 0; width: 3px; border-radius: 2px; background: transparent; transition: background .15s; pointer-events: none; }
 .split:hover::after, .split.drag::after, .split:focus-visible::after { background: var(--acc); }
-.split-btn { position: absolute; z-index: 1; top: 50%; left: -6px; width: 22px; height: 46px; translate: 0 -50%; padding: 0; border: 1.4px solid var(--graphite); border-radius: 8px; background: var(--surface); color: var(--graphite); font: 700 1rem/1 var(--font); cursor: pointer; opacity: 0; transition: opacity .15s; box-shadow: var(--shadow-sketch); }
+.split-btn { position: absolute; z-index: 1; top: 50%; left: -6px; width: 22px; height: 46px; translate: 0 -50%; padding: 0; border: 1.4px solid var(--graphite); border-radius: 8px; background: var(--surface); color: var(--graphite); font: 700 1rem/1 var(--font); cursor: pointer; opacity: .9; transition: opacity .15s, background .15s; box-shadow: var(--shadow-sketch); }
+.split-btn:hover, .split-btn:focus-visible { background: var(--acc); color: var(--on-acc); }
 .split:hover .split-btn, .split:focus-visible .split-btn, .split-btn:focus-visible, .studio.left-off > .split.left .split-btn, .studio.right-off > .split.right .split-btn { opacity: 1; }
 .studio.left-off > .split.left .split-btn { left: 2px; } .studio.right-off > .split.right .split-btn { left: -14px; }
 .studio.left-off > .side:not(.right), .studio.right-off > .side.right { visibility: hidden; overflow: hidden; min-width: 0; }

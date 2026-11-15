@@ -189,3 +189,9 @@ button.plan-pick { cursor: pointer; } button.plan-pick:hover { background: color
 .bc-ask { flex: none; font-size: .7rem; font-weight: 650; color: var(--warn-ink); background: color-mix(in srgb, var(--hl-yellow) 55%, transparent); border-radius: 99px; padding: .02rem .4rem; }
 .bc-val.ask .ask-ok { flex: none; color: var(--ok); }
 @keyframes need-edge { 0%, 100% { border-left-color: var(--warn); } 50% { border-left-color: transparent; } }
+/* Simulation : the switch between the model and the result, the safety factor and its legend */
+.seg.text .seg-btn { width: auto; height: auto; padding: .28rem .65rem; font: inherit; font-size: .84rem; white-space: nowrap; color: var(--ink); } .seg.text .seg-btn.on { font-weight: 650; } .seg.text .seg-btn:disabled { opacity: .45; cursor: default; }
+.chip-btn { border: 1.4px solid var(--line); border-radius: 99px; background: var(--surface); color: var(--ink); font: inherit; font-size: .78rem; padding: .08rem .45rem; cursor: pointer; } .chip-btn.on { background: color-mix(in srgb, var(--acc) 30%, transparent); border-color: var(--graphite); font-weight: 650; }
+.fs-legend { display: grid; gap: .18rem; margin: .45rem 0; } .fs-band { display: grid; grid-template-columns: 2.4rem 5.8rem 1fr; gap: .45rem; align-items: center; font-size: .82rem; }
+.fs-band i { height: .85rem; border-radius: 4px; border: 1px solid color-mix(in srgb, var(--graphite) 25%, transparent); } .fs-band b { font-family: var(--mono); font-weight: 600; font-size: .78rem; } .fs-band small { color: var(--muted); }
+.kpi.fs-yield b, .kpi.fs-under b { color: #dc2626; } .kpi.fs-tight b { color: #c2410c; } .kpi.fs-ok b { color: #1d4ed8; } .kpi.fs-ample b { color: #15803d; }

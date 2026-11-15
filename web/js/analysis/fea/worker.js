@@ -1,6 +1,7 @@
 /* DesignWizard.ai — the simulation runs here, off the page, so the interface stays alive while the solver iterates. */
 
 import { buildModel, solveStructure, solveThermal, skin } from "./index.js";
+import { exposedFaces } from "./voxel.js";
 import { nominalStress, coreStress } from "./precheck.js";
 import { reduceModel, cutSetup } from "./symmetry.js";
 
@@ -21,7 +22,9 @@ function solve(kind, bodies, mesh, load, scale, progress, cuts) {
   }
   const r = solveStructure(model, cutSetup(model, thermal ? { fixed: load.fixed, loads: load.loads || [], thermal } : load, "structure"), progress), b = model.bbox, diag = Math.hypot(b[3] - b[0], b[4] - b[1], b[5] - b[2]);
   const k = scale ?? (r.maxU.value > 0 ? Math.max(1, 0.06 * diag / r.maxU.value) : 1);
-  return { info, skin: skin(model, r.vm, { u: r.u, scale: k }),
+  /* the yield strength of the body of each exposed face : the safety factor is painted from it (0 : unknown) */
+  const faces = exposedFaces(model), re = Float32Array.from(faces.elem, (e) => { const m = model.bodies[model.elemBody[e]]; return (m && m.material && m.material.Re) || 0; });
+  return { info, skin: { ...skin(model, r.vm, { u: r.u, scale: k }), re },
     result: { maxU: r.maxU, maxVm: r.maxVm, nominalVm: nominalStress(model, load, r.vm), coreVm: kind === "thermo" ? coreStress(model, load, r.vm) : null, reaction: r.reaction, energy: r.energy,
       dofs: r.dofs, iterations: r.iterations, residual: r.residual, ms: r.ms, scale: k, ...(temps || {}) } };
 }
@@ -33,7 +36,7 @@ self.onmessage = (e) => {
     for (;;) {
       try {
         const out = solve(kind, bodies, mesh, load, scale, progress, e.data.cuts), s = out.skin;
-        self.postMessage({ id, ok: true, result: out.result, info: { ...out.info, dropped }, skin: s }, [s.pos.buffer, s.idx.buffer, s.val.buffer, s.epos.buffer]);
+        self.postMessage({ id, ok: true, result: out.result, info: { ...out.info, dropped }, skin: s }, [s.pos.buffer, s.idx.buffer, s.val.buffer, s.epos.buffer, ...(s.re ? [s.re.buffer] : [])]);
         return;
       } catch (err) {
         // a body that touches nothing held (a small component lost by the coarse mesh) is left out, and said so

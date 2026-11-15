@@ -15,13 +15,16 @@ test("a panel takes the width it is dragged to, between what stays readable and 
   assert.deepEqual(dragPane({ ...st, leftOff: true }, "left", 380, 1600), { ...st, left: 380 }, "dragged out again, it is back");
 });
 
-test("each screen remembers its own panels ; what cannot be read gives the defaults", () => {
+test("the panels are remembered once, for every screen ; what cannot be read gives the defaults", () => {
   const blank = { left: PANE.left, right: PANE.right, leftOff: false, rightOff: false };
   for (const bad of ["", null, "{", "[1]", '"x"', '{"creepage":7}']) assert.deepEqual(readPanes(bad, "creepage"), blank, String(bad));
-  let text = writePanes("", "creepage", { left: 480, right: 340, leftOff: false, rightOff: true }); text = writePanes(text, "fea", { left: 260, right: 400, leftOff: true, rightOff: false });
-  assert.deepEqual(readPanes(text, "creepage"), { left: 480, right: 340, leftOff: false, rightOff: true }); assert.deepEqual(readPanes(text, "fea"), { left: 260, right: 400, leftOff: true, rightOff: false }); assert.deepEqual(readPanes(text, "parts"), blank);
-  assert.deepEqual(readPanes('{"x":{"left":9999,"right":-4}}', "x"), { left: PANE.max, right: PANE.right, leftOff: false, rightOff: false }, "a width out of range is brought back");
-  assert.equal(JSON.parse(writePanes("pas du json", "a", blank)).a.left, PANE.left);
+  let text = writePanes("", "creepage", { left: 480, right: 340, leftOff: false, rightOff: true });
+  for (const screen of ["creepage", "fea", "parts"]) assert.deepEqual(readPanes(text, screen), { left: 480, right: 340, leftOff: false, rightOff: true }, `widened in the Isolation, the panel has the same width in « ${screen} »`);
+  text = writePanes(text, "fea", { left: 260, right: 400, leftOff: true, rightOff: false });
+  assert.deepEqual(readPanes(text, "creepage"), { left: 260, right: 400, leftOff: true, rightOff: false }, "hidden in one screen, hidden in the next : one button, one state");
+  assert.deepEqual(readPanes('{"x":{"left":9999,"right":-4}}', "x"), { left: PANE.max, right: PANE.right, leftOff: false, rightOff: false }, "what an earlier version kept for one screen is a start ; a width out of range is brought back");
+  assert.deepEqual(readPanes('{"x":{"left":500},"*":{"left":320}}', "x").left, 320, "the shared state wins over an old one");
+  assert.deepEqual(Object.keys(JSON.parse(writePanes('{"creepage":{"left":480}}', "a", blank))), [PANE.all], "the old per-screen entries are dropped"); assert.equal(JSON.parse(writePanes("pas du json", "a", blank))[PANE.all].left, PANE.left);
 });
 
 test("Isolation : the bodies are grouped by what they are — conductors by potential, in the colour of their net", () => {

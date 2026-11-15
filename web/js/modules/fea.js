@@ -25,11 +25,13 @@ import { caseIssues, blocking } from "../analysis/fea/case_check.js";
 import { guideBox, guideSummary, nudge } from "../core/guide.js";
 import { bcTree, bcFind, bcLabels, BC_COLORS } from "../analysis/fea/bc_tree.js";
 import { bcSection } from "./fea_tree.js";
+import { viewSwitch, resultPanel } from "./fea_result.js";
+import { safetyField, safetySummary, fsColour } from "../analysis/fea/safety.js";
 
 const FACES = [["-X", "gauche (−X)"], ["+X", "droite (+X)"], ["-Y", "avant (−Y)"], ["+Y", "arrière (+Y)"], ["-Z", "dessous (−Z)"], ["+Z", "dessus (+Z)"]];
 const TOWARD = { "-X": "la gauche (−X)", "+X": "la droite (+X)", "-Y": "l'avant (−Y)", "+Y": "l'arrière (+Y)", "-Z": "le bas (−Z)", "+Z": "le haut (+Z)" };
 const DIRS = { "+X": [1, 0, 0], "-X": [-1, 0, 0], "+Y": [0, 1, 0], "-Y": [0, -1, 0], "+Z": [0, 0, 1], "-Z": [0, 0, -1] };
-const st = { target: null, kind: "structure", cells: 3000, cuts: [], fixed: [], loads: [], power: [], fixedT: [], conv: { on: true, h: 10, Tamb: 25 }, thermo: { uniform: true, T: 80, Tref: 20 }, sel: null, show: {} };      // sel : the item of the load case that is selected (A1, E2…) ; show : the labels of a type, on or off
+const st = { target: null, kind: "structure", cells: 3000, cuts: [], fixed: [], loads: [], power: [], fixedT: [], conv: { on: true, h: 10, Tamb: 25 }, thermo: { uniform: true, T: 80, Tref: 20 }, sel: null, show: {}, view: "model", quantity: "stress", fsTarget: 1.5 };      // sel : the item of the load case that is selected (A1, E2…) ; show : the labels of a type, on or off ; view : the model with its conditions, or the last result ; quantity : what the colours of a result show (stress or safety factor, against fsTarget)
 let seq = 0;
 
 /** Material of a body for the simulation (typical values; the data sheet of the grade prevails). */
@@ -50,9 +52,9 @@ function render(main, args) {
   if (!targets.length) { root.replaceWith(el("div", { class: "page" }, el("div", { class: "empty" }, el("h2", null, "Rien à simuler"), el("p", null, "Créez d'abord une pièce dans l'Atelier."), el("a", { class: "btn btn-primary", href: "#/shop" }, "Aller à l'Atelier")))); return null; }
   if (args[0] && targets.some((t) => t.id === args[0])) st.target = targets.find((t) => t.id === args[0]);
   if (!st.target || !targets.some((t) => t.id === st.target.id)) { st.target = targets[0]; st.fixed = []; st.loads = []; st.power = []; st.fixedT = []; st.cuts = []; st.sel = null; }
-  const vp = createViewport(view, { name: () => `${st.target.id}_simulation`, menuFor: (hit) => { const own = regionMenu(hit), cut = whole ? cutMenu(hit, st, () => { last = null; remesh(false); }) : []; return [...own, ...(own.length && cut.length ? ["—"] : []), ...cut]; }, onPick: (hit) => { if (!asking) return false; pickRegion(hit); return true; }, onHover: (hit) => { if (asking) { vp.viewer.clearOverlays("bchover"); const k = regionAt(hit); if (k) lightRegion(k, LIT.hover, "bchover"); } } }), info = el("span", { class: "chip" }, "—");
-  vp.setStatus(info);
-  let geo = null, model = null, whole = null, syms = [], regions = [], estimate = null, last = null, worker = null, alive = true, asking = null;      // whole : the product entire ; model : what is solved — the same, or what the cuts keep
+  const vp = createViewport(view, { name: () => `${st.target.id}_simulation`, menuFor: (hit) => { if (st.view === "result") return [{ title: `Résultat ${last ? last.n : ""} affiché` }, { label: "Revenir au modèle pour modifier le cas", icon: "edit", run: () => setView("model") }];
+      const own = regionMenu(hit), cut = whole ? cutMenu(hit, st, () => { outdate(); remesh(false); }) : []; return [...own, ...(own.length && cut.length ? ["—"] : []), ...cut]; }, onPick: (hit) => { if (!asking) return false; pickRegion(hit); return true; }, onHover: (hit) => { if (asking) { vp.viewer.clearOverlays("bchover"); const k = regionAt(hit); if (k) lightRegion(k, LIT.hover, "bchover"); } } }), info = el("span", { class: "chip" }, "—");
+  let geo = null, model = null, whole = null, syms = [], regions = [], estimate = null, last = null, runs = [], worker = null, alive = true, asking = null;      // whole : the product entire ; model : what is solved — the same, or what the cuts keep
 
   /* ---------- pointing at the part : a face or an interface is chosen in the view, and what is chosen shows ---------- */
   /* a face the designer pointed at — an inner wall, a floor, a step — is a region too : its key finds it again on every mesh */
@@ -69,7 +71,7 @@ function render(main, args) {
   /** The region under a pick : an interface when the point is on one ; the whole side of the product when the point is on its
       outermost plane ; otherwise the face pointed at, whatever it is — inside a housing, under a cover, at the bottom of a pocket. */
   function regionAt(hit) {
-    if (!hit || !model) return null;
+    if (!hit || !model || st.view === "result") return null;      // a result is looked at ; the case is changed on the model
     const p = hit.point, h = model.grid.h, b = whole.bbox;      // a face of the product, not the face of a cut
     for (const r of regions) if (r.key.startsWith("iface:")) for (const it of r.list) {
       if (it.near && Math.hypot(p[0] - it.near[0], p[1] - it.near[1], p[2] - it.near[2]) <= Math.max(1.5 * it.r, 2 * h)) return r.key;
@@ -94,7 +96,7 @@ function render(main, args) {
   }
   function lightRegion(key, color, tag) {
     if (key.startsWith("face:")) { if (stillThere(key.slice(5), keptBox())) lightSide(vp.viewer, key.slice(5), { tag, color, ids: ["fea"] }); }
-    else if (key.startsWith("patch:")) { const r = patchRegion(key); if (r && !r.gone && model) lightTriangles(vp.viewer, "fea", patchFlags(model, r.patch), 1, { color, tag, opacity: 0.6 }); }
+    else if (key.startsWith("patch:")) { const r = patchRegion(key); if (r && !r.gone && model && st.view === "model") lightTriangles(vp.viewer, "fea", patchFlags(model, r.patch), 1, { color, tag, opacity: 0.6 }); }
     else for (const s of spots(key)) vp.viewer.addMarker(s.p, color, tag, 2.2);
   }
   function pickRegion(hit) {
@@ -143,7 +145,7 @@ function render(main, args) {
 
   /* ---------- geometry and mesh ---------- */
   async function loadGeometry() {
-    vp.setBusy("Construction de la géométrie…"); last = null;
+    vp.setBusy("Construction de la géométrie…"); last = null; runs = []; st.view = "model";
     try {
       if (st.target.type === "part") {
         const built = await kernel.build(store.part(st.target.id));
@@ -180,7 +182,7 @@ function render(main, args) {
       st.loads[0].ask = [st.loads[0].mode === "pressure" ? "p" : "F"];      // a first case to start from : its values are examples, the designer enters his own
       st.power = [{ region: "face:-Z", P: 5, ask: ["P"] }]; st.fixedT = []; st.sel = st.kind === "structure" ? "E1" : st.kind === "thermal" ? "Q1" : st.sel;      // the value that waits is open, where the eye falls
     }
-    showMesh(); drawLeft(); refreshEstimate();
+    showMesh(); drawLeft(); refreshEstimate(); drawSwitch();
     if (first) vp.viewer.view("iso");
     vp.setBusy("");
   }
@@ -188,6 +190,22 @@ function render(main, args) {
     const s = skin(model, null), col = new Float32Array(s.pos.length).fill(0.72);
     vp.viewer.clear(); vp.viewer.addField("fea", { pos: s.pos, idx: s.idx, col, epos: s.epos, pickable: true });
     info.textContent = `${model.cut ? `Modèle ${fraction(model.cut.copies)} · ` : ""}${model.nCells.toLocaleString("fr-CA")} cubes de ${fmt(model.grid.h, 2)} mm · ${model.nNodes.toLocaleString("fr-CA")} nœuds`; info.className = "chip";
+  }
+  /* ---------- the two views : the model with its conditions, the last result ---------- */
+  /** The case or the mesh changed : the result is kept, said to be of before, and the model comes back to the view. */
+  const outdate = () => { if (last) last.stale = true; st.view = "model"; };
+  const drawSwitch = () => vp.setStatus(viewSwitch({ view: st.view, last, onView: setView }), info);
+  function setView(v) {
+    st.view = v === "result" && last && last.skin ? "result" : "model"; asking = null; view.style.cursor = "";
+    const o = vp.viewer; o.clearOverlays("bc"); o.clearOverlays("bchover"); o.clearOverlays("bcsel");
+    if (st.view === "result") { paint(); peak(); drawSymbols(); drawRight(); } else { showMesh(); refreshEstimate(); }
+    drawSwitch();
+  }
+  /* the worst point of the result shown, with its value : the peak stress or temperature, or the smallest safety factor */
+  function peak() {
+    const o = vp.viewer, thermal = last.kind === "thermal", p = thermal ? last.result.maxT : last.result.maxVm; o.clearOverlays("bc");
+    if (!thermal && st.quantity === "fs" && last.fs) { const S = safetySummary(last.fs, st.fsTarget); if (S.min !== null && S.at >= 0) { const at = Array.from(last.skin.pos.subarray(3 * S.at, 3 * S.at + 3)); o.addMarker(at, "#ff5a4f", "bc", 1.8); o.addLabel(at, `FS ${Number.isFinite(S.min) ? show(S.min, 2) : "∞"}`, "bc", S.min < st.fsTarget ? "err" : ""); } return; }
+    o.addMarker(p.at, "#ff5a4f", "bc", 1.8); o.addLabel(p.at, thermal ? `${show(p.value, 1)} °C` : `${show(p.value, 1)} MPa`, "bc", "err");
   }
   /** The simple regions of a choice: one for a face, one per screw for a bolted interface (the effort is shared between them). */
   const listOf = (key) => (regionOf(key) || regions[0]).list;
@@ -224,7 +242,7 @@ function render(main, args) {
   /* ---------- left: what is simulated and how it is held and loaded ---------- */
   const sel = (value, opts, onChange) => el("select", { onChange: (e) => onChange(e.target.value) }, opts.map(([k, l]) => el("option", { value: k, selected: k === value }, l)));
   const num = (value, onChange, step = "any") => el("input", { type: "number", value, step, onChange: (e) => { const x = parseFloat(e.target.value); if (Number.isFinite(x)) onChange(x); } });
-  const changed = () => { last = null; showMesh(); drawLeft(); refreshEstimate(); };
+  const changed = () => { outdate(); showMesh(); drawLeft(); refreshEstimate(); drawSwitch(); };
   /* a field that loses the focus while the panel is redrawn asks for a redraw of its own : one at a time, the last one wins */
   let drawing = false, again = false;
   function drawLeft() { if (drawing) { again = true; return; } drawing = true; try { paintLeft(); } finally { drawing = false; if (again) { again = false; drawLeft(); } } }
@@ -236,14 +254,14 @@ function render(main, args) {
     scroll.append(el("div", { class: "subtabs" }, el("a", { class: "subtab", href: "#/physics" }, "Modèles analytiques"), el("a", { class: "subtab active", href: "#/fea" }, "Simulation")),
       el("div", { class: "side-section" }, field("Ce que l'on simule", sel(st.target.id, targets.map((t) => [t.id, `${t.type === "part" ? "Pièce" : "Assemblage"} — ${t.name}`]), (id) => { st.target = targets.find((t) => t.id === id); st.fixed = []; loadGeometry(); })),
         field("Physique", sel(st.kind, [["structure", "Structure — efforts et déformations"], ["thermal", "Thermique — régime permanent"], ["thermo", "Thermo-mécanique — dilatation et contraintes"]], (k) => { st.kind = k; changed(); })),
-        field("Finesse du maillage", el("input", { type: "range", min: 500, max: 16000, step: 500, value: st.cells, onChange: (e) => { st.cells = +e.target.value; last = null; remesh(false); } }), `Environ ${st.cells.toLocaleString("fr-CA")} cubes : grossier et rapide. Les détails plus petits qu'un cube sont ignorés.`)));
+        field("Finesse du maillage", el("input", { type: "range", min: 500, max: 16000, step: 500, value: st.cells, onChange: (e) => { st.cells = +e.target.value; outdate(); remesh(false); } }), `Environ ${st.cells.toLocaleString("fr-CA")} cubes : grossier et rapide. Les détails plus petits qu'un cube sont ignorés.`)));
     const sec = el("div", { class: "side-section" });
     scroll.append(sec);
-    if (whole) scroll.append(cutsSection({ st, kind: st.kind, syms, bbox: whole.bbox, symmetric, apply: () => { last = null; remesh(false); } }));
+    if (whole) scroll.append(cutsSection({ st, kind: st.kind, syms, bbox: whole.bbox, symmetric, apply: () => { outdate(); remesh(false); } }));
     const heat = st.kind === "thermal" || (st.kind === "thermo" && !st.thermo.uniform);
     if (st.sel && !bcFind(loadTree(), st.sel)) st.sel = null;
     const DEFAULT = { fixed: () => regions[0].key, loads: () => ({ region: regions[1].key, mode: "force", F: 100, dir: "-Z", p: 0.1, ask: ["F"] }), power: () => ({ region: regions[0].key, P: 5, ask: ["P"] }), fixedT: () => ({ region: regions[5].key, T: 25, ask: ["T"] }) };
-    const aim = (set) => { asking = set; view.style.cursor = "crosshair"; toast("Cliquez une face du produit, extérieure ou intérieure, ou une interface : elle s'allume sous le curseur. Face cachée ? Tournez la vue ou coupez-la.", "info", 4200); };
+    const aim = (set) => { if (st.view === "result") setView("model"); asking = set; view.style.cursor = "crosshair"; toast("Cliquez une face du produit, extérieure ou intérieure, ou une interface : elle s'allume sous le curseur. Face cachée ? Tournez la vue ou coupez-la.", "info", 4200); };
     const go = (x) => { if (x.id && st.sel !== x.id) select(x.id); setTimeout(() => { if (alive) nudge(left.querySelector(x.field ? `.bc-edit [data-field="${x.field}"]` : x.id ? `[data-bc="${x.id}"]` : ".bc-tree")); }, 90); };
     sec.append(el("h3", null, "Cas de charge"), ...[guideBox(issues(), { go })].filter(Boolean), bcSection({ st, tree: loadTree(), regions: [...regions, ...usedPatches()], dirs: DIRS, select, changed, aim, relabel: () => { drawLeft(); drawSymbols(); },
       hover: (k, color) => { vp.viewer.clearOverlays("bchover"); if (k && !asking) lightRegion(k, color || LIT.named, "bchover"); },
@@ -272,38 +290,22 @@ function render(main, args) {
     body.append(el("div", { class: "side-section" }, el("h3", null, "1. Avant de calculer — l'estimation à la main"), el("p", { class: "small" }, el("b", null, estimate.title)),
       el("ol", { class: "calc-steps" }, estimate.steps.map((s) => el("li", null, s))), ...estimate.warnings.map((w) => el("p", { class: "atelier-hint warn" }, icon("warning"), " ", w))));
     const go = btn(last ? "Relancer la simulation" : "Lancer la simulation", () => run(), { primary: true, icon: "play" }), wait = blocking(issues());
+    const flip = last && last.skin ? btn(st.view === "result" ? "Revenir au modèle" : `Voir le résultat ${last.n}`, () => setView(st.view === "result" ? "model" : "result"), { icon: st.view === "result" ? "edit" : "eye", tip: st.view === "result" ? "Le modèle, ses appuis, ses efforts et leurs étiquettes : pour modifier le cas" : "Le dernier calcul, en couleurs" }) : null;
     body.append(el("div", { class: "side-section" }, el("h3", null, "2. La simulation"), el("p", { class: "muted small" }, "Cubes identiques, hexaèdre à modes incompatibles (flexion juste même avec un élément dans l'épaisseur), gradient conjugué. Tout le code du solveur est dans ce dépôt, sous licence MIT."),
-      el("div", { class: "form-actions", style: { justifyContent: "flex-start" } }, go),
+      el("div", { class: "form-actions", style: { justifyContent: "flex-start", flexWrap: "wrap" } }, go, flip),
       ...(wait.length ? [el("p", { class: "atelier-hint warn" }, icon("warning"), ` Avant de lancer — ${guideSummary(wait)}, dans le cas de charge à gauche.`)] : [])));
     if (!last) return;
-    const r = last.result, c = last.compare, mat = geo.bodies[0].material, sf = st.kind !== "thermal" && mat.Re ? mat.Re / r.maxVm.value : null;
-    body.append(el("div", { class: "kpis" }, ...(st.kind === "thermal"
-      ? [el("div", { class: "kpi" }, el("b", null, `${show(r.maxT.value, 1)} °C`), el("span", null, "Température maximale")), el("div", { class: "kpi" }, el("b", null, `${show(r.minT.value, 1)} °C`), el("span", null, "Température minimale")), el("div", { class: "kpi" }, el("b", null, `${show(r.balance.out, 2)} W`), el("span", null, `évacués sur ${show(r.balance.in, 2)} W`))]
-      : [el("div", { class: "kpi" }, el("b", null, `${show(r.maxVm.value, 1)} MPa`), el("span", null, `Contrainte de pointe${r.nominalVm ? ` · nominale ${show(r.nominalVm.value, 1)}` : ""}`)), el("div", { class: "kpi" }, el("b", null, `${show(r.maxU.value)} mm`), el("span", null, "Déplacement maximal")), el("div", { class: "kpi" }, el("b", null, sf ? show(sf, 2) : "—"), el("span", null, "Marge Re / σ de pointe")),
-        ...(st.kind === "thermo" ? [el("div", { class: "kpi" }, el("b", null, `${show(r.maxT.value, 1)} °C`), el("span", null, r.minT.value === r.maxT.value ? "Température uniforme" : `Température, de ${show(r.minT.value, 1)} °C`))] : [])])));
-    const unit = st.kind === "thermal" ? "°C" : "MPa", [d0, d1] = last.data, span = (d1 - d0) || 1, clampV = (x) => Math.min(d1, Math.max(d0, x));
-    const lo = el("input", { type: "number", step: "any", value: +last.range[0].toPrecision(4), "aria-label": "Bas de l'échelle" }), hi = el("input", { type: "number", step: "any", value: +last.range[1].toPrecision(4), "aria-label": "Haut de l'échelle" });
-    const sLo = el("input", { type: "range", min: 0, max: 1000, value: Math.round(1000 * (last.range[0] - d0) / span), "aria-label": "Bas de l'échelle (curseur)" }), sHi = el("input", { type: "range", min: 0, max: 1000, value: Math.round(1000 * (last.range[1] - d0) / span), "aria-label": "Haut de l'échelle (curseur)" });
-    const out = el("p", { class: "muted small" }), tell = () => { out.textContent = last.range[0] > d0 || last.range[1] < d1 ? `Résultat de ${show(d0, 1)} à ${show(d1, 1)} ${unit}. Hors échelle : au-dessus en magenta, en dessous en gris.` : `Échelle automatique : tout le résultat, de ${show(d0, 1)} à ${show(d1, 1)} ${unit}.`; };
-    const setRange = (a, b, from) => { if (!(b > a)) return; last.range = [a, b]; st.scale = a <= d0 && b >= d1 ? null : [a, b]; if (from !== "n") { lo.value = +a.toPrecision(4); hi.value = +b.toPrecision(4); } if (from !== "s") { sLo.value = Math.round(1000 * (clampV(a) - d0) / span); sHi.value = Math.round(1000 * (clampV(b) - d0) / span); } paint(); tell(); };
-    lo.addEventListener("input", () => setRange(parseFloat(lo.value), last.range[1], "n")); hi.addEventListener("input", () => setRange(last.range[0], parseFloat(hi.value), "n"));
-    sLo.addEventListener("input", () => setRange(d0 + span * Math.min(+sLo.value, +sHi.value - 5) / 1000, last.range[1], "s")); sHi.addEventListener("input", () => setRange(last.range[0], d0 + span * Math.max(+sHi.value, +sLo.value + 5) / 1000, "s"));
-    tell();
-    body.append(el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, `Échelle des couleurs (${unit})`), btn("Auto", () => setRange(d0, d1), { small: true, icon: "refresh", tip: "Revenir à l'échelle qui couvre tout le résultat" })),
-      el("div", { class: "fea-legend" }, lo, el("i"), hi), el("div", { class: "fea-scale" }, sLo, sHi), out,
-      st.kind !== "thermal" ? el("p", { class: "muted small" }, `Déformée amplifiée ${fmt(r.scale, 0)} fois.`) : null));
-    body.append(el("div", { class: "side-section" }, el("h3", null, "3. Le recoupement ", badge(VERDICT[c.verdict][0], VERDICT[c.verdict][1])),
-      c.rows.length ? table(["", "À la main", "Simulation", "Écart"], c.rows.map((x) => [x.label, x.low !== undefined ? `${show(x.low, 2)} à ${show(x.analytic, 2)} ${x.unit}` : `${x.bound ? "au plus " : ""}${show(x.analytic, 2)} ${x.unit}`, `${show(x.fea, 2)} ${x.unit}`, x.deviation === null ? "—" : x.low !== undefined && x.deviation === 0 ? "dans la fourchette" : x.bound && x.deviation === 0 ? `sous la borne${x.note ? ` (${x.note})` : ""}` : `${x.deviation > 0 ? "+" : ""}${Math.round(x.deviation * 100)} %`])) : null,
-      el("p", { class: "small" }, c.text), ...(c.notes || []).map((t) => el("p", { class: "atelier-hint warn" }, icon("warning"), " ", t)),
-      last.info.dropped && last.info.dropped.length ? el("p", { class: "atelier-hint" }, icon("info"), ` ${last.info.dropped.length} corps laissé(s) de côté, car le maillage grossier ne les relie à aucune pièce tenue : ${last.info.dropped.slice(0, 6).join(", ")}${last.info.dropped.length > 6 ? "…" : ""}.`) : null,
-      el("p", { class: "muted small" }, `${last.info.cells.toLocaleString("fr-CA")} cubes, ${r.dofs.toLocaleString("fr-CA")} inconnues, ${r.iterations} itérations, ${fmt(r.ms / 1000, 2)} s. La contrainte de pointe d'un maillage grossier est indicative : les concentrations locales (trous, congés, bord de l'encastrement) ne sont pas résolues.`),
-      el("div", { class: "form-actions" }, btn("Ajouter au rapport", () => keep(), { small: true, icon: "plus" }))));
+    resultPanel(body, { last, st, runs, mat: geo.bodies[0].material, keep, setView,
+      repaint: (only) => { if (st.view !== "result") { setView("result"); return; } paint(); peak(); if (!only) drawRight(); },
+      pick: (x) => { last = x; setView("result"); } });
   }
-  /** Paints the result with the current range of the colour scale : blue to red inside, magenta above, grey below. */
+  /** Paints the result : the stress (or the temperature) on the current scale — blue to red inside, magenta above, grey below — or the
+      safety factor against the one aimed at — red below it, then orange, blue, green. */
   function paint() {
     if (!last || !last.skin) return;
     const s = last.skin, [a, b] = last.range, col = new Float32Array(s.pos.length);
-    for (let i = 0; i < s.val.length; i++) { const x = s.val[i], c = x > b * (1 + 1e-9) + 1e-12 ? [0.85, 0.27, 0.94] : x < a - 1e-9 * Math.abs(a) - 1e-12 ? [0.62, 0.64, 0.68] : colour((x - a) / (b - a)); col[3 * i] = c[0]; col[3 * i + 1] = c[1]; col[3 * i + 2] = c[2]; }
+    if (st.quantity === "fs" && last.kind !== "thermal" && last.fs) for (let i = 0; i < last.fs.length; i++) { const c = fsColour(last.fs[i], st.fsTarget); col[3 * i] = c[0]; col[3 * i + 1] = c[1]; col[3 * i + 2] = c[2]; }
+    else for (let i = 0; i < s.val.length; i++) { const x = s.val[i], c = x > b * (1 + 1e-9) + 1e-12 ? [0.85, 0.27, 0.94] : x < a - 1e-9 * Math.abs(a) - 1e-12 ? [0.62, 0.64, 0.68] : colour((x - a) / (b - a)); col[3 * i] = c[0]; col[3 * i + 1] = c[1]; col[3 * i + 2] = c[2]; }
     vp.viewer.addField("fea", { pos: s.pos, idx: s.idx, col, epos: s.epos, pickable: true });
   }
   function run() {
@@ -321,22 +323,21 @@ function render(main, args) {
       vp.setBusy(""); worker.terminate(); worker = null;
       if (!m.ok) { setStatus("Simulation impossible", "bad"); toast(m.error, "error", 9000); return; }
       const s = m.skin, lo = kind === "thermal" ? m.result.minT.value : 0, hi = kind === "thermal" ? m.result.maxT.value : m.result.maxVm.value;
-      last = { skin: s, data: [lo, hi > lo ? hi : lo + 1], range: [lo, hi > lo ? hi : lo + 1] }; st.scale = null; paint();
-      const peak = kind === "thermal" ? m.result.maxT : m.result.maxVm;
-      vp.viewer.clearOverlays("bc"); vp.viewer.addMarker(peak.at, "#ff5a4f", "bc", 1.8); vp.viewer.addLabel(peak.at, kind === "thermal" ? `${show(peak.value, 1)} °C` : `${show(peak.value, 1)} MPa`, "bc", "err");
-      Object.assign(last, { result: m.result, info: m.info, compare: compare(kind, est, m.result), estimate: est });
+      last = { n: (runs.length ? runs[runs.length - 1].n : 0) + 1, kind, stale: false, skin: s, data: [lo, hi > lo ? hi : lo + 1], range: [lo, hi > lo ? hi : lo + 1], result: m.result, info: m.info, compare: compare(kind, est, m.result), estimate: est,
+        fs: kind !== "thermal" && s.re ? safetyField(s.val, s.re) : null };
+      runs.push(last); if (runs.length > 6) runs[runs.length - 7].skin = null;      // the six last trials can be shown again ; the older ones keep their figures
       setStatus(`Simulation : ${m.result.iterations} itérations, ${fmt(m.result.ms / 1000, 2)} s`, "done");
-      drawRight();
+      setView("result");
     };
     worker.onerror = (e) => { vp.setBusy(""); setStatus("Simulation impossible", "bad"); toast(`Le solveur s'est arrêté : ${e.message || "erreur inconnue"}.`, "error", 9000); };
     worker.postMessage({ id, kind, bodies: geo.bodies, mesh: { target: st.cells, planes: st.cuts }, cuts: st.cuts, load: loadCase() });
   }
   function keep() {
     if (!last) return;
-    const r = last.result, mat = geo.bodies[0].material, thermal = st.kind === "thermal", nominal = r.nominalVm ? r.nominalVm.value : null;
-    store.commit(`Simulation gardée : ${st.target.id}`, (x) => { x.simulations = x.simulations || []; x.simulations.push({ id: `S${x.simulations.length + 1}`, kind: st.kind, target: st.target.id, cells: last.info.cells, h: last.info.h, ...(last.info.cuts ? { cuts: last.info.cuts, copies: last.info.copies } : {}),
-      estimate: thermal ? { Tmax: last.estimate.values.Tmax } : { sigma: (st.kind === "thermo" && last.estimate.values.sigmaPlate) || last.estimate.values.sigma, delta: last.estimate.values.delta },
-      result: thermal ? { Tmax: r.maxT.value, Tmin: r.minT.value } : { sigma: r.maxVm.value, nominal, delta: r.maxU.value, sf: mat.Re ? mat.Re / r.maxVm.value : null, ...(st.kind === "thermo" ? { Tmax: r.maxT.value, core: r.coreVm ? r.coreVm.value : null } : {}) },
+    const r = last.result, mat = geo.bodies[0].material, thermal = last.kind === "thermal", nominal = r.nominalVm ? r.nominalVm.value : null;
+    store.commit(`Simulation gardée : ${st.target.id}`, (x) => { x.simulations = x.simulations || []; x.simulations.push({ id: `S${x.simulations.length + 1}`, kind: last.kind, target: st.target.id, cells: last.info.cells, h: last.info.h, ...(last.info.cuts ? { cuts: last.info.cuts, copies: last.info.copies } : {}),
+      estimate: thermal ? { Tmax: last.estimate.values.Tmax } : { sigma: (last.kind === "thermo" && last.estimate.values.sigmaPlate) || last.estimate.values.sigma, delta: last.estimate.values.delta },
+      result: thermal ? { Tmax: r.maxT.value, Tmin: r.minT.value } : { sigma: r.maxVm.value, nominal, delta: r.maxU.value, sf: mat.Re ? mat.Re / r.maxVm.value : null, ...(last.kind === "thermo" ? { Tmax: r.maxT.value, core: r.coreVm ? r.coreVm.value : null } : {}) },
       worst: last.compare.rows.length ? last.compare.worst : null, verdict: last.compare.verdict, when: new Date().toISOString() }); });
     toast("Simulation ajoutée au rapport de revue.", "success");
   }

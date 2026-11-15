@@ -131,6 +131,41 @@ mène à l'endroit, qui clignote un instant.
 Les règles sont pures et testées (`web/js/analysis/fea/case_check.js`, `caseIssues`) ; l'affichage est celui du guide
 commun à tous les écrans (`web/js/core/guide.js`).
 
+### Aller et venir entre le modèle et le résultat
+
+Deux vues, un bouton à deux positions en bas de la vue 3D (et le même à côté de « Lancer la simulation ») :
+
+- **Modèle et conditions** — le modèle en gris, ses appuis, ses efforts, ses sources et leurs étiquettes. C'est ici que
+  le cas se modifie : clic droit sur une face, valeurs à gauche.
+- **Résultat n** — le dernier calcul, en couleurs, avec son point le plus sévère.
+
+Un résultat n'est plus perdu quand on retouche le cas ou le maillage : il reste affichable, marqué « d'avant » jusqu'au
+prochain calcul. On regarde, on revient au modèle, on corrige, on relance : chaque calcul est un **essai** numéroté, et
+le panneau liste les essais de la séance (cubes, contrainte de pointe, déplacement, facteur de sécurité minimal). Les six
+derniers se réaffichent d'un clic. Un résultat qui ne bouge plus quand on affine le maillage ou qu'on précise les appuis
+est un résultat sur lequel on peut s'appuyer. Dans la vue « Résultat », un clic droit propose de revenir au modèle.
+
+### Le facteur de sécurité en couleurs
+
+« Ce que les couleurs montrent » bascule entre la **contrainte** (échelle réglable, comme avant) et le **facteur de
+sécurité** : la limite élastique du matériau divisée par la contrainte de von Mises, en chaque point — par corps dans un
+assemblage. Il se lit contre le **facteur visé** (1,25 · 1,5 · 2 · 3 · 4, ou toute valeur de 1 à 20) :
+
+| Couleur | Facteur | Lecture |
+|---|---|---|
+| Rouge sombre | sous 1 | au-delà de la limite élastique |
+| Rouge | de 1 au facteur visé | sous la marge visée |
+| Orange, de l'orangé à l'ambre | du facteur visé à 1,5 fois | marge juste |
+| Bleu, du bleu au cyan | de 1,5 à 3 fois | marge confortable |
+| Vert | 3 fois et plus | large marge — de la matière à gagner, peut-être |
+| Gris | — | limite élastique inconnue pour ce matériau |
+
+Le point le plus faible porte son étiquette sur le modèle (« FS 0,73 »), l'indicateur du panneau prend la couleur de sa
+bande, et une phrase dit la part de la surface sous la marge. Le facteur est aussi **indicatif** que la contrainte dont
+il vient : sur ce maillage grossier, les concentrations locales ne sont pas résolues, et les limites élastiques sont des
+valeurs typiques — la fiche de la nuance fait foi. Code : `web/js/analysis/fea/safety.js` (pur), panneau
+`web/js/modules/fea_result.js`.
+
 ## 2. Le maillage : un seul gabarit, le cube
 
 La pièce est découpée en **cubes identiques** : une grille régulière posée sur son enveloppe, dont on garde les

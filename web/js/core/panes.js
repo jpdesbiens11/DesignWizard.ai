@@ -1,25 +1,24 @@
 /* DesignWizard.ai — the side panels of a studio. The border between a panel and the view is dragged to give the panel
-   room ; a panel folds away and comes back (the button on the border, a double click, or Enter on the border). Each
-   screen remembers its own widths in the browser. The studio lays itself out from --left-w and --right-w (app.css) :
-   this module only moves those two lengths. */
+   room ; a panel hides and comes back with one button, always in sight on its border (also : a double click or Enter
+   on the border, Ctrl + B for the left panel). The widths and what is hidden are kept in the browser and SHARED by every
+   screen : a panel widened in one module has the same width in the next. The studio lays itself out from --left-w and
+   --right-w (app.css) : this module only moves those two lengths. */
 
-export const PANE = { min: 200, max: 760, left: 300, right: 340, view: 320, step: 24, key: "dw.panes" };
+export const PANE = { min: 200, max: 760, left: 300, right: 340, view: 320, step: 24, key: "dw.panes", all: "*" };
 const num = (v, d) => (Number.isFinite(v) && v > 0 ? v : d);
 /** A width a panel may take : between the smallest that stays readable and what leaves `PANE.view` to the 3D view. */
 export const clampPane = (w, room = Infinity) => Math.round(Math.max(PANE.min, Math.min(PANE.max, Math.max(PANE.min, room - PANE.view), num(w, PANE.min))));
-/** The panels of a screen, read from what the browser kept (anything unreadable gives the defaults). */
+/** The panels, read from what the browser kept (anything unreadable gives the defaults). One state for every screen ; what
+    an earlier version kept for this screen alone (key) is taken once, as a start. */
 export function readPanes(text, key) {
   let p = null;
-  try { const all = JSON.parse(text || "{}"); p = all && typeof all === "object" ? all[key] : null; } catch (e) { p = null; }
+  try { const all = JSON.parse(text || "{}"); p = all && typeof all === "object" && !Array.isArray(all) ? (all[PANE.all] || all[key]) : null; } catch (e) { p = null; }
   p = p && typeof p === "object" ? p : {};
   return { left: clampPane(num(p.left, PANE.left)), right: clampPane(num(p.right, PANE.right)), leftOff: !!p.leftOff, rightOff: !!p.rightOff };
 }
-/** The text to keep once a screen has changed its panels. */
+/** The text to keep once the panels have changed : the one state every screen reads. */
 export function writePanes(text, key, state) {
-  let all = {};
-  try { const x = JSON.parse(text || "{}"); if (x && typeof x === "object" && !Array.isArray(x)) all = x; } catch (e) { all = {}; }
-  all[key] = { left: state.left, right: state.right, leftOff: !!state.leftOff, rightOff: !!state.rightOff };
-  return JSON.stringify(all);
+  return JSON.stringify({ [PANE.all]: { left: state.left, right: state.right, leftOff: !!state.leftOff, rightOff: !!state.rightOff } });
 }
 /** What a drag gives : a panel pulled under half its smallest width folds away, otherwise it takes the width, clamped. */
 export function dragPane(state, side, width, room) {
@@ -38,7 +37,7 @@ export function mountPanes(studio, key, store) {
     studio.style.setProperty("--left-w", st.leftOff ? "0px" : `${st.left}px`); studio.classList.toggle("left-off", st.leftOff);
     if (right) { studio.style.setProperty("--right-w", st.rightOff ? "0px" : `${st.right}px`); studio.classList.toggle("right-off", st.rightOff); }
     for (const [side, h] of Object.entries(handles)) { const off = st[`${side}Off`], word = side === "left" ? "gauche" : "droite";
-      h.b.textContent = (side === "left") === off ? "›" : "‹"; h.b.setAttribute("aria-label", `${off ? "Montrer" : "Masquer"} le panneau de ${word}`); h.b.dataset.tip = off ? "Montrer le panneau" : "Masquer le panneau (double clic sur la bordure)";
+      h.b.textContent = (side === "left") === off ? "›" : "‹"; h.b.setAttribute("aria-label", `${off ? "Montrer" : "Masquer"} le panneau de ${word}`); h.b.dataset.tip = `${off ? "Montrer" : "Masquer"} le volet de ${word}${side === "left" ? " (Ctrl + B)" : ""} — glisser la bordure pour l'élargir : la largeur est gardée d'un écran à l'autre`; h.b.setAttribute("aria-pressed", off ? "false" : "true");
       h.el.setAttribute("aria-valuenow", String(off ? 0 : st[side])); }
     if (save && keep) { try { keep.setItem(PANE.key, writePanes(get(), key, st)); } catch (e) { /* a private window keeps nothing */ } }
   };
@@ -65,5 +64,8 @@ export function mountPanes(studio, key, store) {
     });
     studio.append(h);
   }
+  /* Ctrl + B : the left panel, from anywhere on the screen ; the listener goes away with the studio */
+  const onKey = (e) => { if (!studio.isConnected) { window.removeEventListener("keydown", onKey); return; } if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && String(e.key).toLowerCase() === "b") { e.preventDefault(); toggle("left"); } };
+  if (typeof window !== "undefined") window.addEventListener("keydown", onKey);
   apply(false);
 }
