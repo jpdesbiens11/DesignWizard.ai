@@ -137,7 +137,11 @@ Les règles vérifiées à l'écriture comme à la lecture sont celles du format
 fonction primaire, de type usage ; trois niveaux, une fonction technique seule au quatrième ; un flux part d'une entrée
 ou d'une fonction et arrive à une fonction ou à une sortie ; les pièces se posent sur des fonctions secondaires ou
 tertiaires ; 160 caractères par fonction, aucun balisage. Le lecteur a été éprouvé sur les trois fichiers d'exemple du
-dépôt de DynamiteAgile ; le validateur de DynamiteAgile lui-même n'a pas été exécuté sur les fichiers écrits ici.
+dépôt de DynamiteAgile. Dans l'autre sens, six fichiers écrits ici — le premier design d'exemple, le variateur de
+démonstration, un projet à deux cartes, un projet sans carte, un projet vide, des textes à nettoyer — ont été soumis au
+validateur de DynamiteAgile lui-même (`tools/check_starter.py`, version 0.60.104) : tous acceptés, avec ses seuls avis
+d'usage (aucun requis, aucun backlog, aucun code de temps, que DesignWizard n'exporte pas). Cette vérification est faite
+à la main : la suite de tests de ce dépôt ne dépend pas de celui de DynamiteAgile.
 
 ## Pourquoi cela marche
 
