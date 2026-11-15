@@ -16,6 +16,7 @@ import { routing } from "../cad/shop.js";
 import { orderCheck } from "../cad/order.js";
 import { makeDrawing, svgNode } from "./drawings.js";
 import { reviewRows, reviewProgress } from "../core/review.js";
+import { mvpRows, trlReached } from "../core/mvp.js";
 import { PROCESSES, materialOrDefault } from "../cad/materials.js";
 import { INTERFACE_TYPES } from "../cad/interfaces.js";
 import { LEVEL_LABEL } from "../analysis/cc_rules.js";
@@ -155,6 +156,10 @@ function render(main) {
     if (led.length) doc.append(el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, "État de la revue, artéfact par artéfact ", badge(`${prog.ok} / ${prog.total} revus`, prog.left ? "warn" : "ok")),
       el("p", { class: "muted" }, "Un « Brouillon IA » a été écrit ou modifié par une IA et n'a pas été relu ; « Revu » engage la personne qui l'a validé. Tenu dans l'écran Revue."),
       table(["Genre", "Repère", "Nom", "Rév.", "État", "Note"], led)));
+    const iters = mvpRows(store.project);
+    if (iters.length) doc.append(el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, "Itérations MVP ", badge(trlReached(store.project) ? `TRL ${trlReached(store.project)} atteint` : "aucun niveau atteint", trlReached(store.project) ? "ok" : "neutral")),
+      el("p", { class: "muted" }, `Cible du projet : TRL ${(store.project.mvp || {}).target || 6}. Chaque itération est gelée, passée en revue puis close par une décision ; la convergence est la part de ce qui a bougé depuis l'itération gelée précédente. Tenu dans l'écran Itérations MVP.`),
+      table(["Itération", "Objectif", "Niveau visé", "Revue de passage", "Gelée le", "Revues", "Convergence", "Décision"], iters)));
     const r = rv(), actions = r.actions || [];
     const set = (fn, label) => store.commit(`Revue : ${label}`, (x) => { x.review = x.review || { actions: [] }; x.review.actions = x.review.actions || []; fn(x.review); });
     const inp = (val, onChange, ph) => el("input", { type: "text", value: val || "", placeholder: ph, onChange: (e) => onChange(e.target.value) });

@@ -58,10 +58,10 @@ const project = {
   sections: [
     ["Le produit", ["description", "author", "drawing"]],
     ["La physique vérifiée — modèles analytiques et simulations gardés pour la revue", ["physics", "simulations"]],
-    ["La revue de conception — ce que l'IA a retenu de l'entrevue, et l'état de chaque artéfact", ["brief", "review"]],
+    ["La revue de conception — ce que l'IA a retenu de l'entrevue, l'état de chaque artéfact, les itérations MVP et leurs revues", ["brief", "review", "mvp"]],
     ["Journal", ["log"]],
   ],
-  kids: { brief: { kids: { answers: { word: "answer" } } }, review: { kids: { items: {} } }, drawing: {}, physics: { word: "physics", head: ["id", "model"] }, simulations: { word: "simulation", head: ["id", "kind"], first: ["target"], kids: { estimate: {}, result: {} } }, log: { word: "log" } },
+  kids: { brief: { kids: { answers: { word: "answer" } } }, review: { kids: { items: {} } }, mvp: { kids: { iterations: { word: "iteration", head: ["n", "name"] } } }, drawing: {}, physics: { word: "physics", head: ["id", "model"] }, simulations: { word: "simulation", head: ["id", "kind"], first: ["target"], kids: { estimate: {}, result: {} } }, log: { word: "log" } },
   embed: { parts: "part", assemblies: "assembly", boards: "board" },   // documents carried inside a project file, one after the other
 };
 const board = {

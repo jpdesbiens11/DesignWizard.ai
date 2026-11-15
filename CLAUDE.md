@@ -36,8 +36,11 @@ Consignes permanentes de JP (propriétaire du dépôt). Elles s'appliquent à to
 - Étude de logiciels tiers : méthode REA (`docs/REA.md`) — seulement ce que l'on possède ou que l'on est autorisé à
   étudier ; jamais le code d'un service propriétaire.
 - Visuels : inspiration de principes, pas de portrait, pas de nom de personne vivante, pas de marque.
+- Connecteurs et cellules (demande de JP) : la bibliothèque renvoie aux **séries standard de l'industrie des grands
+  fabricants** et aux normes publiées — fabricant et série cités en texte, comme référence de compatibilité, sans logo
+  ni dessin copié. Valeurs nominales publiées, avec la façon dont elles ont été vérifiées ; la fiche du fabricant fait foi.
 
 ## Documents de référence
 
 `docs/VISION.md` (objectif et briques), `docs/ARCHITECTURE.md`, `docs/FORMAT.md`, `docs/SIMULATION.md`,
-`docs/PCBA.md`, `docs/GAMMES.md` (gammes de fabrication et d'assemblage), `docs/MOULAGE.md` (pièce moulée), `docs/EXTRUSION.md` (profilé extrudé), `docs/JOINTS.md` (registre des joints, joint collé, santé des accouplements), `docs/IA.md` (aller-retour IA), `docs/GOOGLE.md`, `docs/REA.md`, `docs/BRAND.md`.
+`docs/PCBA.md`, `docs/GAMMES.md` (gammes de fabrication et d'assemblage), `docs/MOULAGE.md` (pièce moulée), `docs/EXTRUSION.md` (profilé extrudé), `docs/JOINTS.md` (registre des joints, joint collé, santé des accouplements), `docs/IA.md` (aller-retour IA), `docs/ITERATIONS.md` (itérations MVP, revues de passage, convergence), `docs/GOOGLE.md`, `docs/REA.md`, `docs/BRAND.md`.

@@ -207,7 +207,7 @@ export function readFirstDesign(text, o = {}) {
     what was there. Mutates and returns `after`. */
 export function adoptIteration(before, after, o = {}) {
   const when = (o.date || new Date()).toISOString(), old = new Map(list(before.physics).map((r) => [String(r.id), r]));
-  for (const k of ["review", "brief"]) { if (before[k] !== undefined) after[k] = JSON.parse(JSON.stringify(before[k])); else delete after[k]; }
+  for (const k of ["review", "brief", "mvp"]) { if (before[k] !== undefined) after[k] = JSON.parse(JSON.stringify(before[k])); else delete after[k]; }
   after.physics = list(after.physics).filter((r) => r && model(r.model)).map((r, k) => {
     const prev = old.get(String(r.id)), same = prev && prev.model === r.model && JSON.stringify(prev.inputs) === JSON.stringify(r.inputs);
     if (same) return prev;                                                       // untouched : the result computed here stays

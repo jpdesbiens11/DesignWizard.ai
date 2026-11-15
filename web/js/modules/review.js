@@ -58,7 +58,8 @@ function render(main) {
       el("div", { class: "form-actions" },
         btn("Premier design avec une IA…", () => import("./first_design.js").then((m) => m.openFirstDesign()), { icon: "wizard", tip: "Une description détaillée, une entrevue menée par l'assistant de votre choix, et un premier design complet à passer en revue" }),
         (iter = btn("Itération complète avec l'IA", () => app.aiLoop("project", { ask: iterationRequest(store.project) }), { primary: !!ask, icon: "sparkle", disabled: !ask, tip: "Envoie le projet entier avec toutes les notes de la revue ; la réponse revient avec la liste de ses changements, à appliquer en une étape. Écrivez d'abord une note sur au moins un artéfact." })),
-        el("a", { class: "btn", href: "#/report", "data-tip": "Le dossier de revue de conception, à imprimer" }, icon("report"), el("span", null, "Rapport"))));
+        el("a", { class: "btn", href: "#/report", "data-tip": "Le dossier de revue de conception, à imprimer" }, icon("report"), el("span", null, "Rapport"))),
+      el("div", { class: "subtabs", style: { width: "100%" } }, el("a", { class: "subtab active", href: "#/review" }, "Artéfacts"), el("a", { class: "subtab", href: "#/mvp", "data-tip": "Geler une itération, la passer en revue, la clore — et mesurer la convergence d'un MVP à l'autre" }, "Itérations MVP")));
     const sum = el("section", { class: "card taped" }, el("h2", null, `${prog.ok} / ${prog.total} revus`), bar,
       el("div", { class: "atelier-chips" }, ["draft", "revise", "changed", "todo", "ok"].filter((k) => prog[k]).map((k) => el("span", { class: "chip", "data-tip": REVIEW_STATES[k].text }, `${prog[k]} ${REVIEW_STATES[k].fr.toLowerCase()}`))),
       prog.total && !prog.left ? el("p", { class: "atelier-hint" }, icon("check"), " Tout est revu : le rapport peut partir en revue de conception.") : null);
