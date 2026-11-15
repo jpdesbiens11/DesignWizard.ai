@@ -64,7 +64,7 @@ test("two bars pressed together through a lamella contact : same key, a healthy 
   K.flush();
 });
 
-import { blankLaminate, laminatePart, laminateChecks, thermalPadPart, PAPER_THICKNESS } from "../../web/js/core/busbar_lam.js";
+import { blankLaminate, blankLamFlex, lamFlexTracks, laminatePart, laminateChecks, thermalPadPart, PAPER_THICKNESS } from "../../web/js/core/busbar_lam.js";
 
 test("an insulated busbar wears a sleeve of its own body, open by a window at each terminal and each contact", async () => {
   const K = await kernel(), def = blankBusbar(); addContact(def, { leg: 2, side: 1, s: 25, y: 10 }); def.insulation = { material: "EPOXY", t: 0.3 };
@@ -92,6 +92,37 @@ test("a laminated busbar : conductors of opposite potentials, aramid paper betwe
   const c = laminateChecks(def); assert.deepEqual([c.tabW, c.creep, c.ok], [16, 8.25, true]); assert.ok(c.withstand > c.test, "0,25 mm of aramid paper holds the dielectric test of 800 V");
   assert.match(laminateChecks({ ...def, paper: { ...def.paper, t: 0.05 } }).notes[0].text, /il tient environ 1,35 kV, pour un essai diélectrique de 2 U \+ 1000 V = 2,6 kV/);
   assert.match(laminateChecks({ ...def, W: 20 }).notes.map((n) => n.text).join(" "), /Pattes de 6 mm de large pour une vis M6/); assert.ok(PAPER_THICKNESS.includes(0.25));
+  assert.deepEqual(fromDwiz(toDwiz(s)), s);
+  K.flush();
+});
+
+test("a laminate may carry its own measuring circuit : a flexible circuit in a slot of the paper, a tap on each plate, a probe at the core, a tail out by the side", async () => {
+  const K = await kernel(), def = { ...blankLaminate(), flex: blankLamFlex() }, s = laminatePart(def, "LAM-2"), b = buildPart(K, s), body = (n) => b.bodies.find((q) => q.name === n), r = (x) => Math.round(x * 1000) / 1000, vol = (q) => K.props(q.shape).volume;
+  assert.deepEqual(validateSpec(s).errors, []); assert.equal(b.log.filter((l) => l.level === "error").length, 0);
+  assert.deepEqual(b.bodies.filter((x) => x.net).map((x) => [x.name, x.net]), [["main", "HV+"], ["c2", "HV-"], ["piste1", "HV+"], ["vs1", "HV+"], ["piste2", "TS1"], ["piste3", "T-RET"], ["piste4", "HV-"], ["vs2", "HV-"]], "each track and each tap is a conductor with its potential : the isolation analysis reads them");
+  for (let i = 0; i < b.bodies.length; i++) for (let j = i + 1; j < b.bodies.length; j++) assert.ok(vol({ shape: K.common(b.bodies[i].shape, b.bodies[j].shape) }) < 1e-6, `${b.bodies[i].name} enters ${b.bodies[j].name}`);
+  /* the film lies on the lower plate, inside the thickness of the paper, which gives it a slot */
+  const flex = body("flex"), paper = body("p1"), plain = buildPart(K, laminatePart(blankLaminate(), "LAM-1"));
+  assert.deepEqual([r(flex.bbox[2]), r(flex.bbox[5]), r(paper.bbox[5])], [1.69, 1.89, 1.94]); assert.ok(Math.abs(vol(plain.bodies.find((q) => q.name === "p1")) - vol(paper) - 10.4 * 34.2 * 0.25) < 0.01, "the slot : the strip and 0,2 mm round it, out to the edge of the paper");
+  assert.ok(Math.abs(b.bbox[5] - plain.bbox[5]) < 1e-6, "the stack is not one micron thicker");
+  /* a tap touches its plate ; the probe sits in a pocket of the plate above ; the tail leaves past the insulation */
+  assert.deepEqual([r(body("vs1").bbox[2]), r(body("main").bbox[5]), r(body("vs2").bbox[5]), r(body("c2").bbox[2])], [1.69, 1.69, 1.94, 1.94]);
+  assert.ok(Math.abs(vol(plain.bodies.find((q) => q.name === "c2")) - vol(body("c2")) - 2.6 * 1.8 * 0.6) < 0.01); assert.deepEqual([r(body("ts1").bbox[2]), r(body("ts1").bbox[5])], [1.89, 2.39]);
+  assert.deepEqual([flex.bbox[1], flex.bbox[4], paper.bbox[4]], [10, 64, 44], "30 mm between the plates, then out by the +Y side : 4 mm of overhang and 20 mm of tail");
+  const fq = s.interfaces.find((i) => i.id === "FQ"); assert.deepEqual([fq.type, fq.body, fq.level, fq.at], ["planar", "flex", 1.89, ["L/2", "W + e + 17"]]); assert.match(fq.name, /Queue du circuit de mesure — Hirose FH12/);
+  assert.deepEqual(lamFlexTracks(def).rows.map((t) => [t.id, t.net, t.x]), [["VS1", "HV+", 0.5], ["TS1", "TS1", 1.3], ["T-RET", "T-RET", 2.1], ["VS2", "HV-", 9.2]], "the two potentials of the stack at the two edges of the strip");
+  /* what it is worth, and what stops it */
+  const c = laminateChecks(def), text = (d) => laminateChecks(d).notes.map((n) => n.text).join(" "); assert.deepEqual([c.ok, c.flex.pins, c.flex.cover, c.flex.hold > c.test], [true, 4, 0.083, true]);
+  assert.match(text({ ...def, paper: { ...def.paper, t: 0.13 } }), /Circuit de mesure de 0,2 mm dans un papier de 0,13 mm : il ferait une bosse dans l'empilage — passer le papier à 0,25 mm au moins/);
+  assert.match(text({ ...def, layers: def.layers.map((l) => ({ ...l, t: 1 })) }), /lamage de 0,6 mm de la plaque du dessus, qui n'a que 1 mm/); assert.match(text({ ...def, flex: { ...def.flex, after: 2 } }), /un dessous et un dessus/);
+  assert.match(text({ ...def, flex: { ...def.flex, W: 3 } }), /4 pistes prennent 3,7 mm : le circuit de mesure n'en fait que 3/); assert.match(text({ ...def, U: 6000 }), /Couverture du circuit de mesure : 82,5 µm de polyimide .* environ 12,38 kV pour un essai de 13 kV/);
+  assert.match(text(def), /prévoir une résistance ou un fusible en série sur chaque prise/); assert.equal(laminateChecks(blankLaminate()).flex, null);
+  /* three plates, the circuit between the upper two, no probe : two tracks, nothing asked of the plate above */
+  const three = { ...blankLaminate(), W: 60, layers: [{ net: "HV+", t: 1.5 }, { net: "MID", t: 1.5 }, { net: "HV-", t: 1.5 }], flex: { ...blankLamFlex(), after: 2, ntc: 0 } }, s3 = laminatePart(three, "LAM-3"), b3 = buildPart(K, s3);
+  assert.equal(b3.log.filter((l) => l.level === "error").length, 0); assert.deepEqual(lamFlexTracks(three).rows.map((t) => t.net), ["MID", "HV-"]); assert.equal(b3.bodies.some((q) => q.name === "ts1"), false);
+  assert.ok(b3.bodies.find((q) => q.name === "flex").bbox[2] > b3.bodies.find((q) => q.name === "c2").bbox[5] - 1e-6, "it lies on the second plate");
+  assert.match(s.notes[0], /Circuit de mesure entre HV\+ et HV- : polyimide de 0,2 mm dans une fente du papier/); assert.match(s.function, /il mesure lui-même ses tensions et sa température/);
+  const d = checkPart(s, b, { mesh: K.tessellate(b.bodies[0].shape) }); assert.equal(d.summary.errors, 0, d.findings.filter((f) => f.severity === "error").map((f) => f.message).join(" | "));
   assert.deepEqual(fromDwiz(toDwiz(s)), s);
   K.flush();
 });

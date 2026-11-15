@@ -14,22 +14,28 @@ import { MATERIALS } from "../cad/materials.js";
 import { THREADS } from "../cad/standards.js";
 import { PLATINGS, CONTACT_BASES, CONTACT_TESTS, contactEstimate } from "../cad/interfaces_elec.js";
 import { blankBusbar, busbarPart, busbarChecks, legsOf, locate, addContact, addTerminal, fit, FINISHES, INSULATIONS } from "../core/busbar.js";
-import { blankLaminate, laminatePart, laminateChecks, PAPER_THICKNESS } from "../core/busbar_lam.js";
+import { blankLaminate, blankLamFlex, laminatePart, laminateChecks, PAPER_THICKNESS } from "../core/busbar_lam.js";
 import { modal } from "../core/dom.js";
 
 /** A laminated busbar is asked for in one dialog : the stack, the paper, the film, the tabs — and what the stack is worth before it is created. */
 function newLaminate() {
-  const d = blankLaminate(), out = el("div"), nets = el("input", { type: "text", value: d.layers.map((l) => l.net).join(", ") });
-  const check = () => { d.layers = nets.value.split(",").map((x) => x.trim()).filter(Boolean).map((net) => ({ net, t: d.layers[0] ? d.layers[0].t : 1.5 })); const c = laminateChecks(d);
-    out.replaceChildren(el("p", { class: "muted small" }, c.rows.map((r) => `${r.net} : ${fmt(r.S, 1)} mm², ${fmt(r.J)} A/mm²`).join(" · "), ` · pattes de ${fmt(c.tabW, 1)} mm · papier ≈ ${fmt(c.withstand / 1000, 1)} kV pour un essai de ${fmt(c.test / 1000, 1)} kV`), ...c.notes.map((n) => el("p", { class: n.level === "bad" ? "form-error" : "atelier-hint", style: { fontSize: ".82rem" } }, n.text))); ok.disabled = !c.ok; };
+  const d = blankLaminate(), fx = blankLamFlex(), out = el("div"), nets = el("input", { type: "text", value: d.layers.map((l) => l.net).join(", ") });
+  /* the measuring circuit : where it lies in the stack — the choices follow the potentials typed above */
+  const where = el("select", { "aria-label": "Circuit de mesure", onChange: (e) => { const k = +e.target.value; if (k) fx.after = k; d.flex = k ? fx : null; check(); } });
+  const places = () => { if (d.flex && d.flex.after >= d.layers.length) { if (d.layers.length > 1) fx.after = d.layers.length - 1; else d.flex = null; }
+    where.replaceChildren(el("option", { value: "", selected: !d.flex }, "Sans"), ...d.layers.slice(0, -1).map((l, i) => el("option", { value: i + 1, selected: !!d.flex && fx.after === i + 1 }, `Entre ${l.net} et ${d.layers[i + 1].net}`))); };
+  const check = () => { d.layers = nets.value.split(",").map((x) => x.trim()).filter(Boolean).map((net) => ({ net, t: d.layers[0] ? d.layers[0].t : 1.5 })); places(); const c = laminateChecks(d);
+    out.replaceChildren(el("p", { class: "muted small" }, c.rows.map((r) => `${r.net} : ${fmt(r.S, 1)} mm², ${fmt(r.J)} A/mm²`).join(" · "), ` · pattes de ${fmt(c.tabW, 1)} mm · papier ≈ ${fmt(c.withstand / 1000, 1)} kV pour un essai de ${fmt(c.test / 1000, 1)} kV`, c.flex ? ` · circuit de mesure : ${c.flex.pins} pistes (${c.flex.tracks.map((t) => t.net).join(", ")}), couverture ≈ ${fmt(c.flex.hold / 1000, 1)} kV` : ""), ...c.notes.map((n) => el("p", { class: n.level === "bad" ? "form-error" : "atelier-hint", style: { fontSize: ".82rem" } }, n.text))); ok.disabled = !c.ok; };
   const num = (obj, key, label, step = 1) => field(label, el("input", { type: "number", value: obj[key], step, min: 0, onInput: (e) => { const v = parseFloat(e.target.value); if (v > 0) { if (key === "t" && obj === d.layers[0]) d.layers.forEach((l) => { l.t = v; }); else obj[key] = v; check(); } } }));
   const ok = btn("Créer le busbar laminé", () => { const r = importPart(laminatePart(d, store.nextPartId()), { replace: false }); if (r.errors && r.errors.length) { toast(r.errors.join(" "), "error"); return; } m.close(); toast(`${r.id} créé : une couche par corps, à voir dans le studio de pièce et dans l'écran Isolation.`, "success", 6000); go(`#/parts/${encodeURIComponent(r.id)}`); }, { primary: true, icon: "plus" });
   nets.addEventListener("input", check);
-  const m = modal("Busbar laminé", [el("p", { class: "muted" }, "Des conducteurs de potentiels opposés posés l'un sur l'autre, un papier aramide entre eux sur toute l'épaisseur, un film polymère autour. L'isolant déborde les conducteurs : c'est la ligne de fuite."),
+  const m = modal("Busbar laminé", [el("p", { class: "muted" }, "Des conducteurs de potentiels opposés posés l'un sur l'autre, un papier aramide entre eux sur toute l'épaisseur, un film polymère autour. L'isolant déborde les conducteurs : c'est la ligne de fuite. Il peut porter son propre circuit de mesure, pris entre deux plaques."),
     el("div", { class: "form-row" }, field("Potentiels, du bas vers le haut", nets, "Séparés par des virgules : HV+, HV−"), num(d.layers[0], "t", "Épaisseur d'un conducteur", 0.1), num(d, "I", "Courant par conducteur (A)"), num(d, "U", "Tension entre voisins (V)")),
     el("div", { class: "form-row" }, num(d, "L", "Longueur"), num(d, "W", "Largeur"), num(d, "e", "Débord de l'isolant", 0.5), field("Papier aramide", el("select", { onChange: (e) => { d.paper.t = +e.target.value; check(); } }, PAPER_THICKNESS.map((t) => el("option", { value: t, selected: t === d.paper.t }, `${String(t).replace(".", ",")} mm`))))),
     el("div", { class: "form-row" }, field("Enveloppe", el("select", { onChange: (e) => { d.wrap = e.target.value ? { material: e.target.value, t: e.target.value === "PI-FILM" ? 0.1 : 0.19 } : null; check(); } }, [["PET-FILM", "Film polyester 0,19 mm"], ["PI-FILM", "Film polyimide 0,1 mm"], ["", "Sans enveloppe"]].map(([k, l]) => el("option", { value: k, selected: k === (d.wrap ? d.wrap.material : "") }, l)))),
       num(d.tab, "L", "Longueur des pattes"), num(d.tab, "gap", "Écart entre pattes"), field("Vis des pattes", el("select", { onChange: (e) => { d.tab.screw = e.target.value; check(); } }, ["M4", "M5", "M6", "M8", "M10"].map((k) => el("option", { value: k, selected: k === d.tab.screw }, k))))),
+    el("div", { class: "form-row" }, field("Circuit de mesure", where, "Un circuit flexible dans une fente du papier : une prise de tension sur chacune des deux plaques, des sondes au cœur, une queue qui sort par le côté"),
+      field("Sondes de température", el("select", { "aria-label": "Sondes de température", onChange: (e) => { fx.ntc = +e.target.value; check(); } }, [0, 1, 2, 3].map((k) => el("option", { value: k, selected: k === fx.ntc }, String(k))))), num(fx, "W", "Largeur du circuit", 0.5), num(fx.tail, "L", "Longueur de la queue")),
     out, el("div", { class: "form-actions" }, btn("Annuler", () => m.close()), ok)], { wide: true });
   check();
 }

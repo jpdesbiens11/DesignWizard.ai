@@ -128,6 +128,24 @@ par sa propre patte, côte à côte dans la largeur, avec sa vis. Le dialogue v�
 (rigidité diélectrique × épaisseur) contre un essai de 2 U + 1000 V, la largeur des pattes pour leur vis, la densité de
 courant de chaque conducteur.
 
+**Son circuit de mesure** (option « Circuit de mesure » du même dialogue). Un busbar laminé peut porter un **circuit
+flexible pris entre deux de ses plaques**, sous l'enveloppe : une couche de plus dans l'épaisseur, sans un micron de
+plus — il se loge dans une **fente du papier**. Ce qu'il fait :
+
+- une **prise de tension** sur chacune des deux plaques qu'il touche : celle du dessous par sa face inférieure, celle du
+  dessus par sa face supérieure, chacune à travers une fenêtre de sa couverture ;
+- zéro à trois **sondes de température** au cœur de l'empilage — là où une barre laminée évacue le moins bien sa chaleur.
+  Une sonde est plus épaisse que le papier : elle se loge dans un petit **lamage** de la plaque du dessus ;
+- une **queue** raidie qui sort par le côté, au-delà du débord de l'isolant, vers un connecteur de carte de la
+  bibliothèque ; elle a son interface (`FQ`), qui s'accouple dans l'assemblage.
+
+Chaque piste et chaque prise est un **corps conducteur avec son potentiel**, comme les plaques : l'écran Isolation voit
+que les pistes des prises portent les potentiels du busbar jusque sur la queue. Les deux potentiels sont mis aux deux
+bords du circuit, les sondes au milieu. Le dialogue refuse l'empilage si : le circuit est plus épais que le papier (il
+ferait une bosse), sa couverture de polyimide ne tient pas l'essai diélectrique entre une piste et la plaque voisine,
+ses pistes ne tiennent pas dans sa largeur, la plaque du dessus est trop mince pour le lamage d'une sonde. Il rappelle
+de prévoir une résistance ou un fusible en série sur chaque prise, au plus près de la plaque.
+
 **Le pad thermique** (Bibliothèque électrique → Interface thermique). Une plaque de silicone chargé entre deux faces
 planes, dessinée **écrasée** de 20 %, avec sa résistance thermique : épaisseur / (k × surface).
 
@@ -179,10 +197,12 @@ annulable.
 ## Limites
 
 - Busbars : plis à 90° dans un seul plan, largeur constante. Le busbar laminé est plat, sans pli ni fenêtre dans ses
-  couches ; il ne porte pas encore de circuit flexible entre ses couches, et se règle à la création seulement.
+  couches, et se règle à la création seulement. Son circuit de mesure est une géométrie de principe : il traverse la
+  barre à mi-longueur, ne touche que les deux plaques qui l'encadrent (un seul circuit par busbar), ses pistes sont
+  droites, et le scellement de l'enveloppe autour de la queue n'est pas dessiné.
 - Circuit flexible : géométrie de principe — pistes droites au cœur du film, sans plages, fenêtres de vernis ni
-  routage ; plis à 90° dans un seul plan ; il ne se glisse pas encore entre les couches d'un busbar laminé, et n'est
-  pas relié à l'arbre fonctionnel d'une carte (brique PCBA).
+  routage ; plis à 90° dans un seul plan ; il n'est pas relié à l'arbre fonctionnel d'une carte (brique PCBA). Le
+  circuit pris dans un busbar laminé est décrit avec le busbar, pas dans l'écran Circuits flexibles.
 - Le remplissage est une géométrie figée (STEP, lourde dans le fichier du projet) : il ne suit pas les pièces seul, il se
   recalcule. La gamme d'assemblage ne décrit pas encore la coulée.
 - Les rigidités diélectriques et les indices de résistance au cheminement des films sont des valeurs typiques.
