@@ -180,7 +180,7 @@ function render(main, args) {
     for (const it of geo.interfaces) {
       const f = it.frame, sign = it.side === "B" ? -1 : 1, at = (pu, pv, pn = 0) => [0, 1, 2].map((i) => f.o[i] + pu * f.u[i] + pv * sign * f.v[i] + pn * f.n[i]);
       if (it.type === "bolt_pattern" || it.type === "pins") {     // held or loaded where the screws are, not over the whole pattern
-        const d = it.type === "pins" ? it.params.d : thread(it.params.screw).washer, pts = it.type === "pins" ? Array.from({ length: Math.max(1, Math.round(it.params.n || 2)) }, (_, k, arr) => [(k - (arr.length - 1) / 2) * it.params.pitch, 0]) : patternPoints(it.params.pattern);
+        const d = it.type === "pins" ? it.params.d : thread(it.params.screw).washer, count = Math.max(1, Math.round(it.params.n || 2)), pts = it.type === "pins" ? Array.from({ length: count }, (_, k) => [(k - (count - 1) / 2) * it.params.pitch, 0]) : patternPoints(it.params.pattern);
         regions.push({ key: `iface:${it.id}`, n: f.n, label: `Interface ${it.id} — ${it.name} (${pts.length} vis)`.replace("vis)", it.type === "pins" ? "goupilles)" : "vis)"), list: pts.map(([pu, pv]) => ({ near: at(pu, pv), r: Math.max(d / 2, 0.75 * h) })) });
       } else {
         const fp = footprint(it, geo.material), pts = [];
@@ -356,6 +356,7 @@ function render(main, args) {
     toast("Simulation ajoutée au rapport de revue.", "success");
   }
 
+  vp.setStatus(info);                                    // whatever stops the first mesh is said in the view, before the switch of views exists
   loadGeometry();
   return () => { alive = false; if (worker) worker.terminate(); vp.dispose(); };
 }

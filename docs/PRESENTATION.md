@@ -64,3 +64,26 @@ marketing à mesure qu'ils sont produits.
 Elle ne donne aucun chiffre de gain de temps : personne ne l'a mesuré. Elle dit ce que l'outil fait, et consacre une page
 à ce qu'il ne prétend pas (valeurs typiques, simulation simplifiée, pas un remplaçant de la CAO de production, projet
 jeune). La démo en ligne s'ouvre sur approbation ; sur son propre poste, l'application s'ouvre sans compte.
+
+## La storyline
+
+Une **histoire animée**, en un seul fichier HTML : Hugo, étudiant en génie mécanique, mène un produit de l'idée au
+résultat avec la plateforme, avec trois coéquipiers et un assistant IA. Chaque écran est une **capture réelle** de
+l'application (l'exemple Rover) ; un curseur s'y déplace là où l'histoire dit que la main va, la narration et les
+échanges de l'équipe défilent à côté. Lecture automatique, ← → et Espace ; `fichier.html#7` ouvre la scène 7, en pause.
+
+```bash
+python3 designwizard.py --port 8141 --no-browser --data /tmp/dw_storyline
+```
+
+```bash
+node tools/storyline.mjs http://localhost:8141 Storyline_Hugo.html
+```
+
+- Le récit — scènes, narration, répliques, où va le curseur — est dans `tools/storyline_story.mjs` : c'est le seul
+  fichier à retoucher pour changer l'histoire. Personnages de fiction ; aucun portrait, des initiales.
+- `tools/storyline.mjs` charge l'exemple, pose les étiquettes et le rendu de l'équipe, capture chaque écran (WebP, dans
+  le fichier), relève où sont les boutons que le curseur visite, et écrit le fichier avec la note de la plateforme.
+- Le fichier pèse environ 1,7 Mo : il passe par le connecteur Drive (limite d'environ 3 Mo). Il se dépose dans le
+  dossier de communications du Drive, sous-dossier `Storyline`, nommé `Storyline_Sujet_AAAA-MM-JJ.html`.
+
