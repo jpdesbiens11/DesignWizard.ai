@@ -17,6 +17,9 @@ import { runDfa } from "../analysis/dfx_api.js";
 import { matPoint, matDir, bboxTransform } from "../cad/vec.js";
 import { INTERFACE_TYPES } from "../cad/interfaces.js";
 import { gammeTab, showWhole } from "./asm_gamme.js";
+import { mateTree, mateFind, mateLabels } from "../core/asm_tree.js";
+import { mateSection } from "./asm_tree.js";
+import { nudge } from "../core/guide.js";
 
 function render(main, args) {
   const list = store.assemblies;
@@ -31,7 +34,7 @@ function render(main, args) {
       btn("Créer un assemblage", async () => { const name = await promptBox("Nouvel assemblage", "Nom", "Assemblage général"); if (name) go(`#/assembly/${encodeURIComponent(store.addAssembly(name))}`); }, { primary: true, icon: "plus" }))));
     return null;
   }
-  const st = { ctx: null, sel: null, tab: "mates", token: 0, frames: false, dfa: null, interference: null };
+  const st = { ctx: null, sel: null, tab: "mates", token: 0, frames: false, dfa: null, interference: null, mate: null, showMates: {} };      // mate : the mate selected in the tree ; showMates : the labels of a state, on or off
   const asm = () => store.assembly(id);
   const vp = createViewport(view, { name: () => id, explode: true, explodeScale: () => (st.ctx ? Math.max(20, (st.ctx.bbox[5] - st.ctx.bbox[2] + st.ctx.bbox[3] - st.ctx.bbox[0]) * 0.25) : 50),
     menuFor: (hit) => [...instMenu(hit && hit.def.data.inst ? hit.def.data.inst : null), ...(hit && hit.def.data.inst ? ["—", ...pins.menu(hit)] : [])], onKey: (e) => instKey(e), keys: [["H · I · Maj + H", "Masquer la pièce choisie · l'isoler · tout afficher"], ["Entrée · Suppr", "Ouvrir la pièce choisie · la retirer de l'assemblage"]],
@@ -89,9 +92,12 @@ function render(main, args) {
       const m = sol.placements[inst.id], fr = { o: matPoint(m, it.frame.o), u: matDir(m, it.frame.u), v: matDir(m, it.frame.v), n: matDir(m, it.frame.n) };
       v.addFrame(fr, it.side === "A" ? "#9b7bff" : "#2ec4b6", "frame");
     }
-    if (st.frames) for (const m of a.mates || []) {
-      const ia = a.instances.find((i) => i.id === m.a.inst), fa = ia && ifaceOf(built, ia.part, m.a.iface);
-      if (fa) v.addLabel(matPoint(sol.placements[ia.id], fa.frame.o), `${m.id}${m.linked === false ? "" : " 🔗"}`, "mate", "iface");
+    /* the labels of the mates : a state whose eye is open, in the colour of its health ; the selected one always ; all of them with the frames */
+    const tree = mateTree(a, (health() || { rows: [] }).rows, (i) => instName(a, i)), labelled = st.frames ? tree.flatMap((g) => g.items.map((it) => ({ ...it, selected: it.id === st.mate }))) : mateLabels(tree, st.showMates, st.mate);
+    for (const it of labelled) {
+      const ia = a.instances.find((i) => i.id === it.a.inst), fa = ia && ifaceOf(built, ia.part, it.a.iface); if (!fa || !sol.placements[ia.id]) continue;
+      const b = v.addLabel(matPoint(sol.placements[ia.id], fa.frame.o), `${it.id}${it.linked ? " 🔗" : ""}`, "mate", `bc${it.selected ? " sel" : ""}`, () => selectMate(it.selected ? null : it.id));
+      b.style.borderColor = it.color; b.style.setProperty("--bc", it.color); b.dataset.tip = `${it.text}${it.notes.length ? ` — ${it.notes[0]}` : ""}`;
     }
     for (const x of st.interference || []) if (x.volume > 0 && x.at) { v.addMarker(x.at, "#ff5a4f", "mate", 1.6); v.addLabel(x.at, `Interférence ${fmt(x.volume, 0)} mm³`, "mate", "err"); }
     pins.draw();
@@ -137,10 +143,22 @@ function render(main, args) {
     }
     if (!a.instances.length) sec.append(el("p", { class: "muted" }, "Ajoutez une première pièce : elle sera la pièce fixe."));
     scroll.append(sec);
+    if (st.ctx) scroll.append(el("div", { class: "side-section" }, el("h3", null, `Accouplements (${(a.mates || []).length})`),
+      mateSection({ tree: mateTree(a, (health() || { rows: [] }).rows, (i) => instName(a, i)), sel: st.mate, show: st.showMates, select: selectMate,
+        hover: (it) => { if (!st.mate) vp.viewer.highlight(it ? [...vp.viewer.objects.keys()].filter((k) => k.startsWith(it.a.inst + "/") || k.startsWith(it.b.inst + "/")) : []); },
+        relabel: (k, on) => { st.showMates[k] = on; renderLeft(); overlays(); } }),
+      el("p", { class: "muted small" }, "Un clic sur un accouplement allume ses deux pièces et ouvre sa fiche à droite ; l'œil d'un état affiche ou masque ses étiquettes sur le modèle.")));
     scroll.append(el("div", { class: "side-section" }, el("h3", null, "Assemblage"),
       btn("STEP", () => exportStep(), { small: true, icon: "step", tip: "Télécharger le STEP AP214 de l'assemblage (pièces nommées, positions résolues)" }), " ",
       btn("Envoyer vers Onshape", () => go(`#/onshape/${encodeURIComponent(id)}`), { small: true, icon: "onshape" }), " ",
       btn("Supprimer", async () => { if (await confirmBox("Supprimer l'assemblage", `Supprimer ${id} ? Les pièces restent dans le projet.`, "Supprimer", true)) { store.commit(`Assemblage supprimé : ${id}`, (p) => { p.assemblies = p.assemblies.filter((x) => x.id !== id); }); go("#/assembly"); } }, { small: true, icon: "trash", danger: true })));
+  }
+  /** Selects a mate (null : none) : its two parts light up, its label shows, its card opens on the right. */
+  function selectMate(mid) {
+    st.mate = mid; const it = mid && st.ctx ? mateFind(mateTree(st.ctx.asm, (health() || { rows: [] }).rows), mid) : null;
+    vp.viewer.highlight(it ? [...vp.viewer.objects.keys()].filter((k) => k.startsWith(it.a.inst + "/") || k.startsWith(it.b.inst + "/")) : []);
+    if (it) { st.sel = null; st.tab = "mates"; } renderLeft(); renderRight(); overlays();
+    if (it) setTimeout(() => nudge(right.querySelector(`[data-mate="${mid}"]`)), 80);
   }
   function iconBtn(name, tip, fn) {
     const b = el("button", { class: "icon-btn", type: "button", "data-tip": tip, "aria-label": tip, onClick: (e) => { e.stopPropagation(); fn(); } }, icon(name));
@@ -196,7 +214,7 @@ function render(main, args) {
     body.append(el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, `Joints (${(a.mates || []).length})`), reg.length ? btn("Registre (.csv)", () => download(`${id}-joints.csv`, jointsCsv(reg), "text/csv"), { small: true, icon: "download", tip: "Le registre des joints : numéro, genre, pièces, clé, visserie ou colle, procédé" }) : null)));
     for (const m of a.mates || []) {
       const ia = a.instances.find((i) => i.id === m.a.inst), fa = ia && ifaceOf(built, ia.part, m.a.iface), pb = sol.problems.find((p) => p.mate === m.id);
-      body.append(el("div", { class: "card", style: { marginBottom: ".5rem", padding: ".5rem .65rem" } },
+      body.append(el("div", { class: "card", "data-mate": m.id, style: { marginBottom: ".5rem", padding: ".5rem .65rem", ...(st.mate === m.id ? { outline: "2px solid var(--acc)" } : {}) } },
         el("div", { style: { display: "flex", gap: ".35rem", alignItems: "center", flexWrap: "wrap" } }, el("b", null, m.id), badge(byId.get(m.id) ? byId.get(m.id).kind : fa ? INTERFACE_TYPES[fa.type].fr : "?", byId.get(m.id) && byId.get(m.id).type === "bond" ? "info" : "neutral"), m.linked === false ? badge("non lié", "warn") : badge("lié 🔗", "ok"), hOf.get(m.id) ? badge(HEALTH[hOf.get(m.id).state].fr, HEALTH[hOf.get(m.id).state].tone) : null),
         el("p", { style: { margin: ".25rem 0", fontSize: ".84rem" } }, `${instName(a, m.a.inst)} (${m.a.iface}) ↔ ${instName(a, m.b.inst)} (${m.b.iface})`), ...(hOf.get(m.id) ? hOf.get(m.id).notes : pb ? [pb.msg] : []).map((t) => el("p", { class: "form-error", style: { fontSize: ".8rem" } }, t)),
         byId.get(m.id) && (byId.get(m.id).hardware.length || byId.get(m.id).process) ? el("p", { class: "muted", style: { margin: ".15rem 0", fontSize: ".8rem" } }, [byId.get(m.id).hardware.map((h) => `${String(h.qty).replace(".", ",")}${h.unit ? ` ${h.unit}` : " ×"} ${h.name}`).join(" + "), byId.get(m.id).process].filter(Boolean).join(" — ")) : null,

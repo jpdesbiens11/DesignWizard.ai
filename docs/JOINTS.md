@@ -88,3 +88,16 @@ Un couvercle moulé à clips ([MOULAGE.md](MOULAGE.md)) n'a qu'un joint, le plan
 - Pas de rainure de colle, de joint torique ni de cordon de soudure comme types d'interface.
 - L'interférence est cherchée jusqu'à 14 pièces ; au-delà, elle se lance à la main.
 - Le numéro d'un joint est celui de la liaison (`M…`) : il n'y a pas de numérotation séparée par genre de joint.
+
+## L'arbre des accouplements
+
+Dans le volet de gauche de l'Assemblage, sous les pièces, les accouplements se lisent comme le cas de charge de la
+Simulation : un arbre **par état** — rompus d'abord, puis à vérifier, puis sains —, chacun avec son numéro, les deux
+pièces qu'il joint et la couleur de son état (rouge, orange, vert).
+
+- Un **clic** sur un accouplement allume ses deux pièces, montre son étiquette sur le modèle et ouvre sa fiche à droite.
+- L'**œil d'un état** affiche ou masque ses étiquettes sur le modèle. Ce qui cloche se montre d'office ; ce qui est sain
+  reste discret tant qu'on ne le demande pas. Un clic sur une étiquette du modèle sélectionne sa ligne.
+- Un accouplement rompu dit pourquoi sous son nom, et le guide de la barre du haut le compte.
+
+Modèle pur : `web/js/core/asm_tree.js` (`mateTree`, `mateLabels`, `MATE_COLORS`) ; dessin : `web/js/modules/asm_tree.js`.
