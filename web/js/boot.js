@@ -5,4 +5,8 @@
   try { t = localStorage.getItem("dw.theme") || t; } catch (e) { /* private window */ }
   if (["carnet", "mecanique", "aero", "spatial"].indexOf(t) < 0) t = "carnet";
   document.documentElement.setAttribute("data-theme", t);
+  var z = 100;                                                   // the size of what is shown, in percent (core/theme.js)
+  try { z = parseInt(localStorage.getItem("dw.scale") || "100", 10) || 100; } catch (e) { /* private window */ }
+  if ([90, 100, 115, 130, 150].indexOf(z) < 0) z = 100;
+  document.documentElement.style.setProperty("--ui-scale", String(z / 100));
 })();

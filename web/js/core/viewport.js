@@ -7,7 +7,15 @@ import { popupMenu, createSelection } from "./view_select.js";
 
 /* The gestures every 3D view answers, whatever it shows (a screen adds its own with opts.menuFor and opts.onKey). */
 export const VIEW_KEYS = [["Clic", "Sélectionner une face, une arête ou un point"], ["Ctrl + clic", "Ajouter à la sélection, ou en retirer"], ["Clic droit", "Menu : ce qui se fait ici"], ["Deux éléments choisis", "Leur distance, leur angle ou leur entraxe s'affiche"],
-  ["N", "Vue normale à la face choisie ou survolée ; N encore : l'autre côté"], ["Ctrl + C", "Copier la mesure"], ["Échap", "Tout désélectionner"], ["F · 0 à 6", "Cadrer · vues"], ["X · M · S · Maj + S", "Rayons X · mesurer · coupe · inverser la coupe"], ["E", "Vue éclatée (assemblage)"]];
+  ["N", "Vue normale à la face choisie ou survolée ; N encore : l'autre côté"], ["Ctrl + C", "Copier la mesure"], ["Échap", "Tout désélectionner"], ["F · 0 à 6", "Cadrer · vues"], ["X · M · S · Maj + S", "Rayons X · mesurer · coupe · inverser la coupe"], ["G", "Grille derrière la pièce"], ["E", "Vue éclatée (assemblage)"]];
+
+/* what every 3D view shares and the browser keeps : { grid } */
+const VIEW_KEY = "dw.view";
+export function viewPref(set) {
+  let p = {}; try { p = JSON.parse(localStorage.getItem(VIEW_KEY) || "{}") || {}; } catch (e) { p = {}; }
+  if (set) { p = { ...p, ...set }; try { localStorage.setItem(VIEW_KEY, JSON.stringify(p)); } catch (e) { /* a private window keeps nothing */ } }
+  return { grid: !!p.grid };
+}
 
 export function createViewport(host, opts = {}) {
   host.classList.add("viewport");
@@ -31,7 +39,7 @@ export function createViewport(host, opts = {}) {
   group(vbtn("Iso", "Vue isométrique (touche 0)", () => viewer.view("iso")), vbtn("Face", "Vue de face (1)", () => viewer.view("front")), vbtn("Dessus", "Vue de dessus (5)", () => viewer.view("top")),
     vbtn("Droite", "Vue de droite (4)", () => viewer.view("right")), vbtn("Normale", "Vue normale à la face choisie ou survolée (N) — une seconde fois : l'autre côté de la face", () => normalView()), vbtn("", "Cadrer tout (F)", () => viewer.fit(), "fit"));
 
-  const state = { xray: false, section: null, measure: false, flip: false };
+  const state = { xray: false, section: null, measure: false, flip: false, grid: viewPref().grid };
   const bX = vbtn("", "Rayons X : voir à travers les pièces (X)", () => toggleXray(), "eye");
   const bM = vbtn("", "Mesurer : cliquez deux points ou deux faces (M)", () => toggleMeasure(), "ruler");
   const secSel = el("select", { "aria-label": "Plan de coupe", "data-tip": "Coupe : choisissez un axe puis glissez le curseur (S)" },
@@ -43,7 +51,10 @@ export function createViewport(host, opts = {}) {
   const applySection = () => { viewer.setSection(secSel.value || null, +secPos.value, !!state.flip); secPos.classList.toggle("hidden", !secSel.value); secFlip.classList.toggle("hidden", !secSel.value); };
   secSel.addEventListener("change", applySection); secPos.addEventListener("input", applySection);
   secSel.style.width = "auto"; secSel.style.padding = ".12rem .3rem"; secSel.style.fontSize = ".8rem";
-  group(bX, bM, secSel, secPos, secFlip);
+  // the grid behind the part : one choice for every 3D view, kept by the browser
+  const bG = vbtn("Grille", "Grille derrière la pièce, au pas rond en millimètres écrit sous le repère (G)", () => toggleGrid());
+  function toggleGrid(on = !state.grid) { state.grid = !!on; viewer.setGrid(state.grid); bG.classList.toggle("on", state.grid); viewPref({ grid: state.grid }); }
+  group(bX, bM, bG, secSel, secPos, secFlip); if (state.grid) { viewer.setGrid(true); bG.classList.add("on"); }
   function toggleXray() { state.xray = !state.xray; viewer.setXray(state.xray); bX.classList.toggle("on", state.xray); }
   function toggleMeasure() { state.measure = !state.measure; viewer.setMode(state.measure ? "measure" : "select"); bM.classList.toggle("on", state.measure); if (state.measure) toast("Mesure : cliquez un premier point (ou une face), puis un second.", "info", 3000); }
 
@@ -57,7 +68,7 @@ export function createViewport(host, opts = {}) {
 
   function onKey(e) {
     const k = e.key.toLowerCase();
-    if (k === "x") toggleXray(); else if (k === "m") toggleMeasure();
+    if (k === "x") toggleXray(); else if (k === "m") toggleMeasure(); else if (k === "g" && !e.ctrlKey && !e.metaKey) toggleGrid();
     else if (k === "s" && e.shiftKey && secSel.value) secFlip.click();
     else if (k === "s") { secSel.value = secSel.value ? "" : "z"; applySection(); }
     else if (k === "e" && explode) { explode.value = +explode.value > 0 ? "0" : "0.6"; explode.dispatchEvent(new Event("input")); }

@@ -33,15 +33,18 @@ export function mountPanes(studio, key, store) {
   let st = readPanes(get(), key);
   const right = !studio.classList.contains("no-right") && [...studio.children].some((c) => c.classList && c.classList.contains("side") && c.classList.contains("right"));
   const handles = {};
+  /* the widths are kept at the normal size of the display ; a larger display (the preferences) widens the panels with their text */
+  const zoom = () => { try { return parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--ui-scale")) || 1; } catch (e) { return 1; } };
   const apply = (save) => {
-    studio.style.setProperty("--left-w", st.leftOff ? "0px" : `${st.left}px`); studio.classList.toggle("left-off", st.leftOff);
-    if (right) { studio.style.setProperty("--right-w", st.rightOff ? "0px" : `${st.right}px`); studio.classList.toggle("right-off", st.rightOff); }
+    const k = zoom();
+    studio.style.setProperty("--left-w", st.leftOff ? "0px" : `${Math.round(st.left * k)}px`); studio.classList.toggle("left-off", st.leftOff);
+    if (right) { studio.style.setProperty("--right-w", st.rightOff ? "0px" : `${Math.round(st.right * k)}px`); studio.classList.toggle("right-off", st.rightOff); }
     for (const [side, h] of Object.entries(handles)) { const off = st[`${side}Off`], word = side === "left" ? "gauche" : "droite";
       h.b.textContent = (side === "left") === off ? "›" : "‹"; h.b.setAttribute("aria-label", `${off ? "Montrer" : "Masquer"} le panneau de ${word}`); h.b.dataset.tip = `${off ? "Montrer" : "Masquer"} le volet de ${word}${side === "left" ? " (Ctrl + B)" : ""} — glisser la bordure pour l'élargir : la largeur est gardée d'un écran à l'autre`; h.b.setAttribute("aria-pressed", off ? "false" : "true");
       h.el.setAttribute("aria-valuenow", String(off ? 0 : st[side])); }
     if (save && keep) { try { keep.setItem(PANE.key, writePanes(get(), key, st)); } catch (e) { /* a private window keeps nothing */ } }
   };
-  const room = (side) => studio.getBoundingClientRect().width - (side === "left" ? (right && !st.rightOff ? st.right : 0) : (st.leftOff ? 0 : st.left));
+  const room = (side) => studio.getBoundingClientRect().width / zoom() - (side === "left" ? (right && !st.rightOff ? st.right : 0) : (st.leftOff ? 0 : st.left));
   const toggle = (side) => { st = { ...st, [`${side}Off`]: !st[`${side}Off`] }; apply(true); };
   for (const side of right ? ["left", "right"] : ["left"]) {
     const h = document.createElement("div"), b = document.createElement("button");
@@ -58,7 +61,7 @@ export function mountPanes(studio, key, store) {
     h.addEventListener("pointerdown", (e) => {
       if (e.button !== 0) return;
       h.setPointerCapture(e.pointerId); h.classList.add("drag"); studio.classList.add("resizing"); e.preventDefault();
-      const move = (ev) => { const r = studio.getBoundingClientRect(); st = dragPane(st, side, side === "left" ? ev.clientX - r.left : r.right - ev.clientX, room(side)); apply(false); };
+      const move = (ev) => { const r = studio.getBoundingClientRect(); st = dragPane(st, side, (side === "left" ? ev.clientX - r.left : r.right - ev.clientX) / zoom(), room(side)); apply(false); };
       const up = () => { h.classList.remove("drag"); studio.classList.remove("resizing"); h.removeEventListener("pointermove", move); h.removeEventListener("pointerup", up); h.removeEventListener("pointercancel", up); apply(true); };
       h.addEventListener("pointermove", move); h.addEventListener("pointerup", up); h.addEventListener("pointercancel", up);
     });
@@ -66,6 +69,7 @@ export function mountPanes(studio, key, store) {
   }
   /* Ctrl + B : the left panel, from anywhere on the screen ; the listener goes away with the studio */
   const onKey = (e) => { if (!studio.isConnected) { window.removeEventListener("keydown", onKey); return; } if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && String(e.key).toLowerCase() === "b") { e.preventDefault(); toggle("left"); } };
-  if (typeof window !== "undefined") window.addEventListener("keydown", onKey);
+  const onScale = () => { if (!studio.isConnected) { window.removeEventListener("dw:scale", onScale); return; } apply(false); };
+  if (typeof window !== "undefined") { window.addEventListener("keydown", onKey); window.addEventListener("dw:scale", onScale); }
   apply(false);
 }

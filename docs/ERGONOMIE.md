@@ -56,6 +56,19 @@ Ce qui reste, et pourquoi :
 - **Listes déroulantes** : 38 dans l'Isolation (une par corps, pour son rôle et son potentiel) et 40 dans les Dessins
   (une par cote). C'est là que des arbres par type, comme dans la Simulation, serviraient le mieux.
 
+## Le repère, la grille et la taille de l'affichage
+
+- **Repère X Y Z** : en haut à droite de chaque vue 3D, avec son point central. L'axe qui vient vers l'œil est dessiné
+  par-dessus, celui qui s'éloigne est estompé. Un clic sur une lettre regarde le long de son axe.
+- **Grille derrière la pièce** : bouton « Grille » de la barre de la vue, ou touche **G**. Elle se pose sur les trois
+  faces de la boîte de la pièce qui sont à l'opposé de l'œil — le sol et les deux murs du fond — donc toujours
+  *derrière*, quelle que soit la vue. Son pas est un nombre rond de millimètres (0,5 · 1 · 2 · 5 · 10 · 20 · 50…),
+  écrit sous le repère, avec un trait plus fort tous les cinq pas. Le choix vaut pour toutes les vues et le navigateur
+  le garde (`web/js/core/view_grid.js`, pur et testé).
+- **Taille de l'affichage** : menu du compte (l'icône de personne) → « Taille de l'affichage », cinq pas de 90 à
+  150 %. Tout suit — textes, boutons, étiquettes des vues 3D, barre du haut — parce que tout est en `rem` ; les volets
+  s'élargissent avec leur texte. Le choix est gardé par le navigateur et appliqué avant le premier affichage.
+
 ## Ce que l'audit ne voit pas
 
 Il mesure des boîtes, pas le sens : un libellé obscur, un ordre d'actions illogique, une couleur mal choisie, une

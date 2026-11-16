@@ -6,14 +6,14 @@ import { el, clear, icon, btn, toast, modal, installTips, download, confirmBox, 
 import { store } from "./store.js";
 import { kernel } from "../cad/client.js";
 import { session, signOut } from "./access.js";
-import { THEMES, currentTheme, applyTheme } from "./theme.js";
+import { THEMES, currentTheme, applyTheme, SCALES, currentScale, applyScale } from "./theme.js";
 import { toDwiz } from "./dwiz.js";
 import { dwizFileName } from "./dwiz_names.js";
 import { mountPanes } from "./panes.js";
 import { guideBox, guideCount, guideSummary } from "./guide.js";
 import { projectIssues, issuesHere } from "./guide_checks.js";
 
-export const APP_VERSION = "0.42.0";
+export const APP_VERSION = "0.43.0";
 const modules = new Map();
 const ORDER = ["home", "shop", "parts", "pcb", "pcba", "assembly", "physics", "creepage", "dfx", "drawings", "review", "report"];
 const SHOP_SCREENS = new Set(["interfaces", "process", "extrusion", "library", "busbar", "flex"]);      // screens of the Shop : its tab stays lit on them (see modules/shop_tabs.js)
@@ -144,6 +144,10 @@ function accountMenu(menu, close) {
   else if (session.configured) menu.append(item("Se connecter avec Google", "user", () => app.connect && app.connect(), close));
   menu.append(item("Compte, Drive et accès", "cloud", () => go("#/account"), close), el("hr"), el("div", { class: "menu-title" }, "Thème"));
   for (const t of THEMES) { const it = item(t.label, t.key === cur ? "check" : "palette", () => { applyTheme(t.key); rebuildShell(); }, close); if (t.key === cur) it.classList.add("on"); menu.append(it); }
+  /* the size of what is shown : five steps, each drawn at its own size ; the menu stays open so that the eye can compare */
+  const z = currentScale(), row = el("div", { class: "scale-row", role: "group", "aria-label": "Taille de l'affichage" }, SCALES.map(([k, label]) => el("button", { type: "button", class: k === z ? "on" : null, "aria-pressed": k === z ? "true" : "false", "data-tip": `${label} — ${k} %`, "data-scale": String(k), style: { fontSize: `${0.62 + (k - 90) * 0.011}rem` },
+    onClick: (e) => { e.stopPropagation(); applyScale(k); for (const b of row.children) { const on = b.dataset.scale === String(k); b.classList.toggle("on", on); b.setAttribute("aria-pressed", on ? "true" : "false"); } } }, "A")));
+  menu.append(el("hr"), el("div", { class: "menu-title" }, "Taille de l'affichage"), row);
 }
 function onshapeMenu(menu, close) {
   menu.append(el("div", { class: "menu-title" }, "Onshape"));

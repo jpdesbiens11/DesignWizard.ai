@@ -19,3 +19,17 @@ export function applyTheme(key) {
   window.dispatchEvent(new CustomEvent("dw:theme", { detail: t }));
   return t;
 }
+
+/* ---------- the size of what is shown : text, buttons, labels of the 3D views — for a small screen, tired eyes, the evening ---------- */
+export const SCALES = [[90, "Petit"], [100, "Normal"], [115, "Grand"], [130, "Très grand"], [150, "Énorme"]];
+const SCALE_KEY = "dw.scale";
+export const scaleOf = (v) => { const n = parseInt(v, 10); return SCALES.some(([k]) => k === n) ? n : 100; };
+export function currentScale() { return scaleOf(Math.round(parseFloat(document.documentElement.style.getPropertyValue("--ui-scale") || "1") * 100)); }
+/** Sets the size (percent, one of SCALES) and keeps it ; the 3D views and the panels follow (they listen to the window). */
+export function applyScale(pct) {
+  const z = scaleOf(pct);
+  document.documentElement.style.setProperty("--ui-scale", String(z / 100));
+  try { localStorage.setItem(SCALE_KEY, String(z)); } catch (e) { /* private window : the size lasts for this page only */ }
+  window.dispatchEvent(new Event("resize")); window.dispatchEvent(new CustomEvent("dw:scale", { detail: z }));
+  return z;
+}

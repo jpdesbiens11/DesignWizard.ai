@@ -3,6 +3,7 @@
    platform's own tools (interface frames, DFx markers, isolation paths). Renders only when something changed. */
 
 import * as THREE from "../../vendor/three/three.module.min.js";
+import { triadOf, gridOf, gridKey } from "./view_grid.js";
 
 const GRAPHITE = 0x26323f;
 /** Colour of a design token (themes.css), read on the element so each theme draws its own edges. */
@@ -27,7 +28,10 @@ export class Viewer {
     this.canvas.tabIndex = 0;
     this.labelLayer = document.createElement("div");
     this.labelLayer.className = "dw-view-labels";
-    container.append(this.canvas, this.labelLayer);
+    this.triad = document.createElementNS("http://www.w3.org/2000/svg", "svg"); this.triad.setAttribute("class", "dw-view-triad"); this.triad.setAttribute("viewBox", "-50 -50 100 100"); this.triad.setAttribute("role", "img"); this.triad.setAttribute("aria-label", "Repère X Y Z de la vue");
+    this.gridNote = document.createElement("div"); this.gridNote.className = "dw-view-gridnote"; this.gridNote.hidden = true;
+    container.append(this.canvas, this.labelLayer, this.triad, this.gridNote);
+    this.grid = null; this.gridOn = false; this._gridKey = "";      // the grid behind the part (setGrid)
     this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, -1e5, 1e5);
     this.camera.up.set(0, 0, 1);
     this.target = new THREE.Vector3();
@@ -57,7 +61,7 @@ export class Viewer {
     this.resizeObs.disconnect();
     this.clear();
     this.renderer.dispose();
-    this.canvas.remove(); this.labelLayer.remove();
+    this.canvas.remove(); this.labelLayer.remove(); this.triad.remove(); this.gridNote.remove(); this._dropGrid();
   }
   invalidate() { this.dirty = true; }
 
@@ -191,14 +195,43 @@ export class Viewer {
     this.camera.lookAt(this.target);
     this.camera.updateProjectionMatrix(); this.camera.updateMatrixWorld();
     const right = new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld, 0), up = new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld, 1);
+    this._right = right; this._up = up;
     this.key.position.copy(this.dir).addScaledVector(right, -0.6).addScaledVector(up, 0.8);
     this.fill.position.copy(this.dir).addScaledVector(right, 0.9).addScaledVector(up, -0.3);
   }
   _render() {
     this.dirty = false;
     this._cam();
+    if (this.gridOn) this._layGrid();
     this.renderer.render(this.scene, this.camera);
     this._layoutLabels();
+    this._drawTriad();
+  }
+  /* ---------- the triad, top right : where X, Y and Z point ; a click on a letter looks along its axis ---------- */
+  _drawTriad() {
+    const key = [...this._right.toArray(), ...this._up.toArray()].map((v) => v.toFixed(3)).join(",");
+    if (key === this._triadKey) return; this._triadKey = key;
+    const NS = "http://www.w3.org/2000/svg", mk = (tag, at) => { const n = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(at)) n.setAttribute(k, v); return n; };
+    this.triad.replaceChildren();
+    for (const a of triadOf(this._right.toArray(), this._up.toArray(), this.dir.toArray())) {
+      const back = a.depth < -0.02, g = mk("g", { class: "ax", "data-axis": a.key }), tip = mk("title", {}); tip.textContent = `Regarder le long de ${a.key}`;
+      g.append(tip, mk("line", { x1: 0, y1: 0, x2: (a.x * 30).toFixed(2), y2: (a.y * 30).toFixed(2), stroke: a.color, "stroke-width": 3.4, "stroke-linecap": "round", opacity: back ? 0.45 : 1 }),
+        mk("circle", { cx: (a.x * 38).toFixed(2), cy: (a.y * 38).toFixed(2), r: 8.5, fill: a.color, opacity: back ? 0.55 : 1 }));
+      const t = mk("text", { x: (a.x * 38).toFixed(2), y: (a.y * 38).toFixed(2) }); t.textContent = a.key; g.append(t);
+      g.addEventListener("click", () => this.lookAlong(a.v)); this.triad.append(g);
+    }
+    this.triad.append(mk("circle", { cx: 0, cy: 0, r: 4.2, fill: "#26323f", stroke: "#fff", "stroke-width": 1.4 }));
+  }
+  /* ---------- the grid behind the part : on the three faces of its box away from the eye, a round step in millimetres ---------- */
+  setGrid(on) { this.gridOn = !!on; if (!this.gridOn) this._dropGrid(); this.gridNote.hidden = !this.gridOn; this._gridKey = ""; this.dirty = true; }
+  _dropGrid() { if (!this.grid) return; this.scene.remove(this.grid); this.grid.traverse((n) => { if (n.geometry) n.geometry.dispose(); if (n.material) n.material.dispose(); }); this.grid = null; }
+  _layGrid() {
+    if (!this.objects.size) { this._dropGrid(); this.gridNote.hidden = true; this._gridKey = ""; return; }
+    const bb = this.bbox(), box = [bb.min.x, bb.min.y, bb.min.z, bb.max.x, bb.max.y, bb.max.z], eye = this.dir.toArray(), key = gridKey(box, eye);
+    if (key === this._gridKey && this.grid) return; this._gridKey = key; this._dropGrid();
+    const g = gridOf(box, eye), lines = (arr, opacity) => { const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.BufferAttribute(arr, 3)); return new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: this.edgeColor.clone(), transparent: true, opacity, depthWrite: false })); };
+    this.grid = new THREE.Group(); this.grid.add(lines(g.minor, 0.13), lines(g.heavy, 0.34)); this.grid.renderOrder = -1; this.scene.add(this.grid);
+    this.gridNote.hidden = false; this.gridNote.textContent = `grille ${String(g.step).replace(".", ",")} mm`;
   }
   _bind() {
     const c = this.canvas;
