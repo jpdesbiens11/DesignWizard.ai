@@ -23,10 +23,11 @@ const part = {
     ["Ses poignées — les paramètres que l'on règle", ["params"]],
     ["Comment elle se fait — les opérations, dans l'ordre de l'atelier", ["extrusion", "pcb", "features", "bodies"]],
     ["Ce qu'il faut savoir — notes du dessin, révision, hypothèses", ["notes", "revision", "interview"]],
+    ["De quoi elle a l'air à l'écran — sa couleur, pour la reconnaître (ce n'est pas une finition)", ["look"]],
     ["Ce qui se dit avec le fournisseur — la gamme annotée : une note par phase, les points à voir", ["plan"]],
   ],
   kids: {
-    intent: {}, order: {}, elec: {}, mold: {}, print: {}, characteristics: {}, library: {}, busbar: {}, laminate: {}, thermal: {}, fill: {}, flex: {},
+    intent: {}, order: {}, elec: {}, mold: {}, print: {}, look: {}, characteristics: {}, library: {}, busbar: {}, laminate: {}, thermal: {}, fill: {}, flex: {},
     interfaces: { word: "interface", head: ["id", "type"], first: ["side", "face", "at", "level", "rot", "key", "partner", "name"], kids: { params: {}, opts: {} } },
     stock: { head: ["form"] },
     folded: { kids: { flanges: { word: "flange", head: ["side"] } } },

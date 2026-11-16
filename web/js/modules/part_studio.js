@@ -18,6 +18,7 @@ import { foldPanel, isFolded } from "./part_fold.js";
 import { runDfx } from "../analysis/dfx_api.js";
 import { lightSide, LIT } from "../core/view_marks.js";
 import { partGestures, PART_KEYS } from "./part_gestures.js";
+import { lookSwatch, lookTools } from "./part_look.js";
 
 const OP_ICON = { box: "part", cylinder: "part", extrude: "extrusion", revolve: "refresh", hole: "bolt", pocket: "section", pad: "layers", slot: "minus", boss: "bolt", shell: "layers", fillet: "edit", chamfer: "edit", interfaces: "interfaces",
   drill: "drill", tap: "tap", cbore: "drill", csink: "drill", ream: "drill", mill: "mill", groove: "mill", face: "mill", step: "mill", outline: "laser", turn: "lathe", bore: "lathe", break_edges: "deburr", deburr: "deburr", finish: "palette" };
@@ -145,9 +146,9 @@ export function partStudio(main, args, cfg) {
       el("div", { class: "side-head" }, el("h2", null, cfg.title), btn("", () => newPartDialog(cfg), { small: true, icon: "plus", tip: "Nouvelle pièce (gabarit) — ou démarrez par l'intention, dans l'Atelier" })));
     const scroll = el("div", { class: "side-scroll" });
     left.append(scroll);
-    const list = el("div", { class: "side-section" }, el("h3", null, `Pièces (${parts().length})`));
-    for (const p of parts()) list.append(el("a", { class: "nav-item" + (p.id === id ? " active" : ""), href: `#/${cfg.key}/${encodeURIComponent(p.id)}` },
-      icon(p.family === "pcb" ? "pcb" : p.family === "extrusion" ? "extrusion" : p.step ? "step" : "part"), el("span", { class: "grow" }, p.name || p.id), el("small", null, p.id)));
+    const list = el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, `Pièces (${parts().length})`), lookTools(parts())));
+    for (const p of parts()) list.append(el("div", { class: "nav-row" }, el("a", { class: "nav-item" + (p.id === id ? " active" : ""), href: `#/${cfg.key}/${encodeURIComponent(p.id)}` },
+      icon(p.family === "pcb" ? "pcb" : p.family === "extrusion" ? "extrusion" : p.step ? "step" : "part"), el("span", { class: "grow" }, p.name || p.id), el("small", null, p.id)), lookSwatch(p)));      // its colour, a click away
     if (!parts().length) list.append(el("p", { class: "muted" }, "Aucune pièce."));
     scroll.append(list);
     if (!st.spec) return;

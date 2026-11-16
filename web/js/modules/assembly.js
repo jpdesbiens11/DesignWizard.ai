@@ -5,6 +5,7 @@
 import { el, clear, icon, btn, badge, toast, modal, fmt, fmtMass, download, promptBox, confirmBox, table } from "../core/dom.js";
 import { registerModule, go, setStatus, app } from "../core/app.js";
 import { store } from "../core/store.js";
+import { lookSwatch } from "./part_look.js";
 import { kernel } from "../cad/client.js";
 import { createViewport } from "../core/viewport.js";
 import { mountPins } from "./view_pins.js";
@@ -137,7 +138,7 @@ function render(main, args) {
     for (const inst of a.instances) {
       const spec = store.part(inst.part), placed = st.ctx && st.ctx.sol.placedBy[inst.id];
       sec.append(el("div", { class: "nav-item" + (st.sel === inst.id ? " active" : "") + (inst.hidden ? " off" : ""), role: "button", tabindex: "0", onClick: () => { st.sel = inst.id; st.tab = "inst"; vp.viewer.highlight([...vp.viewer.objects.keys()].filter((k) => k.startsWith(inst.id + "/"))); renderLeft(); renderRight(); } },
-        icon(spec && spec.family === "pcb" ? "pcb" : spec && spec.family === "extrusion" ? "extrusion" : "part"), el("span", { class: "grow" }, spec ? spec.name || spec.id : `${inst.part} (absente)`),
+        icon(spec && spec.family === "pcb" ? "pcb" : spec && spec.family === "extrusion" ? "extrusion" : "part"), el("span", { class: "grow" }, spec ? spec.name || spec.id : `${inst.part} (absente)`), spec ? lookSwatch(spec) : null,
         inst.fixed ? badge("fixe", "neutral") : placed ? badge("matée", "ok") : badge("libre", "warn"),
         iconBtn(inst.hidden ? "eye-off" : "eye", inst.hidden ? "Afficher" : "Masquer", () => store.updateAssembly(id, (x) => { const i = x.instances.find((q) => q.id === inst.id); if (i.hidden) delete i.hidden; else i.hidden = true; }, `${inst.part} ${inst.hidden ? "affichée" : "masquée"}`))));
     }

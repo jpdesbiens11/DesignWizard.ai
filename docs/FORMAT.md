@@ -156,6 +156,9 @@ d'atelier, opérations du noyau) est dans [PART_LANGUAGE.md](PART_LANGUAGE.md). 
 
 - **`intent`** — `loads`, `environment`, `quantity`, `priority` : pourquoi la pièce existe.
 - **`order`** — `quantity`, `need_by`, `note` : la commande du prototype.
+- **`look`** — `color` (`"#rrggbb"`), `opacity` (0,2 à 1) : la couleur de la pièce **à l'écran**, choisie par son
+  concepteur pour la reconnaître. Ce n'est pas une finition ; absente, la pièce a la couleur de sa matière. Elle
+  n'entre pas dans la signature de la pièce (revue, révision).
 - **`interface`** — `bolt_pattern`, `planar`, `fit`, `cutout`, `rail`, `pins` ; côté `A` ou `B`, même `key` et mêmes
   `params` sur la pièce voisine.
 - **`brief`** et **`review`** (projet) — ce que l'IA a retenu de l'entrevue d'un premier design (réponses, hypothèses,

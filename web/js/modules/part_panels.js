@@ -7,6 +7,8 @@ import { app } from "../core/app.js";
 import { interfaceDialog, nextIfaceId } from "../core/part_edit.js";
 import { INTERFACE_TYPES, interfaceType } from "../cad/interfaces.js";
 import { PROCESSES, materialOrDefault, materialMenu, materialLabel } from "../cad/materials.js";
+import { lookSwatch } from "./part_look.js";
+import { lookOf, colorName } from "../core/part_look.js";
 import { validateSpec } from "../cad/build.js";
 import { applyFix } from "../analysis/dfx_api.js";
 import { toDwiz } from "../core/dwiz.js";
@@ -107,7 +109,9 @@ export function sheetPanel(body, { st, id }) {
     field("Matériau", el("select", { onChange: set("material", "matériau") }, el("option", { value: "" }, "— à définir —"), materialMenu().map((f) => el("optgroup", { label: f.family }, f.list.map((m) => el("option", { value: m.id, selected: m.id === s.material }, materialLabel(m))))))),
     field("Procédé", el("select", { onChange: set("process", "procédé") }, el("option", { value: "" }, "— à définir —"), Object.entries(PROCESSES).map(([k, p]) => el("option", { value: k, selected: k === s.process }, p.fr))),
       s.material && s.process && mat.processes && mat.processes.length && !mat.processes.includes(s.process) ? "Ce matériau n'est pas courant pour ce procédé." : null),
-    text("finish", "Finition"), text("revision", "Révision"));
+    text("finish", "Finition"), text("revision", "Révision"),
+    el("div", { class: "field look-field" }, el("span", { class: "field-label" }, "Couleur à l'écran"), el("div", { class: "look-line" }, lookSwatch(s, { big: true }), el("span", null, lookOf(s).color ? colorName(lookOf(s).color) : `celle de la matière (${mat.name})`)),
+      el("span", { class: "field-hint" }, "Pour reconnaître la pièce d'un coup d'œil, ici et dans l'assemblage. Ce n'est pas la finition.")));
   const elec = s.elec || {};
   body.append(el("div", { class: "side-section" }, el("h3", null, "Rôle électrique (analyse d'isolation)"),
     el("div", { class: "form-row" }, field("Rôle", el("select", { onChange: (e) => store.updatePart(id, (x) => { x.elec = { ...(x.elec || {}), kind: e.target.value || undefined }; }, `${s.id} : rôle électrique`) },

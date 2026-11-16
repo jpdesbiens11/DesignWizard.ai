@@ -33,6 +33,7 @@ Functions: min max abs sqrt floor ceil round sin cos tan (degrees) hypot clamp(v
   "pcb": { ... },                       // section 7 (family pcb)
   "notes": ["Drawing note 1", "..."],   // notes printed on the 2D drawing
   "finish": "Anodised black 10 µm",
+  "look": { "color": "#3d86e6", "opacity": 0.6 },   // optional: the colour of the part ON SCREEN, to tell parts apart (not a finish; leave it out and the part shows the colour of its material)
   "interview": { "questions": [ {"q": "...", "a": "..."} ], "assumptions": ["..."] }   // what was asked and assumed
 }
 
