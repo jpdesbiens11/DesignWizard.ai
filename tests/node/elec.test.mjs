@@ -26,7 +26,7 @@ test("a high-voltage connector becomes a part : flange, body, one conductor per 
   assert.deepEqual(validateSpec(s).errors, []); assert.equal(s.process, "purchased"); assert.deepEqual(poleNets(c, 2, "HV"), ["HV+", "HV-"]); assert.deepEqual(poleNets(connector("jst-xh"), 6), ["LV"]);
   assert.deepEqual(Object.values(s.bodies).map((b) => [b.net, b.kind, b.material]), [["HV+", "conductor", "CU-C110"], ["HV-", "conductor", "CU-C110"]]);
   assert.deepEqual(s.interfaces.map((i) => [i.type, i.side, i.face, !!i.external]), [["cutout", "B", "-Y", false], ["planar", "A", "-Y", true]], "the connection leaves the product : external");
-  assert.deepEqual([s.library.ref, s.library.a, s.library.v, s.library.hvil], ["te-hvp800", 250, 1000, true]); assert.match(s.notes.join(" "), /TE Connectivity AMP\+ HVP 800 — 250 A par contact, 1000 V/); assert.match(s.notes.join(" "), /Enveloppe indicative/);
+  assert.deepEqual([s.library.ref, s.library.a, s.library.v, s.library.hvil], ["te-hvp800", 250, 1000, true]); assert.match(s.notes.join(" "), /TE Connectivity AMP\+ HVP 800 — 250 A par contact, 1000 V/); assert.match(s.notes.join(" "), /Forme indicative \(embase blindée à ports ronds\) dans une enveloppe indicative/);
   const b = buildPart(K, s); assert.equal(b.log.filter((l) => l.level === "error").length, 0); assert.equal(b.bodies.length, 3);
   assert.deepEqual(b.bodies.map((x) => [x.name, x.conductive, x.net]), [["main", false, null], ["pole1", true, "HV+"], ["pole2", true, "HV-"]]);
   const E = connectorEnvelope(c, 2); assert.ok(Math.abs((b.bbox[3] - b.bbox[0]) - (E.L + 2 * s.params.e.value)) < 0.01 && b.bbox[1] < -5, "the flange is wider than the body, the nose passes the wall");

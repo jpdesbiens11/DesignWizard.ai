@@ -9,6 +9,7 @@ import { INTERFACE_TYPES, interfaceType } from "../cad/interfaces.js";
 import { PROCESSES, materialOrDefault, materialMenu, materialLabel } from "../cad/materials.js";
 import { lookSwatch } from "./part_look.js";
 import { lookOf, colorName } from "../core/part_look.js";
+import { useMakerModel, dropMakerModel } from "../core/elec_parts.js";
 import { validateSpec } from "../cad/build.js";
 import { applyFix } from "../analysis/dfx_api.js";
 import { toDwiz } from "../core/dwiz.js";
@@ -100,6 +101,18 @@ export function dfxPanel(body, { st, id, vp }) {
   }
 }
 
+/* ---------- the maker's 3D model of a library part : the designer downloads it for the part number chosen, it replaces the indicative shape ---------- */
+function makerModel(s, id) {
+  const L = s.library, has = !!s.step, file = el("input", { type: "file", accept: ".step,.stp", hidden: true, "data-maker-file": "1", onChange: async (e) => { const f = e.target.files && e.target.files[0]; if (!f) return;
+    try { const text = await f.text(); store.updatePart(id, (x) => { useMakerModel(x, text, f.name); }, `${s.id} : modèle 3D du fabricant (${f.name})`); toast(`Modèle ${f.name} mis à la place de la forme indicative. Vérifiez la place des interfaces.`, "success", 6000); }
+    catch (err) { toast(err.message, "error", 8000); } e.target.value = ""; } });
+  return el("div", { class: "side-section", "data-maker-model": has ? "step" : "indicative" }, el("h3", null, "Modèle 3D du fabricant"),
+    el("p", { class: "small" }, has ? `Modèle fourni : ${(s.step && s.step.file) || L.model || "fichier STEP"}. La référence, les interfaces et les notes de la bibliothèque sont gardées.` : `La forme affichée est indicative : elle distingue le genre et prend la bonne place. Pour la référence exacte de ${L.maker} ${L.series}, téléchargez son modèle STEP sur le site du fabricant et mettez-le ici.`),
+    el("div", { class: "form-actions", style: { justifyContent: "flex-start", flexWrap: "wrap" } }, file, btn(has ? "Changer de fichier STEP…" : "Mettre le modèle STEP…", () => file.click(), { small: true, icon: "upload", primary: !has, tip: "Un fichier .step ou .stp téléchargé chez le fabricant pour la référence choisie. Il est gardé dans le projet." }),
+      el("a", { class: "btn btn-small", href: `https://duckduckgo.com/?q=${encodeURIComponent(`${L.maker} ${L.series} 3D model STEP`)}`, target: "_blank", rel: "noopener noreferrer", "data-tip": "Ouvre une recherche dans un nouvel onglet : le modèle se télécharge sur le site du fabricant, avec la référence exacte" }, icon("external"), "Chercher chez le fabricant"),
+      ...(has ? [btn("Revenir à la forme indicative", () => store.updatePart(id, (x) => { dropMakerModel(x); }, `${s.id} : forme indicative`), { small: true, icon: "undo" })] : [])),
+    el("p", { class: "muted small" }, "Le modèle d'un fabricant lui appartient : la plateforme ne le copie pas et ne le publie pas, elle garde seulement dans votre projet le fichier que vous y mettez."));
+}
 /* ---------- data sheet ---------- */
 export function sheetPanel(body, { st, id }) {
   const s = st.spec, b = st.built, set = (key, label) => (e) => store.updatePart(id, (x) => { if (e.target.value === "") delete x[key]; else x[key] = e.target.value; }, `${s.id} : ${label} modifié`);
@@ -112,6 +125,7 @@ export function sheetPanel(body, { st, id }) {
     text("finish", "Finition"), text("revision", "Révision"),
     el("div", { class: "field look-field" }, el("span", { class: "field-label" }, "Couleur à l'écran"), el("div", { class: "look-line" }, lookSwatch(s, { big: true }), el("span", null, lookOf(s).color ? colorName(lookOf(s).color) : `celle de la matière (${mat.name})`)),
       el("span", { class: "field-hint" }, "Pour reconnaître la pièce d'un coup d'œil, ici et dans l'assemblage. Ce n'est pas la finition.")));
+  if (s.library && s.family === "connector") body.append(makerModel(s, id));
   const elec = s.elec || {};
   body.append(el("div", { class: "side-section" }, el("h3", null, "Rôle électrique (analyse d'isolation)"),
     el("div", { class: "form-row" }, field("Rôle", el("select", { onChange: (e) => store.updatePart(id, (x) => { x.elec = { ...(x.elec || {}), kind: e.target.value || undefined }; }, `${s.id} : rôle électrique`) },

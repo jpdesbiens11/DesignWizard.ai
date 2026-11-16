@@ -8,10 +8,16 @@ import { registerModule, go } from "../core/app.js";
 import { store } from "../core/store.js";
 import { importPart } from "../core/importer.js";
 import { CONNECTORS, CELLS, ELEC_STANDARDS, CONNECTOR_KINDS, pickConnectors } from "../cad/elec_library.js";
-import { connectorPart, cellPart, connectorEnvelope, poleNets } from "../core/elec_parts.js";
+import { connectorPart, cellPart, connectorEnvelope, poleNets, defaultPoles } from "../core/elec_parts.js";
 import { WELD_PROCESSES } from "../cad/interfaces_elec.js";
 import { thermalPadPart } from "../core/busbar_lam.js";
 import { shopTabs } from "./shop_tabs.js";
+import { connectorPictures, cellPicture, livePreview } from "./library_preview.js";
+import { SHAPE_WORDS } from "../core/connector_shapes.js";
+
+/* a colour per kind of connector, the low-voltage ones in cool colours, the high-voltage ones in warm ones */
+const KIND_COLOR = { "wire-to-board": "#3d86e6", "wire-to-wire": "#25ad9f", "board-to-board": "#8a7df0", circular: "#22b8cf", ffc: "#e9708f", "terminal-block": "#a0744c", hv: "#ee8a32", power: "#e8554b", msd: "#d9480f" };
+const shot = (url, alt) => (url ? el("img", { class: "lib-shot", src: url, alt, loading: "lazy" }) : el("span", { class: "lib-shot none" }, icon("part")));
 
 const filter = { domain: "", amps: "", volts: "", sealed: false, hvil: false };
 const SEEN = { read: ["lu", "ok", "Valeurs lues sur la fiche ou la page du fabricant"], excerpt: ["extrait", "warn", "Valeurs vues en extrait de la page du fabricant : à relire sur la fiche"] };
@@ -26,18 +32,20 @@ function create(spec, toAsm) {
   return r.id;
 }
 function addConnector(c) {
-  const hv = c.domain === "hv", st = { poles: hv ? 2 : 4, net: hv ? "HV" : "LV", mount: hv || c.kind === "circular" || c.sealed ? "panel" : "board", external: hv, partner: "", toAsm: !!store.project.assemblies.length };
-  const info = el("p", { class: "muted small" }), draw = () => { const E = connectorEnvelope(c, st.poles); info.textContent = `Potentiels : ${poleNets(c, st.poles, st.net).join(", ")} · enveloppe indicative ${fr(E.L)} × ${fr(E.W)} × ${fr(E.H)} mm (à remplacer par le modèle du fabricant).`; };
+  const hv = c.domain === "hv", st = { poles: defaultPoles(c), net: hv ? "HV" : "LV", mount: hv || c.kind === "circular" || c.sealed ? "panel" : "board", external: hv, partner: "", toAsm: !!store.project.assemblies.length };
+  const stage = el("div", { class: "lib-live", "data-tip": "La forme indicative de ce genre de connecteur, dans son enveloppe : tournez-la à la souris" }); let live = null;
+  const info = el("p", { class: "muted small" }), draw = () => { const E = connectorEnvelope(c, st.poles); info.textContent = `Potentiels : ${poleNets(c, st.poles, st.net).join(", ")} · forme indicative (${SHAPE_WORDS[c.kind] || "connecteur"}) dans une enveloppe de ${fr(E.L)} × ${fr(E.W)} × ${fr(E.H)} mm — à remplacer par le modèle du fabricant, depuis la fiche de la pièce.`; if (live) live.show({ poles: st.poles, mount: st.mount, net: st.net }); };
   const num = el("input", { type: "number", min: 1, max: 60, step: 1, value: st.poles, onInput: (e) => { st.poles = Math.max(1, parseInt(e.target.value, 10) || 1); draw(); } });
   const net = el("input", { type: "text", value: st.net, onInput: (e) => { st.net = e.target.value.trim() || (hv ? "HV" : "LV"); draw(); } }), partner = el("input", { type: "text", placeholder: hv ? "Ex. : onduleur, chargeur, batterie" : "Ex. : capteur de température, carte de commande", onInput: (e) => { st.partner = e.target.value; } });
-  const mount = el("select", { onChange: (e) => { st.mount = e.target.value; } }, [["panel", "Sur une paroi (bride, passage, vis)"], ["board", "Sur une carte"]].map(([k, l]) => el("option", { value: k, selected: k === st.mount }, l)));
+  const mount = el("select", { onChange: (e) => { st.mount = e.target.value; draw(); } }, [["panel", "Sur une paroi (bride, passage, vis)"], ["board", "Sur une carte"]].map(([k, l]) => el("option", { value: k, selected: k === st.mount }, l)));
   const ext = el("input", { type: "checkbox", checked: st.external, onChange: (e) => { st.external = e.target.checked; } }), asm = el("input", { type: "checkbox", checked: st.toAsm, onChange: (e) => { st.toAsm = e.target.checked; } });
   draw();
-  const m = modal(`${c.maker} ${c.series}`, [el("p", null, `${CONNECTOR_KINDS[c.kind]} — ${fr(c.a)} A par contact${c.v ? `, ${c.v} V` : ""}${c.pos ? ` · ${c.pos} pôles` : ""}${c.wire ? ` · ${c.wire}` : ""}. `, badge(SEEN[c.seen][0], SEEN[c.seen][1])), c.note ? el("p", { class: "muted small" }, `${c.note.charAt(0).toUpperCase()}${c.note.slice(1)}.`) : null,
+  const m = modal(`${c.maker} ${c.series}`, [stage, el("p", null, `${CONNECTOR_KINDS[c.kind]} — ${fr(c.a)} A par contact${c.v ? `, ${c.v} V` : ""}${c.pos ? ` · ${c.pos} pôles` : ""}${c.wire ? ` · ${c.wire}` : ""}. `, badge(SEEN[c.seen][0], SEEN[c.seen][1])), c.note ? el("p", { class: "muted small" }, `${c.note.charAt(0).toUpperCase()}${c.note.slice(1)}.`) : null,
     el("div", { class: "form-row" }, field("Nombre de pôles", num, c.pos ? `La famille existe en ${c.pos}` : ""), field(hv ? "Potentiel (HV donne HV+ et HV−)" : "Potentiel", net), field("Montage", mount)),
     field("Vers quoi", partner), el("label", { class: "check" }, ext, "Le raccordement sort du produit : interface externe, vers un appareil qui n'est pas dans l'assemblage"),
     store.project.assemblies.length ? el("label", { class: "check" }, asm, `Poser la pièce dans ${store.project.assemblies[0].id}`) : null, info,
-    el("div", { class: "form-actions" }, btn("Annuler", () => m.close()), btn("Ajouter au projet", () => { const id = create(connectorPart(c, { id: store.nextPartId(), poles: st.poles, net: st.net, mount: st.mount, external: st.external, partner: st.partner.trim() || undefined }), st.toAsm); if (id) { m.close(); go(`#/parts/${encodeURIComponent(id)}`); } }, { primary: true, icon: "plus" }))], { wide: true });
+    el("div", { class: "form-actions" }, btn("Annuler", () => m.close()), btn("Ajouter au projet", () => { const id = create(connectorPart(c, { id: store.nextPartId(), poles: st.poles, net: st.net, mount: st.mount, external: st.external, partner: st.partner.trim() || undefined }), st.toAsm); if (id) { m.close(); go(`#/parts/${encodeURIComponent(id)}`); } }, { primary: true, icon: "plus" }))], { wide: true, onClose: () => { if (live) live.dispose(); } });
+  live = livePreview(stage, c); draw();
 }
 function addCell(c) {
   const st = { net: "CELL", process: "laser", toAsm: !!store.project.assemblies.length };
@@ -63,11 +71,22 @@ function render(main) {
       el("div", null, el("label", { class: "check" }, el("input", { type: "checkbox", checked: filter.sealed, onChange: set("sealed") }), "Étanche"), el("label", { class: "check" }, el("input", { type: "checkbox", checked: filter.hvil, onChange: set("hvil") }), "Interverrouillage (HVIL)"))),
       el("p", { class: "muted small" }, "Valeurs nominales publiées par les fabricants, par contact, à la condition indiquée : elles se déclassent avec le nombre de pôles, le fil et la température. « lu » : relevé sur la fiche ; « extrait » : vu en extrait seulement. La fiche de la référence achetée fait foi."));
     const sections = [bar];
-    if (filter.domain !== "cells") sections.push(el("section", { class: "card" }, el("h2", null, `Connecteurs `, el("small", { class: "muted" }, `${list.length} famille(s), la plus petite qui convient d'abord`)),
-      list.length ? table(["Fabricant ou norme", "Série", "Genre", "Pas / contact", "Pôles", "A", "V", "Fil", "Étanchéité", "Normes", "Usage", "", ""], list.map((c) => [c.maker, el("b", null, c.series), CONNECTOR_KINDS[c.kind], c.pitch ? `${fr(c.pitch)} mm` : c.contact || "—", c.pos || "—", el("span", { "data-tip": c.note || null }, fr(c.a)), c.v ? String(c.v) : "—", c.wire || "—",
-        c.sealed ? `${c.sealed}${c.hvil ? " · HVIL" : ""}${c.shielded ? " · blindé" : ""}` : c.hvil ? "HVIL" : "—", c.std || "—", c.use || "", el("span", { "data-tip": SEEN[c.seen][2] }, badge(SEEN[c.seen][0], SEEN[c.seen][1])), btn("Ajouter", () => addConnector(c), { small: true, icon: "plus", primary: true })]))
-        : el("p", { class: "atelier-hint" }, icon("info"), " Aucune famille de la bibliothèque ne porte ce courant sous cette tension avec ces options : relâchez un critère, ou mettez plusieurs contacts en parallèle.")));
+    if (filter.domain !== "cells") { const kinds = Object.keys(KIND_COLOR).filter((k) => list.some((c) => c.kind === k)), chip = (t, tip) => el("span", { class: "chip", "data-tip": tip || null }, t);
+      sections.push(el("section", { class: "card" }, el("h2", null, "Connecteurs ", el("small", { class: "muted" }, `${list.length} famille(s), par genre ; dans chaque genre, la plus petite qui convient d'abord`)),
+        list.length ? kinds.map((k) => { const of = list.filter((c) => c.kind === k), shots = connectorPictures(CONNECTORS.filter((c) => c.kind === k));      // one scale per kind, whatever the filter keeps
+          return el("section", { class: "lib-group", style: `--dom:${KIND_COLOR[k] || "var(--acc)"}`, "data-kind": k }, el("header", { class: "lib-group-head" }, el("b", null, CONNECTOR_KINDS[k]), el("small", null, `forme indicative : ${SHAPE_WORDS[k] || "connecteur"}`), el("span", { class: "lib-count" }, String(of.length))),
+            el("div", { class: "lib-cards" }, of.map((c) => el("article", { class: "lib-card", "data-family": c.id }, shot(shots.get(c.id), `${c.maker} ${c.series} : forme indicative`),
+              el("div", { class: "lib-name" }, el("b", null, c.series), el("small", null, c.maker)),
+              el("div", { class: "lib-chips" }, chip(`${fr(c.a)} A${c.v ? ` · ${c.v} V` : ""}`, c.note ? `${c.note.charAt(0).toUpperCase()}${c.note.slice(1)}.` : "Par contact, à la condition publiée"), c.pitch ? chip(`pas ${fr(c.pitch)} mm`) : c.contact ? chip(c.contact) : null, c.pos ? chip(`${c.pos} pôles`) : null,
+                c.sealed ? chip(c.sealed, "Étanchéité publiée") : null, c.hvil ? chip("HVIL", "Interverrouillage : un contact pilote coupe la haute tension avant l'ouverture") : null, c.shielded ? chip("blindé") : null),
+              el("p", { class: "lib-use", "data-tip": [c.wire, c.temp, c.std].filter(Boolean).join(" · ") || null }, c.use || ""),
+              el("div", { class: "lib-foot" }, el("span", { "data-tip": SEEN[c.seen][2] }, badge(SEEN[c.seen][0], SEEN[c.seen][1])), btn("Ajouter", () => addConnector(c), { small: true, icon: "plus", primary: true }))))));
+        }) : el("p", { class: "atelier-hint" }, icon("info"), " Aucune famille de la bibliothèque ne porte ce courant sous cette tension avec ces options : relâchez un critère, ou mettez plusieurs contacts en parallèle."),
+        el("p", { class: "muted small" }, "Les images montrent la forme indicative de chaque genre — celle que la pièce prendra dans le projet — dans une enveloppe tirée du pas, des pôles et du courant ; dans un même genre, elles sont à la même échelle : la plus grande famille remplit son image. Ce n'est pas le dessin du fabricant : son modèle 3D (STEP) se met à la place depuis la fiche de la pièce."))); }
     if (!filter.domain || filter.domain === "cells") sections.push(el("section", { class: "card" }, el("h2", null, "Cellules Li-ion cylindriques"),
+      el("div", { class: "lib-cards", style: "--dom:#3b6fb5" }, CELLS.map((c) => el("article", { class: "lib-card", "data-cell": c.id }, shot(cellPicture(c), `Cellule ${c.id}`), el("div", { class: "lib-name" }, el("b", null, c.id), el("small", null, c.iec)),
+        el("div", { class: "lib-chips" }, el("span", { class: "chip" }, `Ø ${fr(c.d)} × ${fr(c.L)} mm`), el("span", { class: "chip" }, `${fr(c.capacity[0])}–${fr(c.capacity[1])} Ah`), el("span", { class: "chip" }, `${fr(c.vNom)} V`)),
+        el("div", { class: "lib-foot" }, badge(SEEN[c.seen][0], SEEN[c.seen][1]), btn("Ajouter", () => addCell(c), { small: true, icon: "plus", primary: true }))))),
       table(["Format", "Désignation IEC", "Ø × L au plus", "Masse", "Capacité", "Tension", "Décharge continue", "Essais", ""], CELLS.map((c) => [el("b", null, c.id), c.iec, `${fr(c.d)} × ${fr(c.L)} mm`, `${c.mass[0]}–${c.mass[1]} g`, `${fr(c.capacity[0])}–${fr(c.capacity[1])} Ah`, `${fr(c.vMin)}–${fr(c.vMax)} V (${fr(c.vNom)} nominal)`, `${c.discharge[0]}–${c.discharge[1]} A`, c.std, btn("Ajouter", () => addCell(c), { small: true, icon: "plus", primary: true })])),
       el("p", { class: "muted small" }, "Plages relevées sur les fiches de plusieurs fabricants ; l'enveloppe est la plus grande publiée, pour dimensionner le logement. « 18650 » et « 21700 » sont des noms d'usage : la désignation de la norme arrondit les dimensions au-dessus.")));
     if (!filter.domain) { const pad = { L: 40, W: 40, t: 1 }, n = (k, label, step = 1) => field(label, el("input", { type: "number", value: pad[k], step, min: 0.1, onInput: (e) => { const v = parseFloat(e.target.value); if (v > 0) pad[k] = v; } }));

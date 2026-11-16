@@ -40,8 +40,41 @@ multiconducteur) ; HVA 630 porte 40 A ; le MC4 d'origine est à 1000 V selon IEC
 | **Interface de raccordement** | vers le câble ou l'appareil ; **externe** par défaut en haute tension : elle entre au contrat du produit avec son environnement, aucune pièce du projet ne s'y accouple |
 | **Référence** | `library` dans le fichier de la pièce : famille, courant, tension, normes, mode de vérification |
 
-L'**enveloppe est indicative** : elle est tirée du pas, du nombre de pôles et du courant, pour réserver la place. Le
-modèle 3D du fabricant la remplace quand la référence est choisie.
+### La forme d'un connecteur : indicative, par genre
+
+Chaque **genre** de connecteur a sa forme, pour qu'on le reconnaisse dans la bibliothèque comme dans l'assemblage :
+
+| Genre | Forme indicative |
+|---|---|
+| Fil à carte | embase à picots : un fond, quatre parois, un picot par pôle, un verrou si la famille est verrouillée |
+| Fil à fil | boîtier de faisceau : corps, joint arrière, verrou |
+| Carte à carte | mezzanine : corps bas, fente, deux rangées de contacts |
+| Nappe FFC / FPC | corps bas, volet, fente d'entrée de la nappe |
+| Circulaire | corps cylindrique, écrou, nez fileté, presse-étoupe, contacts en cercle |
+| Bornier | corps à rehausse, une vis et une entrée de fil par pôle |
+| Haute tension blindé | bride à quatre trous, corps, un port rond par pôle avec son contact et son départ de câble, deux broches d'interverrouillage |
+| Puissance | un bloc par pôle, sa lame |
+| Sectionneur de service | bride, corps, levier |
+
+La forme est écrite **une seule fois**, en boîtes et en cylindres (`web/js/core/connector_shapes.js`), et lue deux
+fois : comme les opérations de la pièce — des expressions de `L`, `W`, `H` et `e`, de sorte que l'enveloppe se règle
+encore sur la fiche du fabricant — et comme solides de l'**aperçu 3D**. La bibliothèque montre un aperçu par famille,
+à la même échelle dans un genre (la plus grande famille remplit son image) ; le dialogue d'ajout montre la forme en 3D,
+à tourner à la souris, et la redessine quand le nombre de pôles ou le montage changent. Un connecteur haute tension
+arrive orange, un connecteur de signaux clair (c'est sa couleur à l'écran, pas une matière).
+
+**Ce n'est pas le dessin du fabricant.** La forme et l'enveloppe sont **indicatives** : tirées du pas, du nombre de
+pôles et du courant, pour distinguer les genres et réserver la place. Aucune cote ni aucun modèle de fabricant n'a été
+repris : leurs pages refusent la lecture automatique, et leurs modèles leur appartiennent.
+
+### Le modèle du fabricant, à la place
+
+Quand la référence est choisie, la **fiche de la pièce** (studio des pièces, onglet « Fiche ») propose « Mettre le
+modèle STEP… » : le fichier `.step` téléchargé chez le fabricant prend la place de la forme indicative. « Chercher chez
+le fabricant » ouvre une recherche dans un nouvel onglet. La référence, les potentiels déclarés, les interfaces et les
+notes sont gardés ; la forme indicative attend de côté (« Revenir à la forme indicative »). À vérifier ensuite : la
+place des interfaces — le repère du fichier n'est pas celui de la forme indicative — et les corps conducteurs, qui
+viennent alors du fichier. Le fichier reste dans votre projet : la plateforme ne le publie pas.
 
 Une **cellule** est un cylindre à sa plus grande cote publiée, d'une matière homogénéisée qui donne sa masse, avec deux
 bornes — des interfaces soudées, côté B — que la languette ou le busbar reprend.
