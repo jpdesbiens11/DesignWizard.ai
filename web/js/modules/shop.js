@@ -5,7 +5,7 @@
 
 import { el, clear, icon, btn, badge, field, toast, copyText, fmt, fmtMass, debounce } from "../core/dom.js";
 import { registerModule, go, setStatus, setContext, setGuide, app } from "../core/app.js";
-import { briefIssues } from "../core/shop_check.js";
+import { briefIssues, formTakes, materialChoices } from "../core/shop_check.js";
 import { guideBox, guideCount, nudge } from "../core/guide.js";
 import { store } from "../core/store.js";
 import { kernel } from "../cad/client.js";
@@ -20,7 +20,7 @@ import { STOCK_FORMS } from "../cad/stock.js";
 import { INTERFACE_TYPES, interfaceSignature, ADHESIVES, BOND_PREPS } from "../cad/interfaces.js";
 import { THREADS } from "../cad/standards.js";
 import { WELD_PROCESSES, PLATINGS } from "../cad/interfaces_elec.js";
-import { MATERIALS, PROCESSES, material } from "../cad/materials.js";
+import { PROCESSES, material } from "../cad/materials.js";
 import { anticipatedInterfaces, shopPrompt } from "../core/prompts.js";
 import { importPart } from "../core/importer.js";
 import { runDfx } from "../analysis/dfx_api.js";
@@ -108,11 +108,25 @@ function render(main) {
     el("h3", null, "Ajouter une interface par sa forme"), gallery));
 
   /* 3 — material and raw stock */
-  const matSel = el("select", { onChange: (e) => { brief.material = e.target.value; drawIfaces(); drawStock(); propose(); } },
-    [["metal", "Métaux"], ["plastic", "Plastiques"], ["sheet", "Feuilles isolantes (papier, film)"], ["pcb", "Stratifiés (carte)"]].map(([cls, label]) => el("optgroup", { label }, MATERIALS.filter((m) => m.cls === cls && m.id !== "GENERIC-COMPONENT" && m.id !== "EPOXY").map((m) => el("option", { value: m.id, selected: m.id === brief.material }, m.name)))));
+  /* the materials by nature, a swatch each ; once a stock form is chosen by hand, those its process cannot work are greyed */
+  const matBox = el("div", { class: "mat-pick", "data-brief": "material" }), open = new Set();
+  function drawMaterials() {
+    const rec = recommend(brief), form = brief.form, groups = materialChoices(form, (id) => recommend({ ...brief, form: "", material: id }).form === form), cur = material(brief.material), held = form ? formTakes(form, brief.material) : { ok: true };
+    clear(matBox);
+    matBox.append(el("div", { class: "mat-now" }, el("i", { class: "mat-dot", style: `background:${cur ? cur.color : "transparent"}` }), el("b", null, cur ? cur.name : "Aucune matière"),
+      ...[form ? el("span", { class: "chip" + (held.ok || rec.form === form ? "" : " bad") }, icon(STOCK_FORMS[form].icon), ` Choisi : ${STOCK_FORMS[form].fr}`) : null, form ? el("small", { class: "muted" }, "les matières que ce procédé ne travaille pas sont grisées") : null,
+        form ? btn("Libérer", () => { brief.form = ""; drawStock(); propose(); }, { small: true, tip: "Ne plus imposer la matière première : toutes les matières redeviennent possibles, et le conseil suit la matière" }) : null].filter(Boolean)));
+    for (const g of groups) {
+      const has = g.list.some((m) => m.id === brief.material), d = el("details", { class: "mat-group", style: `--dom:${g.color}`, open: has || open.has(g.cls), onToggle: () => { if (d.open) open.add(g.cls); else open.delete(g.cls); } },
+        el("summary", null, icon(g.icon), el("b", null, g.label), el("small", null, form ? `${g.possible} / ${g.list.length} possibles` : String(g.list.length))),
+        el("div", { class: "mat-list" }, g.list.map((m) => el("button", { class: "mat-chip" + (m.id === brief.material ? " on" : "") + (m.ok ? "" : " off"), type: "button", "data-mat": m.id, disabled: !m.ok && m.id !== brief.material, "aria-pressed": m.id === brief.material ? "true" : "false",
+          "data-tip": m.ok ? null : `${m.name} ${m.why} — « Libérer » pour la choisir quand même`, onClick: () => { brief.material = m.id; drawIfaces(); drawStock(); propose(); } }, el("i", { class: "mat-dot", style: `background:${m.color}` }), el("span", null, m.name)))));
+      matBox.append(d);
+    }
+  }
   const stockGrid = el("div", { class: "stock-grid" }), stockWhy = el("p", { class: "muted small" }), moldBox = el("div"), profBox = el("div"), specBox = el("div");
   left.append(el("section", { class: "card taped" }, el("h2", null, el("span", { class: "step-no" }, "3"), "Sa matière et sa matière première"),
-    el("div", { class: "form-row" }, field("Matériau", matSel)), el("h3", null, "Ce que l'on prend sur l'étagère"), stockGrid, stockWhy, moldBox, profBox, specBox));
+    el("h3", null, "Matériau"), matBox, el("h3", null, "Ce que l'on prend sur l'étagère"), stockGrid, stockWhy, moldBox, profBox, specBox));
 
   /* 4 — the proposal */
   const holder = el("div", { class: "viewport atelier-view" }), chips = el("div", { class: "atelier-chips" }), out = el("div");
@@ -180,17 +194,16 @@ function render(main) {
     }
   }
   function drawStock() {
-    clear(stockGrid);
+    clear(stockGrid); drawMaterials();
     const rec = recommend(brief), mat = material(brief.material), plastic = mat && mat.cls !== "metal";
     for (const [form, proc] of Object.entries(SHOP_FORMS)) {
-      const mould = form === "molded", canMould = mat && ["injection_molding", "die_casting", "sand_casting"].some((k) => mat.processes.includes(k));
+      const mould = form === "molded";
       const prof = form === "profile", canExtrude = mat && mat.processes.some((k) => /^extrusion_/.test(k));
-      const flatOnly = mat && (mat.cls === "sheet" || mat.cls === "pcb"), cuts = mat && (mat.processes.includes("laser_cut") || mat.processes.includes("sheet_metal"));
-      const f = STOCK_FORMS[form], on = (brief.form || rec.form) === form, odd = mould ? !canMould : prof ? !canExtrude : form === "print" ? !printProcess(brief.material) : form === "sheet" ? !cuts : flatOnly || (plastic && form === "angle");
-      stockGrid.append(el("button", { class: "stock-card" + (on ? " on" : "") + (odd ? " odd" : ""), type: "button", "aria-pressed": on ? "true" : "false", "data-tip": f.hint, onClick: () => { brief.form = form === rec.form ? "" : form;
-        if (prof && brief.form && !canExtrude) { brief.material = plastic ? "PVC-U" : "AL6063-T5"; matSel.value = brief.material; toast(`Matière changée pour ${material(brief.material).name} : celle d'avant ne s'extrude pas.`, "info", 4500); }
+      const f = STOCK_FORMS[form], on = (brief.form || rec.form) === form, odd = form !== rec.form && !formTakes(form, brief.material).ok;
+      stockGrid.append(el("button", { class: "stock-card" + (on ? " on" : "") + (odd ? " odd" : ""), type: "button", "aria-pressed": on ? "true" : "false", "data-tip": f.hint, onClick: () => { brief.form = brief.form === form ? "" : form;      // a click chooses this stock by hand ; a second one gives the choice back to the companion
+        if (prof && brief.form && !canExtrude) { brief.material = plastic ? "PVC-U" : "AL6063-T5"; toast(`Matière changée pour ${material(brief.material).name} : celle d'avant ne s'extrude pas.`, "info", 4500); }
         drawStock(); propose(); } },
-        icon(f.icon), el("b", null, f.fr), el("small", null, PROCESSES[mould ? moldProcess(brief.material) : prof ? extrusionProcess(brief.material) : form === "print" ? printProcess(brief.material) || proc : form === "sheet" && foldSides(brief).length ? "sheet_metal" : proc].fr), form === rec.form ? badge("Conseillé", "ok") : null));
+        icon(f.icon), el("b", null, f.fr), el("small", null, PROCESSES[mould ? moldProcess(brief.material) : prof ? extrusionProcess(brief.material) : form === "print" ? printProcess(brief.material) || proc : form === "sheet" && foldSides(brief).length ? "sheet_metal" : proc].fr), form === rec.form ? badge("Conseillé", "ok") : null, brief.form === form ? badge("Choisi", "info") : null));
     }
     /* a moulded part is drawn around what it holds : the designer gives the volume to contain, the rules of the moulder do the rest */
     clear(moldBox);

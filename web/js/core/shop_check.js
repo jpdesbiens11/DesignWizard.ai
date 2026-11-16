@@ -3,7 +3,7 @@
    the proposal, marks the field that waits, and holds « Créer la pièce » until what blocks is dealt with.
    An entry : { level, text, field (key of the brief the entry is about, when one) } — levels of core/guide.js. */
 
-import { material } from "../cad/materials.js";
+import { material, MATERIALS } from "../cad/materials.js";
 import { printProcess } from "../cad/special_processes.js";
 
 const FORM_NEEDS = {
@@ -13,6 +13,34 @@ const FORM_NEEDS = {
   profile: [(m) => m.processes.some((k) => /^extrusion_/.test(k)), "ne s'extrude pas"],
 };
 const SOLID = ["plate", "block", "bar_flat", "bar_round", "angle"];
+const machined = (m) => m.processes.includes("cnc_milling") || m.processes.includes("cnc_turning");
+
+/** Whether a stock form — and the process that goes with it — can work a material, from the processes the library gives it.
+    → { ok, why (a few words that follow the name of the material ; "" when ok) } */
+export function formTakes(form, materialId) {
+  const m = material(materialId), need = FORM_NEEDS[form], no = (why) => ({ ok: false, why });
+  if (!m || !form) return { ok: true, why: "" };
+  if (need) return need[0](m) ? { ok: true, why: "" } : no(need[1]);
+  if (SOLID.includes(form)) {
+    if (m.cls === "sheet" || m.cls === "pcb") return no("est une matière en feuille");
+    if (form === "angle" && m.cls !== "metal") return no("ne se vend pas en cornière");
+    if (!machined(m)) return no("ne s'usine pas dans la masse, d'après la bibliothèque");
+  }
+  return { ok: true, why: "" };
+}
+/* the materials of the Shop by nature : a colour and a pictogram per nature, the colour of each material as its swatch */
+export const MATERIAL_CLASSES = [{ cls: "metal", label: "Métaux", color: "#64748b", icon: "block" }, { cls: "plastic", label: "Plastiques", color: "#7c3aed", icon: "part" },
+  { cls: "sheet", label: "Feuilles isolantes", color: "#b45309", icon: "sheet" }, { cls: "pcb", label: "Stratifiés (carte)", color: "#15803d", icon: "pcb" }];
+const HIDDEN = new Set(["GENERIC-COMPONENT", "EPOXY"]);
+/** What the designer may pick, by nature, once a stock form is chosen by hand (form "" : nothing is held back).
+    also(id) : true for a material the companion would itself put in this form — it is never greyed.
+    → [{ cls, label, color, icon, possible, list: [{ id, name, color, ok, why }] }] */
+export function materialChoices(form, also = () => false) {
+  return MATERIAL_CLASSES.map((g) => {
+    const list = MATERIALS.filter((m) => m.cls === g.cls && !HIDDEN.has(m.id)).map((m) => { const t = form && !also(m.id) ? formTakes(form, m.id) : { ok: true, why: "" }; return { id: m.id, name: m.name, color: m.color, ok: t.ok, why: t.why }; });
+    return { ...g, list, possible: list.filter((x) => x.ok).length };
+  });
+}
 
 /** @param brief  the intent of the Shop   @param project  the open project (names already taken)   @returns the entries */
 export function briefIssues(brief, project) {
@@ -27,7 +55,7 @@ export function briefIssues(brief, project) {
   if (b.material && !mat) add("warn", `Matière « ${b.material} » inconnue de la bibliothèque.`, "material");
   if (mat && b.form) {
     const need = FORM_NEEDS[b.form];
-    if (need && !need[0](mat)) add("warn", `${mat.name} ${need[1]} : la proposition forcera un procédé qui ne lui convient pas. Correctif : changez de matière, ou reprenez la matière première conseillée.`, "form");
+    if (need && !need[0](mat)) add("warn", `${mat.name} ${need[1]} : la proposition forcera un procédé qui ne lui convient pas. Correctif : changez de matière — celles que ce procédé ne travaille pas sont grisées — ou reprenez la matière première conseillée.`, "form");
     else if (SOLID.includes(b.form) && (mat.cls === "sheet" || mat.cls === "pcb")) add("warn", `${mat.name} est une matière en feuille : elle ne se prend pas dans un bloc ou une barre. Correctif : « Tôle ou feuille ».`, "form");
   }
   const names = list.map((it) => String(it.name || "").trim().toLowerCase()).filter(Boolean), twice = names.find((x, i) => names.indexOf(x) < i);

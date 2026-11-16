@@ -25,7 +25,7 @@ const OP_ICON = { box: "part", cylinder: "part", extrude: "extrusion", revolve: 
 export function partStudio(main, args, cfg) {
   const parts = () => store.parts.filter(cfg.filter || (() => true));
   let id = args[0] && store.part(args[0]) ? args[0] : (parts()[0] && parts()[0].id) || null;
-  const st = { spec: id ? store.part(id) : null, built: null, findings: null, token: 0, tab: cfg.defaultTab || "params", placing: null, showFrames: true };
+  const st = { spec: id ? store.part(id) : null, built: null, findings: null, token: 0, tab: args[1] === "dfx" ? "dfx" : cfg.defaultTab || "params", placing: null, showFrames: true };      // #/parts/<id>/dfx : the page of the DFx points sends here
 
   const left = el("aside", { class: "side" }), right = el("aside", { class: "side right" }), view = el("div");
   const root = el("div", { class: "studio" }, left, view, right);

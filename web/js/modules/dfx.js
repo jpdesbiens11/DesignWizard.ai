@@ -1,13 +1,18 @@
-/* DesignWizard.ai — DFx: the health of the whole project at a glance (DFM of every part, DFA of every assembly),
-   and the printable rule book. The checks themselves run live in the studios; this page gathers them. */
+/* DesignWizard.ai — DFx : the health of the whole project (DFM of every part, DFA of every assembly), and the printable
+   rule book. The page opens on WHAT HAS TO BE SETTLED : the counts at the top are buttons — a click shows the points they
+   count, each with what was measured, why the rule exists, and its fix in one click when there is one. What is in order
+   is kept apart, behind its own count. Routes : #/dfx (the points to settle), #/dfx/points/<reference> (those of one part
+   or assembly), #/dfx/regles (the rule book), #/dfx/regles/<rule> (one rule in the book). */
 
-import { el, clear, icon, btn, badge, table, fmt } from "../core/dom.js";
+import { el, clear, icon, btn, badge, table, fmt, toast, debounce } from "../core/dom.js";
 import { registerModule, setStatus } from "../core/app.js";
 import { store } from "../core/store.js";
 import { kernel } from "../cad/client.js";
-import { runDfx, runDfa, rulebook } from "../analysis/dfx_api.js";
+import { runDfx, runDfa, rulebook, applyFix } from "../analysis/dfx_api.js";
 import { buildAssembly } from "../core/asm_scene.js";
 import { PROCESSES } from "../cad/materials.js";
+import { nudge } from "../core/guide.js";
+import { DFX_FILTERS, DFX_STATES, PROCESS_ICON, dfxItems, dfxCounts, dfxView, dfxHash, ruleOf, measureText, fixOutcome } from "../analysis/dfx_board.js";
 
 /** DFM findings of every part and DFA findings of every assembly (used by this page and by the report). */
 export async function projectDfx(onProgress) {
@@ -27,14 +32,15 @@ export async function projectDfx(onProgress) {
   }
   return { parts, asms };
 }
-const sevBadge = (s) => (s && s.errors ? badge(`${s.errors} à corriger`, "danger") : s && s.warnings ? badge(`${s.warnings} à vérifier`, "warn") : badge("conforme", "ok"));
+const SEV = { error: ["à corriger", "danger"], warn: ["à vérifier", "warn"], info: ["conseil", "info"] };
+const ui = { filter: "todo" };      // the filter is kept while the page is open
 
 function render(main, args) {
-  const tab = args[0] === "regles" ? "regles" : "bilan";
+  const tab = args[0] === "regles" ? "regles" : "bilan", only = args[0] === "points" && args[1] ? args[1] : null;
   const page = el("div", { class: "page" });
   main.append(page);
-  page.append(el("div", { class: "page-head" }, el("div", { class: "grow" }, el("h1", null, "DFx"), el("p", { class: "muted" }, "Design for Manufacturing, Assembly et autres : chaque pièce est vérifiée contre les règles de son procédé dès qu'elle change, chaque assemblage contre les règles de montage. Les correctifs en un clic sont dans le Part Studio (onglet DFx)."))),
-    el("div", { class: "subtabs" }, el("a", { class: "subtab" + (tab === "bilan" ? " active" : ""), href: "#/dfx" }, "Bilan du projet"), el("a", { class: "subtab" + (tab === "regles" ? " active" : ""), href: "#/dfx/regles" }, "Livre des règles")));
+  page.append(el("div", { class: "page-head" }, el("div", { class: "grow" }, el("h1", null, "DFx"), el("p", { class: "muted" }, "Design for Manufacturing, Assembly et autres : chaque pièce est vérifiée contre les règles de son procédé dès qu'elle change, chaque assemblage contre les règles de montage."))),
+    el("div", { class: "subtabs" }, el("a", { class: "subtab" + (tab === "bilan" ? " active" : ""), href: "#/dfx" }, "Points du projet"), el("a", { class: "subtab" + (tab === "regles" ? " active" : ""), href: "#/dfx/regles" }, "Livre des règles")));
   const box = el("div");
   page.append(box);
   let alive = true;
@@ -44,31 +50,77 @@ function render(main, args) {
       if (!book.length) { box.append(el("p", { class: "muted" }, "Le livre des règles n'est pas chargé dans cette version.")); return; }
       box.append(el("div", { class: "form-actions no-print" }, btn("Imprimer le livre des règles", () => window.print(), { icon: "pdf" })));
       for (const b of book) box.append(el("div", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, b.fr || b.title || b.process), b.steps && el("p", { class: "muted" }, `Étapes de conception : ${b.steps.join(" → ")}`),
-        table(["Règle", "Titre", "Limite", "Niveau", "Pourquoi", "Source"], (b.rules || []).map((r) => [el("code", null, r.id), r.title, r.limit || "", badge(r.severity === "error" ? "à corriger" : r.severity === "warn" ? "à vérifier" : "conseil", r.severity === "error" ? "danger" : r.severity === "warn" ? "warn" : "info"), r.why || "", el("small", { class: "muted" }, r.source || "")]))));
+        table(["Règle", "Titre", "Limite", "Niveau", "Pourquoi", "Source"], (b.rules || []).map((r) => [el("code", { id: `rule-${r.id}` }, r.id), r.title, r.limit || "", badge(SEV[r.severity === "error" || r.severity === "warn" ? r.severity : "info"][0], SEV[r.severity === "error" || r.severity === "warn" ? r.severity : "info"][1]), r.why || "", el("small", { class: "muted" }, r.source || "")]))));
+      if (args[1]) setTimeout(() => { const at = document.getElementById(`rule-${args[1]}`); if (alive && at) nudge(at.closest("tr") || at); }, 80);
     });
     return () => { alive = false; };
   }
-  box.append(el("p", { class: "muted" }, "Évaluation des pièces et des assemblages…"));
-  projectDfx((t) => setStatus(t, "busy")).then(({ parts, asms }) => {
-    if (!alive) return;
-    clear(box); setStatus("Bilan DFx à jour", "done");
-    const tot = parts.reduce((a, p) => ({ e: a.e + ((p.res.summary || {}).errors || 0), w: a.w + ((p.res.summary || {}).warnings || 0) }), { e: 0, w: 0 });
-    const scores = parts.map((p) => (p.res.summary || {}).score).filter((x) => typeof x === "number");
-    box.append(el("div", { class: "kpis" }, el("div", { class: "kpi" }, el("b", null, String(parts.length)), el("span", null, "Pièces vérifiées")), el("div", { class: "kpi" }, el("b", null, String(tot.e)), el("span", null, "Points à corriger")), el("div", { class: "kpi" }, el("b", null, String(tot.w)), el("span", null, "Points à vérifier")),
-      el("div", { class: "kpi" }, el("b", null, scores.length ? fmt(scores.reduce((a, b) => a + b, 0) / scores.length, 0) : "—"), el("span", null, "Score DFx moyen / 100"))));
-    box.append(el("h2", null, "Pièces — DFM"), table(["Pièce", "Procédé", "Score", "État", "Principales remarques"], parts.map((p) => [el("a", { href: `#/${p.spec.family === "pcb" ? "pcb" : p.spec.family === "extrusion" ? "extrusion" : "parts"}/${encodeURIComponent(p.spec.id)}` }, `${p.spec.id} — ${p.spec.name || ""}`),
-      (PROCESSES[p.spec.process] || {}).fr || "—", p.res.summary && typeof p.res.summary.score === "number" ? String(p.res.summary.score) : "—", p.res.unavailable ? badge("moteur absent", "neutral") : sevBadge(p.res.summary),
-      el("span", { style: { fontSize: ".82rem" } }, p.res.findings.filter((f) => f.severity !== "info").slice(0, 3).map((f) => `${f.id} ${f.title}`).join(" · ") || "—")])));
-    box.append(el("h2", { style: { marginTop: "1.2rem" } }, "Assemblages — DFA"));
-    for (const a of asms) {
-      const m = a.res.metrics || {};
-      box.append(el("div", { class: "card", style: { marginBottom: ".8rem" } }, el("h3", null, el("a", { href: `#/assembly/${encodeURIComponent(a.asm.id)}` }, `${a.asm.id} — ${a.asm.name || ""}`), " ", a.error ? badge("erreur", "danger") : sevBadge(a.res.summary)),
-        a.error && el("p", { class: "form-error" }, a.error), Object.keys(m).length ? el("p", { class: "muted", style: { fontSize: ".86rem" } }, Object.entries({ instances: "pièces", uniqueParts: "pièces uniques", fasteners: "fixations", fastenerTypes: "types de fixation", directions: "directions de montage", dfaIndex: "indice DFA" }).filter(([k]) => m[k] !== undefined).map(([k, l]) => `${typeof m[k] === "number" ? fmt(m[k], 1) : m[k]} ${l}`).join(" · ")) : null,
-        a.res.findings.map((f) => el("div", { class: `finding ${f.severity}` }, el("span", { class: "sev" }), el("div", null, el("b", null, f.title), el("span", { class: "id" }, f.id)), el("p", null, f.message)))));
+  if (only) ui.filter = "todo";
+  const top = el("div", { class: "dfx-top" }), list = el("div", { class: "dfx-list" });
+  box.append(top, list);
+  list.append(el("p", { class: "muted" }, "Évaluation des pièces et des assemblages…"));
+  let items = [], book = [], token = 0;
+
+  function drawTop() {
+    clear(top);
+    const c = dfxCounts(items), tile = (key, n, label, tone, ico, tip) => el("button", { class: `kpi dfx-kpi ${tone}${ui.filter === key ? " on" : ""}`, type: "button", "data-filter": key, "aria-pressed": ui.filter === key ? "true" : "false", "data-tip": tip,
+      onClick: () => { ui.filter = key; drawTop(); drawList(); nudge(list.querySelector(".dfx-item, .dfx-pass, .dfx-none")); } }, el("b", null, icon(ico), String(n)), el("span", null, label));
+    top.append(el("div", { class: "kpis dfx-kpis" }, tile("todo", c.todo, "Points à régler", c.error ? "danger" : c.warn ? "warn" : "ok", "search", "Tout ce qui est à corriger ou à vérifier : un clic montre chaque point, avec son explication et son correctif"),
+      tile("error", c.error, "À corriger", c.error ? "danger" : "none", "cross", "Les points qui empêchent de fabriquer ou de monter"), tile("warn", c.warn, "À vérifier", c.warn ? "warn" : "none", "warning", "Les points qui se fabriquent, mais coûtent ou surprennent"),
+      tile("info", c.info, "Conseils", "info", "info", "Ce qui peut s'améliorer, sans obligation"), tile("pass", `${c.pass} / ${c.items}`, "Conformes", "ok", "check", "Les pièces et les assemblages sans point à corriger ni à vérifier"),
+      el("div", { class: "kpi" }, el("b", null, c.score === null ? "—" : String(c.score)), el("span", null, "Score DFx moyen / 100"))),
+    ...[only ? el("p", { class: "dfx-only" }, icon("search"), ` Seuls les points de ${only} sont montrés. `, el("a", { href: "#/dfx" }, "Voir tout le projet")) : null].filter(Boolean));
+  }
+  const head = (it) => { const st = DFX_STATES[it.state], m = it.metrics || {}, proc = it.kind === "part" ? (PROCESSES[it.process] || {}).fr || "procédé non défini" : "assemblage";
+    const metrics = Object.entries({ instances: "pièces", uniqueParts: "pièces uniques", fasteners: "fixations", fastenerTypes: "types de fixation", directions: "directions de montage", dfaIndex: "indice DFA" }).filter(([k]) => m[k] !== undefined).map(([k, l]) => `${typeof m[k] === "number" ? fmt(m[k], 1) : m[k]} ${l}`).join(" · ");
+    return el("header", { class: "dfx-head" }, icon(it.kind === "assembly" ? "assembly" : PROCESS_ICON[it.process] || "part"), el("div", { class: "grow" }, el("b", null, `${it.ref}${it.name ? " — " + it.name : ""}`), el("small", null, [proc, it.score === null ? "" : `score ${it.score} / 100`, metrics].filter(Boolean).join(" · "))),
+      ...[it.errors ? badge(`${it.errors} à corriger`, "danger") : null, it.warnings ? badge(`${it.warnings} à vérifier`, "warn") : null, it.state === "pass" ? badge(it.unavailable ? "moteur absent" : st.fr, it.unavailable ? "neutral" : "ok") : null].filter(Boolean),
+      el("a", { class: "btn btn-small", href: dfxHash(it), "data-tip": it.kind === "assembly" ? "Ouvrir l'assemblage" : "Ouvrir la pièce sur son onglet DFx : le point s'y voit sur le modèle" }, icon("external"), el("span", null, "Ouvrir"))); };
+  function point(it, f) {
+    const r = ruleOf(book, f.id), measured = measureText(f, (v) => fmt(v, 3));
+    const card = el("div", { class: `finding ${f.severity} dfx-point`, "data-rule": f.id }, el("span", { class: "sev" }), el("div", null, el("b", null, f.title), el("a", { class: "id", href: `#/dfx/regles/${encodeURIComponent(f.id)}`, "data-tip": "La règle, dans le livre des règles" }, f.id), " ", badge(SEV[f.severity][0], SEV[f.severity][1])), el("p", null, f.message),
+      ...[measured ? el("p", { class: "dfx-measure" }, measured) : null, r && r.why ? el("p", { class: "dfx-why" }, el("b", null, "Pourquoi — "), r.why, r.source ? el("small", { class: "muted" }, ` (${r.source})`) : null) : null].filter(Boolean));
+    if (it.kind === "part" && f.fix && f.fix.patch) card.append(btn(f.fix.label || "Appliquer le correctif", (e, b) => tryFix(it, f, card, b), { small: true, primary: true, icon: "sparkle", cls: "fix", tip: "Essaie le correctif, puis l'applique ici même s'il ne crée rien à corriger (annulable avec Ctrl+Z)" }));
+    return card;
+  }
+  /* a fix is tried before it is applied : one that would create a point to fix is held back, and says why */
+  async function tryFix(it, f, card, b) {
+    const label = `Correctif ${f.id} : ${f.fix.label || ""}`, apply = () => { try { store.updatePart(it.ref, (x) => applyFix(x, f.fix.patch), label); toast(`Correctif appliqué à ${it.ref} : ${f.fix.label || f.id} (Ctrl+Z pour annuler)`, "success"); } catch (err) { toast(err.message, "error"); } };
+    b.disabled = true; setStatus("Essai du correctif…", "busy");
+    let out = null, why = "";
+    try { const next = applyFix(store.part(it.ref), f.fix.patch), built = await kernel.build(next), broken = built.log.filter((l) => l.level === "error");
+      if (broken.length || !built.bodies.length) why = `la pièce ne se construirait plus (${broken.map((l) => l.msg).join(" · ") || "aucun corps"})`; else out = fixOutcome(it.points, (await runDfx(next, built)).findings, f);
+    } catch (err) { why = `la pièce ne se construirait plus (${err.message})`; }
+    setStatus("Prêt"); if (!alive || !card.isConnected) return;
+    if (out && out.ok) { apply(); return; }
+    b.disabled = false; card.querySelectorAll(".dfx-held").forEach((x) => x.remove());
+    card.append(el("div", { class: "dfx-held" }, el("p", null, el("b", null, "Correctif retenu — "), why ? `${why}.` : `il créerait ${out.added.length} point${out.added.length > 1 ? "s" : ""} à corriger : ${out.added.slice(0, 2).map((x) => `${x.id} ${x.title} — ${x.message}`).join(" · ")}`),
+      el("div", { class: "form-actions" }, el("a", { class: "btn btn-small", href: dfxHash(it) }, icon("external"), el("span", null, "Le régler dans la pièce")), ...[why ? null : btn("Appliquer quand même", apply, { small: true, tip: "Applique le correctif malgré ce qu'il crée (annulable avec Ctrl+Z)" })].filter(Boolean))));
+    nudge(card.querySelector(".dfx-held"));
+  }
+  function drawList() {
+    clear(list);
+    const view = dfxView(items, ui.filter, only), title = (DFX_FILTERS.find(([k]) => k === ui.filter) || DFX_FILTERS[0])[1];
+    if (ui.filter === "pass") {
+      list.append(el("h2", null, `Conformes (${view.length})`), view.length ? el("div", { class: "dfx-passes" }, view.map((it) => el("a", { class: "dfx-pass", href: dfxHash(it), "data-tip": `${(PROCESSES[it.process] || {}).fr || (it.kind === "assembly" ? "assemblage" : "")}${it.infos ? ` · ${it.infos} conseil${it.infos > 1 ? "s" : ""}` : ""}` }, icon("check"), el("b", null, it.ref), el("span", null, it.name), it.score === null ? null : el("small", null, String(it.score)))))
+        : el("p", { class: "dfx-none muted" }, "Rien n'est encore conforme : les points à régler sont sous « Points à régler »."));
+      return;
     }
-    if (!asms.length) box.append(el("p", { class: "muted" }, "Aucun assemblage."));
-  });
-  return () => { alive = false; };
+    list.append(el("h2", null, ui.filter === "todo" ? "Points à régler" : title));
+    if (!view.length || view.every((it) => !it.points.length && ui.filter !== "all")) { list.append(el("p", { class: "dfx-none" }, icon("check"), ui.filter !== "todo" ? ` Aucun point « ${title.toLowerCase()} »${only ? ` sur ${only}` : ""}.` : only ? ` Rien à régler sur ${only} : les règles évaluées sont respectées.` : " Rien à régler : les pièces et les assemblages respectent les règles évaluées.")); return; }
+    for (const it of view) list.append(el("section", { class: `dfx-item ${it.state}`, "data-item": it.key }, head(it), it.points.length ? it.points.map((f) => point(it, f)) : el("p", { class: "muted small" }, "Aucune remarque : les règles évaluées sont respectées.")));
+  }
+  async function refresh() {
+    const mine = ++token, y = window.scrollY;
+    const [run, rules] = await Promise.all([projectDfx((t) => setStatus(t, "busy")), rulebook()]);
+    if (!alive || mine !== token) return;
+    items = dfxItems(run); book = rules; setStatus("Points DFx à jour", "done");
+    drawTop(); drawList(); window.scrollTo(0, y);
+    if (only) setTimeout(() => { if (alive) nudge(list.querySelector(".dfx-item")); }, 60);
+  }
+  const off = store.on("change", debounce(() => { if (alive) refresh(); }, 350));
+  refresh();
+  return () => { alive = false; off(); };
 }
 
-registerModule({ key: "dfx", label: "DFx", icon: "dfx", tip: "Bilan DFM / DFA du projet et livre des règles", render });
+registerModule({ key: "dfx", label: "DFx", icon: "dfx", tip: "Les points DFM / DFA à régler dans le projet, et le livre des règles", render });

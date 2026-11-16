@@ -71,3 +71,18 @@ test("the team : a conflict to settle and a message that waits are said on every
   assert.ok(projectIssues({ parts: [], assemblies: [], ...p }).some((x) => x.screen === "team"), "the project list carries them, so the top bar shows them anywhere");
   assert.deepEqual(issuesHere(list, "team", null).length, 2);
 });
+
+test("the Shop : a stock form chosen by hand greys the materials its process cannot work", async () => {
+  const { formTakes, materialChoices, MATERIAL_CLASSES } = await import("../../web/js/core/shop_check.js");
+  const ok = (form, id) => formTakes(form, id).ok;
+  assert.deepEqual([ok("print", "PA12"), ok("print", "AL6061-T6"), ok("print", "TI-6AL-4V"), ok("molded", "PA66-GF30"), ok("molded", "AL6061-T6"), ok("profile", "AL6063-T5"), ok("profile", "SS-304"), ok("sheet", "NOMEX-410"), ok("sheet", "AL-A380")], [true, false, true, true, false, true, false, true, false]);
+  assert.deepEqual([ok("plate", "AL6061-T6"), ok("plate", "NOMEX-410"), ok("plate", "PA12"), ok("bar_round", "BRASS-360"), ok("angle", "POM"), ok("angle", "STEEL-1018"), ok("block", "AL-A380")], [true, false, false, true, false, true, false]);
+  assert.match(formTakes("print", "AL6061-T6").why, /ne s'imprime pas/); assert.match(formTakes("plate", "PA12").why, /ne s'usine pas dans la masse, d'après la bibliothèque/); assert.match(formTakes("block", "FR4").why, /matière en feuille/);
+  assert.deepEqual(formTakes("", "PA12"), { ok: true, why: "" }, "no form chosen by hand : nothing is held back"); assert.deepEqual(formTakes("print", "NOPE"), { ok: true, why: "" });
+  const free = materialChoices(""), printed = materialChoices("print"), by = (g, cls) => g.find((x) => x.cls === cls);
+  assert.deepEqual(free.map((g) => g.cls), MATERIAL_CLASSES.map((g) => g.cls)); assert.ok(free.every((g) => g.possible === g.list.length && g.list.length > 0 && /^#[0-9a-f]{6}$/.test(g.color) && g.icon)); assert.equal(new Set(MATERIAL_CLASSES.map((g) => g.color)).size, 4);
+  assert.ok(!free.some((g) => g.list.some((m) => m.id === "EPOXY" || m.id === "GENERIC-COMPONENT")), "what is bought ready-made is not a choice of the Shop"); assert.ok(free.every((g) => g.list.every((m) => /^#[0-9a-f]{6}$/.test(m.color))), "every material has its swatch");
+  assert.deepEqual(by(printed, "plastic").list.filter((m) => m.ok).map((m) => m.id), ["PC", "ABS", "PEI-9085", "PEKK", "PA12", "PA11", "RESIN-SLA"]); assert.equal(by(printed, "sheet").possible, 0); assert.equal(by(printed, "pcb").possible, 0);
+  assert.deepEqual(by(printed, "metal").list.filter((m) => m.ok).map((m) => m.id), ["SS-316L", "SS-17-4PH", "ALSI10MG", "TI-6AL-4V", "IN718", "IN625"]); assert.match(by(printed, "metal").list.find((m) => m.id === "CU-C110").why, /ne s'imprime pas/);
+  assert.equal(by(materialChoices("print", (id) => id === "CU-C110"), "metal").list.find((m) => m.id === "CU-C110").ok, true, "a material the companion itself would put in this form is never greyed");
+});

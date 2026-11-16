@@ -45,6 +45,7 @@ web/js/analysis/
     cc_geom.js cc_clearance.js cc_creepage.js cc_paths.js   chemins mesurés sur les maillages
     cc_scene.js  cc_worker.js          scène de l'assemblage complet · worker d'analyse
     dfx_core.js dfx_rules*.js dfa_rules.js  règles DFM / DFA / DFx, correctifs déclaratifs
+    dfx_board.js                            la page DFx : points du projet, compteurs, filtres, essai d'un correctif
 web/js/draw/               feuille PDF et SVG (même API), aides au dessin, composition du dessin d'une pièce
 web/js/modules/            un fichier par écran
 web/js/onshape/            client du proxy local et orchestration de l'envoi

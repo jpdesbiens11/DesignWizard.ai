@@ -30,7 +30,7 @@ function render(main) {
   main.append(page); page.append(body);
   let alive = true, run = 0;
   const cells = new Map();
-  const paint = (it) => { const cell = cells.get(it.key), c = checked.get(`${it.key}|${it.sig}`); if (!cell || !c) return; cell.replaceChildren(...c.map((x) => el("span", { class: `chip ${x.tone === "ok" ? "done" : x.tone === "danger" ? "bad" : ""}`, "data-tip": x.tip || null }, x.text))); };
+  const paint = (it) => { const cell = cells.get(it.key), c = checked.get(`${it.key}|${it.sig}`); if (!cell || !c) return; cell.replaceChildren(...c.map((x) => el(x.href ? "a" : "span", { class: `chip ${x.tone === "ok" ? "done" : x.tone === "danger" ? "bad" : ""}`, href: x.href || null, "data-tip": x.href ? `${x.tip ? x.tip + " — " : ""}un clic mène aux points, expliqués un à un` : x.tip || null }, x.text))); };
   /** Builds each part and asks the rule engine, one after the other : the review reads facts, not promises. */
   async function check(items) {
     const mine = ++run;
@@ -39,7 +39,7 @@ function render(main) {
       try {
         const built = await kernel.build(spec), errs = built.log.filter((l) => l.level === "error"), dfx = await runDfx(spec, built), s = dfx && dfx.summary;
         checked.set(`${it.key}|${it.sig}`, [errs.length || !built.bodies.length ? { text: "ne se construit pas", tone: "danger", tip: errs.map((e) => e.msg).join(" · ") } : { text: "construite", tone: "ok" },
-          ...(s ? [{ text: s.errors ? `DFx : ${s.errors} à corriger` : s.warnings ? `DFx : ${s.warnings} à vérifier` : "DFx : fabricable", tone: s.errors ? "danger" : s.warnings ? "warn" : "ok", tip: dfx.findings.filter((f) => f.severity !== "info").slice(0, 4).map((f) => f.message).join(" · ") || null }] : [])]);
+          ...(s ? [{ text: s.errors ? `DFx : ${s.errors} à corriger` : s.warnings ? `DFx : ${s.warnings} à vérifier` : "DFx : fabricable", tone: s.errors ? "danger" : s.warnings ? "warn" : "ok", href: s.errors || s.warnings ? `#/dfx/points/${encodeURIComponent(spec.id)}` : null, tip: dfx.findings.filter((f) => f.severity !== "info").slice(0, 4).map((f) => f.message).join(" · ") || null }] : [])]);
       } catch (e) { checked.set(`${it.key}|${it.sig}`, [{ text: "ne se construit pas", tone: "danger", tip: e.message }]); }
       if (!alive || mine !== run) return;
       paint(it);
