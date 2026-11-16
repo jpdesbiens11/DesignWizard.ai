@@ -70,9 +70,9 @@ appartiennent : ils ne sont pas redistribués ici ; le lien vers le site du fabr
 
 | Niveau | Ce que cela veut dire | Séries |
 |---|---|---|
-| **cotes lues** | relevées sur la fiche ou le dessin du fabricant, ouvert et lu | JST PH, JST XH, Hirose DF13, Hirose FH12, Molex Mini-Fit Jr. (5) |
-| **cotes lues en partie** | pas, rangées, couleur, queue lus sur la page du produit ; corps saisi de mémoire | JST GH, Molex PicoBlade, Micro-Fit 3.0, Nano-Fit (4) |
-| **cotes à vérifier** | enveloppe saisie de mémoire, du bon ordre de grandeur : pour un aperçu et une première implantation | les 41 autres, dont **tous les connecteurs haute tension** |
+| **cotes lues** (15) | relevées sur la fiche, le catalogue ou le dessin du fabricant, ouvert et lu | JST PH, JST XH · Hirose DF13, FH12 · Molex Mini-Fit Jr., PicoBlade · Anderson Powerpole PP15/45, PP75, PP120, PP180, SB175, SB350 · Amass XT60, XT90 · Stäubli MC4 |
+| **cotes lues en partie** (6) | une partie lue (pas, entraxe, encombrement d'une pièce de la série), le reste saisi de mémoire | JST GH · Molex Micro-Fit 3.0, Nano-Fit · TE HVA 280, HVA 630 · Amphenol SurLok Plus 8 mm |
+| **cotes à vérifier** (29) | enveloppe saisie de mémoire, du bon ordre de grandeur : pour un aperçu et une première implantation | les autres, dont les embases haute tension HVP 800, HC-STAK, HVSL, PowerLok, HVR 200, Imperium, le MSD, et les séries de faisceau et circulaires |
 
 Le guide donne un « à vérifier » à toute pièce dont les cotes ne sont pas lues, jusqu'à ce que le modèle du fabricant
 soit déposé. Les pages de plusieurs fabricants refusent la lecture automatique : leurs séries restent « à vérifier »
@@ -355,8 +355,8 @@ au retour, la liste des changements et ce que le circuit revenu demande, avant d
 - Le remplissage est une géométrie figée (STEP, lourde dans le fichier du projet) : il ne suit pas les pièces seul, il se
   recalcule. La gamme d'assemblage ne décrit pas encore la coulée.
 - Les rigidités diélectriques et les indices de résistance au cheminement des films sont des valeurs typiques.
-- Connecteurs : 5 séries sur 50 ont des cotes lues sur la fiche ; 4 en partie ; 41 sont saisies de mémoire (tous les
-  connecteurs haute tension). Parois, fentes et verrous sont dessinés à l'œil ; le modèle du fabricant n'est pas fourni.
+- Connecteurs : 15 séries sur 50 ont des cotes lues sur la fiche ; 6 en partie ; 29 sont saisies de mémoire (dont la
+  plupart des embases haute tension : leurs dessins ne sont pas en accès libre ou leurs sites refusent la lecture). Parois, fentes et verrous sont dessinés à l'œil ; le modèle du fabricant n'est pas fourni.
   Les empreintes des séries CMS (GH, FH12, DF40) ont des plages saisies : à comparer au motif recommandé.
 - Les lignes marquées « extrait » sont à relire sur la fiche du fabricant ; les titres des documents LV 214 et LV 215
   (constructeurs allemands) ne sont pas publics.

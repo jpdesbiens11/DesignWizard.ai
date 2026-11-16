@@ -40,7 +40,7 @@ const MODELS = {
     if (S.silos) { out.push(box("corps", "Housing", [0, 0, f], [L, W, H - f], col));
       out.push(...each(G, (c, r, k) => { const [x, y] = G.xy(c, r), a = S.silos; return [box(`s${k}`, "", [x - a / 2, y - a / 2, f + 0.4], [a, a, H - f - 0.35], { cut: true })]; })); }
     else { out.push(box("dos", "", [0, W - t, f], [L, t, H - f], col), box("avant", "", [0, 0, f], [L, t, (H - f) * (S.front || 1)], col), box("joue1", "", [0, 0, f], [t, W, H - f], col), box("joue2", "", [L - t, 0, f], [t, W, H - f], col));
-      for (const [i, u] of (S.slots || []).entries()) out.push(box(`fente${i + 1}`, "", [L * u - S.slotW / 2, -0.05, H - (H - f) * 0.55], [S.slotW, t + 0.1, (H - f) * 0.55 + 0.05], { cut: true })); }
+      for (const [i, u] of (typeof S.slots === "function" ? S.slots(n) : S.slots || []).entries()) out.push(box(`fente${i + 1}`, "", [L * u - S.slotW / 2, -0.05, H - (H - f) * 0.55], [S.slotW, t + 0.1, (H - f) * 0.55 + 0.05], { cut: true })); }
     if (S.latch) { const [w, d, h, z] = S.latch, y = S.latchSide === "+Y" ? W : -d; out.push(box("verrou", "Latch", [L / 2 - w / 2, y, z], [w, d, h], col)); }
     for (const [i, [u, v]] of (S.pegs || []).entries()) out.push(cyl(`pion${i + 1}`, "Peg", [u < 0 ? L + u : u, v < 0 ? W + v : v, -S.pegH], "Z", S.pegD, S.pegH, col));
     if (S.tab) for (const [i, x] of [-S.tab[0] * 0.1, L - S.tab[0] * 0.9].entries()) out.push(box(`patte${i + 1}`, "Solder tab", [x, W * 0.2, 0], [S.tab[0], S.tab[1], 0.2], { tone: "metal" }));
@@ -84,7 +84,7 @@ const MODELS = {
   hvheader(S, n) { const { L, H, W, nose } = hvBox(S, n), fl = S.flangeT, e = S.flangeE, col = { color: S.color }, out = [box("bride", "Flange", [-e, 0, -e], [L + 2 * e, fl, H + 2 * e], col)];
     for (const [i, [x, z]] of [[-e / 2, -e / 2], [L + e / 2, -e / 2], [-e / 2, H + e / 2], [L + e / 2, H + e / 2]].entries()) out.push(cyl(`fix${i + 1}`, "", [x, -0.1, z], "Y", S.fix, fl + 0.2, { cut: true }));
     out.push(box("corps", "Body", [0, fl, 0], [L, W, H], col)); if (!S.towers) out.push(box("nez", "Shroud", [L * 0.04, -nose, H * 0.06], [L * 0.92, nose, H * 0.88], col));
-    for (let k = 0; k < n; k++) { const x = L * (k + 0.5) / n, z = H / 2, pole = { tone: "metal", body: n === 1 ? "contacts" : `pole${k + 1}` }, y = -nose * 0.6, len = nose * 0.6 + fl + W * 0.9;
+    for (let k = 0; k < n; k++) { const x = S.pitch ? L / 2 + (k - (n - 1) / 2) * S.pitch : L * (k + 0.5) / n, z = H / 2, pole = { tone: "metal", body: n === 1 ? "contacts" : `pole${k + 1}` }, y = -nose * 0.6, len = nose * 0.6 + fl + W * 0.9;
       if (S.towers) out.push(cyl(`tour${k + 1}`, "Shroud", [x, -nose, z], "Y", S.port * 1.3, nose, col));
       if (S.blade) out.push(box(`port${k + 1}`, "", [x - S.port / 2, -nose - 0.1, z - S.port * 0.3], [S.port, nose * 0.8, S.port * 0.6], { cut: true }), box(`p${k + 1}`, "Contact", [x - S.contact / 2, y, z - S.blade / 2], [S.contact, len, S.blade], pole));
       else out.push(cyl(`port${k + 1}`, "", [x, -nose - 0.1, z], "Y", S.port, nose * 0.8, { cut: true }), cyl(`p${k + 1}`, "Contact", [x, y, z], "Y", S.contact, len, pole));
@@ -93,8 +93,8 @@ const MODELS = {
     if (S.lever) out.push(box("levier1", "", [-1.6, -nose * 0.9, H * 0.3], [1.6, nose * 0.8, H * 0.6], { color: S.lever }), box("levier2", "", [L, -nose * 0.9, H * 0.3], [1.6, nose * 0.8, H * 0.6], { color: S.lever }), box("levier", "Lever", [-1.6, -nose * 0.9, H * 0.9], [L + 3.2, nose * 0.28, Math.max(2, H * 0.08)], { color: S.lever }));
     if (S.hvil) for (const [i, dx] of [[1, -1.3], [2, 1.3]]) out.push(cyl(`hvil${i}`, "Interlock", [L / 2 + dx, -nose * 0.55, H * 0.16], "Y", 0.9, nose * 0.55 + 1, { tone: "metal" }));
     return out; },
-  /* a single-pole power connector : a round barrel, its contact, a collar */
-  barrel(S) { const d = S.barrel, c = d * 0.6, out = [cyl("fut", "Barrel", [c, 0, c], "Y", d, S.length, { color: S.color }), cyl("collet", "Collar", [c, S.length * 0.3, c], "Y", d * 1.18, S.length * 0.12, { color: S.color }), cyl("alveole", "", [c, -0.1, c], "Y", d * 0.7, S.length * 0.35, { cut: true }), cyl("p1", "Contact", [c, 0.6, c], "Y", S.contact, S.length * 0.8, METAL)];
+  /* a single-pole power connector : a round barrel, its contact, a collar — `barrel` is its largest diameter, the collar's */
+  barrel(S) { const D = S.barrel, d = D * 0.85, c = D / 2, out = [cyl("fut", "Barrel", [c, 0, c], "Y", d, S.length, { color: S.color }), cyl("collet", "Collar", [c, S.length * 0.3, c], "Y", D, S.length * 0.12, { color: S.color }), cyl("alveole", "", [c, -0.1, c], "Y", d * 0.7, S.length * 0.35, { cut: true }), cyl("p1", "Contact", [c, 0.6, c], "Y", S.contact, S.length * 0.8, METAL)];
     if (S.elbow) out.push(cyl("coude", "Cable outlet", [c, S.length - d * 0.55, c], "Z", d * 0.85, S.elbow, { color: S.color })); return out; },
   /* flat-contact housings that stack : one block per pole, a tongue, a flat contact */
   stack(S, n) { const [w, h, len] = S.block, out = []; for (let k = 0; k < n; k++) { const x = k * w, col = { color: (S.colors || [S.color])[k % (S.colors || [S.color]).length] };
@@ -102,11 +102,11 @@ const MODELS = {
     return out; },
   /* a two-pole flat housing with its two contacts side by side, and two holes to fix it */
   flat(S) { const [len, w, t] = S.size, col = { color: S.color }, out = [box("corps", "Housing", [0, 0, 0], [w, len, t], col), box("creux", "", [w * 0.08, -0.1, t * 0.22], [w * 0.84, len * 0.42, t * 0.56], { cut: true })];
-    for (const [i, x] of [w * 0.28, w * 0.72].entries()) out.push(S.pinD ? cyl(`p${i + 1}`, "Contact", [x, 0.5, t / 2], "Y", S.pinD, len - 1, { tone: "metal", body: `pole${i + 1}` }) : box(`p${i + 1}`, "Contact", [x - w * 0.13, 0.6, t * 0.42], [w * 0.26, len - 1.2, t * 0.16], { tone: "metal", body: `pole${i + 1}` }));
+    for (const [i, x] of (S.gap ? [w / 2 - S.gap / 2, w / 2 + S.gap / 2] : [w * 0.28, w * 0.72]).entries()) out.push(S.pinD ? cyl(`p${i + 1}`, "Contact", [x, 0.5, t / 2], "Y", S.pinD, len - 1, { tone: "metal", body: `pole${i + 1}` }) : box(`p${i + 1}`, "Contact", [x - w * 0.13, 0.6, t * 0.42], [w * 0.26, len - 1.2, t * 0.16], { tone: "metal", body: `pole${i + 1}` }));
     for (const [i, x] of (S.holes ? [w * 0.5 - S.holes / 2, w * 0.5 + S.holes / 2] : []).entries()) out.push(cyl(`fix${i + 1}`, "", [x, len * 0.72, -0.1], "Z", S.fix, t + 0.2, { cut: true }));
     if (S.chamfer) out.push(box("detrompeur", "", [w - S.chamfer, -0.05, -0.05], [S.chamfer + 0.05, len * 0.5, S.chamfer], { cut: true })); return out; },
-  /* two cable couplers, one in the other : a slim male, a female with its locking sleeve */
-  coupler(S) { const d = S.d, c = d * 0.6; return [cyl("corps", "Coupler", [c, 0, c], "Y", d, S.length, { color: S.color }), cyl("manchon", "Locking sleeve", [c, S.length * 0.42, c], "Y", d * 1.12, S.length * 0.2, { color: S.color }), cyl("ecrou", "Cable nut", [c, S.length * 0.82, c], "Y", d * 1.05, S.length * 0.18, { color: S.color }), cyl("alveole", "", [c, -0.1, c], "Y", d * 0.6, S.length * 0.3, { cut: true }), cyl("p1", "Contact", [c, 0.5, c], "Y", S.contact, S.length * 0.5, METAL)]; },
+  /* a cable coupler : a slim body, a locking sleeve, a cable nut — `d` is its largest diameter, the sleeve's */
+  coupler(S) { const D = S.d, d = D * 0.9, c = D / 2; return [cyl("corps", "Coupler", [c, 0, c], "Y", d, S.length, { color: S.color }), cyl("manchon", "Locking sleeve", [c, S.length * 0.42, c], "Y", D, S.length * 0.2, { color: S.color }), cyl("ecrou", "Cable nut", [c, S.length * 0.82, c], "Y", D * 0.94, S.length * 0.18, { color: S.color }), cyl("alveole", "", [c, -0.1, c], "Y", d * 0.6, S.length * 0.3, { cut: true }), cyl("p1", "Contact", [c, 0.5, c], "Y", S.contact, S.length * 0.5, METAL)]; },
   /* a service disconnect on a wall : a base behind it, a plug that carries the fuse toward the outside, a lever over the plug */
   disconnect(S) { const [L, H, W, out] = S.base, col = { color: S.color }, lev = { color: S.lever }; return [box("bride", "Flange", [-S.flangeE, 0, -S.flangeE], [L + 2 * S.flangeE, S.flangeT, H + 2 * S.flangeE], col), box("base", "Base", [0, S.flangeT, 0], [L, W, H], col), box("fiche", "Plug", [L * 0.06, -out, H * 0.08], [L * 0.88, out, H * 0.84], col),
     box("pied1", "", [L * 0.02, -out * 0.75, H * 0.92], [L * 0.07, out * 0.3, H * 0.16], lev), box("pied2", "", [L * 0.91, -out * 0.75, H * 0.92], [L * 0.07, out * 0.3, H * 0.16], lev), box("levier", "Lever", [L * 0.02, -out * 0.75, H * 1.08], [L * 0.96, out * 0.3, H * 0.07], lev),
@@ -136,8 +136,8 @@ export function modelEnvelope(S, n) {
     case "sealed": { const B = sealedBox(S, k); return E(B.L, B.W, B.H); }
     case "hvheader": { const B = hvBox(S, k); return E(B.L, B.W, B.H, S.flangeE); }
     case "circular": return S.flange ? E(S.body, S.back, S.body, (S.flange - S.body) / 2) : E(S.thread, S.back, S.thread);
-    case "barrel": return E(S.barrel * 1.2, S.length, S.barrel * 1.2);
-    case "coupler": return E(S.d * 1.2, S.length, S.d * 1.2);
+    case "barrel": return E(S.barrel, S.length, S.barrel);
+    case "coupler": return E(S.d, S.length, S.d);
     case "stack": return E(S.block[0] * k, S.block[2], S.block[1]);
     case "flat": return E(S.size[1], S.size[0], S.size[2]);
     case "disconnect": return E(S.base[0], S.base[2], S.base[1], S.flangeE);

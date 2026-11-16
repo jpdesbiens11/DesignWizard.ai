@@ -19,8 +19,8 @@ test("every connector of the library has its series, and every series says what 
   for (const [id, S] of Object.entries(SERIES)) { assert.ok(MODEL_KINDS.includes(S.model) && MODEL_WORDS[S.model], `${id} : model`); assert.ok(DIMS_LEVELS[S.dims], `${id} : dims`); assert.ok(S.ref && /^#[0-9a-f]{6}$/.test(S.color), `${id} : ref, colour`); assert.ok(String(S.basis).length > 60, `${id} : basis`); }
   for (const w of Object.values(MODEL_WORDS)) assert.ok(w.label && w.fr && w.label !== w.fr, "a model has its English name and its French word");
   for (const S of Object.values(SERIES)) { if (S.dims === "typed") assert.match(S.basis, /saisi|mémoire/, "a typed series says it was typed"); if (S.dims === "read") assert.match(S.basis, /Fiche|Catalogue|Dessin/, "a read series names the document"); if (S.dims === "part") assert.match(S.basis, /lus/); }
-  const n = dimsCount(); assert.equal(n.read + n.part + n.typed, CONNECTORS.length); assert.equal(n.read, 5, "five series read on their data sheet, no more claimed");
-  assert.deepEqual(Object.entries(SERIES).filter(([, S]) => S.dims === "read").map(([id]) => id).sort(), ["hirose-df13", "hirose-fh12", "jst-ph", "jst-xh", "molex-minifit"]);
+  const n = dimsCount(); assert.equal(n.read + n.part + n.typed, CONNECTORS.length); assert.deepEqual([n.read, n.part, n.typed], [15, 6, 29], "what was read on a data sheet, no more claimed");
+  assert.deepEqual(Object.entries(SERIES).filter(([, S]) => S.dims === "read").map(([id]) => id).sort(), ["amass-xt60", "amass-xt90", "anderson-pp120", "anderson-pp180", "anderson-pp45", "anderson-pp75", "anderson-sb175", "anderson-sb350", "hirose-df13", "hirose-fh12", "jst-ph", "jst-xh", "molex-minifit", "molex-picoblade", "staubli-mc4"]);
   assert.equal(makerSite("Molex"), "https://www.molex.com"); assert.equal(makerSite("MIL-DTL-38999"), null, "a standard has no maker's site"); assert.equal(seriesOf("nope"), null);
 });
 
@@ -31,6 +31,13 @@ test("the dimensions read on the data sheets come out of the generators as they 
   for (const [n, B] of [[2, 4.15], [8, 11.65], [15, 20.4]]) near(len("hirose-df13", n), B, `Hirose DF13, B for ${n} contacts`);
   for (const [n, C] of [[6, 7.1], [10, 9.1], [53, 30.6]]) near(len("hirose-fh12", n), C, `Hirose FH12, C for ${n} contacts`);
   for (const [n, A] of [[2, 5.4], [4, 9.6], [8, 18.0], [24, 51.6]]) near(len("molex-minifit", n), A, `Mini-Fit Jr., A for ${n} circuits`);
+  for (const [n, A] of [[2, 4.25], [4, 6.75], [9, 13], [15, 20.5]]) near(len("molex-picoblade", n), A, `PicoBlade, A for ${n} circuits`);
+  assert.equal(modelSolids(SERIES["molex-picoblade"], 3).filter((s) => /^fente/.test(s.id)).length, 1, "one locking window for 2 and 3 circuits"); assert.equal(modelSolids(SERIES["molex-picoblade"], 4).filter((s) => /^fente/.test(s.id)).length, 2, "two from 4");
+  const box = (id, n) => { const B = solidsBox(modelSolids(SERIES[id], n)); return [B.L, B.W, B.H]; };
+  assert.deepEqual(box("amass-xt60", 2), [15.4, 23.8, 9.2]); assert.deepEqual(box("amass-xt90", 2), [21.3, 30.7, 10.7]); assert.deepEqual(box("anderson-sb175", 2), [55.6, 79.6, 25.4]); assert.deepEqual(box("anderson-sb350", 2), [69.9, 107.9, 33.3]); assert.deepEqual(box("staubli-mc4", 1), [18.8, 61, 18.8]);
+  const xt = modelSolids(SERIES["amass-xt60"], 2).filter((s) => /^p\d/.test(s.id)); near(xt[1].at[0] - xt[0].at[0], 7.2, "XT60, contacts 7,2 apart");
+  assert.deepEqual([SERIES["anderson-pp45"].block, SERIES["anderson-pp75"].block, SERIES["anderson-pp120"].block, SERIES["anderson-pp180"].block], [[7.9, 7.9, 24.6], [15.9, 15.9, 47.9], [22.2, 22.2, 69.9], [28.6, 28.6, 82.6]]);
+  assert.deepEqual(box("te-hva280", 2).filter((v, i) => i !== 1), [45.4, 40.6], "HVA 280 header : 45,4 × 40,6 overall"); const hva = modelSolids(SERIES["te-hva280"], 2).filter((s) => /^p\d/.test(s.id)); near((hva[1].at[0] + hva[1].size[0] / 2) - (hva[0].at[0] + hva[0].size[0] / 2), 10.4, "HVA 280, poles 10,4 apart");
   const E = (id, n) => modelEnvelope(SERIES[id], n);
   assert.deepEqual([E("jst-ph", 4).W, E("jst-ph", 4).H], [4.5, 6]); assert.deepEqual([E("jst-xh", 4).W, E("jst-xh", 4).H], [5.75, 7]); assert.deepEqual([E("hirose-df13", 4).W, E("hirose-df13", 4).H], [3.4, 4.3]);
   assert.deepEqual([E("hirose-fh12", 10).W, E("hirose-fh12", 10).H], [5.6, 2]); assert.deepEqual([E("molex-minifit", 8).W, E("molex-minifit", 8).H], [9.6, 12.8]);
