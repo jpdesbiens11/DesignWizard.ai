@@ -110,9 +110,10 @@ html[data-module="fea"] { --acc: var(--hl-teal); }
 /* Isolation : the bodies grouped by what they are, each group in its colour */
 .cc-group { display: flex; align-items: center; gap: .4rem; width: 100%; margin-top: .5rem; padding: .25rem .2rem; border: 0; border-bottom: 1.4px solid var(--line); background: none; font: inherit; font-size: .88rem; color: var(--ink); text-align: left; cursor: pointer; }
 .cc-group:hover { background: var(--surface-2); } .cc-group small { color: var(--muted); } .cc-chev { color: var(--muted); width: .9rem; text-align: center; }
-.cc-body { display: flex; flex-wrap: wrap; align-items: center; gap: .2rem .35rem; margin: .18rem 0 0 .3rem; padding: .12rem .2rem .12rem .4rem; border-left: 4px solid var(--line); font-size: .84rem; }
+.cc-body { display: flex; align-items: center; gap: .2rem .35rem; margin: .18rem 0 0 .3rem; padding: .12rem .2rem .12rem .4rem; border-left: 4px solid var(--line); border-radius: 0 var(--r-field) var(--r-field) 0; font-size: .84rem; cursor: pointer; }
+.cc-body:hover, .cc-body:focus-visible { background: var(--surface-2); } .cc-body.sel { background: var(--surface); box-shadow: var(--shadow-sketch); } .cc-body .cc-role { flex: none; color: var(--muted); max-width: 46%; overflow-wrap: anywhere; text-align: right; }
 .cc-body.off { opacity: .55; } .cc-body.off .cc-name { text-decoration: line-through; }
-.cc-body .cc-name { flex: 1 1 calc(100% - 2rem); min-width: 0; overflow-wrap: anywhere; line-height: 1.25; }
+.cc-body .cc-name { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; line-height: 1.25; }
 .cc-body select { flex: 1 1 6rem; min-width: 0; max-width: 14rem; padding: .15rem .2rem; font-size: .8rem; }
 /* the tree of the load case : a type, its items, the colour of the type on each */
 .bc-tree { margin: .2rem 0 .5rem; }

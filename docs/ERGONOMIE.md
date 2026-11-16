@@ -53,8 +53,24 @@ Ce qui reste, et pourquoi :
 - **6 textes tronqués** : la pastille d'état de la barre du haut, à 170 px sur portable — la barre est pleine ; son
   texte entier est dans son info-bulle.
 - **2 cibles** de 20 px dans l'écran DFx.
-- **Listes déroulantes** : 38 dans l'Isolation (une par corps, pour son rôle et son potentiel) et 40 dans les Dessins
-  (une par cote). C'est là que des arbres par type, comme dans la Simulation, serviraient le mieux.
+- **Listes déroulantes** : réglé à la v0.66.0 — voir « Les listes en arbre » ci-dessous. Sur la démonstration,
+  l'Isolation passe de 38 menus à 6 (les conditions de l'analyse), les Dessins de 40 à 0.
+
+## Les listes en arbre
+
+Ce qu'un écran a en grand nombre se range **par état ou par nature**, comme les accouplements de l'Assemblage et le cas
+de charge de la Simulation : un groupe, sa couleur, son compte ; un élément, son numéro et ses quelques mots ; un clic
+sélectionne, un second relâche ; **un seul éditeur ouvert à la fois**, sous l'élément choisi — plus de mur de menus.
+
+| Écran | L'arbre | Groupes | Ce que fait un clic |
+|---|---|---|---|
+| Isolation — corps (volet de gauche) | les corps de l'assemblage | conducteurs par potentiel, sans potentiel, métal flottant, isolants, hors analyse | ouvre le rôle et le potentiel de CE corps |
+| Isolation — paires (volet de droite) | les paires de nets | non conformes, à vérifier, à mesurer, conformes | montre ses chemins et son calcul ; l'œil d'un état trace les chemins de toutes ses paires, à sa couleur |
+| Dessins — cotes | les cotes de la feuille, au numéro de leur bulle | hors tout, positions et entraxes, trous, cotes de détail, cotes de définition | ouvre la classe de CETTE cote : Normale, REF, SC, CSC |
+| Carte — vérifications | les constats (schéma et implantation) | à corriger, à vérifier, remarques | centre la carte sur le constat et dit quoi faire |
+
+Les modèles sont purs et testés (`web/js/core/trees.js`, `tests/node/trees.test.mjs`) ; un seul module les dessine
+(`web/js/modules/state_tree.js`), avec les styles des arbres existants (`.bc-tree`).
 
 ## Le repère, la grille et la taille de l'affichage
 

@@ -13,6 +13,8 @@ import { bodyGroups } from "../analysis/cc_groups.js";
 import { charredEdge } from "../cad/special_processes.js";
 import { BUILTIN, DEFAULT_PARAMS, requirement, floatingSpan, altLabel, LEVEL_LABEL, FT_PER_M } from "../analysis/cc_rules.js";
 import { netColor } from "../cad/materials.js";
+import { pairTree, pairState, treeShown, STATE_COLORS } from "../core/trees.js";
+import { stateTree } from "./state_tree.js";
 
 const pairKey = (a, b) => [a, b].sort().join("|");
 const GROUP_ORDER = ["I", "II", "IIIa", "IIIb"];
@@ -77,7 +79,7 @@ function render(main, args) {
     return null;
   }
   const asm = () => store.assembly(id);
-  const st = { ctx: null, bodies: null, results: null, sel: null, token: 0, running: false, ghost: true, worker: null, hidden: new Set(), fold: new Set() };      // hidden : bodies put aside to see behind them — still analysed
+  const st = { ctx: null, bodies: null, results: null, sel: null, token: 0, running: false, ghost: true, worker: null, hidden: new Set(), fold: new Set(), show: {}, body: null };      // hidden : bodies put aside to see behind them — still analysed
   const iso = () => ({ nets: collectNets(asm()), params: { ...DEFAULT_PARAMS, ...((asm().isolation || {}).params || {}) }, levels: (asm().isolation || {}).levels || {}, overrides: (asm().isolation || {}).overrides || {} });
   const save = (fn, label) => store.updateAssembly(id, (a) => { a.isolation = a.isolation || {}; a.isolation.nets = collectNets(a); fn(a.isolation); }, label);
   /* ---- hide and bring back, roles and potentials : with the mouse, on the body itself ---- */
@@ -135,11 +137,11 @@ function render(main, args) {
     const v = vp.viewer;
     v.clearOverlays("path");
     if (!st.results) return;
-    const shown = st.sel ? st.results.filter((r) => pairKey(r.a, r.b) === st.sel) : st.results.filter((r) => r.verdict && r.verdict.ok === false);
+    const shown = st.sel ? st.results.filter((r) => pairKey(r.a, r.b) === st.sel) : st.results.filter((r) => treeShown(st.show, pairState(r)));      // the selected pair, or every state whose eye is open — what fails, by default
     for (const r of shown) {
-      const c = r.clearance, k = r.creepage;
-      if (c && c.path && c.path.length > 1) { v.addPath(c.path, "#ff3b30", "path", 1.2); v.addLabel(mid(c.path), `clearance [clr] ${fmt(c.d, 2)} mm`, "path", "path"); }
-      if (k && k.path && k.path.length > 1) { v.addPath(k.path, "#ff3b30", "path", 1.0, true); v.addLabel(mid(k.path, 0.35), `creepage [crp] ${fmt(k.d, 2)} mm`, "path", "path"); }
+      const c = r.clearance, k = r.creepage, state = pairState(r), tone = state === "fail" ? "#ff3b30" : STATE_COLORS[state];      // a path takes the colour of the state of its pair
+      if (c && c.path && c.path.length > 1) { v.addPath(c.path, tone, "path", 1.2); v.addLabel(mid(c.path), `clearance [clr] ${fmt(c.d, 2)} mm`, "path", "path"); }
+      if (k && k.path && k.path.length > 1) { v.addPath(k.path, tone, "path", 1.0, true); v.addLabel(mid(k.path, 0.35), `creepage [crp] ${fmt(k.d, 2)} mm`, "path", "path"); }
     }
   }
   const mid = (path, t = 0.5) => { let L = 0; const seg = []; for (let i = 0; i + 1 < path.length; i++) { const d = Math.hypot(path[i + 1][0] - path[i][0], path[i + 1][1] - path[i][1], path[i + 1][2] - path[i][2]); seg.push(d); L += d; } let s = L * t; for (let i = 0; i < seg.length; i++) { if (s <= seg[i]) { const q = seg[i] ? s / seg[i] : 0; return [0, 1, 2].map((k) => path[i][k] + (path[i + 1][k] - path[i][k]) * q); } s -= seg[i]; } return path[path.length - 1]; };
@@ -211,7 +213,7 @@ function render(main, args) {
       el("p", { class: "muted", style: { fontSize: ".78rem" } }, "Règles : IEC 60664-1 (tables intégrées, à vérifier contre votre copie de la norme avant toute décision de certification). ", el("a", { href: "#/help/sources/isolation" }, "Sources de la méthode →"))));
     if (st.bodies) {
       const sec = el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, "Rôle des corps"), st.hidden.size ? btn(`Ramener (${st.hidden.size})`, showAll, { small: true, icon: "eye", tip: "Ramener tous les corps masqués (Maj + H)" }) : null),
-        el("p", { class: "muted", style: { fontSize: ".78rem", margin: "0 0 .3rem" } }, "Clic droit sur un corps dans la vue : le masquer, lui donner son rôle et son potentiel. Un corps masqué reste analysé."));
+        el("p", { class: "muted", style: { fontSize: ".78rem", margin: "0 0 .3rem" } }, "Cliquez un corps pour lui donner son rôle et son potentiel ; clic droit dans la vue : le masquer. Un corps masqué reste analysé."));
       /* grouped by what a body is for the analysis, each group in its colour : conductors by potential, then the rest */
       for (const g of bodyGroups(st.bodies, I.nets)) {
         const shut = st.fold.has(g.key), hiddenIn = g.bodies.filter((b) => st.hidden.has(b.id)).length;
@@ -220,14 +222,19 @@ function render(main, args) {
           dot, el("b", { class: "grow" }, g.title), el("small", null, `${g.bodies.length}${hiddenIn ? ` · ${hiddenIn} masqué${hiddenIn > 1 ? "s" : ""}` : ""}`), el("span", { class: "cc-chev", "aria-hidden": "true" }, shut ? "▸" : "▾")));
         if (shut) continue;
         for (const b of g.bodies) {
-          const o = I.overrides[b.id] || {}, off = st.hidden.has(b.id), row = el("div", { class: "cc-body" + (off ? " off" : "") },
+          /* a body is a line of the tree : its name, what it is ; a click opens ITS editor — one at a time, not a wall of menus */
+          const o = I.overrides[b.id] || {}, off = st.hidden.has(b.id), sel = st.body === b.id, pick = () => { st.body = sel ? null : b.id; renderLeft(); }, WORD = { conductor: "conducteur", floating: "flottant", insulator: "isolant", ignore: "ignoré" };
+          const row = el("div", { class: "cc-body" + (off ? " off" : "") + (sel ? " sel" : ""), role: "treeitem", "aria-selected": sel ? "true" : "false", tabindex: "0", "data-body-row": b.id,
+            onClick: (e) => { if (!e.target.closest("button")) pick(); }, onKeydown: (e) => { if ((e.key === "Enter" || e.key === " ") && !e.target.closest("button")) { e.preventDefault(); pick(); } } },
             el("button", { class: "icon-btn", type: "button", "aria-label": off ? `Ramener ${b.name}` : `Masquer ${b.name}`, "aria-pressed": off ? "true" : "false", "data-tip": off ? "Masqué — cliquez pour le ramener" : "Masquer ce corps", onClick: () => hide(b.id, !off) }, icon(off ? "cross" : "eye")),
             el("span", { class: "cc-name", "data-tip": `${b.id} · ${b.material}${b.group ? ` · group ${b.group}` : ""}${off ? " · masqué" : ""}` }, b.name),
+            el("small", { class: "cc-role" }, `${WORD[b.kind]}${o.kind ? "" : " (auto)"}${b.net && b.kind !== "insulator" && b.kind !== "ignore" ? ` · ${b.net}` : ""}`));
+          const editor = !sel ? null : el("div", { class: "bc-edit", "data-body-edit": b.id }, el("div", { class: "bc-row" }, el("small", null, "Rôle"),
             el("select", { "aria-label": `Rôle de ${b.name}`, onChange: (e) => save((x) => { x.overrides = x.overrides || {}; const q = { ...(x.overrides[b.id] || {}) }; if (e.target.value) q.kind = e.target.value; else delete q.kind; x.overrides[b.id] = q; }, `Rôle de ${b.name}`) },
-              [["", `auto (${{ conductor: "conducteur", floating: "flottant", insulator: "isolant", ignore: "ignoré" }[b.kind]})`], ["conductor", "conducteur"], ["floating", "flottant"], ["insulator", "isolant"], ["ignore", "ignoré"]].map(([v, l]) => el("option", { value: v, selected: (o.kind || "") === v }, l))),
-            b.kind === "insulator" || b.kind === "ignore" ? null : el("select", { "aria-label": `Net de ${b.name}`, onChange: (e) => save((x) => { x.overrides = x.overrides || {}; x.overrides[b.id] = { ...(x.overrides[b.id] || {}), net: e.target.value || null }; }, `Net de ${b.name}`) },
-              el("option", { value: "" }, "—"), I.nets.map((n) => el("option", { value: n.name, selected: b.net === n.name }, n.name))));
-          row.style.borderLeftColor = cssColor(g.color); sec.append(row);
+              [["", `auto (${WORD[b.kind]})`], ["conductor", "conducteur"], ["floating", "flottant"], ["insulator", "isolant"], ["ignore", "ignoré"]].map(([v, l]) => el("option", { value: v, selected: (o.kind || "") === v }, l)))),
+            b.kind === "insulator" || b.kind === "ignore" ? null : el("div", { class: "bc-row" }, el("small", null, "Potentiel"), el("select", { "aria-label": `Net de ${b.name}`, onChange: (e) => save((x) => { x.overrides = x.overrides || {}; x.overrides[b.id] = { ...(x.overrides[b.id] || {}), net: e.target.value || null }; }, `Net de ${b.name}`) },
+              el("option", { value: "" }, "—"), I.nets.map((n) => el("option", { value: n.name, selected: b.net === n.name }, n.name)))));
+          row.style.borderLeftColor = cssColor(g.color); sec.append(row); if (editor) { editor.style.borderLeftColor = cssColor(g.color); sec.append(editor); }
         }
       }
       scroll.append(sec);
@@ -244,17 +251,10 @@ function render(main, args) {
     const ps = pairs();
     if (!ps.length) { body.append(el("div", { class: "card" }, el("p", null, "Aucune paire de nets."), el("p", { class: "muted" }, "Donnez un net aux conducteurs (colonne « Rôle des corps », ou « Rôle électrique » dans la fiche de chaque pièce, ou les zones d'un PCB)."))); return; }
     const res = new Map((st.results || []).map((r) => [pairKey(r.a, r.b), r]));
-    const cell = (v, capped) => (v === null || v === undefined ? (capped ? "> plafond" : "—") : fmt(v, 2));
-    const rows = ps.map((p) => {
-      const key = pairKey(p.a, p.b), r = res.get(key), v = r ? r.verdict : judge(p.req, null);
-      return { attrs: { style: { cursor: "pointer", background: st.sel === key ? "color-mix(in srgb, var(--acc) 18%, #fff)" : "" }, onClick: () => { st.sel = st.sel === key ? null : key; drawPaths(); renderRight(); } },
-        cells: [el("span", null, el("b", null, `${p.a} ↔ ${p.b}`), el("br"), el("small", { class: "muted" }, `${fmt(p.req.u_rms, 0)} V · ${LEVEL_LABEL[p.level]}`)),
-          `${fmt(p.req.clearance_mm, 2)}`, r ? cell(v.clr, v.clrCapped) : "…", r ? (v.crpNone ? "—" : `${fmt(v.crpReq, 2)}`) : `${fmt(p.req.creepage_mm.II, 2)}*`, r ? (v.crpNone ? "aucun" : cell(v.crp, v.crpCapped)) : "…",
-          r ? (r.error ? badge("erreur", "danger") : v.ok === false ? badge("NON", "danger") : v.ok ? badge("OK", "ok") : badge("?", "warn")) : badge("à mesurer", "neutral")] };
-    });
-    const tb = table(["Paire", "Clr req.", "Clr mes.", "Crp req.", "Crp mes.", "Verdict"], rows);
-    tb.querySelectorAll("th, td").forEach((c) => { c.style.padding = ".35rem .4rem"; c.style.fontSize = ".82rem"; });
-    body.append(tb, el("p", { class: "muted", style: { fontSize: ".76rem", margin: ".4rem 0" } }, "Distances en mm. * avant mesure : creepage requis pour un isolant du group II ; après mesure : pour le pire groupe touché par le chemin. Cliquez une paire pour voir ses chemins et son calcul."));
+    /* the pairs as a tree, by verdict : what fails first ; the eye of a state draws the paths of its pairs in the view */
+    body.append(stateTree({ label: "Paires de nets, par état", tree: pairTree(ps, st.results, { key: pairKey, fmt, levels: LEVEL_LABEL }), sel: st.sel, attr: "data-pair-row", keep: st.results ? ["fail"] : [], eye: "Chemins tracés dans la vue",
+      shown: st.results ? (k) => (k === "todo" ? null : treeShown(st.show, k)) : null, toggle: (k, on) => { st.show = { ...st.show, [k]: on }; drawPaths(); renderRight(); }, select: (key) => { st.sel = key; drawPaths(); renderRight(); } }),
+      el("p", { class: "muted", style: { fontSize: ".76rem", margin: ".4rem 0" } }, "Distances en mm : mesurée / requise. Le creepage requis est celui du pire groupe de matière touché par le chemin. Cliquez une paire pour voir ses chemins et son calcul ; l'œil d'un état trace les chemins de toutes ses paires."));
     const selP = ps.find((p) => pairKey(p.a, p.b) === st.sel);
     if (selP) {
       const r = res.get(st.sel), lvl = el("select", { onChange: (e) => save((x) => { x.levels = { ...(x.levels || {}), [st.sel]: e.target.value }; }, `Niveau ${selP.a} ↔ ${selP.b}`) }, ["functional", "basic", "reinforced"].map((k) => el("option", { value: k, selected: selP.level === k }, LEVEL_LABEL[k])));

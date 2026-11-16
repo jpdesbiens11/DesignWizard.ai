@@ -17,6 +17,8 @@ import { buildAssembly } from "../core/asm_scene.js";
 import { matPoint } from "../cad/vec.js";
 import { whereUsed, reviewItems } from "../core/review.js";
 import { confidentialNote } from "../core/brand.js";
+import { dimTree, dimClasses } from "../core/trees.js";
+import { stateTree } from "./state_tree.js";
 
 const [PW, PH] = PAPER.TABLOID;
 /** The title-block fields of the project, and the revisions the review ledger remembers for an artefact. */
@@ -70,7 +72,7 @@ function render(main, args) {
     asms.length ? el("optgroup", { label: `Assemblages (${asms.length})` }, asms.map((a) => el("option", { value: `asm/${encodeURIComponent(a.id)}`, selected: isAsm && a.id === id }, `${a.id} — ${a.name || ""}`))) : null);
   scroll.append(el("div", { class: "side-section" }, field("Dessin de", pick)), dimBox);
   if (!id) { center.append(el("div", { class: "empty" }, el("h2", null, "Rien à dessiner"), el("p", null, "Créez une pièce : son dessin se génère tout seul."), el("a", { class: "btn btn-primary", href: "#/shop" }, "Démarrer par les interfaces"))); right.remove(); root.classList.add("no-right"); return null; }
-  const st = { doc: null, token: 0 }, artefact = () => (isAsm ? store.assembly(id) : store.part(id));
+  const st = { doc: null, token: 0, dim: null }, artefact = () => (isAsm ? store.assembly(id) : store.part(id));
   const d = () => store.project.drawing || {};
   const setD = (key, val, label) => store.commit(`Dessins : ${label}`, (p) => { p.drawing = { ...(p.drawing || {}), [key]: val }; });
   const off = store.on("change", () => { if (!artefact()) { go("#/drawings"); return; } build(); });
@@ -90,14 +92,16 @@ function render(main, args) {
   function renderDims() {
     clear(dimBox); if (!st.doc) return;
     const dims = st.doc.info.dims || [];
-    if (isAsm) { dimBox.append(el("div", { class: "side-section" }, el("h3", null, `Repères (${st.doc.info.items.length}) et cotes (${dims.length})`), st.doc.info.items.map((x) => el("p", { class: "small", style: { margin: "0 0 .2rem" } }, badge(String(x.item), "info"), ` ${x.id}`, x.view ? null : el("small", { class: "muted" }, " — masquée"))),
-      dims.map((x) => el("p", { class: "small", style: { margin: "0 0 .2rem" } }, badge(String(x.n), "neutral"), ` ${x.label} : ${fmt(x.value, 2)} mm`)))); return; }
-    const n = (c) => dims.filter((x) => x.cls === c).length;
-    dimBox.append(el("div", { class: "side-section" }, el("h3", null, `Cotes (${dims.length})`), el("p", { class: "muted", style: { fontSize: ".78rem", margin: "0 0 .4rem" } }, `Le numéro est celui de la bulle sur le dessin. ${n("sc")} SC · ${n("csc")} CSC · ${n("ref")} référence(s).`),
-      dims.map((x) => el("div", { class: "param", style: { gridTemplateColumns: "26px minmax(0,1fr) 92px", alignItems: "center" } }, badge(String(x.n), x.cls === "csc" ? "danger" : x.cls === "sc" ? "warn" : "neutral"),
-        el("label", { "data-tip": `${x.label} — ${st.doc.info.onView.includes(x.key) ? "sur une vue" : x.table === "holes" ? "au tableau des trous" : "au tableau des cotes de définition"}${x.basic ? " · cote de base (encadrée)" : ""}` }, dimText(x), el("small", null, x.label)),
-        el("select", { "aria-label": `Classe de la cote ${x.n}`, style: { padding: ".15rem .2rem", fontSize: ".8rem" }, onChange: (e) => store.updatePart(id, (p) => { setDimClass(p, x.key, e.target.value); }, `${id} : cote ${x.n} — ${DIM_CLASSES[e.target.value].fr}`) },
-          Object.entries(DIM_CLASSES).map(([k, c]) => el("option", { value: k, selected: k === x.cls }, c.short || "Normale")))))));
+    /* an assembly : its balloons and its overall dimensions, as a tree to read */
+    if (isAsm) { const tree = [{ key: "items", fr: "Repères", color: "#0ea5e9", tip: "Les pièces de la nomenclature, au numéro de leur bulle", items: st.doc.info.items.map((x) => ({ id: `item:${x.item}`, n: x.item, text: x.id, sub: x.view ? "" : "masquée sur les vues" })) },
+      { key: "dims", fr: "Cotes hors tout", color: "#2563eb", tip: "L'encombrement de l'assemblage", items: dims.map((x) => ({ id: `dim:${x.n}`, n: x.n, text: `${fmt(x.value, 2)} mm`, sub: x.label })) }];
+      dimBox.append(el("div", { class: "side-section" }, el("h3", null, `Repères (${st.doc.info.items.length}) et cotes (${dims.length})`), stateTree({ label: "Repères et cotes du dessin d'assemblage", tree, sel: null, attr: "data-dim-row", select: () => {} }))); return; }
+    /* a part : its dimensions by nature ; a click on one opens ITS class — normal, reference, special characteristic — instead of a menu per dimension */
+    const c = dimClasses(dims), tree = dimTree(dims, st.doc.info.onView, dimText);
+    const editor = (it) => el("div", { class: "bc-edit", "data-dim-edit": it.id }, el("p", { class: "small", style: { margin: ".2rem 0" } }, `${it.sub} — ${it.where}${it.basic ? " · cote de base (encadrée)" : ""}`),
+      el("div", { class: "bc-row" }, Object.entries(DIM_CLASSES).map(([k, cl]) => btn(cl.short || "Normale", () => store.updatePart(id, (p) => { setDimClass(p, it.id, k); }, `${id} : cote ${it.n} — ${cl.fr}`), { small: true, primary: k === it.cls, tip: cl.fr }))));
+    dimBox.append(el("div", { class: "side-section" }, el("h3", null, `Cotes (${dims.length})`), el("p", { class: "muted", style: { fontSize: ".78rem", margin: "0 0 .4rem" } }, `Le numéro est celui de la bulle sur le dessin. ${c.sc} SC · ${c.csc} CSC · ${c.ref} référence(s). Cliquez une cote pour changer sa classe.`),
+      stateTree({ label: "Cotes du dessin, par nature", tree, sel: st.dim, attr: "data-dim-row", select: (k) => { st.dim = k; renderDims(); }, editor })));
   }
   function pdf() { if (!st.doc) return; download(`${id}_rev${st.doc.spec.revision || "A"}.pdf`, st.doc.pdfBytes(), "application/pdf"); toast("PDF vectoriel téléchargé (tabloïd, 11 × 17 po).", "success"); }
   function renderRight() {

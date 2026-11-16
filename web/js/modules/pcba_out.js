@@ -32,10 +32,11 @@ import { draftsOf } from "../core/ai_draft.js";
 import { autoroute } from "../pcba/route.js";
 import { planPanel, setPlanNote, setPlanPoints } from "./plan_view.js";
 import { docMeta } from "../core/app.js";
+import { findingTree, treeFind } from "../core/trees.js";
+import { stateTree } from "./state_tree.js";
 
 const { txt, sel, section, scroll, hint } = ui$;
 const pane = (view, title, sub, ...kids) => { const p = el("div", { class: "pcba-pane" }, el("div", { class: "pcba-pane-head" }, el("h2", null, title), sub ? el("span", { class: "muted small" }, sub) : null), el("div", { class: "pcba-scroll" }, ...kids)); view.append(p); return p; };
-const finding = (f, onClick) => el("div", { class: "finding", onClick, style: { cursor: onClick ? "pointer" : null } }, el("span", { class: `sev ${f.severity}` }), el("div", null, el("b", null, `${f.rule} · ${f.title}`), el("p", { class: "small" }, f.message), fixHints(f) ? el("p", { class: "muted small" }, `→ ${fixHints(f)}`) : null));
 
 /** What an AI needs to know to edit a board. */
 /** The functional tree of a DynamiteAgile file into this board : a preview in words, then one undoable step. */
@@ -82,8 +83,12 @@ function verifs(ctx, { left, view, right }) {
       el("h3", null, "Contrôle électrique"), table(["Règle", "Pourquoi"], ERC_RULES.map((r) => [`${r.id} ${r.title}`, r.why]))), { xl: true }), { icon: "library", small: true })),
     section("Couches", layerList(ctx.art, ui.layers, () => v.show(scene()))));
   const r = scroll(right, el("div", { class: "side-head" }, el("h2", null, `Constats (${all.length})`)));
-  if (!all.length) r.append(el("p", { class: "muted" }, "Rien à signaler."));
-  for (const sev of ["error", "warn", "info"]) { const list = all.filter((f) => f.severity === sev); if (list.length) r.append(section({ error: "Erreurs", warn: "Avertissements", info: "Remarques" }[sev], ...list.map((f) => finding(f, f.at ? () => { ui.focus = f; v.show(scene()); v.focus(f.at); } : null)))); }
+  /* the findings as a tree, by severity : a click on one shows where it is on the board and what to do about it */
+  const tree = findingTree(all, fixHints), box = el("div"); let sel = all.indexOf(ui.focus) >= 0 ? all.indexOf(ui.focus) : null; r.append(box);
+  const paint = () => box.replaceChildren(stateTree({ label: "Constats de la carte, par état", tree, sel, attr: "data-finding-row", none: "Rien à signaler.", keep: ["error"],
+    select: (i) => { sel = i; const it = i === null ? null : treeFind(tree, i); ui.focus = it ? it.finding : null; v.show(scene()); if (it && it.at) v.focus(it.at); paint(); },
+    editor: (it) => el("div", { class: "bc-edit", "data-finding-edit": String(it.id) }, it.hint ? el("p", { class: "small", style: { margin: ".2rem 0" } }, `→ ${it.hint}`) : null, el("p", { class: "muted small", style: { margin: ".2rem 0" } }, it.at ? "Marqué sur la carte, au centre de la vue." : "Constat sans position sur la carte : il vient du schéma ou de la carte entière.")) }));
+  paint();
   return () => v.destroy();
 }
 
