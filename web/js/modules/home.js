@@ -70,7 +70,8 @@ function render(main) {
         btn("Premier design avec une IA…", () => app.firstDesign(), { icon: "wizard", tip: "Décrivez le produit : l'assistant de votre choix mène l'entrevue et rend un premier design complet — pièces, assemblage, carte, analyses — à passer en revue ici" }),
         btn("Nouveau projet", async () => { const name = await promptBox("Nouveau projet", "Nom du projet", "Mon produit"); if (name) { await store.create(name); go("#/shop"); } }, { icon: "plus" }),
         el("a", { class: "btn", href: "presentation.html", target: "_blank", rel: "noopener", "data-tip": "De la conception d'aujourd'hui à l'assemblage prêt à commander, brique par brique — une vingtaine de pages à faire défiler" }, icon("eye"), "Présentation guidée"),
-        btn("Importer…", () => app.pickFile(), { icon: "upload", tip: "Projet .json, pièce JSON d'une entrevue, ou fichier STEP — vous pouvez aussi coller (Ctrl+V) ou déposer un fichier n'importe où" }))),
+        btn("Importer…", () => app.pickFile(), { icon: "upload", tip: "Projet .json, pièce JSON d'une entrevue, ou fichier STEP — vous pouvez aussi coller (Ctrl+V) ou déposer un fichier n'importe où" }),
+        el("a", { class: "btn btn-primary gh", href: "https://github.com/jpdesbiens11/DesignWizard.ai", target: "_blank", rel: "noopener noreferrer", "data-tip": "Le code source, sous licence MIT" }, "GitHub"))),
     el("img", { src: `img/sketch/hero-${document.documentElement.dataset.theme || "carnet"}.svg`, alt: "" })));
 
   page.append(el("h2", null, "Les briques"),

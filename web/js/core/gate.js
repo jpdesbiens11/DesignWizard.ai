@@ -16,7 +16,7 @@ export function gate() {
     const box = el("div", { class: "gate", role: "dialog", "aria-modal": "true", "aria-label": "Accès à la démo" },
       el("div", { class: "gate-card" }, el("img", { class: "gate-logo", src: "img/brand.svg", alt: "" }),
         el("h1", null, "DesignWizard", el("i", null, ".ai")), el("p", { class: "gate-by" }, "by DynamiteAgile™ — démo sur invitation"), body,
-        el("p", { class: "gate-foot" }, el("a", { href: "vitrine.html" }, "Découvrir le projet"), " · ", el("a", { href: `https://github.com/${CONFIG.repo}`, target: "_blank", rel: "noopener noreferrer" }, "Code source (MIT)"))));
+        el("p", { class: "gate-foot" }, el("a", { class: "btn btn-small", href: "vitrine.html" }, "Découvrir le projet"), el("a", { class: "btn btn-small btn-primary gh", href: `https://github.com/${CONFIG.repo}`, target: "_blank", rel: "noopener noreferrer", "data-tip": "Le code source, sous licence MIT" }, "GitHub"))));
     document.body.append(box);
     const google = (label, choose) => btn(label, () => go(choose), { primary: !choose, icon: choose ? "refresh" : "lock" });
 
