@@ -4,7 +4,7 @@
    what a good analyst does first. The simulation then runs in a worker and is compared with that estimate.
    Route: #/fea or #/fea/<part|assembly id>. Runs kept for the review live in project.simulations. */
 
-import { el, clear, icon, btn, badge, field, table, fmt, toast } from "../core/dom.js";
+import { el, clear, icon, btn, badge, field, table, fmt, toast, confirmBox } from "../core/dom.js";
 import { registerModule, setStatus, setGuide } from "../core/app.js";
 import { store } from "../core/store.js";
 import { kernel } from "../cad/client.js";
@@ -15,7 +15,7 @@ import { footprint } from "../core/shop_intent.js";
 import { patternPoints } from "../cad/interfaces.js";
 import { thread } from "../cad/standards.js";
 import { buildModel, skin, regionInfo } from "../analysis/fea/index.js";
-import { findSymmetries, reduceModel, loadSymmetry } from "../analysis/fea/symmetry.js";
+import { findSymmetries, reduceModel, loadSymmetry, oneSymmetry } from "../analysis/fea/symmetry.js";
 import { cutsSection, cutMenu, fraction } from "./fea_cuts.js";
 import { precheckStructure, precheckThermal, precheckThermo, compare } from "../analysis/fea/precheck.js";
 import { VERDICT, show } from "../analysis/fea/summary.js";
@@ -131,14 +131,26 @@ function render(main, args) {
     const v = vp.viewer; v.clearOverlays("sym"); v.clearOverlays("bcsel"); if (!model) return;
     const tag = "sym", tree = loadTree();
     for (const g of tree) for (const it of g.items) {
+      if (it.kind === "symmetry") { for (const s of planeSpots(it.plane)) clamp(v, s.p, s.out, { tag, color: it.color }); continue; }
       if (it.kind === "fixed") for (const s of spots(it.region)) clamp(v, s.p, s.out, { tag, color: it.color });
       else if (it.kind === "pressure") for (const s of spots(it.region)) arrow(v, s.p, s.out.map((c) => -c), { tag, color: it.color, len: v._size() * 0.05 });
       else if (it.kind === "force") for (const s of spots(it.region, 2)) arrow(v, s.p, DIRS[st.loads[it.index].dir], { tag, color: it.color });
       else for (const s of spots(it.region, 2)) gem(v, s.p, { tag, color: it.color });
     }
-    for (const it of bcLabels(tree, st.show, st.sel)) { const s = spots(it.region, 1)[0]; if (!s) continue;
+    for (const it of bcLabels(tree, st.show, st.sel)) { const s = it.kind === "symmetry" ? planeSpots(it.plane, 1)[0] : spots(it.region, 1)[0]; if (!s) continue;
       const b = v.addLabel(s.p, it.short, tag, `bc${it.selected ? " sel" : ""}`, () => select(it.selected ? null : it.id)); b.style.borderColor = it.color; b.style.setProperty("--bc", it.color); b.dataset.tip = `${it.text} — ${it.where}`; b.setAttribute("aria-label", `${it.id} : ${it.text}, ${it.where}`); }
-    const cur = st.sel ? bcFind(tree, st.sel) : null; if (cur) lightRegion(cur.item.region, cur.item.color, "bcsel");
+    const cur = st.sel ? bcFind(tree, st.sel) : null; if (cur && cur.item.region) lightRegion(cur.item.region, cur.item.color, "bcsel");
+  }
+  /* where a plane of symmetry shows its clamps : on the plane, spread over what is kept, pointing at the half that was removed */
+  function planeSpots(pl, n = 2) {
+    if (!whole) return []; const kb = keptBox(), a = pl.axis, [u, w] = [0, 1, 2].filter((k) => k !== a), out = [0, 0, 0], list = []; out[a] = -pl.keep;
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) { const p = [0, 0, 0]; p[a] = pl.at; p[u] = kb[u] + (kb[u + 3] - kb[u]) * (i + 0.5) / n; p[w] = kb[w] + (kb[w + 3] - kb[w]) * (j + 0.5) / n; list.push({ p, out }); }
+    return list;
+  }
+  /** The designer tries to remove the boundary a symmetry blocks : say why it cannot go alone, and offer to remove the symmetry. */
+  async function unsym(it) {
+    const ok = await confirmBox("Cette frontière vient de la symétrie", `${it.text} : ce plan est bloqué parce qu'il est un plan de symétrie — rien ne le traverse, et il tient la place de la moitié du produit qui n'est pas calculée. Il ne peut pas être retiré seul. Retirer la symétrie remet le produit entier dans le calcul : plus de cubes, le même résultat si le chargement est symétrique.`, "Retirer la symétrie", true);
+    if (!ok || !alive) return; st.cuts = st.cuts.filter((c) => c.bc !== "sym"); st.sel = null; outdate(); remesh(false); toast("Symétrie retirée : le produit entier est calculé.", "success", 3500);
   }
   /** Selects an item of the load case (null : none) : it lights up on the model and opens in the tree. */
   function select(id) { st.sel = id; drawLeft(); drawSymbols(); }
@@ -160,6 +172,7 @@ function render(main, args) {
     } catch (e) { vp.setBusy(""); info.textContent = e.message; info.className = "chip bad"; }
   }
   function remesh(first) {
+    { const one = oneSymmetry(st.cuts); if (one.dropped.length) { st.cuts = one.cuts; toast(`Une seule symétrie à la fois pour l'instant : le plan ${one.dropped.join(", ")} devient une coupe libre.`, "warn", 6000); } }
     try { whole = buildModel({ bodies: geo.bodies, target: st.cells, planes: st.cuts }); model = reduceModel(whole, st.cuts); syms = findSymmetries(whole); }
     catch (e) { vp.setBusy(""); info.textContent = e.message; info.className = "chip bad"; if (st.cuts.length) { toast(`${e.message} Le dernier plan est retiré.`, "warn", 6000); st.cuts.pop(); return remesh(first); } model = null; whole = null; drawRight(); return; }
     const b = whole.bbox, h = model.grid.h; patches.clear();
@@ -267,7 +280,7 @@ function render(main, args) {
     sec.append(el("h3", null, "Cas de charge"), ...[guideBox(found, { go })].filter(Boolean), bcSection({ st, tree: loadTree(), regions: [...regions, ...usedPatches()], dirs: DIRS, select, changed, aim, relabel: () => { drawLeft(); drawSymbols(); },
       hover: (k, color) => { vp.viewer.clearOverlays("bchover"); if (k && !asking) lightRegion(k, color || LIT.named, "bchover"); },
       add: (key) => { st[key].push(DEFAULT[key]()); const g = loadTree().find((x) => x.key === key), it = g.items[g.items.length - 1]; st.sel = it.id; changed(); aim((k) => { if (key === "fixed") st.fixed[it.index] = k; else st[key][it.index].region = k; changed(); toEnter(); }); },
-      remove: (key, i) => { st[key].splice(i, 1); st.sel = null; changed(); } }),
+      remove: (key, i) => { st[key].splice(i, 1); st.sel = null; changed(); }, unsym }),
       el("p", { class: "muted small" }, "Un clic sur une ligne la montre sur le modèle et ouvre ses valeurs ; l'œil d'un type affiche ou masque ses étiquettes. Un clic droit sur une face du modèle — intérieure aussi : tournez la vue, ou coupez-la — y pose un appui, un effort ou une source, et règle ou retire ce qui s'y trouve. Une valeur qui clignote est un exemple : entrez la vôtre."));
     if (st.kind === "thermo") sec.append(el("h3", { style: { marginTop: ".7rem" } }, "Température"),
       el("div", { class: "bc-row" }, el("small", null, "Montage sans contrainte à"), num(st.thermo.Tref, (v) => { st.thermo.Tref = v; changed(); }), el("small", null, "°C")),

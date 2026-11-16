@@ -12,8 +12,38 @@ import { FLUID } from "./models_fluid.js";
 import { THERMAL } from "./models_thermal.js";
 import { ELECTRICAL } from "./models_electrical.js";
 
-export const DOMAINS = [{ id: "structure", label: "Structure" }, { id: "joints", label: "Assemblages" }, { id: "fluid", label: "Fluides" },
-  { id: "thermal", label: "Thermique" }, { id: "electrical", label: "Électrique" }];
+/* a physics, its colour and its pictogram : a model is found by what it looks like before it is read */
+export const DOMAINS = [{ id: "structure", label: "Structure", color: "#2563eb", icon: "ruler", hint: "Ça plie, ça flambe, ça tord ?" }, { id: "joints", label: "Assemblages", color: "#7c3aed", icon: "bolt", hint: "Ça tient ensemble ?" },
+  { id: "fluid", label: "Fluides", color: "#0891b2", icon: "flow", hint: "Ça passe, à quel prix ?" }, { id: "thermal", label: "Thermique", color: "#ea580c", icon: "thermal", hint: "Ça chauffe ?" },
+  { id: "electrical", label: "Électrique", color: "#b45309", icon: "power", hint: "Le courant passe sans brûler ?" }];
+/* the few words of a model on its tile : the long title and the question come once it is chosen */
+const SHORT = { beam_cantilever_point: "Porte-à-faux · charge en bout", beam_cantilever_udl: "Porte-à-faux · charge répartie", beam_simple_point: "Deux appuis · charge au centre", beam_simple_udl: "Deux appuis · charge répartie",
+  column_buckling: "Flambement", shaft_torsion: "Torsion d'un arbre", plate_pressure: "Plaque sous pression", thermal_mismatch: "Dilatation différentielle", bolted_joint: "Vis serrée", press_fit: "Emmanchement serré", dowel_pin: "Goupille cisaillée",
+  pipe_flow: "Tube · perte de charge", orifice_flow: "Orifice calibré", conduction_stack: "Paroi · conduction", junction_temperature: "Température de jonction", heatsink_natural: "Ailettes · air calme", heatsink_forced: "Ailettes · air soufflé",
+  lumped_mass: "Masse thermique", busbar: "Busbar", pcb_trace: "Piste de PCB", adiabatic_pulse: "Impulsion de courant" };
+export const shortTitle = (m) => (m ? SHORT[m.id] || m.title : "");
+/** The numeric inputs of a model that still hold the example the tool put there : neither typed, nor confirmed, nor read on a part.
+    entered : the keys the designer typed or confirmed (a Set or a list). → keys, in the order of the form */
+export function exampleKeys(m, inputs, entered) {
+  const done = entered instanceof Set ? entered : new Set(entered || []);
+  return ((m && m.inputs) || []).filter((d) => !d.options && inputActive(d, inputs || {}) && !done.has(d.key)).map((d) => d.key);
+}
+/** What is wrong with the inputs of a model, for the guide : a value missing or outside what the model accepts, the examples still
+    to enter or to confirm (o.examples, from exampleKeys), what was read on a part and wants a look (o.read : keys ; o.part : its id),
+    then the limits of validity the run reports. → [{ level, text, field }] */
+export function inputIssues(m, inputs, result, o = {}) {
+  const out = [], name = (k) => { const d = m.inputs.find((x) => x.key === k); return d ? d.label : k; };
+  if (!m) return [{ level: "tip", text: "Choisissez un modèle dans le volet de droite : ils sont rangés par physique." }];
+  for (const d of (m && m.inputs) || []) { if (d.options || !inputActive(d, inputs)) continue; const v = inputs[d.key], unit = d.unit ? ` ${d.unit}` : "";
+    if (v === null || v === undefined || !Number.isFinite(v)) out.push({ level: "error", field: d.key, text: `${d.label} : entrez une valeur (de ${d.min} à ${d.max}${unit}).` });
+    else if (v < d.min || v > d.max) out.push({ level: "error", field: d.key, text: `${d.label} = ${v}${unit} : hors de ce que le modèle accepte (de ${d.min} à ${d.max}${unit}).` }); }
+  const eg = (o.examples || []).filter((k) => !out.some((x) => x.field === k));
+  if (eg.length) out.push({ level: "todo", field: eg[0], examples: eg, text: `${eg.length} valeur${eg.length > 1 ? "s" : ""} d'exemple à entrer ou à confirmer : ${eg.slice(0, 4).map(name).join(", ")}${eg.length > 4 ? "…" : ""}. Le verdict ne vaut que pour vos valeurs.` });
+  const read = (o.read || []).filter((k) => m.inputs.some((d) => d.key === k && inputActive(d, inputs)));
+  if (read.length) out.push({ level: "warn", field: read[0], text: `${read.length} valeur${read.length > 1 ? "s reprises" : " reprise"} de la pièce${o.part ? " " + o.part : ""} (${read.slice(0, 4).map(name).join(", ")}${read.length > 4 ? "…" : ""}) : l'enveloppe n'est pas toujours la section utile.` });
+  for (const w of (result && result.warnings) || []) out.push({ level: "warn", text: `Limite de validité — ${w}` });
+  return out;
+}
 export const MODELS = [...STRUCTURE_A, ...STRUCTURE_B, ...JOINTS, ...FLUID, ...THERMAL, ...ELECTRICAL];
 const BY_ID = new Map(MODELS.map((m) => [m.id, m]));
 

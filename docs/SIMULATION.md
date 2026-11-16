@@ -166,6 +166,24 @@ il vient : sur ce maillage grossier, les concentrations locales ne sont pas rés
 valeurs typiques — la fiche de la nuance fait foi. Code : `web/js/analysis/fea/safety.js` (pur), panneau
 `web/js/modules/fea_result.js`.
 
+### Avant la simulation : l'écran des modèles analytiques
+
+L'onglet « Modèles analytiques » a la même structure que la Simulation et que les autres studios :
+
+| Volet de gauche — ce que l'on entre | Centre — ce que l'on regarde | Volet de droite — ce que l'on choisit et ce que l'on obtient |
+|---|---|---|
+| Le modèle en cours, la pièce du projet dont on reprend les dimensions, puis les entrées par groupe (géométrie, chargement, matériau, critères) | En haut, le **schéma 2D** du modèle avec sa question, son verdict et ses trois valeurs clés ; en bas, le **même modèle en 3D**, dessiné aux dimensions tapées, avec ses efforts, ses appuis et ses étiquettes | « Modèles » : les 21 calculs en **tuiles rangées par physique** — une couleur et un pictogramme par physique, le schéma du modèle comme pictogramme de sa tuile, quelques mots dessous ; « Résultat » : verdict, valeurs, vérifications et marges ; « Calcul » : les étapes, les hypothèses, la validité, la source ; « Rapport » : les calculs gardés |
+
+Le 3D est tracé avec les nombres entrés (`web/js/analysis/physics/scene3d.js`, pur et testé) : une portée doublée
+double la poutre, douze ailettes en montrent douze. Une disproportion saute aux yeux avant que le verdict ne tombe.
+Ce qui est raccourci ou épaissi pour rester lisible le dit dans son étiquette (un tube très long, le cuivre d'une
+piste). Ce n'est pas la pièce : c'est le modèle simple que le calcul suppose.
+
+Les valeurs d'un modèle neuf sont des **exemples**. Leur champ est marqué, le prochain à entrer clignote, le guide les
+compte, et « Ajouter au rapport » attend qu'elles soient tapées ou confirmées (Entrée dans le champ, ou « Tout
+confirmer »). Sans modèle choisi, le centre propose les cinq physiques. Fenêtre étroite : le volet de droite passe
+sous celui de gauche au lieu de disparaître.
+
 ## 2. Le maillage : un seul gabarit, le cube
 
 La pièce est découpée en **cubes identiques** : une grille régulière posée sur son enveloppe, dont on garde les
@@ -233,6 +251,20 @@ plan porte :
 
 La vue montre ce qui est résolu : on voit l'intérieur du produit par la face de coupe, et les symboles ne sont
 dessinés que sur le côté gardé.
+
+### Le plan de symétrie est une frontière bloquée
+
+Un plan de symétrie ne bouge pas : rien ne le traverse, tout se déforme autour de lui. Dès qu'un plan est utilisé comme
+symétrie, il apparaît donc **parmi les appuis** du cas de charge — `S1 · Symétrie · plan X = 40 mm` —, avec ses cônes
+bleus sur le plan et son étiquette sur le modèle.
+
+- Ce qui est bloqué est le déplacement **perpendiculaire** au plan ; la matière reste libre de glisser dans le plan. C'est
+  la condition qui donne, sur la moitié, le même résultat que sur le produit entier — un encastrement complet du plan le
+  fausserait.
+- **Un seul plan de symétrie à la fois**, pour l'instant : les autres plans symétriques restent proposés mais grisés, et
+  une coupe ordinaire (libre, tenue, température) reste possible sur les autres axes.
+- Cette frontière **ne se retire pas seule** : elle porte un cadenas. Si l'on tente de l'effacer, une fenêtre explique
+  qu'elle vient de la symétrie et propose de **retirer la symétrie** — le produit entier revient alors dans le calcul.
 
 ## 5. Ce qui est vérifié
 

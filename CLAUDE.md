@@ -41,6 +41,10 @@ Consignes permanentes de JP (propriétaire du dépôt). Elles s'appliquent à to
   « à entrer », « à vérifier », « conseil » (`web/js/core/guide.js`, bouton « Guide » de la barre du haut). Une valeur que
   l'outil invente est un exemple : son champ clignote jusqu'à ce qu'elle soit entrée ou confirmée, et l'action attend.
   Toute nouvelle brique donne sa liste au guide (fonction pure testée + `setGuide`). Voir `docs/GUIDAGE.md`.
+- **Visuel, symbole, couleur** (demande de JP) : jamais une longue liste de texte seule. Tout choix à faire dans une liste
+  se présente groupé par nature, chaque groupe avec sa couleur, chaque élément avec un pictogramme qui montre le concept
+  et un titre court ; le détail vient ensuite. Les studios gardent tous la même structure : volet de gauche (ce que l'on
+  entre), centre (ce que l'on regarde), volet de droite (ce que l'on choisit et ce que l'on obtient).
 - Vie privée : aucune adresse courriel dans le dépôt (les comptes approuvés sont des empreintes dans `web/acces.json`),
   aucun secret ; l'identifiant client OAuth est public. Pas de contenu H55.
 - Étude de logiciels tiers : méthode REA (`docs/REA.md`) — seulement ce que l'on possède ou que l'on est autorisé à

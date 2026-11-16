@@ -34,6 +34,7 @@ Chaque ligne dit **ce qui cloche, pourquoi, et le correctif** quand il y en a un
 | Tout le projet — assemblages | Aucune pièce ; aucune pièce fixe ; instance d'une pièce disparue ; accouplement rompu ; pièce accouplée à rien ; pièce du projet dans aucun assemblage | `guide_checks.js` — `assemblyIssues`, `projectIssues` |
 | Équipe | Conflit à trancher ; message qui vous est adressé — dits sur tous les écrans | `guide_checks.js` — `teamIssues` |
 | Atelier (intention) | Pièce sans nom ; nom déjà pris ; aucune interface ; quantité nulle ; matière qui ne se vend pas dans la matière première choisie ; deux interfaces du même nom | `web/js/core/shop_check.js` — `briefIssues` |
+| Physique (modèles analytiques) | Aucun modèle choisi ; valeur absente ou hors de ce que le modèle accepte ; valeurs d'exemple à entrer ou à confirmer (« Tout confirmer », ou Entrée dans le champ) ; valeurs reprises d'une pièce, à vérifier ; limite de validité du modèle. Le champ d'exemple est marqué en pointillé, **le prochain à entrer clignote**, et « Ajouter au rapport » attend | `web/js/analysis/physics/index.js` — `exampleKeys`, `inputIssues` |
 | Simulation (cas de charge) | Produit tenu nulle part ; aucun effort ; chaleur sans sortie ; face disparue ; effort sur une face encastrée ; unité douteuse ; valeurs d'exemple | `web/js/analysis/fea/case_check.js` — `caseIssues` |
 
 Les règles de fabrication restent au DFx, les règles électriques à la carte et à l'Isolation : le guide ne les double

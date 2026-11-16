@@ -13,7 +13,7 @@ export const fraction = (copies) => (copies > 1.05 ? `1/${Math.round(copies * 10
 /** The section of the side panel. o : { st (st.cuts), kind, syms (findSymmetries of the whole product), bbox (of the whole),
     symmetric(plane) → { ok, notes }, apply() (the cuts changed : mesh again) } */
 export function cutsSection(o) {
-  const { st } = o, heat = o.kind !== "structure", sec = el("div", { class: "side-section" });
+  const { st } = o, heat = o.kind !== "structure", sec = el("div", { class: "side-section" }), symAt = st.cuts.findIndex((c) => c.bc === "sym"), hasSym = symAt >= 0;      // one plane of symmetry at a time, for now
   const add = (c) => { st.cuts = [...st.cuts.filter((x) => x.axis !== c.axis), c]; o.apply(); }, set = (i, patch) => { st.cuts[i] = { ...st.cuts[i], ...patch }; o.apply(); };
   const rows = [el("h3", null, el("span", { class: "grow" }, "Symétries et coupes"), btn("", () => { const free = [0, 1, 2].find((a) => !st.cuts.some((c) => c.axis === a)) ?? 0; add({ axis: free, at: (o.bbox[free] + o.bbox[free + 3]) / 2, keep: 1, bc: "free" }); },
     { small: true, icon: "plus", tip: "Ajouter un plan de coupe : il isole une zone du produit, avec la condition de votre choix sur le plan" }))];
@@ -22,7 +22,7 @@ export function cutsSection(o) {
     if (!s.ok) { rows.push(el("p", { class: "muted small", style: { margin: ".1rem 0" } }, `Plan ${s.name} : pas de symétrie (${fr(s.mismatch * 100)} % des cubes sans vis-à-vis).`)); continue; }
     const chk = o.symmetric({ axis: s.axis, at: s.at });
     rows.push(el("div", { class: "bc-row" }, el("span", { class: "grow small" }, `Plan ${s.name} = ${fr(s.at)} mm : le produit est symétrique${chk.ok ? ", son chargement aussi." : "."}`),
-      btn(chk.ok ? "Utiliser" : "Forcer", () => add({ axis: s.axis, at: s.at, keep: 1, bc: "sym" }), { small: true, primary: chk.ok, tip: chk.ok ? "Ne résoudre qu'un côté du plan : même réponse, deux fois moins de cubes — ou des cubes plus fins pour le même temps" : "Le chargement n'est pas le même des deux côtés : le résultat ne vaudra que pour un chargement symétrique" })));
+      btn(chk.ok ? "Utiliser" : "Forcer", () => add({ axis: s.axis, at: s.at, keep: 1, bc: "sym" }), { small: true, primary: chk.ok && !hasSym, disabled: hasSym, tip: hasSym ? `Une seule symétrie à la fois pour l'instant : le plan ${AX[st.cuts[symAt].axis]} l'est déjà. Retirez-la pour utiliser celle-ci.` : chk.ok ? "Ne résoudre qu'un côté du plan : même réponse, deux fois moins de cubes — ou des cubes plus fins pour le même temps" : "Le chargement n'est pas le même des deux côtés : le résultat ne vaudra que pour un chargement symétrique" })));
     for (const n of chk.notes.slice(0, 3)) rows.push(el("p", { class: "form-error small", style: { margin: "0 0 .2rem" } }, n));
   }
   /* the cuts in use : where the plane is, then which side is solved and what the plane carries */
@@ -34,9 +34,9 @@ export function cutsSection(o) {
     el("div", { style: { display: "flex", gap: ".3rem", alignItems: "center", marginTop: ".3rem" } },
       el("select", { "aria-label": "Côté gardé", "data-tip": "Le côté du plan que l'on résout", style: { flex: "0 0 5.2rem" }, onChange: (e) => set(i, { keep: +e.target.value }) }, [[1, `côté +${AX[c.axis]}`], [-1, `côté −${AX[c.axis]}`]].map(([v, l]) => el("option", { value: v, selected: v === (c.keep < 0 ? -1 : 1) }, l))),
       el("select", { "aria-label": "Condition sur le plan", style: { flex: "1 1 auto", minWidth: 0 }, onChange: (e) => set(i, { bc: e.target.value, ...(e.target.value === "temp" && !Number.isFinite(c.T) ? { T: 25 } : {}) }) },
-        Object.entries(CUT_BC).filter(([k]) => (k === "temp" ? heat : k !== "fixed" || o.kind !== "thermal")).map(([k, l]) => el("option", { value: k, selected: k === c.bc, title: l }, l.split(" : ")[0]))),
+        Object.entries(CUT_BC).filter(([k]) => (k === "temp" ? heat : k !== "fixed" || o.kind !== "thermal")).map(([k, l]) => el("option", { value: k, selected: k === c.bc, title: l, disabled: k === "sym" && hasSym && symAt !== i }, k === "sym" && hasSym && symAt !== i ? "Symétrie (une seule à la fois)" : l.split(" : ")[0]))),
       c.bc === "temp" ? el("input", { type: "number", "aria-label": "Température du plan (°C)", value: c.T ?? 25, step: "any", style: { flex: "0 0 3.6rem" }, onChange: (e) => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) set(i, { T: v }); } }) : null))));
-  rows.push(el("p", { class: "muted small" }, st.cuts.length ? "Symétrie : rien ne traverse le plan — ni déplacement, ni chaleur. Les efforts et les puissances que le plan partage sont comptés pour leur part ; la face de coupe n'échange rien avec l'air."
+  rows.push(el("p", { class: "muted small" }, st.cuts.length ? "Symétrie : rien ne traverse le plan — ni déplacement, ni chaleur ; le plan est une frontière bloquée, listée avec les appuis (S1), et un seul plan peut l'être pour l'instant. Les efforts et les puissances que le plan partage sont comptés pour leur part ; la face de coupe n'échange rien avec l'air."
     : "Un produit identique des deux côtés d'un plan, tenu et chargé de même, se résout sur un seul côté. Clic droit sur la pièce : « Couper ici »."));
   sec.append(...rows);
   return sec;

@@ -195,3 +195,49 @@ button.plan-pick { cursor: pointer; } button.plan-pick:hover { background: color
 .fs-legend { display: grid; gap: .18rem; margin: .45rem 0; } .fs-band { display: grid; grid-template-columns: 2.4rem 5.8rem 1fr; gap: .45rem; align-items: center; font-size: .82rem; }
 .fs-band i { height: .85rem; border-radius: 4px; border: 1px solid color-mix(in srgb, var(--graphite) 25%, transparent); } .fs-band b { font-family: var(--mono); font-weight: 600; font-size: .78rem; } .fs-band small { color: var(--muted); }
 .kpi.fs-yield b, .kpi.fs-under b { color: #dc2626; } .kpi.fs-tight b { color: #c2410c; } .kpi.fs-ok b { color: #1d4ed8; } .kpi.fs-ample b { color: #15803d; }
+
+/* ---------- Physique : the hand calculations as a studio — inputs | 2D over 3D | models and result ---------- */
+.phys-centre { display: grid; grid-template-rows: minmax(170px, 40%) minmax(0, 1fr); min-width: 0; min-height: 0; }
+.phys-2d { display: flex; flex-direction: column; gap: .3rem; min-height: 0; padding: .55rem .8rem .4rem; background: var(--surface); border-bottom: 1.5px solid color-mix(in srgb, var(--graphite) 22%, transparent); overflow: hidden; }
+.phys-3d { min-height: 0; } .phys-centre.none { grid-template-rows: minmax(0, 1fr) 0; } .phys-centre.none .phys-3d { visibility: hidden; }
+.phys-2d-head { display: flex; align-items: flex-start; gap: .6rem; } .phys-2d-head .grow { flex: 1; min-width: 0; } .phys-2d-head h2 { margin: 0; font-size: 1.02rem; line-height: 1.25; }
+.phys-chip { display: inline-flex; align-items: center; gap: .3rem; flex: none; padding: .16rem .55rem .16rem .4rem; border-radius: 999px; background: var(--dom); color: #fff; font: 650 .76rem var(--label-font); }
+.phys-2d-foot { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; } .zone-tag { font: 650 .7rem var(--label-font); text-transform: uppercase; letter-spacing: var(--label-track); color: var(--muted); margin-right: .3rem; }
+.chip.eg { background: color-mix(in srgb, var(--hl-yellow) 55%, var(--surface)); color: var(--warn-ink); }
+.phys-pick { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .6rem; height: 100%; text-align: center; } .phys-pick h2 { margin: 0; font-size: 1.1rem; }
+.phys-doms { display: flex; flex-wrap: wrap; justify-content: center; gap: .6rem; }
+.phys-dom { display: grid; justify-items: center; gap: .1rem; width: 148px; padding: .55rem .5rem; border: 1.6px solid color-mix(in srgb, var(--dom) 55%, transparent); border-top: 5px solid var(--dom); border-radius: var(--r-card); background: color-mix(in srgb, var(--dom) 7%, var(--surface)); color: var(--ink); font: inherit; cursor: pointer; transition: transform .15s, box-shadow .15s; }
+.phys-dom:hover, .phys-dom:focus-visible { transform: translateY(-2px); box-shadow: var(--shadow-sketch); } .phys-dom small { color: var(--muted); font-size: .76rem; line-height: 1.2; }
+.phys-count { font: 650 .72rem var(--mono); color: var(--dom); }
+.phys-label { font-size: .74rem; }
+/* right : the models as tiles, a colour and a pictogram per physics */
+.phys-tabs { margin: 0 .7rem; gap: 0; } .phys-tabs .subtab { padding: .4rem .5rem; font-size: .88rem; } .phys-n { margin-left: .3rem; font: 650 .7rem var(--mono); color: var(--muted); }
+.phys-dot { display: inline-block; width: .6rem; height: .6rem; margin-right: .3rem; border-radius: 50%; background: var(--hl-yellow); } .phys-dot.ok { background: var(--ok); } .phys-dot.fail { background: var(--danger); }
+.phys-group { margin: .6rem 0 .9rem; }
+.phys-group-head { display: flex; align-items: center; gap: .5rem; padding: .3rem .5rem; border-left: 5px solid var(--dom); border-radius: var(--r-small); background: color-mix(in srgb, var(--dom) 12%, var(--surface)); }
+.phys-group-head .grow { flex: 1; min-width: 0; display: grid; line-height: 1.2; } .phys-group-head b { color: var(--dom); } .phys-group-head small { color: var(--muted); font-size: .76rem; }
+.phys-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); gap: .4rem; margin-top: .4rem; }
+.phys-tile { position: relative; display: grid; gap: .15rem; align-content: start; padding: .3rem .35rem .4rem; border: 1.6px solid color-mix(in srgb, var(--dom) 30%, transparent); border-radius: var(--r-card); background: var(--surface); color: var(--ink); font: inherit; text-align: center; cursor: pointer; transition: transform .15s, box-shadow .15s; }
+.phys-tile:hover, .phys-tile:focus-visible { transform: translateY(-2px); box-shadow: var(--shadow-sketch); border-color: var(--dom); }
+.phys-tile.sel { border-color: var(--dom); border-width: 2.6px; background: color-mix(in srgb, var(--dom) 13%, var(--surface)); }
+.phys-tile svg { display: block; height: auto; } .phys-tile svg *, .phys-dom-icon * { vector-effect: non-scaling-stroke; }
+.phys-tile-name { font-size: .78rem; font-weight: 600; line-height: 1.2; overflow-wrap: anywhere; }
+.phys-kept { position: absolute; top: 3px; right: 3px; min-width: 1.15rem; padding: 0 .25rem; border-radius: 999px; background: var(--hl-yellow); color: #111; font: 700 .68rem/1.15rem var(--mono); font-style: normal; } .phys-kept.ok { background: var(--ok); color: #fff; } .phys-kept.fail { background: var(--danger); color: #fff; }
+.phys-verdict { display: flex; align-items: center; gap: .5rem; margin: .5rem 0; padding: .4rem .55rem; border-left: 5px solid var(--hl-yellow); border-radius: var(--r-small); background: var(--surface); font-size: .86rem; } .phys-verdict.ok { border-left-color: var(--ok); } .phys-verdict.fail { border-left-color: var(--danger); }
+.phys-eg { margin: 0 0 .5rem; color: var(--warn-ink); }
+.phys-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .4rem; margin-bottom: .6rem; } .phys-kpis .kpi { padding: .4rem .55rem; } .phys-kpis .kpi b { font-size: 1.08rem; } .phys-kpis .kpi b small { font-size: .62em; font-weight: 500; }
+.phys-check, .phys-saved { display: flex; align-items: flex-start; gap: .5rem; margin-bottom: .35rem; padding: .35rem .5rem; border-left: 4px solid var(--line); border-radius: var(--r-small); background: var(--surface); font-size: .84rem; }
+.phys-check .grow, .phys-saved .grow { flex: 1; min-width: 0; display: grid; line-height: 1.25; } .phys-check small, .phys-saved small { font-size: .76rem; overflow-wrap: anywhere; }
+.phys-check.ok { border-left-color: var(--ok); } .phys-check.warn { border-left-color: var(--hl-yellow); } .phys-check.danger { border-left-color: var(--danger); } .phys-saved { border-left-color: var(--dom); }
+.phys-margin { display: grid; justify-items: end; gap: .15rem; flex: none; } .phys-margin small { font-family: var(--mono); font-size: .72rem; color: var(--muted); }
+.phys-steps { margin: 0; padding-left: 1.2rem; font-size: .84rem; line-height: 1.5; } .phys-steps li { margin-bottom: .3rem; overflow-wrap: anywhere; }
+/* left : the model in use, the part, the inputs — an example is marked, the next one to enter blinks */
+.phys-now { display: flex; align-items: center; gap: .5rem; margin: .1rem 0 .5rem; padding: .35rem .5rem; border-left: 5px solid var(--dom); border-radius: var(--r-small); background: color-mix(in srgb, var(--dom) 12%, var(--surface)); }
+.phys-now .grow { flex: 1; min-width: 0; display: grid; line-height: 1.2; } .phys-now small { color: var(--dom); font-weight: 650; font-size: .74rem; }
+.phys-guide .guide-fix { flex-direction: column; align-items: stretch; gap: 0; } .phys-guide .guide-fix .btn { align-self: flex-start; margin: .15rem 0 .35rem .5rem; }
+.phys-take { margin-top: .35rem; } .phys-from { grid-column: 1 / -1; color: var(--muted); font-size: .74rem; }
+.studio.phys .param.wide { grid-template-columns: minmax(0, 1fr); } .studio.phys .param select { width: 100%; }
+.studio.phys .param input.eg { border-style: dashed; border-color: var(--warn); background: color-mix(in srgb, var(--hl-yellow) 16%, var(--surface)); }
+/* a narrow window : the right panel is not lost — it comes under the left one, the model keeps the rest */
+@media (max-width: 1100px) { .studio.phys { grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); } .studio.phys > .side:not(.right) { grid-area: 1 / 1; } .studio.phys > .phys-centre { grid-area: 1 / 2 / 3 / 3; }
+  .studio.phys > .side.right { display: flex; visibility: visible; grid-area: 2 / 1; min-width: 0; border-top: 1.5px solid color-mix(in srgb, var(--graphite) 22%, transparent); } }

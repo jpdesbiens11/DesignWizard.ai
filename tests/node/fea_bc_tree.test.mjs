@@ -29,3 +29,17 @@ test("the labels of the view : a whole type when its eye is open, the selected i
   assert.deepEqual(ids(bcLabels(tree, { fixed: false })), ["E1", "E2"]); assert.deepEqual(ids(bcLabels(tree, { fixed: false, loads: false })), []);
   assert.deepEqual(ids(bcLabels(tree, { fixed: false, loads: false }, "A2")), ["A2*"], "what is selected stays labelled"); assert.deepEqual(ids(bcLabels(tree, {}, "E1")), ["A1", "A2", "E1*", "E2"]);
 });
+
+test("a plane of symmetry is a blocked boundary : it shows among the supports, locked — and only one plane can be one", async () => {
+  const { oneSymmetry, symmetryOf } = await import("../../web/js/analysis/fea/symmetry.js");
+  const withSym = st("structure", { cuts: [{ axis: 1, at: 55, keep: 1, bc: "free" }, { axis: 0, at: 80, keep: -1, bc: "sym" }] }), tree = bcTree(withSym, labelOf), fixed = tree.find((g) => g.key === "fixed");
+  assert.deepEqual(fixed.items.map((x) => x.id), ["A1", "A2", "S1"]); const s1 = bcFind(tree, "S1").item;
+  assert.deepEqual([s1.kind, s1.locked, s1.index, s1.region, s1.text, s1.color], ["symmetry", true, 1, null, "Symétrie · plan X = 80 mm", BC_COLORS.fixed]); assert.deepEqual(s1.plane, { axis: 0, at: 80, keep: -1 }); assert.match(s1.where, /bloqué perpendiculairement au plan/);
+  assert.ok(bcLabels(tree, {}, null).some((x) => x.id === "S1"), "its label shows with the other supports");
+  assert.deepEqual(bcTree(st("thermal", { cuts: withSym.cuts }), labelOf).flatMap((g) => g.items.map((x) => x.id)), ["Q1", "T1"], "a thermal case has no supports : the plane is simply adiabatic");
+  assert.deepEqual(bcTree(st("structure"), labelOf).find((g) => g.key === "fixed").items.map((x) => x.id), ["A1", "A2"], "no cut, no symmetry");
+  assert.deepEqual(symmetryOf(withSym.cuts).index, 1); assert.equal(symmetryOf(withSym.cuts).name, "X = 80 mm"); assert.equal(symmetryOf([{ axis: 0, at: 1, bc: "free" }]), null); assert.equal(symmetryOf(null), null);
+  const two = [{ axis: 0, at: 80, keep: 1, bc: "sym" }, { axis: 1, at: 55, keep: 1, bc: "sym" }, { axis: 2, at: 10, keep: 1, bc: "fixed" }], one = oneSymmetry(two);
+  assert.deepEqual(one.cuts.map((c) => c.bc), ["sym", "free", "fixed"], "the first symmetry stays, the second becomes a plain cut"); assert.deepEqual(one.dropped, ["Y"]); assert.equal(two[1].bc, "sym", "the list given is not changed");
+  assert.equal(oneSymmetry(withSym.cuts).cuts, withSym.cuts, "nothing to change : the same list"); assert.deepEqual(oneSymmetry(null), { cuts: [], dropped: [] });
+});

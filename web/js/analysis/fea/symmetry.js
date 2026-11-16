@@ -54,6 +54,15 @@ export function cutFaces(model, faces) {
   c.onCut = on; return on;
 }
 
+/** One plane of symmetry at a time, for now : the first one stays, any other falls back to a plain cut (« libre »).
+    → { cuts (a new list, or the same when nothing changed), dropped: [axis letters] } */
+export function oneSymmetry(cuts) {
+  let seen = false; const dropped = [], out = (cuts || []).map((c) => { if (!c || c.bc !== "sym") return c; if (!seen) { seen = true; return c; } dropped.push(AX[c.axis]); return { ...c, bc: "free" }; });
+  return { cuts: dropped.length ? out : (cuts || []), dropped };
+}
+/** The plane of symmetry in use (the cut and its index), or null. */
+export function symmetryOf(cuts) { const i = (cuts || []).findIndex((c) => c && c.bc === "sym"); return i < 0 ? null : { index: i, cut: cuts[i], name: `${AX[cuts[i].axis]} = ${Math.round(cuts[i].at * 100) / 100} mm`.replace(".", ",") }; }
+
 /** The conditions the cut planes add to a load case. kind : "structure" | "thermal". → the case, completed. */
 export function cutSetup(model, setup, kind) {
   if (!model.cut) return setup;

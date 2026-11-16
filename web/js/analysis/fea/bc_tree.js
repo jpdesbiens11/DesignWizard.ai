@@ -15,16 +15,20 @@ const heated = (st) => st.kind === "thermal" || (st.kind === "thermo" && !(st.th
 export function bcGroups(st) { const heat = heated(st); return BC_GROUPS.filter((g) => (g.key === "fixed" ? st.kind !== "thermal" : g.key === "loads" ? st.kind === "structure" : heat)); }
 const n = (v, d = 3) => String(Math.round(v * 10 ** d) / 10 ** d).replace(".", ","), dirFr = (d) => `${d[0] === "-" ? "−" : "+"}${d[1]}`;
 /** The tree : [{ ...group, items: [{ id, index, region, where, text, short, color, kind, ask (values still to enter) }] }].
+    A plane of symmetry (st.cuts, bc « sym ») is a blocked boundary : it shows among the supports as S1, `locked` — it goes away
+    with the symmetry only, never alone (item.kind « symmetry », item.index : its place in st.cuts).
     labelOf(regionKey) → the plain name of a region (a face, an interface). */
 export function bcTree(st, labelOf = (k) => k) {
-  return bcGroups(st).map((g) => ({ ...g, items: (st[g.key] || []).map((x, i) => {
+  const sym = (st.cuts || []).map((c, i) => ({ c, i })).filter(({ c }) => c && c.bc === "sym").map(({ c, i }, k) => { const ax = "XYZ"[c.axis], name = `${ax} = ${n(c.at, 2)} mm`;
+    return { id: `S${k + 1}`, index: i, region: null, plane: { axis: c.axis, at: c.at, keep: c.keep < 0 ? -1 : 1 }, where: `bloqué perpendiculairement au plan — il tient la place de la moitié retirée`, text: `Symétrie · plan ${name}`, short: `S${k + 1} · symétrie`, color: BC_COLORS.fixed, kind: "symmetry", locked: true, ask: [] }; });
+  return bcGroups(st).map((g) => ({ ...g, items: [...(st[g.key] || []).map((x, i) => {
     const id = `${g.tag}${i + 1}`, region = g.key === "fixed" ? x : x.region, base = { id, index: i, region, where: labelOf(region), ask: g.key === "fixed" || !Array.isArray(x.ask) ? [] : x.ask };
     if (g.key === "fixed") return { ...base, text: "Encastrement", short: id, color: g.color, kind: "fixed" };
     if (g.key === "loads") return x.mode === "pressure" ? { ...base, text: `Pression ${n(x.p)} MPa`, short: `${id} · ${n(x.p)} MPa`, color: BC_COLORS.pressure, kind: "pressure" }
       : { ...base, text: `Force ${n(x.F, 1)} N vers ${dirFr(x.dir)}`, short: `${id} · ${n(x.F, 1)} N ${dirFr(x.dir)}`, color: BC_COLORS.force, kind: "force" };
     if (g.key === "power") return { ...base, text: `Source ${n(x.P, 1)} W`, short: `${id} · ${n(x.P, 1)} W`, color: g.color, kind: "power" };
     return { ...base, text: `Température ${n(x.T, 1)} °C`, short: `${id} · ${n(x.T, 1)} °C`, color: g.color, kind: "fixedT" };
-  }) }));
+  }), ...(g.key === "fixed" ? sym : [])] }));
 }
 /** The item a number names : { group, item } — null when it is gone. */
 export function bcFind(tree, id) { for (const g of tree) { const it = g.items.find((x) => x.id === id); if (it) return { group: g, item: it }; } return null; }
