@@ -48,12 +48,14 @@ const assembly = {
     ["Ce qu'il contient — une ligne par pièce posée", ["instances"]],
     ["Ce qui les tient ensemble — les interfaces accouplées", ["mates"]],
     ["Ce que l'on vérifie — isolation électrique", ["isolation"]],
+    ["Ce qu'il porte — étiquettes, autocollants, marquages", ["labels"]],
     ["Comment il se monte — la gamme d'assemblage annotée : l'ordre, une note par étape, les points à voir", ["plan"]],
   ],
   kids: {
     instances: { word: "place", head: ["id", "part"] },
     mates: { word: "mate", head: ["id"] },
     isolation: { kids: { nets: { word: "net", head: ["name"] }, params: {} } },
+    labels: { word: "label", head: ["id", "kind"], first: ["name", "inst", "w", "h", "turn"], kids: { art: {}, on: {} } },
     plan: PLAN,
   },
 };

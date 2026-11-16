@@ -14,7 +14,7 @@ import { guideBox, guideCount, guideSummary } from "./guide.js";
 import { projectIssues, issuesHere } from "./guide_checks.js";
 import { docIdentity } from "./brand.js";
 
-export const APP_VERSION = "0.55.0";
+export const APP_VERSION = "0.56.0";
 /** What every document of the open project carries beside its content : approval names, organisation, confidentiality note, extraction stamp (core/brand.js). */
 export const docMeta = (when = new Date()) => docIdentity(store.project, when, APP_VERSION);
 const modules = new Map();
@@ -132,6 +132,7 @@ async function projectMenu(menu, close) {
     menu.append(item("Bibliothèque électrique…", "power", () => go("#/library"), close));
     menu.append(item("Busbars et contacts…", "power", () => go("#/busbar"), close));
     menu.append(item("Circuits flexibles…", "chip", () => go("#/flex"), close));
+    menu.append(item("Étiquettes et autocollants…", "edit", () => go("#/labels"), close));
     menu.append(item("Exporter le projet (.dwiz)", "download", () => download(dwizFileName(p), toDwiz(p), "text/plain;charset=utf-8"), close));
     menu.append(item("Exporter en JSON", "download", () => download(`${p.id}.dwproject.json`, store.exportJson(), "application/json"), close));
   }

@@ -24,6 +24,7 @@ import "./modules/mvp.js";
 import "./modules/library.js";
 import "./modules/busbar.js";
 import "./modules/flex.js";
+import "./modules/labels.js";
 import "./modules/team.js";
 import "./modules/plm.js";
 import "./modules/report.js";

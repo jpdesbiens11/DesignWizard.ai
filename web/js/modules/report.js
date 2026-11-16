@@ -14,6 +14,7 @@ import { physicsSummary } from "./physics.js";
 import { simulationSummary } from "../analysis/fea/summary.js";
 import { routing } from "../cad/shop.js";
 import { orderCheck } from "../cad/order.js";
+import { labelRows, labelGuide } from "../core/labels.js";
 import { makeDrawing, svgNode } from "./drawings.js";
 import { reviewRows, reviewProgress, revisionRows } from "../core/review.js";
 import { mvpRows, trlReached } from "../core/mvp.js";
@@ -116,6 +117,9 @@ function render(main) {
       const gamme = assemblyPlan(a.asm, p, { hardwareOf: (m) => mateHardware(a.ctx.asm, a.ctx.built, m), mass: a.ctx.mass.mass });
       sec.append(el("h3", { style: { marginTop: ".8rem" } }, "Gamme d'assemblage"), el("p", { class: "muted", style: { fontSize: ".84rem" } }, planSummary(gamme)),
         table(["N°", "Étape", "Opérations", "Outillage", "Note de discussion"], gamme.phases.map((ph) => [String(ph.n), ph.title, ph.ops.map((o) => o.text).join(" ; ") || ph.checks.join(" ; "), ph.tools.join(" ; ") || "—", ph.note || "—"])));
+      const lab = labelRows(a.asm.labels, Object.fromEntries(a.asm.instances.map((i) => [i.id, (store.part(i.part) || {}).name || i.part]))), labAsk = labelGuide(a.asm.labels, a.asm.instances.map((i) => i.id)).filter((x) => x.level !== "tip");
+      if (lab.length) sec.append(el("h3", { style: { marginTop: ".8rem" } }, "Étiquettes, autocollants et marquages"), table(["Repère", "Nom", "Genre", "Motif", "Sur", "Surface", "Taille (mm)", "Aire (cm²)"], lab.map((r) => [r.id, r.name, r.kind, r.art, r.on, r.surface, `${fmt(r.w, 0)} × ${fmt(r.h, 0)}`, fmt(r.area, 1)])),
+        ...(labAsk.length ? [el("p", { class: "muted", style: { fontSize: ".84rem" } }, labAsk.map((x) => x.text).join(" "))] : []));
       const isoA = (a.asm.isolation || {}).results;
       sec.append(el("h3", { style: { marginTop: ".8rem" } }, "Isolation — creepage et clearance (IEC 60664-1)"));
       if (isoA && isoA.length) {

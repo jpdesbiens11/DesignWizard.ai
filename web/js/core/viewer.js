@@ -86,10 +86,12 @@ export class Viewer {
     g.setAttribute("position", new THREE.BufferAttribute(def.mesh.pos, 3));
     g.setAttribute("normal", new THREE.BufferAttribute(def.mesh.nrm, 3));
     g.setIndex(new THREE.BufferAttribute(def.mesh.idx, 1));
+    if (def.mesh.uv) g.setAttribute("uv", new THREE.BufferAttribute(def.mesh.uv, 2));
     g.computeBoundingBox(); g.computeBoundingSphere();
-    const opacity = def.opacity ?? 1;
-    const mat = new THREE.MeshStandardMaterial({ color: new THREE.Color(def.color || token(this.el, "--view-part", "#a8b0b8")), metalness: 0.08, roughness: 0.62, side: THREE.DoubleSide,
-      polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1, transparent: opacity < 1, opacity, depthWrite: opacity >= 1 });
+    const opacity = def.opacity ?? 1, map = def.map && def.mesh.uv ? new THREE.CanvasTexture(def.map) : null;       // a picture laid on the mesh (a label) : drawn just above what carries it
+    if (map) { map.colorSpace = THREE.SRGBColorSpace; map.anisotropy = 8; }
+    const mat = new THREE.MeshStandardMaterial({ color: new THREE.Color(map ? "#ffffff" : def.color || token(this.el, "--view-part", "#a8b0b8")), map, metalness: 0.08, roughness: 0.62, side: THREE.DoubleSide,
+      polygonOffset: true, polygonOffsetFactor: map ? -3 : 1, polygonOffsetUnits: map ? -3 : 1, transparent: opacity < 1 || !!map, opacity, depthWrite: opacity >= 1 });
     const mesh = new THREE.Mesh(g, mat);
     const eg = new THREE.BufferGeometry();
     eg.setAttribute("position", new THREE.BufferAttribute(def.mesh.epos, 3));
