@@ -32,6 +32,7 @@ Chaque ligne dit **ce qui cloche, pourquoi, et le correctif** quand il y en a un
 |---|---|---|
 | Tout le projet — pièces | Aucune géométrie ; aucune matière ; procédé inhabituel pour la matière ; paramètre hors de ses propres bornes, minimum au-dessus du maximum, dimension nulle ; deux interfaces du même numéro ; interface sans clé ; interface qu'aucune autre pièce ne reprend ; pièce sans fonction | `web/js/core/guide_checks.js` — `partIssues` |
 | Tout le projet — assemblages | Aucune pièce ; aucune pièce fixe ; instance d'une pièce disparue ; accouplement rompu ; pièce accouplée à rien ; pièce du projet dans aucun assemblage | `guide_checks.js` — `assemblyIssues`, `projectIssues` |
+| Équipe | Conflit à trancher ; message qui vous est adressé — dits sur tous les écrans | `guide_checks.js` — `teamIssues` |
 | Atelier (intention) | Pièce sans nom ; nom déjà pris ; aucune interface ; quantité nulle ; matière qui ne se vend pas dans la matière première choisie ; deux interfaces du même nom | `web/js/core/shop_check.js` — `briefIssues` |
 | Simulation (cas de charge) | Produit tenu nulle part ; aucun effort ; chaleur sans sortie ; face disparue ; effort sur une face encastrée ; unité douteuse ; valeurs d'exemple | `web/js/analysis/fea/case_check.js` — `caseIssues` |
 

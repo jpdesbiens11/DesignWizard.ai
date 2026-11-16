@@ -147,6 +147,28 @@ Si le sélecteur affiche une erreur de clé d'API, ou reste vide alors qu'un fic
 c'est le point que seul un essai sur de vrais comptes peut confirmer (voir les limites). L'échange par fichier marche
 dans tous les cas.
 
+### Répéter l'essai sans Google
+
+Avant un essai sur de vrais comptes, deux scénarios rejouent tout le parcours sur un poste, avec deux navigateurs et un
+second membre simulé :
+
+```bash
+python3 designwizard.py --port 8130 --no-browser --data /tmp/essai
+node tools/team_rehearsal.mjs http://127.0.0.1:8130 /tmp/essai_out          # par fichier
+node tools/team_drive_rehearsal.mjs http://127.0.0.1:8130 /tmp/essai_out    # par Drive, Google simulé
+```
+
+Le premier échange les miroirs par fichier : partage, arrivée du second membre, deux pièces changées et un message, un
+conflit, la fusion, le conflit tranché, le retour — à la fin les deux projets disent la même chose. Le second remplace
+Google par un simulateur qui applique la règle `drive.file` (une application ne lit un fichier que si elle l'a créé pour
+ce compte, ou si la personne l'a désigné) : six étapes, jusqu'au droit de lecture perdu puis désigné de nouveau.
+
+Rejoués sur la version 0.37.2 : les deux passent, sans erreur. Ce qu'ils **ne montrent pas** : le vrai sélecteur de
+Google, la clé d'API, l'écran de consentement — seul l'essai à deux comptes réels le confirmera.
+
+Le **guide** de la barre du haut dit sur tous les écrans qu'un conflit attend d'être tranché ou qu'un message vous est
+adressé ; un clic y mène.
+
 ## Limites, dites comme elles sont
 
 - **Vérifié** : la fusion, par des tests à deux et à trois membres (changements croisés, retraits, conflits des deux

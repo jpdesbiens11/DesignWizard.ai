@@ -58,6 +58,16 @@ export function assemblyIssues(asm, parts = new Map()) {
   return out;
 }
 
+/** What the team asks of this member : conflicts to settle, messages that wait for him. Pure. */
+export function teamIssues(project) {
+  const out = [], t = project && project.team; if (!t || !t.owner) return out;
+  const hash = "#/team", add = (level, text) => out.push({ level, text, screen: "team", ref: null, hash });
+  const conflicts = t.conflicts || [], mine = (project.talk || []).filter((m) => m && !m.done && m.by !== t.owner && (m.mentions || []).includes(t.owner));
+  if (conflicts.length) add("warn", `Équipe — ${conflicts.length} conflit${conflicts.length > 1 ? "s" : ""} à trancher : ${conflicts.slice(0, 3).map((c) => `${String(c.key).replace(/^[a-z]+:/, "")} (@${c.by})`).join(", ")}${conflicts.length > 3 ? "…" : ""}. Le vôtre est en place, le sien attend : « Garder le mien » ou « Prendre le sien ».`);
+  if (mine.length) add("tip", `Équipe — ${mine.length} message${mine.length > 1 ? "s vous attendent" : " vous attend"}${mine[0].by ? `, de @${[...new Set(mine.map((m) => m.by))].slice(0, 3).join(", @")}` : ""}.`);
+  return out;
+}
+
 /** Every entry of a project, the most serious first inside each part and assembly. */
 export function projectIssues(project) {
   const out = []; if (!project) return out;
@@ -68,6 +78,7 @@ export function projectIssues(project) {
     out.push(...partIssues(p, others));
   }
   for (const a of asms) out.push(...assemblyIssues(a, byId));
+  out.push(...teamIssues(project));
   if (asms.length) { const placed = new Set(asms.flatMap((a) => (a.instances || []).map((i) => i.part)));
     for (const p of parts) if (!placed.has(p.id)) out.push({ level: "tip", text: `${p.id} — dans le projet, mais dans aucun assemblage.`, screen: "assembly", ref: p.id, hash: `#/assembly/${encodeURIComponent(asms[0].id)}` }); }
   return out;

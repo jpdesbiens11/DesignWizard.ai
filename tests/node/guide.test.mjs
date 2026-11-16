@@ -1,7 +1,7 @@
 /* The guide : what a project and the brief of the Shop lack or get wrong, read from the data alone. */
 import test from "node:test";
 import assert from "node:assert/strict";
-import { partIssues, assemblyIssues, projectIssues, issuesHere } from "../../web/js/core/guide_checks.js";
+import { partIssues, assemblyIssues, projectIssues, issuesHere, teamIssues } from "../../web/js/core/guide_checks.js";
 import { briefIssues } from "../../web/js/core/shop_check.js";
 import { guideCount, guideSort } from "../../web/js/core/guide.js";
 import { DEMO_DRIVE } from "../../web/js/demo/demo_drive.js";
@@ -60,4 +60,14 @@ test("the brief of the Shop : a name first, then what does not go together", () 
   assert.deepEqual(at(brief({ interfaces: [], folds: { sides: ["+X"] }, material: "AL5052-H32", form: "sheet" })), [], "a folded edge is reason enough for a part");
   assert.deepEqual(at(brief({ interfaces: [{ name: "Vis" }, { name: "vis" }] })), ["tip:interfaces"]); assert.deepEqual(at(brief({ envelope: { L: 100, W: 0, H: 20 } })), ["warn:envelope"]); assert.deepEqual(at(brief({ material: "XX" })), ["warn:material"]);
   assert.deepEqual(briefIssues(null).map((x) => x.field), ["name", "interfaces", "quantity", "fn"]);
+});
+
+test("the team : a conflict to settle and a message that waits are said on every screen", () => {
+  assert.deepEqual(teamIssues({ parts: [] }), []); assert.deepEqual(teamIssues({ team: { owner: "jp", members: [{ handle: "jp" }] }, talk: [] }), []);
+  const p = { team: { owner: "jp", members: [{ handle: "jp" }, { handle: "ami" }], conflicts: [{ key: "part:DRV-BASE", by: "ami" }] },
+    talk: [{ id: "m1", by: "ami", text: "@jp regarde", mentions: ["jp"] }, { id: "m2", by: "ami", text: "@jp vu ?", mentions: ["jp"], done: { by: "jp" } }, { id: "m3", by: "jp", text: "@ami ok", mentions: ["ami"] }] };
+  const list = teamIssues(p); assert.deepEqual(list.map((x) => [x.level, x.hash, x.screen]), [["warn", "#/team", "team"], ["tip", "#/team", "team"]]);
+  assert.match(list[0].text, /1 conflit à trancher : DRV-BASE \(@ami\)/); assert.match(list[1].text, /1 message vous attend, de @ami/);
+  assert.ok(projectIssues({ parts: [], assemblies: [], ...p }).some((x) => x.screen === "team"), "the project list carries them, so the top bar shows them anywhere");
+  assert.deepEqual(issuesHere(list, "team", null).length, 2);
 });
