@@ -184,6 +184,21 @@ compte, et « Ajouter au rapport » attend qu'elles soient tapées ou confirmée
 confirmer »). Sans modèle choisi, le centre propose les cinq physiques. Fenêtre étroite : le volet de droite passe
 sous celui de gauche au lieu de disparaître.
 
+**Ce que la pièce dit passe dans le modèle.** Ouvrir un modèle sur une pièce y porte d'emblée ce que la pièce dit sans
+être construite : les propriétés de sa matière et, pour un **busbar**, sa bande (largeur, épaisseur, longueur le long
+de la fibre du milieu — pas l'enveloppe), son courant déclaré et l'émissivité de sa finition (cuivre nu 0,4 ; étamé ou
+nickelé 0,1 ; argenté 0,05 ; gainé 0,9 — valeurs typiques). Le bouton « Vérifier l'échauffement » de l'écran Busbars
+ouvre donc le calcul déjà rempli ; chaque valeur dit d'où elle vient sous son champ, et reste à vérifier. « Reprendre
+ses dimensions » ajoute ce qui demande la pièce construite (enveloppe, masse, trous).
+
+**Garder un calcul, au nom de sa pièce.** « Garder ce calcul » le garde dans le projet sous un **nom** — proposé avec
+le nom de la pièce d'abord (« Busbar — Busbar », puis « … (2) »), modifiable (« Busbar HV+ — pointe 150 A »). On en
+garde autant qu'on veut par pièce, au fil du temps ; l'onglet « Rapport » les range **par pièce**, le dernier d'abord,
+et chacun se rouvre avec ses données. Quand le projet est dans Google Drive, la **fiche** du calcul — données,
+résultats, vérifications, étapes, hypothèses, référence — est rangée en texte dans `03_Analyses/<pièce>/<nom>.txt`
+(`runSheet`, `runsByPart`, `runName` dans `web/js/analysis/physics/index.js`). L'écriture dans Drive n'a pas été
+essayée sur un vrai compte dans cette session.
+
 ## 2. Le maillage : un seul gabarit, le cube
 
 La pièce est découpée en **cubes identiques** : une grille régulière posée sur son enveloppe, dont on garde les

@@ -12,7 +12,9 @@ import { kernel } from "../cad/client.js";
 import { createViewport } from "../core/viewport.js";
 import { arrow, clamp, gem } from "../core/view_marks.js";
 import { guideBox, guideCount, nudge } from "../core/guide.js";
-import { MODELS, DOMAINS, model, defaults, run, prefill, inputActive, inputIssues, exampleKeys, shortTitle } from "../analysis/physics/index.js";
+import { MODELS, DOMAINS, model, defaults, run, prefill, inputActive, inputIssues, exampleKeys, shortTitle, runName, runSheet } from "../analysis/physics/index.js";
+import { session } from "../core/access.js";
+import { TREE, itemFolderName } from "../google/drive_fs.js";
 import { sceneOf } from "../analysis/physics/scene3d.js";
 import { sketch, domainIcon } from "./physics_sketch.js";
 import { physicsSummary, show, verdictBadge, domainOf, modelTiles, resultPanel, calcPanel, savedPanel, tabBar } from "./physics_panels.js";
@@ -22,7 +24,8 @@ export { physicsSummary, show };
 const memory = new Map();        // model id -> last inputs, kept while the page is open
 const prefillNotes = new Map();  // model id -> { key: where the value comes from }
 const entered = new Map();       // model id -> the keys the designer typed or confirmed
-const ui = { tab: "models" };    // the tab of the right panel, kept from one model to the next
+const taken = new Set();         // `${model}|${part}` : what the part says was already carried into the model, once
+const ui = { tab: "models", name: "" };    // the tab of the right panel, kept from one model to the next ; the name typed for the run to keep
 
 function render(main, args) {
   let cur = model(args[0]) || null, partId = args[1] && store.part(args[1]) ? args[1] : "", inputs = null, r = null, found = [], alive = true, timer = 0;
@@ -38,8 +41,18 @@ function render(main, args) {
   const examples = () => (cur ? exampleKeys(cur, inputs, new Set([...done(), ...Object.keys(notes())])) : []);
   const take = (id) => { if (!memory.has(id)) memory.set(id, defaults(id)); return memory.get(id); };
   /* another model, another part : the screen stays, the address follows */
+  /* what the part says without being built — its material, and for a busbar its strip, its current and its finish — goes into a model
+     the first time the two meet : arriving from the busbar screen, the calculation is already the one of that busbar */
+  function carry() {
+    const spec = partId ? store.part(partId) : null, key = cur && `${cur.id}|${partId}`;
+    if (!spec || !cur || taken.has(key) || (entered.get(cur.id) || new Set()).size) return 0;
+    taken.add(key); const pf = prefill(cur.id, { spec, built: null }), n = Object.keys(pf.inputs).length;
+    if (n) { Object.assign(inputs, pf.inputs); prefillNotes.set(cur.id, { ...(prefillNotes.get(cur.id) || {}), ...pf.notes }); }
+    return n;
+  }
   function open(id, part = partId) {
-    cur = model(id) || null; partId = part; inputs = cur ? take(cur.id) : null;
+    cur = model(id) || null; partId = part; inputs = cur ? take(cur.id) : null; ui.name = ""; const n = carry();
+    if (n) toast(`${n} valeur(s) reprise(s) de ${partId}${store.part(partId).busbar ? " (bande, courant, finition, matière)" : " (matière)"} : vérifiez-les.`, "success", 4200);
     try { history.replaceState(null, "", `#/physics${cur ? `/${cur.id}${partId ? "/" + encodeURIComponent(partId) : ""}` : ""}`); } catch (e) { /* a page opened from the disk */ }
     drawLeft(); update(true); drawRight(true);
   }
@@ -153,17 +166,24 @@ function render(main, args) {
     if (ui.tab === "models") modelTiles(body, { cur, saved: rows, pick: (id) => open(id) });
     else if (ui.tab === "result") resultPanel(body, { cur, r, waits: c.blocking ? `Le rapport attend : ${c.blocking} point${c.blocking > 1 ? "s" : ""} à entrer ou à corriger — le guide du volet de gauche les montre.` : "",
       blocked: () => { toast("Entrez ou confirmez d'abord les valeurs que le guide demande.", "info"); goTo(found.find((x) => x.level === "error" || x.level === "todo")); },
-      save: () => { const entry = { id: `phy-${Date.now().toString(36)}`, model: cur.id, part: partId || null, inputs: r.inputs, values: r.values, checks: r.checks, verdict: r.verdict, when: new Date().toISOString() };
-        store.commit(`Physique : ${cur.title}`, (p) => { p.physics = p.physics || []; p.physics.push(entry); }); toast("Calcul ajouté au rapport du projet.", "success"); } });
+      name: ui.name || runName(store.project, cur.id, partId), setName: (v) => { ui.name = v; },
+      save: () => { const entry = { id: `phy-${Date.now().toString(36)}`, name: (ui.name || runName(store.project, cur.id, partId)).trim(), model: cur.id, part: partId || null, inputs: r.inputs, values: r.values, checks: r.checks, verdict: r.verdict, when: new Date().toISOString() };
+        store.commit(`Physique : ${entry.name}`, (p) => { p.physics = p.physics || []; p.physics.push(entry); }); ui.name = ""; toast(`« ${entry.name} » gardé dans le projet${partId ? `, au nom de ${partId}` : ""}.`, "success"); file(entry); } });
     else if (ui.tab === "calc") calcPanel(body, { cur, r });
-    else savedPanel(body, { rows, remove: (id) => store.commit("Physique : calcul retiré du rapport", (p) => { p.physics = (p.physics || []).filter((x) => x.id !== id); }),
+    else savedPanel(body, { rows, project: store.project, remove: (id) => store.commit("Physique : calcul retiré du rapport", (p) => { p.physics = (p.physics || []).filter((x) => x.id !== id); }),
       reopen: (id) => { const s = (store.project.physics || []).find((x) => x.id === id); if (!s || !model(s.model)) return; memory.set(s.model, { ...defaults(s.model), ...s.inputs }); prefillNotes.delete(s.model); entered.set(s.model, new Set(Object.keys(defaults(s.model))));
         ui.tab = "result"; open(s.model, s.part && store.part(s.part) ? s.part : ""); } });
     body.scrollTop = y;
   }
 
+  /* in Drive, the sheet of a kept run is filed with the analyses of its part : 03_Analyses / <pièce> / <nom>.txt */
+  async function file(entry) {
+    if (!(session.fs && store.mode === "drive")) return;
+    try { const part = entry.part ? store.part(entry.part) : null; await session.fs.publish(store.project, [{ path: [TREE.analyses, part ? itemFolderName(part.id, part.name) : "Sans pièce"], name: `${entry.name}.txt`, mime: "text/plain", bytes: runSheet(entry, store.project) }]); toast("Fiche du calcul rangée dans Drive, avec les analyses de la pièce.", "success"); }
+    catch (e) { toast(`Drive : la fiche du calcul n'a pas pu être rangée (${e.message}). Le calcul reste dans le projet.`, "error", 7000); }
+  }
   const off = store.on("change", () => { if (alive) drawRight(true); });
-  if (cur) inputs = take(cur.id);
+  if (cur) { inputs = take(cur.id); carry(); }
   drawLeft(); update(true); drawRight();
   return () => { alive = false; clearTimeout(timer); off(); vp.dispose(); };
 }

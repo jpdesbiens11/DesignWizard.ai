@@ -62,3 +62,19 @@ test("the guide of a model : what is out of range, the examples still to enter, 
   assert.ok(Array.isArray(slender.warnings)); assert.deepEqual(w, [{ level: "warn", text: "Limite de validité — hors domaine" }]);
   assert.deepEqual(inputIssues(null).map((x) => x.level), ["tip"]);
 });
+
+test("a busbar carries its strip, its current and its finish into the heating model ; kept runs are named after their part", async () => {
+  const { prefill, runName, runsByPart, runSheet } = await import("../../web/js/analysis/physics/index.js"), { blankBusbar, busbarPart } = await import("../../web/js/core/busbar.js");
+  const def = { ...blankBusbar(), W: 25, t: 4, I: 180, finish: "none" }, spec = busbarPart(def, "BB-1"), pf = prefill("busbar", { spec, built: null });
+  assert.deepEqual([pf.inputs.w, pf.inputs.t, pf.inputs.I, pf.inputs.eps], [25, 4, 180, 0.4], "the strip, the current, bare copper"); assert.equal(pf.inputs.L, def.legs.reduce((t, l) => t + l.L, 0), "the length along the middle fibre : the sum of the legs, not the envelope");
+  assert.ok(pf.inputs.rho20 > 15 && pf.inputs.rho20 < 20, "the resistivity of its copper"); assert.match(pf.notes.I, /busbar BB-1 : courant déclaré/); assert.match(pf.notes.eps, /cuivre nu — valeur typique/);
+  assert.equal(prefill("busbar", { spec: busbarPart({ ...def, finish: "Sn" }, "BB-2"), built: null }).inputs.eps, 0.1); assert.equal(prefill("busbar", { spec: busbarPart({ ...def, insulation: { material: "PI-FILM", t: 0.1 } }, "BB-3"), built: null }).inputs.eps, 0.9, "a covered bar radiates like its cover");
+  assert.equal(prefill("beam_cantilever_point", { spec, built: null }).inputs.I, undefined, "a model takes only what it asks for");
+  /* several runs per part, each with its name ; the list is by part */
+  const project = { parts: [spec, { id: "P-2", name: "Capot" }], physics: [] }, keep = (model, part, when) => { const r = run(model, defaults(model)), e = { id: `phy-${project.physics.length + 1}`, name: runName(project, model, part), model, part, inputs: r.inputs, values: r.values, checks: r.checks, verdict: r.verdict, when }; project.physics.push(e); return e; };
+  const a = keep("busbar", "BB-1", "2026-11-10T10:00:00Z"), b = keep("busbar", "BB-1", "2026-11-16T10:00:00Z"), c = keep("adiabatic_pulse", "BB-1", "2026-11-12T10:00:00Z"), d = keep("plate_pressure", "P-2", "2026-11-11T10:00:00Z"), e = keep("pipe_flow", null, "2026-11-09T10:00:00Z"), gone = keep("busbar", "GONE", "2026-11-08T10:00:00Z");
+  assert.deepEqual([a.name, b.name, c.name, d.name, e.name], ["Busbar — Busbar", "Busbar — Busbar (2)", "Busbar — Impulsion de courant", "Capot — Plaque sous pression", "Sans pièce — Tube · perte de charge"]);
+  assert.deepEqual(runsByPart(project).map((g) => [g.part, g.name, g.runs.map((r) => r.id)]), [["BB-1", "Busbar", [b.id, c.id, a.id]], ["P-2", "Capot", [d.id]], ["", "Sans pièce", [e.id, gone.id]]], "by part, in the order of the project, the latest first ; a run whose part is gone is kept, without a part");
+  const sheet = runSheet(b, project); for (const re of [/^Busbar — Busbar \(2\)\n/, /Pièce : BB-1 — Busbar/, /Verdict : (OK|À VÉRIFIER|NON)/, /DONNÉES\n  Largeur w/, /RÉSULTATS\n  Température de la barre : /, /VÉRIFICATIONS\n/, /CALCUL\n  1\. /, /HYPOTHÈSES\n  - /, /Référence : Incropera/]) assert.match(sheet, re);
+  assert.match(runSheet({ name: "X", model: "nope" }, project), /inconnu de cette version/); assert.deepEqual(runsByPart({}), []);
+});

@@ -4,8 +4,8 @@
    with their margins. « Calcul » : the steps written like a hand calculation, the assumptions, the validity and the
    source. « Rapport » : the runs kept in the project. */
 
-import { el, btn, badge, table, fmt } from "../core/dom.js";
-import { MODELS, DOMAINS, model, shortTitle } from "../analysis/physics/index.js";
+import { el, btn, badge, table, fmt, icon } from "../core/dom.js";
+import { MODELS, DOMAINS, model, shortTitle, runsByPart } from "../analysis/physics/index.js";
 import { sketch, domainIcon } from "./physics_sketch.js";
 
 export const VERDICT = { ok: ["OK", "ok"], warn: ["À vérifier", "warn"], fail: ["NON", "danger"] };
@@ -26,7 +26,7 @@ export function physicsSummary(project) {
   return ((project && project.physics) || []).map((r) => {
     const m = model(r.model), values = r.values || {}, o = m && m.outputs.find((x) => typeof values[x.key] === "number");
     const worst = (r.checks || []).reduce((a, c) => (!a || c.margin < a.margin ? c : a), null), part = r.part ? parts.find((p) => p.id === r.part) : null;
-    return { id: r.id, model: r.model, title: m ? m.title : r.model, question: m ? m.question : "", part: r.part || "", partName: part ? part.name || "" : "",
+    return { id: r.id, name: r.name || "", model: r.model, title: m ? m.title : r.model, question: m ? m.question : "", part: r.part || "", partName: part ? part.name || "" : "",
       verdict: r.verdict, verdictLabel: (VERDICT[r.verdict] || VERDICT.warn)[0], result: o ? `${o.label} : ${show(values[o.key])} ${o.unit}`.trim() : "—",
       worst: worst ? `${worst.label} — marge ${show(worst.margin)}` : "", when: r.when || "" };
   });
@@ -63,8 +63,9 @@ export function resultPanel(body, o) {
       el("div", { class: "phys-margin" }, badge(word, kind), el("small", null, `marge ${c.margin >= 999 ? "> 999" : show(c.margin)}`))); })));
   else body.append(el("p", { class: "muted small" }, "Aucun critère à vérifier avec ces données : le calcul donne les valeurs ci-dessus."));
   if (cur.outputs.length > 4) body.append(el("div", { class: "side-section" }, el("h3", null, "Autres résultats"), table(["Grandeur", "Valeur"], cur.outputs.slice(4).map((x) => [x.label, `${show(r.values[x.key])} ${x.unit}`]))));
-  body.append(el("div", { class: "form-actions" }, btn("Ajouter au rapport", () => (o.waits ? o.blocked() : o.save()), { primary: true, icon: "plus",
-    tip: o.waits ? "Entrez ou confirmez d'abord les valeurs que le guide demande : un calcul au rapport ne garde que vos valeurs" : "Garde ce calcul (données, résultats, verdict) dans le projet, pour le rapport de revue de conception" })));
+  body.append(el("label", { class: "field phys-name" }, el("span", { class: "field-label" }, "Nom du calcul à garder"), el("input", { type: "text", value: o.name || "", "data-tip": "Le nom de la pièce d'abord : ses calculs se rangent ensemble, et vous pouvez en garder plusieurs au fil du temps", onInput: (e) => o.setName && o.setName(e.target.value) })));
+  body.append(el("div", { class: "form-actions" }, btn("Garder ce calcul", () => (o.waits ? o.blocked() : o.save()), { primary: true, icon: "plus",
+    tip: o.waits ? "Entrez ou confirmez d'abord les valeurs que le guide demande : un calcul au rapport ne garde que vos valeurs" : "Garde ce calcul sous ce nom (données, résultats, verdict) dans le projet, au nom de la pièce : il va au rapport de revue, et sa fiche est rangée dans Drive quand le projet y est" })));
 }
 
 /** The calculation written like a hand calculation, with what it assumes and where it comes from. */
@@ -77,13 +78,16 @@ export function calcPanel(body, o) {
     el("div", { class: "side-section" }, el("h3", null, "Référence"), el("p", { class: "muted small" }, cur.reference)));
 }
 
-/** The runs kept in the project. o : { rows (physicsSummary), reopen(id), remove(id) } */
+/** The runs kept in the project, by part. o : { rows (physicsSummary), project, reopen(id), remove(id) } */
 export function savedPanel(body, o) {
-  if (!o.rows.length) { body.append(el("p", { class: "muted" }, "Aucun calcul enregistré. « Ajouter au rapport », sous le résultat, garde un calcul dans le projet avec ses données et son verdict.")); return; }
-  for (const r of o.rows) { const m = model(r.model), d = domainOf(m);
-    body.append(el("div", { class: "phys-saved", style: `--dom:${d.color}` }, ...[m ? domainIcon(d.id, d.color, 20) : null].filter(Boolean),
-      el("div", { class: "grow" }, el("b", null, m ? shortTitle(m) : r.title), el("small", null, [r.part ? `${r.part}${r.partName ? " — " + r.partName : ""}` : "sans pièce", r.when ? new Date(r.when).toLocaleDateString("fr-CA") : ""].filter(Boolean).join(" · ")), el("small", null, r.result), ...[r.worst ? el("small", { class: "muted" }, r.worst) : null].filter(Boolean)),
-      el("div", { class: "phys-margin" }, verdictBadge(r.verdict), el("span", { class: "nowrap" }, btn("", () => o.reopen(r.id), { small: true, icon: "edit", tip: "Rouvrir : reprendre les données de ce calcul" }), btn("", () => o.remove(r.id), { small: true, danger: true, icon: "trash", tip: "Retirer ce calcul du rapport" }))))); }
+  if (!o.rows.length) { body.append(el("p", { class: "muted" }, "Aucun calcul gardé. « Garder ce calcul », sous le résultat, le garde dans le projet sous son nom, au nom de sa pièce : plusieurs par pièce, au fil du temps.")); return; }
+  const rowOf = new Map(o.rows.map((r) => [r.id, r]));
+  for (const g of runsByPart(o.project)) {
+    body.append(el("div", { class: "side-section" }, el("h3", null, icon(g.part ? "part" : "folder"), el("span", { class: "grow" }, g.part ? `${g.name} · ${g.part}` : g.name), el("small", null, String(g.runs.length))), g.runs.map((run) => { const r = rowOf.get(run.id), m = model(run.model), d = domainOf(m);
+      return el("div", { class: "phys-saved", style: `--dom:${d.color}`, "data-run": run.id }, ...[m ? domainIcon(d.id, d.color, 20) : null].filter(Boolean),
+        el("div", { class: "grow" }, el("b", null, run.name || (m ? shortTitle(m) : run.model)), el("small", null, [m ? shortTitle(m) : run.model, r.when ? new Date(r.when).toLocaleDateString("fr-CA") : ""].filter(Boolean).join(" · ")), el("small", null, r.result), ...[r.worst ? el("small", { class: "muted" }, r.worst) : null].filter(Boolean)),
+        el("div", { class: "phys-margin" }, verdictBadge(r.verdict), el("span", { class: "nowrap" }, btn("", () => o.reopen(r.id), { small: true, icon: "edit", tip: "Rouvrir : reprendre les données de ce calcul" }), btn("", () => o.remove(r.id), { small: true, danger: true, icon: "trash", tip: "Retirer ce calcul du projet" })))); })));
+  }
 }
 
 /** The tabs of the right panel. tabs : [[key, label, count?, verdict?]] — a count after the word, a dot of the colour of the verdict */

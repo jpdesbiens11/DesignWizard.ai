@@ -118,6 +118,13 @@ export function partContext(spec, built) {
     const tapped = holes.find((x) => typeof x.thread === "string" && x.thread);
     if (tapped) put("screw", tapped.thread.toUpperCase(), "taraudage de la pièce");
   }
+  /* a busbar says more than its envelope : its strip (width, thickness, length along the middle fibre), its current and its finish */
+  const bus = spec && spec.busbar && typeof spec.busbar === "object" ? spec.busbar : null;
+  if (bus) {
+    const len = (bus.legs || []).reduce((t, l) => t + (Number(l.L) || 0), 0), src = `busbar ${spec.id || ""}`.trim(), covered = bus.insulation && bus.insulation.t > 0;
+    put("L", len, `${src} : somme des branches, sur la fibre du milieu`); put("b", bus.W, `${src} : largeur de la bande`); put("h", bus.t, `${src} : épaisseur de la bande`); put("A_sec", bus.W * bus.t, `${src} : largeur × épaisseur`);
+    put("I_bus", bus.I, `${src} : courant déclaré`); put("eps_bus", covered ? 0.9 : bus.finish === "Sn" || bus.finish === "Ni" ? 0.1 : bus.finish === "Ag" ? 0.05 : 0.4, `${src} : ${covered ? "barre gainée d'un isolant" : bus.finish === "Sn" ? "étamée" : bus.finish === "Ni" ? "nickelée" : bus.finish === "Ag" ? "argentée" : "cuivre nu"} — valeur typique`);
+  }
   const ifaces = [...((built && built.interfaces) || []), ...((spec && Array.isArray(spec.interfaces) && spec.interfaces) || [])];
   const scr = ifaces.find((x) => x && x.params && typeof x.params.screw === "string");
   if (scr && !c.screw) put("screw", scr.params.screw.toUpperCase(), `vis de l'interface « ${scr.name || scr.id || scr.type || "fixation"} »`);
@@ -138,4 +145,32 @@ export function prefill(id, part = {}) {
     res.notes[key] = f.note;
   }
   return res;
+}
+
+/* ---------- a run that is kept : its name, and its sheet ---------- */
+/** A name for a new run of a model on a part — the name of the part first, so that the runs of a part sort together — unique among the runs kept. */
+export function runName(project, modelId, partId) {
+  const part = partId ? ((project && project.parts) || []).find((p) => p.id === partId) : null, base = `${part ? part.name || part.id : "Sans pièce"} — ${shortTitle(model(modelId)) || modelId}`, taken = new Set(((project && project.physics) || []).map((r) => r.name));
+  if (!taken.has(base)) return base;
+  for (let n = 2; n < 999; n++) if (!taken.has(`${base} (${n})`)) return `${base} (${n})`;
+  return base;
+}
+/** The runs kept, by part : [{ part (id or ""), name, runs }] — the parts in the order of the project, « sans pièce » last ; in a part, the latest first. */
+export function runsByPart(project) {
+  const parts = (project && project.parts) || [], by = new Map();
+  for (const r of (project && project.physics) || []) { const k = r.part && parts.some((p) => p.id === r.part) ? r.part : ""; if (!by.has(k)) by.set(k, []); by.get(k).push(r); }
+  const order = [...parts.map((p) => p.id).filter((id) => by.has(id)), ...(by.has("") ? [""] : [])];
+  return order.map((id) => ({ part: id, name: id ? (parts.find((p) => p.id === id) || {}).name || id : "Sans pièce", runs: by.get(id).slice().sort((a, b) => String(b.when || "").localeCompare(String(a.when || ""))) }));
+}
+/** The sheet of a run that is kept, as text : what was asked, what was entered, what came out, how — for the file of the part. */
+export function runSheet(saved, project) {
+  const m = model(saved.model), part = saved.part ? ((project && project.parts) || []).find((p) => p.id === saved.part) : null, num = (v) => (typeof v === "number" ? String(Number(v.toPrecision(6))).replace(".", ",") : String(v ?? "—"));
+  if (!m) return `${saved.name || saved.model}\nModèle « ${saved.model} » inconnu de cette version.\n`;
+  const again = run(m.id, { ...defaults(m.id), ...(saved.inputs || {}) }), V = { ok: "OK", warn: "À VÉRIFIER", fail: "NON" };
+  return [`${saved.name || m.title}`, `${m.title}`, `Question : ${m.question}`, `Pièce : ${part ? `${part.id} — ${part.name || ""}` : saved.part || "aucune"}`, `Date : ${String(saved.when || "").slice(0, 10) || "—"}`, `Verdict : ${V[again.verdict] || again.verdict}`, "",
+    "DONNÉES", ...m.inputs.filter((d) => inputActive(d, again.inputs)).map((d) => `  ${d.label} : ${d.options ? ((d.options.find((o) => o.value === String(again.inputs[d.key])) || {}).label || again.inputs[d.key]) : num(again.inputs[d.key])}${d.unit ? ` ${d.unit}` : ""}`), "",
+    "RÉSULTATS", ...m.outputs.map((o) => `  ${o.label} : ${num(again.values[o.key])}${o.unit ? ` ${o.unit}` : ""}`), "",
+    ...(again.checks.length ? ["VÉRIFICATIONS", ...again.checks.map((c) => `  ${c.ok ? "OK " : "NON"}  ${c.label} : ${num(c.value)} ${c.unit} — limite ${num(c.limit)} ${c.unit} — marge ${num(c.margin)}`), ""] : []),
+    ...(again.warnings.length ? ["LIMITES DE VALIDITÉ", ...again.warnings.map((w) => `  ${w}`), ""] : []),
+    "CALCUL", ...again.steps.map((s, i) => `  ${i + 1}. ${s}`), "", "HYPOTHÈSES", ...m.assumptions.map((a) => `  - ${a}`), "", `Domaine de validité : ${m.validity}`, `Référence : ${m.reference}`, ""].join("\n");
 }

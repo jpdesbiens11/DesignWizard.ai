@@ -272,3 +272,4 @@ button.dfx-kpi:hover, button.dfx-kpi:focus-visible { transform: translateY(-2px)
 .mat-family { padding: 0 .5rem; } .mat-family > h4 { margin: .35rem 0 .2rem; font: 650 .72rem var(--label-font); text-transform: uppercase; letter-spacing: var(--label-track); color: var(--dom); } .mat-family .mat-list { padding: 0 0 .35rem; }
 .mat-chip small { color: var(--muted); font-size: .76rem; font-weight: 400; }
 .sheet-no { margin: .6rem 0 .2rem; font: 650 .74rem var(--label-font); text-transform: uppercase; letter-spacing: var(--label-track); color: var(--muted); }
+.phys-name { margin: .6rem 0 .3rem; } .phys-name input { width: 100%; }

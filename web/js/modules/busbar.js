@@ -122,7 +122,7 @@ function render(main, args) {
       el("p", { class: "muted", style: { fontSize: ".78rem" } }, "Longueurs prises sur la fibre du milieu, d'un sommet de pli au suivant. La bande se découpe à plat, se poinçonne, puis se plie.")));
     const c = busbarChecks(d);
     if (c.notes.length) scroll.append(el("div", { class: "side-section" }, el("h3", null, "À regarder"), c.notes.map((n) => el("p", { class: n.level === "bad" ? "form-error" : "atelier-hint warn", style: { fontSize: ".82rem" } }, n.text))));
-    scroll.append(el("div", { class: "side-section" }, el("p", { class: "muted", style: { fontSize: ".78rem" } }, `Résistance à 20 °C ≈ ${fr(c.R, 1)} µΩ · pertes ≈ ${fr(c.P)} W · chute ≈ ${fr(c.dU)} mV à ${fr(d.I || 0, 0)} A. `), el("a", { class: "btn btn-small", href: `#/physics/busbar/${encodeURIComponent(id)}` }, icon("power"), "Vérifier l'échauffement")));
+    scroll.append(el("div", { class: "side-section" }, el("p", { class: "muted", style: { fontSize: ".78rem" } }, `Résistance à 20 °C ≈ ${fr(c.R, 1)} µΩ · pertes ≈ ${fr(c.P)} W · chute ≈ ${fr(c.dU)} mV à ${fr(d.I || 0, 0)} A. `), el("a", { class: "btn btn-small", href: `#/physics/busbar/${encodeURIComponent(id)}`, "data-tip": "Ouvre le calcul d'échauffement avec la bande, le courant, la finition et la matière de ce busbar déjà entrés" }, icon("power"), "Vérifier l'échauffement")));
   }
   function renderRight() {
     clear(right); const d = def(), all = [...d.terminals, ...d.contacts];

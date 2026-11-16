@@ -21,7 +21,7 @@ const busbar = { id: "busbar", domain: "electrical", sketch: "busbar", title: "B
     "Les résistances de contact des connexions vissées ne sont pas comprises."],
   validity: "Barre rectangulaire isolée en convection naturelle laminaire ; résultat à ± 20 % — pour une barre critique, vérifier par un essai d'échauffement.",
   reference: "Incropera, Fundamentals of Heat and Mass Transfer — chap. 1 (bilan d'énergie) ; Holman, Heat Transfer — table 7-2 (convection naturelle simplifiée de l'air) ; Copper Development Association, Copper for Busbars",
-  fill: { L: "L", w: "b", t: "h", rho20: "rhoE_n", alpha: "alphaE" },
+  fill: { L: "L", w: "b", t: "h", I: "I_bus", eps: "eps_bus", rho20: "rhoE_n", alpha: "alphaE" },
   compute(i) {
     const S = sheet(), w = i.w * 1e-3, t = i.t * 1e-3, L = i.L * 1e-3, Ac = w * t, As = 2 * (w + t) * L, rho20 = i.rho20 * 1e-9, Ta = i.Ta, J = i.I / (i.w * i.t);
     const R = (T) => rho20 * (1 + i.alpha * (T - 20)) * L / Ac, h = (dT) => (i.hc > 0 ? i.hc : 1.42 * (dT / w) ** 0.25);
