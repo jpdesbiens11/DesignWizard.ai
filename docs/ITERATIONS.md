@@ -78,10 +78,52 @@ Le registre voyage avec le projet (`.dwiz`, Drive). Il ne part pas dans un aller
 itération complète rapportée par une IA ne le touche pas. Le rapport de revue liste les itérations, leurs revues, leur
 convergence et leur décision.
 
+## Les niveaux de maturité : une seule définition pour tous
+
+Un niveau ne se définit pas « à la maison ». L'écran montre l'échelle en trois marches de couleur (comprendre et
+prouver, valider et démontrer, qualifier et exploiter — un regroupement de la plateforme, pour la lecture) et neuf
+tuiles à pictogramme. Un clic sur un niveau ouvre :
+
+- sa **définition officielle**, citée en anglais telle qu'elle a été lue — le tableau « Technology Readiness Level
+  Definitions » de la NASA et l'annexe G des programmes de travail Horizon 2020 de la Commission européenne — avec, à
+  côté, une traduction française de la plateforme (l'anglais fait foi) ;
+- **ce qu'il faut montrer** pour dire le niveau atteint : la description du matériel et le critère de sortie du tableau
+  de la NASA, traduits, le texte d'origine dépliable ;
+- **deux exemples**, un automobile et un aéronautique, qui suivent la même technologie du TRL 1 au TRL 9. Ils sont
+  écrits par la plateforme pour illustrer la définition : ils ne viennent pas des sources ;
+- le résumé du guide de l'industrie automobile britannique (2011) et le niveau de maturité de fabrication (MRL) qu'il
+  associe d'ordinaire au niveau ;
+- **ce qu'il ne faut pas confondre** avec le niveau suivant.
+
+Là où les sources ne disent pas la même chose, l'écran le dit au lieu de choisir en silence : au TRL 6, la colonne de
+définition du tableau de la NASA écrit « operational environment » quand sa description du matériel et la Commission
+européenne écrivent « relevant environment ». La plateforme retient TRL 6 = environnement représentatif, TRL 7 =
+environnement opérationnel réel.
+
+Le libellé court de chaque niveau, partout dans l'application, vient de ces définitions ; le dossier de revue confié à
+une IA et l'ordre du jour d'une revue entre collègues citent la définition officielle du niveau visé, pour que le
+relecteur ne juge pas sur une autre lecture. Le rapport de revue cite celle de la cible du projet.
+
+Les **références** ferment la page, chacune avec ce qu'elle couvre et la façon dont elle a été vérifiée
+(`web/js/core/trl.js`, `TRL_SOURCES`) :
+
+| Référence | Vérifiée |
+|---|---|
+| NASA, « Technology Readiness Level Definitions » (tableau des neuf niveaux) | lue en entier |
+| Commission européenne, Horizon 2020, Work Programme 2014-2015 et 2016-2017, General Annexes, G | lues en entier |
+| Low Carbon Vehicle Partnership et Automotive Council (Royaume-Uni), « Automotive Technology and Manufacturing Readiness Levels », 2011 | lu en entier |
+| NASA, page « Technology Readiness Levels » | lue (contrôle, aucun texte repris) |
+| ISO 16290:2013 | **non lue** (norme payante) : elle fait foi quand un contrat la cite |
+| Mankins, « Technology Readiness Levels: A White Paper », NASA, 1995 | **non lu** |
+| NASA NPR 7123.1 | **non lue** |
+| GAO-20-48G, « Technology Readiness Assessment Guide » | **non lu** |
+
 ## Limites
 
-- Les niveaux de maturité suivent l'échelle usuelle (ISO 16290) ; les questions par niveau sont un point de départ, à
-  adapter au référentiel de l'entreprise.
+
+- Les définitions des niveaux sont celles de la NASA et de la Commission européenne, telles que lues ; l'ISO 16290 n'a
+  pas été lue. Les traductions françaises et les exemples sont de la plateforme. Les questions par niveau sont un point
+  de départ, à adapter au référentiel de l'entreprise.
 - Le dossier IA porte les faits que la plateforme calcule sans noyau géométrique ; la santé des accouplements, le DFx et
   l'isolement se lisent dans leurs écrans et dans le rapport, qui peut être joint.
 - Une revue IA n'a encore jamais été menée avec un vrai assistant sur un vrai projet : seul le format est éprouvé.

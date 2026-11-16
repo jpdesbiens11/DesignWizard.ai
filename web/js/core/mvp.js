@@ -9,19 +9,22 @@
 
 import { reviewItems, reviewProgress, askRevision, REVIEW_KINDS } from "./review.js";
 import { interfaceSignature } from "../cad/interfaces.js";
+import { TRL_LEVELS, trlText } from "./trl.js";
 
-/** Technology readiness levels (ISO 16290), and what a review asks before saying the level is reached. */
-export const TRL = {
-  1: ["Principes de base observés", ["Le besoin et le principe physique sont-ils écrits ?"]],
-  2: ["Concept formulé", ["Le concept répond-il à chaque fonction demandée ?", "Les interfaces avec l'extérieur du produit sont-elles nommées ?"]],
-  3: ["Preuve de concept, par le calcul et par l'essai", ["Chaque fonction critique a-t-elle un calcul ou un essai qui la soutient ?", "Les hypothèses du calcul sont-elles écrites et plausibles ?"]],
-  4: ["Composants validés en laboratoire", ["Chaque pièce se fabrique-t-elle avec le procédé choisi (DFx sans erreur) ?", "Les interfaces internes sont-elles toutes appariées et saines ?", "Le plan d'essai de laboratoire couvre-t-il les fonctions critiques ?"]],
-  5: ["Composants validés en environnement représentatif", ["Les distances d'isolement et les lignes de fuite tiennent-elles aux tensions et à la pollution réelles ?", "La tenue thermique et mécanique est-elle montrée aux conditions d'emploi ?"]],
-  6: ["Prototype démontré en environnement représentatif", ["L'assemblage complet se monte-t-il avec la gamme écrite, sans interférence ?", "Les écarts entre le prototype et la définition sont-ils consignés ?"]],
-  7: ["Prototype démontré en environnement opérationnel", ["Les essais en conditions réelles couvrent-ils tous les cas d'emploi ?", "Les non-conformités ouvertes ont-elles un propriétaire et une date ?"]],
-  8: ["Système complet et qualifié", ["Le dossier de qualification est-il complet et la définition figée ?"]],
-  9: ["Système éprouvé en opération", ["Le retour d'expérience est-il repris dans la définition ?"]],
+/** Technology readiness levels : the label of each level comes from the official definitions (core/trl.js) ; here, what a
+    review asks before saying the level is reached. */
+const ASKS = {
+  1: ["Le besoin et le principe physique sont-ils écrits ?"],
+  2: ["Le concept répond-il à chaque fonction demandée ?", "Les interfaces avec l'extérieur du produit sont-elles nommées ?"],
+  3: ["Chaque fonction critique a-t-elle un calcul ou un essai qui la soutient ?", "Les hypothèses du calcul sont-elles écrites et plausibles ?"],
+  4: ["Chaque pièce se fabrique-t-elle avec le procédé choisi (DFx sans erreur) ?", "Les interfaces internes sont-elles toutes appariées et saines ?", "Le plan d'essai de laboratoire couvre-t-il les fonctions critiques ?"],
+  5: ["Les distances d'isolement et les lignes de fuite tiennent-elles aux tensions et à la pollution réelles ?", "La tenue thermique et mécanique est-elle montrée aux conditions d'emploi ?"],
+  6: ["L'assemblage complet se monte-t-il avec la gamme écrite, sans interférence ?", "Les écarts entre le prototype et la définition sont-ils consignés ?"],
+  7: ["Les essais en conditions réelles couvrent-ils tous les cas d'emploi ?", "Les non-conformités ouvertes ont-elles un propriétaire et une date ?"],
+  8: ["Le dossier de qualification est-il complet et la définition figée ?"],
+  9: ["Le retour d'expérience est-il repris dans la définition ?"],
 };
+export const TRL = Object.fromEntries(Object.keys(ASKS).map((n) => [n, [TRL_LEVELS[n].short, ASKS[n]]]));
 export const GATES = { iteration: "Revue d'itération", concept: "Revue de concept", pdr: "Revue préliminaire (PDR)", cdr: "Revue détaillée (CDR)", trr: "Revue d'aptitude aux essais (TRR)", qual: "Revue de qualification" };
 export const DECISIONS = { go: { fr: "Accepté", tone: "ok" }, conditional: { fr: "Accepté avec réserves", tone: "warn" }, redo: { fr: "À refaire", tone: "danger" } };
 export const REVIEW_MODES = { ai: "Dossier détaillé lu par une IA", humans: "Revue devant les collègues" };
@@ -134,7 +137,7 @@ const facts = (project, it) => { const m = (it.snapshot || snapshot(project)).me
 export function agenda(project, n) {
   const it = iteration(project, n); if (!it) return "";
   const notes = reviewItems(project).filter((x) => x.note);
-  return [`${it.name} — ${GATES[it.gate]}`, `Objectif : ${it.goal || "à dire"}`, `Niveau visé : TRL ${it.trl} — ${TRL[it.trl][0]} (cible du projet : TRL ${mvpOf(project).target})`, "", "CE QUE L'ITÉRATION CONTIENT", ...facts(project, it).map((x) => `- ${x}`),
+  return [`${it.name} — ${GATES[it.gate]}`, `Objectif : ${it.goal || "à dire"}`, `Niveau visé : TRL ${it.trl} — ${TRL[it.trl][0]} (cible du projet : TRL ${mvpOf(project).target})`, ...trlText(it.trl).slice(1, 3).map((x) => `  ${x}`), "", "CE QUE L'ITÉRATION CONTIENT", ...facts(project, it).map((x) => `- ${x}`),
     "", "CE QUE LA REVUE DOIT TRANCHER", ...TRL[it.trl][1].map((q) => `- ${q}`), ...criteria(project, n).filter((c) => !c.ok && !c.blocking).map((c) => `- ${c.text} ? Aujourd'hui : ${c.value}.`),
     ...(notes.length ? ["", "NOTES DÉJÀ ÉCRITES", ...notes.map((x) => `- ${REVIEW_KINDS[x.kind]} ${x.id} : ${x.note}`)] : []), "", "DÉCISION : accepté · accepté avec réserves · à refaire — et les actions, chacune avec son porteur."].join("\n");
 }
@@ -145,6 +148,7 @@ export function reviewPackage(project, n, o = {}) {
   return [`Tu mènes la revue de conception de « ${project.name || "ce produit"} », itération ${it.name} (${GATES[it.gate]}).`,
     "Tu es un comité de revue exigeant : mécanique, électronique de puissance, fabrication, assemblage, sécurité électrique, essais. Tu lis TOUT le dossier, pièce par pièce, et tu cherches ce qui empêcherait d'atteindre le niveau visé.",
     "", `OBJECTIF DE L'ITÉRATION : ${it.goal || "non précisé"}`, `NIVEAU VISÉ : TRL ${it.trl} — ${TRL[it.trl][0]}. Cible du projet : TRL ${mvpOf(project).target}.`,
+    "", "CE QUE CE NIVEAU VEUT DIRE (définitions officielles : ne juge pas sur une autre lecture du niveau) :", ...trlText(it.trl).slice(1).map((x) => `- ${x}`),
     "", "FAITS CALCULÉS PAR LA PLATEFORME (ne les recalcule pas, appuie-toi dessus) :", ...facts(project, it).map((x) => `- ${x}`), ...(o.facts || []).map((x) => `- ${x}`),
     "", "QUESTIONS DE CE NIVEAU :", ...TRL[it.trl][1].map((q) => `- ${q}`),
     "", "AXES À COUVRIR, DANS L'ORDRE : 1) les fonctions — chacune est-elle portée par une pièce, une carte ou un calcul ? 2) les formes et les dimensions — cohérentes entre pièces voisines ? 3) les interfaces — même clé, mêmes paramètres des deux côtés ; externes déclarées ? 4) la fabrication de chaque pièce avec son procédé ; 5) l'assemblage et son ordre ; 6) l'isolement électrique et la thermique ; 7) ce qui reste à prouver par l'essai.",

@@ -14,7 +14,7 @@ import { guideBox, guideCount, guideSummary } from "./guide.js";
 import { projectIssues, issuesHere } from "./guide_checks.js";
 import { docIdentity } from "./brand.js";
 
-export const APP_VERSION = "0.46.0";
+export const APP_VERSION = "0.47.0";
 /** What every document of the open project carries beside its content : approval names, organisation, confidentiality note, extraction stamp (core/brand.js). */
 export const docMeta = (when = new Date()) => docIdentity(store.project, when, APP_VERSION);
 const modules = new Map();

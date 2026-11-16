@@ -9,6 +9,8 @@ import { store } from "../core/store.js";
 import { toDwiz } from "../core/dwiz.js";
 import { mvpOf, canOpen, openIteration, freeze, thaw, trend, criteria, recordReview, toggleAction, closeIteration, iterationState, stateLabel, trlReached, reviewPackage, readReviewAnswer, applyReview, agenda,
   TRL, GATES, DECISIONS, REVIEW_MODES, TREND_FR } from "../core/mvp.js";
+import { trlFocus } from "../core/trl.js";
+import { trlScale, trlReferences } from "./mvp_trl.js";
 
 const pct = (x) => `${Math.round(x * 100)} %`, day = (s) => String(s || "").slice(0, 10);
 const STATE_TONE = { open: "info", frozen: "warn", reviewed: "warn", closed: "ok" };
@@ -73,18 +75,22 @@ function card(p, it, T) {
 function render(main) {
   const page = el("div", { class: "page" }), body = el("div");
   main.append(page); page.append(body);
+  let picked = null;   // the level the reader opened (null : the one the project is working on)
   function draw() {
     const p = store.project, m = (p.mvp && p.mvp.iterations) || [], target = (p.mvp && p.mvp.target) || 6, reached = trlReached(p), open = canOpen(p), T = new Map(trend(p).map((t) => [t.n, t])), live = m.at(-1);
     const head = el("div", { class: "page-head" }, el("div", { class: "grow" }, el("h1", null, "Itérations MVP"),
       el("p", { class: "muted" }, "Le produit converge par itérations. Chaque MVP est gelé, passé en revue — par un dossier détaillé confié à une IA, ou devant les collègues — et clos par une décision avant que le suivant s'ouvre. Entre deux itérations, la plateforme mesure ce qui a bougé.")),
       el("div", { class: "subtabs", style: { width: "100%" } }, el("a", { class: "subtab", href: "#/review" }, "Artéfacts"), el("a", { class: "subtab active", href: "#/mvp" }, "Itérations MVP"), el("a", { class: "subtab", href: "#/team" }, "Équipe"), el("a", { class: "subtab", href: "#/plm" }, "Révisions")));
-    const ladder = el("div", { class: "atelier-chips" }, Object.keys(TRL).map((k) => el("span", { class: `chip${Number(k) <= reached ? " done" : live && !live.closed && Number(k) === live.trl ? " warn" : ""}`, "data-tip": `TRL ${k} — ${TRL[k][0]}${Number(k) === target ? " · la cible du projet" : ""}`, style: Number(k) === target ? { outline: "2px solid var(--acc)" } : null }, `TRL ${k}`)));
-    const sum = el("section", { class: "card taped" }, el("h2", null, reached ? `TRL ${reached} atteint — ${TRL[reached][0]}` : "Aucun niveau atteint encore"), ladder,
+    const liveTrl = live && !live.closed ? live.trl : 0, sel = picked || trlFocus({ live: liveTrl, reached, target });
+    const ladder = trlScale({ sel, reached, target, live: liveTrl, pick: (k) => { picked = k; draw(); } });
+    const sum = el("section", { class: "card taped" }, el("h2", null, reached ? `TRL ${reached} atteint — ${TRL[reached][0]}` : "Aucun niveau atteint encore"),
+      el("p", { class: "muted small" }, "L'échelle des niveaux de maturité, telle que la NASA et la Commission européenne l'ont écrite. Cliquez un niveau : sa définition officielle, ce qu'il faut montrer, et deux exemples."), ...ladder,
       el("div", { class: "form-row" }, field("Niveau visé par le projet", el("select", { onChange: (e) => act(`Cible du projet : TRL ${e.target.value}`, (x) => { mvpOf(x).target = Number(e.target.value); }) }, Object.keys(TRL).map((k) => el("option", { value: k, selected: Number(k) === target }, `TRL ${k} — ${TRL[k][0]}`))), "Il n'y a pas de nombre fixe d'itérations : autant qu'il en faut pour atteindre ce niveau, chacune avec sa revue."),
         el("div", { class: "form-actions", style: { alignItems: "flex-end" } }, btn(m.length ? "Ouvrir le MVP suivant" : "Ouvrir le premier MVP", () => act("Nouvelle itération MVP", (x) => openIteration(x)), { primary: open.ok, icon: "plus", disabled: !open.ok, tip: open.ok ? "Une nouvelle itération, un niveau plus haut que la précédente" : open.why }))),
       open.ok ? null : el("p", { class: "atelier-hint" }, icon("lock"), ` ${open.why}`));
     const sections = [head, sum, ...[...m].reverse().map((it) => card(p, it, T))];
     if (!m.length) sections.push(el("div", { class: "empty" }, el("h2", null, "Pas encore d'itération"), el("p", null, "Ouvrez le premier MVP, dites ce qu'il doit montrer et le niveau qu'il vise. Quand le design est prêt, gelez-le : c'est cet état qui passe en revue.")));
+    sections.push(trlReferences());
     body.replaceChildren(...sections);
   }
   const off = store.on("change", () => { if (store.project) draw(); });
