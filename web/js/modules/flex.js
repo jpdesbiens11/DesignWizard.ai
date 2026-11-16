@@ -5,7 +5,7 @@
    The definition goes to an AI and comes back with a preview of what changed. Route : #/flex/<part>. */
 
 import { el, clear, icon, btn, badge, field, toast, fmt, fmtMass, debounce, modal, copyText, table } from "../core/dom.js";
-import { registerModule, go, setStatus, setContext } from "../core/app.js";
+import { registerModule, go, setStatus, setContext, setGuide } from "../core/app.js";
 import { store } from "../core/store.js";
 import { kernel } from "../cad/client.js";
 import { createViewport, showBuilt } from "../core/viewport.js";
@@ -16,6 +16,8 @@ import { CONNECTORS } from "../cad/elec_library.js";
 import { WELD_PROCESSES } from "../cad/interfaces_elec.js";
 import { locate } from "../core/busbar.js";
 import { blankFlex, flexPart, flexChecks, addSensor, fitSensor, SENSOR_KINDS, TAIL_MATES, BEND_RATIO } from "../core/flex.js";
+import { blankTree, exampleTree, treePart, isTree } from "../core/flex_tree.js";
+import { renderTree, kindTiles } from "./flex_tree.js";
 
 const KEYS = [["Clic droit sur une face", "Poser une sonde de température ou une prise de tension"], ["Clic sur une face", "Y déplacer le capteur choisi"], ["← → ↑ ↓", "Pousser le capteur de 1 mm (Maj : 5 mm · Alt : 0,1 mm)"], ["V", "L'envoyer sur l'autre face (verso)"], ["Tab · Suppr", "Capteur suivant · retirer le capteur choisi"]];
 const fr = (x, d = 2) => fmt(x, d);
@@ -30,12 +32,17 @@ function render(main, args) {
   const left = el("aside", { class: "side" }), right = el("aside", { class: "side right" }), view = el("div"), root = el("div", { class: "studio" }, left, view, right);
   root.style.setProperty("--left-w", "350px"); root.style.setProperty("--right-w", "400px");
   main.append(root);
-  const create = () => { const r = importPart(flexPart(blankFlex(), store.nextPartId()), { replace: false }); if (r.errors && r.errors.length) { toast(r.errors.join(" "), "error"); return; } go(`#/flex/${encodeURIComponent(r.id)}`); };
+  /* a new circuit : a folded strip, a core with branches, or the worked example with seven branches */
+  const make = (kind) => { const nid = store.nextPartId(), r = importPart(kind === "strip" ? flexPart(blankFlex(), nid) : treePart(kind === "example" ? exampleTree() : blankTree(), nid), { replace: false }); if (r.errors && r.errors.length) { toast(r.errors.join(" "), "error"); return; } go(`#/flex/${encodeURIComponent(r.id)}`); };
+  const create = () => { const m = modal("Nouveau circuit flexible", [el("p", { class: "muted" }, "Une bande que l'on plie, ou un cœur large d'où partent des branches vers les points à mesurer."), kindTiles((k) => { m.close(); make(k); })], { wide: true }); };
+  const head = () => el("div", { class: "side-head" }, el("h2", null, "Circuits flexibles"), btn("", create, { small: true, icon: "plus", tip: "Nouveau circuit flexible : bande pliée, circuit ramifié ou exemple" }));
+  const listed = () => el("div", { class: "side-section" }, list.map((p) => el("a", { class: "nav-item" + (p.id === id ? " active" : ""), href: `#/flex/${encodeURIComponent(p.id)}` }, icon("chip"), el("span", { class: "grow" }, p.name || p.id), isTree(p.flex) ? badge("ramifié", "info") : null, el("small", null, p.id))));
   if (!id) {
     root.classList.add("no-right"); right.remove(); left.append(el("div", { class: "side-head" }, el("h2", null, "Circuits flexibles")));
-    view.append(el("div", { class: "page" }, el("div", { class: "empty" }, el("h2", null, "Une bande souple qui relie des fonctions"), el("p", null, "Donnez la bande, ses plis, les fonctions à relier ; posez à la souris les sondes de température et les prises de tension."), btn("Nouveau circuit flexible", create, { primary: true, icon: "plus" }))));
+    view.append(el("div", { class: "page" }, el("div", { class: "empty" }, el("h2", null, "Un circuit souple qui relie des fonctions"), el("p", null, "Une bande que l'on plie, avec ses sondes et ses prises posées à la souris — ou un cœur large, sous une carte rigide, d'où partent des branches vers les points à mesurer."), el("div", { style: { maxWidth: "640px", margin: "0 auto" } }, kindTiles(make)))));
     return null;
   }
+  if (isTree(store.part(id).flex)) { root.style.setProperty("--right-w", "430px"); return renderTree({ id, left, right, view, head, list: listed }); }
   const st = { sel: null, token: 0, built: null }, def = () => store.part(id).flex;
   const rewrite = (x, d) => { const next = flexPart(d, id, x); for (const k of Object.keys(x)) if (k !== "id") delete x[k]; Object.assign(x, next); };
   const change = (label, fn) => store.updatePart(id, (x) => { const d = JSON.parse(JSON.stringify(x.flex)); fn(d); rewrite(x, d); }, label);
@@ -87,9 +94,9 @@ function render(main, args) {
   function renderLeft() {
     clear(left); const d = def(), slow = debounce((label, fn) => change(label, fn), 350);
     const num = (key, label, step = 0.5, min = 0.01) => field(label, el("input", { type: "number", value: d[key], step, min, onInput: (e) => { const v = parseFloat(e.target.value); if (v >= min) slow(`Circuit : ${label}`, (x) => { x[key] = v; }); } }));
-    left.append(el("div", { class: "side-head" }, el("h2", null, "Circuits flexibles"), btn("", create, { small: true, icon: "plus", tip: "Nouveau circuit flexible" })));
+    left.append(head());
     const scroll = el("div", { class: "side-scroll" }); left.append(scroll);
-    scroll.append(el("div", { class: "side-section" }, list.map((p) => el("a", { class: "nav-item" + (p.id === id ? " active" : ""), href: `#/flex/${encodeURIComponent(p.id)}` }, icon("chip"), el("span", { class: "grow" }, p.name || p.id), el("small", null, p.id)))));
+    scroll.append(listed());
     scroll.append(el("div", { class: "side-section" }, el("h3", null, "La bande"), field("Nom", el("input", { type: "text", value: d.name, onChange: (e) => change("Circuit : nom", (x) => { x.name = e.target.value; }) })),
       el("div", { class: "form-row" }, num("W", "Largeur"), num("t", "Épaisseur", 0.05), d.legs.length > 1 ? num("r", "Rayon de pli", 0.5) : null),
       el("div", { class: "form-row" }, field("Cuivre", el("select", { onChange: (e) => change("Circuit : cuivre", (x) => { x.cu = +e.target.value; }) }, [[0.018, "18 µm"], [0.035, "35 µm"], [0.07, "70 µm"]].map(([v, l]) => el("option", { value: v, selected: v === d.cu }, l)))),
@@ -117,6 +124,7 @@ function render(main, args) {
   }
   function renderRight() {
     clear(right); const d = def(), c = flexChecks(d);
+    setGuide(c.notes.map((n) => ({ level: n.level === "bad" ? "error" : "warn", text: n.text })));      // the guide of the top bar says what the left pane says
     right.append(el("div", { class: "side-head" }, el("h2", null, "Capteurs et pistes"), el("a", { class: "btn btn-small", href: `#/parts/${encodeURIComponent(id)}`, "data-tip": "Ouvrir dans le studio de pièce" }, icon("part"))));
     const body = el("div", { class: "side-scroll" }); right.append(body);
     if (!d.sensors.length) body.append(el("p", { class: "atelier-hint" }, icon("info"), " Clic droit sur une face plane du film : « Poser une sonde de température ici » ou « Poser une prise de tension ici »."));
@@ -135,9 +143,9 @@ function render(main, args) {
       el("p", { class: "muted", style: { fontSize: ".78rem" } }, `Courant admissible : IPC-2221, piste couverte, échauffement de 20 K. Queue : ${c.pins} contacts${c.pitch ? ` au pas de ${fr(c.pitch)} mm` : ""}.`)));
     body.append(el("div", { class: "side-section" }, el("h3", null, "À la souris et au clavier"), el("table", { class: "data" }, el("tbody", null, KEYS.map(([k, t]) => el("tr", null, el("td", null, el("kbd", null, k)), el("td", { style: { fontSize: ".8rem" } }, t)))))));
   }
-  const off = store.on("change", () => { if (!store.part(id) || !store.part(id).flex) { go("#/flex"); return; } renderLeft(); renderRight(); build(); });
+  const off = store.on("change", () => { const p = store.part(id); if (!p || !p.flex) { go("#/flex"); return; } if (isTree(p.flex)) { go(`#/flex/${encodeURIComponent(id)}`); return; } renderLeft(); renderRight(); build(); });
   renderLeft(); renderRight(); build(true);
-  return () => { off(); st.token++; };
+  return () => { off(); st.token++; setGuide([]); };
 }
 
-registerModule({ key: "flex", label: "Circuits flexibles", icon: "chip", tip: "Circuits flexibles : une bande souple pliée, une piste par fonction, des sondes de température et des prises de tension posées à la souris", render });
+registerModule({ key: "flex", label: "Circuits flexibles", icon: "chip", tip: "Circuits flexibles : une bande souple pliée et ses capteurs posés à la souris, ou un cœur large sous une carte rigide, d'où partent des branches vers les points à mesurer", render });

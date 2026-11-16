@@ -27,7 +27,8 @@ const part = {
     ["Ce qui se dit avec le fournisseur — la gamme annotée : une note par phase, les points à voir", ["plan"]],
   ],
   kids: {
-    intent: {}, order: {}, elec: {}, mold: {}, print: {}, look: {}, characteristics: {}, library: {}, busbar: {}, laminate: {}, thermal: {}, fill: {}, flex: {},
+    intent: {}, order: {}, elec: {}, mold: {}, print: {}, look: {}, characteristics: {}, library: {}, busbar: {}, laminate: {}, thermal: {}, fill: {},
+    flex: { kids: { branches: { word: "branch", head: ["id", "edge"], first: ["at", "w", "legs", "end", "net", "on"] } } },
     interfaces: { word: "interface", head: ["id", "type"], first: ["side", "face", "at", "level", "rot", "key", "partner", "name"], kids: { params: {}, opts: {} } },
     stock: { head: ["form"] },
     folded: { kids: { flanges: { word: "flange", head: ["side"] } } },

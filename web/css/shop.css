@@ -310,3 +310,9 @@ button.dfx-kpi:hover, button.dfx-kpi:focus-visible { transform: translateY(-2px)
 .lib-use { margin: 0; font-size: .8rem; color: var(--ink-soft); } .lib-foot { display: flex; align-items: center; justify-content: space-between; gap: .4rem; }
 .lib-live { height: min(280px, 34vh); margin-bottom: .5rem; border: 1.4px solid var(--line); border-radius: var(--r-card); background: var(--surface); position: relative; overflow: hidden; }
 .lib-stage { position: fixed; left: -9999px; top: 0; width: 400px; height: 250px; pointer-events: none; }
+/* --- the branched flexible circuit : four tiles in a row, the branches grouped by the edge they leave, the card of the chosen one --- */
+.cf-tiles.ft-four { grid-template-columns: repeat(4, minmax(0, 1fr)); } .cf-tile small { font-size: .72rem; line-height: 1.2; } .ft-group { margin: .55rem 0 .2rem; }
+.ft-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: .5rem; width: 100%; margin-top: .3rem; padding: .3rem .45rem; border: 1.4px solid color-mix(in srgb, var(--dom) 30%, var(--line)); border-left: 5px solid var(--dom); border-radius: var(--r-small); background: var(--surface); color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.ft-row:hover, .ft-row:focus-visible { border-color: var(--dom); box-shadow: var(--shadow-sketch); } .ft-row.sel { background: color-mix(in srgb, var(--dom) 12%, var(--surface)); border-color: var(--dom); }
+.ft-name { display: grid; line-height: 1.25; font-size: .86rem; min-width: 0; } .ft-name b { color: var(--dom); display: inline; } .ft-name small { color: var(--muted); font-size: .74rem; overflow-wrap: anywhere; }
+.ft-card { padding: .5rem .6rem .6rem; margin: .3rem 0 .5rem; } .ft-label { margin: .45rem 0 .2rem; font: 650 .68rem var(--label-font); text-transform: uppercase; letter-spacing: var(--label-track); color: var(--muted); } .ft-card .ft-label:first-child { margin-top: 0; }

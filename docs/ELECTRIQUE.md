@@ -234,7 +234,7 @@ nomenclature, isolant pour l'analyse d'isolement. Quand les pièces autour chang
 ## Le circuit flexible
 
 Écran **Circuits flexibles** (`Atelier → Circuits flexibles`, ou menu Projet ; `web/js/core/flex.js`,
-`web/js/modules/flex.js`). Une bande de polyimide, pliée là où le produit le demande, qui porte **une piste par
+`web/js/modules/flex.js`). Deux genres : la **bande pliée**, décrite ici, et le **circuit ramifié**, plus bas. Une bande de polyimide, pliée là où le produit le demande, qui porte **une piste par
 fonction** et de petits **capteurs** le long de son trajet. Sa définition reste dans la pièce (`flex`), et la pièce est
 réécrite à chaque changement — même squelette de branches et de plis que le busbar.
 
@@ -264,6 +264,53 @@ restent sur le plat, à l'écart des plis ; le connecteur porte le courant de ch
 attendue) ; « Réimporter » lit la définition revenue, **liste ce qui a changé**, et réécrit la pièce en une étape
 annulable.
 
+## Le circuit flexible ramifié
+
+Même écran (`#/flex`), second genre de circuit : `web/js/core/flex_tree.js`, `web/js/modules/flex_tree.js`. Un **cœur
+large**, à plat — la couche qui passe **sous une carte rigide**, ou sur elle — et des **branches de largeurs
+différentes** qui le quittent par un de ses quatre bords, vers X ou vers Y, puis se **plient vers Z+ ou Z−** jusqu'au
+point qu'elles servent. Un nouveau circuit se choisit sur trois tuiles : bande pliée, circuit ramifié, ou l'**exemple à
+sept branches** (une carte de mesure : trois prises de tension et une sonde vers X+, une sonde et une languette vers Y+,
+un faisceau vers X−, une prise vers Y−).
+
+```
+flex name="Carte de mesure" t=0.2 cu=0.035 r=2 layers=1 gap=0.3 core={L: 70, W: 46}
+  rigid={side: over, t: 1.6}
+  branch B1 +X at=8 w=6 legs=[{L: 30}, {L: 12, bend: 90}, {L: 10, bend: -90}] end=volt net=S1+ on="Busbar de la série 1"
+  branch B5 +Y at=50 w=8 legs=[{L: 12}, {L: 10, bend: -90}, {L: 14, bend: 90}] end=slot tracks=4 on="Capteur de courant"
+```
+
+- **Le cœur** (volet de gauche) : longueur en X, largeur en Y, film, cuivre, faces, rayon de pli, espace entre pistes.
+- **La carte rigide**, en option, sur trois tuiles : *sans carte*, *carte dessus* (le circuit est la couche du dessous),
+  *carte dessous*. Elle est un corps de la pièce, montré pour la place qu'il prend ; l'interface `IF1` de la pièce est
+  alors la face libre de la carte.
+- **Les branches** (volet de droite), groupées par le bord qu'elles quittent, chacune avec le pictogramme de son bout.
+  Une branche : son bord (`+X`, `-X`, `+Y`, `-Y`), sa place le long de ce bord (`at`, son milieu), sa largeur, ses
+  parties — la première à plat depuis le cœur, les suivantes après un pli à 90° vers Z+ (`bend: 90`) ou Z− (`-90`).
+- **Ce qu'il y a au bout** (`end`) :
+  - `temp` — **sonde de température** : le composant au dos, la face qui touche reste plane (interface d'appui) ;
+  - `volt` — **prise de tension** : une patte de cuivre soudée sur un busbar ou une borne (interface soudée, conducteur
+    au potentiel `net`) ; tant que le potentiel n'est pas dit, son champ clignote et le guide le demande ;
+  - `slot` — **languette clipsée** : le bout raidi à 0,3 mm glisse dans une fente (interface de glissière) où un
+    capteur ou une carte l'attend ;
+  - `free` — **plages à braser**, pour des fils ou un composant.
+- **À la souris** : un clic sur une branche la choisit ; un clic droit sur le cœur propose une branche vers le bord le
+  plus proche, à cet endroit, avec le bout voulu ; ← → glissent la branche choisie le long de son bord, ↑ ↓ allongent
+  sa dernière partie, Tab passe à la suivante, Suppr la retire.
+
+Une pièce, **un conducteur par branche** (une bande de cuivre tient lieu de ses pistes, au potentiel de la prise), plus
+ce qui est au bout et la carte : l'écran Isolation les lit tels quels.
+
+**Ce que l'écran vérifie** (`treeChecks`, donné au guide par `treeGuide`) : la branche est assez large pour ses pistes
+(0,3 mm par piste de signal, l'espace entre pistes, 0,5 mm à chaque bord — une prise demande une piste, une sonde deux) ;
+elle ne dépasse pas son bord ; 1 mm au moins entre deux branches d'un même bord ; 3 mm de plat entre deux plis, 6 mm
+pour une languette ; le rayon de pli (6 ou 12 fois l'épaisseur) ; le potentiel de chaque prise. Ces largeurs et ces
+écarts sont des **choix de la plateforme** (registre des sources : « Circuit flexible ramifié », choix maison) : les
+règles du fabricant du circuit font foi.
+
+**Avec une IA** : même aller-retour que la bande — la définition part avec sa consigne, une ligne `branch` par branche ;
+au retour, la liste des changements et ce que le circuit revenu demande, avant d'appliquer en une étape annulable.
+
 ## Limites
 
 - Busbars : plis à 90° dans un seul plan, largeur constante. Le busbar laminé est plat, sans pli ni fenêtre dans ses
@@ -273,6 +320,11 @@ annulable.
 - Circuit flexible : géométrie de principe — pistes droites au cœur du film, sans plages, fenêtres de vernis ni
   routage ; plis à 90° dans un seul plan ; il n'est pas relié à l'arbre fonctionnel d'une carte (brique PCBA). Le
   circuit pris dans un busbar laminé est décrit avec le busbar, pas dans l'écran Circuits flexibles.
+- Circuit flexible ramifié : chaque branche se plie dans le plan de son bord (une branche partie vers X ne tourne pas
+  vers Y), ses plis sont à 90°, sa largeur est constante ; le routage des pistes sur le cœur, la queue vers la carte et
+  les connexions à la carte rigide ne sont pas dessinés (la carte est un volume) ; une branche repliée au-dessus du cœur
+  ne se choisit plus d'un clic dans la vue ; le développé à plat du circuit n'est pas tracé ; une bande ne se convertit
+  pas en circuit ramifié.
 - Le remplissage est une géométrie figée (STEP, lourde dans le fichier du projet) : il ne suit pas les pièces seul, il se
   recalcule. La gamme d'assemblage ne décrit pas encore la coulée.
 - Les rigidités diélectriques et les indices de résistance au cheminement des films sont des valeurs typiques.
