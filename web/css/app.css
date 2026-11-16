@@ -327,6 +327,12 @@ input.need, select.need, textarea.need { border-color: var(--warn); animation: n
 .dw-view-gridnote { position: absolute; top: 6.6rem; right: .6rem; padding: .05rem .4rem; border-radius: var(--r-small); background: color-mix(in srgb, var(--surface) 85%, transparent); color: var(--muted); font: 600 .72rem var(--mono); pointer-events: none; }
 .menu .scale-row { display: flex; gap: .25rem; padding: .2rem .55rem .5rem; } .menu .scale-row button { flex: 1; min-width: 0; padding: .25rem 0; border: 1.3px solid color-mix(in srgb, var(--graphite) 28%, transparent); border-radius: var(--r-small); background: var(--surface); color: var(--ink); font-family: inherit; line-height: 1; cursor: pointer; }
 .menu .scale-row button.on { border-color: var(--graphite); border-width: 2.2px; background: color-mix(in srgb, var(--acc) 30%, var(--surface)); font-weight: 700; } .menu .scale-row button:hover { border-color: var(--graphite); }
+/* --- the choice of the units : the system, then the unit of a pressure (core/units_ui.js) --- */
+.unit-pick { display: grid; gap: .3rem; justify-items: start; } .unit-line { display: flex; align-items: center; gap: .45rem; } .unit-line small { color: var(--muted); font-size: .76rem; }
+.unit-seg { display: inline-flex; border: 1.4px solid color-mix(in srgb, var(--graphite) 28%, transparent); border-radius: var(--r-small); overflow: hidden; background: var(--surface); }
+.unit-seg button { border: 0; background: none; padding: .2rem .6rem; font: inherit; font-size: .8rem; color: var(--muted); cursor: pointer; } .unit-seg button + button { border-left: 1.3px solid color-mix(in srgb, var(--graphite) 18%, transparent); }
+.unit-seg button.on { background: color-mix(in srgb, var(--acc) 30%, var(--surface)); color: var(--ink); font-weight: 700; } .unit-seg button:hover { color: var(--ink); } .unit-seg button:focus-visible { outline: 2px solid var(--acc); outline-offset: -2px; }
+.menu .unit-pick { padding: .2rem .55rem .5rem; }
 /* --- Aide : the sources of the methods, by nature ; a line opens on what it covers and how it was checked --- */
 .src-filters { display: flex; flex-wrap: wrap; gap: .35rem; margin: .5rem 0 .8rem; } .src-filters small { color: var(--muted); }
 .src-group { margin: 0 0 .9rem; } .src-group-head { display: flex; align-items: center; gap: .5rem; padding: .3rem .55rem; border-left: 5px solid var(--dom); border-radius: var(--r-small); background: color-mix(in srgb, var(--dom) 12%, var(--surface)); color: var(--dom); }

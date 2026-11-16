@@ -7,6 +7,7 @@
 import { el, btn, badge, table, fmt, icon } from "../core/dom.js";
 import { MODELS, DOMAINS, model, shortTitle, runsByPart } from "../analysis/physics/index.js";
 import { sketch, domainIcon } from "./physics_sketch.js";
+import { getUnits, quantity, toShown, shownUnit, dualOf, pressureEquivalents } from "../core/units.js";
 
 export const VERDICT = { ok: ["OK", "ok"], warn: ["À vérifier", "warn"], fail: ["NON", "danger"] };
 export const verdictBadge = (v) => badge((VERDICT[v] || VERDICT.warn)[0], (VERDICT[v] || VERDICT.warn)[1]);
@@ -20,14 +21,17 @@ export function show(v) {
   return fmt(v, a === 0 || a >= 1000 ? 0 : a >= 100 ? 1 : a >= 10 ? 2 : a >= 1 ? 3 : Math.min(9, 3 - Math.floor(Math.log10(a))));
 }
 
+/** A value with its unit, in the units the designer chose (core/units.js) : « 0,096 psi », « 1,83 kg (4,03 lb) ». */
+export const qty = (v, unit, U = getUnits()) => quantity(v, unit, U, show);
+
 /** Rows of the design-review report : one per saved run (title, part, verdict, key result, tightest check). */
-export function physicsSummary(project) {
+export function physicsSummary(project, U = getUnits()) {
   const parts = (project && project.parts) || [];
   return ((project && project.physics) || []).map((r) => {
     const m = model(r.model), values = r.values || {}, o = m && m.outputs.find((x) => typeof values[x.key] === "number");
     const worst = (r.checks || []).reduce((a, c) => (!a || c.margin < a.margin ? c : a), null), part = r.part ? parts.find((p) => p.id === r.part) : null;
     return { id: r.id, name: r.name || "", model: r.model, title: m ? m.title : r.model, question: m ? m.question : "", part: r.part || "", partName: part ? part.name || "" : "",
-      verdict: r.verdict, verdictLabel: (VERDICT[r.verdict] || VERDICT.warn)[0], result: o ? `${o.label} : ${show(values[o.key])} ${o.unit}`.trim() : "—",
+      verdict: r.verdict, verdictLabel: (VERDICT[r.verdict] || VERDICT.warn)[0], result: o ? `${o.label} : ${qty(values[o.key], o.unit, U)}` : "—",
       worst: worst ? `${worst.label} — marge ${show(worst.margin)}` : "", when: r.when || "" };
   });
 }
@@ -52,17 +56,19 @@ export function modelTiles(body, o) {
 const checkState = (c) => (c.ok ? (c.tight ? ["juste", "warn"] : ["OK", "ok"]) : c.soft ? ["à vérifier", "warn"] : ["NON", "danger"]);
 /** The result of the run. o : { cur, r (the run), waits (text : why the report must wait, or ""), save(), blocked() } */
 export function resultPanel(body, o) {
-  const { cur, r } = o;
+  const { cur, r } = o, U = getUnits();
   if (!cur || !r) { body.append(el("p", { class: "muted" }, "Choisissez d'abord un modèle : le verdict, les valeurs et les marges s'écrivent ici pendant que vous tapez.")); return; }
   body.append(el("div", { class: `phys-verdict ${r.verdict}` }, verdictBadge(r.verdict), el("span", null, VERDICT_TEXT[r.verdict] || "")));
   if (o.waits) body.append(el("p", { class: "phys-eg small" }, o.waits));
-  body.append(el("div", { class: "kpis phys-kpis" }, cur.outputs.slice(0, 4).map((x) => el("div", { class: "kpi" }, el("b", null, show(r.values[x.key]), x.unit ? el("small", null, " " + x.unit) : null), el("span", null, x.label)))));
+  body.append(el("div", { class: "kpis phys-kpis" }, cur.outputs.slice(0, 4).map((x) => { const v = r.values[x.key], u = shownUnit(x.unit, U), d = dualOf(v, x.unit, U), eq = x.unit === "kPa" ? pressureEquivalents(v, U).slice(1) : [];      // a pressure also reads in the three other units
+    return el("div", { class: "kpi", "data-out": x.key }, el("b", null, show(toShown(v, x.unit, U)), u ? el("small", null, " " + u) : null, ...(d ? [el("small", null, ` (${show(d[0])} ${d[1]})`)] : [])), el("span", null, x.label),
+      ...(eq.length ? [el("small", { class: "phys-equiv", "data-tip": "La même pression dans les autres unités" }, eq.map(([k, e]) => `${show(e)} ${k}`).join(" · "))] : [])); })));
   for (const w of r.warnings) body.append(el("div", { class: "finding warn" }, el("span", { class: "sev" }), el("div", null, el("b", null, "Limite de validité")), el("p", null, w)));
   if (r.checks.length) body.append(el("div", { class: "side-section" }, el("h3", null, "Vérifications"), r.checks.map((c) => { const [word, kind] = checkState(c);
-    return el("div", { class: `phys-check ${kind}` }, el("div", { class: "grow" }, el("b", null, c.label), el("small", null, `${show(c.value)} ${c.unit} · limite ${show(c.limit)} ${c.unit}`), ...[c.note ? el("small", { class: "muted" }, c.note) : null].filter(Boolean)),
+    return el("div", { class: `phys-check ${kind}` }, el("div", { class: "grow" }, el("b", null, c.label), el("small", null, `${qty(c.value, c.unit, U)} · limite ${qty(c.limit, c.unit, U)}`), ...[c.note ? el("small", { class: "muted" }, c.note) : null].filter(Boolean)),
       el("div", { class: "phys-margin" }, badge(word, kind), el("small", null, `marge ${c.margin >= 999 ? "> 999" : show(c.margin)}`))); })));
   else body.append(el("p", { class: "muted small" }, "Aucun critère à vérifier avec ces données : le calcul donne les valeurs ci-dessus."));
-  if (cur.outputs.length > 4) body.append(el("div", { class: "side-section" }, el("h3", null, "Autres résultats"), table(["Grandeur", "Valeur"], cur.outputs.slice(4).map((x) => [x.label, `${show(r.values[x.key])} ${x.unit}`]))));
+  if (cur.outputs.length > 4) body.append(el("div", { class: "side-section" }, el("h3", null, "Autres résultats"), table(["Grandeur", "Valeur"], cur.outputs.slice(4).map((x) => [x.label, qty(r.values[x.key], x.unit, U)]))));
   body.append(el("label", { class: "field phys-name" }, el("span", { class: "field-label" }, "Nom du calcul à garder"), el("input", { type: "text", value: o.name || "", "data-tip": "Le nom de la pièce d'abord : ses calculs se rangent ensemble, et vous pouvez en garder plusieurs au fil du temps", onInput: (e) => o.setName && o.setName(e.target.value) })));
   body.append(el("div", { class: "form-actions" }, btn("Garder ce calcul", () => (o.waits ? o.blocked() : o.save()), { primary: true, icon: "plus",
     tip: o.waits ? "Entrez ou confirmez d'abord les valeurs que le guide demande : un calcul au rapport ne garde que vos valeurs" : "Garde ce calcul sous ce nom (données, résultats, verdict) dans le projet, au nom de la pièce : il va au rapport de revue, et sa fiche est rangée dans Drive quand le projet y est" })));
@@ -72,7 +78,7 @@ export function resultPanel(body, o) {
 export function calcPanel(body, o) {
   const { cur, r } = o;
   if (!cur || !r) { body.append(el("p", { class: "muted" }, "Le calcul d'un modèle s'écrit ici, étape par étape, avec ses hypothèses et sa source.")); return; }
-  body.append(el("div", { class: "side-section" }, el("h3", null, "Calcul"), el("ol", { class: "phys-steps" }, r.steps.map((s) => el("li", null, s)))),
+  body.append(el("div", { class: "side-section" }, el("h3", null, "Calcul"), ...(getUnits().system === "imperial" ? [el("p", { class: "muted small" }, "Le calcul s'écrit en SI, comme dans sa source ; les résultats et les vérifications sont convertis à l'affichage.")] : []), el("ol", { class: "phys-steps" }, r.steps.map((s) => el("li", null, s)))),
     el("div", { class: "side-section" }, el("h3", null, "Hypothèses"), el("ul", { class: "phys-steps" }, cur.assumptions.map((a) => el("li", null, a)))),
     el("div", { class: "side-section" }, el("h3", null, "Domaine de validité"), el("p", { class: "small" }, cur.validity)),
     el("div", { class: "side-section" }, el("h3", null, "Référence"), el("p", { class: "muted small" }, cur.reference)));

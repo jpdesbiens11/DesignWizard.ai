@@ -17,7 +17,9 @@ import { session } from "../core/access.js";
 import { TREE, itemFolderName } from "../google/drive_fs.js";
 import { sceneOf } from "../analysis/physics/scene3d.js";
 import { sketch, domainIcon } from "./physics_sketch.js";
-import { physicsSummary, show, verdictBadge, domainOf, modelTiles, resultPanel, calcPanel, savedPanel, tabBar } from "./physics_panels.js";
+import { physicsSummary, show, qty, verdictBadge, domainOf, modelTiles, resultPanel, calcPanel, savedPanel, tabBar } from "./physics_panels.js";
+import { getUnits, shownUnit, fromShown, fieldValue, converts } from "../core/units.js";
+import { unitPicker } from "../core/units_ui.js";
 
 export { physicsSummary, show };
 
@@ -88,14 +90,15 @@ function render(main, args) {
     const scroll = el("div", { class: "side-scroll" });
     left.append(scroll);
     scroll.append(el("div", { class: "subtabs" }, el("a", { class: "subtab active", href: "#/physics" }, "Modèles analytiques"), el("a", { class: "subtab", href: "#/fea" }, "Simulation")));
+    const U = getUnits(), units = el("div", { class: "side-section phys-units" }, el("h3", null, "Unités"), unitPicker());      // what is typed and what is read : SI inside, converted at the edges
     if (!cur) {
-      scroll.append(guideHost, el("p", { class: "muted small" }, "Des modèles analytiques reconnus et simples — une poutre, un tube, une vis, une ailette — qui répondent à 80 % de la question « la physique derrière cette pièce fonctionne-t-elle ? »."),
+      scroll.append(guideHost, units, el("p", { class: "muted small" }, "Des modèles analytiques reconnus et simples — une poutre, un tube, une vis, une ailette — qui répondent à 80 % de la question « la physique derrière cette pièce fonctionne-t-elle ? »."),
         el("p", { class: "muted small" }, "Chaque calcul montre ses formules, ses hypothèses et sa source ; la simulation par éléments finis simplifiés, puis l'essai, confirment le reste. Les entrées du modèle choisi viennent ici."));
       return;
     }
     const d = domainOf(cur);
     scroll.append(el("div", { class: "phys-now", style: `--dom:${d.color}` }, domainIcon(d.id, d.color, 26), el("div", { class: "grow" }, el("b", null, shortTitle(cur)), el("small", null, d.label)),
-      btn("Changer", () => showTiles(".phys-tile.sel"), { small: true, tip: "Choisir un autre modèle, dans le volet de droite" })), guideHost);
+      btn("Changer", () => showTiles(".phys-tile.sel"), { small: true, tip: "Choisir un autre modèle, dans le volet de droite" })), guideHost, units);
     const pick = el("select", { "aria-label": "Pièce du projet", onChange: (e) => open(cur.id, e.target.value) }, el("option", { value: "" }, "— aucune pièce —"), store.parts.map((p) => el("option", { value: p.id, selected: p.id === partId }, `${p.id} — ${p.name || ""}`)));
     const read = btn("Reprendre ses dimensions", async (e, b) => {
       const spec = store.part(partId), id = cur.id;
@@ -118,11 +121,11 @@ function render(main, args) {
       let input;
       if (d.options) input = el("select", { id, "data-field": d.key, onChange: (e) => { inputs[d.key] = e.target.value; update(true); } }, d.options.map((o) => el("option", { value: o.value, selected: o.value === String(inputs[d.key]) }, o.label)));
       else {
-        input = el("input", { id, "data-field": d.key, type: "number", inputmode: "decimal", value: inputs[d.key] === null || inputs[d.key] === undefined ? "" : String(inputs[d.key]), min: String(d.min), max: String(d.max), step: String(d.step || "any"), class: note ? "flash" : null });
-        input.addEventListener("input", () => { inputs[d.key] = input.value === "" ? null : Number(input.value); done().add(d.key); if (notes()[d.key]) delete notes()[d.key]; update(); });
+        input = el("input", { id, "data-field": d.key, type: "number", inputmode: "decimal", value: inputs[d.key] === null || inputs[d.key] === undefined ? "" : String(fieldValue(inputs[d.key], d.unit, U)), min: String(fieldValue(d.min, d.unit, U)), max: String(fieldValue(d.max, d.unit, U)), step: converts(d.unit, U) ? "any" : String(d.step || "any"), class: note ? "flash" : null });
+        input.addEventListener("input", () => { inputs[d.key] = input.value === "" ? null : fromShown(Number(input.value), d.unit, U); done().add(d.key); if (notes()[d.key]) delete notes()[d.key]; update(); });
         input.addEventListener("keydown", (e) => { if (e.key !== "Enter") return; done().add(d.key); update(); const next = fields.get(examples()[0]); if (next) next.input.focus(); });
       }
-      const row = el("div", { class: `param${d.options ? " wide" : ""}`, "data-key": d.key }, el("label", { for: id }, d.label, d.unit ? el("small", null, d.unit) : null), input, note ? el("small", { class: "phys-from" }, `↳ ${note}`) : null);
+      const row = el("div", { class: `param${d.options ? " wide" : ""}`, "data-key": d.key }, el("label", { for: id }, d.label, d.unit ? el("small", null, shownUnit(d.unit, U)) : null), input, note ? el("small", { class: "phys-from" }, `↳ ${note}`) : null);
       fields.set(d.key, { row, input, def: d }); sec.append(row);
     }
     scroll.append(el("div", { class: "form-actions" }, btn("Valeurs par défaut", () => { Object.assign(inputs, defaults(cur.id)); prefillNotes.delete(cur.id); entered.delete(cur.id); drawLeft(); update(true); }, { small: true, icon: "refresh", tip: "Revenir aux valeurs d'exemple du modèle" })));
@@ -140,14 +143,14 @@ function render(main, args) {
     const d = domainOf(cur), eg = examples().length;
     top.append(el("div", { class: "phys-2d-head", style: `--dom:${d.color}` }, el("span", { class: "phys-chip" }, domainIcon(d.id, "currentColor", 18), d.label), el("div", { class: "grow" }, el("h2", null, cur.question), el("small", { class: "muted" }, cur.title)), verdictBadge(r.verdict)),
       sketch(cur, { fill: true, color: d.color }),
-      el("div", { class: "phys-2d-foot" }, el("span", { class: "zone-tag" }, "2D · schéma de principe"), cur.outputs.slice(0, 3).map((x) => el("span", { class: "chip" }, `${x.label} : ${show(r.values[x.key])} ${x.unit}`.trim())), eg ? el("span", { class: "chip eg", "data-tip": "Le verdict ne vaut que pour vos valeurs : le guide de gauche dit lesquelles restent des exemples" }, `${eg} valeur${eg > 1 ? "s" : ""} d'exemple`) : null));
+      el("div", { class: "phys-2d-foot" }, el("span", { class: "zone-tag" }, "2D · schéma de principe"), cur.outputs.slice(0, 3).map((x) => el("span", { class: "chip" }, `${x.label} : ${qty(r.values[x.key], x.unit)}`)), eg ? el("span", { class: "chip eg", "data-tip": "Le verdict ne vaut que pour vos valeurs : le guide de gauche dit lesquelles restent des exemples" }, `${eg} valeur${eg > 1 ? "s" : ""} d'exemple`) : null));
   }
   /* ---------- centre, bottom : the same model in 3D, with the typed dimensions ---------- */
   function drawScene(refit) {
     const v = vp.viewer;
     v.clear();
     if (!cur) { chip.textContent = "3D · choisissez un modèle"; return; }
-    const sc = sceneOf(cur, inputs), own = domainOf(cur).color;      // the part under study takes the colour of its physics, as in the diagram
+    const sc = sceneOf(cur, inputs, getUnits()), own = domainOf(cur).color;      // the part under study takes the colour of its physics, as in the diagram
     for (const s of sc.solids) v.add({ id: s.id, mesh: s.mesh, color: s.color || own, opacity: s.opacity, pickable: false });
     for (const m of sc.marks) { if (m.t === "gem") gem(v, m.at, { color: m.color, tag: "phys" }); else (m.t === "clamp" ? clamp : arrow)(v, m.at, m.dir, { color: m.color, tag: "phys" }); }
     for (const l of sc.labels) v.addLabel(l.at, l.text, "phys", "phys-label");
@@ -183,9 +186,11 @@ function render(main, args) {
     catch (e) { toast(`Drive : la fiche du calcul n'a pas pu être rangée (${e.message}). Le calcul reste dans le projet.`, "error", 7000); }
   }
   const off = store.on("change", () => { if (alive) drawRight(true); });
+  const onUnits = () => { if (!alive) return; drawLeft(); update(); drawRight(true); };      // another system, another pressure unit : the same values, read otherwise
+  window.addEventListener("dw:units", onUnits);
   if (cur) { inputs = take(cur.id); carry(); }
   drawLeft(); update(true); drawRight();
-  return () => { alive = false; clearTimeout(timer); off(); vp.dispose(); };
+  return () => { alive = false; clearTimeout(timer); off(); window.removeEventListener("dw:units", onUnits); vp.dispose(); };
 }
 
 registerModule({ key: "physics", label: "Physique", icon: "physics", tip: "Modèles analytiques reconnus : poutre, flambement, vis, tube, dissipateur, busbar… avec verdict, marges et calcul détaillé", render });
