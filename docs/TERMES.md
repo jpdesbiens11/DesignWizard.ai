@@ -35,7 +35,19 @@ les procédés du mold (`MOLDS`) et les gates (`GATES`).
 Les phrases : explications, conseils, messages du guide, constats du DFx (la limite, la raison, le correctif d'une
 règle), les questions et les grandeurs des modèles de calcul (« flèche », « perte de charge »). Restent aussi en
 français, par choix : les noms que les exemples donnent à leurs pièces (ce sont des données de projet, pas du
-vocabulaire), les noms des domaines et des menus de l'application, et **le vocabulaire des dessins** — noms des vues
-(FACE, DESSUS, DROITE), cartouche, NOMENCLATURE, NOTES : la langue d'un dessin est une décision de projet, pas un terme
-de métier. Les noms d'interface écrits dans un projet existant ne changent pas : seuls les noms proposés par défaut
-sont en anglais.
+vocabulaire) et les noms des domaines et des menus de l'application. Les noms d'interface écrits dans un projet
+existant ne changent pas : seuls les noms proposés par défaut sont en anglais.
+
+## Les dessins : en anglais partout
+
+Choix de JP : **tout ce que l'outil écrit sur un dessin est en anglais** — noms des vues (FRONT, TOP, RIGHT, ISOMETRIC,
+SECTION A-A), SCALE, cartouche (Title, Part No., Rev., Material, Finish, Mass, Scale, Sheet, Size, Drawn, Checked,
+Approved, General tolerances, Project, Status, Units), REVISIONS, NOTES et notes générales, BILL OF MATERIALS, GEOMETRIC
+TOLERANCES, HOLE TABLE, DEFINITION DIMENSIONS, le libellé de chaque cote (width, pitch X, first hole from edge X…), les
+descriptions de trous (through, depth, counterbore, countersink, tapped, heat-set insert), les notes SC / CSC, et les
+notes du DXF du développé (BEND 90 UP R…, FLAT PATTERN, K FACTOR). Les nombres s'écrivent avec un **point décimal**
+(2.5, échelle 1:1.5).
+
+Restent tels qu'écrits : ce que le projet a tapé (nom de la pièce, noms d'interface, notes de la pièce, finition), la
+note de confidentialité du projet et la note de la marque (phrases fixes, `core/brand.js`). À l'écran, le sélecteur de
+classe d'une cote et les messages restent en français : c'est l'interface, pas le dessin.

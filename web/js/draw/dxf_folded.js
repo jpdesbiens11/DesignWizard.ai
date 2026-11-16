@@ -37,12 +37,12 @@ export function foldedDxf(built, features = []) {
   for (const b of flat.bends) {
     doc.line(b.a[0], b.a[1], b.b[0], b.b[1], "BEND");
     const mx = (b.a[0] + b.b[0]) / 2, my = (b.a[1] + b.b[1]) / 2;
-    doc.text(mx + th * 0.4, my + th * 0.4, th, `PLI ${b.angle} ${b.dir === "up" ? "VERS LE HAUT" : "VERS LE BAS"} R${n3(b.r)}`, "NOTES");
+    doc.text(mx + th * 0.4, my + th * 0.4, th, `BEND ${b.angle} ${b.dir === "up" ? "UP" : "DOWN"} R${n3(b.r)}`, "NOTES");
   }
   const x0 = flat.min[0], y0 = flat.min[1] - 3 * th;
-  doc.text(x0, y0, th, `DEVELOPPE ${n3(flat.size[0])} x ${n3(flat.size[1])} mm - TOLE ${n3(F.t)} mm - ${flat.bends.length} PLI(S) A 90`, "NOTES");
-  doc.text(x0, y0 - 1.6 * th, th, `LONGUEUR DEVELOPPEE D'UN PLI ${n3(F.ba)} mm (FACTEUR K ${n3(F.k)}, VALEUR TYPIQUE : A CORRIGER PAR L'ATELIER)`, "NOTES");
-  doc.text(x0, y0 - 3.2 * th, th, "FACE VUE : DESSUS DE LA BASE (+Z) - LIGNES BEND : NE PAS COUPER", "NOTES");
+  doc.text(x0, y0, th, `FLAT PATTERN ${n3(flat.size[0])} x ${n3(flat.size[1])} mm - SHEET ${n3(F.t)} mm - ${flat.bends.length} BEND(S) AT 90`, "NOTES");
+  doc.text(x0, y0 - 1.6 * th, th, `BEND ALLOWANCE ${n3(F.ba)} mm (K FACTOR ${n3(F.k)}, TYPICAL VALUE: TO BE CORRECTED BY THE SHOP)`, "NOTES");
+  doc.text(x0, y0 - 3.2 * th, th, "VIEWED FACE: TOP OF THE BASE (+Z) - BEND LINES: DO NOT CUT", "NOTES");
   const warnings = [];
   if (H.lost.length) warnings.push(`Trou(s) dans un pli, absents du développé : ${H.lost.join(", ")}. Les éloigner du pli ou les percer après pliage.`);
   if (C.lost.length) warnings.push(`Découpe(s) qui touchent un pli, absentes du développé : ${C.lost.join(", ")}.`);

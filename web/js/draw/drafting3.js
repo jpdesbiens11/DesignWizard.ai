@@ -129,27 +129,27 @@ export function drawTitleBlock(sheet, frame, data = {}) {
   if (own) sheet.text(X(16), Y(12.6), own.str, { size: own.size, font: "bold", baseline: "middle" });
 
   const F = (u, v, w, h, label, value, o) => field(sheet, X(u), Y(v), w, h, label, value, o);
-  F(0, 2 * R, 60, R, "Projet", d.project);
+  F(0, 2 * R, 60, R, "Project", d.project);
   projectionSymbol(sheet, X(15), Y(4 * R), d.projection);
-  F(30, 3 * R, 30, R, "Échelle", d.scale);
-  F(30, 4 * R, 30, R, "Format", d.size);
-  F(0, 5 * R, 60, R, "Statut", d.status);
+  F(30, 3 * R, 30, R, "Scale", d.scale);
+  F(30, 4 * R, 30, R, "Size", d.size);
+  F(0, 5 * R, 60, R, "Status", d.status);
 
-  F(60, 0, 30, R, "Dessiné", d.drawnBy);
-  F(90, 0, 30, R, "Vérifié", d.checkedBy);
-  F(120, 0, 30, R, "Approuvé", d.approvedBy);
+  F(60, 0, 30, R, "Drawn", d.drawnBy);
+  F(90, 0, 30, R, "Checked", d.checkedBy);
+  F(120, 0, 30, R, "Approved", d.approvedBy);
   F(150, 0, 30, R, "Date", d.date);
-  F(60, R, 60, R, "Matériau", d.material);
-  F(120, R, 60, R, "Finition", d.finish);
-  F(60, 2 * R, 60, R, "Tolérances générales", d.generalTolerance);
-  F(120, 2 * R, 30, R, "Masse", d.mass);
-  F(150, 2 * R, 30, R, "Unités", d.units);
-  F(60, 5 * R, 60, R, "No de pièce", d.partNumber, { font: "bold" });
-  F(120, 5 * R, 30, R, "Rév.", d.revision, { font: "bold" });
-  F(150, 5 * R, 30, R, "Feuille", d.sheet);
+  F(60, R, 60, R, "Material", d.material);
+  F(120, R, 60, R, "Finish", d.finish);
+  F(60, 2 * R, 60, R, "General tolerances", d.generalTolerance);
+  F(120, 2 * R, 30, R, "Mass", d.mass);
+  F(150, 2 * R, 30, R, "Units", d.units);
+  F(60, 5 * R, 60, R, "Part No.", d.partNumber, { font: "bold" });
+  F(120, 5 * R, 30, R, "Rev.", d.revision, { font: "bold" });
+  F(150, 5 * R, 30, R, "Sheet", d.sheet);
 
   // Title: 5 mm bold, one or two lines (smaller sizes are tried before truncating).
-  sheet.text(X(61.2), Y(3 * R + 2.7), "Titre", { size: 1.8, color: GREY });
+  sheet.text(X(61.2), Y(3 * R + 2.7), "Title", { size: 1.8, color: GREY });
   const title = String(d.title ?? ""), maxW = 120 - 5;
   if (title) {
     let size = 5, lines = sheet.wrapText(title, maxW, { size, font: "bold" });
@@ -231,14 +231,14 @@ export const REVISION_TABLE_W = 120;
 
 /** Revision table. rows: [{ rev, description, date, by }].
     opts: { align = 'left' ((x, y) is the top-left corner) | 'right' ((x, y) is the top-right corner, handy
-    to hang the table in the top-right corner of the frame), size = 2.5, title = 'RÉVISIONS' }.
+    to hang the table in the top-right corner of the frame), size = 2.5, title = 'REVISIONS' }.
     Returns { w, h } (w = 120). */
-export function drawRevisionTable(sheet, x, y, rows = [], { align = "left", size = TEXT_SMALL, title = "RÉVISIONS" } = {}) {
+export function drawRevisionTable(sheet, x, y, rows = [], { align = "left", size = TEXT_SMALL, title = "REVISIONS" } = {}) {
   const columns = [
-    { title: "Rév.", width: 12, align: "center" },
+    { title: "Rev.", width: 12, align: "center" },
     { title: "Description", width: 66, align: "left" },
     { title: "Date", width: 24, align: "center" },
-    { title: "Par", width: 18, align: "center" },
+    { title: "By", width: 18, align: "center" },
   ];
   const x0 = align === "right" ? x - REVISION_TABLE_W : x;
   return drawTable(sheet, x0, y, columns, rows.map((r) => [r?.rev, r?.description, r?.date, r?.by]), { size, title });

@@ -81,7 +81,7 @@ test("the DXF of the flat pattern : what is cut on CUT, the bend lines on BEND, 
   assert.equal(of("POLYLINE", "CUT").length, 2, "the outline and the cut-out of the base"); assert.equal(of("LINE", "BEND").length, 3); assert.equal(of("LINE", "CUT").length, 0, "a bend line is never on the cut layer");
   assert.deepEqual(of("CIRCLE", "CUT").map((c) => [c.cx, c.cy, c.r]), [[40, 25, 2.5], [92.393, 25, 2]]);
   const notes = of("TEXT", "NOTES").map((x) => x.text).join(" | ");
-  assert.match(notes, /PLI 90 VERS LE HAUT R1\.5/); assert.match(notes, /TOLE 1\.5 mm - 3 PLI\(S\)/); assert.match(notes, /FACTEUR K 0\.44, VALEUR TYPIQUE : A CORRIGER PAR L'ATELIER/);
+  assert.match(notes, /BEND 90 UP R1\.5/); assert.match(notes, /SHEET 1\.5 mm - 3 BEND\(S\)/); assert.match(notes, /K FACTOR 0\.44, TYPICAL VALUE: TO BE CORRECTED BY THE SHOP/);
   assert.deepEqual(r1.warnings.length, 1); assert.match(r1.warnings[0], /p2/, "a cut-out that touches a bend is reported, not drawn");
   assert.equal(flatCutouts(b.facts.folded, spec.features).loops.length, 1);
   assert.throws(() => foldedDxf(buildPart(K, { dw: "part/1", id: "B", name: "b", params: {}, interfaces: [], features: [{ op: "box", size: [10, 10, 2] }] })), /folded/);

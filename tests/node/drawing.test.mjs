@@ -31,7 +31,7 @@ test("every dimension the design defines is listed once, numbered, and can be cl
   setDimClass(spec, "bbox:X", "csc"); setDimClass(spec, "bbox:Y", "sc"); setDimClass(spec, "bbox:Z", "ref");
   const again = dimensionList(spec, built); assert.deepEqual(again.slice(0, 3).map((d) => d.cls), ["csc", "sc", "ref"]); assert.equal(dimText(again[2]), `(${again[2].text})`, "a reference dimension is written in brackets");
   assert.deepEqual(again.map((d) => d.n), dims.map((d) => d.n), "classing a dimension does not renumber the others");
-  assert.equal(classNotes(again).length, 3); assert.match(classNotes(again).join(" "), /Losange « SC »/); assert.equal(Object.keys(DIM_CLASSES).length, 4);
+  assert.equal(classNotes(again).length, 3); assert.match(classNotes(again).join(" "), /Diamond “SC”/); assert.equal(Object.keys(DIM_CLASSES).length, 4);
   assert.deepEqual(fromDwiz(toDwiz(spec)).characteristics, { "bbox:X": "csc", "bbox:Y": "sc", "bbox:Z": "ref" }, "the classes survive the .dwiz file");
   setDimClass(spec, "bbox:X", "normal"); setDimClass(spec, "bbox:Y", "normal"); setDimClass(spec, "bbox:Z", "normal"); assert.equal(spec.characteristics, undefined);
   K.flush();
@@ -47,19 +47,19 @@ test("a part drawing is a tabloid sheet : notes bottom left, isometric view top 
   const block = { x: L.frame.x + L.frame.w - 180, y: L.frame.y + L.frame.h - 48, w: 180, h: 48 };
   for (const [name, v] of Object.entries(L.boxes)) assert.ok(clear(v, L.notes) && clear(v, L.stack) && clear(v, block) && v.x >= L.area.x && v.y >= L.area.y && v.x + v.w <= L.area.x + L.area.w && v.y + v.h <= L.area.y + L.area.h, `the ${name} view stays clear of the notes, of the tables of the corner and of the title block`);
   /* the views take the sheet : no micro-view. The base (160 × 110 × 42) is drawn at 1:1,5 — it was 1:2,5 when a column of tables took the right of the sheet */
-  assert.equal(info.scale, "1:1,5"); assert.ok(L.views.w * L.views.h > 0.3 * L.area.w * L.area.h, "the block of the views covers a good third of the sheet"); assert.ok(L.stack.w <= 150 && L.stack.x + L.stack.w > L.frame.x + L.frame.w - 1 && L.stack.y === L.frame.y, "the tables keep to the top right corner");
+  assert.equal(info.scale, "1:1.5"); assert.ok(L.views.w * L.views.h > 0.3 * L.area.w * L.area.h, "the block of the views covers a good third of the sheet"); assert.ok(L.stack.w <= 150 && L.stack.x + L.stack.w > L.frame.x + L.frame.w - 1 && L.stack.y === L.frame.y, "the tables keep to the top right corner");
   /* a geometric tolerance is tied to what it controls : a hexagonal flag on the feature, the same flag in the table, with the tags of its holes */
   assert.deepEqual(info.gdt.map((g) => g.flag), info.gdt.map((_, i) => `T${i + 1}`)); assert.ok(info.gdt.length >= 4 && info.gdt.every((g) => g.at && g.at.every(Number.isFinite)), "every tolerance has its flag on a view");
   for (const g of info.gdt) { assert.equal((text.match(new RegExp(`>${g.flag}<`, "g")) || []).length, 2, `${g.flag} : once on the view, once in the table`); if (g.symbol === "position" && g.count > 1) assert.match(g.tags, /^[A-Z]\d+–[A-Z]\d+$/, `${g.flag} names its holes (${g.tags})`); }
-  assert.match(text, /TOLÉRANCES GÉOMÉTRIQUES/); assert.match(text, /4× · A1–A4 · /); assert.equal(tagRange(["A1", "A2", "A3", "A4"]), "A1–A4"); assert.equal(tagRange(["A1", "A3"]), "A1, A3"); assert.equal(tagRange(["B2"]), "B2");
+  assert.match(text, /GEOMETRIC TOLERANCES/); assert.match(text, /4× · A1–A4 · /); assert.equal(tagRange(["A1", "A2", "A3", "A4"]), "A1–A4"); assert.equal(tagRange(["A1", "A3"]), "A1, A3"); assert.equal(tagRange(["B2"]), "B2");
   for (let i = 0; i < info.gdt.length; i++) for (let j = i + 1; j < info.gdt.length; j++) assert.ok(Math.hypot(info.gdt[i].at[0] - info.gdt[j].at[0], info.gdt[i].at[1] - info.gdt[j].at[1]) >= 6.5, `flags ${i + 1} and ${j + 1} do not sit on one another`);
   /* the long table of the definition dimensions is on a second sheet, with the same frame and title block */
-  assert.equal(info.sheets, 2); const pages = svg.toStrings(); assert.equal(pages.length, 2); assert.match(pages[1], /COTES DE DÉFINITION — DRV-BASE/); assert.match(pages[0], />1\/2</); assert.match(pages[1], />2\/2</); assert.ok(!pages[0].includes("COTES DE DÉFINITION") && pages[1].includes("Hauteur des colonnettes"));
+  assert.equal(info.sheets, 2); const pages = svg.toStrings(); assert.equal(pages.length, 2); assert.match(pages[1], /DEFINITION DIMENSIONS — DRV-BASE/); assert.match(pages[0], />1\/2</); assert.match(pages[1], />2\/2</); assert.ok(!pages[0].includes("DEFINITION DIMENSIONS") && pages[1].includes("Hauteur des colonnettes"));
   assert.ok(info.onView.length >= 5 && info.onView.includes("bbox:X"), "overall and pattern dimensions are on the views");
   assert.equal(info.dims.length, dimensionList(spec, built).length);
-  for (const re of [/ASME Y14\.5-2018/, />CSC</, />SC</, /TOLÉRANCES GÉOMÉTRIQUES/, /TABLEAU DES TROUS/, /B \(11 × 17\)/, /NOTES/]) assert.match(text, re);
+  for (const re of [/ASME Y14\.5-2018/, />CSC</, />SC</, /GEOMETRIC TOLERANCES/, /HOLE TABLE/, /B \(11 × 17\)/, /NOTES/]) assert.match(text, re);
   for (const d of info.dims.filter((x) => info.onView.includes(x.key))) assert.match(text, new RegExp(`>${d.n}<`), `balloon ${d.n} is on the sheet`);
-  assert.match(info.notes[0], /ASME Y14\.5/); assert.ok(info.notes.some((n) => /Triangle « CSC »/.test(n)));
+  assert.match(info.notes[0], /ASME Y14\.5/); assert.ok(info.notes.some((n) => /Triangle “CSC”/.test(n)));
   const pdf = new PdfSheet({ width: PAPER.TABLOID[0], height: PAPER.TABLOID[1], title: spec.id }); composeDrawing(pdf, { spec, built, views, project: DEMO_DRIVE, opts: {} }); assert.ok(pdf.toBytes().length > 20000);
   K.flush();
 });
@@ -99,7 +99,7 @@ test("a section view : the part cut across, what stays behind the plane, the cut
   const views = { ...hlr(K, shape), section: v }, svg = new SvgSheet({ width: PAPER.TABLOID[0], height: PAPER.TABLOID[1], title: spec.id }), info = composeDrawing(svg, { spec, built, views, project: DEMO_DRIVE, opts: { date: "2026-01-01" } }), S = info.section, L = info.layout, text = svg.toStrings().join("\n");
   assert.ok(S && S.scale === info.scale && S.axis === "x", "at the scale of the sheet"); assert.ok(clear(S, L.notes) && clear(S, L.stack) && Object.values(L.boxes).every((v) => clear(S, v)) && S.x >= L.area.x && S.x + S.w <= L.area.x + L.area.w && S.y >= L.frame.y, "inside the room of the views, clear of the notes, of the corner and of the three views");
   assert.ok(Math.abs(S.y + S.h - (L.boxes.front.y + L.boxes.front.h)) < 0.01 && S.x > L.boxes.right.x + L.boxes.right.w, "in the row of the front view, right of the right view");
-  assert.match(text, /COUPE A-A/); assert.match(text, />A</, "the letters of the cutting plane, on the top view");
+  assert.match(text, /SECTION A-A/); assert.match(text, />A</, "the letters of the cutting plane, on the top view");
   for (const k of ["wall", "rc", "pwrX", "winL", "winW"]) assert.ok(info.onView.includes(`param:${k}`), `${k} is on a view`);
   assert.ok(!text.includes("Fenêtre thermique (X)") && text.includes("Hauteur des colonnettes"), "a dimension drawn on a view is not repeated in the table ; the others are there");
   for (const d of info.dims.filter((x) => info.onView.includes(x.key))) assert.match(text, new RegExp(`>${d.n}<`), `balloon ${d.n} is on the sheet`);
@@ -121,7 +121,7 @@ test("an assembly drawing numbers its parts with balloons and carries the parts 
   assert.deepEqual(info.dims.map((d) => d.n), [rows.length + 1, rows.length + 2, rows.length + 3], "dimension balloons are numbered after the items : no number twice");
   assert.ok(Math.abs(L.bom.y + L.bom.h - (L.frame.y + L.frame.h - 48)) < 0.01 && Math.abs(L.bom.x + L.bom.w - (L.frame.x + L.frame.w)) < 0.01, "the parts list sits on the title block, bottom right");
   assert.ok(L.notes.x < L.frame.x + 6 && clear(L.views, L.notes) && clear(L.views, L.bom) && clear(L.views, L.iso));
-  for (const re of [/NOMENCLATURE/, /DRV-BASE/, /ASME Y14\.5-2018/, /gamme d'assemblage/]) assert.match(text, re);
+  for (const re of [/BILL OF MATERIALS/, /DRV-BASE/, /ASME Y14\.5-2018/, /assembly routing/]) assert.match(text, re);
   const spread = placeBalloons([{ item: 1, p: [50, 50] }, { item: 2, p: [50.2, 50.1] }, { item: 3, p: [80, 50] }], { x: 20, y: 30, w: 60, h: 40 });
   for (let i = 0; i < spread.length; i++) for (let j = i + 1; j < spread.length; j++) assert.ok(Math.hypot(spread[i].b[0] - spread[j].b[0], spread[i].b[1] - spread[j].b[1]) >= 9, "two balloons never touch");
   assert.ok(spread.every((x) => x.b[0] < 20 - 5 || x.b[0] > 80 + 5 || x.b[1] < 30 - 5 || x.b[1] > 70 + 5), "balloons stand outside the view");

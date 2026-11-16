@@ -17,9 +17,9 @@ export const DIM_CLASSES = {
 };
 /** The view that looks at a face, and the two world axes it shows. */
 export const VIEW_OF_FACE = { "+Z": ["top", 0, 1], "-Z": ["top", 0, 1], "+Y": ["front", 0, 2], "-Y": ["front", 0, 2], "+X": ["right", 1, 2], "-X": ["right", 1, 2] };
-const AXIS = ["X", "Y", "Z"], OVERALL = ["Longueur hors tout", "Largeur hors tout", "Hauteur hors tout"];
-const PARAM_FR = { w: "largeur", h: "hauteur", d: "diamètre", length: "longueur", depth: "profondeur", t: "épaisseur", r: "rayon", gap: "film", pitch: "entraxe", pcd: "Ø de perçage" };
-export const f2 = (v) => (Math.round(v * 100) / 100).toString().replace(".", ",");
+const AXIS = ["X", "Y", "Z"], OVERALL = ["Overall length", "Overall width", "Overall height"];
+const PARAM_FR = { w: "width", h: "height", d: "diameter", length: "length", depth: "depth", t: "thickness", r: "radius", gap: "bond line", pitch: "pitch", pcd: "bolt circle Ø" };      // the words of a drawing, in English
+export const f2 = (v) => (Math.round(v * 100) / 100).toString();      // a drawing is written in English : a decimal point
 const uniq = (list) => [...new Set(list.map((x) => Math.round(x * 1000) / 1000))].sort((a, b) => a - b);
 const even = (u) => u.length < 3 || u.slice(2).every((x, i) => Math.abs((x - u[i + 1]) - (u[1] - u[0])) < 0.01);
 
@@ -69,19 +69,19 @@ export function dimensionList(spec, built) {
     if (it.type !== "bolt_pattern") continue;
     const V = VIEW_OF_FACE[it.face], mine = holes.filter((h) => h.iface === it.id); if (!V || !mine.length) continue;
     const [view, a, b] = V, us = uniq(mine.map((h) => h.at[a])), vs = uniq(mine.map((h) => h.at[b])), circle = it.params && it.params.pattern && it.params.pattern.type === "circle";
-    if (circle) { add(`iface:${it.id}:pcd`, { kind: "iface", table: "def", value: it.params.pattern.pcd, text: `Ø ${f2(it.params.pattern.pcd)}`, basic: true, label: `${it.name} — Ø de perçage, ${mine.length} trous équidistants` }); }
+    if (circle) { add(`iface:${it.id}:pcd`, { kind: "iface", table: "def", value: it.params.pattern.pcd, text: `Ø ${f2(it.params.pattern.pcd)}`, basic: true, label: `${it.name} — bolt circle Ø, ${mine.length} equally spaced holes` }); }
     else {
-      if (us.length > 1 && even(us)) add(`iface:${it.id}:du`, { kind: "pattern", on: view, dir: "h", p1: [us[0], vs.at(-1)], p2: [us[1], vs.at(-1)], value: us[1] - us[0], text: `${us.length > 2 ? `${us.length - 1}× ` : ""}${f2(us[1] - us[0])}`, basic: true, label: `${it.name} — entraxe ${AXIS[a]}` });
-      if (vs.length > 1 && even(vs)) add(`iface:${it.id}:dv`, { kind: "pattern", on: view, dir: "v", p1: [us.at(-1), vs[0]], p2: [us.at(-1), vs[1]], value: vs[1] - vs[0], text: `${vs.length > 2 ? `${vs.length - 1}× ` : ""}${f2(vs[1] - vs[0])}`, basic: true, label: `${it.name} — entraxe ${AXIS[b]}` });
+      if (us.length > 1 && even(us)) add(`iface:${it.id}:du`, { kind: "pattern", on: view, dir: "h", p1: [us[0], vs.at(-1)], p2: [us[1], vs.at(-1)], value: us[1] - us[0], text: `${us.length > 2 ? `${us.length - 1}× ` : ""}${f2(us[1] - us[0])}`, basic: true, label: `${it.name} — pitch ${AXIS[a]}` });
+      if (vs.length > 1 && even(vs)) add(`iface:${it.id}:dv`, { kind: "pattern", on: view, dir: "v", p1: [us.at(-1), vs[0]], p2: [us.at(-1), vs[1]], value: vs[1] - vs[0], text: `${vs.length > 2 ? `${vs.length - 1}× ` : ""}${f2(vs[1] - vs[0])}`, basic: true, label: `${it.name} — pitch ${AXIS[b]}` });
     }
-    const u0 = circle && it.frame ? it.frame.o[a] : us[0], v0 = circle && it.frame ? it.frame.o[b] : vs[0], what = circle ? "centre" : "premier trou";
-    add(`iface:${it.id}:u`, { kind: "pattern", on: view, dir: "h", p1: [bb[a], v0], p2: [u0, v0], value: u0 - bb[a], text: f2(u0 - bb[a]), basic: true, label: `${it.name} — ${what} depuis le bord ${AXIS[a]}` });
-    add(`iface:${it.id}:v`, { kind: "pattern", on: view, dir: "v", p1: [u0, bb[b]], p2: [u0, v0], value: v0 - bb[b], text: f2(v0 - bb[b]), basic: true, label: `${it.name} — ${what} depuis le bord ${AXIS[b]}` });
+    const u0 = circle && it.frame ? it.frame.o[a] : us[0], v0 = circle && it.frame ? it.frame.o[b] : vs[0], what = circle ? "centre" : "first hole";
+    add(`iface:${it.id}:u`, { kind: "pattern", on: view, dir: "h", p1: [bb[a], v0], p2: [u0, v0], value: u0 - bb[a], text: f2(u0 - bb[a]), basic: true, label: `${it.name} — ${what} from edge ${AXIS[a]}` });
+    add(`iface:${it.id}:v`, { kind: "pattern", on: view, dir: "v", p1: [u0, bb[b]], p2: [u0, v0], value: v0 - bb[b], text: f2(v0 - bb[b]), basic: true, label: `${it.name} — ${what} from edge ${AXIS[b]}` });
   }
   /* holes, by group : same face, same diameter, same making */
   const groups = new Map();
   for (const h of holeRows(built)) { const k = `${h.face}:${f2(h.d)}:${h.desc}`; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(h); }
-  for (const [k, l] of groups) add(`hole:${k}`, { kind: "hole", table: "holes", value: l[0].d, text: `${l.length > 1 ? `${l.length}× ` : ""}Ø ${f2(l[0].d)}`, label: `${l[0].desc || "trou"} — face ${l[0].face}`, tags: l.length > 1 ? `${l[0].tag}–${l.at(-1).tag}` : l[0].tag, face: l[0].face, holes: l });
+  for (const [k, l] of groups) add(`hole:${k}`, { kind: "hole", table: "holes", value: l[0].d, text: `${l.length > 1 ? `${l.length}× ` : ""}Ø ${f2(l[0].d)}`, label: `${l[0].desc || "hole"} — face ${l[0].face}`, tags: l.length > 1 ? `${l[0].tag}–${l.at(-1).tag}` : l[0].tag, face: l[0].face, holes: l });
   /* the other design parameters, then what each interface defines */
   const where = locateParams(spec, built);                                                    // a parameter that shows on a view is a detail dimension, drawn there
   for (const [k, p] of params) if (!taken.has(k)) { const w = where.get(k);
@@ -101,8 +101,8 @@ export function holeRows(built) {
   for (const [face, list] of byFace) {
     const letter = String.fromCharCode(65 + g++), V = VIEW_OF_FACE[face];
     list.forEach((h, i) => {
-      const desc = [h.thread ? `${h.thread} taraudé` : null, h.fit === "insert" ? "insert à chaud" : null, h.fit && /^[A-Z]\d$/.test(h.fit) ? h.fit : null, h.through ? "débouchant" : `prof. ${f2(h.depth)}`,
-        h.cbore ? `lamage Ø${f2(h.cbore.d)} × ${f2(h.cbore.depth)}` : null, h.csink ? `fraisure Ø${f2(h.csink.d)} × ${h.csink.angle || 90}°` : null].filter(Boolean).join(", ");
+      const desc = [h.thread ? `${h.thread} tapped` : null, h.fit === "insert" ? "heat-set insert" : null, h.fit && /^[A-Z]\d$/.test(h.fit) ? h.fit : null, h.through ? "through" : `depth ${f2(h.depth)}`,
+        h.cbore ? `counterbore Ø${f2(h.cbore.d)} × ${f2(h.cbore.depth)}` : null, h.csink ? `countersink Ø${f2(h.csink.d)} × ${h.csink.angle || 90}°` : null].filter(Boolean).join(", ");
       rows.push({ tag: `${letter}${i + 1}`, face, x: V ? h.at[V[1]] : h.at[0], y: V ? h.at[V[2]] : h.at[1], d: h.d, desc, at: h.at, iface: h.iface });
     });
   }
@@ -120,8 +120,8 @@ export function setDimClass(spec, key, cls) {
 /** What the notes say about the classes in use. */
 export function classNotes(dims) {
   const n = (c) => dims.filter((d) => d.cls === c).length, out = [];
-  if (n("sc")) out.push(`Losange « SC » : caractéristique spéciale (${n("sc")}) — à suivre en fabrication selon l'AMDEC de conception.`);
-  if (n("csc")) out.push(`Triangle « CSC » : caractéristique spéciale critique (${n("csc")}) — contrôle à 100 % ou capabilité démontrée.`);
-  if (n("ref")) out.push("Les cotes entre parenthèses sont des cotes de référence : elles ne sont pas à contrôler.");
+  if (n("sc")) out.push(`Diamond “SC”: special characteristic (${n("sc")}) — to be monitored in production per the design FMEA.`);
+  if (n("csc")) out.push(`Triangle “CSC”: critical special characteristic (${n("csc")}) — 100 % inspection or demonstrated capability.`);
+  if (n("ref")) out.push("Dimensions in parentheses are reference dimensions: they are not to be inspected.");
   return out;
 }

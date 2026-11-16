@@ -27,7 +27,7 @@ test("what the page says of a standard is what the code says of it", () => {
   assert.match(readFileSync(new URL("../../web/js/analysis/cc_rules.js", import.meta.url), "utf8"), /STATUS « to verify »/);
   // GD&T : applied from practice, the hexagonal flag is the platform's own marking
   const gdt = methodById("asme-y14-5"); assert.equal(gdt.how, "typed"); assert.match(gdt.check, /choix de la plateforme/);
-  assert.match(readFileSync(new URL("../../web/js/draw/part_drawing.js", import.meta.url), "utf8"), /repère propre à ce dessin, pas un symbole de la norme/);
+  assert.match(readFileSync(new URL("../../web/js/draw/part_drawing.js", import.meta.url), "utf8"), /a mark of this drawing, not a symbol of the standard/);
   // folded sheet metal : summaries only
   assert.equal(methodById("dfx-sheet").how, "excerpt"); assert.match(readFileSync(new URL("../../docs/TOLERIE.md", import.meta.url), "utf8"), /aucun guide n'a été lu en entier/);
   // a standard nobody read is never marked « lu » : the only lines marked read are the ones a document was opened for

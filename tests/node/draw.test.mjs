@@ -212,8 +212,8 @@ test("drafting helpers use only Sheet primitives and return their documented val
   assert.deepEqual(frame, { x: 20, y: 10, w: 390, h: 277 });
   assert.deepEqual(D.drawTitleBlock(r, frame, { title: "Essai" }), { x: 230, y: 239, w: 180, h: 48 });
   const labels = r.calls.filter((c) => c[0] === "text").map((c) => c[3]);
-  for (const l of ["Titre", "No de pièce", "Rév.", "Matériau", "Finition", "Masse", "Échelle", "Feuille", "Format",
-    "Dessiné", "Vérifié", "Approuvé", "Date", "Tolérances générales", "Projet", "Statut", "Unités",
+  for (const l of ["Title", "Part No.", "Rev.", "Material", "Finish", "Mass", "Scale", "Sheet", "Size",
+    "Drawn", "Checked", "Approved", "Date", "General tolerances", "Project", "Status", "Units",
     "DesignWizard.ai™", "by DynamiteAgile™", "ISO 2768-mK", "mm", "1/1", "Essai"]) assert.ok(labels.includes(l), l);
   assert.ok(labels.some((l) => /Co-Intelligence WorkFlow™ — document généré par DesignWizard\.ai/.test(l)), "the note of the platform under the frame of every sheet");
   for (const z of ["1", "8", "A", "F"]) assert.ok(labels.includes(z), `zone ${z}`);
@@ -241,7 +241,7 @@ test("drafting helpers use only Sheet primitives and return their documented val
   D.centerMark(r, [10, 10], 5); D.centerMark(r, [10, 10], 1); D.centerLine(r, [0, 0], [100, 0]); D.centerLine(r, [0, 0], [5, 0]);
   for (const dir of ["up", "down", "left", "right"]) assert.equal(D.datumFeature(r, 10, 10, "A", { dir }).w, 7);
   D.surfaceFinish(r, 10, 10, 1.6); D.surfaceFinish(r, 10, 10, "Rz 6.3", { angle: -90 });
-  D.sectionArrows(r, [0, 0], [0, 100], "A"); D.viewLabel(r, 50, 50, "COUPE A-A", "ÉCHELLE 2:1");
+  D.sectionArrows(r, [0, 0], [0, 100], "A"); D.viewLabel(r, 50, 50, "SECTION A-A", "SCALE 2:1");
   D.hatchPolygon(r, [[0, 0], [10, 0], [10, 10], [0, 10]]);
   D.projectionSymbol(r, 50, 50, "third");
 
@@ -262,7 +262,7 @@ test("drafting helpers use only Sheet primitives and return their documented val
   assert.ok(D.drawNotes(r, 10, 10, 60, ["Une note assez longue pour être repliée sur plusieurs lignes.", "Deux"]) > 10);
   assert.deepEqual(D.drawTable(r, 0, 0, [{ title: "A", width: 10 }, { title: "B", width: 30, align: "right" }], [[1, 2], [3, 4]], { size: 2.5 }), { w: 40, h: 15 });
   assert.deepEqual(D.drawTable(r, 0, 0, [{ width: 10 }], [["x"]], { rowH: 6, title: "T" }), { w: 10, h: 12 });
-  assert.deepEqual(D.drawRevisionTable(r, 410, 10, [{ rev: "A", description: "Émission", date: "2026-11-14", by: "ATR" }], { align: "right" }), { w: 120, h: 15 });
+  assert.deepEqual(D.drawRevisionTable(r, 410, 10, [{ rev: "A", description: "Initial release", date: "2026-11-14", by: "ATR" }], { align: "right" }), { w: 120, h: 15 });
   assert.deepEqual(D.PAPER, { A4: [297, 210], A3: [420, 297], A2: [594, 420], TABLOID: [431.8, 279.4] });
   assert.equal(r.count("image") + r.count("newPage"), 0);
   assert.ok(r.count("line") > 100 && r.count("text") > 60 && r.count("polyline") > 20);
@@ -276,9 +276,10 @@ test("demo sheet renders on both backends with the same content", () => {
   const s = svg.toString();
   checkSvg(s);
   assert.ok(p.includes("/Filter /DCTDecode") && s.includes("data:image/jpeg;base64,"));
-  assert.ok(p.includes("(Mat\\351riau) Tj") && s.includes(">Matériau</text>"));
+  assert.ok(p.includes("(Material) Tj") && s.includes(">Material</text>"));
+  assert.ok(p.includes("(M. C\\364t\\351) Tj") && s.includes(">M. Côté</text>"), "accented letters keep their code in the PDF");
   assert.ok(p.includes("(\\33040 H7) Tj") && s.includes(">Ø40 H7</text>"));
-  assert.ok(p.includes("(Tol\\351rances g\\351n\\351rales) Tj") && p.includes("(No de pi\\350ce) Tj"));
+  assert.ok(p.includes("(General tolerances) Tj") && p.includes("(Part No.) Tj"));
   assert.equal(p.match(/\) Tj ET/g).length, s.match(/<text /g).length, "same number of text runs");
   assert.equal(parseJpeg(demoJpeg()).width, 160);
   assert.ok(!p.includes("NaN") && !s.includes("NaN"));

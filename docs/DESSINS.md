@@ -3,6 +3,15 @@
 Le dessin d'une pièce ou d'un assemblage se génère depuis le modèle 3D et les interfaces. Il n'est jamais retouché à la
 main : ce qui doit y figurer se décide dans la conception, et dans le volet de gauche de l'écran Dessins.
 
+## La langue du dessin
+
+**Anglais partout** (choix de JP) : tout ce que l'outil écrit sur une feuille — noms des vues (FRONT, TOP, RIGHT,
+ISOMETRIC, SECTION A-A), SCALE, cartouche, REVISIONS, NOTES, BILL OF MATERIALS, GEOMETRIC TOLERANCES, HOLE TABLE,
+DEFINITION DIMENSIONS, libellés des cotes, descriptions des trous, notes SC / CSC, notes du DXF du développé — est en
+anglais, avec le point décimal (2.5 ; échelle 1:1.5). Ce que le projet a écrit (nom de la pièce, noms d'interface, notes
+de la pièce, finition) reste tel qu'il a été tapé ; la note de confidentialité et la note de la marque sont des phrases
+fixes (`docs/BRAND.md`). Voir `docs/TERMES.md`.
+
 ## La feuille
 
 Format **tabloïd** — 11 × 17 po (431,8 × 279,4 mm, ANSI B), paysage — pour l'écran et pour le PDF vectoriel.

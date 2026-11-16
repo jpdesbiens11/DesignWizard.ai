@@ -81,26 +81,26 @@ export function demoJpeg() {
 /* ---- the demo sheet ------------------------------------------------------------------------------------ */
 
 const SYMBOL_LABELS = {
-  position: "position", flatness: "planéité", perpendicularity: "perpend.", parallelism: "parall.",
-  angularity: "inclin.", concentricity: "coaxial.", symmetry: "symétrie", circularity: "circul.",
-  cylindricity: "cylindr.", profile_line: "profil ligne", profile_surface: "profil surf.", runout: "battement",
-  total_runout: "batt. total", straightness: "rectitude", diameter: "diamètre", mmc: "MMC", lmc: "LMC",
-  counterbore: "lamage", countersink: "fraisure", depth: "profondeur",
+  position: "position", flatness: "flatness", perpendicularity: "perpend.", parallelism: "parall.",
+  angularity: "angular.", concentricity: "concentr.", symmetry: "symmetry", circularity: "circul.",
+  cylindricity: "cylindr.", profile_line: "profile line", profile_surface: "profile surf.", runout: "runout",
+  total_runout: "total runout", straightness: "straightn.", diameter: "diameter", mmc: "MMC", lmc: "LMC",
+  counterbore: "counterbore", countersink: "countersink", depth: "depth",
 };
 
 /** Draws the demo drawing on `sheet` (any Sheet backend, A3 landscape). */
 export function buildDemo(sheet, { jpeg = demoJpeg() } = {}) {
   const frame = drawBorder(sheet);
   drawTitleBlock(sheet, frame, {
-    title: "Plaque support de palier — usinée", partNumber: "DW-2026-0042", revision: "B",
-    material: "Aluminium 6061-T6", finish: "Anodisé noir 15 µm", mass: "0,48 kg", scale: "1:1",
+    title: "Bearing support plate — machined", partNumber: "DW-2026-0042", revision: "B",
+    material: "Aluminium 6061-T6", finish: "Black anodize 15 µm", mass: "0.48 kg", scale: "1:1",
     sheet: "1/1", size: "A3", drawnBy: "A. Tremblay", checkedBy: "M. Côté", approvedBy: "L. Bélanger",
-    date: "2026-11-14", project: "Banc d'essai — réducteur", generalTolerance: "ISO 2768-mK",
-    projection: "first", units: "mm", status: "Préliminaire",
+    date: "2026-11-14", project: "Test bench — gearbox", generalTolerance: "ISO 2768-mK",
+    projection: "first", units: "mm", status: "Preliminary",
   });
   drawRevisionTable(sheet, frame.x + frame.w, frame.y, [
-    { rev: "A", description: "Émission initiale", date: "2026-10-02", by: "ATR" },
-    { rev: "B", description: "Ajout du lamage Ø50 ; tolérance de position resserrée", date: "2026-11-14", by: "ATR" },
+    { rev: "A", description: "Initial release", date: "2026-10-02", by: "ATR" },
+    { rev: "B", description: "Counterbore Ø50 added; position tolerance tightened", date: "2026-11-14", by: "ATR" },
   ], { align: "right" });
 
   /* -- front view: plate 120 x 80, corners R10, bore Ø40 H7 with a Ø50 counterbore, 4 holes Ø9 -- */
@@ -152,7 +152,7 @@ export function buildDemo(sheet, { jpeg = demoJpeg() } = {}) {
   }
   sheet.rect(cx - 10, ty - 9, 20, td + 18, STYLE.phantom);
   centerLine(sheet, [cx, ty - 12], [cx, ty + td + 12]);
-  leaderNote(sheet, [cx + 10, ty + td + 5], [cx + 24, ty + td + 11], ["Arbre Ø20 h6", "(pièce adjacente)"], { size: 2.5 });
+  leaderNote(sheet, [cx + 10, ty + td + 5], [cx + 24, ty + td + 11], ["Shaft Ø20 h6", "(adjacent part)"], { size: 2.5 });
   surfaceFinish(sheet, fx + 88, ty, 3.2);
 
   /* -- section A-A (seen from the left, placed on the right) -- */
@@ -173,7 +173,7 @@ export function buildDemo(sheet, { jpeg = demoJpeg() } = {}) {
   surfaceFinish(sheet, sx, top + 14, 1.6, { angle: -90 });
   sheet.circle(sx + st, bot, 5, { w: LW.fine });
   sheet.text(sx + st + 5.5, bot + 6, "B", { size: 5, font: "bold" });
-  viewLabel(sheet, sx + st / 2, bot + 12, "COUPE A-A", "ÉCHELLE 1:1");
+  viewLabel(sheet, sx + st / 2, bot + 12, "SECTION A-A", "SCALE 1:1");
 
   /* -- detail B (5:1): chamfered edge, aligned dimension -- */
   const dx = 176, dy = 240;
@@ -181,28 +181,28 @@ export function buildDemo(sheet, { jpeg = demoJpeg() } = {}) {
   sheet.polyline([[dx, dy], [dx - 1.5, dy + 7], [dx + 1.5, dy + 14], [dx - 1, dy + 21], [dx, dy + 28], [dx + 8, dy + 29.2],
     [dx + 16, dy + 26.8], [dx + 24, dy + 29], [dx + 32, dy + 28]], { w: LW.fine });
   dimLinear(sheet, [dx + 22, dy], [dx + 32, dy + 10], { dir: "aligned", offset: -7, text: "1 × 45°" });
-  viewLabel(sheet, dx + 14, dy + 33, "DÉTAIL B", "ÉCHELLE 5:1");
+  viewLabel(sheet, dx + 14, dy + 33, "DETAIL B", "SCALE 5:1");
 
   /* -- notes, hole table, GD&T symbol legend, embedded JPEG -- */
   drawNotes(sheet, 28, 236, 118, [
-    "Casser les arêtes vives 0,5 × 45° sauf indication contraire.",
-    "Tolérances générales selon ISO 2768-mK ; cotes en millimètres.",
-    "Rugosité générale Ra 3,2 µm ; alésage Ø40 H7 : Ra 1,6 µm.",
-    "Ébavurer et nettoyer avant anodisation ; masquer l'alésage Ø40 H7 pendant le traitement de surface.",
-    "Contrôler la position des trous A1 à A4 au calibre fonctionnel (références A, B et C).",
+    "Break sharp edges 0.5 × 45° unless otherwise specified.",
+    "General tolerances per ISO 2768-mK; dimensions in millimetres.",
+    "General surface roughness Ra 3.2 µm; bore Ø40 H7: Ra 1.6 µm.",
+    "Deburr and clean before anodizing; mask bore Ø40 H7 during surface treatment.",
+    "Inspect the position of holes A1 to A4 with a functional gauge (datums A, B and C).",
   ]);
   drawTable(sheet, 298, 168, [
-    { title: "Repère", width: 16, align: "center" }, { title: "X", width: 16, align: "right" },
+    { title: "Tag", width: 16, align: "center" }, { title: "X", width: 16, align: "right" },
     { title: "Y", width: 16, align: "right" }, { title: "Ø", width: 22, align: "center" },
     { title: "Description", width: 38, align: "left" },
   ], [
-    ["A1", "15", "65", "Ø9", "Débouchant"], ["A2", "105", "65", "Ø9", "Débouchant"],
-    ["A3", "15", "15", "Ø9", "Débouchant"], ["A4", "105", "15", "Ø9", "Débouchant"],
-    ["B1", "60", "40", "Ø40 H7", "Lamage Ø50 × 5"],
-  ], { title: "TABLEAU DES TROUS" });
+    ["A1", "15", "65", "Ø9", "Through"], ["A2", "105", "65", "Ø9", "Through"],
+    ["A3", "15", "15", "Ø9", "Through"], ["A4", "105", "15", "Ø9", "Through"],
+    ["B1", "60", "40", "Ø40 H7", "Counterbore Ø50 × 5"],
+  ], { title: "HOLE TABLE" });
 
   const lx = 232, ly = 206, cell = 12.8;
-  sheet.text(lx, ly, "Symboles GD&T (tracés vectoriels)", { size: 2.5, font: "bold", baseline: "top" });
+  sheet.text(lx, ly, "GD&T symbols (vector strokes)", { size: 2.5, font: "bold", baseline: "top" });
   GDT_SYMBOLS.forEach((name, i) => {
     const gx = lx + (i % 10) * cell, gy = ly + 4.5 + Math.floor(i / 10) * 13;
     sheet.rect(gx, gy, 7, 7, { w: LW.fine, color: "#999" });
@@ -213,7 +213,7 @@ export function buildDemo(sheet, { jpeg = demoJpeg() } = {}) {
   if (jpeg) {
     sheet.image(368, 208, 36, 27, jpeg);
     sheet.rect(368, 208, 36, 27, { w: LW.fine });
-    sheet.text(366.5, 235, "Aperçu (JPEG)", { size: 1.8, color: GREY, angle: -90 });
+    sheet.text(366.5, 235, "Preview (JPEG)", { size: 1.8, color: GREY, angle: -90 });
   }
   return sheet;
 }
@@ -222,7 +222,7 @@ export function buildDemo(sheet, { jpeg = demoJpeg() } = {}) {
 
 function main(outDir) {
   const [width, height] = PAPER.A3;
-  const title = "DesignWizard.ai — démo du kit de dessin";
+  const title = "DesignWizard.ai — drawing kit demo";
   mkdirSync(outDir, { recursive: true });
   const pdf = buildDemo(new PdfSheet({ width, height, title }));
   const svg = buildDemo(new SvgSheet({ width, height, title }));
