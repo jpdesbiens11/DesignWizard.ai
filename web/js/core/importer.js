@@ -13,7 +13,7 @@ export function extractJson(text) {
   if (typeof text !== "string") return null;
   const dw = findDwiz(text);
   if (dw && !/^\s*[[{]/.test(text)) { try { return fromDwiz(dw); } catch (e) { extractJson.error = e.message; } }
-  const tryParse = (s) => { try { const v = JSON.parse(s); return v && typeof v === "object" ? v : null; } catch (e) { return null; } };
+  const tryParse = (s) => { try { const v = JSON.parse(s); if (v && typeof v === "object" && !Array.isArray(v)) delete v._mark; return v && typeof v === "object" ? v : null; } catch (e) { return null; } };      // _mark : the note of the platform on an exported file, not data
   const fences = [...text.matchAll(/```(?:json|JSON)?\s*([\s\S]*?)```/g)].map((m) => m[1]);
   for (const f of fences.sort((a, b) => b.length - a.length)) { const v = tryParse(f.trim()); if (v) return v; }
   const direct = tryParse(text.trim());

@@ -2,6 +2,8 @@
    Pure module (browser and Node): takes the meshes of the kernel's tessellation ({pos: Float32Array, idx: Uint32Array}),
    returns the bytes of the file. Units are the model's (millimetres); the facet normals are recomputed from the vertices. */
 
+import { STL_HEADER } from "../core/brand.js";
+
 const HEADER = 80, RECORD = 50;
 
 /** a * b for column-major 4x4 matrices (either may be null = identity). */
@@ -33,7 +35,7 @@ export function meshesToStl(meshes, { name = "part", matrix = null } = {}) {
   let max = 0;
   for (const m of list) max += Math.floor((m.idx ? m.idx.length : m.pos.length / 3) / 3);
   const bytes = new Uint8Array(HEADER + 4 + RECORD * max), dv = new DataView(bytes.buffer);
-  const head = asciiHeader(`DesignWizard.ai - binary STL - ${name} - units: mm`);
+  const head = asciiHeader(`${STL_HEADER} - ${name} - mm`);      // 80 bytes : the mark first, what is left for the name
   for (let i = 0; i < head.length; i++) bytes[i] = head.charCodeAt(i);
   let count = 0, off = HEADER + 4;
   const P = [new Float64Array(3), new Float64Array(3), new Float64Array(3)];

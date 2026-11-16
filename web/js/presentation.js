@@ -3,6 +3,8 @@
    No dependency, no external resource. Keys : → Space PageDown = next · ← PageUp = previous · Home / End · F = full
    screen · N = notes · R = replay the animation of the slide · Esc = close. Printed (Ctrl + P), each slide is one page. */
 
+import { FOOT_NOTE } from "./core/brand.js";
+
 /** The stations of the rail, in the order of a design : [key written in data-stage, label]. */
 export const STAGES = [["idee", "Idée"], ["atelier", "Atelier"], ["piece", "Pièce"], ["procedes", "Procédés"], ["electrique", "Électrique"], ["assemblage", "Assemblage"],
   ["physique", "Physique"], ["isolation", "Isolation"], ["dfx", "DFx"], ["dessins", "Dessins"], ["revue", "Revue"], ["commande", "Commande"]];
@@ -18,6 +20,7 @@ export const fitScale = (w, h) => Math.min(w / STAGE_W, h / STAGE_H);
 
 function start() {
   const deck = document.querySelector(".deck"), slides = [...deck.querySelectorAll(".slide")], panel = document.querySelector(".panel"), zoom = document.querySelector(".zoom");
+  for (const s of slides) { const p = document.createElement("p"); p.className = "mark-note"; p.textContent = FOOT_NOTE; s.append(p); }      // every page carries the note of the platform, on screen and in the PDF
   const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text) n.textContent = text; return n; };
   const main = slides.filter((s) => !s.hasAttribute("data-annex")).length;
   let at = 0, before = 0;

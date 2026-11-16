@@ -36,7 +36,7 @@ test("STL: binary file of the demo base (count, size, bounding box, placement ma
   assert.equal(bytes.length, 84 + 50 * n);
   const st = stlStats(bytes);
   assert.equal(st.triangles, n);
-  assert.match(st.header, /^DesignWizard\.ai - binary STL - DRV-BASE Base du boitier/);
+  assert.match(st.header, /^DesignWizard\.ai\(TM\) by DynamiteAgile\(TM\) - Co-Intelligence WorkFlow\(TM\) - DRV/, "the 80 bytes of the header : the mark first");
   for (let i = 0; i < 6; i++) close(st.bbox[i], built.bbox[i], 1e-3, `bbox[${i}]`);
   // facet normals are unit vectors computed from the vertices
   const dv = new DataView(bytes.buffer);

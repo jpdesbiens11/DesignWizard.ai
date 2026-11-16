@@ -4,6 +4,7 @@
    Re-exported by drafting.js. */
 
 import { LW, TEXT_H, TEXT_SMALL, GREY, fitText } from "./drafting2.js";
+import { BRAND, FOOT_NOTE, drawLogo } from "../core/brand.js";
 
 /* ---- border -------------------------------------------------------------------------------------------- */
 
@@ -18,6 +19,7 @@ export function drawBorder(sheet, { margin = 10, left, grid = true, zone = 50, c
   const band = Math.min(5, margin / 2), thin = { w: LW.thin, color }, thick = { w: LW.frame, color };
   const cx = sheet.width / 2, cy = sheet.height / 2, x1 = f.x + f.w, y1 = f.y + f.h;
   sheet.rect(f.x, f.y, f.w, f.h, thick);
+  sheet.text(f.x, sheet.height - Math.max(1.4, (margin - band) / 2 - 0.8), FOOT_NOTE, { size: 1.9, color: "#3a4450" });      // the note of the platform, in the margin under the frame (core/brand.js)
   if (!grid) return f;
   sheet.rect(f.x - band, f.y - band, f.w + 2 * band, f.h + 2 * band, thin);
 
@@ -117,9 +119,12 @@ export function drawTitleBlock(sheet, frame, data = {}) {
   sheet.line(X(60), Y(0), X(60), Y(H), { w: LW.medium });
   sheet.rect(x, y, W, H, { w: LW.frame });
 
-  // Company name, centred in its cell.
-  const company = fitText(sheet, d.company, 56, 6, "bold");
-  sheet.text(X(30), Y(R), company.str, { size: company.size, font: "bold", align: "center", baseline: "middle" });
+  // Who made the drawing : the mark of the platform, its name and its house — and the company of the designer when one is given.
+  drawLogo(sheet, X(2.5), Y(2.2), 11.5);
+  const own = d.company && !/^DesignWizard\.ai/i.test(d.company) ? fitText(sheet, d.company, 42, 3.2, "bold") : null, name = fitText(sheet, BRAND.product, 42, 4.6, "bold");
+  sheet.text(X(16), Y(own ? 4.6 : 6.2), name.str, { size: name.size, font: "bold", baseline: "middle" });
+  sheet.text(X(16), Y(own ? 8.6 : 10.8), `by ${BRAND.by}`, { size: 2.6, baseline: "middle", color: "#3a4450" });
+  if (own) sheet.text(X(16), Y(12.6), own.str, { size: own.size, font: "bold", baseline: "middle" });
 
   const F = (u, v, w, h, label, value, o) => field(sheet, X(u), Y(v), w, h, label, value, o);
   F(0, 2 * R, 60, R, "Projet", d.project);

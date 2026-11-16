@@ -4,6 +4,7 @@
    twice : once to learn on which page each heading falls and how many pages there are, once for good. */
 
 import { PdfSheet } from "../draw/pdf.js";
+import { BRAND_LINE, BRAND, FOOT_NOTE, drawLogo } from "./brand.js";
 
 const W = 210, H = 297, M = 18, CW = W - 2 * M, INK = "#1c2430", HEADC = "#1F3A5F", MUTED = "#5A6472", LINE = "#9AA5B4", FILL = { ok: "#DCF2E3", warn: "#FCEFC7", error: "#F9D9D9", muted: "#EEF0F3", head: "#DDE5F0" };
 /** Text the standard PDF fonts can show : characters outside Windows-1252 are spelled out. */
@@ -14,8 +15,12 @@ const cellOf = (c) => (c !== null && typeof c === "object" ? c : { text: c });
 function layout(doc, pagesOf, total) {
   const sheet = new PdfSheet({ width: W, height: H, title: doc.title, date: doc.date || new Date(0) }), seen = new Map();
   let y = M, page = 1;
-  const furniture = () => { if (page === 1) return; sheet.text(M, 11, safe(doc.header || doc.title), { size: 2.6, color: MUTED }); sheet.line(M, 13, W - M, 13, { w: 0.15, color: LINE });
-    sheet.text(W - M, H - 10, safe(`${doc.footer || ""} — Page ${page}${total ? ` de ${total}` : ""}`), { size: 2.6, color: MUTED, align: "right" }); };
+  /* every page carries the mark of the platform : the logo and who made the document on top, the note at the bottom (core/brand.js) */
+  const note = () => { sheet.line(M, H - 13.2, W - M, H - 13.2, { w: 0.15, color: LINE }); sheet.wrapText(safe(FOOT_NOTE), CW - 34, { size: 2.1 }).slice(0, 2).forEach((l, i) => sheet.text(M, H - 10 + i * 2.9, l, { size: 2.1, color: MUTED })); };
+  const furniture = () => {
+    if (page === 1) { drawLogo(sheet, M, M - 4, 16); sheet.text(M + 19, M + 3.4, safe(BRAND.product), { size: 5.2, font: "bold", color: HEADC }); sheet.text(M + 19, M + 8.6, safe(`by ${BRAND.by} · ${BRAND.workflow}`), { size: 2.9, color: MUTED }); note(); return; }
+    drawLogo(sheet, M, 6.2, 6); sheet.text(M + 7.6, 9.2, safe(BRAND_LINE), { size: 2.5, font: "bold", color: HEADC }); sheet.text(M + 7.6, 12, safe(doc.header || doc.title), { size: 2.3, color: MUTED }); sheet.line(M, 13.6, W - M, 13.6, { w: 0.15, color: LINE });
+    note(); sheet.text(W - M, H - 10, safe(`${doc.footer ? `${doc.footer} — ` : ""}Page ${page}${total ? ` de ${total}` : ""}`), { size: 2.4, color: MUTED, align: "right" }); };
   const next = () => { sheet.newPage(); page++; y = M + 2; furniture(); };
   const need = (h) => { if (y + h > H - M - 4) next(); };
   const lines = (text, width, o) => sheet.wrapText(safe(text), width, o);
@@ -39,7 +44,7 @@ function layout(doc, pagesOf, total) {
   const heading = (b) => { const size = { h1: 5, h2: 4, h3: 3.5 }[b.type], lh = size * 1.3; if (b.type === "h1" && y > M + 30) y += 3; need(lh + 12); seen.set(b, page); y += b.type === "h1" ? 2 : 1; sheet.text(M, y, safe(b.text), { size, font: "bold", color: HEADC, baseline: "top" }); y += lh; if (b.type === "h1") { sheet.line(M, y, W - M, y, { w: 0.3, color: HEADC }); y += 1; } y += 1.6; };
 
   // title page
-  y = 78; write(doc.title, { size: 8.5, font: "bold", color: HEADC, after: 2 }); write(doc.subtitle || "", { size: 5, color: MUTED, after: 14 });
+  furniture(); y = 78; write(doc.title, { size: 8.5, font: "bold", color: HEADC, after: 2 }); write(doc.subtitle || "", { size: 5, color: MUTED, after: 14 });
   table(null, [["Référence", doc.reference || "—"], ["Révision", doc.revision || "—"], ["Rédacteur", doc.author || "—"], ["Date", (doc.date || new Date(0)).toISOString().slice(0, 10)]], [30, 70], { firstCol: true });
   sheet.text(W / 2, H - 22, safe(doc.footer || ""), { size: 3, color: MUTED, align: "center" });
   next();

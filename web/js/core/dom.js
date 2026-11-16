@@ -1,6 +1,8 @@
 /* DesignWizard.ai — DOM helpers (same habits as DynamiteAgile): nodes are built with el() and textContent,
    never innerHTML on data. el() ignores null / undefined / false children. */
 
+import { stampText } from "./brand.js";
+
 const SVG_NS = "http://www.w3.org/2000/svg";
 
 export function el(tag, attrs, ...children) {
@@ -124,7 +126,7 @@ export function installTips() {
 }
 
 export function download(name, data, mime = "application/octet-stream") {
-  const blob = data instanceof Blob ? data : new Blob([data], { type: mime });
+  const blob = data instanceof Blob ? data : new Blob([stampText(name, data)], { type: mime });      // a text file leaves with the note of the platform (core/brand.js) — whoever wrote it
   const a = el("a", { href: URL.createObjectURL(blob), download: name });
   document.body.append(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 4000);

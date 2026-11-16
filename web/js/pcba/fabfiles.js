@@ -9,6 +9,7 @@ import { excellon, drillTable } from "./drill.js";
 import { zip } from "../core/zip.js";
 import { boardAssemblyPlan } from "./assembly_plan.js";
 import { planText } from "../core/plan_doc.js";
+import { stampText } from "../core/brand.js";
 
 export const FAB_FILES = [
   { key: "top", ext: ".GTL", fn: (n) => "Copper,L1,Top" }, { key: "in1", ext: ".G1", fn: () => "Copper,L2,Inr" }, { key: "in2", ext: ".G2", fn: () => "Copper,L3,Inr" }, { key: "bottom", ext: ".GBL", fn: (n) => `Copper,L${n},Bot` },
@@ -74,6 +75,7 @@ export function fabPackage(board, lib = {}, opts = {}) {
       "  Zones à épargner (voir les fichiers « vernis ») :", ...keep.map((k) => `    ${k.ref ? pad(k.ref, 6) : pad(`Trou ${k.hole}`, 6)} ${k.side === "top" ? "dessus " : "dessous"} — ${k.why}`), "  Essais électriques et programmation avant vernissage."] : ["  Aucun."]), "",
     "FICHIERS", ...files.map((f) => `  ${pad(f.name, 44)} ${f.label}`), ...(notes.length ? ["", "REMARQUES", ...notes.map((x) => `  ${x}`)] : []), ""].join("\n");
   files.push({ key: "notes", name: `${base}-fabrication.txt`, label: "Notes de fabrication", mime: "text/plain", text: txt });
+  for (const f of files) f.text = stampText(f.name, f.text);      // every file of the package carries the note of the platform, written the way its format allows (core/brand.js)
   return { files, stats, notes, art };
 }
 

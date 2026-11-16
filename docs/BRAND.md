@@ -174,3 +174,37 @@ l'outil et ce qu'il ne fait pas (« indicatif : la décision appartient à la re
 
 Captures de référence : `docs/img/brand/theme-carnet.png`, `theme-mecanique.png`, `theme-aero.png`, `theme-spatial.png`,
 `vitrine.png`, `vitrine-mobile.png`, `logo-sheet.png`.
+
+## La marque sur chaque document
+
+Tout document qui sort de la plateforme dit qui l'a fait. Les mots viennent d'une seule source,
+`web/js/core/brand.js` — la formulation est celle de DynamiteAgile :
+
+> DesignWizard.ai™ by DynamiteAgile™ · Co-Intelligence WorkFlow™ — document généré par DesignWizard.ai. La version
+> électronique fait foi ; la version imprimée est pour référence.
+
+| Document | Le visuel | La note |
+|---|---|---|
+| Rapports et gammes en **PDF** (`core/pdfdoc.js`) | Symbole et nom sur la page de titre ; symbole, « DesignWizard.ai™ by DynamiteAgile™ » et titre en tête de chaque page | Au pied de chaque page, page de titre comprise |
+| Rapports et gammes en **Word** (`core/docx.js`) | En-tête de chaque page : symbole, nom, document, référence, révision, date, page | Pied de chaque page |
+| **Dessins** PDF et SVG (`draw/drafting3.js`) | Symbole, nom et maison dans le cartouche | Sous le cadre de chaque feuille |
+| Revue de conception en **HTML** | Symbole et nom en tête | Bas de page |
+| **Présentation** (`web/presentation.html`, et son PDF) | Logotype de la couverture | Au pied de chaque page |
+| Texte, Markdown, **CSV** (ouvert dans un tableur), `.dwiz`, **FeatureScript** | — | Dernière ligne, écrite comme un commentaire du format (une dernière cellule pour un CSV) |
+| **DXF** | — | Commentaire de groupe 999 en tête, en ASCII |
+| **STEP** | — | Commentaire `/* … */` après la première ligne, en ASCII |
+| **STL** binaire | — | Les 80 octets d'en-tête |
+| **Gerber**, perçage Excellon, netlist IPC-D-356 | — | `G04 …*`, `; …`, `C  …` : le commentaire de chaque format |
+| draw.io, XML, SVG | — | Commentaire XML après le prologue |
+| **JSON** (projet, arbre des fonctions) | — | Première clé `_mark` ; elle est retirée quand le fichier revient |
+| Arbre de travail dans **Google Drive** | — | Chaque fichier texte, à l'écriture (`google/drive_fs.js`) |
+| **Onshape** | — | Le STEP importé, et la dernière ligne du bloc de notes du dessin natif |
+
+Deux garde-fous : `download()` (`core/dom.js`) marque tout fichier texte qui sort, quel que soit l'écran qui l'a écrit, et
+un test refuse qu'un écran enregistre un fichier par un `Blob` à lui. La note est écrite **une fois** : un fichier
+déjà marqué ressort tel quel. Elle est toujours un commentaire du format : les lecteurs de la plateforme (`.dwiz`,
+Gerber, DXF) relisent les fichiers marqués, c'est testé.
+
+Ce qui ne porte pas la note : une **capture PNG** de la vue 3D (une image, sans texte) et `acces.json` (un réglage du
+site, pas un document). La plateforme n'écrit ni `.pptx` ni `.xlsx` : la présentation est une page et son PDF, les
+tableaux sortent en CSV.

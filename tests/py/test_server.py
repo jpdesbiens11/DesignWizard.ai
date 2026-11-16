@@ -512,7 +512,8 @@ console.log(JSON.stringify({ available: await api.available(), plan: planPush(jo
         self.assertEqual((drawing["create"]["elementId"], drawing["create"]["partId"]), (studio["id"], "JHD"))
         texts = [a["note"]["contents"] for a in drawing["annotations"]]
         self.assertEqual(texts[:3], ["NOTES :", "1. Ébavurer toutes les arêtes", "2. ISO 2768-mK"])
-        self.assertEqual(texts[-1], "⌖ ⌀0.2 | A | B")
+        self.assertEqual(texts[-2], "⌖ ⌀0.2 | A | B")
+        self.assertIn("Co-Intelligence WorkFlow™ — document généré par DesignWizard.ai", texts[-1])   # the note of the platform closes the block of notes
         self.assertTrue(all(a["type"] == "Onshape::Note" for a in drawing["annotations"]))
         ys = [a["note"]["position"]["coordinate"][1] for a in drawing["annotations"]]
         self.assertEqual(ys, sorted(ys, reverse=True))

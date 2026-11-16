@@ -214,7 +214,8 @@ test("drafting helpers use only Sheet primitives and return their documented val
   const labels = r.calls.filter((c) => c[0] === "text").map((c) => c[3]);
   for (const l of ["Titre", "No de pièce", "Rév.", "Matériau", "Finition", "Masse", "Échelle", "Feuille", "Format",
     "Dessiné", "Vérifié", "Approuvé", "Date", "Tolérances générales", "Projet", "Statut", "Unités",
-    "DesignWizard.ai", "ISO 2768-mK", "mm", "1/1", "Essai"]) assert.ok(labels.includes(l), l);
+    "DesignWizard.ai™", "by DynamiteAgile™", "ISO 2768-mK", "mm", "1/1", "Essai"]) assert.ok(labels.includes(l), l);
+  assert.ok(labels.some((l) => /Co-Intelligence WorkFlow™ — document généré par DesignWizard\.ai/.test(l)), "the note of the platform under the frame of every sheet");
   for (const z of ["1", "8", "A", "F"]) assert.ok(labels.includes(z), `zone ${z}`);
   assert.ok(!labels.includes("9") && !labels.includes("G"), "A3 = 8 x 6 zones");
 

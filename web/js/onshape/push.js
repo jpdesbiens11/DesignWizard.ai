@@ -14,6 +14,7 @@
 //     (options.nativeGdt) because the position of the datum fields in the frame string is UNCONFIRMED.
 
 import * as api from './api.js';
+import { FOOT_NOTE, stampText } from '../core/brand.js';
 
 const SYMBOL_FONT = 'Drawing Symbols Sans';
 const GDT = {
@@ -134,6 +135,7 @@ function buildAnnotations(part, o) {
       lines.push(`${gdtSymbol(g.symbol)} ${clean(g.tolerance)}${datums.length ? ` | ${datums.join(' | ')}` : ''}`);
     }
   }
+  lines.push(FOOT_NOTE);                                       // the note of the platform closes the block of notes of the native drawing
   // Sheet space, drawing units, origin assumed bottom-left (created with units=MILLIMETER).
   const k = o.sheetUnits === 'inch' ? 1 / 25.4 : 1;
   const lay = { x: 15 * k, y: 20 * k, textHeight: 3.5 * k, lineStep: 6 * k, ...(o.notes || {}) };
@@ -197,7 +199,7 @@ export async function pushToOnshape(job, onProgress, deps) {
     warnings.push('Aucun STEP à envoyer : la géométrie 3D est absente. Correctif : générez l\'assemblage avant l\'envoi.');
   } else {
     try {
-      upload = await A.importFile({ did, wid, filename: stepFileName(job), text: job.stepText, kind: 'step',
+      upload = await A.importFile({ did, wid, filename: stepFileName(job), text: stampText('modele.step', job.stepText), kind: 'step',
         options: { flattenAssemblies: !!o.flattenAssemblies, yAxisIsUp: !!o.yAxisIsUp, createComposite: !!o.createComposite } });
     } catch (e) {
       warn('STEP non envoyé', e);

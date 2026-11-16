@@ -4,6 +4,8 @@
    archive is stored without compression, which Word and LibreOffice read. */
 
 import { zip } from "./zip.js";
+import { BRAND, FOOT_NOTE } from "./brand.js";
+import { logoPng } from "./brand_logo.js";
 
 const esc = (s) => String(s ?? "").replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const NS = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"';
@@ -37,6 +39,19 @@ ${[[1, 32, 360], [2, 26, 240], [3, 22, 180]].map(([n, sz, before]) => `<w:style 
 const level = (i, fmt, text) => `<w:lvl w:ilvl="${i}"><w:start w:val="1"/><w:numFmt w:val="${fmt}"/><w:lvlText w:val="${text}"/><w:lvlJc w:val="left"/><w:pPr><w:ind w:left="${360 * (i + 1)}" w:hanging="260"/></w:pPr></w:lvl>`;
 const NUMBERING = `${HEAD}<w:numbering ${NS}><w:abstractNum w:abstractNumId="1"><w:multiLevelType w:val="hybridMultilevel"/>${[0, 1, 2].map((i) => level(i, "bullet", i ? "–" : "•")).join("")}</w:abstractNum><w:abstractNum w:abstractNumId="2"><w:multiLevelType w:val="hybridMultilevel"/>${[0, 1, 2].map((i) => level(i, "decimal", `%${i + 1}.`)).join("")}</w:abstractNum><w:num w:numId="1"><w:abstractNumId w:val="1"/></w:num><w:num w:numId="2"><w:abstractNumId w:val="2"/></w:num></w:numbering>`;
 
+/* the header of every page, in the manner of the house : the mark and who made the document, what the document is, its
+   reference, its revision, its date and its page */
+function headerTable(doc) {
+  const cols = [1100, 5038, 3500], date = (doc.date || new Date(0)).toISOString().slice(0, 10), tight = '<w:spacing w:before="0" w:after="0"/>';
+  const cell = (w, inner, extra = "") => `<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/><w:vAlign w:val="center"/>${extra}</w:tcPr>${inner}</w:tc>`, line = (label, value) => para(`${run(`${label} `, { size: 15, color: "5A6472" })}${value}`, null, tight);
+  const border = ["top", "left", "bottom", "right", "insideV"].map((b) => `<w:${b} w:val="single" w:sz="4" w:space="0" w:color="9AA5B4"/>`).join("");
+  return `<w:tbl><w:tblPr><w:tblW w:w="${WIDTH}" w:type="dxa"/><w:tblBorders>${border}</w:tblBorders><w:tblLayout w:type="fixed"/><w:tblCellMar><w:left w:w="90" w:type="dxa"/><w:right w:w="90" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>${cols.map((c) => `<w:gridCol w:w="${c}"/>`).join("")}</w:tblGrid><w:tr>`
+    + cell(cols[0], para(picture("rIdLogo", 900, 13, 13, "DesignWizard.ai"), null, `<w:jc w:val="center"/>${tight}`))
+    + cell(cols[1], para(run(BRAND.product, { bold: true, color: "1F3A5F", size: 26 }), null, tight) + para(run(`by ${BRAND.by} · ${BRAND.workflow}`, { size: 15, color: "5A6472" }), null, tight) + para(run(doc.header || doc.title, { bold: true, size: 18 }), null, '<w:spacing w:before="60" w:after="0"/>'))
+    + cell(cols[2], line("Réf. :", run(doc.reference || "—", { bold: true, size: 16 })) + line("Révision :", run(doc.revision || "—", { bold: true, size: 16 })) + line("Date :", run(date, { size: 16 })) + line("Page :", `${field("PAGE").replace(/<w:r>/g, '<w:r><w:rPr><w:sz w:val="16"/></w:rPr>')}${run(" de ", { size: 16 })}${field("NUMPAGES").replace(/<w:r>/g, '<w:r><w:rPr><w:sz w:val="16"/></w:rPr>')}`))
+    + `</w:tr></w:tbl>${para("", null, '<w:spacing w:before="0" w:after="120"/>')}`;
+}
+
 /** A .docx file from a document model. → Uint8Array */
 export function docx(doc) {
   const body = [], media = [], rels = [], heads = doc.blocks.filter((b) => /^h[123]$/.test(b.type));
@@ -63,7 +78,7 @@ export function docx(doc) {
       if (b.caption) body.push(para(run(b.caption), "Caption"));
     }
   }
-  const sect = `<w:sectPr><w:headerReference w:type="default" r:id="${hid}"/><w:footerReference w:type="default" r:id="${fid}"/><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="567" w:footer="567" w:gutter="0"/></w:sectPr>`;
+  const sect = `<w:sectPr><w:headerReference w:type="default" r:id="${hid}"/><w:footerReference w:type="default" r:id="${fid}"/><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="2150" w:right="1134" w:bottom="1300" w:left="1134" w:header="500" w:footer="450" w:gutter="0"/></w:sectPr>`;
   const iso = (doc.date || new Date(0)).toISOString().replace(/\.\d+Z$/, "Z"), part = (name, type) => `<Override PartName="/${name}" ContentType="application/vnd.openxmlformats-${type}+xml"/>`;
   const files = [
     { name: "[Content_Types].xml", bytes: `${HEAD}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/>${part("word/document.xml", "officedocument.wordprocessingml.document.main")}${part("word/styles.xml", "officedocument.wordprocessingml.styles")}${part("word/numbering.xml", "officedocument.wordprocessingml.numbering")}${part("word/settings.xml", "officedocument.wordprocessingml.settings")}${part("word/header1.xml", "officedocument.wordprocessingml.header")}${part("word/footer1.xml", "officedocument.wordprocessingml.footer")}${part("docProps/core.xml", "package.core-properties")}${part("docProps/app.xml", "officedocument.extended-properties")}</Types>` },
@@ -73,8 +88,10 @@ export function docx(doc) {
     { name: "word/document.xml", bytes: `${HEAD}<w:document ${NS}><w:body>${body.join("")}${sect}</w:body></w:document>` },
     { name: "word/styles.xml", bytes: STYLES }, { name: "word/numbering.xml", bytes: NUMBERING },
     { name: "word/settings.xml", bytes: `${HEAD}<w:settings ${NS}><w:defaultTabStop w:val="708"/><w:compat><w:compatSetting w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word" w:val="15"/></w:compat></w:settings>` },
-    { name: "word/header1.xml", bytes: `${HEAD}<w:hdr ${NS}>${para(run(doc.header || doc.title), "Header")}</w:hdr>` },
-    { name: "word/footer1.xml", bytes: `${HEAD}<w:ftr ${NS}>${para(`${run(`${doc.footer || ""} — Page `)}${field("PAGE")}${run(" de ")}${field("NUMPAGES")}`, "Header", '<w:jc w:val="right"/>')}</w:ftr>` },
+    { name: "word/header1.xml", bytes: `${HEAD}<w:hdr ${NS}>${headerTable(doc)}</w:hdr>` },
+    { name: "word/_rels/header1.xml.rels", bytes: `${HEAD}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdLogo" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/dw_logo.png"/></Relationships>` },
+    { name: "word/media/dw_logo.png", bytes: logoPng() },
+    { name: "word/footer1.xml", bytes: `${HEAD}<w:ftr ${NS}>${para(run(FOOT_NOTE, { size: 14 }), "Header", '<w:pBdr><w:top w:val="single" w:sz="4" w:space="4" w:color="9AA5B4"/></w:pBdr><w:spacing w:after="0"/>')}${doc.footer ? para(run(doc.footer, { size: 14 }), "Header", '<w:spacing w:after="0"/>') : ""}</w:ftr>` },
     { name: "word/_rels/document.xml.rels", bytes: `${HEAD}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${rels.join("")}</Relationships>` },
     ...media.map((m) => ({ name: `word/media/${m.name}`, bytes: m.bytes })),
   ];

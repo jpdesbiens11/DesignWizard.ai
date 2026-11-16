@@ -25,6 +25,7 @@ import { toDwiz } from "./dwiz.js";
 import { orderCheck, rfqText } from "../cad/order.js";
 import { runDfx } from "../analysis/dfx_api.js";
 import { zip } from "./zip.js";
+import { stampText } from "./brand.js";
 
 const isFlat = (spec) => !spec.folded && ((spec.stock && STOCK_FORMS[spec.stock.form] && STOCK_FORMS[spec.stock.form].flat) || ["plate", "sheet", "busbar"].includes(spec.family));
 
@@ -57,7 +58,7 @@ export async function makeArtifact(partId, key) {
   if (!spec) throw new Error(`Pièce « ${partId} » introuvable.`);
   if (!def) throw new Error(`Artéfact inconnu « ${key} ».`);
   const out = { key, name: `${spec.id}${def.ext}`, mime: def.mime, warnings: [] };
-  out.bytes = await def.make(spec, out);
+  out.bytes = stampText(out.name, await def.make(spec, out));      // text artefacts carry the note of the platform ; the PDF and the STL carry it by their own writers
   return out;
 }
 /** Every applicable artefact of a part. A failing one is reported in `errors`, the others are kept. */
@@ -109,6 +110,6 @@ export async function orderPackage(partId, order) {
   const st = await orderStatus(partId, order), spec = st.spec, keys = artifactsFor(spec).map((a) => a.key).filter((k) => k !== "fs");
   const { files, errors } = await partArtifacts(partId, keys);
   const rfq = rfqText(spec, st.built, st.route, st.check, order || spec.order || {}, files.map((f) => f.name));
-  const bytes = zip([{ name: `${spec.id}/demande_de_prix.txt`, bytes: rfq }, ...files.map((f) => ({ name: `${spec.id}/${f.name}`, bytes: f.bytes }))]);
+  const bytes = zip([{ name: `${spec.id}/demande_de_prix.txt`, bytes: stampText("demande_de_prix.txt", rfq) }, ...files.map((f) => ({ name: `${spec.id}/${f.name}`, bytes: f.bytes }))]);
   return { name: `${spec.id}_commande.zip`, bytes, rfq, files: files.map((f) => f.name), errors, check: st.check };
 }

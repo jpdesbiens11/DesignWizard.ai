@@ -14,6 +14,7 @@ export function readGerber(text) {
     if (ended) throw new Error("Gerber : du contenu suit la fin de fichier M02.");
     let m;
     if ((m = /^FSLAX(\d)(\d)Y(\d)(\d)$/.exec(c))) { out.digits = [+m[1], +m[2]]; scale = 10 ** -m[2]; }
+    else if (/^G04/.test(c)) continue;                         // a comment : the note of the platform, or what another tool wrote
     else if (c === "MOMM") out.units = "mm"; else if (c === "MOIN") out.units = "inch";
     else if ((m = /^ADD(\d+)([CRO]),([\d.]+)(?:X([\d.]+))?$/.exec(c))) out.apertures.set(+m[1], { shape: m[2], w: +m[3], h: m[4] === undefined ? +m[3] : +m[4] });
     else if ((m = /^TF\.(\w+),(.*)$/.exec(c))) out.attributes[m[1]] = m[2];

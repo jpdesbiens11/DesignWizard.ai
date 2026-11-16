@@ -21,6 +21,7 @@
 
 import { FOLDER } from "./drive.js";
 import { toDwiz, fromDwiz } from "../core/dwiz.js";
+import { stampText } from "../core/brand.js";
 
 export const TREE = { parts: "01_Pieces", assemblies: "02_Assemblages", analyses: "03_Analyses", reports: "04_Rapports", orders: "05_Commandes", revisions: "06_Revisions", archives: "99_Archives" };
 const OLD_PROJECT_FILES = ["projet.dwiz", "projet.dwproject.json"];   // names written by the first versions; still read
@@ -78,7 +79,8 @@ export function createDriveFs(drive, { root = "DesignWizard.ai" } = {}) {
     return f;
   }
   /** Create or replace the file `name` in folder `parent`. */
-  async function put(parent, name, mime, bytes, role = "file", props) {
+  async function put(parent, name, mime, raw, role = "file", props) {
+    const bytes = stampText(name, raw);                        // a text file of the tree carries the note of the platform (core/brand.js) ; the note is a comment, the file reads back the same
     const same = (await drive.find({ parent, name, limit: 5 })).find((f) => f.mimeType !== FOLDER);
     return same ? drive.replace(same.id, { mime, bytes }) : drive.upload({ name, mime, bytes, parent, role, props });
   }

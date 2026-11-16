@@ -27,6 +27,7 @@ import { processPlan } from "../cad/process_plan.js";
 import { assemblyPlan } from "../core/asm_plan.js";
 import { mateHardware, joints, freeInterfaces } from "../core/assembly_logic.js";
 import { planSummary } from "../core/plan_doc.js";
+import { BRAND, BRAND_LINE, FOOT_NOTE, logoSvg } from "../core/brand.js";
 
 const sevText = { error: "À corriger", warn: "À vérifier", info: "Conseil" };
 const img = (src, alt) => el("img", { src, alt, style: { width: "100%", height: "auto", border: "1.4px solid rgba(38,50,63,.25)", borderRadius: "10px", background: "#fff" } });
@@ -87,7 +88,7 @@ function render(main) {
     const mass = dfx.asms[0] && dfx.asms[0].ctx ? dfx.asms[0].ctx.mass.mass : dfx.parts.reduce((s, x) => s + (x.built ? x.built.mass : 0), 0);
     const verdict = errs || isoBad ? ["Points bloquants à lever", "danger"] : warns ? ["Acceptable sous réserve des points à vérifier", "warn"] : ["Conforme aux règles évaluées", "ok"];
     doc.append(el("section", { class: "card", style: { marginBottom: "1rem" } },
-      el("p", { class: "muted", style: { margin: 0 } }, "DesignWizard.ai by DynamiteAgile™ — dossier de revue de conception"), el("h2", { style: { fontSize: "1.5rem", fontFamily: "var(--hand)", margin: ".2rem 0" } }, p.name),
+      el("p", { class: "muted", style: { margin: 0, display: "flex", alignItems: "center", gap: ".5rem" } }, icon("logo"), el("b", null, BRAND_LINE), ` · ${BRAND.workflow} — dossier de revue de conception`), el("h2", { style: { fontSize: "1.5rem", fontFamily: "var(--hand)", margin: ".2rem 0" } }, p.name),
       el("p", null, p.description || ""), el("p", { class: "muted" }, `Généré le ${new Date().toLocaleString("fr-CA")} · ${p.parts.length} pièce(s) · ${p.assemblies.length} assemblage(s)${p.author ? ` · ${p.author}` : ""}`),
       el("div", { class: "kpis" }, el("div", { class: "kpi" }, el("b", null, fmtMass(mass)), el("span", null, "Masse des pièces")), el("div", { class: "kpi" }, el("b", null, String(errs)), el("span", null, "DFx : à corriger")), el("div", { class: "kpi" }, el("b", null, String(warns)), el("span", null, "DFx : à vérifier")),
         el("div", { class: "kpi" }, el("b", null, iso.length ? (isoBad ? `${isoBad} / ${iso.length}` : "OK") : "—"), el("span", null, iso.length ? "Isolation : paires en défaut" : "Isolation : non analysée"))),
@@ -197,7 +198,8 @@ function render(main) {
       const css = await (await fetch("css/app.css")).text();
       const clone = doc.cloneNode(true);
       clone.querySelectorAll(".no-print").forEach((n) => n.remove());
-      const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${p.name.replace(/[<>&]/g, "")} — design review</title><style>${css.replace(/url\("\.\.\/img[^)]*\)/g, "none")}</style></head><body><div class="page">${new XMLSerializer().serializeToString(clone)}</div></body></html>`;
+      clone.querySelectorAll("svg.sk-icon").forEach((n) => { if ((n.querySelector("use") || { getAttribute: () => "" }).getAttribute("href").endsWith("#i-logo")) n.outerHTML = logoSvg(22); });      // the sprite does not travel with the file : the mark is drawn in it
+      const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${p.name.replace(/[<>&]/g, "")} — design review</title><style>${css.replace(/url\("\.\.\/img[^)]*\)/g, "none")}</style></head><body><div class="page">${new XMLSerializer().serializeToString(clone)}<p class="muted" style="margin-top:2rem;padding-top:.6rem;border-top:1px solid #9aa5b4;font-size:.78rem">${FOOT_NOTE}</p></div></body></html>`;
       download(`${p.id}_design_review.html`, html, "text/html");
       toast("Rapport enregistré en un seul fichier HTML.", "success");
     } catch (e) { toast(`Enregistrement impossible : ${e.message}`, "error"); }
