@@ -24,7 +24,7 @@ export function placeBalloons(items, box, out = 13, r = ITEM_R) {
 
 /** data = { asm, project, views, bbox, rows (the BOM), centers: { partId: [x, y, z] }, mass, joints, opts }. Returns what was drawn. */
 export function composeAssemblyDrawing(sheet, data) {
-  const { asm, project, views, bbox: bb, rows } = data, o = data.opts || {}, frame = drawBorder(sheet, {});
+  const { asm, project, views, bbox: bb, rows } = data, o = data.opts || {}, frame = drawBorder(sheet, { confidential: o.confidential });
   const B = { front: bounds(views.front), top: bounds(views.top), right: bounds(views.right), iso: bounds(views.iso) }, third = (o.projection || "third") === "third";
   const parts = rows.filter((r) => r.kind === "part"), hw = rows.filter((r) => r.kind !== "part");
   const notes = ["Cotation interprétée selon ASME Y14.5-2018 ; cotes en millimètres ; cotes hors tout de l'assemblage monté.", "Les bulles renvoient aux repères de la nomenclature ; chaque pièce est définie par son propre dessin, à la révision indiquée.",
@@ -66,7 +66,7 @@ export function composeAssemblyDrawing(sheet, data) {
   viewLabel(sheet, fx + B.front.w * s / 2, frontY + B.front.h * s + 34, "", `ÉCHELLE ${scale[1]}`);
   drawRevisionTable(sheet, frame.x + frame.w, frame.y, revs.slice(-4), { align: "right" });
   drawTitleBlock(sheet, frame, { title: asm.name || asm.id, partNumber: asm.id, revision: asm.revision || "A", material: "Assemblage", finish: "—", mass: data.mass >= 1000 ? `${f2(data.mass / 1000)} kg` : `${f2(data.mass || 0)} g`,
-    scale: scale[1], sheet: "1/1", size: "B (11 × 17)", drawnBy: o.drawnBy || "", checkedBy: o.checkedBy || "", approvedBy: o.approvedBy || "", date: o.date || "", company: "DesignWizard.ai", project: (project && project.name) || "",
+    scale: scale[1], sheet: "1/1", size: "B (11 × 17)", drawnBy: o.drawnBy || "", checkedBy: o.checkedBy || "", approvedBy: o.approvedBy || "", date: o.date || "", company: o.organisation || "DesignWizard.ai", project: (project && project.name) || "",
     generalTolerance: "ISO 2768-mK", projection: third ? "third" : "first", units: "mm", status: o.status || "Préliminaire" });
   return { scale: scale[1], notes, items: parts.map((r) => ({ item: r.item, id: r.id, view: where[r.id] || null })), dims: dims.map(([label, value, k]) => ({ n: k, label, value })), bom: shown.length,
     layout: { notes: { x: frame.x + 4, y: notesY, w: notesW, h: nH }, iso: isoBox, views: { x: fx, y: y0, w: bw, h: bh }, bom: { x: colX, y: frame.y + frame.h - TITLE_BLOCK_H - th, w: RIGHT_W, h: th }, area, frame } };

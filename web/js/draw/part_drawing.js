@@ -89,7 +89,7 @@ export function notesHeight(sheet, notes, width, size = 2.3) { const indent = sh
 /** Draw the whole sheet. data = {spec, built, views, project, opts:{projection, hidden, drawnBy, checkedBy, approvedBy, status, date, revisions}}. Returns what was drawn. */
 export function composeDrawing(sheet, data) {
   const { spec, built, views, project } = data, o = data.opts || {};
-  const frame = drawBorder(sheet, {}), mat = materialOrDefault(spec.material), sem = drawingSemantics(spec, built), dims = dimensionList(spec, built), holes = holeRows(built);
+  const frame = drawBorder(sheet, { confidential: o.confidential }), mat = materialOrDefault(spec.material), sem = drawingSemantics(spec, built), dims = dimensionList(spec, built), holes = holeRows(built);
   const B = { front: bounds(views.front), top: bounds(views.top), right: bounds(views.right), iso: bounds(views.iso) }, third = (o.projection || "third") === "third";
   /* the furniture first : it says what room is left for the views */
   const notes = drawingNotes(spec, sem, dims), notesW = 150, nH = Math.min(notesHeight(sheet, notes, notesW), 80), notesY = frame.y + frame.h - nH - 3, colX = frame.x + frame.w - RIGHT_W;
@@ -189,7 +189,7 @@ export function composeDrawing(sheet, data) {
   viewLabel(sheet, fx + B.front.w * s / 2, frontY + B.front.h * s + 10 + 8 * (used["front:h"] || 1) + 5, "", `ÉCHELLE ${scale[1]}`);
   drawRevisionTable(sheet, frame.x + frame.w, frame.y, revs.slice(-4), { align: "right" });
   drawTitleBlock(sheet, frame, { title: spec.name || spec.id, partNumber: spec.id, revision: spec.revision || "A", material: mat.name, finish: spec.finish || "—", mass: built.mass >= 1000 ? `${f2(built.mass / 1000)} kg` : `${f2(built.mass)} g`,
-    scale: scale[1], sheet: "1/1", size: "B (11 × 17)", drawnBy: o.drawnBy || "", checkedBy: o.checkedBy || "", approvedBy: o.approvedBy || "", date: o.date || "", company: "DesignWizard.ai", project: (project && project.name) || "",
+    scale: scale[1], sheet: "1/1", size: "B (11 × 17)", drawnBy: o.drawnBy || "", checkedBy: o.checkedBy || "", approvedBy: o.approvedBy || "", date: o.date || "", company: o.organisation || "DesignWizard.ai", project: (project && project.name) || "",
     generalTolerance: "ISO 2768-mK", projection: third ? "third" : "first", units: "mm", status: o.status || "Préliminaire" });
   return { scale: scale[1], holes, gdt: sem.gdt, datums: sem.datums, notes, dims, onView, section, layout: { notes: { x: frame.x + 4, y: notesY, w: notesW, h: nH }, iso: isoBox, views: { x: fx, y: y0, w: bw, h: bh }, area, frame } };
 }

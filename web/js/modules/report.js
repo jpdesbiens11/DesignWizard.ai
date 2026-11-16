@@ -4,7 +4,7 @@
 
 import { assemblyHealth, HEALTH } from "../core/joint_health.js";
 import { el, clear, icon, btn, badge, table, fmt, fmtMass, download, toast } from "../core/dom.js";
-import { registerModule, setStatus } from "../core/app.js";
+import { registerModule, setStatus, docMeta } from "../core/app.js";
 import { store } from "../core/store.js";
 import { Viewer } from "../core/viewer.js";
 import { showBuilt } from "../core/viewport.js";
@@ -28,6 +28,9 @@ import { assemblyPlan } from "../core/asm_plan.js";
 import { mateHardware, joints, freeInterfaces } from "../core/assembly_logic.js";
 import { planSummary } from "../core/plan_doc.js";
 import { BRAND, BRAND_LINE, FOOT_NOTE, logoSvg } from "../core/brand.js";
+import { blocksOf } from "../core/dom_doc.js";
+import { pdfDoc } from "../core/pdfdoc.js";
+import { docx } from "../core/docx.js";
 
 const sevText = { error: "À corriger", warn: "À vérifier", info: "Conseil" };
 const img = (src, alt) => el("img", { src, alt, style: { width: "100%", height: "auto", border: "1.4px solid rgba(38,50,63,.25)", borderRadius: "10px", background: "#fff" } });
@@ -63,7 +66,9 @@ function render(main) {
   main.append(page);
   const p = store.project, rv = () => store.project.review || {};
   const head = el("div", { class: "page-head no-print" }, el("div", { class: "grow" }, el("h1", null, "Rapport de design review"), el("p", { class: "muted" }, "Le dossier se construit à partir du modèle vivant : relancez-le après chaque modification. Il sert de support à la revue et garde ses décisions.")),
-    btn("Imprimer / PDF", () => window.print(), { icon: "pdf", tip: "Le navigateur enregistre le rapport en PDF (Destination : Enregistrer au format PDF)" }), btn("Fichier HTML autonome", () => saveHtml(), { icon: "download", tip: "Un seul fichier avec les images, à joindre à un courriel ou à un ticket" }));
+    btn("PDF", (e, b) => saveDoc(b, "pdf"), { icon: "pdf", primary: true, tip: "Le dossier en PDF, au gabarit des documents : cartouche d'en-tête, approbation, journal des révisions, sommaire, note de confidentialité" }),
+    btn("Word", (e, b) => saveDoc(b, "docx"), { icon: "download", tip: "Le même dossier en document Word, à compléter ou à annoter" }),
+    btn("Imprimer", () => window.print(), { icon: "pdf", tip: "L'impression du navigateur : la page telle qu'elle est à l'écran" }), btn("Fichier HTML autonome", () => saveHtml(), { icon: "download", tip: "Un seul fichier avec les images, à joindre à un courriel ou à un ticket" }));
   const doc = el("article", { id: "report" });
   page.append(head, doc);
   doc.append(el("p", { class: "muted" }, "Construction des pièces, des images et des analyses…"));
@@ -193,6 +198,19 @@ function render(main) {
       el("p", { class: "muted", style: { fontSize: ".8rem", marginTop: ".6rem" } }, "Signatures : ______________________ (concepteur)      ______________________ (vérificateur)      ______________________ (approbateur)")));
   }
   const off = store.on("change", (c) => { if (c && /^Revue/.test(c.label || "")) return; });
+  /* the file as a document of the house : what the screen shows, read block by block (core/dom_doc.js) */
+  async function saveDoc(b, kind) {
+    b.disabled = true;
+    try {
+      const blocks = blocksOf(doc, { figure: 118 }).filter((x, i) => !(i === 0 && x.type === "p")), r = rv(), led = store.project.review || {};
+      const model = { title: "Dossier de revue de conception", subtitle: p.name || p.id, kind: "Rapport de revue de conception", subject: "Revue de conception", reference: `${p.id}-REVUE`, revision: led.rev || "A", author: p.author || "", date: new Date(), header: `${p.name || p.id} — revue de conception`,
+        blocks: [{ type: "toc" }, ...blocks, { type: "h1", text: "Signatures" }, { type: "signatures", roles: ["Concepteur", "Vérificateur", "Approbateur"] }], ...docMeta() };
+      if (r.date || r.decision) model.revisions = [{ rev: model.revision, reason: r.decision ? `Revue : ${r.decision}` : "Revue de conception", sections: "Toutes", by: p.author || "", date: r.date || new Date().toISOString().slice(0, 10) }];
+      if (kind === "pdf") download(`${p.id}_revue_de_conception.pdf`, pdfDoc(model), "application/pdf"); else download(`${p.id}_revue_de_conception.docx`, docx(model), "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+      toast(kind === "pdf" ? "Dossier enregistré en PDF." : "Dossier enregistré en Word.", "success");
+    } catch (e) { console.error(e); toast(`Dossier ${kind === "pdf" ? "PDF" : "Word"} : ${e.message}`, "error", 7000); }
+    b.disabled = false;
+  }
   async function saveHtml() {
     try {
       const css = await (await fetch("css/app.css")).text();

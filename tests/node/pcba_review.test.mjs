@@ -73,5 +73,5 @@ test(".docx and PDF: valid packages, the same content, figures and page numbers"
   assert.match(text("word/footer1.xml"), /DesignWizard\.ai™ by DynamiteAgile™ · Co-Intelligence WorkFlow™ — document généré par DesignWizard\.ai\. La version électronique fait foi ; la version imprimée est pour référence\./); assert.ok(!/[<>&](?![a-z#/?!w]|amp;|lt;|gt;|quot;)/.test(text("docProps/core.xml").replace(/<[^>]+>/g, "")));
   const pdf = pdfDoc(doc), raw = new TextDecoder("latin1").decode(pdf), pages = (raw.match(/\/Type \/Page\b/g) || []).length;
   assert.ok(raw.startsWith("%PDF-1.4")); assert.ok(pages >= 4, `${pages} pages`); assert.ok(drawn >= 2, "the figure is drawn in both layout passes");
-  assert.ok(raw.includes(`Page 2 de ${pages}`) && raw.includes(`Page ${pages} de ${pages}`) && !raw.includes(`Page ${pages + 1} de`)); assert.ok(raw.includes("(Sommaire)") && raw.includes("Revue de conception d\\351taill\\351e"));
+  assert.ok(raw.includes(`(2 de ${pages})`) && raw.includes(`(${pages} de ${pages})`) && !raw.includes(`(${pages + 1} de`), "the page of the title block, on every page"); assert.ok(raw.includes("(Sommaire)") && raw.includes("Revue de conception d\\351taill\\351e"));
 });

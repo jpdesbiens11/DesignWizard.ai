@@ -31,6 +31,7 @@ import { drawio } from "../core/drawio.js";
 import { draftsOf } from "../core/ai_draft.js";
 import { autoroute } from "../pcba/route.js";
 import { planPanel, setPlanNote, setPlanPoints } from "./plan_view.js";
+import { docMeta } from "../core/app.js";
 
 const { txt, sel, section, scroll, hint } = ui$;
 const pane = (view, title, sub, ...kids) => { const p = el("div", { class: "pcba-pane" }, el("div", { class: "pcba-pane-head" }, el("h2", null, title), sub ? el("span", { class: "muted small" }, sub) : null), el("div", { class: "pcba-scroll" }, ...kids)); view.append(p); return p; };
@@ -147,8 +148,8 @@ function revue(ctx, { left, view, right }) {
     field("Rédacteur", txt(rv.author, (v) => setR((r) => { r.author = v; }))), field("Points ouverts (un par ligne)", el("textarea", { rows: 3, style: { width: "100%" }, onChange: (e) => setR((r) => { r.open = e.target.value.split("\n").map((s) => s.trim()).filter(Boolean); }) }, (rv.open || []).join("\n"))),
     field("Décisions (une par ligne)", el("textarea", { rows: 3, style: { width: "100%" }, onChange: (e) => setR((r) => { r.decisions = e.target.value.split("\n").map((s) => s.trim()).filter(Boolean); }) }, (rv.decisions || []).join("\n"))));
   l.append(section("Rapport à partager", el("div", { class: "form-actions", style: { justifyContent: "flex-start", flexWrap: "wrap" } },
-    btn("Word (.docx)", async () => { try { const f = {}; for (const [k, x] of Object.entries(figures)) f[k] = await pngOf(x); download(`${name}.docx`, docx(reviewDoc({ ...data(), figures: f })), "application/vnd.openxmlformats-officedocument.wordprocessingml.document"); } catch (e) { toast(`Rapport Word : ${e.message}`, "error"); } }, { primary: true, icon: "download" }),
-    btn("PDF", () => { try { download(`${name}.pdf`, pdfDoc(doc), "application/pdf"); } catch (e) { toast(`Rapport PDF : ${e.message}`, "error"); } }, { primary: true, icon: "pdf" }))));
+    btn("Word (.docx)", async () => { try { const f = {}; for (const [k, x] of Object.entries(figures)) f[k] = await pngOf(x); download(`${name}.docx`, docx({ ...reviewDoc({ ...data(), figures: f }), kind: "Rapport de revue de conception", ...docMeta() }), "application/vnd.openxmlformats-officedocument.wordprocessingml.document"); } catch (e) { toast(`Rapport Word : ${e.message}`, "error"); } }, { primary: true, icon: "download" }),
+    btn("PDF", () => { try { download(`${name}.pdf`, pdfDoc({ ...doc, kind: "Rapport de revue de conception", ...docMeta() }), "application/pdf"); } catch (e) { toast(`Rapport PDF : ${e.message}`, "error"); } }, { primary: true, icon: "pdf" }))));
   const structure = () => functionalStructure(board, ctx.lib), drafts = new Set(draftsOf(board).filter((w) => w.list === "functions").map((w) => w.key));
   l.append(section("Structure fonctionnelle", el("p", { class: "muted small" }, "L'arbre des fonctions (critères, bloc, composants, nets) et la structure fonctionnelle : ce qui entre, ce qui sort, les flux d'énergie et d'information entre les blocs. Le fichier draw.io reste modifiable."), el("div", { class: "form-actions", style: { justifyContent: "flex-start", flexWrap: "wrap" } },
     btn("draw.io", () => download(`${board.id}-fonctions.drawio`, drawio([treeDiagram(ctx.rows, `${board.id} — ${board.name || ""}`, drafts), structureDiagram(structure())]), "application/xml"), { small: true, primary: true, icon: "download", tip: "Deux pages modifiables dans diagrams.net : l'arbre des fonctions et la structure fonctionnelle" }),

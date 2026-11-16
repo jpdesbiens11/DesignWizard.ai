@@ -71,7 +71,7 @@ test("board assembly routing, and the three sheets as text, Word and PDF", () =>
     assert.ok(doc.title.startsWith(PLAN_KINDS[p.kind].title)); assert.equal(doc.blocks.filter((x) => x.type === "h2").length, p.phases.length); assert.ok(doc.blocks.some((x) => x.type === "signatures" && x.roles.length === 2));
     const q = doc.blocks.filter((x) => x.type === "table").pop(); assert.deepEqual(q.head, ["N°", "Sujet", "Question", "Réponse"]); assert.equal(q.rows.length, p.questions.length);
     const z = docx(doc), pdf = new TextDecoder("latin1").decode(pdfDoc(doc));
-    assert.ok(z[0] === 0x50 && z[1] === 0x4b && z.length > 8000); assert.ok(pdf.startsWith("%PDF-1.4") && pdf.includes("Page 2 de"));
+    assert.ok(z[0] === 0x50 && z[1] === 0x4b && z.length > 8000); assert.ok(pdf.startsWith("%PDF-1.4") && pdf.includes("(2 de "));
   }
   assert.match(planText(plan), /^GAMME D'ASSEMBLAGE DE LA CARTE — DRV-CTRL-PCBA/);
   assert.equal(planSummary(plan), "10 phases · 9 points à discuter avec l'assembleur de cartes".replace("9", String(plan.questions.length)));

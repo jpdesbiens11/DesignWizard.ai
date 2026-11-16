@@ -76,3 +76,18 @@ export function stampText(name, text) {
 export const isMarked = (text) => typeof text === "string" && text.includes(KEY);
 /** The 80 bytes at the head of a binary STL : the mark, in ASCII. */
 export const STL_HEADER = "DesignWizard.ai(TM) by DynamiteAgile(TM) - Co-Intelligence WorkFlow(TM)";
+
+/* ---------- the confidentiality note of a deliverable : whose document it is ---------- */
+/** owner : the organisation the documents of the project belong to ("" : the issuer, unnamed) ; text : the wording of the project when it has its own. */
+export function confidentialNote(owner = "", text = "") {
+  const own = String(text || "").trim(); if (own) return own;
+  const who = String(owner || "").trim().replace(/\.$/, "");                 // « Atelier inc. » : its own full stop is not doubled
+  return `CONFIDENTIEL — ce document et les informations qu'il contient sont la propriété de ${who || "son émetteur"}. Toute reproduction, diffusion ou utilisation sans son autorisation écrite est interdite.`;
+}
+/** What every document of a project carries beside its content : the names of the approval block, the organisation and the notes.
+    From project.drawing (the fields of the title block, shared by the drawings and the documents). */
+export function docIdentity(project, when = new Date(), version = "") {
+  const d = (project && project.drawing) || {}, day = (when instanceof Date && !Number.isNaN(when.getTime()) ? when : new Date(0)).toISOString().slice(0, 10);
+  return { organisation: d.organisation || "", confidential: confidentialNote(d.organisation, d.confidentiality), stamp: stampLine(when, version), project: (project && project.name) || "",
+    approvals: [{ role: "Préparé par", name: d.drawnBy || (project && project.author) || "", date: d.drawnBy || (project && project.author) ? day : "" }, { role: "Vérifié par", name: d.checkedBy || "", date: "" }, { role: "Approuvé par", name: d.approvedBy || "", date: "" }] };
+}

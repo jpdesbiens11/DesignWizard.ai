@@ -12,8 +12,11 @@ import { dwizFileName } from "./dwiz_names.js";
 import { mountPanes } from "./panes.js";
 import { guideBox, guideCount, guideSummary } from "./guide.js";
 import { projectIssues, issuesHere } from "./guide_checks.js";
+import { docIdentity } from "./brand.js";
 
-export const APP_VERSION = "0.43.0";
+export const APP_VERSION = "0.44.0";
+/** What every document of the open project carries beside its content : approval names, organisation, confidentiality note, extraction stamp (core/brand.js). */
+export const docMeta = (when = new Date()) => docIdentity(store.project, when, APP_VERSION);
 const modules = new Map();
 const ORDER = ["home", "shop", "parts", "pcb", "pcba", "assembly", "physics", "creepage", "dfx", "drawings", "review", "report"];
 const SHOP_SCREENS = new Set(["interfaces", "process", "extrusion", "library", "busbar", "flex"]);      // screens of the Shop : its tab stays lit on them (see modules/shop_tabs.js)

@@ -208,3 +208,28 @@ Gerber, DXF) relisent les fichiers marqués, c'est testé.
 Ce qui ne porte pas la note : une **capture PNG** de la vue 3D (une image, sans texte) et `acces.json` (un réglage du
 site, pas un document). La plateforme n'écrit ni `.pptx` ni `.xlsx` : la présentation est une page et son PDF, les
 tableaux sortent en CSV.
+
+## Le gabarit des documents à lire
+
+Les rapports, les gammes et le dossier de revue (PDF et Word) suivent un même gabarit, dans l'esprit du gabarit
+d'ingénierie de DynamiteAgile, avec le visuel de DesignWizard.ai :
+
+- **Sur chaque page**, un cartouche d'en-tête encadré : le symbole et « DesignWizard.ai™ by DynamiteAgile™ » ; le titre
+  et le genre du document (RAPPORT DE REVUE DE CONCEPTION, GAMME…) ; le n° de document, la révision, la date et la page
+  « n de N ». Dessous, la ligne d'extraction (« Extrait le … — DesignWizard.ai v… ») et le projet.
+- **Sur la première page** : le titre, les faits du document, le bloc **Approbation** (préparé par, vérifié par,
+  approuvé par — nom, date, signature) et le **Journal des révisions** (révision, motif, sections touchées, nom, date).
+  Le sommaire suit.
+- **Au pied de chaque page** : la **note de confidentialité** du projet, en gras, puis la note de la plateforme.
+
+Les noms du bloc d'approbation, l'**organisation** et la note de confidentialité se règlent une fois, dans le
+cartouche de l'écran Dessins (`project.drawing`) : ils servent aux dessins comme aux documents (`docIdentity`,
+`confidentialNote` dans `core/brand.js`). Sans texte propre au projet, la note est : « CONFIDENTIEL — ce document et
+les informations qu'il contient sont la propriété de *l'organisation* (ou « son émetteur »). Toute reproduction,
+diffusion ou utilisation sans son autorisation écrite est interdite. » Les dessins la portent sous leur cadre, au-dessus
+de la note de la plateforme, et l'organisation dans leur cartouche.
+
+Le **dossier de revue de conception** sort en PDF et en Word à ce gabarit (boutons « PDF » et « Word » de l'écran
+Rapport) : il est lu sur ce que l'écran montre, bloc par bloc (`core/dom_doc.js`) — titres, textes, tableaux aux
+colonnes larges comme ce qu'elles disent, chiffres clés, images. L'impression du navigateur reste possible, mais elle
+ne porte ni cartouche ni pagination de la maison.

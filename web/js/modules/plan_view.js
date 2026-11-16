@@ -4,7 +4,7 @@
    AI round trip on the artefact, the computed sheet given for reference. */
 
 import { el, icon, btn, badge, toast, download, copyText } from "../core/dom.js";
-import { app } from "../core/app.js";
+import { app, docMeta } from "../core/app.js";
 import { store } from "../core/store.js";
 import { planText, planDoc, planKeys, PLAN_KINDS } from "../core/plan_doc.js";
 import { docx } from "../core/docx.js";
@@ -26,7 +26,7 @@ export const planAiHelp = (plan) => ({ context: `${planText(plan)}\n\n${planKeys
 
 /** The buttons of a routing sheet. o : { figures() → figures for the documents (may be async), aiKey }. */
 export function planBar(plan, o = {}) {
-  const name = `${plan.id}_gamme`, doc = async () => planDoc(plan, { date: new Date(), project: store.project ? store.project.name || store.project.id : "", author: (store.project && store.project.author) || "", figures: o.figures ? await o.figures() : [] });
+  const name = `${plan.id}_gamme`, doc = async () => ({ ...planDoc(plan, { date: new Date(), project: store.project ? store.project.name || store.project.id : "", author: (store.project && store.project.author) || "", figures: o.figures ? await o.figures() : [] }), kind: "Gamme", ...docMeta() });
   const make = async (b, fn) => { b.disabled = true; try { await fn(); } catch (e) { console.error(e); toast(`Gamme : ${e.message}`, "error", 7000); } b.disabled = false; };
   return el("div", { class: "form-actions plan-bar" },
     btn("Word", (e, b) => make(b, async () => download(`${name}.docx`, docx(await doc()), DOCX)), { small: true, primary: true, icon: "download", tip: "La gamme en document Word : phases, images, questions avec une colonne pour les réponses, signatures" }),

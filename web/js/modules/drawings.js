@@ -16,6 +16,7 @@ import { DIM_CLASSES, setDimClass, dimText } from "../draw/dim_model.js";
 import { buildAssembly } from "../core/asm_scene.js";
 import { matPoint } from "../cad/vec.js";
 import { whereUsed, reviewItems } from "../core/review.js";
+import { confidentialNote } from "../core/brand.js";
 
 const [PW, PH] = PAPER.TABLOID;
 /** The title-block fields of the project, and the revisions the review ledger remembers for an artefact. */
@@ -23,7 +24,7 @@ function sheetOpts(key, rev, extra) {
   const d = (store.project.drawing || {}), led = ((store.project.review || {}).items || {})[key] || {}, now = (reviewItems(store.project).find((x) => x.key === key) || {}).state;      // the state as it is today : a reviewed artefact that changed — or whose parts moved on — is no longer « reviewed »
   const revisions = (led.history || []).filter((h) => h.rev).map((h) => ({ rev: h.rev, description: h.note || "", date: String(h.when || "").slice(0, 10), by: led.by || d.checkedBy || "" }));
   return { projection: d.projection || "third", hidden: d.hidden !== false, drawnBy: d.drawnBy || store.project.author || "", checkedBy: d.checkedBy || "", approvedBy: d.approvedBy || "",
-    status: d.status || (now === "ok" ? "Revu" : now === "changed" ? "À revalider" : "Préliminaire"), date: new Date().toISOString().slice(0, 10), revisions, ...extra };
+    status: d.status || (now === "ok" ? "Revu" : now === "changed" ? "À revalider" : "Préliminaire"), date: new Date().toISOString().slice(0, 10), revisions, organisation: d.organisation || "", confidential: confidentialNote(d.organisation, d.confidentiality), ...extra };
 }
 const render2 = (compose, data, title) => { const svg = new SvgSheet({ width: PW, height: PH, title }), info = compose(svg, data);
   return { svg: svg.toString(0), info, pdfBytes: () => { const pdf = new PdfSheet({ width: PW, height: PH, title }); compose(pdf, data); return pdf.toBytes(); } }; };
@@ -115,6 +116,7 @@ function render(main, args) {
     const text = (key, label, hint) => field(label, el("input", { type: "text", value: d()[key] || "", onChange: (e) => setD(key, e.target.value, label) }), hint);
     const setRev = (v) => (isAsm ? store.updateAssembly(id, (x) => { x.revision = v || undefined; }, `${id} : révision`) : store.updatePart(id, (x) => { x.revision = v || undefined; }, `${id} : révision`));
     body.append(el("div", { class: "side-section" }, el("h3", null, "Cartouche"), el("div", { class: "form-row" }, text("drawnBy", "Dessiné"), text("checkedBy", "Vérifié")), el("div", { class: "form-row" }, text("approvedBy", "Approuvé"), text("status", "Statut", "Préliminaire, Pour revue, Émis…")),
+      text("organisation", "Organisation", "À qui appartiennent les documents du projet : dans le cartouche et dans la note de confidentialité de tous les livrables"), text("confidentiality", "Note de confidentialité", "Laissez vide pour la note d'usage : « CONFIDENTIEL — ce document et les informations qu'il contient sont la propriété de… »"),
       el("div", { class: "form-row" }, field("Projection", el("select", { onChange: (e) => setD("projection", e.target.value, "projection") }, [["third", "Troisième dièdre (Amérique du Nord)"], ["first", "Premier dièdre (ISO / Europe)"]].map(([v, l]) => el("option", { value: v, selected: (d().projection || "third") === v }, l)))),
         isAsm ? null : el("label", { class: "check" }, el("input", { type: "checkbox", checked: d().hidden !== false, onChange: (e) => setD("hidden", e.target.checked, "arêtes cachées") }), "Arêtes cachées")),
       isAsm ? null : sectionRow(),

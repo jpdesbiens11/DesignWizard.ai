@@ -4,7 +4,7 @@
    Re-exported by drafting.js. */
 
 import { LW, TEXT_H, TEXT_SMALL, GREY, fitText } from "./drafting2.js";
-import { BRAND, FOOT_NOTE, drawLogo } from "../core/brand.js";
+import { BRAND, FOOT_NOTE, drawLogo, confidentialNote } from "../core/brand.js";
 
 /* ---- border -------------------------------------------------------------------------------------------- */
 
@@ -13,13 +13,15 @@ import { BRAND, FOOT_NOTE, drawLogo } from "../core/brand.js";
     (counted from the centre of the sheet, letters top → bottom without I and O, numbers left → right).
     opts: { margin = 10, left = margin + 10, grid = true, zone = 50, color }.
     Returns the inner frame { x, y, w, h } (the usable drawing space). */
-export function drawBorder(sheet, { margin = 10, left, grid = true, zone = 50, color = "#000" } = {}) {
+export function drawBorder(sheet, { margin = 10, left, grid = true, zone = 50, color = "#000", confidential = "" } = {}) {
   const ml = left ?? margin + 10;
   const f = { x: ml, y: margin, w: sheet.width - ml - margin, h: sheet.height - 2 * margin };
   const band = Math.min(5, margin / 2), thin = { w: LW.thin, color }, thick = { w: LW.frame, color };
   const cx = sheet.width / 2, cy = sheet.height / 2, x1 = f.x + f.w, y1 = f.y + f.h;
   sheet.rect(f.x, f.y, f.w, f.h, thick);
-  sheet.text(f.x, sheet.height - Math.max(1.4, (margin - band) / 2 - 0.8), FOOT_NOTE, { size: 1.9, color: "#3a4450" });      // the note of the platform, in the margin under the frame (core/brand.js)
+  /* in the margin under the frame : the confidentiality note of the project, then the note of the platform (core/brand.js) */
+  const low = sheet.height - Math.max(1.2, (margin - band) / 2 - 1.3);
+  sheet.text(f.x, low - 2.3, confidential || confidentialNote(), { size: 1.8, font: "bold", color: "#1c2430" }); sheet.text(f.x, low, FOOT_NOTE, { size: 1.8, color: "#3a4450" });
   if (!grid) return f;
   sheet.rect(f.x - band, f.y - band, f.w + 2 * band, f.h + 2 * band, thin);
 
