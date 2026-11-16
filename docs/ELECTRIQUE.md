@@ -118,6 +118,10 @@ réécrite à chaque changement.
 - **Les branches** : une longueur chacune, et le pli à 90° — vers le haut ou vers le bas — qui la précède. Les longueurs
   se prennent sur la fibre du milieu, d'un sommet de pli au suivant. Une seule branche : une barre droite, seulement
   découpée.
+- **Les trous de passage** (`H1`, `H2`…) : un trou traversant qui n'est pas une interface — ronds (Ø) ou **oblongs**
+  (une longueur plus grande que le diamètre, le long de la branche ou en travers). Sous une gaine, ils traversent la
+  gaine aussi. L'écran signale ce qui reste de cuivre au droit du trou (repère de 5 A/mm²), moins d'une épaisseur de
+  métal jusqu'au bord, moins de 1,5 × d du bout de la barre, un chevauchement — repères d'usage, sans source citée.
 - **Les bornes** (`T1`, `T2`…) : un trou de passage pour une vis, une interface vissée que l'autre pièce reprend.
 - **Les contacts à pression** (`CT1`, `CT2`…) : posés seulement sur une **face plane** d'une branche, hors des plis.
   Un contact neuf prend la forme que la barre appelle (bossages, lames ou bande) ; elle se change d'un clic sur sa

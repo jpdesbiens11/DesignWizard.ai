@@ -10,6 +10,7 @@ import { app } from "../core/app.js";
 import { featureDialog, interfaceDialog, nextFeatureId, nextIfaceId, FEATURE_DEFAULT, SHOP_DEFAULT } from "../core/part_edit.js";
 import { createSelection, popupMenu } from "../core/view_select.js";
 import { lightFace, LIT } from "../core/view_marks.js";
+import { createPlacer } from "../core/view_place.js";
 
 export const PART_KEYS = [["Clic", "Sélectionner une face, une arête ou un point"], ["Ctrl + clic", "Ajouter à la sélection, ou en retirer"], ["Clic droit", "Menu : ce qui se fait ici"], ["Double clic", "Ouvrir l'opération d'un perçage"],
   ["H", "Trou sur la face choisie"], ["T", "Taraudage"], ["P", "Poche"], ["B", "Bossage"], ["I", "Interface"], ["R", "Congé sur les arêtes choisies"], ["C", "Chanfrein sur les arêtes choisies"], ["N", "Regarder la face de face"], ["Maj + S", "Inverser la coupe"],
@@ -23,6 +24,18 @@ export function partGestures(ctx) {
   const faces = () => sel.items().filter((x) => x.kind === "face"), edges = () => sel.items().filter((x) => x.kind === "edge");
   /** The planar face to work on : the one chosen (when there is exactly one), as { face, at, level }. */
   const target = () => { const f = faces(); return f.length === 1 ? ctx.faceOfHit(f[0].hit) : null; };
+  /* placing with the mouse, helped : the face under the pointer shows the 5 mm grid of the part, its symmetry axes catch the feature,
+     so do the holes already there ; the dimensions and the coordinates follow, a click drops it (core/view_place.js) */
+  const PLACE = { hole: "Trou", tap: "Taraudage", pocket: "Poche", boss: "Bossage", iface: "Interface" }, AX = "XYZ";
+  const placer = createPlacer(v, view, {
+    face: (hit) => { const f = ctx.faceOfHit(hit); if (!f || !st.built) return null;
+      const a = AX.indexOf(f.face[1]), sign = f.face[0] === "+" ? 1 : -1, pl = a === 2 ? [0, 1] : a === 1 ? [0, 2] : [1, 2], bb = st.built.bbox, lvl = f.level === undefined ? (sign > 0 ? bb[3 + a] : bb[a]) : f.level;
+      const P = (pu, pv) => { const q = [0, 0, 0]; q[pl[0]] = pu; q[pl[1]] = pv; q[a] = lvl + sign * 0.05; return q; };
+      const others = ((st.built.facts && st.built.facts.holes) || []).filter((h) => h.face === f.face && h.at).map((h, k) => ({ id: h.source || `trou ${k + 1}`, u: h.at[pl[0]], v: h.at[pl[1]] }));
+      return { key: `${f.face}:${lvl}`, face: f.face, level: f.level, u: [bb[pl[0]], bb[3 + pl[0]]], v: [bb[pl[1]], bb[3 + pl[1]]], others, P, names: { u: AX[pl[0]], v: AX[pl[1]] }, title: `face ${f.face}`, pl }; },
+    local: (hit, f) => [hit.local[f.pl[0]], hit.local[f.pl[1]]],
+    drop: (t, f, sn) => createAt(t.kind, { face: f.face, at: [sn.u, sn.v], level: f.level }),
+  });
 
   /** A new operation where the designer pointed. f = { face, at, level }. */
   function createAt(kind, f) {
@@ -72,13 +85,14 @@ export function partGestures(ctx) {
       marks("face"); marks("facehover"); lightFace(v, hit.id, hit.faceId, { tag: "face", color: LIT.chosen, opacity: 0.7 });
       st.faceAsk(f); return;
     }
-    if (st.placing) { const kind = st.placing, f = ctx.faceOfHit(hit); st.placing = null; view.style.cursor = ""; marks("facehover"); if (!f) { toast("Ce n'est pas une face plane alignée sur X, Y ou Z. Correctif : cliquez une face plane.", "warn"); return; } createAt(kind, f); return; }
+    if (placer.armed()) { if (!ctx.faceOfHit(hit)) { toast("Ce n'est pas une face plane alignée sur X, Y ou Z. Correctif : cliquez une face plane.", "warn"); return; } marks("facehover"); placer.click(hit, e); return; }
     const x = sel.at(hit), now = Date.now(), twice = x && lastClick.key === x.key && now - lastClick.t < 420;
     lastClick = { key: x ? x.key : null, t: now };
     if (twice && openHole(holeOf(x))) return;                     // a double click on a hole opens what drilled it
     sel.click(x, !!(e && (e.ctrlKey || e.metaKey)));
   }
-  function onHover(hit) {
+  function onHover(hit, e) {
+    if (placer.armed()) { marks("facehover"); if (hit && ctx.faceOfHit(hit)) lightFace(v, hit.id, hit.faceId, { tag: "facehover", color: LIT.hover, opacity: 0.25 }); placer.hover(hit, e); return; }
     if (st.faceAsk || st.placing) { marks("facehover"); if (hit && ctx.faceOfHit(hit)) lightFace(v, hit.id, hit.faceId, { tag: "facehover", color: LIT.hover }); return; }
     sel.hover(sel.at(hit));
   }
@@ -102,8 +116,8 @@ export function partGestures(ctx) {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     const k = e.key.toLowerCase(), f = target(), one = sel.count() === 1 ? sel.items()[0] : null;
     const map = { h: () => createAt("hole", f), t: () => createAt("tap", f), p: () => createAt("pocket", f), b: () => createAt("boss", f), i: () => createAt("iface", f), r: () => dress("fillet"), c: () => dress("chamfer"), n: () => lookAt(one),
-      escape: () => { sel.clear(); st.placing = null; view.style.cursor = ""; marks("facehover"); }, delete: () => removeHole(holeOf(one)), backspace: () => removeHole(holeOf(one)), "?": () => ctx.showKeys() };
+      escape: () => { sel.clear(); st.placing = null; placer.cancel(); view.style.cursor = ""; marks("facehover"); }, delete: () => removeHole(holeOf(one)), backspace: () => removeHole(holeOf(one)), "?": () => ctx.showKeys() };
     if (map[k]) { e.preventDefault(); map[k](); }
   }
-  return { onPick, onHover, onMenu, onKey, sel, createAt, place: (kind) => { st.placing = kind; view.style.cursor = "crosshair"; toast("Cliquez une face plane de la pièce : elle s'allume sous le curseur.", "info", 2500); } };
+  return { onPick, onHover, onMenu, onKey, sel, createAt, dispose: () => placer.dispose(), place: (kind) => placer.arm({ kind, label: PLACE[kind] || "Opération", size: kind === "pocket" ? [10, 5] : [2.5, 2.5] }) };
 }

@@ -4,6 +4,7 @@
 
 import * as THREE from "../../vendor/three/three.module.min.js";
 import { triadOf, gridOf, gridKey } from "./view_grid.js";
+import { snapDirection } from "./snap.js";
 
 const GRAPHITE = 0x26323f;
 /** Colour of a design token (themes.css), read on the element so each theme draws its own edges. */
@@ -302,7 +303,7 @@ export class Viewer {
   _hover(e) {
     if (!this.opts.onHover && this.mode !== "measure") return;
     if (this._hoverRaf) return;
-    this._hoverRaf = requestAnimationFrame(() => { this._hoverRaf = 0; const hit = this._pick(e); this.hoverHit = hit; if (this.opts.onHover) this.opts.onHover(hit, e); });
+    this._hoverRaf = requestAnimationFrame(() => { this._hoverRaf = 0; const hit = this._pick(e); this.hoverHit = hit; if (this.mode === "measure") this._measureLive(hit); if (this.opts.onHover) this.opts.onHover(hit, e); });
   }
   _click(e) {
     const hit = this._pick(e);
@@ -311,10 +312,19 @@ export class Viewer {
   }
 
   /* ---------- measure ---------- */
-  setMode(mode) { this.mode = mode; this.measure = []; this.clearOverlays("measure"); this.canvas.style.cursor = mode === "measure" ? "crosshair" : ""; }
+  setMode(mode) { this.mode = mode; this.measure = []; this.clearOverlays("measure"); this.clearOverlays("measure-live"); this.canvas.style.cursor = mode === "measure" ? "crosshair" : ""; }
+  /** The second point of a measure : brought onto the axis its line nearly follows, unless the catch is switched off (snapOn). */
+  _caught(hit) { const a = this.measure[0]; return a && hit && this.measure.length === 1 && (!this.snapOn || this.snapOn()) ? snapDirection(a.point, hit.point) : { point: hit ? hit.point : null, ref: null }; }
+  _measureLive(hit) {
+    this.clearOverlays("measure-live"); if (this.measure.length !== 1 || !hit) return;
+    const s = this._caught(hit); this.addPath([this.measure[0].point, s.point], s.ref ? "#e8554b" : "#0c66e4", "measure-live", 0.4, true);
+    if (s.ref) this.addLabel(s.point, `∥ ${s.ref} — relâchez pour accrocher`, "measure-live", "dim");
+  }
   _measure(hit) {
     if (!hit) return;
+    this.clearOverlays("measure-live");
     if (this.measure.length >= 2) { this.measure = []; this.clearOverlays("measure"); }
+    const caught = this._caught(hit); if (caught.ref) hit = { ...hit, point: caught.point, caught: caught.ref };
     this.measure.push(hit);
     this.addMarker(hit.point, "#0c66e4", "measure");
     if (hit.face && hit.face.type === "cylinder" && this.measure.length === 1) this.addLabel(hit.point, `Ø ${fmt(hit.face.r * 2)}`, "measure");
@@ -323,11 +333,12 @@ export class Viewer {
       let d = pa.distanceTo(pb), text = `${fmt(d)} mm`;
       if (a.normal && b.normal && a.face && b.face && a.face.type === "plane" && b.face.type === "plane") {
         const na = new THREE.Vector3(...a.normal), nb = new THREE.Vector3(...b.normal);
-        if (Math.abs(Math.abs(na.dot(nb)) - 1) < 1e-3) { d = Math.abs(pb.clone().sub(pa).dot(na)); text = `${fmt(d)} mm entre faces ∥`; }
+        const gap = Math.abs(pb.clone().sub(pa).dot(na));
+        if (Math.abs(Math.abs(na.dot(nb)) - 1) < 1e-3 && gap > 1e-6) { d = gap; text = `${fmt(d)} mm entre faces ∥`; }      // two points of one same face : the distance between the points
       }
       const dv = pb.clone().sub(pa);
       this.addPath([a.point, b.point], "#0c66e4", "measure", 0.5);
-      this.addLabel(pa.clone().add(pb).multiplyScalar(0.5).toArray(), `${text}  (ΔX ${fmt(Math.abs(dv.x))} · ΔY ${fmt(Math.abs(dv.y))} · ΔZ ${fmt(Math.abs(dv.z))})`, "measure");
+      this.addLabel(pa.clone().add(pb).multiplyScalar(0.5).toArray(), `${text}${b.caught ? ` ∥ ${b.caught}` : ""}  (ΔX ${fmt(Math.abs(dv.x))} · ΔY ${fmt(Math.abs(dv.y))} · ΔZ ${fmt(Math.abs(dv.z))})`, "measure");
       if (this.opts.onMeasure) this.opts.onMeasure({ d, a, b });
     }
     this.dirty = true;
@@ -383,6 +394,8 @@ export class Viewer {
     g.userData.tag = tag; this.overlays.add(g); this.dirty = true;
     return g;
   }
+  /** Where a point of the model is on the screen, in the coordinates of the window. */
+  toScreen(p) { this._cam(); const v = new THREE.Vector3(...p).project(this.camera), r = this.canvas.getBoundingClientRect(); return [r.left + (v.x + 1) / 2 * r.width, r.top + (1 - v.y) / 2 * r.height]; }
   addLabel(p, text, tag = "label", cls = "", onClick = null) {
     const el = document.createElement(onClick ? "button" : "div");
     el.className = "dw-view-label " + cls; el.textContent = text;

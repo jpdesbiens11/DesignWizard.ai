@@ -4,7 +4,8 @@
    plating, the side it presses on. The definition is kept in the part (spec.busbar) : the part is written again from it at
    each change. Pure : no kernel, no DOM.
    def = { name, material, net, W, t, r, I, finish, legs: [{ L, bend }], terminals: [{ id, leg, s, y, screw, key }],
-           contacts: [{ id, leg, side, s, y, turn, role, form, weld, u, w, h, n, gap, force, plating, base, duty, i, key }] }
+           contacts: [{ id, leg, side, s, y, turn, role, form, weld, u, w, h, n, gap, force, plating, base, duty, i, key }],
+           holes: [{ id, leg, s, y, d, l, turn }] }      — a plain through hole : Ø d, oblong when l > d (l along the leg, or across it when turned)
    form : cone (pointed bosses embossed in the bar), bridge (spring blades lanced in a thin bar) or band (a band of lamellae laid on
    the land) — a contact without a form is a band, as before ; weld : "projection" when the bosses are welded ; u : volts d.c.
    leg.bend : the turn BEFORE the leg, +90 (up) or −90 (down) ; s : distance along the leg, from its start ; y : across the width ;
@@ -79,6 +80,30 @@ export function addContact(def, where, o = {}) {
   const c = { id: nextId(def.contacts, "CT"), leg: where.leg, side: where.side, s: where.s, y: where.y ?? r2(def.W / 2), turn: 0, role: "A", form, w, h: Math.min(P.h, def.W - 2), n: P.n, gap: form === "cone" ? 0.5 : P.gap, force: P.force, plating: P.plating, base: form === "band" ? P.base : "Cu", duty: "power", i, ...o };
   def.contacts.push(c); fit(def, c); return c;
 }
+/** A through hole where the designer pointed : it takes the next number, for good. o : { d, l, turn }. */
+export function addHole(def, where, o = {}) {
+  def.holes = def.holes || [];
+  const h = { id: nextId(def.holes, "H"), leg: where.leg, s: where.s, y: where.y ?? r2(def.W / 2), d: 6.6, ...o };
+  def.holes.push(h); fitHole(def, h); return h;
+}
+/** Keeps a hole inside the flat part of its leg and inside the width, with a little metal around it. */
+export function fitHole(def, h) {
+  const g = legsOf(def)[h.leg]; if (!g) return h;
+  const along = (h.l > h.d && !h.turn ? h.l : h.d) / 2, across = (h.l > h.d && h.turn ? h.l : h.d) / 2, m = 1;
+  h.s = r2(Math.max(g.from + along + m, Math.min(g.to - along - m, h.s))); h.y = r2(Math.max(Math.min(across + m, def.W / 2), Math.min(Math.max(def.W - across - m, def.W / 2), h.y)));
+  return h;
+}
+/** Every terminal, contact and hole of a strip, with what it is called on screen. */
+export const connections = (def) => [...(def.terminals || []).map((x) => ({ ...x, kind: "terminal" })), ...(def.contacts || []).map((x) => ({ ...x, kind: "contact" })), ...(def.holes || []).map((x) => ({ ...x, kind: "hole" }))];
+/** The flat face of a leg, for the mouse : its two directions (u along the leg from its start, v across the width), where a feature of
+    half-sizes [along, across] may sit, the features already on that leg, and the point of the part at (u, v). w : { leg, side }. */
+export function legFace(def, w, half = [0, 0], skip = null) {
+  const g = legsOf(def)[w.leg]; if (!g) return null;
+  const off = w.side * (def.t / 2 + 0.04), P = (u, v) => [g.C[0] + g.d[0] * u + g.n[0] * off, v, g.C[1] + g.d[1] * u + g.n[1] * off];
+  const keepV = [Math.min(half[1], def.W / 2), Math.max(def.W - half[1], def.W / 2)];
+  return { key: `${w.leg}:${w.side}`, leg: w.leg, side: w.side, u: [0, r2(g.L)], v: [0, def.W], keep: { u: [r2(g.from + half[0]), r2(Math.max(g.from + half[0], g.to - half[0]))], v: keepV.map(r2) },
+    others: connections(def).filter((x) => x.leg === w.leg && x.id !== skip).map((x) => ({ id: x.id, u: x.s, v: x.y ?? def.W / 2 })), P, names: { u: "le long de la branche", v: "en travers" }, title: `Branche ${w.leg + 1}` };
+}
 /** The parameters of the interface of a contact : what the designer set, and — for a form made in the bar itself — the thickness of the bar. */
 export function contactParams(def, c) {
   const form = contactForm(c, { band: c.band });
@@ -107,6 +132,14 @@ export function busbarChecks(def) {
   for (const c of def.contacts) { const g = legs[c.leg]; if (!g) { say("bad", `${c.id} : sa branche n'existe plus.`); continue; }
     for (const n of [...contactEstimate(c).notes, ...contactFormNotes(contactParams(def, c), { band: c.band })]) say("check", `${c.id} : ${n}`);
     if (c.duty === "power" && def.finish === "none") say("check", `${c.id} : plage de contact sur cuivre nu — l'oxyde monte la résistance avec le temps ; revêtir la plage (${PLATINGS[c.plating].fr.toLowerCase()}).`); }
+  for (const h of def.holes || []) { const g = legs[h.leg]; if (!g) { say("bad", `${h.id} : sa branche n'existe plus.`); continue; }
+    const across = h.l > h.d && h.turn ? h.l : h.d, along = h.l > h.d && !h.turn ? h.l : h.d, left = def.W - across;
+    if (left <= 0.5) { say("bad", `${h.id} : un trou de ${fr(across)} mm dans une largeur de ${fr(def.W)} mm coupe la barre.`); continue; }
+    const Jn = I / (left * def.t);
+    if (Jn > 5) say("check", `${h.id} : au droit du trou il reste ${fr(left)} mm de large — ${fr(Jn)} A/mm², au-dessus du repère de 5 A/mm².`);
+    if (Math.min(h.y - across / 2, def.W - h.y - across / 2) < def.t - 0.01) say("check", `${h.id} : moins d'une épaisseur (${fr(def.t)} mm) de métal entre le trou et le bord de la barre.`);
+    if ((g.i === 0 && h.s - along / 2 < 1.5 * h.d - 0.01) || (g.i === legs.length - 1 && g.L - h.s - along / 2 < 1.5 * h.d - 0.01)) say("check", `${h.id} : à moins de 1,5 × d du bout de la barre.`);
+    for (const x of connections(def)) if (x.id !== h.id && x.leg === h.leg && Math.hypot(x.s - h.s, (x.y ?? def.W / 2) - h.y) < (along + (x.kind === "hole" ? x.d : x.kind === "terminal" ? 2 * (parseFloat(String(x.screw).replace(/[^0-9.]/g, "")) || 6) : Math.min(x.w, x.h))) / 2 && (x.kind !== "hole" || x.id > h.id)) say("check", `${h.id} : chevauche ${x.id}.`); }
   return { S: r2(S), J: r2(J), length: r2(len), flat: r2(flat), bends, R: R * 1e6, P: I * I * R, dU: I * R * 1e3, notes, ok: !notes.some((n) => n.level === "bad") };
 }
 /** Writes the part from its definition. Interfaces the definition does not own (added elsewhere) are kept. */
@@ -118,6 +151,10 @@ export function busbarPart(def, id, before = null) {
     return { id: c.id, type: "contact", name: `${CONTACT_FORMS[contactForm(c, { band: c.band })].name} ${c.id} — ${def.net}`, key: c.key || `${key}_${c.id.toLowerCase()}`, side: c.role === "B" ? "B" : "A", face: q.face, level: q.level, at: q.at, ...(rot ? { rot } : {}), ...(c.external ? { external: true } : {}),
       params: contactParams(def, c), opts: { band: c.band || (c.form && c.form !== "band" ? "integral" : "insert") } }; });
   const ins = def.insulation && def.insulation.t > 0 && material(def.insulation.material) ? def.insulation : null;
+  const holes = (def.holes || []).filter((h) => legs[h.leg] && h.d > 0).map((h) => { const q = onLeg(def, legs, h.leg, 1, h.s, h.y ?? def.W / 2), all = ins ? { bodies: "all" } : {}, e = h.l > h.d ? (h.l - h.d) / 2 : 0;
+    if (!e) return { op: "hole", id: `trou_${h.id.toLowerCase()}`, name: `Trou de passage ${h.id}`, face: q.face, at: q.at, d: h.d, depth: "through", ...all };
+    const a = h.turn ? onLeg(def, legs, h.leg, 1, h.s, (h.y ?? def.W / 2) - e) : onLeg(def, legs, h.leg, 1, h.s - e, h.y ?? def.W / 2), b = h.turn ? onLeg(def, legs, h.leg, 1, h.s, (h.y ?? def.W / 2) + e) : onLeg(def, legs, h.leg, 1, h.s + e, h.y ?? def.W / 2);
+    return { op: "slot", id: `trou_${h.id.toLowerCase()}`, name: `Trou oblong ${h.id}`, face: q.face, from: a.at, to: b.at, w: h.d, depth: "through", ...all }; });
   const kept = ((before && before.interfaces) || []).filter((i) => !mine.has(i.id) && !/^(T|CT)\d+$/.test(i.id)), ch = busbarChecks(def);
   return { ...(before ? { revision: before.revision, characteristics: before.characteristics } : {}), dw: "part/1", id, name: def.name || "Busbar", function: `Conduit ${def.net}${def.I ? ` : ${fr(def.I)} A` : ""} entre ${def.terminals.length + def.contacts.length} point(s) de raccordement`,
     family: "busbar", process: legs.length > 1 ? "sheet_metal" : "laser_cut", material: def.material, ...(def.finish && def.finish !== "none" ? { finish: FINISHES[def.finish] } : {}), elec: { kind: "conductor", net: def.net }, busbar: JSON.parse(JSON.stringify(def)),
@@ -125,7 +162,7 @@ export function busbarPart(def, id, before = null) {
     ...(ins ? { bodies: { isolant: { material: ins.material, kind: "insulator", label: INSULATIONS[ins.material] ? INSULATIONS[ins.material].fr : "Isolant" } } } : {}),
     features: [{ op: "extrude", id: "bande", name: "Bande", profile: stripProfile(def), plane: "XZ", length: "W" },
       ...(ins ? [{ op: "extrude", id: "gaine", name: "Isolant", body: "isolant", profile: stripProfile(def, ins.t), plane: "XZ", at: -ins.t, length: `W + ${r2(2 * ins.t)}` }, { op: "extrude", id: "gaine_ame", body: "isolant", mode: "cut", profile: stripProfile(def), plane: "XZ", length: "W" }, ...windows(def, legs, ins.t, ins.margin ?? 2)] : []),
-      { op: "interfaces" }], interfaces: [...terminals, ...contacts, ...kept],
+      ...holes, { op: "interfaces" }], interfaces: [...terminals, ...contacts, ...kept],
     notes: [`Section ${fr(ch.S)} mm², ${fr(ch.J)} A/mm² à ${fr(def.I || 0)} A ; résistance à 20 °C ≈ ${fr(ch.R)} µΩ.`, ...(ch.bends ? [`Développé ≈ ${fr(ch.flat)} mm (${ch.bends} pli(s) à 90°, rayon intérieur ${fr(def.r)} mm, facteur K ${String(KFACTOR).replace(".", ",")}) : à confirmer par le plieur.`] : []),
       ...(ins ? [`Isolant : ${(INSULATIONS[ins.material] || { fr: ins.material }).fr.toLowerCase()} de ${fr(ins.t)} mm, ouvert par une fenêtre à chaque borne et à chaque contact (${fr(ins.margin ?? 2)} mm de marge).`] : []),
       ...(def.contacts.length ? ["Plages de contact : planéité 0,05 mm, sans bavure ni rayure ; revêtement selon la nomenclature du contact."] : [])] };

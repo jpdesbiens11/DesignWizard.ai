@@ -4,6 +4,7 @@
 import { el, btn, icon, download, toast, copyText, modal } from "./dom.js";
 import { Viewer } from "./viewer.js";
 import { popupMenu, createSelection } from "./view_select.js";
+import { snapPrefs, snapMenu } from "./view_place.js";
 
 /* The gestures every 3D view answers, whatever it shows (a screen adds its own with opts.menuFor and opts.onKey). */
 export const VIEW_KEYS = [["Clic", "Sélectionner une face, une arête ou un point"], ["Ctrl + clic", "Ajouter à la sélection, ou en retirer"], ["Clic droit", "Menu : ce qui se fait ici"], ["Deux éléments choisis", "Leur distance, leur angle ou leur entraxe s'affiche"],
@@ -27,6 +28,7 @@ export function createViewport(host, opts = {}) {
     onHover: (h, e) => { hovered = h && h.normal ? h : null; if (opts.onHover) opts.onHover(h, e); if (sel) sel.hover(opts.hoverSelect === false ? null : sel.at(h)); },
     onMenu: (h, e) => (opts.onMenu ? opts.onMenu(h, e) : popupMenu(e, contextMenu(h))), onMeasure: opts.onMeasure, onKey: (e) => onKey(e) });
   host._viewer = viewer;                                          // for whoever inspects the page (tests, the console)
+  viewer.snapOn = () => snapPrefs().direction;                   // the second point of a measure is caught onto an axis, unless switched off (right click)
   const picked = el("div", { class: "chip picked view-picked hidden", "data-tip": "Ce qui est sélectionné, et ce qu'il mesure. Ctrl + clic pour ajouter ; Échap pour tout désélectionner." });
   if (opts.select !== false) sel = createSelection(viewer, (items) => { picked.textContent = items.length ? sel.measure() : ""; picked.classList.toggle("hidden", !items.length); if (opts.onSelect) opts.onSelect(items); });
   const busy = el("div", { class: "view-busy hidden" }, "");
@@ -104,7 +106,7 @@ export function createViewport(host, opts = {}) {
       ...(x && x.kind === "face" && x.hit.normal ? [{ label: "Vue normale à cette face", keys: "N", icon: "eye", run: () => lookAt(x) }, { label: "Couper ici", icon: "section", run: () => cutAt(x) }] : []),
       { label: "Copier la mesure", keys: "Ctrl+C", icon: "copy", run: copyMeasure }, { label: "Tout désélectionner", keys: "Échap", icon: "cross", run: () => sel.clear() }, "—"] : [];
     const bare = !on.length && h && h.normal ? [{ label: "Vue normale à cette face", keys: "N", icon: "eye", run: () => viewer.lookAlong(h.normal) }, "—"] : [];      // a view with no selection of its own still looks square at what is under the pointer
-    return [...own, ...(own.length ? ["—"] : []), ...on, ...bare, ...menu(), "—", { label: "Souris et raccourcis…", keys: "?", icon: "help", run: showKeys }];
+    return [...own, ...(own.length ? ["—"] : []), ...on, ...bare, ...menu(), "—", ...snapMenu(), "—", { label: "Souris et raccourcis…", keys: "?", icon: "help", run: showKeys }];
   }
 
   const api = {

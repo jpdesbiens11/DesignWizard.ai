@@ -42,7 +42,7 @@ export function partStudio(main, args, cfg) {
   }
 
   let gest = null;                                                // the mouse and the keys on the model (part_gestures.js)
-  const vp = createViewport(view, { select: false, name: () => st.spec.id, onPick: (h, e) => gest.onPick(h, e), onHover: (h) => { gest.onHover(h); onHover(h); }, onMenu: (h, e) => gest.onMenu(h, e), onKey: (e) => gest.onKey(e) });
+  const vp = createViewport(view, { select: false, name: () => st.spec.id, onPick: (h, e) => gest.onPick(h, e), onHover: (h, e) => { gest.onHover(h, e); onHover(h); }, onMenu: (h, e) => gest.onMenu(h, e), onKey: (e) => gest.onKey(e) });
   const pins = mountPins(vp, { key: () => `part:${id}` });      // the messages pinned on this part
   const info = el("span", { class: "chip" }, "—"), hover = el("span", { class: "chip hidden" }, ""), stage = el("span", { class: "chip stage hidden" }, "");
   const picked = el("span", { class: "chip picked hidden" }, "");
@@ -216,7 +216,7 @@ export function partStudio(main, args, cfg) {
     else ({ params: paramsPanel, ifaces: interfacesPanel, gamme: gammePanel, files: artifactsPanel, dfx: dfxPanel, print: printPanel, fold: foldPanel, sheet: sheetPanel, json: jsonPanel })[st.tab](body, ctx);
   }
 
-  return () => { offChange(); pins.dispose(); st.token++; app.faces = null; vp.dispose(); kernel.forget(`${id}~live`).catch(() => {}); };
+  return () => { offChange(); pins.dispose(); gest.dispose(); st.token++; app.faces = null; vp.dispose(); kernel.forget(`${id}~live`).catch(() => {}); };
 }
 
 /** Gallery of starter parts. */
