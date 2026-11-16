@@ -31,7 +31,7 @@ test("a coil refuses what cannot be wound", async () => {
   assert.match(errors({ op: "coil", d: 6, di: 6, r: 40, h: 60, turns: 5 }), /alésage/);
 });
 test("the coil has its words in the editor, travels in a .dwiz file, and is left to Onshape in a FeatureScript", () => {
-  assert.equal(FEATURE_LABEL.coil, "Serpentin (tube en hélice)"); assert.equal(FEATURE_DEFAULT.coil.op, "coil");
+  assert.equal(FEATURE_LABEL.coil, "Coil (helical tube)"); assert.equal(FEATURE_DEFAULT.coil.op, "coil");
   const p = part({ op: "coil", id: "helice", d: 8, di: 6, r: 78.6, r1: 41.9, h: 125, turns: 11, at: [0, 0, 15], axis: "Z" });
   assert.deepEqual(fromDwiz(toDwiz(p)), p);
   assert.match(toFeatureScript(p).code || toFeatureScript(p), /serpentin \(coil\)/);

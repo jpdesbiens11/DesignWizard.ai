@@ -12,37 +12,37 @@ const round2 = (x) => Math.round(x * 100) / 100, frn = (x, d = 2) => String(Math
 
 /** Joining processes : what each asks before, how it is done, how it is checked. */
 export const WELD_PROCESSES = {
-  laser: { fr: "Soudure laser", unit: "cordon", prep: "Dégraisser les deux faces ; brider sans jeu (jeu ≤ 10 % de l'épaisseur de la languette)", tool: "Laser et bridage dédié", control: "Arrachement sur éprouvettes, coupe métallographique, résistance de la liaison en 4 fils",
+  laser: { label: "Laser welding", fr: "Soudure laser", unit: "cordon", prep: "Dégraisser les deux faces ; brider sans jeu (jeu ≤ 10 % de l'épaisseur de la languette)", tool: "Laser et bridage dédié", control: "Arrachement sur éprouvettes, coupe métallographique, résistance de la liaison en 4 fils",
     note: "Cuivre sur aluminium : composés intermétalliques fragiles — paramètres à qualifier, ou face nickelée." },
-  resistance: { fr: "Soudure par résistance", unit: "point", prep: "Faces propres ; languette de 0,1 à 0,3 mm", tool: "Soudeuse par points à électrodes parallèles", control: "Arrachement de la languette : la matière doit se déchirer autour des points",
+  resistance: { label: "Resistance welding", fr: "Soudure par résistance", unit: "point", prep: "Faces propres ; languette de 0,1 à 0,3 mm", tool: "Soudeuse par points à électrodes parallèles", control: "Arrachement de la languette : la matière doit se déchirer autour des points",
     note: "Pour des languettes minces sur des bornes de cellule ; au-delà de 0,3 mm, préférer le laser." },
-  ultrasonic: { fr: "Soudure par ultrasons", unit: "empreinte", prep: "Faces propres et sèches ; enclume sous la pièce", tool: "Soudeuse à ultrasons, sonotrode adaptée", control: "Arrachement sur éprouvettes ; empreinte complète de la sonotrode",
+  ultrasonic: { label: "Ultrasonic welding", fr: "Soudure par ultrasons", unit: "empreinte", prep: "Faces propres et sèches ; enclume sous la pièce", tool: "Soudeuse à ultrasons, sonotrode adaptée", control: "Arrachement sur éprouvettes ; empreinte complète de la sonotrode",
     note: "Sans fusion : convient à l'aluminium sur le cuivre et aux feuillards." },
-  wirebond: { fr: "Câblage par fils (wirebonding)", unit: "fil", prep: "Plages propres, planes, sans oxyde épais ; pièces bridées, sans vibration", tool: "Machine de câblage par fils (ultrasons)", control: "Essai de traction des fils (pull test) et de cisaillement des pieds",
+  wirebond: { label: "Wire bonding", fr: "Câblage par fils (wirebonding)", unit: "fil", prep: "Plages propres, planes, sans oxyde épais ; pièces bridées, sans vibration", tool: "Machine de câblage par fils (ultrasons)", control: "Essai de traction des fils (pull test) et de cisaillement des pieds",
     note: "Le fil sert souvent de fusible : son courant de fusion se choisit, il ne se subit pas." },
 };
 /** Bond wires : Preece's constant K (A / mm^1.5), fusing current I = K · d^1.5. */
-export const BOND_WIRES = { Al: { fr: "aluminium", K: 59.2 }, Cu: { fr: "cuivre", K: 80 } };
+export const BOND_WIRES = { Al: { label: "aluminium", fr: "aluminium", K: 59.2 }, Cu: { label: "copper", fr: "cuivre", K: 80 } };
 /** Contact platings : resistivity (Ω·m), hardness (Pa), softening voltage (V) — textbook orders of magnitude — and the standards that specify them. */
 export const PLATINGS = {
-  Ag: { fr: "Argent", rho: 1.6e-8, H: 0.9e9, soften: 0.09, std: "ASTM B700, ISO 4521", use: "Puissance : la référence pour les contacts à fort courant", signal: false },
-  Sn: { fr: "Étain", rho: 1.15e-7, H: 0.07e9, soften: 0.07, std: "ASTM B545, ISO 2093", use: "Économique ; sensible à l'usure par petits débattements (fretting) : effort élevé, peu de cycles", signal: false },
-  Au: { fr: "Or dur sur nickel", rho: 3.5e-8, H: 1.8e9, soften: 0.08, std: "ASTM B488, ISO 27874 ; sous-couche nickel ASTM B689", use: "Signal et faibles courants : pas d'oxyde, faible effort", signal: true },
-  Ni: { fr: "Nickel", rho: 7e-8, H: 3e9, soften: 0.22, std: "ASTM B689", use: "Barrière et tenue à la corrosion ; résistance de contact plus élevée", signal: false },
+  Ag: { label: "Silver", fr: "Argent", rho: 1.6e-8, H: 0.9e9, soften: 0.09, std: "ASTM B700, ISO 4521", use: "Puissance : la référence pour les contacts à fort courant", signal: false },
+  Sn: { label: "Tin", fr: "Étain", rho: 1.15e-7, H: 0.07e9, soften: 0.07, std: "ASTM B545, ISO 2093", use: "Économique ; sensible à l'usure par petits débattements (fretting) : effort élevé, peu de cycles", signal: false },
+  Au: { label: "Hard gold over nickel", fr: "Or dur sur nickel", rho: 3.5e-8, H: 1.8e9, soften: 0.08, std: "ASTM B488, ISO 27874 ; sous-couche nickel ASTM B689", use: "Signal et faibles courants : pas d'oxyde, faible effort", signal: true },
+  Ni: { label: "Nickel", fr: "Nickel", rho: 7e-8, H: 3e9, soften: 0.22, std: "ASTM B689", use: "Barrière et tenue à la corrosion ; résistance de contact plus élevée", signal: false },
 };
 /** What a contact is formed in : conductivity (% IACS), Young's modulus E (GPa) and elastic limit Rp (MPa) — TYPICAL values of
     each family, written from practice and not read again on a data sheet — and the standard of the strip. */
 export const CONTACT_BASES = {
-  CuBe: { fr: "Cuivre-béryllium (C17200)", iacs: 22, E: 131, Rp: 1000, std: "ASTM B194", use: "Le ressort de référence : forte élasticité, tient l'effort dans le temps" },
-  CuNiSi: { fr: "Cuivre-nickel-silicium (C70250)", iacs: 40, E: 131, Rp: 650, std: "ASTM B422", use: "Bon compromis ressort / conductivité, sans béryllium" },
-  CuSn: { fr: "Bronze phosphoreux (C51900)", iacs: 15, E: 118, Rp: 500, std: "ASTM B103", use: "Économique, pour les signaux et les petits courants" },
-  Cu: { fr: "Cuivre de la barre (demi-dur)", iacs: 100, E: 117, Rp: 250, std: "nuance de la barre", use: "La lame ou le bossage est formé dans la barre elle-même : rien à rapporter, mais le cuivre garde mal son effort à chaud" },
+  CuBe: { label: "Beryllium copper (C17200)", fr: "Cuivre-béryllium (C17200)", iacs: 22, E: 131, Rp: 1000, std: "ASTM B194", use: "Le ressort de référence : forte élasticité, tient l'effort dans le temps" },
+  CuNiSi: { label: "Copper-nickel-silicon (C70250)", fr: "Cuivre-nickel-silicium (C70250)", iacs: 40, E: 131, Rp: 650, std: "ASTM B422", use: "Bon compromis ressort / conductivité, sans béryllium" },
+  CuSn: { label: "Phosphor bronze (C51900)", fr: "Bronze phosphoreux (C51900)", iacs: 15, E: 118, Rp: 500, std: "ASTM B103", use: "Économique, pour les signaux et les petits courants" },
+  Cu: { label: "Busbar copper (half-hard)", fr: "Cuivre de la barre (demi-dur)", iacs: 100, E: 117, Rp: 250, std: "nuance de la barre", use: "La lame ou le bossage est formé dans la barre elle-même : rien à rapporter, mais le cuivre garde mal son effort à chaud" },
 };
 /** The forms a pressure contact takes. integral : formed in the bar itself (nothing to buy). */
 export const CONTACT_FORMS = {
-  cone: { fr: "Bossages coniques", name: "Contact à bossages", unit: "bossage", integral: true, text: "Des bossages emboutis en pointe dans la barre elle-même : chaque pointe fait un point de contact, et peut servir de bossage de soudage. Pour une barre de 1 mm et plus." },
-  bridge: { fr: "Lames à ressort", name: "Contact à lames", unit: "lame", integral: true, text: "Des lames découpées et cambrées en pont dans une barre mince : chaque lame fléchit et rattrape les défauts de planéité." },
-  band: { fr: "Bande de lamelles rapportée", name: "Contact à lamelles", unit: "lamelle", integral: false, text: "Une bande de lamelles en alliage à ressort, revêtue, posée entre les deux plages : beaucoup de points en parallèle, pour les forts courants." },
+  cone: { label: "Conical projections", fr: "Bossages coniques", name: "Contact à bossages", unit: "bossage", integral: true, text: "Des bossages emboutis en pointe dans la barre elle-même : chaque pointe fait un point de contact, et peut servir de bossage de soudage. Pour une barre de 1 mm et plus." },
+  bridge: { label: "Spring blades", fr: "Lames à ressort", name: "Contact à lames", unit: "lame", integral: true, text: "Des lames découpées et cambrées en pont dans une barre mince : chaque lame fléchit et rattrape les défauts de planéité." },
+  band: { label: "Louvered contact band", fr: "Bande de lamelles rapportée", name: "Contact à lamelles", unit: "lamelle", integral: false, text: "Une bande de lamelles en alliage à ressort, revêtue, posée entre les deux plages : beaucoup de points en parallèle, pour les forts courants." },
 };
 /** The form of a contact : the one it says, else the one its old option meant (a band, unless it was marked integral). */
 export const contactForm = (p = {}, o = {}) => (CONTACT_FORMS[p.form] ? p.form : o && o.band === "integral" ? "cone" : "band");
@@ -69,7 +69,7 @@ export function contactEstimate(p) {
   const P = PLATINGS[p.plating] || PLATINGS.Ag, n = Math.max(1, Math.round(p.n || 1)), F = Math.max(0.05, Number(p.force) || 1), i = Math.max(0, Number(p.i) || 0);
   const a = Math.sqrt(F / (Math.PI * P.H)), rPoint = P.rho / (2 * a), rTotal = rPoint / n, iPoint = 0.1 * P.soften / rPoint, iMax = iPoint * n * 0.8;      // a tenth of the softening voltage across a point ; 80 % : the points never share evenly
   const notes = [];
-  if (p.duty === "signal" && !P.signal) notes.push(`${P.fr} pour un signal : la couche d'oxyde peut couper un courant de quelques milliampères — or dur sur nickel conseillé.`);
+  if (p.duty === "signal" && !P.signal) notes.push(`${P.label} pour un signal : la couche d'oxyde peut couper un courant de quelques milliampères — or dur sur nickel conseillé.`);
   if (p.plating === "Sn" && F < 1) notes.push("Étain : au moins 1 N par point pour percer l'oxyde.");
   if (i > iMax) notes.push(`${frn(i, 1)} A demandés pour environ ${frn(iMax, 1)} A estimés : plus de points, plus d'effort, ou argent.`);
   if (n < 2) notes.push("Un seul point de contact : aucune redondance.");
@@ -106,7 +106,7 @@ export function contactFacts(p = {}, o = {}) {
   const form = contactForm(p, o), L = contactLayout(p);
   if (form === "cone") { const pr = projectionFor(p.gap || 0.5, Math.min(L.pitch, L.lane) * 0.8); return [`${L.n} bossages Ø ${frn(pr.d1)} mm en pointe (sommet Ø ${frn(round2(pr.d1 * 0.3))}), hauts de ${frn(p.gap || 0.5)} mm — série de l'ISO 8167, type sphérique (Ø ${frn(pr.d1)} × ${frn(pr.a)}).`]; }
   if (form === "bridge") { const base = p.base || "Cu", sp = bridgeSpring({ l: L.l, w: L.w, t: p.t || 0.3, base }), B = CONTACT_BASES[base] || CONTACT_BASES.Cu;
-    return [`${L.n} lames de ${frn(L.l)} × ${frn(L.w)} × ${frn(p.t || 0.3)} mm, ${B.fr.split(" (")[0].toLowerCase()} : chacune fléchit et revient jusqu'à environ ${frn(sp.deflMax, 3)} mm, pour ${frn(sp.forceMax, 1)} N ; au-delà elle se met en place une fois pour toutes.`]; }
+    return [`${L.n} lames de ${frn(L.l)} × ${frn(L.w)} × ${frn(p.t || 0.3)} mm, ${B.label.split(" (")[0].toLowerCase()} : chacune fléchit et revient jusqu'à environ ${frn(sp.deflMax, 3)} mm, pour ${frn(sp.forceMax, 1)} N ; au-delà elle se met en place une fois pour toutes.`]; }
   return [`Une bande de ${L.n} lamelles rapportée entre les deux plages : les lamelles travaillent en parallèle.`];
 }
 /** What the form of a contact asks to check, beyond its resistance. p : the parameters of the contact ; o : its options. */
@@ -138,7 +138,7 @@ export const ELEC_INTERFACES = {
     doc: "Liaison électrique permanente entre deux conducteurs sur une zone de w × h. A = le côté mince (languette, bout de busbar, départ des fils) ; B = la borne (capot de cellule, barre épaisse, plage). « process » : laser, resistance, ultrasonic, wirebond. « n » : cordons, points ou fils ; « t » : épaisseur de la languette ; « wire » et « wireMat » (Al, Cu) pour le wirebonding ; « i » : courant à porter (A). Aucune géométrie ajoutée.",
     params: { process: "laser", w: 8, h: 4, n: 2, t: 0.3, wire: 0.3, wireMat: "Al", i: 0 }, optsA: {}, optsB: {},
     compile: () => [],
-    hardware(p) { const W = BOND_WIRES[p.wireMat] || BOND_WIRES.Al; return p.process === "wirebond" ? [{ id: `WIRE-${String(p.wireMat || "Al").toUpperCase()}-${Math.round((p.wire || 0.3) * 1000)}`, name: `Fil de câblage en ${W.fr} Ø ${frn(p.wire || 0.3)} mm`, qty: Math.max(1, Math.round(p.n || 1)), kind: "wire" }] : []; },
+    hardware(p) { const W = BOND_WIRES[p.wireMat] || BOND_WIRES.Al; return p.process === "wirebond" ? [{ id: `WIRE-${String(p.wireMat || "Al").toUpperCase()}-${Math.round((p.wire || 0.3) * 1000)}`, name: `Fil de câblage en ${W.label} Ø ${frn(p.wire || 0.3)} mm`, qty: Math.max(1, Math.round(p.n || 1)), kind: "wire" }] : []; },
     gdt: () => ({ symbol: "flatness", tolerance: 0.05 }),
     signature: (p) => `${p.process || "laser"}|${round2(p.w || 0)}x${round2(p.h || 0)}|n${Math.round(p.n || 1)}`,
   },
@@ -155,7 +155,7 @@ export const ELEC_INTERFACES = {
       return [{ op: "boss", uv: pts, d: L.d, h: p.gap, lift: p.gap }];
     },
     hardware(p, oA = {}) { const B = CONTACT_BASES[p.base] || CONTACT_BASES.CuBe, P = PLATINGS[p.plating] || PLATINGS.Ag;
-      return contactForm(p, oA) !== "band" ? [] : [{ id: `CONTACT-BAND-${Math.round(p.n || 1)}-${p.base || "CuBe"}-${p.plating || "Ag"}`, name: `Bande de contact à lamelles, ${Math.round(p.n || 1)} points, ${B.fr.split(" (")[0].toLowerCase()}, ${P.fr.toLowerCase()}`, qty: 1, kind: "contact" }]; },
+      return contactForm(p, oA) !== "band" ? [] : [{ id: `CONTACT-BAND-${Math.round(p.n || 1)}-${p.base || "CuBe"}-${p.plating || "Ag"}`, name: `Bande de contact à lamelles, ${Math.round(p.n || 1)} points, ${B.label.split(" (")[0].toLowerCase()}, ${P.label.toLowerCase()}`, qty: 1, kind: "contact" }]; },
     gdt: () => ({ symbol: "flatness", tolerance: 0.05 }),
     signature: (p) => `${round2(p.w || 0)}x${round2(p.h || 0)}|n${Math.round(p.n || 1)}|${p.plating || "Ag"}${p.form ? `|${p.form}` : ""}${p.weld === "projection" ? "|soudé" : ""}`,
   },
@@ -163,8 +163,8 @@ export const ELEC_INTERFACES = {
 /** What the joint register says of an electrical joint. */
 export function elecProcess(type, p, o = {}) {
   if (type === "weld") { const W = WELD_PROCESSES[p.process] || WELD_PROCESSES.laser, e = weldEstimate(p);
-    return `${W.fr} · ${Math.round(p.n || 1)} ${W.unit}${p.n > 1 ? "s" : ""}${p.process === "wirebond" ? ` Ø ${frn(p.wire || 0.3)} mm en ${(BOND_WIRES[p.wireMat] || BOND_WIRES.Al).fr} · fusion ≈ ${frn(e.fuseTotal, 1)} A` : ` · zone ${frn(p.w)} × ${frn(p.h)} mm`}`; }
+    return `${W.label} · ${Math.round(p.n || 1)} ${W.unit}${p.n > 1 ? "s" : ""}${p.process === "wirebond" ? ` Ø ${frn(p.wire || 0.3)} mm en ${(BOND_WIRES[p.wireMat] || BOND_WIRES.Al).label} · fusion ≈ ${frn(e.fuseTotal, 1)} A` : ` · zone ${frn(p.w)} × ${frn(p.h)} mm`}`; }
   const e = contactEstimate(p), P = PLATINGS[p.plating] || PLATINGS.Ag, form = CONTACT_FORMS[contactForm(p, o)];
-  if (p.weld === "projection" && form === CONTACT_FORMS.cone) return `${Math.round(p.n || 1)} bossages soudés par bossage · ${P.fr.toLowerCase()} · zone ${frn(p.w)} × ${frn(p.h)} mm · liaison permanente, à qualifier`;
-  return `${form.fr.toLowerCase()} · ${Math.round(p.n || 1)} points · ${P.fr.toLowerCase()} · ${frn(p.force || 1, 1)} N par point · ≈ ${frn(e.rTotal, 3)} mΩ · ≈ ${frn(e.iMax, 1)} A (estimation)`;
+  if (p.weld === "projection" && form === CONTACT_FORMS.cone) return `${Math.round(p.n || 1)} bossages soudés par bossage · ${P.label.toLowerCase()} · zone ${frn(p.w)} × ${frn(p.h)} mm · liaison permanente, à qualifier`;
+  return `${form.label.toLowerCase()} · ${Math.round(p.n || 1)} points · ${P.label.toLowerCase()} · ${frn(p.force || 1, 1)} N par point · ≈ ${frn(e.rTotal, 3)} mΩ · ≈ ${frn(e.iMax, 1)} A (estimation)`;
 }

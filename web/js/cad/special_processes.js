@@ -15,53 +15,53 @@ import { material } from "./materials.js";
    (0 = none) · keepOut : copper kept back from the cut · verdict : ok | caution (it cuts, badly) | forbidden */
 const METAL = { kerf: [0.2, 0.4], hole: { k: 0.5, min: 0.5 }, slot: { k: 1, min: 1 }, web: { k: 1, min: 1.6 }, corner: 0, tol: 0.25, verdict: "ok" };
 export const LASER_FAMILIES = {
-  steel: { ...METAL, fr: "Acier et inox", short: "acier", source: "laser à fibre", gas: "azote pour un bord sans bavure ni oxyde (inox, pièce à peindre ou à souder) ; oxygène pour l'acier doux, bord oxydé", t: [0.5, 20],
+  steel: { ...METAL, label: "Steel and stainless steel", fr: "Acier et inox", short: "acier", source: "laser à fibre", gas: "azote pour un bord sans bavure ni oxyde (inox, pièce à peindre ou à souder) ; oxygène pour l'acier doux, bord oxydé", t: [0.5, 20],
     cut: "Découper le contour au laser à fibre (sous azote : bord sans oxyde)", edge: "Bord net, finement strié. Coupé à l'oxygène, il porte une couche d'oxyde.",
     watch: ["Sur un bord coupé à l'oxygène, la peinture en poudre s'écaille : demander l'azote, ou décaper le bord avant de peindre.", "Une petite pièce bascule entre les lattes de la table : prévoir des micro-attaches."],
     basis: "Épaisseur (machine de 6 kW), trait de coupe, gaz, plus petits détails et ponts : lus chez un fabricant de machines, un gazier et dans un guide de conception. Micro-attaches : pratique d'atelier." },
-  aluminium: { ...METAL, fr: "Aluminium", short: "aluminium", source: "laser à fibre", gas: "azote", t: [0.5, 15],
+  aluminium: { ...METAL, label: "Aluminium", fr: "Aluminium", short: "aluminium", source: "laser à fibre", gas: "azote", t: [0.5, 15],
     cut: "Découper le contour au laser à fibre, sous azote", edge: "Bord strié, une fine bavure au dos. Métal réfléchissant : seul un laser à fibre le coupe sans risque pour la machine.",
     watch: ["Bavure au dos : ébavurer avant anodisation ou collage.", "Une nuance trempée (6061-T6) se plie mal après découpe : pour une pièce pliée, prendre une nuance de tôlerie (5052)."],
     basis: "Épaisseur, trait de coupe, gaz : lus. Pliage des nuances trempées : pratique d'atelier." },
-  copper: { ...METAL, fr: "Cuivre et laiton", short: "cuivre et laiton", source: "laser à fibre (un laser CO2 est renvoyé par le métal)", gas: "azote", t: [0.3, 10],
+  copper: { ...METAL, label: "Copper and brass", fr: "Cuivre et laiton", short: "cuivre et laiton", source: "laser à fibre (un laser CO2 est renvoyé par le métal)", gas: "azote", t: [0.3, 10],
     cut: "Découper le contour au laser à fibre, ébavurer le dos", edge: "Bord net, une bavure fine au dos. Métal très réfléchissant : laser à fibre, coupe lente.",
     watch: ["Conducteur à isoler ou à laminer : une bavure perce l'isolant — ébavurer et arrondir les arêtes avant d'isoler.", "Une plage de contact ou de soudure se nettoie après la coupe."],
     basis: "Épaisseur (machine de 6 kW), laser à fibre pour les métaux réfléchissants : lus. Ébavurage avant isolation : pratique des fabricants de busbars, non vérifiée ici." },
-  titanium: { ...METAL, fr: "Titane", short: "titane", source: "laser à fibre", gas: "argon, gaz neutre : à chaud le titane absorbe l'oxygène et l'azote", t: [0.5, 6],
+  titanium: { ...METAL, label: "Titanium", fr: "Titane", short: "titane", source: "laser à fibre", gas: "argon, gaz neutre : à chaud le titane absorbe l'oxygène et l'azote", t: [0.5, 6],
     cut: "Découper le contour au laser à fibre, sous argon", edge: "Coupé sous gaz neutre, le bord reste clair. Un bord coloré dit que l'air est entré : couche durcie et fragile.",
     watch: ["Pièce en fatigue : la couche fragilisée du bord s'enlève à l'usinage ou par décapage — prévoir la matière.", "Épaisseur maximale à confirmer avec l'atelier."],
     basis: "Coupe sous gaz neutre sans oxyde : lu chez un fabricant de machines. Épaisseur maximale et couche fragilisée du titane : connaissance métallurgique, non vérifiée ici." },
-  laminate: { fr: "Stratifié verre-époxy (FR-4, carte)", short: "FR-4", source: "laser UV ; un laser CO2 coupe plus épais mais carbonise le bord", gas: "aspiration des fumées", t: [0.1, 1.6],
+  laminate: { label: "Glass-epoxy laminate (FR-4, board)", fr: "Stratifié verre-époxy (FR-4, carte)", short: "FR-4", source: "laser UV ; un laser CO2 coupe plus épais mais carbonise le bord", gas: "aspiration des fumées", t: [0.1, 1.6],
     kerf: [0.02, 0.05], hole: { k: 0, min: 0.3 }, slot: { k: 0, min: 0.3 }, web: { k: 0, min: 0.5 }, corner: 0.5, tol: 0.05, keepOut: 0.2, verdict: "ok",
     cut: "Découper le contour au laser UV (aucun effort sur la carte)", edge: "Aucun effort sur la carte ni sur ses soudures, un trait de coupe très fin. Mal réglé, même un laser UV carbonise le bord.",
     watch: ["Un bord carbonisé abaisse la résistance de surface et la tenue en tension du chant : tenir pistes et composants en retrait du trait de coupe, ou placer une piste de garde.", "Aucune distance normalisée : des essais publiés ont tenu la tension dès 0,2 mm entre le trait de coupe et le cuivre — la convenir avec l'atelier et la contrôler.", "Carte assemblée : le laser détache sans plier ni presser, contrairement à la fraise (trait de 3 mm environ)."],
     basis: "Épaisseur, absence d'effort, carbonisation et son effet, essais de tenue en tension : lus dans les publications d'un fabricant de machines de découpe de cartes. Plus petit trou, pont et rayon : ordre de grandeur d'atelier, non vérifié." },
-  aramid: { fr: "Papier aramide", short: "papier aramide", source: "laser CO2", gas: "aspiration des fumées", t: [0.05, 0.76],
+  aramid: { label: "Aramid paper", fr: "Papier aramide", short: "papier aramide", source: "laser CO2", gas: "aspiration des fumées", t: [0.05, 0.76],
     kerf: [0.1, 0.2], hole: { k: 0, min: 0.5 }, slot: { k: 0, min: 0.5 }, web: { k: 0, min: 1.5 }, corner: 0.5, tol: 0.1, verdict: "ok",
     cut: "Découper le contour au laser CO2, feuille à plat sur table aspirante", edge: "Le papier ne fond pas : son bord brunit. Aucune bavure, aucun effort sur la feuille.",
     watch: ["L'effet d'un bord bruni sur la tenue diélectrique du papier n'est pas publié : par prudence, garder le débord d'isolant au-delà du conducteur, ne pas compter le chant coupé dans la ligne de fuite, et le vérifier par un essai diélectrique.", "Feuille mince : un pont étroit se déchire à la manipulation — élargir les ponts, arrondir les angles rentrants.", "Stocker à plat et à sec ; découper puis laminer sans attendre."],
     basis: "Laser CO2 et bord peu décoloré : résumés d'un fabricant de machines, pages non lues. Trait de coupe, plus petits détails, ponts : ordre de grandeur d'atelier, non vérifié." },
-  film: { fr: "Film isolant (polyimide, polyester)", short: "film isolant", source: "laser UV pour un bord net ; laser CO2, plus rapide, bord plus marqué", gas: "aspiration des fumées", t: [0.025, 0.5],
+  film: { label: "Insulating film (polyimide, polyester)", fr: "Film isolant (polyimide, polyester)", short: "film isolant", source: "laser UV pour un bord net ; laser CO2, plus rapide, bord plus marqué", gas: "aspiration des fumées", t: [0.025, 0.5],
     kerf: [0.03, 0.12], hole: { k: 0, min: 0.3 }, slot: { k: 0, min: 0.3 }, web: { k: 0, min: 1 }, corner: 0.3, tol: 0.05, verdict: "ok",
     cut: "Découper le contour au laser, film à plat sur table aspirante", edge: "Polyimide : il ne fond pas, son bord noircit — bien moins au laser UV qu'au CO2. Polyester : le bord fond.",
     watch: ["Trop de puissance carbonise ou décolore le bord : même prudence que pour le papier, il ne compte pas dans la ligne de fuite.", "Angle rentrant vif : amorce de déchirure — toujours un rayon."],
     basis: "Polyimide : trait de coupe mesuré (0,03 mm au laser UV, 0,12 mm au CO2 dans un film de 0,125 mm), carbonisation moindre au laser UV : lus. Polyester, plus petits détails et ponts : ordre de grandeur d'atelier, non vérifié." },
-  acrylic: { fr: "Acrylique (PMMA)", short: "acrylique", source: "laser CO2", gas: "air", t: [1, 20],
+  acrylic: { label: "Acrylic (PMMA)", fr: "Acrylique (PMMA)", short: "acrylique", source: "laser CO2", gas: "air", t: [1, 20],
     kerf: [0.1, 0.3], hole: { k: 0.5, min: 1 }, slot: { k: 1, min: 1 }, web: { k: 1, min: 2 }, corner: 0.5, tol: 0.2, verdict: "ok",
     cut: "Découper le contour au laser CO2", edge: "Le plastique qui se découpe le mieux au laser : bord lisse et brillant.",
     watch: ["Le bord garde des contraintes : un solvant ou une colle le fait craqueler — coller avec une colle prévue pour, ou recuire.", "Angle rentrant vif : la plaque casse là — toujours un rayon."],
     basis: "Matière donnée pour découpable au laser CO2 par un fabricant de machines : lu. Épaisseur, état du bord, craquelures : connaissance d'atelier, non vérifiée ici." },
-  plastic: { fr: "Plastiques techniques (POM, polyester, polyamide, ABS)", short: "plastique", source: "laser CO2", gas: "air, aspiration des fumées", t: [0.5, 10],
+  plastic: { label: "Engineering plastics (POM, polyester, polyamide, ABS)", fr: "Plastiques techniques (POM, polyester, polyamide, ABS)", short: "plastique", source: "laser CO2", gas: "air, aspiration des fumées", t: [0.5, 10],
     kerf: [0.15, 0.4], hole: { k: 1, min: 1 }, slot: { k: 1, min: 1 }, web: { k: 1, min: 2 }, corner: 0.5, tol: 0.2, verdict: "ok",
     cut: "Découper le contour au laser CO2, sous aspiration", edge: "Bord fondu, coupe conique dans les fortes épaisseurs. Les fumées s'aspirent.",
     watch: ["Précision moindre que dans l'acrylique : pour un ajustement, reprendre à l'outil ou usiner.", "Matière chargée de fibres de verre : bord rugueux, fibres à nu."],
     basis: "Matières données pour découpables au laser CO2 par un fabricant de machines : lu. Épaisseur, état du bord : connaissance d'atelier, non vérifiée ici." },
-  caution: { fr: "Polycarbonate", short: "polycarbonate", source: "laser CO2 — à éviter", gas: "aspiration", t: [0.1, 1],
+  caution: { label: "Polycarbonate", fr: "Polycarbonate", short: "polycarbonate", source: "laser CO2 — à éviter", gas: "aspiration", t: [0.1, 1],
     kerf: [0.2, 0.5], hole: { k: 1, min: 1.5 }, slot: { k: 1, min: 1.5 }, web: { k: 1, min: 2 }, corner: 0.5, tol: 0.2, verdict: "caution",
     cut: "Découper le contour (laser déconseillé : usinage ou jet d'eau)", why: "le polycarbonate se découpe en feuille mince seulement, et il se décolore sous le faisceau : bord jaune à brun, qualité de coupe faible",
     instead: "usiner (fraisage) ou découper au jet d'eau ; pour une pièce transparente découpée au laser, prendre de l'acrylique", edge: "Bord jauni ou bruni.", watch: [],
     basis: "Décoloration et coupe en feuille mince seulement : lu chez un fabricant de machines." },
-  forbidden: { fr: "PVC, PTFE et matières chlorées ou fluorées", short: "PVC", source: "jamais au laser", gas: "—", t: [0, 0],
+  forbidden: { label: "PVC, PTFE and chlorinated or fluorinated materials", fr: "PVC, PTFE et matières chlorées ou fluorées", short: "PVC", source: "jamais au laser", gas: "—", t: [0, 0],
     kerf: [0, 0], hole: { k: 0, min: 0 }, slot: { k: 0, min: 0 }, web: { k: 0, min: 0 }, corner: 0, tol: 0, verdict: "forbidden",
     cut: "Découper le contour à l'outil ou au jet d'eau (jamais au laser)", why: "sous le faisceau, le PVC dégage du chlorure d'hydrogène et du chlorure de vinyle — toxiques pour l'opérateur, corrosifs pour l'optique et l'électronique de la machine ; le PTFE dégage lui aussi des gaz toxiques",
     instead: "usiner (fraisage, détourage à la fraise) ou découper au couteau ou au jet d'eau", edge: "—", watch: [],
@@ -101,19 +101,19 @@ export function sheetDefault(materialId) { const m = material(materialId), s = s
    unsupported span · hHole : largest horizontal hole printed round without support · escape : opening that lets powder or
    resin out of a cavity (escapes : how many) · ra : as-built roughness (µm) · build : build volume of a usual machine */
 export const AM_PROCESSES = {
-  fdm: { fr: "Dépôt de fil fondu (FDM)", short: "FDM", kind: "polymer", raw: "filament", wall: 1.0, wallRec: 1.5, hole: 1.5, fillet: 1.0, gap: 0.3, overhang: 45, bridge: 5, hHole: 6, escape: 0, escapes: 0, machined: false, ra: null, tol: "± 0,13 mm ou ± 0,15 % (machine industrielle)", build: [914, 610, 914],
+  fdm: { label: "Fused deposition modeling (FDM)", fr: "Dépôt de fil fondu (FDM)", short: "FDM", kind: "polymer", raw: "filament", wall: 1.0, wallRec: 1.5, hole: 1.5, fillet: 1.0, gap: 0.3, overhang: 45, bridge: 5, hHole: 6, escape: 0, escapes: 0, machined: false, ra: null, tol: "± 0,13 mm ou ± 0,15 % (machine industrielle)", build: [914, 610, 914],
     supports: true, powder: false, make: "Imprimer en FDM (orienter la plus grande face sur le plateau)", clean: "Retirer les supports",
     watch: ["La pièce est plus faible entre les couches (axe Z) : orienter pour que l'effort reste dans le plan des couches.", "Surplomb sous 45° ou pont de plus de 5 mm : supports, ou forme en goutte d'eau."],
     basis: "Surplomb, pont, tolérance, paroi porteuse (1,2 à 1,5 mm), trou rond au-dessus de 1 mm : lus dans deux guides de conception. Paroi, trou et jeu retenus ici : livre de règles de l'utilisateur, plus prudent. Volume : grande machine industrielle." },
-  mjf: { fr: "Lit de poudre polymère (MJF / SLS)", short: "MJF", kind: "polymer", raw: "poudre", wall: 0.9, wallRec: 1.5, hole: 1.0, fillet: 0.5, gap: 0.2, overhang: 0, bridge: 0, hHole: 0, escape: 5, escapes: 2, machined: false, ra: null, tol: "± 0,3 % (± 0,3 mm au moins)", build: [380, 284, 380],
+  mjf: { label: "Polymer powder bed fusion (MJF / SLS)", fr: "Lit de poudre polymère (MJF / SLS)", short: "MJF", kind: "polymer", raw: "poudre", wall: 0.9, wallRec: 1.5, hole: 1.0, fillet: 0.5, gap: 0.2, overhang: 0, bridge: 0, hHole: 0, escape: 5, escapes: 2, machined: false, ra: null, tol: "± 0,3 % (± 0,3 mm au moins)", build: [380, 284, 380],
     supports: false, powder: true, make: "Imprimer en MJF / SLS", clean: "Dépoudrer et microbiller",
     watch: ["Une cavité se vide par deux ouvertures de 5 mm au moins, sur des faces opposées.", "Section massive : chaleur, retrait et coût de poudre — évider au-delà de 10 mm, paroi de 2 mm au moins."],
     basis: "Paroi (0,5 mm au minimum, 1,5 mm conseillé en MJF ; 0,8 mm en SLS), deux ouvertures de 5 mm, paroi évidée de 2 mm, tolérance : lus dans trois guides de conception. Paroi de 0,9 mm et trou de 1 mm : livre de règles de l'utilisateur." },
-  sla: { fr: "Résine photopolymère (SLA)", short: "SLA", kind: "polymer", raw: "résine liquide", wall: 0.6, wallRec: 1.0, hole: 0.5, fillet: 0.5, gap: 0.2, overhang: 19, bridge: 1, hHole: 0, escape: 3.5, escapes: 1, machined: false, ra: null, tol: "± 0,2 % (± 0,2 mm au moins)", build: [145, 145, 185],
+  sla: { label: "Vat photopolymerization (SLA)", fr: "Résine photopolymère (SLA)", short: "SLA", kind: "polymer", raw: "résine liquide", wall: 0.6, wallRec: 1.0, hole: 0.5, fillet: 0.5, gap: 0.2, overhang: 19, bridge: 1, hHole: 0, escape: 3.5, escapes: 1, machined: false, ra: null, tol: "± 0,2 % (± 0,2 mm au moins)", build: [145, 145, 185],
     supports: true, powder: false, make: "Imprimer en stéréolithographie (pièce inclinée sur ses supports)", clean: "Laver, retirer les supports",
     watch: ["Le plus fin détail et la plus belle surface. En général une résine standard vieillit à la lumière et flue sous charge : pas une pièce de structure durable.", "Une pièce creuse laisse couler la résine : ouverture de 3,5 mm au moins."],
     basis: "Paroi (0,4 mm tenue, 0,6 mm libre), trou de 0,5 mm, ouverture de 3,5 mm, surplomb à 19°, tolérance : lus dans un guide de conception et chez un fabricant de machines. Vieillissement : connaissance générale. Volume : machine de bureau courante, non vérifié." },
-  lpbf: { fr: "Fusion laser sur lit de poudre métallique (LPBF)", short: "LPBF", kind: "metal", raw: "poudre métallique", wall: 0.4, wallRec: 1.0, hole: 1.0, fillet: 0.5, gap: 0.3, overhang: 45, bridge: 2, hHole: 8, escape: 3, escapes: 2, machined: true, ra: [5, 10], tol: "± 0,1 à 0,2 mm", build: [250, 250, 300],
+  lpbf: { label: "Laser powder bed fusion, metal (LPBF)", fr: "Fusion laser sur lit de poudre métallique (LPBF)", short: "LPBF", kind: "metal", raw: "poudre métallique", wall: 0.4, wallRec: 1.0, hole: 1.0, fillet: 0.5, gap: 0.3, overhang: 45, bridge: 2, hHole: 8, escape: 3, escapes: 2, machined: true, ra: [5, 10], tol: "± 0,1 à 0,2 mm", build: [250, 250, 300],
     supports: true, powder: true, make: "Fusionner sur lit de poudre, pièce orientée et supportée sur son plateau", clean: "Séparer du plateau (fil ou scie), retirer les supports",
     watch: ["Les supports sont du métal soudé à la pièce : chaque surplomb sous 45° du plateau se paie en reprise — dessiner des formes qui se portent seules.", "Brut de fusion, la surface est rugueuse (Ra 5 à 10 µm) et la cote tient au dixième : toute portée, tout ajustement, tout plan de joint se reprend en usinage, avec de la matière laissée pour cela.", "Un filetage se taraude en reprise."],
     basis: "Paroi (0,4 mm possible, risque sous 1 mm), surplomb à 45° (55° pour l'inox 316L), pont de 2 mm, trou horizontal de 8 à 10 mm, plus petit trou (0,4 à 1,5 mm), ouverture de 2 à 5 mm, tolérance, rugosité, détente sur le plateau : lus dans cinq guides de fabricants et de services. Surépaisseur d'usinage : aucune valeur publiée trouvée. Volume : machine courante de taille moyenne, non vérifié." },
@@ -203,7 +203,7 @@ export function processSheet(process, materialId, t) {
   const A = amLimits(process, materialId), M = amMaterial(materialId);
   if (!A) return [];
   const mine = M && M.process === process ? M : null;
-  return [`${name} : ${low(A.fr)}, à partir de ${A.raw}.${mine ? ` ${mine.use}` : ""}`,
+  return [`${name} : ${low(A.label)}, à partir de ${A.raw}.${mine ? ` ${mine.use}` : ""}`,
     `Paroi ≥ ${n(A.wall)} mm (${n(A.wallRec)} mm conseillé) ; trou ≥ Ø${n(A.hole)} ; jeu entre pièces ≥ ${n(A.gap)} mm par côté ; tolérance brute ${A.tol}${A.ra ? ` ; rugosité brute Ra ${A.ra[0]} à ${A.ra[1]} µm` : ""}.`,
     A.supports ? `Supports sous ${A.overhang}° du plateau${A.bridge ? `, portée libre ≤ ${n(A.bridge)} mm` : ""}${A.hHole ? `, trou horizontal rond ≤ Ø${n(A.hHole)}` : ""}.` : "Aucun support : la poudre porte la pièce.",
     ...(A.escape ? [`Cavité : ${A.escapes > 1 ? `${A.escapes} ouvertures` : "une ouverture"} ≥ Ø${n(A.escape)} pour vider la ${A.powder ? "poudre" : "résine"} ; aucune cavité fermée.`] : []),
@@ -234,11 +234,11 @@ export function specialRows(parts) {
   const rows = [];
   for (const p of parts || []) {
     if (p.folded) { const m = material(p.material), v = (x) => (typeof x === "number" ? x : p.params && p.params[x] !== undefined ? (p.params[x].value ?? p.params[x]) : x), k = (p.folded.flanges || []).length;
-      rows.push([p.id, p.name || "", "Tôlerie pliée", m ? m.name : p.material || "—", "Laser puis presse plieuse", `${k} pli${k > 1 ? "s" : ""} à 90° · tôle ${n(v(p.folded.t))} mm · rayon intérieur ${n(v(p.folded.r ?? p.folded.t))} mm`, "Développé indicatif (facteur k typique) : l'atelier corrige le flan ; angle et hauteur des bords à contrôler"]); }
+      rows.push([p.id, p.name || "", "Sheet metal bending", m ? m.name : p.material || "—", "Laser puis presse plieuse", `${k} pli${k > 1 ? "s" : ""} à 90° · tôle ${n(v(p.folded.t))} mm · rayon intérieur ${n(v(p.folded.r ?? p.folded.t))} mm`, "Développé indicatif (facteur k typique) : l'atelier corrige le flan ; angle et hauteur des bords à contrôler"]); }
     else if (p.process === "laser_cut") { const P = laserProfile(p.material), m = material(p.material); if (!P) continue;
-      rows.push([p.id, p.name || "", "Découpe laser de précision", m ? m.name : p.material, P.verdict === "forbidden" ? "Jamais au laser" : P.source, P.verdict === "ok" ? `Épaisseur ≤ ${n(P.t[1])} mm · trait ${n(P.kerf[0])} à ${n(P.kerf[1])} mm · ± ${n(P.tol)} mm` : P.why, P.verdict === "ok" ? P.edge : `À la place : ${P.instead}`]); }
+      rows.push([p.id, p.name || "", "Precision laser cutting", m ? m.name : p.material, P.verdict === "forbidden" ? "Jamais au laser" : P.source, P.verdict === "ok" ? `Épaisseur ≤ ${n(P.t[1])} mm · trait ${n(P.kerf[0])} à ${n(P.kerf[1])} mm · ± ${n(P.tol)} mm` : P.why, P.verdict === "ok" ? P.edge : `À la place : ${P.instead}`]); }
     else if (AM_PROCESSES[p.process]) { const A = amLimits(p.process, p.material), M = amMaterial(p.material), mine = M && M.process === p.process ? M : null, m = material(p.material);
-      rows.push([p.id, p.name || "", A.fr, m ? m.name : p.material || "—", mine && mine.std !== "—" ? mine.std : "—", `Paroi ≥ ${n(A.wall)} mm · trou ≥ Ø${n(A.hole)} · ${A.supports ? `supports sous ${A.overhang}°` : "sans support"} · ${A.tol}`,
+      rows.push([p.id, p.name || "", A.label, m ? m.name : p.material || "—", mine && mine.std !== "—" ? mine.std : "—", `Paroi ≥ ${n(A.wall)} mm · trou ≥ Ø${n(A.hole)} · ${A.supports ? `supports sous ${A.overhang}°` : "sans support"} · ${A.tol}`,
         mine ? [mine.relief, ...mine.post, mine.critical ? `pièce en fatigue : ${mine.critical}` : null].filter(Boolean).map(low).join(" ; ") || "—" : "Matière hors de la bibliothèque du procédé : à confirmer avec le fournisseur"]); }
   }
   return rows;

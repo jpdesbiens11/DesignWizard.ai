@@ -93,7 +93,7 @@ function prepare(brief, log) {
   return (brief.interfaces || []).map((raw, i) => {
     const t = INTERFACE_TYPES[raw.type];
     if (!t) throw new Error(`Type d'interface inconnu « ${raw.type} ».`);
-    const id = `IF${i + 1}`, name = raw.name || t.fr, key = raw.key || slug(`${brief.name || "piece"}_${raw.partner || name}_${id}`);
+    const id = `IF${i + 1}`, name = raw.name || t.label, key = raw.key || slug(`${brief.name || "piece"}_${raw.partner || name}_${id}`);
     const it = { id, type: raw.type, name, key, partner: raw.partner || undefined, side: raw.side === "B" ? "B" : "A", where: raw.where || "+Z", inside: !!raw.inside, from: raw.from || undefined, external: raw.external ? true : undefined, params: JSON.parse(JSON.stringify({ ...t.params, ...(raw.params || {}) })), opts: raw.opts ? { ...raw.opts } : undefined };
     it.fp = footprint(it, brief.material);
     if (it.type === "bond" && it.fp.lip) log.push(`« ${name} » : logement de colle de ${fr(it.params.w)} × ${fr(it.params.h)} mm profond de ${fr(it.params.gap)} mm, entouré d'une lèvre d'appui de ${fr(it.fp.lip)} mm — la pièce qui s'appuie porte sur la lèvre, la colle garde son épaisseur.`);
@@ -207,7 +207,7 @@ export function synthesize(brief, id = "PN-0001") {
   if (form === "print" && !(brief.process && AM_PROCESSES[brief.process])) b.process = printProcess(b.material) || "fdm";
   const fold = form === "sheet" && foldSides(b).length > 0;      // a metal sheet with folded edges : the press brake after the laser
   if (form === "sheet") b.process = fold ? "sheet_metal" : "laser_cut";
-  log.push(`Matière première : ${STOCK_FORMS[form].fr.toLowerCase()} — ${form === rec.form ? rec.why : "choix de l'utilisateur."}`);
+  log.push(`Matière première : ${STOCK_FORMS[form].label.toLowerCase()} — ${form === rec.form ? rec.why : "choix de l'utilisateur."}`);
   const items = prepare(b, log);
   if (form === "angle" && !items.some((it) => it.where[1] === "Z")) log.push("Aucune interface sur le dessous : l'aile horizontale reste libre.");
   const core = form === "profile" ? extruded(b, items, log) : form === "molded" ? molded(b, items, log) : fold ? foldedSheet(b, items, log, { arrange, ifaceOut, tapped, P, off, up }) : (form === "plate" || form === "sheet") ? flat(b, items.map((it) => ({ ...it, where: it.where === "-Z" ? "-Z" : "+Z" })), log) : form === "angle" ? angle(b, items, log) : form === "bar_round" ? round(b, items, log) : block(b, items, log);

@@ -58,7 +58,7 @@ test("two bars pressed together through a lamella contact : same key, a healthy 
   const sa = busbarPart(a, "BA"), sb = busbarPart(b, "BB"); sb.interfaces.find((i) => i.id === "T1").side = "B"; sb.interfaces.find((i) => i.id === "T1").face = "-Z"; sb.interfaces.find((i) => i.id === "T1").level = 0; sb.interfaces.find((i) => i.id === "T1").opts = { thread: "clearance" };
   const built = { BA: buildPart(K, sa), BB: buildPart(K, sb) }, asm = { id: "A", instances: [{ id: "i1", part: "BA", fixed: true, placement: { t: [0, 0, 0], r: [0, 0, 0] } }, { id: "i2", part: "BB", placement: { t: [0, 0, 0], r: [0, 0, 0] } }], mates: [] };
   const added = autoMate(asm, built); assert.equal(added.length, 2); const sol = solve(asm, built), reg = joints(asm, built, { BA: sa, BB: sb });
-  assert.ok(reg.some((r) => r.kind === "Contact à pression") && reg.some((r) => r.kind === "Boulonné"));
+  assert.ok(reg.some((r) => r.kind === "Pressure contact") && reg.some((r) => r.kind === "Bolted"));
   const h = jointHealth(asm, built, { BA: sa, BB: sb }, sol).find((x) => x.id === asm.mates.find((m) => m.a.iface === "CT1" || m.b.iface === "CT1").id);
   assert.doesNotMatch(h.notes.join(" "), /demande une vis ou un clip/, "the screw next to it clamps the contact");
   K.flush();
@@ -72,7 +72,7 @@ test("an insulated busbar wears a sleeve of its own body, open by a window at ea
   assert.deepEqual(b.bodies.map((x) => [x.name, x.material, x.conductive, x.net]), [["main", "CU-C110", true, "HV+"], ["isolant", "EPOXY", false, null]]);
   const iso = b.bodies.find((x) => x.name === "isolant"), main = b.bodies.find((x) => x.name === "main"); assert.ok(K.props(K.common(iso.shape, main.shape)).volume < 0.001, "the sleeve is around the metal, not in it");
   assert.deepEqual(b.bbox.slice(0, 3).map((x) => Math.round(x * 100) / 100), [-0.3, -0.3, -0.3], "it covers the edges and the ends too");
-  assert.equal(s.features.filter((f) => /^fen_/.test(f.id)).length, 3, "two windows for the screw (head side and lug side), one for the contact"); assert.match(s.notes.join(" "), /Isolant : poudre époxy de 0,3 mm, ouvert par une fenêtre/);
+  assert.equal(s.features.filter((f) => /^fen_/.test(f.id)).length, 3, "two windows for the screw (head side and lug side), one for the contact"); assert.match(s.notes.join(" "), /Isolant : epoxy powder coating de 0,3 mm, ouvert par une fenêtre/);
   const bare = buildPart(K, busbarPart({ ...def, insulation: null }, "BB-N")); assert.equal(bare.bodies.length, 1);
   assert.ok(iso.volume < 0.3 * 2 * (110 + 30) * 20 * 1.3 && iso.volume > 1000, `a thin skin : ${iso.volume.toFixed(0)} mm³`);
   K.flush();

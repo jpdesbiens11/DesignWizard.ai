@@ -34,12 +34,12 @@ export function patternPoints(pattern = {}) {
 /** Adhesive families for a bonded joint : usual bond line (mm), typical lap shear on prepared aluminium (MPa, to size — the data
     sheet of the product bought prevails), how it is held and cured. Generic classes : no brand, no reference. */
 export const ADHESIVES = {
-  epoxy: { fr: "Colle époxy bicomposant", gap: [0.1, 0.3], shear: 20, hold: "30 min sous pinces", cure: "24 h à 23 °C, ou 1 h à 80 °C", tool: "Cartouche double et buse mélangeuse" },
-  acrylic: { fr: "Colle acrylique structurale (MMA)", gap: [0.2, 1.0], shear: 18, hold: "10 min sous pinces", cure: "24 h à 23 °C", tool: "Cartouche double et buse mélangeuse" },
-  polyurethane: { fr: "Colle polyuréthane", gap: [0.5, 3.0], shear: 8, hold: "2 h sous pinces", cure: "48 h à 23 °C", tool: "Pistolet à cartouche" },
-  cyanoacrylate: { fr: "Colle cyanoacrylate", gap: [0.02, 0.1], shear: 15, hold: "30 s à la main", cure: "24 h à 23 °C", tool: "Flacon doseur" },
-  silicone: { fr: "Mastic silicone (étanchéité)", gap: [0.5, 3.0], shear: 1.5, hold: "sans effort, pièce posée", cure: "24 h par 3 mm d'épaisseur", tool: "Pistolet à cartouche" },
-  tape: { fr: "Ruban double face acrylique", gap: [0.25, 1.1], shear: 0.5, hold: "pression de 15 s au rouleau", cure: "72 h pour la tenue complète", tool: "Rouleau presseur" },
+  epoxy: { label: "Two-part epoxy adhesive", fr: "Colle époxy bicomposant", gap: [0.1, 0.3], shear: 20, hold: "30 min sous pinces", cure: "24 h à 23 °C, ou 1 h à 80 °C", tool: "Cartouche double et buse mélangeuse" },
+  acrylic: { label: "Structural acrylic adhesive (MMA)", fr: "Colle acrylique structurale (MMA)", gap: [0.2, 1.0], shear: 18, hold: "10 min sous pinces", cure: "24 h à 23 °C", tool: "Cartouche double et buse mélangeuse" },
+  polyurethane: { label: "Polyurethane adhesive", fr: "Colle polyuréthane", gap: [0.5, 3.0], shear: 8, hold: "2 h sous pinces", cure: "48 h à 23 °C", tool: "Pistolet à cartouche" },
+  cyanoacrylate: { label: "Cyanoacrylate adhesive", fr: "Colle cyanoacrylate", gap: [0.02, 0.1], shear: 15, hold: "30 s à la main", cure: "24 h à 23 °C", tool: "Flacon doseur" },
+  silicone: { label: "Silicone sealant", fr: "Mastic silicone (étanchéité)", gap: [0.5, 3.0], shear: 1.5, hold: "sans effort, pièce posée", cure: "24 h par 3 mm d'épaisseur", tool: "Pistolet à cartouche" },
+  tape: { label: "Double-sided acrylic tape", fr: "Ruban double face acrylique", gap: [0.25, 1.1], shear: 0.5, hold: "pression de 15 s au rouleau", cure: "72 h pour la tenue complète", tool: "Rouleau presseur" },
 };
 /** Surface preparations, in the words of the routing sheet. */
 export const BOND_PREPS = {
@@ -115,7 +115,7 @@ export const INTERFACE_TYPES = {
     },
     hardware(p) {
       const a = ADHESIVES[p.adhesive] || ADHESIVES.epoxy, tape = p.adhesive === "tape";
-      return [{ id: `ADH-${String(p.adhesive || "epoxy").toUpperCase()}`, name: a.fr, kind: "adhesive", adhesive: p.adhesive || "epoxy", unit: tape ? "cm²" : "mL",
+      return [{ id: `ADH-${String(p.adhesive || "epoxy").toUpperCase()}`, name: a.label, kind: "adhesive", adhesive: p.adhesive || "epoxy", unit: tape ? "cm²" : "mL",
         qty: tape ? Math.max(0.1, round2(p.w * p.h / 100)) : Math.max(0.05, round2(p.w * p.h * (p.gap || 0.2) / 1000 * 1.3)) }];   // 30 % more than the film : the squeeze-out
     },
     gdt: (p) => ({ symbol: "flatness", tolerance: round2(Math.max(0.05, (p.gap || 0.2) / 2)) }),

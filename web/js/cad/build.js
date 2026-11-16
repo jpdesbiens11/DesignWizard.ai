@@ -69,7 +69,7 @@ export function buildPart(K, source, opts = {}) {
       }
       const c = compileInterface({ ...iface, body }, level);
       runFeatures(K, st, c.features);
-      ifaces.push({ id: iface.id, type: iface.type, name: iface.name || type.fr, key: iface.key || null, side: iface.side === "B" ? "B" : "A", ...(iface.external ? { external: true } : {}), face, at: iface.at || [0, 0],
+      ifaces.push({ id: iface.id, type: iface.type, name: iface.name || type.label, key: iface.key || null, side: iface.side === "B" ? "B" : "A", ...(iface.external ? { external: true } : {}), face, at: iface.at || [0, 0],
         rot: iface.rot || 0, level, params: c.params, opts: c.opts, frame: c.frame, body, partner: iface.partner || null, net: iface.net || null });
     } catch (e) {
       st.log.push({ level: "error", feature: iface.id, msg: `Interface « ${iface.id} » : ${e.message}` });

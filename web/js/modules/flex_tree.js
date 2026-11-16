@@ -47,7 +47,7 @@ const KIND = {
 };
 /** The kinds of flexible circuit one can start from, as tiles. pick(kind) : "strip" | "tree" | "example". */
 export function kindTiles(pick) {
-  return el("div", { class: "cf-tiles", role: "group", "aria-label": "Quel circuit flexible" }, Object.entries(KIND).map(([k, K]) => el("button", { class: "cf-tile", type: "button", "data-flex-kind": k, "data-tip": K.text, style: `--dom:${K.color}`, onClick: () => pick(k) }, pic(K.color, 96, K.draw()), el("b", null, K.fr), el("small", { class: "muted" }, K.text))));
+  return el("div", { class: "cf-tiles", role: "group", "aria-label": "Quel circuit flexible" }, Object.entries(KIND).map(([k, K]) => el("button", { class: "cf-tile", type: "button", "data-flex-kind": k, "data-tip": K.text, style: `--dom:${K.color}`, onClick: () => pick(k) }, pic(K.color, 96, K.draw()), el("b", null, K.label), el("small", { class: "muted" }, K.text))));
 }
 const tiles = (cls, items) => el("div", { class: `cf-tiles ${cls}`, role: "group" }, items);
 const tile = (o) => el("button", { class: `cf-tile${o.sel ? " sel" : ""}`, type: "button", "aria-pressed": o.sel ? "true" : "false", "data-tip": o.tip || null, style: `--dom:${o.color}`, onClick: o.run, ...o.data }, o.pic, el("b", null, o.label));
@@ -71,9 +71,9 @@ export function renderTree(ctx) {
   const spot = (h) => (h && (h.local || h.point) ? whereOn(def(), h.local || h.point) : null);
   const menuFor = (h) => {
     const w = spot(h); if (!w) return h ? [{ title: "Ni le cœur ni une branche" }] : null;
-    if (w.branch) { const b = def().branches.find((q) => q.id === w.branch); return [{ title: `${b.id} — ${ENDS[b.end].fr.toLowerCase()}, ${EDGES[b.edge].fr}` }, { label: `Choisir ${b.id}`, icon: "check", run: () => choose(b.id) },
+    if (w.branch) { const b = def().branches.find((q) => q.id === w.branch); return [{ title: `${b.id} — ${ENDS[b.end].label.toLowerCase()}, ${EDGES[b.edge].fr}` }, { label: `Choisir ${b.id}`, icon: "check", run: () => choose(b.id) },
       ...FOLDS.map(([v, l]) => ({ label: `Ajouter un ${l}`, icon: "layers", run: () => { st.sel = b.id; fold(v); } })), { label: `Retirer ${b.id}`, icon: "trash", run: () => remove(b.id) }]; }
-    return [{ title: `Cœur — bord ${w.edge}, à ${fr(w.at, 1)} mm` }, ...Object.entries(ENDS).map(([k, E]) => ({ label: `${E.fr} ${EDGES[w.edge].fr}, ici`, icon: k === "temp" ? "sensor" : k === "volt" ? "power" : k === "slot" ? "mate" : "chip", run: () => add(w.edge, { at: w.at, end: k }) }))];
+    return [{ title: `Cœur — bord ${w.edge}, à ${fr(w.at, 1)} mm` }, ...Object.entries(ENDS).map(([k, E]) => ({ label: `${E.label} ${EDGES[w.edge].fr}, ici`, icon: k === "temp" ? "sensor" : k === "volt" ? "power" : k === "slot" ? "mate" : "chip", run: () => add(w.edge, { at: w.at, end: k }) }))];
   };
   const onKey = (e) => {
     const b = item(), k = e.key, step = e.altKey ? 0.1 : e.shiftKey ? 5 : 1, all = def().branches;
@@ -156,9 +156,9 @@ export function renderTree(ctx) {
         i ? el("select", { "aria-label": `Pli avant la partie ${i + 1}`, onChange: (e) => set(`pli ${i}`, (q) => { q.legs[i].bend = +e.target.value; }) }, FOLDS.map(([v, l]) => el("option", { value: v, selected: v === (g.bend || 90) }, l))) : el("small", { class: "muted" }, "à plat, depuis le cœur"),
         b.legs.length > 1 && i ? el("button", { class: "icon-btn", type: "button", "aria-label": `Retirer la partie ${i + 1}`, onClick: () => set(`partie ${i + 1} retirée`, (q) => { q.legs.splice(i, 1); }) }, "×") : el("span"))),
       el("div", { class: "form-actions", style: { justifyContent: "flex-start" } }, FOLDS.map(([v]) => btn(v > 0 ? "Pli vers Z+" : "Pli vers Z−", () => fold(v), { small: true, icon: "plus", tip: `Une partie de plus, après un pli à 90° vers ${v > 0 ? "le haut" : "le bas"}` }))),
-      el("p", { class: "ft-label" }, "Ce qu'il y a au bout"), tiles("ft-four", Object.entries(ENDS).map(([k, N]) => tile({ sel: k === b.end, color: END_COLOR[k], label: N.fr, tip: N.text, pic: endIcon(k, 56), data: { "data-end": k }, run: () => set(N.fr.toLowerCase(), (q) => { q.end = k; delete q.tracks; }) }))),
+      el("p", { class: "ft-label" }, "Ce qu'il y a au bout"), tiles("ft-four", Object.entries(ENDS).map(([k, N]) => tile({ sel: k === b.end, color: END_COLOR[k], label: N.label, tip: N.text, pic: endIcon(k, 56), data: { "data-end": k }, run: () => set(N.label.toLowerCase(), (q) => { q.end = k; delete q.tracks; }) }))),
       el("div", { class: "form-row tight" }, b.end === "volt" ? field("Potentiel ramené", net) : null,
-        b.end === "volt" ? field("Liaison", el("select", { onChange: (e) => set("liaison", (q) => { q.process = e.target.value; }) }, Object.entries(WELD_PROCESSES).filter(([k]) => k !== "wirebond").map(([k, w]) => el("option", { value: k, selected: k === (b.process || "laser") }, w.fr)))) : null,
+        b.end === "volt" ? field("Liaison", el("select", { onChange: (e) => set("liaison", (q) => { q.process = e.target.value; }) }, Object.entries(WELD_PROCESSES).filter(([k]) => k !== "wirebond").map(([k, w]) => el("option", { value: k, selected: k === (b.process || "laser") }, w.label)))) : null,
         field(b.end === "slot" ? "La fente est dans" : b.end === "free" ? "Va vers" : "Posée sur", el("input", { type: "text", value: b.on || "", placeholder: b.end === "temp" ? "Cellule, busbar, dissipateur…" : b.end === "volt" ? "Busbar, borne de cellule…" : b.end === "slot" ? "Support, capteur…" : "Faisceau, composant…", onChange: (e) => set("destination", (q) => { q.on = e.target.value; }) }))),
       el("div", { class: "form-actions", style: { justifyContent: "flex-start" } }, btn(b.side === -1 ? "Bout sur la face du dessous" : "Bout sur la face du dessus", () => set("autre face", (q) => { if (q.side === -1) delete q.side; else q.side = -1; }), { small: true, icon: "layers", tip: "La face de la dernière partie qui porte le capteur ou la prise : l'envoyer de l'autre côté" }),
         btn("Retirer", () => remove(b.id), { small: true, icon: "trash", danger: true })));
@@ -172,11 +172,11 @@ export function renderTree(ctx) {
       const list = d.branches.filter((b) => b.edge === k).sort((a, b) => a.at - b.at); if (!list.length) continue;
       body.append(el("div", { class: "ft-group", style: `--dom:${EDGE_COLOR[k]}`, "data-edge-group": k }, el("div", { class: "lib-group-head" }, edgeIcon(k, 30), el("b", null, `Bord ${k}`), el("small", null, EDGES[k].fr), el("span", { class: "lib-count" }, String(list.length))),
         list.map((b) => { const on = b.id === st.sel, row = c.rows.find((r) => r.id === b.id) || {}, flag = c.notes.find((n) => n.id === b.id);
-          return [el("button", { class: `ft-row${on ? " sel" : ""}`, type: "button", "data-branch": b.id, "aria-expanded": on ? "true" : "false", style: `--dom:${END_COLOR[b.end]}`, onClick: () => choose(on ? null : b.id) }, endIcon(b.end, 44), el("span", { class: "ft-name" }, el("b", null, b.id), ` ${ENDS[b.end].fr}${b.end === "volt" && b.net ? ` ${b.net}` : ""}`,
+          return [el("button", { class: `ft-row${on ? " sel" : ""}`, type: "button", "data-branch": b.id, "aria-expanded": on ? "true" : "false", style: `--dom:${END_COLOR[b.end]}`, onClick: () => choose(on ? null : b.id) }, endIcon(b.end, 44), el("span", { class: "ft-name" }, el("b", null, b.id), ` ${ENDS[b.end].label}${b.end === "volt" && b.net ? ` ${b.net}` : ""}`,
             el("small", null, `à ${fr(b.at, 1)} mm · ${fr(b.w, 1)} mm de large · ${fr(row.length || 0, 0)} mm · ${b.legs.length - 1} pli(s)${b.on ? ` · ${b.on}` : ""}`)), flag ? badge(flag.level === "bad" ? "à corriger" : flag.level === "todo" ? "à entrer" : "à vérifier", flag.level === "bad" ? "danger" : "warn") : null), on ? card(b, d) : null]; })));
     }
     if (!d.branches.length) body.append(el("p", { class: "atelier-hint" }, icon("info"), " Aucune branche : choisissez ci-dessus le bord qu'elle quitte, ou clic droit sur le cœur, dans la vue."));
-    if (c.rows.length) body.append(el("div", { class: "side-section" }, el("h3", null, `Ce que l'on obtient — ${c.tracks} piste(s)`), table(["", "Bout", "Pistes", "Large", "Besoin", "Long.", "Plis"], c.rows.map((r) => [r.id, `${ENDS[r.end].fr}${r.end === "volt" && r.net ? ` ${r.net}` : ""}`, String(r.tracks), el("span", { class: r.w < r.need ? "form-error" : "" }, fr(r.w, 1)), fr(r.need, 1), fr(r.length, 0), String(r.folds)])),
+    if (c.rows.length) body.append(el("div", { class: "side-section" }, el("h3", null, `Ce que l'on obtient — ${c.tracks} piste(s)`), table(["", "Bout", "Pistes", "Large", "Besoin", "Long.", "Plis"], c.rows.map((r) => [r.id, `${ENDS[r.end].label}${r.end === "volt" && r.net ? ` ${r.net}` : ""}`, String(r.tracks), el("span", { class: r.w < r.need ? "form-error" : "" }, fr(r.w, 1)), fr(r.need, 1), fr(r.length, 0), String(r.folds)])),
       el("p", { class: "muted small" }, `Pistes de signal de 0,3 mm, ${fr(d.gap)} mm entre elles, 0,5 mm au bord du film : environ ${fr(c.rows[0].amps)} A chacune (IPC-2221, piste couverte, échauffement de 20 K). `, el("a", { href: "#/help/sources/elec" }, "Sources"))));
     body.append(el("div", { class: "side-section" }, el("h3", null, "À la souris et au clavier"), el("table", { class: "data" }, el("tbody", null, KEYS.map(([k, t]) => el("tr", null, el("td", null, el("kbd", null, k)), el("td", { style: { fontSize: ".8rem" } }, t)))))));
   }

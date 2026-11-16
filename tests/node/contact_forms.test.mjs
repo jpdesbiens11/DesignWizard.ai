@@ -51,7 +51,7 @@ test("a spring blade is a beam built in at both feet : it springs back only so f
   assert.deepEqual([f[0].op, f[0].l, f[0].w, f[0].h, f[0].t, f[0].lift, f[0].uv.length], ["arch", 12, 2.2, 0.8, 0.5, 0.8, 5]); assert.deepEqual(f[0].dirUV, [0, 1], "the blades span the width of the land");
   const notes = contactFormNotes({ w: 20, h: 8, n: 6, gap: 0.6, form: "bridge", t: 0.3, base: "Cu", force: 2, duty: "power" });
   assert.ok(notes.some((t) => /Moins de 0,03 mm de course élastique/.test(t)) && notes.some((t) => /l'effort se relâche à chaud/.test(t)));
-  assert.match(contactFacts({ w: 20, h: 8, n: 6, gap: 0.6, form: "bridge", t: 0.3, base: "CuBe" })[0], /6 lames de 6,8 × 1,83 × 0,3 mm, cuivre-béryllium : chacune fléchit et revient jusqu'à environ 0,098 mm/);
+  assert.match(contactFacts({ w: 20, h: 8, n: 6, gap: 0.6, form: "bridge", t: 0.3, base: "CuBe" })[0], /6 lames de 6,8 × 1,83 × 0,3 mm, beryllium copper : chacune fléchit et revient jusqu'à environ 0,098 mm/);
   assert.deepEqual(contactFormNotes({ w: 20, h: 12, n: 6, gap: 0.6, form: "bridge", t: 0.15, base: "CuBe", force: 2, duty: "signal" }), []);
 });
 
@@ -69,8 +69,8 @@ test("welding the bosses is an option, and it is said what it costs", () => {
   const n = contactFormNotes({ w: 20, h: 8, n: 8, gap: 0.5, form: "cone", weld: "projection" });
   assert.ok(n.some((t) => /liaison devient permanente/.test(t) && /pas le cuivre ni l'aluminium/.test(t)) && n.some((t) => /5 % près/.test(t)));
   assert.match(contactFormNotes({ w: 20, h: 8, n: 8, gap: 0.6, form: "band", weld: "projection" }).join(" "), /demande des bossages/);
-  assert.match(elecProcess("contact", { w: 20, h: 8, n: 8, plating: "Ag", form: "cone", weld: "projection" }), /8 bossages soudés par bossage · argent · zone 20 × 8 mm · liaison permanente, à qualifier/);
-  assert.match(elecProcess("contact", { w: 20, h: 8, n: 8, plating: "Ag", force: 2, form: "bridge" }), /^lames à ressort · 8 points · argent/); assert.match(elecProcess("contact", { w: 20, h: 8, n: 8, plating: "Ag", force: 2 }), /^bande de lamelles rapportée · 8 points/);
+  assert.match(elecProcess("contact", { w: 20, h: 8, n: 8, plating: "Ag", form: "cone", weld: "projection" }), /8 bossages soudés par bossage · silver · zone 20 × 8 mm · liaison permanente, à qualifier/);
+  assert.match(elecProcess("contact", { w: 20, h: 8, n: 8, plating: "Ag", force: 2, form: "bridge" }), /^spring blades · 8 points · silver/); assert.match(elecProcess("contact", { w: 20, h: 8, n: 8, plating: "Ag", force: 2 }), /^louvered contact band · 8 points/);
 });
 
 test("the kernel makes the bosses and the blades : a pointed boss is a cone, a blade is an arch with daylight under it", async () => {

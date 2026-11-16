@@ -14,9 +14,9 @@ import { LOGO } from "./brand.js";
 
 const r2 = (x) => Math.round(x * 100) / 100, fr = (x) => String(r2(x)).replace(".", ","), esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 export const LABEL_KINDS = {
-  sticker: { fr: "Autocollant", text: "Un vinyle imprimé, posé à la main : il suit une face plane ou un cylindre", lift: 0.1, color: "#ee8a32" },
-  plate: { fr: "Plaque signalétique", text: "Une plaque mince rivetée ou collée : références, tensions, avertissements", lift: 0.5, color: "#5b7fa6" },
-  marking: { fr: "Marquage direct", text: "Gravé au laser ou tampographié sur la pièce : aucune épaisseur", lift: 0.03, color: "#25ad9f" },
+  sticker: { label: "Sticker", fr: "Autocollant", text: "Un vinyle imprimé, posé à la main : il suit une face plane ou un cylindre", lift: 0.1, color: "#ee8a32" },
+  plate: { label: "Nameplate", fr: "Plaque signalétique", text: "Une plaque mince rivetée ou collée : références, tensions, avertissements", lift: 0.5, color: "#5b7fa6" },
+  marking: { label: "Direct marking", fr: "Marquage direct", text: "Gravé au laser ou tampographié sur la pièce : aucune épaisseur", lift: 0.03, color: "#25ad9f" },
 };
 export const LABEL_ARTS = {
   logo: { fr: "Marque DesignWizard.ai", text: "Le sigle et le nom de la plateforme" },
@@ -27,7 +27,7 @@ export const LABEL_SHAPES = { rect: "Angles vifs", round: "Coins arrondis", pill
 export const IMAGE_LIMIT = 400000;           // characters of a data URL kept in the project : beyond, the project file grows too fast
 export const blankLabel = (id = "E1") => ({ id, name: "Autocollant", kind: "sticker", inst: null, w: 80, h: 30, turn: 0, on: null, art: { type: "text", text: "", sub: "", ink: "#1b2733", paper: "#ffffff", shape: "round" } });
 /** The sticker of the platform : its mark and its name, dark on white. */
-export const brandSticker = (id = "E1", patch = {}) => ({ ...blankLabel(id), name: "Autocollant DesignWizard.ai", w: 180, h: 60, art: { type: "logo", text: "DesignWizard.ai", sub: "by DynamiteAgile™", ink: "#26323f", paper: "#ffffff", shape: "round" }, ...patch });
+export const brandSticker = (id = "E1", patch = {}) => ({ ...blankLabel(id), name: "Sticker DesignWizard.ai", w: 180, h: 60, art: { type: "logo", text: "DesignWizard.ai", sub: "by DynamiteAgile™", ink: "#26323f", paper: "#ffffff", shape: "round" }, ...patch });
 export const nextLabelId = (list) => `E${(list || []).reduce((m, l) => Math.max(m, parseInt(String(l.id).replace(/\D/g, ""), 10) || 0), 0) + 1}`;
 export const isWrapped = (label) => !!(label && label.on && Array.isArray(label.on.axis) && label.on.r > 0);
 
@@ -134,7 +134,7 @@ export function labelGuide(labels, instances = []) {
 }
 /** One row per label, for the screen, the report and the list sent to the printer. names : instance id → the name of its part. */
 export function labelRows(labels, names = {}) {
-  return (labels || []).map((l) => ({ id: l.id, name: l.name || "", kind: (LABEL_KINDS[l.kind] || LABEL_KINDS.sticker).fr, art: (LABEL_ARTS[(l.art || {}).type] || LABEL_ARTS.text).fr, on: l.inst ? names[l.inst] || l.inst : "—",
+  return (labels || []).map((l) => ({ id: l.id, name: l.name || "", kind: (LABEL_KINDS[l.kind] || LABEL_KINDS.sticker).label, art: (LABEL_ARTS[(l.art || {}).type] || LABEL_ARTS.text).fr, on: l.inst ? names[l.inst] || l.inst : "—",
     surface: !l.on ? "à poser" : isWrapped(l) ? `cylindre Ø ${fr(2 * l.on.r)}` : l.on.tangent ? "plan tangent" : "face plane", w: r2(l.w), h: r2(l.h), turn: r2(l.turn || 0), area: r2(l.w * l.h / 100) }));
 }
 export const labelsCsv = (rows) => [["Repère", "Nom", "Genre", "Motif", "Sur", "Surface", "Largeur (mm)", "Hauteur (mm)", "Rotation (°)", "Aire (cm²)"], ...rows.map((r) => [r.id, r.name, r.kind, r.art, r.on, r.surface, r.w, r.h, r.turn, r.area])]

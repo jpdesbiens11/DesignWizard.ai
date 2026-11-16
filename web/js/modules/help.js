@@ -7,6 +7,7 @@ import { store } from "../core/store.js";
 import { NL_EXAMPLES } from "../core/nl.js";
 import { LANGUAGE_REFERENCE } from "../cad/language_doc.js";
 import { sourcesCard } from "./help_sources.js";
+import { glossaryCard } from "./help_terms.js";
 
 const REPO = "https://github.com/jpdesbiens11/DesignWizard.ai";
 const KEYS = [["Ctrl + K", "La baguette : aller partout, lancer une commande, modifier la pièce en langage courant"], ["Guide", "Le bouton « Guide » de la barre du haut : ce qui manque ou cloche sur l'écran et dans le projet ; un clic sur une ligne mène à l'endroit. Un champ qui clignote attend votre valeur"], ["Ctrl + B", "Cacher ou montrer le volet de gauche d'un studio (le bouton est aussi sur sa bordure) ; sa largeur est la même sur tous les écrans"], ["Ctrl + Z / Ctrl + Y", "Annuler / rétablir (60 étapes, par projet)"], ["Ctrl + S", "Enregistrer tout de suite (l'enregistrement est aussi automatique)"],
@@ -41,6 +42,7 @@ function render(main, args = []) {
   page.append(card("Gammes : parler avec le fournisseur et avec le prototypage", el("p", null, "L'onglet « Gamme » d'une pièce écrit sa fabrication phase par phase — poste, prise de pièce, opérations, outils, contrôles — avec les questions à poser au fournisseur. Celui d'un assemblage écrit le montage, une étape par pièce, avec les vis, les couples indicatifs et les clés ; l'étape « Fabrication » du PCBA porte la gamme d'assemblage de la carte."),
     el("ul", { style: { paddingLeft: "1.1rem" } }, el("li", null, "Cliquez une phase : la vue montre la pièce après cette phase, ou le produit à cette étape du montage."), el("li", null, "Notez ce qui se dit sous chaque phase, ajoutez vos points à discuter : ils restent dans l'artéfact."), el("li", null, "Sortez la gamme en Word, en PDF (images de chaque étape, colonne « Réponse », signatures) ou en texte pour un courriel."), el("li", null, "Ce sont des propositions : la gamme de l'atelier fait foi."))));
   page.append(sourcesCard(args[0] === "sources" ? args[1] || "sources" : ""));
+  page.append(glossaryCard(args[0] === "terms"));
   page.append(card("Raccourcis", el("table", { class: "data" }, el("tbody", null, KEYS.map(([k, t]) => el("tr", null, el("td", { class: "nowrap" }, k.split(" · ").map((x, i) => [i ? " · " : "", el("kbd", null, x)])), el("td", null, t)))))));
   page.append(el("div", { class: "two-col" },
     card("La baguette comprend", el("p", { class: "muted" }, "Dans une pièce, ouvrez la baguette (Ctrl + K) et écrivez ce que vous voulez. Elle annonce ce qu'elle va faire avant de le faire ; Ctrl + Z l'annule."), el("ul", { style: { paddingLeft: "1.1rem" } }, NL_EXAMPLES.map((x) => el("li", null, el("code", null, x))))),

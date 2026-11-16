@@ -195,7 +195,7 @@ const CHUTE = { dw: "part/1", id: "FUS-6020", name: "Parachute plié dans sa gai
   notes: [CAD, "Toile de polyamide : PA12 pris pour la masse. Le dispositif qui sépare l'ogive n'est pas dessiné."] };
 
 /* the sticker of the platform, wrapped on the central airframe, reading up the rocket — on the side the three-quarter view of the render looks at */
-const STICKER = { id: "E1", name: "Autocollant DesignWizard.ai", kind: "sticker", inst: "coque_centrale", w: 420, h: 120, turn: 90, on: { p: [58.28, 83.23, 760], axis: [0, 0, 1], c: [0, 0, 0], r: 101.6 },
+const STICKER = { id: "E1", name: "Sticker DesignWizard.ai", kind: "sticker", inst: "coque_centrale", w: 420, h: 120, turn: 90, on: { p: [58.28, 83.23, 760], axis: [0, 0, 1], c: [0, 0, 0], r: 101.6 },
   art: { type: "logo", text: "DesignWizard.ai", sub: "by DynamiteAgile™", ink: "#26323f", paper: "#ffffff", shape: "round" } };
 const PARTS = [NOZZLE, COIL, SKIRT, CHAMBER, GRAIN, INJECTOR, VALVE, TANK, LINE, AIR_A, FIN, AIR_B, BUTTON, AIR_C, NOSE, BULKHEAD, SLED, PCB, BATTERY, HARNESS, REC_BULKHEAD, CHUTE];
 /* instance, its part, then the mate that holds it : [its interface, the instance it meets, the interface there, options of the mate] */

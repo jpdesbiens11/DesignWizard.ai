@@ -52,7 +52,7 @@ function render(main, args) {
   const menuFor = (h) => {
     const w = h && h.normal ? locate(def(), h.local || h.point, h.normal) : null;
     if (!w) return h ? [{ title: "Tranche, pli ou composant : un capteur se pose sur une face plane du film" }] : null;
-    return [{ title: `Branche ${w.leg + 1} — à ${fr(w.s, 1)} mm du début` }, ...Object.entries(SENSOR_KINDS).map(([k, K]) => ({ label: `Poser une ${K.fr.toLowerCase()} ici`, icon: k === "temp" ? "sensor" : "power", run: () => change(`${K.fr} posée`, (d) => { st.sel = addSensor(d, k, w).id; }) })),
+    return [{ title: `Branche ${w.leg + 1} — à ${fr(w.s, 1)} mm du début` }, ...Object.entries(SENSOR_KINDS).map(([k, K]) => ({ label: `Poser une ${K.label.toLowerCase()} ici`, icon: k === "temp" ? "sensor" : "power", run: () => change(`${K.label} posée`, (d) => { st.sel = addSensor(d, k, w).id; }) })),
       ...(item() ? [{ label: `Déplacer ${st.sel} ici`, icon: "mate", run: () => place(w) }] : [])];
   };
   const onKey = (e) => {
@@ -131,10 +131,10 @@ function render(main, args) {
     for (const x of d.sensors) {
       const on = x.id === st.sel, K = SENSOR_KINDS[x.kind], set = (label, fn) => { st.sel = x.id; edit(`${x.id} : ${label}`, fn); };
       const card = el("div", { class: "card" + (on ? " taped" : ""), style: { padding: ".55rem .7rem", marginBottom: ".5rem", cursor: "pointer" }, "data-conn": x.id, onClick: (e) => { if (/^(INPUT|SELECT|BUTTON|LABEL)$/.test(e.target.tagName)) return; st.sel = on ? null : x.id; mark(); renderRight(); } },
-        el("div", { style: { display: "flex", gap: ".4rem", alignItems: "center", flexWrap: "wrap" } }, el("b", null, x.id), badge(K.fr, x.kind === "temp" ? "info" : "warn"), el("small", { class: "muted" }, `branche ${x.leg + 1} · à ${fr(x.s, 1)} mm · ${x.side > 0 ? "recto" : "verso"}`)));
+        el("div", { style: { display: "flex", gap: ".4rem", alignItems: "center", flexWrap: "wrap" } }, el("b", null, x.id), badge(K.label, x.kind === "temp" ? "info" : "warn"), el("small", { class: "muted" }, `branche ${x.leg + 1} · à ${fr(x.s, 1)} mm · ${x.side > 0 ? "recto" : "verso"}`)));
       if (on) { card.append(el("p", { class: "muted", style: { fontSize: ".78rem", margin: ".25rem 0" } }, K.text + "."),
         el("div", { class: "form-row tight" }, x.kind === "volt" ? field("Potentiel ramené", el("input", { type: "text", value: x.net || "", placeholder: "S1+, HV−…", onChange: (e) => set("potentiel", (q) => { q.net = e.target.value.trim(); }) })) : null,
-          x.kind === "volt" ? field("Liaison", el("select", { onChange: (e) => set("liaison", (q) => { q.process = e.target.value; }) }, Object.entries(WELD_PROCESSES).filter(([k]) => k !== "wirebond").map(([k, w]) => el("option", { value: k, selected: k === (x.process || "laser") }, w.fr)))) : null,
+          x.kind === "volt" ? field("Liaison", el("select", { onChange: (e) => set("liaison", (q) => { q.process = e.target.value; }) }, Object.entries(WELD_PROCESSES).filter(([k]) => k !== "wirebond").map(([k, w]) => el("option", { value: k, selected: k === (x.process || "laser") }, w.label)))) : null,
           field("Posé sur", el("input", { type: "text", value: x.on || "", placeholder: x.kind === "temp" ? "Cellule, busbar, dissipateur…" : "Busbar, borne de cellule…", onChange: (e) => set("posé sur", (q) => { q.on = e.target.value; }) }))),
         el("div", { class: "form-actions", style: { justifyContent: "flex-start" } }, btn("Autre face", () => set("autre face", (q) => { q.side = -q.side; }), { small: true, icon: "layers", tip: "Verso (V)" }), btn("Retirer", () => { const gone = x.id; st.sel = null; change(`${gone} retiré`, (q) => { q.sensors = q.sensors.filter((k) => k.id !== gone); }); }, { small: true, icon: "trash", danger: true }))); }
       body.append(card);

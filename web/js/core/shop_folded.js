@@ -15,7 +15,7 @@ export const FOLD_T = 1.5;                                       // thin sheet m
 
 /** What the press brake asks of the drawing, as the process screen shows it. Typical values : `basis` says what was read. */
 export const FOLD_RULES = {
-  fr: "Tôlerie pliée — laser puis presse plieuse",
+  label: "Sheet metal bending — laser cutting, then press brake", fr: "Tôlerie pliée — laser puis presse plieuse",
   chips: [["Rayon intérieur ≥ 1 × t", "Le minimum de chaque matière est dans sa fiche ; un seul rayon pour toute la pièce : un seul outil"], ["Bord plié ≥ 4 × t", "Hauteur extérieure. Des guides la lient plutôt au vé de la presse : environ 0,7 × son ouverture"],
     ["Trou à 2,5 × t + R d'un pli", "Du bord du trou à la ligne de pli. Des guides acceptent 2 × t + R pour un petit trou, d'autres demandent 3 × t + R"], ["Trou à 2 × t d'un bord libre"],
     ["Dégagement d'angle R + t + 0,5 mm", "Une entaille carrée là où deux bords pliés se rejoignent"], ["Pli développé = π/2 × (R + k × t), k = 0,44", "La longueur de la fibre neutre dans un pli à 90° ; k situe cette fibre dans l'épaisseur"]],

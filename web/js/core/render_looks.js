@@ -9,26 +9,26 @@ import { material } from "../cad/materials.js";
 import { validHex } from "./part_look.js";
 
 export const FINISH_GROUPS = [
-  { id: "paint", fr: "Peintures", color: "#d6453d" }, { id: "metal", fr: "Métaux", color: "#5b7fa6" }, { id: "plastic", fr: "Plastiques et élastomères", color: "#ee8a32" },
-  { id: "composite", fr: "Composites", color: "#3a3f47" }, { id: "clear", fr: "Transparents", color: "#25ad9f" }];
+  { id: "paint", label: "Paints", fr: "Peintures", color: "#d6453d" }, { id: "metal", label: "Metals", fr: "Métaux", color: "#5b7fa6" }, { id: "plastic", label: "Plastics and elastomers", fr: "Plastiques et élastomères", color: "#ee8a32" },
+  { id: "composite", label: "Composites", fr: "Composites", color: "#3a3f47" }, { id: "clear", label: "Clear materials", fr: "Transparents", color: "#25ad9f" }];
 /* metal, rough : how the surface reflects (0..1) ; coat : a clear varnish over it ; pattern : a fine texture, and its period in millimetres ;
    tint : the finish takes a colour of its own (a paint, an anodising) — otherwise it shows the colour of the material ; opacity : what it lets through */
 export const FINISHES = {
-  "paint-gloss": { group: "paint", fr: "Peinture brillante", text: "Laque vernie : reflets nets", metal: 0, rough: 0.16, coat: 1, tint: true },
-  "paint-satin": { group: "paint", fr: "Peinture satinée", text: "Reflets doux", metal: 0, rough: 0.45, coat: 0.3, tint: true },
-  "paint-matte": { group: "paint", fr: "Peinture mate", text: "Aucun reflet franc", metal: 0, rough: 0.9, coat: 0, tint: true },
-  "paint-metallic": { group: "paint", fr: "Peinture métallisée", text: "Paillettes sous vernis", metal: 0.55, rough: 0.32, coat: 1, tint: true, pattern: "flakes", period: 12 },
-  "metal-polished": { group: "metal", fr: "Métal poli", text: "Miroir", metal: 1, rough: 0.1, coat: 0 },
-  "metal-brushed": { group: "metal", fr: "Métal brossé", text: "Stries fines dans un sens", metal: 1, rough: 0.36, coat: 0, pattern: "brushed", period: 30 },
-  "metal-blasted": { group: "metal", fr: "Métal microbillé", text: "Grain mat, uniforme", metal: 0.95, rough: 0.62, coat: 0, pattern: "grain", period: 16 },
-  "metal-anodized": { group: "metal", fr: "Aluminium anodisé", text: "Teinté dans la masse de l'oxyde, satiné", metal: 0.85, rough: 0.4, coat: 0, tint: true },
-  "plastic-gloss": { group: "plastic", fr: "Plastique brillant", text: "Moule poli", metal: 0, rough: 0.22, coat: 0.2 },
-  "plastic-grain": { group: "plastic", fr: "Plastique grainé", text: "Grain de moule, mat", metal: 0, rough: 0.72, coat: 0, pattern: "grain", period: 10 },
-  rubber: { group: "plastic", fr: "Caoutchouc", text: "Noir profond, sans reflet", metal: 0, rough: 0.96, coat: 0 },
-  carbon: { group: "composite", fr: "Carbone tissé", text: "Sergé 2 × 2 sous vernis", metal: 0.25, rough: 0.3, coat: 1, pattern: "weave", period: 8, own: "#17191d" },
-  laminate: { group: "composite", fr: "Stratifié verre-époxy", text: "Le vert d'une carte, satiné", metal: 0, rough: 0.5, coat: 0.4, pattern: "weave", period: 3 },
-  glass: { group: "clear", fr: "Verre", text: "Presque invisible, reflets vifs", metal: 0, rough: 0.04, coat: 1, opacity: 0.22 },
-  "clear-plastic": { group: "clear", fr: "Plastique transparent", text: "Laisse voir ce qu'il couvre", metal: 0, rough: 0.18, coat: 0.5, opacity: 0.38 },
+  "paint-gloss": { group: "paint", label: "Gloss paint", fr: "Peinture brillante", text: "Laque vernie : reflets nets", metal: 0, rough: 0.16, coat: 1, tint: true },
+  "paint-satin": { group: "paint", label: "Satin paint", fr: "Peinture satinée", text: "Reflets doux", metal: 0, rough: 0.45, coat: 0.3, tint: true },
+  "paint-matte": { group: "paint", label: "Matte paint", fr: "Peinture mate", text: "Aucun reflet franc", metal: 0, rough: 0.9, coat: 0, tint: true },
+  "paint-metallic": { group: "paint", label: "Metallic paint", fr: "Peinture métallisée", text: "Paillettes sous vernis", metal: 0.55, rough: 0.32, coat: 1, tint: true, pattern: "flakes", period: 12 },
+  "metal-polished": { group: "metal", label: "Polished metal", fr: "Métal poli", text: "Miroir", metal: 1, rough: 0.1, coat: 0 },
+  "metal-brushed": { group: "metal", label: "Brushed metal", fr: "Métal brossé", text: "Stries fines dans un sens", metal: 1, rough: 0.36, coat: 0, pattern: "brushed", period: 30 },
+  "metal-blasted": { group: "metal", label: "Bead-blasted metal", fr: "Métal microbillé", text: "Grain mat, uniforme", metal: 0.95, rough: 0.62, coat: 0, pattern: "grain", period: 16 },
+  "metal-anodized": { group: "metal", label: "Anodized aluminium", fr: "Aluminium anodisé", text: "Teinté dans la masse de l'oxyde, satiné", metal: 0.85, rough: 0.4, coat: 0, tint: true },
+  "plastic-gloss": { group: "plastic", label: "Gloss plastic", fr: "Plastique brillant", text: "Moule poli", metal: 0, rough: 0.22, coat: 0.2 },
+  "plastic-grain": { group: "plastic", label: "Textured plastic", fr: "Plastique grainé", text: "Grain de moule, mat", metal: 0, rough: 0.72, coat: 0, pattern: "grain", period: 10 },
+  rubber: { group: "plastic", label: "Rubber", fr: "Caoutchouc", text: "Noir profond, sans reflet", metal: 0, rough: 0.96, coat: 0 },
+  carbon: { group: "composite", label: "Woven carbon fiber", fr: "Carbone tissé", text: "Sergé 2 × 2 sous vernis", metal: 0.25, rough: 0.3, coat: 1, pattern: "weave", period: 8, own: "#17191d" },
+  laminate: { group: "composite", label: "Glass-epoxy laminate", fr: "Stratifié verre-époxy", text: "Le vert d'une carte, satiné", metal: 0, rough: 0.5, coat: 0.4, pattern: "weave", period: 3 },
+  glass: { group: "clear", label: "Glass", fr: "Verre", text: "Presque invisible, reflets vifs", metal: 0, rough: 0.04, coat: 1, opacity: 0.22 },
+  "clear-plastic": { group: "clear", label: "Clear plastic", fr: "Plastique transparent", text: "Laisse voir ce qu'il couvre", metal: 0, rough: 0.18, coat: 0.5, opacity: 0.38 },
 };
 export const SCENES = {
   studio: { fr: "Studio clair", text: "Fond blanc, lumière douce : le produit seul", sky: ["#ffffff", "#e3e8ee"], ground: "#f3f5f7", key: 1.5, fill: 0.5, room: 1 },
@@ -63,7 +63,7 @@ export function bodyLook(body, choice = null, main = "main") {
 export function lookRows(asm, built, names = {}) {
   const R = renderOf(asm), count = new Map(); for (const i of asm.instances) count.set(i.part, (count.get(i.part) || 0) + 1);
   return [...count.keys()].filter((p) => built[p]).map((p) => { const b = built[p], main = b.bodies.find((x) => x.name === b.main) || b.bodies[0], L = bodyLook(main, R.looks[p], main.name);
-    return { part: p, name: names[p] || p, qty: count.get(p), finish: L.finish, label: FINISHES[L.finish].fr, group: FINISHES[L.finish].group, color: L.color, chosen: !!(R.looks[p] && FINISHES[R.looks[p].finish]) }; });
+    return { part: p, name: names[p] || p, qty: count.get(p), finish: L.finish, label: FINISHES[L.finish].label, group: FINISHES[L.finish].group, color: L.color, chosen: !!(R.looks[p] && FINISHES[R.looks[p].finish]) }; });
 }
 /** What the render asks for. parts : the ids of the parts of the assembly. → [{ level, text, id, field }] for the guide */
 export function renderGuide(asm, parts = []) {
@@ -73,7 +73,7 @@ export function renderGuide(asm, parts = []) {
     if (parts.length && !parts.includes(p)) say("warn", `Une finition est gardée pour ${p}, qui n'est plus dans l'assemblage.`, p, "looks");
     else if (!c || !FINISHES[c.finish]) say("error", `${p} : finition inconnue (« ${c && c.finish} »).`, p, "looks");
     else if (c.color && !validHex(c.color)) say("error", `${p} : couleur illisible (« ${c.color} ») — attendu « #rrggbb ».`, p, "looks");
-    else if (c.color && !FINISHES[c.finish].tint) say("tip", `${p} : « ${FINISHES[c.finish].fr} » montre la couleur de la matière — la couleur choisie ne compte pas.`, p, "looks");
+    else if (c.color && !FINISHES[c.finish].tint) say("tip", `${p} : « ${FINISHES[c.finish].label} » montre la couleur de la matière — la couleur choisie ne compte pas.`, p, "looks");
   }
   if (!Object.keys(R.looks).length) say("tip", "Aucune finition choisie : chaque pièce montre celle de sa matière. Cliquez une pièce pour l'habiller.", null, "looks");
   return out;

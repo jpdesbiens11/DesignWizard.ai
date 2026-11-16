@@ -63,7 +63,7 @@ export function stripProfile(def, grow = 0) {
   return { poly: [...right, ...left.reverse()].map((q) => q.map((x) => Math.round(x * 1e4) / 1e4)) };      // to the tenth of a micron : a copper track is 35 µm thick
 }
 /** Insulations a solid busbar can wear : the material of the sleeve and its usual thickness (mm). */
-export const INSULATIONS = { "EPOXY": { fr: "Poudre époxy", t: 0.3 }, "PET-FILM": { fr: "Film polyester", t: 0.19 }, "PI-FILM": { fr: "Film polyimide", t: 0.1 } };
+export const INSULATIONS = { "EPOXY": { label: "Epoxy powder coating", fr: "Poudre époxy", t: 0.3 }, "PET-FILM": { label: "Polyester (PET) film", fr: "Film polyester", t: 0.19 }, "PI-FILM": { label: "Polyimide (PI) film", fr: "Film polyimide", t: 0.1 } };
 /** The windows of the sleeve : one where each terminal and each contact must touch the metal. → features of the body « isolant ». */
 function windows(def, legs, ti, m) {
   const out = [], box = (id, leg, side, s, y, a, b) => { const g = legs[leg], q = onLeg(def, legs, leg, side, s, y), lo = side * (Math.abs(g.n[1]) > 0.5 ? g.n[1] : g.n[0]) > 0 ? q.level - 0.1 : q.level - ti - 0.1;      // a : along the leg, b : across
@@ -131,7 +131,7 @@ export function busbarChecks(def) {
     if (def.W < 2.5 * d) say("check", `${t.id} (${t.screw}) : largeur de ${fr(def.W)} mm pour une vis de ${d} mm — il reste peu de section autour du trou.`); }
   for (const c of def.contacts) { const g = legs[c.leg]; if (!g) { say("bad", `${c.id} : sa branche n'existe plus.`); continue; }
     for (const n of [...contactEstimate(c).notes, ...contactFormNotes(contactParams(def, c), { band: c.band })]) say("check", `${c.id} : ${n}`);
-    if (c.duty === "power" && def.finish === "none") say("check", `${c.id} : plage de contact sur cuivre nu — l'oxyde monte la résistance avec le temps ; revêtir la plage (${PLATINGS[c.plating].fr.toLowerCase()}).`); }
+    if (c.duty === "power" && def.finish === "none") say("check", `${c.id} : plage de contact sur cuivre nu — l'oxyde monte la résistance avec le temps ; revêtir la plage (${PLATINGS[c.plating].label.toLowerCase()}).`); }
   for (const h of def.holes || []) { const g = legs[h.leg]; if (!g) { say("bad", `${h.id} : sa branche n'existe plus.`); continue; }
     const across = h.l > h.d && h.turn ? h.l : h.d, along = h.l > h.d && !h.turn ? h.l : h.d, left = def.W - across;
     if (left <= 0.5) { say("bad", `${h.id} : un trou de ${fr(across)} mm dans une largeur de ${fr(def.W)} mm coupe la barre.`); continue; }
@@ -159,11 +159,11 @@ export function busbarPart(def, id, before = null) {
   return { ...(before ? { revision: before.revision, characteristics: before.characteristics } : {}), dw: "part/1", id, name: def.name || "Busbar", function: `Conduit ${def.net}${def.I ? ` : ${fr(def.I)} A` : ""} entre ${def.terminals.length + def.contacts.length} point(s) de raccordement`,
     family: "busbar", process: legs.length > 1 ? "sheet_metal" : "laser_cut", material: def.material, ...(def.finish && def.finish !== "none" ? { finish: FINISHES[def.finish] } : {}), elec: { kind: "conductor", net: def.net }, busbar: JSON.parse(JSON.stringify(def)),
     params: { W: { value: def.W, min: Math.max(2, def.W / 4), max: def.W * 4, step: 0.5, unit: "mm", label: "Largeur", group: "Bande" }, t: fix(def.t, "Épaisseur (se règle dans l'écran Busbars)", "Bande"), ...(legs.length > 1 ? { r: fix(def.r, "Rayon de pliage intérieur", "Bande") } : {}) },
-    ...(ins ? { bodies: { isolant: { material: ins.material, kind: "insulator", label: INSULATIONS[ins.material] ? INSULATIONS[ins.material].fr : "Isolant" } } } : {}),
+    ...(ins ? { bodies: { isolant: { material: ins.material, kind: "insulator", label: INSULATIONS[ins.material] ? INSULATIONS[ins.material].label : "Isolant" } } } : {}),
     features: [{ op: "extrude", id: "bande", name: "Bande", profile: stripProfile(def), plane: "XZ", length: "W" },
       ...(ins ? [{ op: "extrude", id: "gaine", name: "Isolant", body: "isolant", profile: stripProfile(def, ins.t), plane: "XZ", at: -ins.t, length: `W + ${r2(2 * ins.t)}` }, { op: "extrude", id: "gaine_ame", body: "isolant", mode: "cut", profile: stripProfile(def), plane: "XZ", length: "W" }, ...windows(def, legs, ins.t, ins.margin ?? 2)] : []),
       ...holes, { op: "interfaces" }], interfaces: [...terminals, ...contacts, ...kept],
     notes: [`Section ${fr(ch.S)} mm², ${fr(ch.J)} A/mm² à ${fr(def.I || 0)} A ; résistance à 20 °C ≈ ${fr(ch.R)} µΩ.`, ...(ch.bends ? [`Développé ≈ ${fr(ch.flat)} mm (${ch.bends} pli(s) à 90°, rayon intérieur ${fr(def.r)} mm, facteur K ${String(KFACTOR).replace(".", ",")}) : à confirmer par le plieur.`] : []),
-      ...(ins ? [`Isolant : ${(INSULATIONS[ins.material] || { fr: ins.material }).fr.toLowerCase()} de ${fr(ins.t)} mm, ouvert par une fenêtre à chaque borne et à chaque contact (${fr(ins.margin ?? 2)} mm de marge).`] : []),
+      ...(ins ? [`Isolant : ${(INSULATIONS[ins.material] || { label: ins.material }).label.toLowerCase()} de ${fr(ins.t)} mm, ouvert par une fenêtre à chaque borne et à chaque contact (${fr(ins.margin ?? 2)} mm de marge).`] : []),
       ...(def.contacts.length ? ["Plages de contact : planéité 0,05 mm, sans bavure ni rayure ; revêtement selon la nomenclature du contact."] : [])] };
 }

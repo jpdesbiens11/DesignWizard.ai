@@ -13,8 +13,8 @@ import { connector } from "../cad/elec_library.js";
 const r2 = (x) => Math.round(x * 100) / 100, r3 = (x) => Math.round(x * 1000) / 1000, fr = (x) => String(r2(x)).replace(".", ",");
 const slug = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 40);
 export const SENSOR_KINDS = {
-  temp: { fr: "Sonde de température", prefix: "TS", text: "Une thermistance sur le circuit, pressée ou collée sur ce qu'elle surveille", size: [1.6, 0.8, 0.8], pad: [4, 4] },
-  volt: { fr: "Prise de tension", prefix: "VS", text: "Une patte du circuit soudée sur un busbar ou une borne de cellule : elle en ramène le potentiel", size: [4, 3, 0.1], pad: [4, 3] },
+  temp: { label: "Temperature sensor", fr: "Sonde de température", prefix: "TS", text: "Une thermistance sur le circuit, pressée ou collée sur ce qu'elle surveille", size: [1.6, 0.8, 0.8], pad: [4, 4] },
+  volt: { label: "Voltage tap", fr: "Prise de tension", prefix: "VS", text: "Une patte du circuit soudée sur un busbar ou une borne de cellule : elle en ramène le potentiel", size: [4, 3, 0.1], pad: [4, 3] },
 };
 export const TAIL_MATES = { zif: "Dans un connecteur de la carte (queue raidie)", solder: "Brasée sur la carte" };
 /** Usual limits of a flexible circuit laid once and left in place (IPC-2223 rules of thumb) : bend radius over thickness. */
@@ -25,7 +25,7 @@ export const blankFlex = () => ({ name: "Circuit flexible", W: 12, t: 0.2, cu: 0
 /** Every track the circuit carries : those asked for, then the ones its sensors need — one per voltage tap, one per probe and a shared return. */
 export function allTracks(def) {
   const out = def.tracks.map((t, k) => ({ id: `P${k + 1}`, ...t })), temps = def.sensors.filter((s) => s.kind === "temp");
-  for (const s of def.sensors) out.push({ id: `P${out.length + 1}`, net: s.kind === "volt" ? s.net || s.id : s.id, fn: `${SENSOR_KINDS[s.kind].fr} ${s.id}`, w: 0.3, i: 0.01, sensor: s.id });
+  for (const s of def.sensors) out.push({ id: `P${out.length + 1}`, net: s.kind === "volt" ? s.net || s.id : s.id, fn: `${SENSOR_KINDS[s.kind].label} ${s.id}`, w: 0.3, i: 0.01, sensor: s.id });
   if (temps.length) out.push({ id: `P${out.length + 1}`, net: "T-RET", fn: "Retour commun des sondes de température", w: 0.3, i: 0.01 * temps.length, sensor: "temp" });
   return out;
 }
@@ -79,10 +79,10 @@ export function flexPart(def, id, before = null) {
     const K = SENSOR_KINDS[s.kind], q = onLeg(def, legs, s.leg, s.side, s.s, s.y), back = onLeg(def, legs, s.leg, -s.side, s.s, s.y), [a, b, h] = K.size, body = s.id.toLowerCase();
     const at = (f, base, out) => (f.face[1] === "Z" ? { size: [a, b, h], at: [r2(f.at[0] - a / 2), r2(f.at[1] - b / 2), r2(out > 0 ? base : base - h)] } : { size: [h, b, a], at: [r2(out > 0 ? base : base - h), r2(f.at[0] - b / 2), r2(f.at[1] - a / 2)] });
     const outward = (f) => (f.face[0] === "+" ? 1 : -1);
-    if (s.kind === "temp") { bodies[body] = { material: "GENERIC-COMPONENT", kind: "insulator", label: s.id }; features.push({ op: "box", id: `corps_${body}`, name: `${K.fr} ${s.id}`, body, ...at(back, back.level, outward(back)) });      // the component stands on the back : the face that touches stays flat
-      interfaces.push({ id: s.id, type: "planar", name: `${K.fr} ${s.id} — contact thermique`, key: s.key || `${key}_${body}`, partner: s.on || "Ce qu'elle surveille", side: "A", face: q.face, level: q.level, at: q.at, params: { w: K.pad[0], h: K.pad[1] } }); }
-    else { bodies[body] = { material: "CU-C110", net: s.net || s.id, kind: "conductor", label: `${s.id} ${s.net || ""}`.trim() }; features.push({ op: "box", id: `patte_${body}`, name: `${K.fr} ${s.id}`, body, ...at(q, q.level, outward(q)) });
-      interfaces.push({ id: s.id, type: "weld", name: `${K.fr} ${s.id}${s.net ? ` — ${s.net}` : ""}`, key: s.key || `${key}_${body}`, partner: s.on || "Busbar ou borne de cellule", side: "A", face: q.face, level: r2(q.level + outward(q) * h), at: q.at, ...(q.along ? { rot: 90 } : {}),
+    if (s.kind === "temp") { bodies[body] = { material: "GENERIC-COMPONENT", kind: "insulator", label: s.id }; features.push({ op: "box", id: `corps_${body}`, name: `${K.label} ${s.id}`, body, ...at(back, back.level, outward(back)) });      // the component stands on the back : the face that touches stays flat
+      interfaces.push({ id: s.id, type: "planar", name: `${K.label} ${s.id} — contact thermique`, key: s.key || `${key}_${body}`, partner: s.on || "Ce qu'elle surveille", side: "A", face: q.face, level: q.level, at: q.at, params: { w: K.pad[0], h: K.pad[1] } }); }
+    else { bodies[body] = { material: "CU-C110", net: s.net || s.id, kind: "conductor", label: `${s.id} ${s.net || ""}`.trim() }; features.push({ op: "box", id: `patte_${body}`, name: `${K.label} ${s.id}`, body, ...at(q, q.level, outward(q)) });
+      interfaces.push({ id: s.id, type: "weld", name: `${K.label} ${s.id}${s.net ? ` — ${s.net}` : ""}`, key: s.key || `${key}_${body}`, partner: s.on || "Busbar ou borne de cellule", side: "A", face: q.face, level: r2(q.level + outward(q) * h), at: q.at, ...(q.along ? { rot: 90 } : {}),
         params: { process: s.process || "laser", w: K.pad[0], h: K.pad[1], n: 1, t: h, wire: 0.3, wireMat: "Al", i: 0 } }); }
   }
   const kept = ((before && before.interfaces) || []).filter((i) => i.id !== "IF1" && !/^(TS|VS)\d+$/.test(i.id));

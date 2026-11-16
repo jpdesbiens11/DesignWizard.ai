@@ -28,8 +28,8 @@ test("a body shows the finish of its material until one is chosen for its part",
 test("the rows of the screen : one per part, with its quantity, its finish and whether it was chosen", () => {
   const asm = { instances: [{ id: "a", part: "P1" }, { id: "b", part: "P1" }, { id: "c", part: "P2" }, { id: "d", part: "GONE" }], render: { looks: { P1: { finish: "paint-satin", color: "#112233" } } } };
   const built = { P1: { main: "main", bodies: [{ name: "main", material: "ABS", color: "#e8e3d8" }] }, P2: { main: "main", bodies: [{ name: "main", material: "CU-C110", color: "#c8763f" }] } };
-  assert.deepEqual(lookRows(asm, built, { P1: "Coque" }), [{ part: "P1", name: "Coque", qty: 2, finish: "paint-satin", label: "Peinture satinée", group: "paint", color: "#112233", chosen: true },
-    { part: "P2", name: "P2", qty: 1, finish: "metal-brushed", label: "Métal brossé", group: "metal", color: "#c8763f", chosen: false }]);
+  assert.deepEqual(lookRows(asm, built, { P1: "Coque" }), [{ part: "P1", name: "Coque", qty: 2, finish: "paint-satin", label: "Satin paint", group: "paint", color: "#112233", chosen: true },
+    { part: "P2", name: "P2", qty: 1, finish: "metal-brushed", label: "Brushed metal", group: "metal", color: "#c8763f", chosen: false }]);
   assert.deepEqual(renderOf({}).looks, {}); assert.equal(renderOf(asm).scene, "studio");
 });
 test("the guide : nothing chosen is a word of advice ; an unknown finish, a stray part, an unreadable colour are said", () => {

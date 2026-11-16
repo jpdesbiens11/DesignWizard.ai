@@ -82,7 +82,7 @@ test("the other kinds of interface have their definition too : fit, planar, bond
   const planar = await pair("planar", { w: 50, h: 20 }, {}, { pad: 2 });
   assert.match(fact(planar.def, "Contact area"), /50 × 20 mm/); assert.match(fact(planar.def, "Side B — pad"), /2 mm/); assert.equal(planar.solids.length, 1); assert.deepEqual([span(planar.solids[0], 0), span(planar.solids[0], 1), span(planar.solids[0], 2)], [50, 20, 0]); assert.equal(planar.solids[0].pts[0][2], 14, "on the top of the pad"); inside(planar.section); assert.match(texts(planar.section), /pad 2 mm/);
   const bond = await pair("bond", { w: 40, h: 16, gap: 0.2, adhesive: "epoxy", prep: "abrade" });
-  assert.match(fact(bond.def, "Adhesive"), /époxy/i); assert.match(fact(bond.def, "Bond line"), /0,2 mm/); assert.match(fact(bond.def, "Quantity"), /mL/); assert.equal(bond.solids[0].color, MATE_COLORS.film); assert.deepEqual([span(bond.solids[0], 0), span(bond.solids[0], 1)], [40, 16]); inside(bond.section); assert.match(texts(bond.section), /bond line 0,2 mm/);
+  assert.match(fact(bond.def, "Adhesive"), /epoxy/i); assert.match(fact(bond.def, "Bond line"), /0,2 mm/); assert.match(fact(bond.def, "Quantity"), /mL/); assert.equal(bond.solids[0].color, MATE_COLORS.film); assert.deepEqual([span(bond.solids[0], 0), span(bond.solids[0], 1)], [40, 16]); inside(bond.section); assert.match(texts(bond.section), /bond line 0,2 mm/);
   const cut = await pair("cutout", { shape: "rect", w: 30, h: 12, r: 1 });
   assert.match(fact(cut.def, "Opening"), /30 × 12 mm, coins R 1/); assert.deepEqual([span(cut.solids[0], 0), span(cut.solids[0], 1)], [30, 12]); inside(cut.section); assert.match(texts(cut.section), /30 × 12/);
   const round = await pair("cutout", { shape: "round", d: 16 });

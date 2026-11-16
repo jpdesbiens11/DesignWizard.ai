@@ -113,7 +113,7 @@ export function checkAdditive(ctx) {
     if (!m || (m.processes || []).includes(proc)) return;
     if (M && M.process !== proc) ctx.add("AM-10", { value: processName(proc), limit: processName(M.process), message: `${m.name} en « ${processName(proc)} » : cette matière s'imprime en « ${processName(M.process)} ». Correctif : changer de procédé, ou choisir une matière du procédé (${materialsOf(proc)}).`,
       fix: ctx.fix(`Passer en ${M.proc.short}`, { target: "spec", id: null, path: "process", value: M.process }) });
-    else ctx.add("AM-10", { severity: (m.cls === "metal") !== metal ? "error" : "warn", value: m.name, limit: materialsOf(proc), message: `${m.name} n'est pas une matière « ${P.fr} » de la bibliothèque. Matières du procédé : ${materialsOf(proc)}. Correctif : choisir l'une d'elles, ou confirmer avec le fournisseur que la sienne s'imprime.` });
+    else ctx.add("AM-10", { severity: (m.cls === "metal") !== metal ? "error" : "warn", value: m.name, limit: materialsOf(proc), message: `${m.name} n'est pas une matière « ${P.label} » de la bibliothèque. Matières du procédé : ${materialsOf(proc)}. Correctif : choisir l'une d'elles, ou confirmer avec le fournisseur que la sienne s'imprime.` });
   });
   if (metal) {
     ctx.run("AM-11", () => ctx.checkWalls("AM-11", { rec: P.wallRec, min: P.wall, what: `de fusion laser (${P.short})` }));

@@ -53,7 +53,7 @@ function interview(page) {
   }
   if (!p.parts.length) neigh.append(el("p", { class: "muted" }, "Aucune pièce dans le projet : cette pièce définira les premières interfaces."));
   const antBox = el("div"), extraBox = el("div");
-  const exType = el("select", null, Object.entries(INTERFACE_TYPES).map(([k, t]) => el("option", { value: k }, t.fr))), exPartner = el("input", { type: "text", placeholder: "Voisin à venir (ex. : moteur, capot, faisceau)" });
+  const exType = el("select", null, Object.entries(INTERFACE_TYPES).map(([k, t]) => el("option", { value: k }, t.label))), exPartner = el("input", { type: "text", placeholder: "Voisin à venir (ex. : moteur, capot, faisceau)" });
   const modeSel = el("select", null, el("option", { value: "interview", selected: draft.mode !== "direct" }, "Entrevue : Claude pose ses questions d'abord"), el("option", { value: "direct", selected: draft.mode === "direct" }, "Direct : Claude répond tout de suite avec ses hypothèses"));
   const left = el("div", { class: "card taped" }, el("h2", null, "1. La pièce et ses voisins"),
     el("div", { class: "form-row" }, field("Nom de la pièce", name), field("Procédé envisagé", proc), field("Matériau envisagé", mat)),
@@ -93,9 +93,9 @@ function interview(page) {
     const ant = anticipatedInterfaces(p, draft.neighbours);
     clear(antBox);
     if (!ant.length) antBox.append(el("p", { class: "muted", style: { fontSize: ".86rem" } }, draft.neighbours.length ? "Les voisins cochés n'ont pas d'interface libre." : "Cochez les voisins : leurs interfaces libres deviennent les interfaces imposées de la nouvelle pièce."));
-    for (const a of ant) antBox.append(el("p", { style: { margin: "0 0 .3rem", fontSize: ".86rem" } }, badge(`côté ${a.iface.side}`, a.iface.side === "B" ? "b" : "a"), " ", el("b", null, a.iface.name), ` — ${INTERFACE_TYPES[a.iface.type].fr}, clé `, el("code", null, a.iface.key), ` (face à ${a.from.name})`));
+    for (const a of ant) antBox.append(el("p", { style: { margin: "0 0 .3rem", fontSize: ".86rem" } }, badge(`côté ${a.iface.side}`, a.iface.side === "B" ? "b" : "a"), " ", el("b", null, a.iface.name), ` — ${INTERFACE_TYPES[a.iface.type].label}, clé `, el("code", null, a.iface.key), ` (face à ${a.from.name})`));
     clear(extraBox);
-    draft.extras.forEach((e, i) => extraBox.append(el("p", { style: { margin: "0 0 .3rem", fontSize: ".86rem" } }, badge("à définir", "warn"), ` ${INTERFACE_TYPES[e.type].fr} avec « ${e.partner} » `, el("button", { class: "link-btn", type: "button", onClick: () => { draft.extras.splice(i, 1); update(); } }, "retirer"))));
+    draft.extras.forEach((e, i) => extraBox.append(el("p", { style: { margin: "0 0 .3rem", fontSize: ".86rem" } }, badge("à définir", "warn"), ` ${INTERFACE_TYPES[e.type].label} avec « ${e.partner} » `, el("button", { class: "link-btn", type: "button", onClick: () => { draft.extras.splice(i, 1); update(); } }, "retirer"))));
     const text = partPrompt(p, draft);
     promptBox.textContent = text;
     page.querySelector("#prompt-size").textContent = `${text.length.toLocaleString("fr-CA")} caractères`;

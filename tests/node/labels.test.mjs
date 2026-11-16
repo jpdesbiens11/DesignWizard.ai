@@ -68,8 +68,8 @@ test("the guide : to place, to write, too long for the cylinder, too small to re
 });
 test("the list for the printer, and a label put back in order", () => {
   const rows = labelRows([onCyl(), onFlat({ id: "E2", kind: "plate" }), blankLabel("E3")], { i1: "Coque centrale" });
-  assert.deepEqual(rows.map((r) => [r.id, r.kind, r.on, r.surface, r.area]), [["E1", "Autocollant", "Coque centrale", "cylindre Ø 203,2", 120], ["E2", "Plaque signalétique", "Coque centrale", "face plane", 108], ["E3", "Autocollant", "—", "à poser", 24]]);
-  assert.match(labelsCsv(rows).split("\n")[1], /^"E1","Autocollant DesignWizard\.ai","Autocollant","Marque DesignWizard\.ai","Coque centrale","cylindre Ø 203,2","200","60","0","120"$/);
+  assert.deepEqual(rows.map((r) => [r.id, r.kind, r.on, r.surface, r.area]), [["E1", "Sticker", "Coque centrale", "cylindre Ø 203,2", 120], ["E2", "Nameplate", "Coque centrale", "face plane", 108], ["E3", "Sticker", "—", "à poser", 24]]);
+  assert.match(labelsCsv(rows).split("\n")[1], /^"E1","Sticker DesignWizard\.ai","Sticker","Marque DesignWizard\.ai","Coque centrale","cylindre Ø 203,2","200","60","0","120"$/);
   assert.equal(nextLabelId([{ id: "E1" }, { id: "E7" }]), "E8"); assert.deepEqual(Object.keys(LABEL_KINDS), ["sticker", "plate", "marking"]); assert.deepEqual(Object.keys(LABEL_ARTS), ["logo", "text", "image"]);
   const t = tidyLabel({ id: 4, kind: "banner", w: "120", h: null, turn: "x", art: { type: "hologram", text: "A" }, on: { p: [1, 2] } });
   assert.deepEqual([t.id, t.kind, t.w, t.h, t.turn, t.art.type, t.art.text, t.on], ["4", "sticker", 120, 30, 0, "text", "A", null]);
@@ -78,6 +78,6 @@ test("the rocket wears the sticker of the platform, and it travels in the file o
   const asm = DEMO_ROCKET.assemblies[0], l = asm.labels[0];
   assert.equal(l.art.type, "logo"); assert.equal(l.inst, "coque_centrale"); assert.ok(isWrapped(l)); assert.deepEqual(labelGuide(asm.labels, asm.instances.map((i) => i.id)), []);
   const back = fromDwiz(toDwiz(asm)); assert.deepEqual(back.labels, JSON.parse(JSON.stringify(asm.labels)));
-  assert.match(toDwiz(asm), /\nlabel E1 sticker name="Autocollant DesignWizard\.ai" inst=coque_centrale w=420 h=120 turn=90\n  on p=\[58\.28, 83\.23, 760\]/);
+  assert.match(toDwiz(asm), /\nlabel E1 sticker name="Sticker DesignWizard\.ai" inst=coque_centrale w=420 h=120 turn=90\n  on p=\[58\.28, 83\.23, 760\]/);
   assert.equal(methodById("label-wrap").how, "tested");
 });

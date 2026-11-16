@@ -43,8 +43,8 @@ export const FEATURE_FORMS = {
   deburr: [["note", "Consigne (vide = ébavurer, casser les angles)", "text"]],
   finish: [["note", "Finition", "text"]],
 };
-export const FEATURE_LABEL = { ...Object.fromEntries(Object.entries(SHOP_VERBS).map(([k, v]) => [k, v.fr])), box: "Bloc", cylinder: "Cylindre", coil: "Serpentin (tube en hélice)", extrude: "Extrusion de profil", revolve: "Révolution", hole: "Trou", pocket: "Poche", pad: "Bossage plat", slot: "Rainure",
-  boss: "Bossage cylindrique", arch: "Lame en pont", shell: "Coque", fillet: "Congé", chamfer: "Chanfrein", interfaces: "— géométrie des interfaces —" };
+export const FEATURE_LABEL = { ...Object.fromEntries(Object.entries(SHOP_VERBS).map(([k, v]) => [k, v.label])), box: "Box", cylinder: "Cylinder", coil: "Coil (helical tube)", extrude: "Extrude", revolve: "Revolve", hole: "Hole", pocket: "Pocket", pad: "Pad", slot: "Slot",
+  boss: "Boss", arch: "Arch (spring blade)", shell: "Shell", fillet: "Fillet", chamfer: "Chamfer", interfaces: "— interface geometry —" };
 export const FEATURE_DEFAULT = {
   box: { op: "box", size: [20, 20, 10], at: [0, 0, 0] }, cylinder: { op: "cylinder", d: 10, h: 10, at: [0, 0, 0], axis: "Z" }, coil: { op: "coil", d: 4, di: 3, r: 15, h: 40, turns: 6, at: [0, 0, 0], axis: "Z" },
   extrude: { op: "extrude", profile: { rect: [0, 0, 30, 20], r: 2 }, plane: "XY", at: 0, length: 10 }, hole: { op: "hole", face: "+Z", at: [10, 10], d: 5, depth: "through" },
@@ -110,7 +110,7 @@ export function featureDialog(feature, onSave, title) {
 export function interfaceDialog(iface, onSave, isNew) {
   const it = JSON.parse(JSON.stringify(iface)), err = el("p", { class: "form-error" });
   const doc = el("p", { class: "muted" });
-  const type = el("select", null, Object.entries(INTERFACE_TYPES).map(([k, t]) => el("option", { value: k, selected: k === it.type }, `${t.fr} (${k})`)));
+  const type = el("select", null, Object.entries(INTERFACE_TYPES).map(([k, t]) => el("option", { value: k, selected: k === it.type }, `${t.label} (${k})`)));
   const side = el("select", null, ["A", "B"].map((s) => el("option", { value: s, selected: s === (it.side || "A") }, `Côté ${s}`)));
   const face = faceSelect(it.face);
   const txt = (v) => el("input", { type: "text", value: show(v), spellcheck: false });
@@ -129,7 +129,7 @@ export function interfaceDialog(iface, onSave, isNew) {
   const save = () => {
     try {
       it.type = type.value; it.side = side.value; it.face = face.value;
-      it.name = name.value.trim() || INTERFACE_TYPES[it.type].fr;
+      it.name = name.value.trim() || INTERFACE_TYPES[it.type].label;
       for (const [k, input, kind] of [["key", key, "text"], ["partner", partner, "text"], ["at", at, "json"], ["level", level, "num"], ["rot", rot, "num"]]) { const v = parseValue(input.value, kind); if (v === undefined) delete it[k]; else it[k] = v; }
       it.params = JSON.parse(params.value || "{}"); it.opts = JSON.parse(opts.value || "{}");
       if (external.checked) it.external = true; else delete it.external;
@@ -148,7 +148,7 @@ export function interfaceDialog(iface, onSave, isNew) {
 /** Dialog to choose or edit the raw stock of a part. `onSave(stock | null)` (null removes it). */
 export function stockDialog(stock, onSave) {
   const cur = JSON.parse(JSON.stringify(stock || { form: "plate", L: 100, W: 60, t: 6 })), err = el("p", { class: "form-error" }), box = el("div", { class: "form-row" }), hint = el("p", { class: "muted" });
-  const form = el("select", null, Object.entries(STOCK_FORMS).map(([k, f]) => el("option", { value: k, selected: k === cur.form }, f.fr)));
+  const form = el("select", null, Object.entries(STOCK_FORMS).map(([k, f]) => el("option", { value: k, selected: k === cur.form }, f.label)));
   const inputs = {};
   const fill = () => {
     const f = STOCK_FORMS[form.value];

@@ -52,7 +52,7 @@ test("the assembly as a whole : joints counted, internal interfaces without a tw
   assert.deepEqual(h.counts, { ok: 1, check: 0, broken: 0 }); assert.equal(h.free, 1, "the external interface waits for no twin"); assert.equal(h.floating, 1); assert.equal(h.state, "check");
   assert.equal(h.text, "1 joint : 1 sain · 1 interface interne sans jumelle · 1 pièce non accouplée");
   const clean = assemblyHealth(asmOf([M()]), { P1: { interfaces: [bolt("A")] }, P2: built.P2 }, specs, { problems: [], floating: [] }); assert.equal(clean.state, "ok"); assert.equal(HEALTH[clean.state].fr, "Sain");
-  const row = () => ({ id: "M1", kind: "Boulonné", a: "P1 · Fixation", b: "P2 · Fixation", key: "k1", hardware: [{ name: "Vis M4 × 12", qty: 4, unit: "" }], process: "4 × M4" });
+  const row = () => ({ id: "M1", kind: "Bolted", a: "P1 · Fixation", b: "P2 · Fixation", key: "k1", hardware: [{ name: "Vis M4 × 12", qty: 4, unit: "" }], process: "4 × M4" });
   const csv = jointsCsv([{ ...row(), health: HEALTH[h.rows[0].state].fr, notes: h.rows[0].notes }]).split("\r\n"); assert.match(csv[0], /Santé;Remarques$/); assert.match(csv[1], /;Sain;$/);
   assert.doesNotMatch(jointsCsv([row()]).split("\r\n")[0], /Santé/, "no health column when the register does not carry it");
 });

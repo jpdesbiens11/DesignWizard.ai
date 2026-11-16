@@ -72,7 +72,7 @@ const sources = (keep) => el("section", { class: "card" }, el("h2", null, "Sourc
 function laser(page) {
   const used = (key) => MATERIALS.filter((m) => { const P = laserProfile(m.id); return P && P.key === key; });
   page.append(el("div", { class: "grid", style: WIDE }, Object.entries(LASER_FAMILIES).map(([key, f]) => el("section", { class: "card", "data-family": key },
-    el("h2", null, f.fr, " ", f.verdict === "forbidden" ? badge("Jamais au laser", "danger") : f.verdict === "caution" ? badge("À éviter", "warn") : null),
+    el("h2", null, f.label, " ", f.verdict === "forbidden" ? badge("Jamais au laser", "danger") : f.verdict === "caution" ? badge("À éviter", "warn") : null),
     el("p", { class: "small", style: { margin: "0 0 .4rem" } }, el("b", null, f.source.charAt(0).toUpperCase() + f.source.slice(1)), f.verdict === "ok" ? ` · gaz : ${f.gas}` : ""),
     f.verdict === "forbidden" ? el("p", null, `${f.why.charAt(0).toUpperCase()}${f.why.slice(1)}. À la place : ${f.instead}.`)
       : el("div", { class: "atelier-chips" }, chip(`Épaisseur ${range(f.t)} mm`), chip(`Trait de coupe ${range(f.kerf)} mm`), chip(`Trou ≥ ${f.hole.k ? `${n(f.hole.k)} × t, ` : ""}${n(f.hole.min)} mm`, "t : l'épaisseur de la feuille"),
@@ -83,7 +83,7 @@ function laser(page) {
     sources((s) => s.id.startsWith("laser")));
 }
 function printing(page) {
-  page.append(el("div", { class: "grid", style: WIDE }, Object.entries(AM_PROCESSES).map(([key, P]) => el("section", { class: "card", "data-process": key }, el("h2", null, P.fr), el("p", { class: "small muted", style: { margin: "0 0 .4rem" } }, `À partir de ${P.raw} · ${P.kind === "metal" ? "métaux" : "polymères"}`),
+  page.append(el("div", { class: "grid", style: WIDE }, Object.entries(AM_PROCESSES).map(([key, P]) => el("section", { class: "card", "data-process": key }, el("h2", null, P.label), el("p", { class: "small muted", style: { margin: "0 0 .4rem" } }, `À partir de ${P.raw} · ${P.kind === "metal" ? "métaux" : "polymères"}`),
     el("div", { class: "atelier-chips" }, ...[chip(`Paroi ≥ ${n(P.wall)} mm (${n(P.wallRec)} conseillé)`), chip(`Trou ≥ Ø${n(P.hole)}`), chip(`Jeu ≥ ${n(P.gap)} mm par côté`), P.supports ? chip(`Supports sous ${P.overhang}°`, "Angle mesuré depuis le plateau") : chip("Sans support"),
       P.bridge ? chip(`Portée libre ≤ ${n(P.bridge)} mm`) : null, P.hHole ? chip(`Trou horizontal rond ≤ Ø${n(P.hHole)}`) : null, P.escape ? chip(`${P.escapes > 1 ? `${P.escapes} ouvertures` : "Ouverture"} ≥ Ø${n(P.escape)}`, "Pour vider une cavité de sa poudre ou de sa résine") : null,
       chip(P.tol, "Tolérance brute d'impression"), P.ra ? chip(`Ra ${P.ra[0]} à ${P.ra[1]} µm`, "Rugosité brute de fusion") : null, chip(`Volume ${P.build.join(" × ")} mm`, "Une machine courante — à confirmer avec l'atelier")].filter(Boolean)),
@@ -95,7 +95,7 @@ function printing(page) {
 }
 function folding(page) {
   const mats = MATERIALS.filter((m) => canFold(m.id));
-  page.append(el("div", { class: "grid", style: WIDE }, el("section", { class: "card" }, el("h2", null, FOLD_RULES.fr), el("div", { class: "atelier-chips" }, FOLD_RULES.chips.map(([text, tip]) => chip(text, tip))), bullets(FOLD_RULES.notes), basis(FOLD_RULES.basis)),
+  page.append(el("div", { class: "grid", style: WIDE }, el("section", { class: "card" }, el("h2", null, FOLD_RULES.label), el("div", { class: "atelier-chips" }, FOLD_RULES.chips.map(([text, tip]) => chip(text, tip))), bullets(FOLD_RULES.notes), basis(FOLD_RULES.basis)),
     el("section", { class: "card" }, el("h2", null, "Ce que la plateforme en fait"), bullets(["Dans « Intention d'abord », cochez les côtés de la base à relever, ou placez une interface sur un côté : la pièce s'écrit seule, avec son bloc « folded ».",
       "Le noyau construit la base, les plis avec leur vrai rayon et les bords ; les trous et les interfaces se posent sur la base ou sur un bord.", "Le DFx mesure le rayon, la hauteur de chaque bord, la distance de chaque trou au pli et au bord libre, le dégagement des angles — avec un correctif en un clic.",
       "L'onglet « Développé » de la pièce montre le flan à plat et ses lignes de pliage ; le DXF les met sur des calques séparés (CUT, BEND, NOTES).", "La gamme enchaîne la découpe du flan, les plis un à un et l'ébavurage ; le flan développé est le brut à commander."]),

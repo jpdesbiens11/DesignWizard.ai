@@ -62,7 +62,7 @@ test("a board born from the groove of the profile slides in : same key, tongue o
   const built = { "PN-0310": buildPart(K, box), "PN-0311": buildPart(K, card) };
   const asm = { id: "A1", instances: [{ id: "i1", part: "PN-0310", fixed: true, placement: { t: [0, 0, 0], r: [0, 0, 0] } }, { id: "i2", part: "PN-0311", placement: { t: [0, 0, 0], r: [0, 0, 0] } }], mates: [] };
   const added = autoMate(asm, built); assert.equal(added.length, 1); assert.equal(added[0].flip, true, "a tongue slides in : the frames coincide"); assert.equal(added[0].by, "key");
-  const sol = solve(asm, built); assert.equal(sol.problems.length, 0); assert.equal(joints(asm, built)[0].kind, "Guidé");
+  const sol = solve(asm, built); assert.equal(sol.problems.length, 0); assert.equal(joints(asm, built)[0].kind, "Guided");
   const T = sol.placements.i2, moved = K.transform(built["PN-0311"].bodies[0].shape, T), bb = K.props(moved).bbox || K.bbox(moved), L = val(box, "L");
   assert.ok(Math.abs(bb[4] - L) < 0.01 && bb[1] > -0.01, `the board is inside, flush with the end (y ${bb[1].toFixed(2)} → ${bb[4].toFixed(2)})`);
   const zc = val(box, "t") + parseFloat(rail.at[1].split("+")[1]);

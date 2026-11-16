@@ -155,7 +155,7 @@ export function partStudio(main, args, cfg) {
     if (!st.spec) return;
     const s = st.spec, tree = el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, "Arbre de construction"), addFeatureButton()));
     if (s.stock) tree.append(el("button", { class: "nav-item", type: "button", onClick: () => editStock(), "data-tip": "Matière première : ce que l'on prend sur l'étagère" }, icon("stock"),
-      el("span", { class: "grow" }, `Brut : ${(STOCK_FORMS[s.stock.form] || { fr: s.stock.form }).fr.toLowerCase()}`), st.built && st.built.facts.stock && !st.built.facts.stock.exact ? badge("hors série", "warn") : null));
+      el("span", { class: "grow" }, `Brut : ${(STOCK_FORMS[s.stock.form] || { label: s.stock.form }).label.toLowerCase()}`), st.built && st.built.facts.stock && !st.built.facts.stock.exact ? badge("hors série", "warn") : null));
     for (const it of s.interfaces || []) tree.append(el("button", { class: "nav-item", type: "button", onClick: () => editIface(it.id), "data-tip": "Interface : modifier" }, icon("interfaces"),
       el("span", { class: "grow" }, it.name || it.type), badge(it.side || "A", it.side === "B" ? "b" : "a")));
     (s.features || []).forEach((f, i) => {

@@ -37,32 +37,32 @@ function openCut(f, rect) {
 
 /* verb -> { fr: label, icon, doc: one line for the language reference, expand(f, ctx) -> kernel features } */
 export const SHOP_VERBS = {
-  drill: { fr: "Percer", icon: "drill", expand: (f) => { need(f, ["d"]); return [carry(f, { op: "hole", face: f.face, at: f.at, d: f.d, depth: f.depth ?? "through", start: f.start })]; } },
-  tap: { fr: "Tarauder", icon: "tap", expand: (f) => { need(f, ["thread"]); thread(f.thread); return [carry(f, { op: "hole", face: f.face, at: f.at, thread: f.thread, depth: f.depth ?? "through", start: f.start })]; } },
-  cbore: { fr: "Lamer", icon: "drill", expand: (f) => { need(f, ["screw"]); const th = thread(f.screw);
+  drill: { label: "Drill", fr: "Percer", icon: "drill", expand: (f) => { need(f, ["d"]); return [carry(f, { op: "hole", face: f.face, at: f.at, d: f.d, depth: f.depth ?? "through", start: f.start })]; } },
+  tap: { label: "Tap", fr: "Tarauder", icon: "tap", expand: (f) => { need(f, ["thread"]); thread(f.thread); return [carry(f, { op: "hole", face: f.face, at: f.at, thread: f.thread, depth: f.depth ?? "through", start: f.start })]; } },
+  cbore: { label: "Counterbore", fr: "Lamer", icon: "drill", expand: (f) => { need(f, ["screw"]); const th = thread(f.screw);
     return [carry(f, { op: "hole", face: f.face, at: f.at, d: clearanceHole(f.screw, f.fit || "medium"), depth: f.depth ?? "through", cbore: { d: th.cbore, depth: round2(th.head[1] + 0.4) }, start: f.start })]; } },
-  csink: { fr: "Fraiser (fraisure)", icon: "drill", expand: (f) => { need(f, ["screw"]); const th = thread(f.screw);
+  csink: { label: "Countersink", fr: "Fraiser (fraisure)", icon: "drill", expand: (f) => { need(f, ["screw"]); const th = thread(f.screw);
     return [carry(f, { op: "hole", face: f.face, at: f.at, d: clearanceHole(f.screw, f.fit || "medium"), depth: f.depth ?? "through", csink: { d: th.csk, angle: 90 }, start: f.start })]; } },
-  ream: { fr: "Aléser", icon: "drill", expand: (f) => { need(f, ["d"]); return [carry(f, { op: "hole", face: f.face, at: f.at, d: f.d, depth: f.depth ?? "through", fit: f.fit || "H7", start: f.start })]; } },
-  mill: { fr: "Fraiser une poche", icon: "mill", expand: (f) => [carry(f, { op: "pocket", face: f.face, rect: f.rect, circle: f.circle, profile: f.profile, r: f.r, depth: f.depth, start: f.start })] },
-  groove: { fr: "Rainurer", icon: "mill", expand: (f) => { need(f, ["from", "to", "w"]); return [carry(f, { op: "slot", face: f.face, from: f.from, to: f.to, w: f.w, depth: f.depth, start: f.start })]; } },
-  face: { fr: "Surfacer", icon: "mill", expand: (f) => { need(f, ["to"]); return [openCut(f, [-BIG, -BIG, 2 * BIG, 2 * BIG])]; } },
-  step: { fr: "Épauler", icon: "mill", expand: (f) => { need(f, ["rect", "to"]); return [openCut(f, f.rect)]; } },
-  outline: { fr: "Détourer", icon: "laser", expand(f, ctx) {
+  ream: { label: "Ream", fr: "Aléser", icon: "drill", expand: (f) => { need(f, ["d"]); return [carry(f, { op: "hole", face: f.face, at: f.at, d: f.d, depth: f.depth ?? "through", fit: f.fit || "H7", start: f.start })]; } },
+  mill: { label: "Mill a pocket", fr: "Fraiser une poche", icon: "mill", expand: (f) => [carry(f, { op: "pocket", face: f.face, rect: f.rect, circle: f.circle, profile: f.profile, r: f.r, depth: f.depth, start: f.start })] },
+  groove: { label: "Groove", fr: "Rainurer", icon: "mill", expand: (f) => { need(f, ["from", "to", "w"]); return [carry(f, { op: "slot", face: f.face, from: f.from, to: f.to, w: f.w, depth: f.depth, start: f.start })]; } },
+  face: { label: "Face", fr: "Surfacer", icon: "mill", expand: (f) => { need(f, ["to"]); return [openCut(f, [-BIG, -BIG, 2 * BIG, 2 * BIG])]; } },
+  step: { label: "Shoulder (step)", fr: "Épauler", icon: "mill", expand: (f) => { need(f, ["rect", "to"]); return [openCut(f, f.rect)]; } },
+  outline: { label: "Profile (outline)", fr: "Détourer", icon: "laser", expand(f, ctx) {
     need(f, ["profile"]);
     const flat = ctx.stock && stockForm(ctx.stock.form).flat, len = f.length ?? (flat ? (ctx.stock.t ?? ctx.stock.H) : undefined);
     if (len === undefined) throw new Error("« outline » : donnez « length » (épaisseur traversée) quand le brut n'est pas une plaque.");
     return [carry(f, { op: "extrude", profile: f.profile, plane: f.plane || "XY", at: f.at ?? 0, length: len, mode: "intersect" })];
   } },
-  turn: { fr: "Charioter", icon: "lathe", expand(f, ctx) {
+  turn: { label: "Turn", fr: "Charioter", icon: "lathe", expand(f, ctx) {
     need(f, ["from", "to", "d"]);
     const axis = String((ctx.stock && ctx.stock.axis) || f.axis || "Z").toUpperCase(), D = ctx.stock && ctx.stock.d !== undefined ? ex(ctx.stock.d, "+", 2) : BIG;
     return [carry(f, { op: "extrude", mode: "cut", plane: axisPlane[axis] || "XY", at: f.from, length: ex(f.to, "-", f.from), profile: { outer: { circle: [0, 0, D] }, holes: [{ circle: [0, 0, f.d] }] } })];
   } },
-  bore: { fr: "Aléser dans l'axe", icon: "lathe", expand: (f) => { need(f, ["d"]); return [carry(f, { op: "hole", face: f.face || "+Z", at: [0, 0], d: f.d, depth: f.depth ?? "through", fit: f.fit, start: f.start })]; } },
-  break_edges: { fr: "Casser les angles", icon: "deburr", expand: (f) => [carry(f, { op: "chamfer", d: f.d ?? 0.5, edges: f.edges ?? "all" })] },
-  deburr: { fr: "Ébavurer", icon: "deburr", expand: () => [] },   // no geometry: a line of the routing and a note of the drawing
-  finish: { fr: "Finition", icon: "palette", expand: () => [] },
+  bore: { label: "Bore", fr: "Aléser dans l'axe", icon: "lathe", expand: (f) => { need(f, ["d"]); return [carry(f, { op: "hole", face: f.face || "+Z", at: [0, 0], d: f.d, depth: f.depth ?? "through", fit: f.fit, start: f.start })]; } },
+  break_edges: { label: "Break edges", fr: "Casser les angles", icon: "deburr", expand: (f) => [carry(f, { op: "chamfer", d: f.d ?? 0.5, edges: f.edges ?? "all" })] },
+  deburr: { label: "Deburr", fr: "Ébavurer", icon: "deburr", expand: () => [] },   // no geometry: a line of the routing and a note of the drawing
+  finish: { label: "Finish", fr: "Finition", icon: "palette", expand: () => [] },
 };
 export const isShopVerb = (op) => Object.prototype.hasOwnProperty.call(SHOP_VERBS, op);
 

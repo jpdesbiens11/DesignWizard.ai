@@ -124,7 +124,7 @@ export function autoMate(asm, built) {
 export function nextJoint(asm) {
   return Math.max(asm.mseq || 0, (asm.mates || []).reduce((mx, m) => Math.max(mx, parseInt(String(m.id).replace(/\D/g, ""), 10) || 0), 0)) + 1;
 }
-const JOINT_FR = { bolt_pattern: "Boulonné", bond: "Collé", fit: "Emmanché", planar: "En appui", pins: "Goupillé", cutout: "Traversant", rail: "Guidé", weld: "Soudé", contact: "Contact à pression" };
+const JOINT_KIND = { bolt_pattern: "Bolted", bond: "Bonded", fit: "Fitted", planar: "Seated", pins: "Pinned", cutout: "Panel mount", rail: "Guided", weld: "Welded", contact: "Pressure contact" };      // the kind of a joint, as the trade says it
 /** The joint register of an assembly : one row per mated pair of interfaces, with what holds it. specs : part id → spec (to tell a snapped joint).
     → [{ id, type, kind (in French), a, b (instance · part · interface name), key, by, hardware: [{ name, qty, unit }], process }] */
 export function joints(asm, built, specs = {}) {
@@ -134,7 +134,7 @@ export function joints(asm, built, specs = {}) {
     if (!A || !B) return { id: m.id, type: "?", kind: "Rompu", a: `${m.a.inst}/${m.a.iface}`, b: `${m.b.inst}/${m.b.iface}`, key: "", by: m.by || "", hardware: [], process: "une interface a disparu" };
     const hw = mateHardware(asm, built, m), snap = A.type === "planar" && [specs[ia.part], specs[ib.part]].some((s) => s && s.mold && (s.mold.closure === "clips" || s.mold.lifters > 0)), p = A.params || {};
     const process = A.type === "bolt_pattern" ? `${patternCount(p)} × ${p.screw}` : A.type === "bond" ? `film ${p.gap} mm · ${p.w} × ${p.h} mm · ${p.adhesive || "epoxy"} · préparation ${p.prep || "degrease"}${p.cure ? ` · ${p.cure}` : ""}` : A.type === "fit" ? `Ø ${p.d} ${p.fit || ""}`.trim() : A.type === "weld" || A.type === "contact" ? elecProcess(A.type, p, A.opts || {}) : snap ? "crochets dans les fenêtres" : "";
-    return { id: m.id, type: A.type, kind: snap ? "Encliqueté" : A.type === "weld" && p.process === "wirebond" ? "Câblé par fils" : JOINT_FR[A.type] || A.type, a: `${ia.part} · ${A.name || A.id}`, b: `${ib.part} · ${B.name || B.id}`, key: A.key || B.key || "", by: m.by || "", hardware: hw.map((h) => ({ name: h.name, qty: h.qty, unit: h.unit || "" })), process };
+    return { id: m.id, type: A.type, kind: snap ? "Encliqueté" : A.type === "weld" && p.process === "wirebond" ? "Câblé par fils" : JOINT_KIND[A.type] || A.type, a: `${ia.part} · ${A.name || A.id}`, b: `${ib.part} · ${B.name || B.id}`, key: A.key || B.key || "", by: m.by || "", hardware: hw.map((h) => ({ name: h.name, qty: h.qty, unit: h.unit || "" })), process };
   });
 }
 const patternCount = (p) => { try { return patternPoints(p.pattern).length; } catch (e) { return "?"; } };

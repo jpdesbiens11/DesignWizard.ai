@@ -46,7 +46,7 @@ test("a cell is a part of its largest published size, with two welded terminals 
     interfaces: [{ id: "IF1", type: "weld", name: "Soudure sur la cellule", key: top.key, side: "A", face: "-Z", at: [5, 4], params: top.params }] };
   const built = { "CELL-1": b, TAB: buildPart(K, tab) }, asm = { id: "A", instances: [{ id: "i1", part: "CELL-1", fixed: true, placement: { t: [0, 0, 0], r: [0, 0, 0] } }, { id: "i2", part: "TAB", placement: { t: [0, 0, 0], r: [0, 0, 0] } }], mates: [] };
   assert.equal(autoMate(asm, built).length, 1); assert.equal(solve(asm, built).problems.length, 0);
-  const reg = joints(asm, built, { "CELL-1": s, TAB: tab }); assert.equal(reg[0].kind, "Soudé"); assert.match(reg[0].process, /Soudure laser · 1 cordon · zone 7,6 × 7,6 mm/);
+  const reg = joints(asm, built, { "CELL-1": s, TAB: tab }); assert.equal(reg[0].kind, "Welded"); assert.match(reg[0].process, /Laser welding · 1 cordon · zone 7,6 × 7,6 mm/);
   assert.equal(jointHealth(asm, built, { "CELL-1": s, TAB: tab }, solve(asm, built))[0].state, "ok");
   assert.equal(jointHealth(asm, built, { "CELL-1": s, TAB: { ...tab, material: "PC" } }, solve(asm, built))[0].state, "broken", "an electrical joint needs two conductors");
   K.flush();
@@ -57,7 +57,7 @@ test("a wire-bonded joint : the wires are in the bill of materials and their fus
   assert.ok(Math.abs(e.fuse - 59.2 * 0.3 ** 1.5) < 1e-9 && Math.abs(e.fuseTotal - 3 * e.fuse) < 1e-9, "Preece : I = K · d^1,5 per wire"); assert.equal(e.notes.length, 0);
   assert.match(weldEstimate({ ...p, i: 20 }).notes[0], /plus de fils, ou un fil plus gros/); assert.match(weldEstimate({ process: "resistance", t: 0.5 }).notes[0], /jusqu'à 0,3 mm/);
   assert.deepEqual(ELEC_INTERFACES.weld.hardware(p), [{ id: "WIRE-AL-300", name: "Fil de câblage en aluminium Ø 0,3 mm", qty: 3, kind: "wire" }]); assert.deepEqual(ELEC_INTERFACES.weld.hardware({ ...p, process: "laser" }), []);
-  assert.match(elecProcess("weld", p), /Câblage par fils \(wirebonding\) · 3 fils Ø 0,3 mm en aluminium · fusion ≈ 29,2 A/); assert.equal(Object.keys(WELD_PROCESSES).length, 4);
+  assert.match(elecProcess("weld", p), /Wire bonding · 3 fils Ø 0,3 mm en aluminium · fusion ≈ 29,2 A/); assert.equal(Object.keys(WELD_PROCESSES).length, 4);
   assert.equal(INTERFACE_TYPES.weld, ELEC_INTERFACES.weld); assert.equal(ELEC_INTERFACES.weld.compile("A", p, {}).length, 0);
 });
 
@@ -76,7 +76,7 @@ test("a lamella contact between two flat lands : bumps on side A hold the gap, t
   assert.equal(compatible(built["BAR-A"].interfaces[0], built["BAR-B"].interfaces[0]).ok, true); assert.equal(interfaceSignature(a.interfaces[0]), "20x8|n8|Ag");
   const asm = { id: "A", instances: [{ id: "i1", part: "BAR-B", fixed: true, placement: { t: [0, 0, 0], r: [0, 0, 0] } }, { id: "i2", part: "BAR-A", placement: { t: [0, 0, 0], r: [0, 0, 0] } }], mates: [] };
   autoMate(asm, built); const sol = solve(asm, built), specs = { "BAR-A": a, "BAR-B": b }, reg = joints(asm, built, specs);
-  assert.equal(reg[0].kind, "Contact à pression"); assert.match(reg[0].process, /8 points · argent · 2 N par point/); assert.ok(hardware(asm, built).some((h) => h.kind === "contact"));
+  assert.equal(reg[0].kind, "Pressure contact"); assert.match(reg[0].process, /8 points · silver · 2 N par point/); assert.ok(hardware(asm, built).some((h) => h.kind === "contact"));
   const h = jointHealth(asm, built, specs, sol)[0]; assert.equal(h.state, "check"); assert.match(h.notes.join(" "), /demande une vis ou un clip/);
   const common = K.props(K.common(built["BAR-B"].bodies[0].shape, K.transform(built["BAR-A"].bodies[0].shape, sol.placements.i2))).volume; assert.ok(common < 0.01, "the bars do not cross : the gap is held by the lamellae");
   K.flush();

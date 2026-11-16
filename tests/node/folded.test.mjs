@@ -130,7 +130,7 @@ test("the part round-trips : .dwiz with its folded block, FeatureScript with its
   const fs = toFeatureScript(spec); assert.equal(fs.skipped.length, 0); assert.equal(fs.converted, 4, "the base, two folded edges and the hole"); assert.ok(fs.warnings.some((w) => /Tôle pliée/.test(w)));
   assert.match(LANGUAGE_REFERENCE, /## 6b\. Folded sheet metal/); assert.match(LANGUAGE_REFERENCE, /"flanges": \[ \{"side":"\+X","h":"h","dir":"up"\}/);
   const rows = specialRows([spec, { id: "X", process: "cnc_milling", material: "AL6061-T6" }]); assert.equal(rows.length, 1);
-  assert.deepEqual(rows[0].slice(0, 3), ["T-FOLD", "Tôle pliée", "Tôlerie pliée"]); assert.match(rows[0][5], /2 plis à 90° · tôle 1,5 mm · rayon intérieur 1,5 mm/);
+  assert.deepEqual(rows[0].slice(0, 3), ["T-FOLD", "Tôle pliée", "Sheet metal bending"]); assert.match(rows[0][5], /2 plis à 90° · tôle 1,5 mm · rayon intérieur 1,5 mm/);
 });
 
 test("the Shop writes a folded part from the intent : a side that carries an interface folds, the base keeps its holes away from the bend", () => {

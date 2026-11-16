@@ -101,9 +101,9 @@ function render(main, args) {
       btn("Réimporter…", reimport, { small: true, icon: "wizard", tip: "Aperçu des changements, puis une seule étape annulable" }))));
   }
   function card(row) {
-    const r = R(), cur = r.looks[row.part] || {}, F = FINISHES[row.finish], pick = (k) => change(`${row.part} : ${FINISHES[k].fr.toLowerCase()}`, (x) => { x.looks[row.part] = { finish: k, ...(FINISHES[k].tint ? { color: (x.looks[row.part] || {}).color || row.color } : {}) }; });
+    const r = R(), cur = r.looks[row.part] || {}, F = FINISHES[row.finish], pick = (k) => change(`${row.part} : ${FINISHES[k].label.toLowerCase()}`, (x) => { x.looks[row.part] = { finish: k, ...(FINISHES[k].tint ? { color: (x.looks[row.part] || {}).color || row.color } : {}) }; });
     return el("div", { class: "card taped ft-card", "data-part-card": row.part },
-      ...FINISH_GROUPS.map((G) => [el("p", { class: "ft-label rd-group", style: `--dom:${G.color}` }, G.fr), el("div", { class: "cf-tiles rd-finishes" }, Object.entries(FINISHES).filter(([, f]) => f.group === G.id).map(([k, f]) => tile({ sel: row.chosen && k === row.finish, color: G.color, label: f.fr, tip: f.text, pic: finishPic(k, row.color), data: { "data-finish": k }, run: () => pick(k) })))]).flat(),
+      ...FINISH_GROUPS.map((G) => [el("p", { class: "ft-label rd-group", style: `--dom:${G.color}` }, G.label), el("div", { class: "cf-tiles rd-finishes" }, Object.entries(FINISHES).filter(([, f]) => f.group === G.id).map(([k, f]) => tile({ sel: row.chosen && k === row.finish, color: G.color, label: f.label, tip: f.text, pic: finishPic(k, row.color), data: { "data-finish": k }, run: () => pick(k) })))]).flat(),
       el("div", { class: "form-row tight" }, F.tint ? field("Sa couleur", el("input", { type: "color", value: row.color, "data-look-color": "", onChange: (e) => change(`${row.part} : couleur`, (x) => { x.looks[row.part] = { finish: row.finish, color: e.target.value }; }) })) : el("p", { class: "muted small", style: { margin: 0 } }, "Cette finition montre la couleur de la matière.")),
       el("div", { class: "form-actions", style: { justifyContent: "flex-start" } }, cur.finish ? btn("Revenir à la matière", () => change(`${row.part} : finition de la matière`, (x) => { delete x.looks[row.part]; }), { small: true, icon: "refresh", tip: "Retire le choix : la pièce montre la finition de sa matière" }) : el("small", { class: "muted" }, "Finition de la matière — choisissez-en une ci-dessus.")));
   }
@@ -113,7 +113,7 @@ function render(main, args) {
     if (!st.ctx) { body.append(el("p", { class: "atelier-hint" }, icon("info"), " Construction de l'assemblage…")); return; }
     const rows = lookRows(asm(), st.ctx.built, names());
     for (const G of FINISH_GROUPS) { const mine = rows.filter((x) => x.group === G.id); if (!mine.length) continue;
-      body.append(el("div", { class: "ft-group", style: `--dom:${G.color}`, "data-finish-group": G.id }, el("div", { class: "lib-group-head" }, el("b", null, G.fr), el("small", null, ""), el("span", { class: "lib-count" }, String(mine.length))),
+      body.append(el("div", { class: "ft-group", style: `--dom:${G.color}`, "data-finish-group": G.id }, el("div", { class: "lib-group-head" }, el("b", null, G.label), el("small", null, ""), el("span", { class: "lib-count" }, String(mine.length))),
         mine.map((row) => { const on = row.part === st.sel; return [el("button", { class: `ft-row${on ? " sel" : ""}`, type: "button", "data-part": row.part, "aria-expanded": on ? "true" : "false", style: `--dom:${G.color}`, onClick: () => { st.sel = on ? null : row.part; renderRight(); glow(); } }, finishPic(row.finish, row.color),
           el("span", { class: "ft-name" }, el("b", null, row.name), el("small", null, `${row.label}${row.qty > 1 ? ` · × ${row.qty}` : ""} · ${row.part}`)), row.chosen ? badge("choisie", "info") : null), on ? card(row) : null]; }))); }
     body.append(el("p", { class: "muted small" }, "Une finition habille toutes les instances d'une pièce. Les finitions sont des réglages d'image, pas des finitions d'atelier. ", el("a", { href: "#/help/sources/project" }, "Sources")));

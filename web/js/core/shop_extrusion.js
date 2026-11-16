@@ -15,9 +15,9 @@ const slug = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toL
 /** The extruder's figures, by process. wall(ccd) : the wall for a section whose circumscribed circle is ccd ; groove : depth over
     width of a groove at most ; port : hole for a thread-forming screw, by size ; side : clearance each side of a sliding tongue. */
 export const EXTRUSION_RULES = {
-  extrusion_al: { fr: "extrusion d'aluminium", wall: (ccd) => (ccd <= 100 ? 1.5 : ccd <= 150 ? 2 : 2.5), groove: 3, side: 0.15, port: { M3: 2.7, M4: 3.6, M5: 4.5 },
+  extrusion_al: { label: "Aluminium extrusion", fr: "extrusion d'aluminium", wall: (ccd) => (ccd <= 100 ? 1.5 : ccd <= 150 ? 2 : 2.5), groove: 3, side: 0.15, port: { M3: 2.7, M4: 3.6, M5: 4.5 },
     notes: ["Tolérances de section EN 12020-2 ; coupe à la scie ± 0,5 mm", "Anodisation 10 à 15 µm après usinage ; les rainures s'en trouvent réduites de 0,02 à 0,03 mm", "Casser les angles de coupe 0,2 à 0,5 mm"] },
-  extrusion_plastic: { fr: "extrusion plastique", wall: (ccd) => (ccd <= 80 ? 1.5 : ccd <= 150 ? 2 : 2.5), groove: 2, side: 0.25, port: { M3: 2.6, M4: 3.5, M5: 4.4 },
+  extrusion_plastic: { label: "Plastic extrusion", fr: "extrusion plastique", wall: (ccd) => (ccd <= 80 ? 1.5 : ccd <= 150 ? 2 : 2.5), groove: 2, side: 0.25, port: { M3: 2.6, M4: 3.5, M5: 4.4 },
     notes: ["Tolérances de section ± 0,3 mm, à confirmer avec l'extrudeur (calibrage)", "Coupe à la scie ± 0,5 mm ; ébavurer", "Retrait et flèche à contrôler sur les premières barres"] },
 };
 /** The extrusion process a material goes to. */
@@ -38,7 +38,7 @@ export function extruded(brief, items, log) {
     else { const c = { name: it.partner || it.name || `Carte ${i + 1}`, w: Number(p.length) || 60, h: 12, hold: "rail", edge: Number(p.t) || 1.6, below: 3, iface: it }; contents.push(c); tongues.push(c); } });
   if (!contents.length) throw new Error("Profilé : dites ce qu'il contient (au moins un élément à glisser, à poser ou à loger).");
   for (const c of contents) { c.w = Number(c.w); c.h = Number(c.h); if (!(c.w > 0) || !(c.h > 0)) throw new Error(`Profilé : « ${c.name || "élément"} » doit avoir une largeur et une hauteur.`); c.hold = HOLD_FR[c.hold] ? c.hold : "free"; }
-  log.push(`Procédé : ${R.fr} — ${mat.name}. La section se dessine autour de ${contents.length} élément(s) : ${contents.map((c) => `${c.name || "élément"} ${fr(c.w)} × ${fr(c.h)} mm, ${HOLD_FR[c.hold]}`).join(" ; ")}.`);
+  log.push(`Procédé : ${R.label} — ${mat.name}. La section se dessine autour de ${contents.length} élément(s) : ${contents.map((c) => `${c.name || "élément"} ${fr(c.w)} × ${fr(c.h)} mm, ${HOLD_FR[c.hold]}`).join(" ; ")}.`);
   /* the cavity : wide enough for the widest thing, the tongues touching the walls or carried further in by longer ribs */
   const side = R.side, free = 0.5, relief = 0.4, Wc = half(Math.max(...contents.map((c) => (c.hold === "rail" ? c.w + 2 * (side + relief) : c.w + 2 * free)), 10));     // relief : the groove is deeper than the edge by its bottom radius, a square edge never rides on it
   const size = (t) => { const b = brief.ports === false ? 0 : r1(pd + Math.max(t, 1.5)),      // a boss as thick as the wall around its screw channel

@@ -24,7 +24,7 @@ export function anticipatedInterfaces(project, neighbourIds, onlyFree = true) {
       const type = INTERFACE_TYPES[it.type];
       if (!type) continue;
       out.push({ from: { part: id, name: part.name || id, iface: it.id, side: it.side || "A" },
-        iface: { type: it.type, key: it.key || `${id}_${it.id}`.toLowerCase(), name: it.name || type.fr, partner: part.name || id, side: (it.side || "A") === "A" ? "B" : "A", params: evaluatedParams(part, it.id) || it.params || {} },
+        iface: { type: it.type, key: it.key || `${id}_${it.id}`.toLowerCase(), name: it.name || type.label, partner: part.name || id, side: (it.side || "A") === "A" ? "B" : "A", params: evaluatedParams(part, it.id) || it.params || {} },
         needsKey: !it.key });
     }
   }
@@ -62,7 +62,7 @@ export function partPrompt(project, opts) {
   if ((opts.extras || []).length) {
     lines.push("");
     lines.push("INTERFACES SUPPLÉMENTAIRES À DÉFINIR pendant l'entrevue (voisins qui n'existent pas encore) :");
-    for (const e of opts.extras) lines.push(`- ${INTERFACE_TYPES[e.type] ? INTERFACE_TYPES[e.type].fr : e.type} (${e.type}) avec « ${e.partner || "?"} »${e.note ? ` — ${e.note}` : ""}`);
+    for (const e of opts.extras) lines.push(`- ${INTERFACE_TYPES[e.type] ? INTERFACE_TYPES[e.type].label : e.type} (${e.type}) avec « ${e.partner || "?"} »${e.note ? ` — ${e.note}` : ""}`);
   }
   if (others.length) { lines.push(""); lines.push("AUTRES PIÈCES DU PROJET (pour le contexte) :"); lines.push(...others.slice(0, 30)); }
   lines.push("");

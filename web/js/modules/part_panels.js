@@ -76,7 +76,7 @@ export function interfacesPanel(body, { st, id, editIface }) {
   }
   body.append(btn("Ajouter une interface", () => interfaceDialog({ id: nextIfaceId(s), type: "bolt_pattern", side: "A", face: "+Z", at: st.built ? [(st.built.bbox[0] + st.built.bbox[3]) / 2, (st.built.bbox[1] + st.built.bbox[4]) / 2].map((x) => Math.round(x * 10) / 10) : [0, 0] },
     (ni) => store.updatePart(id, (x) => { x.interfaces = x.interfaces || []; x.interfaces.push(ni); }, `Interface ${ni.id} ajoutée`), true), { icon: "plus" }));
-  body.append(el("div", { class: "side-section" }, el("h3", null, "Types d'interface"), Object.entries(INTERFACE_TYPES).map(([k, t]) => el("p", { style: { fontSize: ".8rem", margin: "0 0 .35rem" } }, el("b", null, t.fr), ` (${k}) — `, t.doc))));
+  body.append(el("div", { class: "side-section" }, el("h3", null, "Types d'interface"), Object.entries(INTERFACE_TYPES).map(([k, t]) => el("p", { style: { fontSize: ".8rem", margin: "0 0 .35rem" } }, el("b", null, t.label), ` (${k}) — `, t.doc))));
 }
 
 /* ---------- DFx ---------- */

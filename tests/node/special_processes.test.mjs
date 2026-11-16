@@ -131,7 +131,7 @@ test("the sheet of a process goes to an AI : in the prompt of the Shop, and as a
   const cut = processBrief("laser", MATERIALS), am = processBrief("impression", MATERIALS);
   assert.match(cut, /^Voici ce que la DÉCOUPE LASER DE PRÉCISION/); for (const id of ["NOMEX-410", "FR4", "CU-C110", "PMMA", "PVC-U", "TI-6AL-4V"]) assert.ok(cut.includes(`## ${id} — `), id); assert.ok(!cut.includes("## SILICONE"));
   const rows = specialRows([{ id: "ISO-1", name: "Intercalaire", process: "laser_cut", material: "NOMEX-410" }, { id: "BRK-1", process: "lpbf", material: "TI-6AL-4V" }, { id: "X", process: "cnc_milling", material: "AL6061-T6" }, { id: "P", process: "laser_cut", material: "PVC-U" }, { id: "Q", process: "fdm", material: "UNOBTAINIUM" }]);
-  assert.deepEqual(rows.map((r) => r[0]), ["ISO-1", "BRK-1", "P", "Q"], "the report lists the laser-cut and the printed parts, not the milled ones"); assert.match(rows[0].join(" | "), /Découpe laser de précision \| Nomex.*laser CO2.*Épaisseur ≤ 0,76 mm/); assert.match(rows[1].join(" | "), /ASTM F2924.*Paroi ≥ 0,4 mm.*détendre sur le plateau.*compaction/s); assert.match(rows[2].join(" | "), /Jamais au laser/); assert.match(rows[3][6], /à confirmer avec le fournisseur/);
+  assert.deepEqual(rows.map((r) => r[0]), ["ISO-1", "BRK-1", "P", "Q"], "the report lists the laser-cut and the printed parts, not the milled ones"); assert.match(rows[0].join(" | "), /Precision laser cutting \| Nomex.*laser CO2.*Épaisseur ≤ 0,76 mm/); assert.match(rows[1].join(" | "), /ASTM F2924.*Paroi ≥ 0,4 mm.*détendre sur le plateau.*compaction/s); assert.match(rows[2].join(" | "), /Jamais au laser/); assert.match(rows[3][6], /à confirmer avec le fournisseur/);
   assert.match(am, /^Voici ce que l'IMPRESSION 3D/); for (const id of Object.keys(AM_MATERIALS)) assert.ok(am.includes(`## ${id} — `), id); assert.match(am, /## IN718 — .*\(process « lpbf »\)/); assert.ok(!am.includes("## NOMEX-410"));
 });
 
@@ -146,7 +146,7 @@ test("the demonstration shows both processes : a laser-cut insulator mated on th
   const base = by("DRV-BASE"); assert.ok(iso.params.L.value < base.params.winL.value && iso.params.W.value < base.params.winW.value);
   const seat = sink.interfaces.find((i) => i.key === "thermal_iso_seat"), foot = iso.interfaces[0]; assert.deepEqual([seat.side, foot.side, seat.type, foot.type, foot.key], ["B", "A", "planar", "planar", "thermal_iso_seat"]);
   const asm = DEMO_DRIVE.assemblies[0]; assert.ok(asm.instances.some((i) => i.part === "DRV-ISO") && asm.mates.some((m) => m.a.inst === "i6" && m.b.inst === "i5")); assert.ok(!asm.instances.some((i) => i.part === "DRV-BRACKET"), "the bracket is a variant : in the project, not yet in the assembly");
-  assert.deepEqual(specialRows(DEMO_DRIVE.parts).map((r) => [r[0], r[2]]), [["DRV-ISO", "Découpe laser de précision"], ["DRV-BRACKET", "Fusion laser sur lit de poudre métallique (LPBF)"], ["DRV-FOOT", "Tôlerie pliée"]], "the report of the demonstration has its section of special processes");
+  assert.deepEqual(specialRows(DEMO_DRIVE.parts).map((r) => [r[0], r[2]]), [["DRV-ISO", "Precision laser cutting"], ["DRV-BRACKET", "Laser powder bed fusion, metal (LPBF)"], ["DRV-FOOT", "Sheet metal bending"]], "the report of the demonstration has its section of special processes");
 });
 
 test("which cut edges the isolation analysis leaves out : insulating sheets cut by laser, nothing else", async () => {
