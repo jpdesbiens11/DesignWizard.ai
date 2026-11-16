@@ -48,7 +48,7 @@ de la réponse : elle reste celle de la souris.
 **Dans l'exemple de la fusée** : l'autocollant DesignWizard.ai, 420 × 120 mm, enroulé sur la coque centrale et lu le
 long de la fusée.
 
-### Limites
+### Limites des étiquettes
 
 - Cylindres et plans seulement ; pas de cône ni de surface gauche.
 - La largeur d'un texte est **estimée** (pas de mesure de police hors navigateur) : un texte très large peut toucher le
@@ -56,3 +56,57 @@ long de la fusée.
 - L'étiquette ne sait rien des arêtes de la face : elle peut dépasser d'une face plane, à vous de la tenir dedans.
 - Un vinyle réel s'étire un peu sur un petit rayon : le fabricant d'étiquettes fait foi.
 - Les mentions réglementaires d'une plaque signalétique ne sont pas vérifiées.
+
+## Le rendu
+
+Écran **Rendu** (`Projet → Rendu marketing…`, route `#/render/<assemblage>` ; `web/js/core/render_looks.js`,
+`web/js/core/render_stage.js`, `web/js/modules/render.js`). Le produit sous une lumière de studio, en perspective,
+avec la **finition de chaque pièce**, ses **étiquettes**, un sol qui prend son ombre et un décor que ses métaux
+reflètent ; l'image part en **PNG**, la marque de la plateforme dans le coin.
+
+```
+render scene=studio shot=hero size=portrait ground=true labels=true
+  look FUS-4060 paint-gloss color="#d6453d"
+  look FUS-4020 metal-anodized color="#1f4e79"
+  look FUS-1020 metal-polished
+```
+
+- **Le décor** (`scene`), sur trois tuiles : studio clair, studio sombre, plein air.
+- **Le point de vue** (`shot`), sur cinq tuiles : trois-quarts, profil, de face, contre-plongée, plongée — la caméra
+  se place pour que **tout le produit tienne** dans l'image, quel que soit son format (un produit élancé remplit une
+  image en hauteur). La souris tourne autour (glisser), approche (molette), déplace (Maj + glisser) ; « Garder ce
+  point de vue » le range avec l'assemblage (`view`).
+- **L'image** (`size`) : écran 16:9, carré, portrait 2:3, bandeau 3:1, 4K ; ombre au sol et étiquettes au choix.
+- **Les finitions** (`looks`), une par **pièce** (toutes ses instances la portent), **groupées par nature**, chaque
+  groupe avec sa couleur et chaque finition avec sa petite sphère :
+  - *peintures* — brillante, satinée, mate, métallisée (elles prennent leur couleur) ;
+  - *métaux* — poli, brossé, microbillé, aluminium anodisé (teinté) ;
+  - *plastiques et élastomères* — brillant, grainé, caoutchouc ;
+  - *composites* — carbone tissé, stratifié verre-époxy ;
+  - *transparents* — verre, plastique transparent.
+  Une pièce sans choix montre la **finition de sa matière** (métal brossé, plastique grainé, caoutchouc, stratifié).
+  Un clic sur une pièce, dans l'image ou dans la liste, ouvre ses tuiles.
+- **Les motifs** — stries du brossé, sergé du carbone, grain, paillettes — sont de petites tuiles calculées
+  (`patternPixels`), projetées sur la pièce par les axes de sa boîte (`boxUv`) : aucune image externe.
+
+**Ce que l'écran dit** (`renderGuide`) : décor, point de vue ou format inconnu ; finition inconnue ; couleur illisible ;
+finition gardée pour une pièce sortie de l'assemblage ; couleur choisie pour une finition qui montre celle de la
+matière ; rien de choisi (un conseil).
+
+**Avec une IA** : le bloc `render` part avec sa consigne ; au retour, la liste des changements avant d'appliquer en
+une étape annulable.
+
+**Dans l'exemple de la fusée** : coques en peinture brillante blanche, ogive rouge, ailerons anodisés bleus, réservoir
+brossé, tuyère microbillée, serpentin poli, jupe transparente ; image en portrait, vue de trois-quarts.
+
+### Limites du rendu
+
+- **Ce n'est pas un rendu physiquement exact** : pas de lancer de rayons, pas de réflexions entre pièces ; les reflets
+  sont ceux d'un décor de synthèse, l'ombre est une ombre portée simple.
+- Les finitions sont des **réglages d'image** réglés à l'œil, pas des mesures de brillance ni des finitions d'atelier :
+  la finition réelle d'une pièce reste celle de sa fiche (`finish`).
+- Une finition habille le **corps principal** de la pièce ; ses autres corps gardent la finition de leur matière.
+- Les motifs sont projetés par les axes de la pièce : une couture peut se voir là où la surface tourne d'un axe à
+  l'autre.
+- Pas d'image de fond importée, pas de profondeur de champ, pas d'animation.
+

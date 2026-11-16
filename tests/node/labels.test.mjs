@@ -78,6 +78,6 @@ test("the rocket wears the sticker of the platform, and it travels in the file o
   const asm = DEMO_ROCKET.assemblies[0], l = asm.labels[0];
   assert.equal(l.art.type, "logo"); assert.equal(l.inst, "coque_centrale"); assert.ok(isWrapped(l)); assert.deepEqual(labelGuide(asm.labels, asm.instances.map((i) => i.id)), []);
   const back = fromDwiz(toDwiz(asm)); assert.deepEqual(back.labels, JSON.parse(JSON.stringify(asm.labels)));
-  assert.match(toDwiz(asm), /\nlabel E1 sticker name="Autocollant DesignWizard\.ai" inst=coque_centrale w=420 h=120 turn=90\n  on p=\[101\.6, 0, 760\]/);
+  assert.match(toDwiz(asm), /\nlabel E1 sticker name="Autocollant DesignWizard\.ai" inst=coque_centrale w=420 h=120 turn=90\n  on p=\[58\.28, 83\.23, 760\]/);
   assert.equal(methodById("label-wrap").how, "tested");
 });

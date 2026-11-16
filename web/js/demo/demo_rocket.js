@@ -194,8 +194,8 @@ const CHUTE = { dw: "part/1", id: "FUS-6020", name: "Parachute plié dans sa gai
   features: [{ op: "revolve", id: "gaine", name: "Gaine", profile: { rect: [28, 0, 44, 110], r: 12 }, plane: "XZ", axis: "Z", angle: 360 }, { op: "interfaces" }],
   notes: [CAD, "Toile de polyamide : PA12 pris pour la masse. Le dispositif qui sépare l'ogive n'est pas dessiné."] };
 
-/* the sticker of the platform, wrapped on the central airframe, reading up the rocket */
-const STICKER = { id: "E1", name: "Autocollant DesignWizard.ai", kind: "sticker", inst: "coque_centrale", w: 420, h: 120, turn: 90, on: { p: [101.6, 0, 760], axis: [0, 0, 1], c: [0, 0, 0], r: 101.6 },
+/* the sticker of the platform, wrapped on the central airframe, reading up the rocket — on the side the three-quarter view of the render looks at */
+const STICKER = { id: "E1", name: "Autocollant DesignWizard.ai", kind: "sticker", inst: "coque_centrale", w: 420, h: 120, turn: 90, on: { p: [58.28, 83.23, 760], axis: [0, 0, 1], c: [0, 0, 0], r: 101.6 },
   art: { type: "logo", text: "DesignWizard.ai", sub: "by DynamiteAgile™", ink: "#26323f", paper: "#ffffff", shape: "round" } };
 const PARTS = [NOZZLE, COIL, SKIRT, CHAMBER, GRAIN, INJECTOR, VALVE, TANK, LINE, AIR_A, FIN, AIR_B, BUTTON, AIR_C, NOSE, BULKHEAD, SLED, PCB, BATTERY, HARNESS, REC_BULKHEAD, CHUTE];
 /* instance, its part, then the mate that holds it : [its interface, the instance it meets, the interface there, options of the mate] */
@@ -215,6 +215,10 @@ export const DEMO_ROCKET = {
   assemblies: [{ dw: "assembly/1", id: "FUS-ASM", name: "Fusée hybride — assemblage général",
     instances: BUILD.map(([id, p], k) => ({ id, part: p.id, ...(k ? {} : { fixed: true, placement: { t: [0, 0, 0], r: [0, 0, 0] } }) })),
     mates: BUILD.slice(1).map(([id, , mine, to, theirs, o], k) => ({ id: `M${k + 1}`, a: { inst: id, iface: mine }, b: { inst: to, iface: theirs }, linked: true, by: "key", ...(o || {}) })),
-    labels: [STICKER], plan: { order: BUILD.map(([id]) => id) } }],
+    labels: [STICKER],
+    render: { scene: "studio", shot: "hero", size: "portrait", ground: true, labels: true, view: null, looks: {
+      "FUS-4010": { finish: "paint-gloss", color: "#f4f4f2" }, "FUS-4030": { finish: "paint-gloss", color: "#f4f4f2" }, "FUS-4040": { finish: "paint-gloss", color: "#f4f4f2" }, "FUS-4060": { finish: "paint-gloss", color: "#d6453d" },
+      "FUS-4020": { finish: "metal-anodized", color: "#1f4e79" }, "FUS-1010": { finish: "metal-blasted" }, "FUS-1020": { finish: "metal-polished" }, "FUS-1030": { finish: "clear-plastic" }, "FUS-3020": { finish: "metal-brushed" } } },
+    plan: { order: BUILD.map(([id]) => id) } }],
   log: [],
 };
