@@ -12,7 +12,8 @@ import { kernel } from "../cad/client.js";
 import { createViewport } from "../core/viewport.js";
 import { arrow, clamp, gem } from "../core/view_marks.js";
 import { guideBox, guideCount, nudge } from "../core/guide.js";
-import { MODELS, DOMAINS, model, defaults, run, prefill, inputActive, inputIssues, exampleKeys, shortTitle, runName, runSheet } from "../analysis/physics/index.js";
+import { MODELS, DOMAINS, model, defaults, sessionDefaults, run, prefill, inputActive, inputIssues, exampleKeys, shortTitle, runName, runSheet } from "../analysis/physics/index.js";
+import { medium, mediaMenu, mediaValues } from "../analysis/physics/media.js";
 import { session } from "../core/access.js";
 import { TREE, itemFolderName } from "../google/drive_fs.js";
 import { sceneOf } from "../analysis/physics/scene3d.js";
@@ -35,13 +36,13 @@ function render(main, args) {
   main.append(el("div", { class: "studio phys" }, left, centre, right));
   const vp = createViewport(host, { name: () => `${cur ? cur.id : "physique"}_modele`, select: false }), chip = el("span", { class: "chip" }, "3D");
   vp.setStatus(chip);
-  const fields = new Map(), guideHost = el("div", { class: "phys-guide" });
+  const fields = new Map(), derived = new Map(), shownOf = new Map(), guideHost = el("div", { class: "phys-guide" });      // what is typed · what a medium gives (read only) · what a fluid shows
   if (!cur) ui.tab = "models";
 
   const done = () => { if (!entered.has(cur.id)) entered.set(cur.id, new Set()); return entered.get(cur.id); };
   const notes = () => (cur && prefillNotes.get(cur.id)) || {};
   const examples = () => (cur ? exampleKeys(cur, inputs, new Set([...done(), ...Object.keys(notes())])) : []);
-  const take = (id) => { if (!memory.has(id)) memory.set(id, defaults(id)); return memory.get(id); };
+  const take = (id) => { if (!memory.has(id)) memory.set(id, sessionDefaults(id)); return memory.get(id); };      // a model opens with the media it proposes : its properties come from them
   /* another model, another part : the screen stays, the address follows */
   /* what the part says without being built — its material, and for a busbar its strip, its current and its finish — goes into a model
      the first time the two meet : arriving from the busbar screen, the calculation is already the one of that busbar */
@@ -76,21 +77,33 @@ function render(main, args) {
       const v = inputs[key], bad = !f.def.options && (v === null || v === undefined || !Number.isFinite(v) || v < f.def.min || v > f.def.max), isEg = eg.includes(key);
       f.row.style.display = inputActive(f.def, inputs) ? "" : "none";
       f.input.classList.toggle("bad", bad); f.input.classList.toggle("eg", isEg); f.input.classList.toggle("need", isEg && key === eg[0]);
-      if (isEg) f.input.dataset.tip = "Valeur d'exemple : tapez la vôtre, ou Entrée pour la garder"; else delete f.input.dataset.tip;
+      if (isEg) f.input.dataset.tip = f.slot ? "Média proposé : choisissez le vôtre, ou Entrée pour le garder" : "Valeur d'exemple : tapez la vôtre, ou Entrée pour la garder"; else delete f.input.dataset.tip;
     }
+    if (r && r.media) { for (const [key, o] of derived) if (r.media.values[key] !== undefined) o.out.textContent = qty(r.media.values[key], o.unit); for (const [key, host] of shownOf) drawShown(host, r.media.shown.find((x) => x.slot === key)); }      // a fluid changes with its temperature
     clear(guideHost); const g = guideBox(found, { go: goTo }); if (g) guideHost.append(g);
     drawTop(); if (ui.tab !== "models") drawRight(true);
     clearTimeout(timer); timer = setTimeout(() => { if (alive) drawScene(refit); }, refit ? 0 : 90);
   }
 
   /* ---------- left : the part the dimensions come from, then the inputs by group ---------- */
+  const drawShown = (host, sh) => { clear(host); if (!sh) return; for (const [label, value, unit] of sh.rows) host.append(el("div", { class: "param derived" }, el("label", null, label), el("output", null, `${show(value)}${unit ? ` ${unit}` : ""}`))); if (sh.T !== null) host.append(el("small", { class: "phys-from" }, `↳ ${sh.name} à ${show(sh.T)} °C`)); };
+  /* a medium is chosen in a menu — solids first, then liquids, then gases, by group and by name — and what it gives is written beside it, not typed */
+  function mediumRow(slot) {
+    const id = `phys-${slot.key}`, now = medium(inputs[slot.key]), note = notes()[slot.key], pick = (v) => { inputs[slot.key] = v; done().add(slot.key); if (notes()[slot.key]) delete notes()[slot.key]; drawLeft(); update(true); };
+    const select = el("select", { id, "data-field": slot.key, "data-medium": now ? now.state : "", onChange: (e) => pick(e.target.value) }, ...(now ? [] : [el("option", { value: inputs[slot.key] || "", selected: true }, "— valeurs saisies, avant la base des médias —")]),
+      mediaMenu(slot.states).flatMap((st) => st.groups.map((g) => el("optgroup", { label: `${st.label} — ${g.group}` }, g.list.map((m) => el("option", { value: m.id, selected: !!now && m.id === now.id }, m.name))))));
+    select.addEventListener("keydown", (e) => { if (e.key === "Enter") { done().add(slot.key); update(); } });
+    const row = el("div", { class: "param wide medium", "data-key": slot.key }, el("label", { for: id }, slot.label, el("a", { class: "medium-link", href: `#/media${now ? `/${now.id}` : ""}`, "data-tip": "Ouvrir la base des médias : toutes ses propriétés, et d'où elles viennent" }, "base")), select, note ? el("small", { class: "phys-from" }, `↳ ${note}`) : null);
+    fields.set(slot.key, { row, input: select, def: { key: slot.key, options: true }, slot });
+    return row;
+  }
   function drawLeft() {
-    clear(left); fields.clear();
+    clear(left); fields.clear(); derived.clear(); shownOf.clear();
     left.append(el("img", { class: "side-mark", src: "img/marks/physique.svg", alt: "" }), el("div", { class: "side-head" }, el("h2", null, "Physique")));
     const scroll = el("div", { class: "side-scroll" });
     left.append(scroll);
     scroll.append(el("div", { class: "subtabs" }, el("a", { class: "subtab active", href: "#/physics" }, "Modèles analytiques"), el("a", { class: "subtab", href: "#/fea" }, "Simulation")));
-    const U = getUnits(), units = el("div", { class: "side-section phys-units" }, el("h3", null, "Unités"), unitPicker());      // what is typed and what is read : SI inside, converted at the edges
+    const U = getUnits(), units = el("div", { class: "side-section phys-units" }, el("h3", null, "Unités"), unitPicker(), el("a", { class: "btn btn-small", href: "#/media", style: { marginTop: ".45rem" }, "data-tip": "Les solides, les liquides et les gaz que les modèles connaissent, avec leurs propriétés et leurs sources" }, "Base des médias"));      // what is typed and what is read : SI inside, converted at the edges
     if (!cur) {
       scroll.append(guideHost, units, el("p", { class: "muted small" }, "Des modèles analytiques reconnus et simples — une poutre, un tube, une vis, une ailette — qui répondent à 80 % de la question « la physique derrière cette pièce fonctionne-t-elle ? »."),
         el("p", { class: "muted small" }, "Chaque calcul montre ses formules, ses hypothèses et sa source ; la simulation par éléments finis simplifiés, puis l'essai, confirment le reste. Les entrées du modèle choisi viennent ici."));
@@ -115,8 +128,13 @@ function render(main, args) {
     }, { small: true, icon: "ruler", disabled: !partId, tip: "Longueur, section, épaisseur et propriétés du matériau lues sur la pièce choisie" });
     scroll.append(el("div", { class: "side-section" }, el("h3", null, "Pièce du projet (facultatif)"), pick, el("div", { class: "phys-take" }, read), ...[store.parts.length ? null : el("p", { class: "muted small" }, "Aucune pièce dans le projet : entrez les valeurs à la main.")].filter(Boolean)));
     let group = null, sec = null;
+    const mv = mediaValues(cur.id, inputs), before = new Map((cur.media || []).map((s) => [s.own ? s.key : (cur.inputs.find((d) => s.gives[d.key]) || {}).key, s]));      // a medium stands before the first value it gives
     for (const d of cur.inputs) {
       if (d.group !== group) { group = d.group; sec = el("div", { class: "side-section" }, el("h3", null, group || "Données")); scroll.append(sec); }
+      const slot = before.get(d.key), from = mv.from[d.key];
+      if (slot) sec.append(mediumRow(slot));
+      if (slot && slot.own) { const host = el("div", { class: "phys-shown" }); shownOf.set(slot.key, host); drawShown(host, mv.shown.find((x) => x.slot === slot.key)); sec.append(host); continue; }      // the choice of the model itself : the menu of media replaces it
+      if (from) { const out = el("output", null, qty(mv.values[d.key], d.unit)); derived.set(d.key, { out, unit: d.unit }); sec.append(el("div", { class: "param derived", "data-key": d.key, "data-from": from.medium, "data-tip": `Donné par ${from.name} : changez le média pour changer la valeur` }, el("label", null, d.label), out)); continue; }
       const id = `phys-${d.key}`, note = notes()[d.key];
       let input;
       if (d.options) input = el("select", { id, "data-field": d.key, onChange: (e) => { inputs[d.key] = e.target.value; update(true); } }, d.options.map((o) => el("option", { value: o.value, selected: o.value === String(inputs[d.key]) }, o.label)));
@@ -128,7 +146,7 @@ function render(main, args) {
       const row = el("div", { class: `param${d.options ? " wide" : ""}`, "data-key": d.key }, el("label", { for: id }, d.label, d.unit ? el("small", null, shownUnit(d.unit, U)) : null), input, note ? el("small", { class: "phys-from" }, `↳ ${note}`) : null);
       fields.set(d.key, { row, input, def: d }); sec.append(row);
     }
-    scroll.append(el("div", { class: "form-actions" }, btn("Valeurs par défaut", () => { Object.assign(inputs, defaults(cur.id)); prefillNotes.delete(cur.id); entered.delete(cur.id); drawLeft(); update(true); }, { small: true, icon: "refresh", tip: "Revenir aux valeurs d'exemple du modèle" })));
+    scroll.append(el("div", { class: "form-actions" }, btn("Valeurs par défaut", () => { Object.assign(inputs, sessionDefaults(cur.id)); prefillNotes.delete(cur.id); entered.delete(cur.id); drawLeft(); update(true); }, { small: true, icon: "refresh", tip: "Revenir aux valeurs d'exemple du modèle" })));
   }
 
   /* ---------- centre, top : the diagram of the model, with its question and its answer ---------- */
@@ -174,7 +192,7 @@ function render(main, args) {
         store.commit(`Physique : ${entry.name}`, (p) => { p.physics = p.physics || []; p.physics.push(entry); }); ui.name = ""; toast(`« ${entry.name} » gardé dans le projet${partId ? `, au nom de ${partId}` : ""}.`, "success"); file(entry); } });
     else if (ui.tab === "calc") calcPanel(body, { cur, r });
     else savedPanel(body, { rows, project: store.project, remove: (id) => store.commit("Physique : calcul retiré du rapport", (p) => { p.physics = (p.physics || []).filter((x) => x.id !== id); }),
-      reopen: (id) => { const s = (store.project.physics || []).find((x) => x.id === id); if (!s || !model(s.model)) return; memory.set(s.model, { ...defaults(s.model), ...s.inputs }); prefillNotes.delete(s.model); entered.set(s.model, new Set(Object.keys(defaults(s.model))));
+      reopen: (id) => { const s = (store.project.physics || []).find((x) => x.id === id); if (!s || !model(s.model)) return; memory.set(s.model, { ...defaults(s.model), ...s.inputs }); prefillNotes.delete(s.model); entered.set(s.model, new Set(Object.keys(sessionDefaults(s.model))));
         ui.tab = "result"; open(s.model, s.part && store.part(s.part) ? s.part : ""); } });
     body.scrollTop = y;
   }

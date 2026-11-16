@@ -15,6 +15,7 @@ import "./modules/pcb.js";
 import "./modules/pcba.js";
 import "./modules/assembly.js";
 import "./modules/physics.js";
+import "./modules/media.js";
 import "./modules/fea.js";
 import "./modules/creepage.js";
 import "./modules/dfx.js";

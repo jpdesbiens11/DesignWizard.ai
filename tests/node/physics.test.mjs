@@ -397,23 +397,24 @@ const PART = { spec: { id: 'P1', name: 'Bras', material: 'AL6061-T6', interfaces
   built: { bbox: [0, -10, 0, 200, 10, 10], mass: 108, volume: 40000, bodies: [{ area: 12400 }], facts: { holes: [{ d: 4.5 }, { d: 4.5 }, { d: 3 }] }, interfaces: [] } };
 
 test('prefill() takes the envelope and the material of a part, with the origin of each value', () => {
-  const beam = prefill('beam_cantilever_point', PART); assert.deepEqual(beam.inputs, { L: 200, b: 20, h: 10, d: 20, E: 69, Re: 276, rho: 2700 });
+  const beam = prefill('beam_cantilever_point', PART); assert.deepEqual(beam.inputs, { mat: 'AL6061-T6', L: 200, b: 20, h: 10, d: 20 }, 'the part gives its medium : E, Re and ρ follow from it');
   for (const k of Object.keys(beam.inputs)) assert.ok(typeof beam.notes[k] === 'string' && beam.notes[k].length > 8, `note for ${k}`);
-  assert.ok(beam.notes.L.includes('enveloppe') && beam.notes.E.includes('6061') && beam.notes.E.includes('à confirmer'));
+  assert.ok(beam.notes.L.includes('enveloppe') && beam.notes.mat.includes('6061') && beam.notes.mat.includes('matière de la pièce'));
+  const ran = run('beam_cantilever_point', beam.inputs); assert.deepEqual([ran.inputs.E, ran.inputs.Re, ran.inputs.rho, ran.inputs.mat], [69, 276, 2700, 'AL6061-T6']); assert.equal(ran.media.from.E.name, 'Aluminium 6061-T6');
   // The prefilled case is the hand case: delta = 50 x 200^3 / (3 x 69000 x 1666.7) = 1.159 mm.
-  near(run('beam_cantilever_point', beam.inputs).values.delta, 1.1594, 0.001); assert.deepEqual(prefill('bolted_joint', PART).inputs, { size: 'M4', tp: 10, lk: 10, Em: 69, Re_p: 276, Rm_t: 310 });
-  assert.ok(prefill('bolted_joint', PART).notes.size.includes('IF1')); assert.deepEqual(prefill('lumped_mass', PART).inputs, { m: 108, cp: 896, k: 167, rho: 2700, A: 124 });
-  assert.deepEqual(prefill('pipe_flow', PART).inputs, { d: 4.5, L: 200 }); assert.deepEqual(prefill('conduction_stack', PART).inputs, { t1: 10, k1: 167, A: 4000 });
+  near(run('beam_cantilever_point', beam.inputs).values.delta, 1.1594, 0.001); assert.deepEqual(prefill('bolted_joint', PART).inputs, { mat: 'AL6061-T6', size: 'M4', tp: 10, lk: 10 });
+  assert.ok(prefill('bolted_joint', PART).notes.size.includes('IF1')); assert.deepEqual(prefill('lumped_mass', PART).inputs, { mat: 'AL6061-T6', m: 108, A: 124 });
+  assert.deepEqual(prefill('pipe_flow', PART).inputs, { d: 4.5, L: 200 }); assert.deepEqual(prefill('conduction_stack', PART).inputs, { mat1: 'AL6061-T6', t1: 10, A: 4000 });
   assert.equal(prefill('thermal_mismatch', PART).inputs.A1, 200);          // volume / length
-  const cu = prefill('busbar', { spec: { material: 'CU-C110' }, built: { bbox: [0, 0, 0, 3, 150, 25] } }); assert.deepEqual(cu.inputs, { L: 150, w: 25, t: 3, rho20: 17.24, alpha: 0.00393 });
+  const cu = prefill('busbar', { spec: { material: 'CU-C110' }, built: { bbox: [0, 0, 0, 3, 150, 25] } }); assert.deepEqual(cu.inputs, { mat: 'CU-C110', L: 150, w: 25, t: 3 }); assert.deepEqual([run('busbar', cu.inputs).inputs.rho20, run('busbar', cu.inputs).inputs.alpha], [17.24, 0.00393]);
   // Plastics have no resistivity; an unknown material gives the geometry only; no part gives nothing.
-  assert.deepEqual(Object.keys(prefill('busbar', { spec: { material: 'ABS' }, built: PART.built }).inputs), ['L', 'w', 't']);
+  assert.deepEqual(Object.keys(prefill('busbar', { spec: { material: 'ABS' }, built: PART.built }).inputs), ['mat', 'L', 'w', 't']); assert.ok(run('busbar', { ...prefill('busbar', { spec: { material: 'ABS' }, built: PART.built }).inputs }).warnings.some((w) => /ABS : résistivité électrique à 20 °C inconnue de la base des médias/.test(w)), 'a plastic has no resistivity : the run says so');
   assert.deepEqual(Object.keys(prefill('beam_simple_udl', { spec: { material: 'UNOBTAINIUM' }, built: PART.built }).inputs), ['L', 'b', 'h', 'd']);
-  assert.deepEqual(Object.keys(prefill('beam_simple_udl', { spec: PART.spec }).inputs), ['E', 'Re', 'rho']); assert.deepEqual(prefill('beam_simple_udl', {}), { inputs: {}, notes: {} });
+  assert.deepEqual(Object.keys(prefill('beam_simple_udl', { spec: PART.spec }).inputs), ['mat']); assert.deepEqual(prefill('beam_simple_udl', {}), { inputs: {}, notes: {} });
   assert.deepEqual(prefill('beam_simple_udl'), { inputs: {}, notes: {} }); assert.deepEqual(prefill('nope', PART), { inputs: {}, notes: {} }); assert.deepEqual(prefill('junction_temperature', PART).inputs, {});
   // Every model accepts its own prefill and still computes.
   for (const m of MODELS) {
-    const pf = prefill(m.id, PART); assert.deepEqual(Object.keys(pf.inputs).sort(), Object.keys(pf.notes).sort(), m.id); for (const k of Object.keys(pf.inputs)) assert.ok(m.inputs.some((d) => d.key === k), `${m.id}.${k}`);
+    const pf = prefill(m.id, PART); assert.deepEqual(Object.keys(pf.inputs).sort(), Object.keys(pf.notes).sort(), m.id); for (const k of Object.keys(pf.inputs)) assert.ok(m.inputs.some((d) => d.key === k) || m.media.some((x) => x.key === k), `${m.id}.${k}`);
     assert.ok(VERDICTS.includes(run(m.id, pf.inputs).verdict), m.id);
   }
   assert.equal(partContext(PART.spec, PART.built).screw.v, 'M4'); assert.equal(partContext(null, { facts: { holes: [{ d: 5, thread: 'M6' }] } }).screw.v, 'M6');
@@ -440,7 +441,7 @@ test('fluid properties at 20 °C and their variation with temperature', () => {
   for (const f of Object.values(FLUIDS)) {
     for (const k of ['rho', 'mu', 'k', 'cp', 'Pr', 'nu', 'alpha', 'beta']) assert.ok(Number.isFinite(f[k]) && f[k] > 0, `${f.id}.${k}`); near(f.Pr, f.mu * f.cp / f.k, 1e-9);
     const hot = f.at(60);
-    if (f.id === 'air') assert.ok(hot.mu > f.mu && hot.rho < f.rho, 'a gas gets more viscous when hot'); else assert.ok(hot.mu < f.mu && hot.rho < f.rho, `${f.id}: a liquid gets thinner when hot`);
+    if (f.phase === 'gas') assert.ok(hot.mu > f.mu && hot.rho < f.rho, `${f.id}: a gas gets more viscous when hot`); else assert.ok(hot.mu < f.mu && hot.rho < f.rho, `${f.id}: a liquid gets thinner when hot`);
     assert.ok(Number.isFinite(f.at(NaN).mu) && Number.isFinite(f.at(1e6).mu) && Number.isFinite(f.at(-1e6).mu), 'clamped to the valid range');
   }
 });

@@ -17,7 +17,7 @@ function fluidOf(i, S) {
   const base = FLUIDS[i.fluid], f = base.at(i.T);
   if (i.T < base.range[0] || i.T > base.range[1]) S.warn(`Température hors de la plage des propriétés de « ${base.name} » (${base.range[0]} à ${base.range[1]} °C) : propriétés prises à ${n(f.T)} °C.`);
   S.step(`${f.name} à ${n(f.T)} °C : ρ = ${n(f.rho)} kg/m³, μ = ${n(f.mu * 1e3)} mPa·s (table des fluides, valeurs typiques).`);
-  return { ...f, gas: f.id === "air" };
+  return { ...f, gas: base.phase === "gas" };
 }
 
 const pipe = { id: "pipe_flow", domain: "fluid", sketch: "pipe", title: "Écoulement dans un tube rond (Hagen-Poiseuille / Darcy-Weisbach)", question: "Quelle perte de charge dans ce canal, et l'écoulement est-il laminaire ?",

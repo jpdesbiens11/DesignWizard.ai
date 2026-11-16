@@ -5,6 +5,7 @@
 
 import { verdictOf } from "./models_core.js";
 import { props } from "./props.js";
+import { medium, mediaSlots, mediaDefaults, mediaValues, MEDIA_PROPS } from "./media.js";
 import { STRUCTURE_A } from "./models_structure.js";
 import { STRUCTURE_B } from "./models_structure_plate.js";
 import { JOINTS } from "./models_joints.js";
@@ -25,16 +26,18 @@ export const shortTitle = (m) => (m ? SHORT[m.id] || m.title : "");
 /** The numeric inputs of a model that still hold the example the tool put there : neither typed, nor confirmed, nor read on a part.
     entered : the keys the designer typed or confirmed (a Set or a list). → keys, in the order of the form */
 export function exampleKeys(m, inputs, entered) {
-  const done = entered instanceof Set ? entered : new Set(entered || []);
-  return ((m && m.inputs) || []).filter((d) => !d.options && inputActive(d, inputs || {}) && !done.has(d.key)).map((d) => d.key);
+  const done = entered instanceof Set ? entered : new Set(entered || []), given = m ? mediaValues(m.id, inputs || {}).from : {};       // a value a medium gives is not an example : the medium is
+  const slots = m ? mediaSlots(m.id).filter((s) => medium((inputs || {})[s.key]) && !done.has(s.key)).map((s) => s.key) : [];
+  return [...slots, ...((m && m.inputs) || []).filter((d) => !d.options && !given[d.key] && inputActive(d, inputs || {}) && !done.has(d.key)).map((d) => d.key)];
 }
 /** What is wrong with the inputs of a model, for the guide : a value missing or outside what the model accepts, the examples still
     to enter or to confirm (o.examples, from exampleKeys), what was read on a part and wants a look (o.read : keys ; o.part : its id),
     then the limits of validity the run reports. → [{ level, text, field }] */
 export function inputIssues(m, inputs, result, o = {}) {
-  const out = [], name = (k) => { const d = m.inputs.find((x) => x.key === k); return d ? d.label : k; };
+  const out = [], name = (k) => { const d = m.inputs.find((x) => x.key === k) || mediaSlots(m.id).find((x) => x.key === k); return d ? d.label : k; };
   if (!m) return [{ level: "tip", text: "Choisissez un modèle dans le volet de droite : ils sont rangés par physique." }];
-  for (const d of (m && m.inputs) || []) { if (d.options || !inputActive(d, inputs)) continue; const v = inputs[d.key], unit = d.unit ? ` ${d.unit}` : "";
+  const given = m ? mediaValues(m.id, inputs).from : {};
+  for (const d of (m && m.inputs) || []) { if (d.options || given[d.key] || !inputActive(d, inputs)) continue; const v = inputs[d.key], unit = d.unit ? ` ${d.unit}` : "";
     if (v === null || v === undefined || !Number.isFinite(v)) out.push({ level: "error", field: d.key, text: `${d.label} : entrez une valeur (de ${d.min} à ${d.max}${unit}).` });
     else if (v < d.min || v > d.max) out.push({ level: "error", field: d.key, text: `${d.label} = ${v}${unit} : hors de ce que le modèle accepte (de ${d.min} à ${d.max}${unit}).` }); }
   const eg = (o.examples || []).filter((k) => !out.some((x) => x.field === k));
@@ -45,11 +48,14 @@ export function inputIssues(m, inputs, result, o = {}) {
   return out;
 }
 export const MODELS = [...STRUCTURE_A, ...STRUCTURE_B, ...JOINTS, ...FLUID, ...THERMAL, ...ELECTRICAL];
+for (const m of MODELS) m.media = mediaSlots(m.id);                   // the media a model reads its properties from (media.js)
 const BY_ID = new Map(MODELS.map((m) => [m.id, m]));
 
 export function model(id) { return BY_ID.get(id) || null; }
 /** Default inputs of a model ({} when unknown). */
 export function defaults(id) { const m = model(id); return m ? Object.fromEntries(m.inputs.map((d) => [d.key, d.default])) : {}; }
+/** The inputs a model opens with on a screen : its defaults, and the media it proposes — its properties then come from them. */
+export function sessionDefaults(id) { return { ...defaults(id), ...mediaDefaults(id) }; }
 /** Is this input used with the current choices (its `when` condition)? */
 export function inputActive(def, inputs) { return !def.when || Object.entries(def.when).every(([k, list]) => list.includes(inputs[k])); }
 
@@ -70,7 +76,13 @@ function normalize(m, inputs) {
     if (lim !== v && inputActive(d, { ...clean, ...inputs })) notes.push(`Entrée « ${d.label} » hors de la plage ${String(d.min).replace(".", ",")} à ${String(d.max).replace(".", ",")} ${d.unit} : ramenée à ${String(lim).replace(".", ",")}.`);
     clean[d.key] = lim;
   }
-  return { clean, notes };
+  /* the properties a medium gives replace what was typed : a value alone means nothing, the medium says what it is */
+  const mv = mediaValues(m.id, { ...clean, ...inputs });
+  for (const s of mediaSlots(m.id)) if (!s.own) clean[s.key] = medium(inputs && inputs[s.key]) && s.states.includes(medium(inputs[s.key]).state) ? inputs[s.key] : "";
+  for (const [k, v] of Object.entries(mv.values)) { const d = m.inputs.find((x) => x.key === k); clean[k] = v;
+    if (d && inputActive(d, clean) && (v < d.min || v > d.max)) notes.push(`${mv.from[k].name} : ${d.label} = ${String(v).replace(".", ",")} ${d.unit}, hors de la plage du modèle (${String(d.min).replace(".", ",")} à ${String(d.max).replace(".", ",")}).`); }
+  for (const x of mv.missing) { const d = m.inputs.find((q) => q.key === x.key); if (d && inputActive(d, clean)) notes.push(`${x.name} : ${MEDIA_PROPS[x.prop].fr} inconnue de la base des médias — « ${d.label} » garde ${String(clean[x.key]).replace(".", ",")} ${d.unit}, à vérifier.`); }
+  return { clean, notes, media: mv };
 }
 
 /** Run a model. Never throws: an unknown model or an impossible calculation comes back as a "fail" with its reason.
@@ -78,14 +90,14 @@ function normalize(m, inputs) {
 export function run(id, inputs = {}) {
   const m = model(id);
   if (!m) return { values: {}, checks: [], steps: [], warnings: [`Modèle « ${id} » inconnu.`], verdict: "fail", inputs: {} };
-  const { clean, notes } = normalize(m, inputs);
+  const { clean, notes, media } = normalize(m, inputs);
   let r;
   try { r = m.compute(clean); }
-  catch (e) { return { values: {}, checks: [], steps: [], warnings: [...notes, `Calcul impossible : ${e.message}`], verdict: "fail", inputs: clean }; }
+  catch (e) { return { values: {}, checks: [], steps: [], warnings: [...notes, `Calcul impossible : ${e.message}`], verdict: "fail", inputs: clean, media }; }
   const warnings = [...notes, ...r.warnings], values = {}, bad = [];
   for (const [k, v] of Object.entries(r.values)) { if (typeof v === "number" && Number.isFinite(v)) values[k] = v; else bad.push((m.outputs.find((o) => o.key === k) || { label: k }).label); }
   if (bad.length) warnings.push(`Résultat non défini pour : ${bad.join(", ")}. Vérifiez les entrées (division par zéro ou valeur hors domaine).`);
-  return { values, checks: r.checks, steps: r.steps, warnings, verdict: bad.length ? "fail" : verdictOf(r.checks, warnings), inputs: clean };
+  return { values, checks: r.checks, steps: r.steps, warnings, verdict: bad.length ? "fail" : verdictOf(r.checks, warnings), inputs: clean, media };
 }
 
 /* ---------- prefill from a part ---------- */
@@ -135,8 +147,10 @@ export function partContext(spec, built) {
 export function prefill(id, part = {}) {
   const m = model(id), res = { inputs: {}, notes: {} };
   if (!m || !m.fill || !part) return res;
-  const c = partContext(part.spec, part.built);
+  const c = partContext(part.spec, part.built), slot = mediaSlots(id).find((s) => s.states.includes("solid") && !s.own), mat = slot && part.spec && medium(part.spec.material), given = slot && mat && mat.state === "solid" ? slot.gives : {};
+  if (slot && mat && mat.state === "solid") { res.inputs[slot.key] = mat.id; res.notes[slot.key] = `matière de la pièce : ${mat.name}`; }
   for (const [key, src] of Object.entries(m.fill)) {
+    if (given[key]) continue;                                    // the medium gives it
     const d = m.inputs.find((x) => x.key === key), f = c[src];
     if (!d || !f) continue;
     if (d.options) { if (!d.options.some((o) => o.value === f.v)) continue; res.inputs[key] = f.v; }
@@ -168,7 +182,7 @@ export function runSheet(saved, project) {
   if (!m) return `${saved.name || saved.model}\nModèle « ${saved.model} » inconnu de cette version.\n`;
   const again = run(m.id, { ...defaults(m.id), ...(saved.inputs || {}) }), V = { ok: "OK", warn: "À VÉRIFIER", fail: "NON" };
   return [`${saved.name || m.title}`, `${m.title}`, `Question : ${m.question}`, `Pièce : ${part ? `${part.id} — ${part.name || ""}` : saved.part || "aucune"}`, `Date : ${String(saved.when || "").slice(0, 10) || "—"}`, `Verdict : ${V[again.verdict] || again.verdict}`, "",
-    "DONNÉES", ...m.inputs.filter((d) => inputActive(d, again.inputs)).map((d) => `  ${d.label} : ${d.options ? ((d.options.find((o) => o.value === String(again.inputs[d.key])) || {}).label || again.inputs[d.key]) : num(again.inputs[d.key])}${d.unit ? ` ${d.unit}` : ""}`), "",
+    "DONNÉES", ...again.media.shown.map((x) => `  ${(m.media.find((q) => q.key === x.slot) || {}).label || "Média"} : ${x.name} (base des médias)`), ...m.inputs.filter((d) => inputActive(d, again.inputs)).map((d) => `  ${d.label} : ${d.options ? ((d.options.find((o) => o.value === String(again.inputs[d.key])) || {}).label || again.inputs[d.key]) : num(again.inputs[d.key])}${d.unit ? ` ${d.unit}` : ""}${again.media.from[d.key] ? ` — donné par ${again.media.from[d.key].name}` : ""}`), "",
     "RÉSULTATS", ...m.outputs.map((o) => `  ${o.label} : ${num(again.values[o.key])}${o.unit ? ` ${o.unit}` : ""}`), "",
     ...(again.checks.length ? ["VÉRIFICATIONS", ...again.checks.map((c) => `  ${c.ok ? "OK " : "NON"}  ${c.label} : ${num(c.value)} ${c.unit} — limite ${num(c.limit)} ${c.unit} — marge ${num(c.margin)}`), ""] : []),
     ...(again.warnings.length ? ["LIMITES DE VALIDITÉ", ...again.warnings.map((w) => `  ${w}`), ""] : []),

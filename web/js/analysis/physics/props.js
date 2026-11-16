@@ -69,29 +69,47 @@ const K0 = 273.15;
 function state(id, name, T, rho, mu, k, cp, beta) {
   return { id, name, T, rho, mu, k, cp, nu: mu / rho, alpha: k / (rho * cp), Pr: mu * cp / k, beta };
 }
+/* An ideal gas at 101 325 Pa : density from its molar mass, viscosity and conductivity by Sutherland's law
+   x(T) = x0 (T / T0)^1.5 (T0 + S) / (T + S), T0 = 273.15 K. M g/mol, mu0 Pa.s, Smu K, k0 W/m.K, Sk K, cp J/kg.K. */
+const gas = (id, name, M, mu0, Smu, k0, Sk, cp) => (T) => { const Tk = T + K0, r = (Tk / K0) ** 1.5; return state(id, name, T, 101325 * M / (8314.46 * Tk), mu0 * r * (K0 + Smu) / (Tk + Smu), k0 * r * (K0 + Sk) / (Tk + Sk), cp, 1 / Tk); };
+/* A mineral oil of a viscosity grade : kinematic viscosity by the Walther law (ASTM D341) through its two published points,
+   v40 cSt at 40 °C and v100 cSt at 100 °C. */
+const oil = (id, name, v40, v100) => { const LL = (v) => Math.log10(Math.log10(v + 0.7)), B = (LL(v40) - LL(v100)) / (Math.log10(373.15) - Math.log10(313.15)), A = LL(v40) + B * Math.log10(313.15);
+  return (T) => { const rho = 870 - 0.65 * (T - 20), cSt = 10 ** (10 ** (A - B * Math.log10(T + K0))) - 0.7; return state(id, name, T, rho, cSt * 1e-6 * rho, 0.133 - 7e-5 * (T - 20), 1880 + 3.6 * (T - 20), 7.0e-4); }; };
 const AT = {
-  /* Ideal gas at 101 325 Pa, Sutherland law for mu and k (White, Fluid Mechanics, chap. 1). */
+  /* Air : ideal gas, Sutherland law for mu and k (White, Fluid Mechanics, chap. 1). */
   air: (T) => {
     const Tk = T + K0, r = (Tk / K0) ** 1.5;
     return state("air", "Air (1 atm)", T, 352.98 / Tk, 1.716e-5 * r * (K0 + 110.4) / (Tk + 110.4), 0.02364 * r * (K0 + 194) / (Tk + 194), 1007, 1 / Tk);
   },
+  nitrogen: gas("nitrogen", "Nitrogen N₂ (1 atm)", 28.013, 1.663e-5, 107, 0.0242, 150, 1040),
+  co2: gas("co2", "Carbon dioxide CO₂ (1 atm)", 44.01, 1.370e-5, 222, 0.0146, 1800, 844),
+  helium: gas("helium", "Helium (1 atm)", 4.0026, 1.87e-5, 79.4, 0.142, 122, 5193),
   /* Water: Kell-type density, Vogel viscosity mu = 2.414e-5 x 10^(247.8 / (T_K - 140)), quadratic k (0..100 °C). */
   water: (T) => {
     const rho = 1000 * (1 - (T + 288.9414) / (508929.2 * (T + 68.12963)) * (T - 3.9863) ** 2);
-    return state("water", "Eau", T, rho, 2.414e-5 * 10 ** (247.8 / (T + K0 - 140)), 0.561 + 2.0175e-3 * T - 8.375e-6 * T * T, 4182, 2.07e-4 + 1.0e-5 * (T - 20));
+    return state("water", "Water", T, rho, 2.414e-5 * 10 ** (247.8 / (T + K0 - 140)), 0.561 + 2.0175e-3 * T - 8.375e-6 * T * T, 4182, 2.07e-4 + 1.0e-5 * (T - 20));
   },
   /* Ethylene glycol 50 % vol in water (ASHRAE Fundamentals tables), Arrhenius viscosity fitted on 20 and 80 °C. */
-  glycol50: (T) => state("glycol50", "Eau-glycol 50 % (éthylène glycol)", T, 1071 - 0.65 * (T - 20), 3.94e-3 * Math.exp(2349 * (1 / (T + K0) - 1 / 293.15)),
+  glycol50: (T) => state("glycol50", "Ethylene glycol / water 50 %", T, 1071 - 0.65 * (T - 20), 3.94e-3 * Math.exp(2349 * (1 / (T + K0) - 1 / 293.15)),
     0.380 + 5e-4 * (T - 20), 3283 + 3.8 * (T - 20), 5.7e-4),
-  /* Mineral oil ISO VG 32 (32 cSt at 40 °C, 5.4 cSt at 100 °C): Walther / ASTM D341 viscosity-temperature law. */
-  oil32: (T) => {
-    const rho = 870 - 0.65 * (T - 20), cSt = 10 ** (10 ** (9.53038 - 3.7464 * Math.log10(T + K0))) - 0.7;
-    return state("oil32", "Huile ISO VG 32", T, rho, cSt * 1e-6 * rho, 0.133 - 7e-5 * (T - 20), 1880 + 3.6 * (T - 20), 7.0e-4);
-  },
+  /* Mineral oils ISO VG 32, 46 and 68 : the grade is the viscosity at 40 °C ; the value at 100 °C is the usual one of an oil of viscosity index about 100. */
+  oil32: oil("oil32", "Mineral oil ISO VG 32", 32, 5.4), oil46: oil("oil46", "Mineral oil ISO VG 46", 46, 6.8), oil68: oil("oil68", "Mineral oil ISO VG 68", 68, 8.7),
 };
-const RANGE = { air: [-50, 300], water: [0, 100], glycol50: [-30, 110], oil32: [-10, 120] };
+const RANGE = { air: [-50, 300], nitrogen: [-50, 300], co2: [-50, 300], helium: [-50, 300], water: [0, 100], glycol50: [-30, 110], oil32: [-10, 120], oil46: [-10, 120], oil68: [-10, 120] };
+const PHASE = { air: "gas", nitrogen: "gas", co2: "gas", helium: "gas", water: "liquid", glycol50: "liquid", oil32: "liquid", oil46: "liquid", oil68: "liquid" };
+const FLUID_FR = { air: "Air (1 atm)", nitrogen: "Azote (1 atm)", co2: "Dioxyde de carbone (1 atm)", helium: "Hélium (1 atm)", water: "Eau", glycol50: "Eau-glycol 50 % (éthylène glycol)", oil32: "Huile minérale ISO VG 32", oil46: "Huile minérale ISO VG 46", oil68: "Huile minérale ISO VG 68" };
+/* How each fluid was checked — said as it is. */
+const FLUID_BASIS = {
+  air: "Gaz parfait à 1 atm, loi de Sutherland pour μ et k (White, Fluid Mechanics, chap. 1) : constantes de la plateforme depuis sa première version.", water: "Masse volumique de type Kell, viscosité de Vogel, k quadratique de 0 à 100 °C : corrélations usuelles, à ± 1 % environ.",
+  glycol50: "Tables ASHRAE Fundamentals pour ρ, k, cp ; viscosité d'Arrhenius ajustée sur 20 et 80 °C.", oil32: "Loi de Walther (ASTM D341) par 32 cSt à 40 °C et 5,4 cSt à 100 °C ; ρ, k et cp typiques d'une huile minérale.",
+  oil46: "Loi de Walther (ASTM D341) par 46 cSt à 40 °C (la définition du grade) et 6,8 cSt à 100 °C — valeur typique d'une huile d'indice de viscosité 100, écrite de mémoire, non relue.", oil68: "Loi de Walther (ASTM D341) par 68 cSt à 40 °C (la définition du grade) et 8,7 cSt à 100 °C — valeur typique d'une huile d'indice de viscosité 100, écrite de mémoire, non relue.",
+  nitrogen: "Gaz parfait à 1 atm (M = 28,013 g/mol), loi de Sutherland : constantes écrites de mémoire d'après les tables de White (Viscous Fluid Flow), non relues dans cette session.", co2: "Gaz parfait à 1 atm (M = 44,01 g/mol), loi de Sutherland : constantes écrites de mémoire d'après les tables de White (Viscous Fluid Flow), non relues. cp constant, pris à 20 °C.",
+  helium: "Gaz parfait à 1 atm (M = 4,0026 g/mol), loi de Sutherland : constantes écrites de mémoire, non relues dans cette session.",
+};
 
-/** FLUIDS[id] = { id, name, rho kg/m3, mu Pa.s, k W/m.K, cp J/kg.K, Pr, nu m2/s, alpha m2/s, beta 1/K (at 20 °C), range [Tmin, Tmax], at(T °C) }. */
-export const FLUIDS = Object.fromEntries(Object.keys(AT).map((id) => [id, { ...AT[id](20), range: RANGE[id],
-  at: (T) => AT[id](Math.min(RANGE[id][1], Math.max(RANGE[id][0], Number.isFinite(T) ? T : 20))) }]));
-export const FLUID_OPTIONS = [...Object.values(FLUIDS).map((f) => ({ value: f.id, label: f.name })), { value: "custom", label: "Autre fluide (ρ et μ saisis)" }];
+/** FLUIDS[id] = { id, name (English), fr, phase ("liquid" | "gas"), basis, rho kg/m3, mu Pa.s, k W/m.K, cp J/kg.K, Pr, nu m2/s, alpha m2/s, beta 1/K (at 20 °C), range [Tmin, Tmax], at(T °C) }. */
+export const FLUIDS = Object.fromEntries(Object.keys(AT).map((id) => [id, { ...AT[id](20), fr: FLUID_FR[id], phase: PHASE[id], basis: FLUID_BASIS[id], range: RANGE[id],
+  at: (T) => ({ ...AT[id](Math.min(RANGE[id][1], Math.max(RANGE[id][0], Number.isFinite(T) ? T : 20))), phase: PHASE[id] }) }]));
+/* liquids first, then gases, each by name ; « custom » is kept for the runs of before the media base : a screen no longer offers it */
+export const FLUID_OPTIONS = [...Object.values(FLUIDS).sort((a, b) => (a.phase === b.phase ? a.name.localeCompare(b.name, "en") : a.phase === "liquid" ? -1 : 1)).map((f) => ({ value: f.id, label: f.name })), { value: "custom", label: "Autre fluide (ρ et μ saisis)", legacy: true }];

@@ -67,7 +67,7 @@ test("a busbar carries its strip, its current and its finish into the heating mo
   const { prefill, runName, runsByPart, runSheet } = await import("../../web/js/analysis/physics/index.js"), { blankBusbar, busbarPart } = await import("../../web/js/core/busbar.js");
   const def = { ...blankBusbar(), W: 25, t: 4, I: 180, finish: "none" }, spec = busbarPart(def, "BB-1"), pf = prefill("busbar", { spec, built: null });
   assert.deepEqual([pf.inputs.w, pf.inputs.t, pf.inputs.I, pf.inputs.eps], [25, 4, 180, 0.4], "the strip, the current, bare copper"); assert.equal(pf.inputs.L, def.legs.reduce((t, l) => t + l.L, 0), "the length along the middle fibre : the sum of the legs, not the envelope");
-  assert.ok(pf.inputs.rho20 > 15 && pf.inputs.rho20 < 20, "the resistivity of its copper"); assert.match(pf.notes.I, /busbar BB-1 : courant déclaré/); assert.match(pf.notes.eps, /cuivre nu — valeur typique/);
+  assert.equal(pf.inputs.mat, "CU-C110", "its copper is its medium : the resistivity follows"); assert.equal(run("busbar", { ...defaults("busbar"), ...pf.inputs }).inputs.rho20, 17.24); assert.match(pf.notes.I, /busbar BB-1 : courant déclaré/); assert.match(pf.notes.eps, /cuivre nu — valeur typique/);
   assert.equal(prefill("busbar", { spec: busbarPart({ ...def, finish: "Sn" }, "BB-2"), built: null }).inputs.eps, 0.1); assert.equal(prefill("busbar", { spec: busbarPart({ ...def, insulation: { material: "PI-FILM", t: 0.1 } }, "BB-3"), built: null }).inputs.eps, 0.9, "a covered bar radiates like its cover");
   assert.equal(prefill("beam_cantilever_point", { spec, built: null }).inputs.I, undefined, "a model takes only what it asks for");
   /* several runs per part, each with its name ; the list is by part */
