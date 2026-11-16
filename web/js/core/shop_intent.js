@@ -38,7 +38,8 @@ export function footprint(it, mat) {
       why: side === "A" ? `passage ${p.screw} : au moins ${fr(need)} mm sous la tête` : plastic ? `insert ${p.screw} : ${fr(need)} mm` : `taraudage ${p.screw} : ${fr(k)} × d = ${fr(need)} mm en prise` };
   }
   if (it.type === "planar") return { w: p.w, h: p.h, need: 2, clear: [0, 0], edge: 0, why: "appui plan" };
-  if (it.type === "bond") return { w: p.w, h: p.h, need: 2, clear: [0, 0], edge: 1, why: `plage de collage ${fr(p.w)} × ${fr(p.h)} mm, film de ${fr(p.gap)} mm` };
+  if (it.type === "bond") { const well = side === "B" && it.opts && it.opts.well && p.adhesive !== "tape", lip = well ? Math.max(0, Number(p.lip) || 0) : 0;      // a glue well takes its lip all round, and matter under its floor
+    return { w: p.w + 2 * lip, h: p.h + 2 * lip, need: well ? Math.max(2, r1(p.gap + 1.5)) : 2, clear: [0, 0], edge: well ? 0 : 1, lip, why: `plage de collage ${fr(p.w)} × ${fr(p.h)} mm, film de ${fr(p.gap)} mm${well ? `, lèvre d'appui de ${fr(lip)} mm` : ""}` }; }
   if (it.type === "fit") return side === "A" ? { w: p.d, h: p.d, need: Math.max(3, 0.3 * p.d), clear: [0, 0], edge: 2, why: `épaulement de l'arbre Ø${fr(p.d)}`, spigot: p.length }
     : { w: p.d + 2 * Math.max(3, 0.4 * p.d), h: p.d + 2 * Math.max(3, 0.4 * p.d), need: p.length + 1.5, clear: [0, 0], edge: 0, why: `alésage Ø${fr(p.d)} de ${fr(p.length)} mm + fond` };
   if (it.type === "cutout") { const fix = p.fix && p.fix.screw ? (p.fix.pitch || (p.w || p.d) + 8) + thread(p.fix.screw).washer : 0;
@@ -95,6 +96,7 @@ function prepare(brief, log) {
     const id = `IF${i + 1}`, name = raw.name || t.fr, key = raw.key || slug(`${brief.name || "piece"}_${raw.partner || name}_${id}`);
     const it = { id, type: raw.type, name, key, partner: raw.partner || undefined, side: raw.side === "B" ? "B" : "A", where: raw.where || "+Z", inside: !!raw.inside, from: raw.from || undefined, external: raw.external ? true : undefined, params: JSON.parse(JSON.stringify({ ...t.params, ...(raw.params || {}) })), opts: raw.opts ? { ...raw.opts } : undefined };
     it.fp = footprint(it, brief.material);
+    if (it.type === "bond" && it.fp.lip) log.push(`« ${name} » : logement de colle de ${fr(it.params.w)} × ${fr(it.params.h)} mm profond de ${fr(it.params.gap)} mm, entouré d'une lèvre d'appui de ${fr(it.fp.lip)} mm — la pièce qui s'appuie porte sur la lèvre, la colle garde son épaisseur.`);
     if (!raw.key) log.push(`Interface « ${name} » : clé « ${key} » créée ; la pièce voisine la reprendra telle quelle.`);
     return it;
   });
@@ -194,7 +196,9 @@ function round(brief, items, log) {
   return { family: "turned", params, stock: { form: "bar_round", d: "D", L: top ? `${total} + ${r1(top.params.length)}` : total }, features, interfaces: out };
 }
 
-/** Write the part. Returns { spec, decisions, recommendation }. Throws with a French message when the brief cannot be built. */
+/** Write the part. Returns { spec, decisions, recommendation, form, proposed }. proposed : the interfaces the companion added of its
+    own — a closure for a moulded housing, its joint plane — which the brief did not ask for : [{ id, type, name, side, face, params }].
+    Throws with a French message when the brief cannot be built. */
 export function synthesize(brief, id = "PN-0001") {
   const log = [], rec = recommend(brief), form = brief.form && SHOP_FORMS[brief.form] ? brief.form : rec.form;
   const b = { ...brief, form, process: brief.process || SHOP_FORMS[form], material: brief.material || (form === "print" ? "PA12" : form === "molded" ? "PC-ABS" : form === "profile" ? "AL6063-T5" : "AL6061-T6") };
@@ -211,5 +215,6 @@ export function synthesize(brief, id = "PN-0001") {
   const spec = { dw: "part/1", id, name: brief.name || "Nouvelle pièce", function: brief.fn || "", family: core.family, process: core.process || b.process, material: b.material, ...(Object.keys(intent).length ? { intent } : {}),
     params: core.params, interfaces: core.interfaces, ...(core.stock ? { stock: core.stock } : {}), features: core.features, ...(core.mold ? { mold: core.mold } : {}), ...(core.extrusion ? { extrusion: core.extrusion } : {}), ...(core.folded ? { folded: core.folded } : {}),
     notes: core.notes || ["Casser les angles vifs 0,2 à 0,5 mm", "Tolérances générales ISO 2768-mK"], interview: { questions: [], assumptions: log } };
-  return { spec, decisions: log, recommendation: rec, form };
+  const asked = new Set(items.map((it) => it.id)), proposed = (core.interfaces || []).filter((x) => !asked.has(x.id)).map((x) => ({ id: x.id, type: x.type, name: x.name, side: x.side, face: x.face, params: x.params }));
+  return { spec, decisions: log, recommendation: rec, form, proposed };
 }

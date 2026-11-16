@@ -3,7 +3,7 @@
    the proposal, marks the field that waits, and holds « Créer la pièce » until what blocks is dealt with.
    An entry : { level, text, field (key of the brief the entry is about, when one) } — levels of core/guide.js. */
 
-import { material, MATERIALS } from "../cad/materials.js";
+import { material, materialMenu, materialShort, processWords } from "../cad/materials.js";
 import { printProcess } from "../cad/special_processes.js";
 
 const FORM_NEEDS = {
@@ -34,21 +34,28 @@ export const MATERIAL_CLASSES = [{ cls: "metal", label: "Métaux", color: "#6474
 const HIDDEN = new Set(["GENERIC-COMPONENT", "EPOXY"]);
 /** What the designer may pick, by nature, once a stock form is chosen by hand (form "" : nothing is held back).
     also(id) : true for a material the companion would itself put in this form — it is never greyed.
-    → [{ cls, label, color, icon, possible, list: [{ id, name, color, ok, why }] }] */
+    In a nature, the materials are filed by name — every aluminium together, every stainless steel together — and each one
+    carries its processes in parentheses.
+    → [{ cls, label, color, icon, possible, list: [{ id, name, short, procs, family, color, ok, why }], families: [{ family, list }] }] */
 export function materialChoices(form, also = () => false) {
   return MATERIAL_CLASSES.map((g) => {
-    const list = MATERIALS.filter((m) => m.cls === g.cls && !HIDDEN.has(m.id)).map((m) => { const t = form && !also(m.id) ? formTakes(form, m.id) : { ok: true, why: "" }; return { id: m.id, name: m.name, color: m.color, ok: t.ok, why: t.why }; });
-    return { ...g, list, possible: list.filter((x) => x.ok).length };
+    const families = materialMenu((m) => m.cls === g.cls && !HIDDEN.has(m.id)).map(({ family, list }) => ({ family, list: list.map((m) => { const t = form && !also(m.id) ? formTakes(form, m.id) : { ok: true, why: "" };
+      return { id: m.id, name: m.name, short: materialShort(m), procs: processWords(m), family, color: m.color, ok: t.ok, why: t.why }; }) }));
+    const list = families.flatMap((f) => f.list);
+    return { ...g, list, families, possible: list.filter((x) => x.ok).length };
   });
 }
 
-/** @param brief  the intent of the Shop   @param project  the open project (names already taken)   @returns the entries */
-export function briefIssues(brief, project) {
+/** @param brief  the intent of the Shop   @param project  the open project (names already taken)
+    @param o  { proposed : the interfaces the companion added of its own (synthesize().proposed) — they wait for a yes or a no }   @returns the entries */
+export function briefIssues(brief, project, o = {}) {
   const out = [], add = (level, text, field) => out.push({ level, text, ...(field ? { field } : {}) }), b = brief || {};
   const name = String(b.name || "").trim(), mat = b.material ? material(b.material) : null, list = b.interfaces || [];
   if (!name) add("todo", "Donnez un nom à la pièce : il la suit dans l'arbre, sur le dessin et dans la commande.", "name");
   else if (((project && project.parts) || []).some((p) => String(p.name || "").trim().toLowerCase() === name.toLowerCase())) add("warn", `Une pièce du projet s'appelle déjà « ${name} » : deux pièces du même nom se confondent dans la nomenclature.`, "name");
-  if (!list.length && !(b.contents || []).length && !(b.folds && (b.folds.sides || []).length)) add("warn", "Aucune interface : la pièce n'est reliée à rien, elle n'a qu'une enveloppe par défaut. Ajoutez « je me visse sur… », « on se visse sur moi », « je reçois un arbre »…", "interfaces");
+  const own = (o && o.proposed) || [];
+  if (own.length) add("todo", `Le compagnon ajoute de lui-même ${own.length > 1 ? `${own.length} interfaces` : "une interface"} que vous n'avez pas demandée${own.length > 1 ? "s" : ""} (${own.map((x) => `« ${x.name} »`).join(", ")}) : gardez-${own.length > 1 ? "les" : "la"} ou retirez-${own.length > 1 ? "les" : "la"}, dans « Ses interfaces ».`, "proposed");
+  if (!list.length && !own.length && !(b.contents || []).length && !(b.folds && (b.folds.sides || []).length)) add("warn", "Aucune interface : la pièce n'est reliée à rien, elle n'a qu'une enveloppe par défaut. Ajoutez « je me visse sur… », « on se visse sur moi », « je reçois un arbre »…", "interfaces");
   const q = Number(b.quantity);
   if (!(q >= 1)) add("warn", "Quantité : au moins 1. Elle oriente le procédé — une pièce, dix ou mille ne se fabriquent pas de la même façon.", "quantity");
   else if (!Number.isInteger(q)) add("tip", "Quantité : un nombre entier de pièces.", "quantity");

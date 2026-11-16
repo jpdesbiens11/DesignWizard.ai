@@ -68,6 +68,28 @@ export const PROCESSES = {
 const BY_ID = new Map(MATERIALS.map((m) => [m.id, m]));
 export function material(id) { return BY_ID.get(id) || BY_ID.get(String(id || "").toUpperCase()) || null; }
 export function materialOrDefault(id) { return material(id) || { id: id || "?", name: id || "Matériau non défini", cls: "unknown", rho: 1.0, conductive: false, cti: 100, color: "#a8b0b8", unknown: true, processes: [] }; }
+/* ---------- a menu of materials : filed by name (the family, not the grade), each with its processes in parentheses ---------- */
+const FAMILIES = [[/^alumin/i, "Aluminium"], [/^(stainless|inox)/i, "Inox"], [/^(steel|acier)/i, "Acier"], [/^(copper|cuivre)/i, "Cuivre"], [/^(brass|laiton)/i, "Laiton"], [/^titan/i, "Titane"], [/nickel|inconel/i, "Nickel"], [/^zamak/i, "Zinc"],
+  [/^PA\d/, "Polyamide (PA)"], [/^(PC\b|polycarbonate)/i, "Polycarbonate (PC)"], [/^ABS/, "ABS"], [/^PBT/, "PBT"], [/^PPS/, "PPS"], [/^POM/, "POM"], [/^(PEEK|PEKK|PEI)/, "Hautes performances (PEEK, PEKK, PEI)"], [/^résine/i, "Résine"], [/^(acryl|PMMA)/i, "Acrylique (PMMA)"], [/^PVC/, "PVC"],
+  [/^(epoxy|electronic)/i, "Composants achetés"], [/silicone|pad thermique|composé thermique/i, "Élastomères et thermique"], [/^FR4/, "FR4"], [/nomex|aramid/i, "Papier aramide"], [/^film/i, "Films isolants"], [/^cellule/i, "Cellules"]];
+const PROC_WORD = { cnc_milling: "usinage", cnc_turning: "usinage", sheet_metal: "tôlerie", laser_cut: "laser", extrusion_al: "extrusion", extrusion_plastic: "extrusion", injection_molding: "injection", die_casting: "fonderie sous pression", sand_casting: "fonderie par gravité",
+  fdm: "FDM", mjf: "MJF / SLS", sla: "SLA", lpbf: "impression 3D métal", pcb: "carte", molded_rubber: "moulage", purchased: "acheté" };
+/** The family a material is filed under in a menu : its name, not its grade. */
+export function materialFamily(m) { const f = m && FAMILIES.find(([re]) => re.test(m.name)); return f ? f[1] : m ? m.name.split(/[\s(]/)[0] : ""; }
+/** Its processes in a few words, for the parentheses of a menu : « usinage, laser ». */
+export function processWords(m) { return [...new Set(((m && m.processes) || []).map((k) => PROC_WORD[k] || (PROCESSES[k] ? PROCESSES[k].fr : k)))].join(", "); }
+/** Its name as one reads it in a list : a note in parentheses that names a process goes (the processes come after, from the
+    library) ; any other note — a temper, a grade, a CTI — stays, after a dot. */
+export const materialShort = (m) => (m ? m.name.replace(/\s*\(([^)]*)\)\s*$/, (all, note) => (/extrusion|sheet|MJF|SLS|FDM|SLA|fonderie|impression 3D/i.test(note) ? "" : ` · ${note}`)) : "");
+/** The label of a material in a menu : « Aluminium 6061-T6 (usinage, laser) ». */
+export const materialLabel = (m) => { const w = processWords(m); return `${materialShort(m)}${w ? ` (${w})` : ""}`; };
+/** A menu of materials, filed by name : [{ family, list: [material] }], the families in alphabetical order and, in a family, the grades too.
+    keep(m) : which materials the menu offers (all by default). */
+export function materialMenu(keep = () => true) {
+  const by = new Map(), fr = (a, b) => a.localeCompare(b, "fr", { numeric: true });
+  for (const m of MATERIALS) if (keep(m)) { const f = materialFamily(m); if (!by.has(f)) by.set(f, []); by.get(f).push(m); }
+  return [...by.entries()].sort((a, b) => fr(a[0], b[0])).map(([family, list]) => ({ family, list: list.sort((a, b) => fr(materialShort(a), materialShort(b))) }));
+}
 export function hexToRgb(hex) {
   const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex || "");
   return m ? [parseInt(m[1], 16) / 255, parseInt(m[2], 16) / 255, parseInt(m[3], 16) / 255] : [0.66, 0.69, 0.72];

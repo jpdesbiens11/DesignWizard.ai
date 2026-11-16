@@ -103,10 +103,12 @@ export const INTERFACE_TYPES = {
   },
   bond: {
     label: "Bonded joint", fr: "Joint collé",
-    doc: "Collage entre deux plages planes de w × h. A = plage lisse ; B = plage qui porte les plots de calage : ils tiennent l'épaisseur du film de colle (« gap », mm). « adhesive » (epoxy, acrylic, polyurethane, cyanoacrylate, silicone, tape), « prep » (degrease, abrade, primer, plasma) et « cure » (texte libre) décrivent le procédé ; la colle entre dans la nomenclature.",
-    params: { w: 30, h: 12, gap: 0.2, adhesive: "epoxy", prep: "abrade", cure: "" }, optsA: {}, optsB: { pips: true },
-    compile(side, p, o) {                                       // the gap is built in : pips of the height of the bond line, the mating plane on their tops
-      if (side !== "B" || o.pips === false || !(p.gap > 0) || p.adhesive === "tape") return [];
+    doc: "Collage entre deux plages planes de w × h. A = plage lisse ; B = plage qui tient l'épaisseur du film de colle (« gap », mm) : avec l'option « well », un logement de colle de w × h creusé de « gap », entouré d'une lèvre d'appui de « lip » mm (3 mm et plus) sur laquelle l'autre pièce repose sans écraser la colle ; sinon, des plots de calage de la hauteur du film (« pips »). « adhesive » (epoxy, acrylic, polyurethane, cyanoacrylate, silicone, tape), « prep » (degrease, abrade, primer, plasma) et « cure » (texte libre) décrivent le procédé ; la colle entre dans la nomenclature.",
+    params: { w: 30, h: 12, gap: 0.2, lip: 3, adhesive: "epoxy", prep: "abrade", cure: "" }, optsA: {}, optsB: { pips: true },
+    compile(side, p, o) {                                       // the gap is built in : a well of the depth of the bond line inside a lip the mate rests on — or pips of that height, the mating plane on their tops
+      if (side !== "B" || !(p.gap > 0) || p.adhesive === "tape") return [];
+      if (o.well) return [{ op: "pocket", rectUV: [p.w, p.h], r: round2(Math.min(1, Math.min(p.w, p.h) / 4)), depth: p.gap }];
+      if (o.pips === false) return [];
       const d = round2(Math.max(1.2, Math.min(3, Math.min(p.w, p.h) / 4))), ex = round2(p.w / 2 - d), ey = round2(p.h / 2 - d);
       const pts = ex >= d && ey >= d ? [[-ex, -ey], [ex, -ey], [ex, ey], [-ex, ey]] : ex >= d ? [[-ex, 0], [0, 0], [ex, 0]] : ey >= d ? [[0, -ey], [0, 0], [0, ey]] : [[0, 0]];
       return [{ op: "boss", uv: pts, d, h: p.gap, lift: p.gap }];

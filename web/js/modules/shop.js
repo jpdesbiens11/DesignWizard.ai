@@ -41,7 +41,7 @@ const SHAPES = [
   { type: "bolt_pattern", side: "A", icon: "bolt", name: "Fixation vissée", title: "Je me visse sur…", text: "Trous de passage : mes vis entrent dans le voisin." },
   { type: "bolt_pattern", side: "B", icon: "tap", name: "Fixation taraudée", title: "On se visse sur moi", text: "Taraudages ou inserts : je reçois les vis du voisin." },
   { type: "planar", side: "A", icon: "layers", name: "Appui plan", title: "Je m'appuie sur…", text: "Deux faces planes en contact : appui, joint, pad thermique." },
-  { type: "bond", side: "B", icon: "layers", name: "Plage de collage", title: "Je me colle sur…", text: "Un joint collé : plage, épaisseur du film tenue par des plots, colle, préparation." },
+  { type: "bond", side: "B", icon: "layers", name: "Plage de collage", title: "Je me colle sur…", text: "Un joint collé : logement de colle entouré d'une lèvre d'appui, colle, préparation.", opts: { well: true } },
   { type: "fit", side: "A", icon: "lathe", name: "Portée d'ajustement", title: "Je m'emmanche dans…", text: "Une portée cylindrique centrée dans un alésage." },
   { type: "fit", side: "B", icon: "drill", name: "Alésage d'ajustement", title: "Je reçois un arbre", text: "Un alésage ajusté qui centre le voisin." },
   { type: "cutout", side: "A", icon: "section", name: "Ouverture", title: "Je laisse passer…", text: "Une ouverture : connecteur, câble, afficheur, évent." },
@@ -66,7 +66,8 @@ function render(main) {
   const rebuild = debounce(() => build(), 220);
   /* what the brief lacks or gets wrong, said as it is typed : next to the proposal, and on the field that waits */
   const guideHost = el("div");
-  const advise = () => { const list = briefIssues(brief, p), to = (x) => nudge(page.querySelector(`[data-brief="${x.field}"]`) || guideHost); clear(guideHost); const g = guideBox(list, { go: to }); if (g) guideHost.append(g);
+  let proposed = [];                                           // the interfaces the companion added of its own in the last proposal
+  const advise = () => { const list = briefIssues(brief, p, { proposed }), to = (x) => nudge(page.querySelector(`[data-brief="${x.field}"]`) || guideHost); clear(guideHost); const g = guideBox(list, { go: to }); if (g) guideHost.append(g);
     for (const n of page.querySelectorAll("[data-brief]")) n.classList.toggle("need", list.some((x) => x.level === "todo" && x.field === n.dataset.brief));
     setGuide(list.map((x) => ({ ...x, go: () => to(x) }))); return guideCount(list).blocking; };
   const propose = () => { token++; create.disabled = true; advise(); rebuild(); };   // the shown part is stale from the first keystroke: no creation until it is rebuilt
@@ -96,7 +97,7 @@ function render(main) {
     el("div", { class: "form-row" }, text("loads", "Efforts et charges", "Ex. : 20 N en bout, vibrations"), text("environment", "Milieu", "Ex. : −20 à 60 °C, intérieur, 400 V à proximité"))));
 
   /* 2 — interfaces */
-  const neigh = el("div", { class: "atelier-neigh" }), list = el("div"), gallery = el("div", { class: "shape-grid" });
+  const neigh = el("div", { class: "atelier-neigh" }), ownBox = el("div", { "data-brief": "proposed" }), list = el("div"), gallery = el("div", { class: "shape-grid" });
   for (const part of p.parts) {
     const cb = el("input", { type: "checkbox", checked: brief.neighbours.includes(part.id), onChange: () => { brief.neighbours = cb.checked ? [...brief.neighbours, part.id] : brief.neighbours.filter((x) => x !== part.id); syncNeighbours(); drawIfaces(); drawStock(); propose(); } });
     neigh.append(el("label", { class: "check" }, cb, el("span", null, part.name || part.id, " ", el("small", { class: "muted" }, part.id))));
@@ -104,7 +105,7 @@ function render(main) {
   for (const s of SHAPES) gallery.append(el("button", { class: "shape-card", type: "button", onClick: () => addShape(s) }, icon(s.icon), el("b", null, s.title), el("small", null, s.text)));
   left.append(el("section", { class: "card taped" }, el("h2", null, el("span", { class: "step-no" }, "2"), "Ses interfaces"),
     el("p", { class: "muted small" }, "La pièce n'existe que par ce qu'elle relie. Cochez ses voisines déjà dans le projet — leurs interfaces libres deviennent les siennes — puis ajoutez les autres par leur forme."),
-    p.parts.length ? neigh : el("p", { class: "muted small" }, "Aucune pièce dans le projet : celle-ci définira les premières interfaces."), list,
+    p.parts.length ? neigh : el("p", { class: "muted small" }, "Aucune pièce dans le projet : celle-ci définira les premières interfaces."), ownBox, list,
     el("h3", null, "Ajouter une interface par sa forme"), gallery));
 
   /* 3 — material and raw stock */
@@ -119,8 +120,8 @@ function render(main) {
     for (const g of groups) {
       const has = g.list.some((m) => m.id === brief.material), d = el("details", { class: "mat-group", style: `--dom:${g.color}`, open: has || open.has(g.cls), onToggle: () => { if (d.open) open.add(g.cls); else open.delete(g.cls); } },
         el("summary", null, icon(g.icon), el("b", null, g.label), el("small", null, form ? `${g.possible} / ${g.list.length} possibles` : String(g.list.length))),
-        el("div", { class: "mat-list" }, g.list.map((m) => el("button", { class: "mat-chip" + (m.id === brief.material ? " on" : "") + (m.ok ? "" : " off"), type: "button", "data-mat": m.id, disabled: !m.ok && m.id !== brief.material, "aria-pressed": m.id === brief.material ? "true" : "false",
-          "data-tip": m.ok ? null : `${m.name} ${m.why} — « Libérer » pour la choisir quand même`, onClick: () => { brief.material = m.id; drawIfaces(); drawStock(); propose(); } }, el("i", { class: "mat-dot", style: `background:${m.color}` }), el("span", null, m.name)))));
+        g.families.map((f) => el("div", { class: "mat-family" }, el("h4", null, f.family), el("div", { class: "mat-list" }, f.list.map((m) => el("button", { class: "mat-chip" + (m.id === brief.material ? " on" : "") + (m.ok ? "" : " off"), type: "button", "data-mat": m.id, disabled: !m.ok && m.id !== brief.material, "aria-pressed": m.id === brief.material ? "true" : "false",
+          "data-tip": m.ok ? m.name : `${m.name} ${m.why} — « Libérer » pour la choisir quand même`, onClick: () => { brief.material = m.id; drawIfaces(); drawStock(); propose(); } }, el("i", { class: "mat-dot", style: `background:${m.color}` }), el("span", null, m.short, m.procs ? el("small", null, ` (${m.procs})`) : null)))))));
       matBox.append(d);
     }
   }
@@ -148,7 +149,7 @@ function render(main) {
   }
   function addShape(s, where = "+Z") {
     const t = INTERFACE_TYPES[s.type];
-    brief.interfaces.push({ uid: ++uid, type: s.type, side: s.side, name: s.name, partner: "", where, params: JSON.parse(JSON.stringify(t.params)) }); active = uid; flash = where;
+    brief.interfaces.push({ uid: ++uid, type: s.type, side: s.side, name: s.name, partner: "", where, params: JSON.parse(JSON.stringify(t.params)), ...(s.opts ? { opts: { ...s.opts } } : {}) }); active = uid; flash = where;
     if (s.type === "cutout") delete brief.interfaces.at(-1).params.fix;
     drawIfaces(); drawStock(); propose();
   }
@@ -163,7 +164,11 @@ function render(main) {
       else if (pat.type !== "single") row.append(numIn(pat, "nx", "En X", redraw), numIn(pat, "ny", "En Y", redraw), numIn(pat, "dx", "Entraxe X", redraw, 0.5), numIn(pat, "dy", "Entraxe Y", redraw, 0.5));
     } else if (it.type === "planar") row.append(numIn(q, "w", "Largeur", redraw), numIn(q, "h", "Hauteur", redraw));
     else if (it.type === "bond") { const a = ADHESIVES[q.adhesive] || ADHESIVES.epoxy, pickOf = (key, list) => el("select", { onChange: (e) => { q[key] = e.target.value; if (key === "adhesive") { const g = ADHESIVES[q.adhesive].gap; if (q.gap < g[0] || q.gap > g[1]) q.gap = g[0] <= 0.2 && g[1] >= 0.2 ? 0.2 : g[0]; drawIfaces(); } redraw(); } }, list.map(([k, l]) => el("option", { value: k, selected: k === q[key] }, l)));
-      row.append(numIn(q, "w", "Longueur de la plage", redraw, 0.5), numIn(q, "h", "Largeur", redraw, 0.5), field("Film de colle (mm)", el("input", { type: "number", value: q.gap, step: 0.05, min: 0.02, "data-tip": `Tenu par des plots de calage dans la pièce. Plage usuelle de cette colle : ${String(a.gap[0]).replace(".", ",")} à ${String(a.gap[1]).replace(".", ",")} mm`, onInput: (e) => { const v = parseFloat(e.target.value); if (v > 0) { q.gap = v; redraw(); } } })),
+      row.append(numIn(q, "w", "Longueur de la plage", redraw, 0.5), numIn(q, "h", "Largeur", redraw, 0.5), field("Film de colle (mm)", el("input", { type: "number", value: q.gap, step: 0.05, min: 0.02, "data-tip": `C'est la profondeur du logement de colle (0,2 à 0,4 mm d'usage), ou la hauteur des plots. Plage usuelle de cette colle : ${String(a.gap[0]).replace(".", ",")} à ${String(a.gap[1]).replace(".", ",")} mm`, onInput: (e) => { const v = parseFloat(e.target.value); if (v > 0) { q.gap = v; redraw(); } } })),
+        ...(it.side === "B" && q.adhesive !== "tape" ? [field("Le film est tenu par", el("select", { "data-tip": "Un logement de colle : une poche de la profondeur du film, entourée d'une lèvre sur laquelle l'autre pièce s'appuie sans écraser la colle. Ou des plots de calage de la hauteur du film.",
+          onChange: (e) => { it.opts = { ...(it.opts || {}) }; delete it.opts.well; delete it.opts.pips; if (e.target.value === "well") it.opts.well = true; else if (e.target.value === "none") it.opts.pips = false; drawIfaces(); redraw(); } },
+          [["well", "Un logement de colle"], ["pips", "Des plots de calage"], ["none", "Rien"]].map(([k, l]) => el("option", { value: k, selected: k === (it.opts && it.opts.well ? "well" : it.opts && it.opts.pips === false ? "none" : "pips") }, l)))),
+          ...(it.opts && it.opts.well ? [field("Lèvre d'appui (mm)", el("input", { type: "number", value: q.lip ?? 3, step: 0.5, min: 1, class: q.lip < 3 ? "bad" : null, "data-tip": "La bande pleine qui entoure le logement : 3 mm et plus, pour que la pièce qui s'appuie porte franchement", onInput: (e) => { const v = parseFloat(e.target.value); if (v > 0) { q.lip = v; e.target.classList.toggle("bad", v < 3); redraw(); } } }))] : [])] : []),
         field("Colle", pickOf("adhesive", Object.entries(ADHESIVES).map(([k, v]) => [k, v.fr]))), field("Préparation", pickOf("prep", Object.entries(BOND_PREPS).map(([k, v]) => [k, v.split(",")[0].split(" à ")[0]])))); }
     else if (it.type === "fit") row.append(numIn(q, "d", "Diamètre", redraw, 0.5), numIn(q, "length", "Longueur", redraw, 0.5));
     else if (it.type === "cutout") row.append(numIn(q, "w", "Largeur", redraw, 0.5), numIn(q, "h", "Hauteur", redraw, 0.5), numIn(q, "r", "Rayon", redraw, 0.5));
@@ -174,9 +179,21 @@ function render(main) {
     else if (it.type === "pins") row.append(numIn(q, "d", "Ø goupille", redraw, 0.5), numIn(q, "pitch", "Entraxe", redraw), numIn(q, "n", "Nombre", redraw));
     return row;
   }
+  /* what the companion adds of its own — the closure of a moulded housing, its joint plane — is shown where the interfaces are, to keep or to remove */
+  function drawOwn() {
+    clear(ownBox);
+    if (!proposed.length) return;
+    const keepAll = () => { for (const x of proposed) { const t = INTERFACE_TYPES[x.type]; brief.interfaces.push({ uid: ++uid, type: x.type, side: x.side, name: x.name, partner: "Couvercle", where: x.face || "+Z", params: JSON.parse(JSON.stringify(x.type === "planar" ? t.params : { ...t.params, ...(x.params || {}) })) }); }
+      proposed = []; drawOwn(); drawIfaces(); drawStock(); propose(); };
+    ownBox.append(el("div", { class: "iface-card proposed" }, el("div", { class: "iface-head" }, badge("proposé par le compagnon", "warn"), el("b", null, proposed.length > 1 ? `${proposed.length} interfaces que vous n'avez pas demandées` : "Une interface que vous n'avez pas demandée")),
+      el("ul", { class: "small" }, proposed.map((x) => el("li", null, el("b", null, x.name), ` — ${INTERFACE_TYPES[x.type].fr.toLowerCase()}, côté ${x.side}, sur ${x.face === "+Z" ? "le dessus" : WHERE[x.face] || x.face}${x.type === "bolt_pattern" && x.params ? ` (${x.params.screw})` : ""}`))),
+      el("p", { class: "muted small" }, "Une coque moulée se ferme : le compagnon lui donne de quoi recevoir un couvercle. Elles se voient sur la pièce proposée ; « Créer la pièce » attend votre réponse."),
+      el("div", { class: "form-actions", style: { justifyContent: "flex-start", margin: ".3rem 0 0" } }, btn(proposed.length > 1 ? "Garder les deux" : "Garder", keepAll, { small: true, primary: true, icon: "check", tip: "Elles deviennent des interfaces de la pièce, que vous pouvez régler comme les autres" }),
+        btn("Retirer", () => { brief.cover = false; brief.closure = undefined; proposed = []; drawOwn(); drawStock(); propose(); }, { small: true, icon: "cross", tip: "La pièce n'a pas de couvercle : fermeture « Aucune »" }))));
+  }
   function drawIfaces() {
     clear(list);
-    if (!brief.interfaces.length) list.append(el("p", { class: "atelier-hint" }, icon("info"), " Ajoutez une première interface : la pièce se dessine autour."));
+    if (!brief.interfaces.length && !proposed.length) list.append(el("p", { class: "atelier-hint" }, icon("info"), " Ajoutez une première interface : la pièce se dessine autour."));
     for (const it of brief.interfaces) {
       const t = INTERFACE_TYPES[it.type], where = el("select", { "aria-label": "Face de la pièce", "data-tip": "La face s'allume sur la pièce ; vous pouvez aussi la cliquer dans la vue", onFocus: () => mark(it.where, LIT.named, "named"), onChange: (e) => put(it, e.target.value) }, Object.entries(WHERE).map(([k, l]) => el("option", { value: k, selected: k === it.where }, `sur le ${l}`.replace("le avant", "l'avant").replace("le arrière", "l'arrière").replace("le gauche", "la gauche").replace("le droite", "la droite"))));
       const head = el("div", { class: "iface-head" }, badge(`côté ${it.side}`, it.side === "B" ? "b" : "a"), el("b", null, t.fr), where,
@@ -256,6 +273,7 @@ function render(main) {
       const built = await kernel.build(res.spec, null, "~shop");
       if (mine !== token) return;
       current = { ...res, built }; setContext({ spec: res.spec, built });      // what the code view and the AI round trip read
+      if (JSON.stringify(proposed.map((x) => x.id + x.name)) !== JSON.stringify((res.proposed || []).map((x) => x.id + x.name))) { const none = !proposed.length || !(res.proposed || []).length; proposed = res.proposed || []; drawOwn(); if (none && !brief.interfaces.length) drawIfaces(); }
       if (!viewer) { viewer = new Viewer(holder, { onHover, onPick, onMenu }); holder._viewer = viewer; }      // exposed for whoever inspects the page (tests, the console)
       viewer.clear(); showBuilt(viewer, built, { prefix: "at" });
       for (const it of built.interfaces) { viewer.addFrame(it.frame, it.side === "A" ? "#9b7bff" : "#2ec4b6"); viewer.addLabel(it.frame.o, `${it.name}`, "label", "iface"); }

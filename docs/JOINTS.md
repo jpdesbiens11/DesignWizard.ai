@@ -36,7 +36,8 @@ Type d'interface `bond` (« Je me colle sur… » dans l'Atelier) : deux plages 
 
 | Paramètre | Sens |
 |---|---|
-| `gap` | épaisseur du film de colle, en mm — **tenue par construction** : le côté B porte des plots de calage de cette hauteur (quatre aux coins, trois en ligne sur une plage étroite), et le plan d'accouplement est sur leurs sommets |
+| `gap` | épaisseur du film de colle, en mm — **tenue par construction**, de l'une des deux façons ci-dessous |
+| `lip` | largeur de la lèvre d'appui qui entoure le logement de colle, en mm (3 par défaut) |
 | `adhesive` | `epoxy`, `acrylic`, `polyurethane`, `cyanoacrylate`, `silicone`, `tape` — des familles génériques, sans marque |
 | `prep` | `degrease`, `abrade`, `primer`, `plasma` |
 | `cure` | texte libre ; à défaut, celui de la famille de colle |
@@ -45,12 +46,35 @@ Chaque famille porte sa plage usuelle de film, une tenue typique au cisaillement
 (`ADHESIVES` dans `web/js/cad/interfaces.js`) : des ordres de grandeur pour dimensionner, la fiche du produit acheté
 fait foi.
 
+### Ce qui tient le film : un logement de colle, ou des plots
+
+Le côté B porte la géométrie. Deux options (`opts`) :
+
+- **`well: true` — le logement de colle** (ce que propose l'Atelier pour un nouveau joint) : une poche de `w × h`,
+  profonde de `gap`, entourée d'une **lèvre d'appui** de `lip` mm. L'autre pièce repose sur la lèvre : elle n'écrase pas
+  la colle, qui garde son épaisseur et reste contenue. Le plan d'accouplement est la face elle-même. La plage prend
+  donc `w + 2 × lip` par `h + 2 × lip` sur la pièce.
+- **`pips` — des plots de calage** de la hauteur du film (quatre aux coins, trois en ligne sur une plage étroite) : le
+  plan d'accouplement est sur leurs sommets. C'est ce que gardent les pièces écrites avant le logement de colle.
+
+Un ruban double face n'a ni l'un ni l'autre : il est sa propre épaisseur.
+
+**Valeurs d'usage, non recoupées à une norme** : lèvre de 3 mm et plus, logement de 0,2 à 0,4 mm de profondeur —
+règle d'atelier donnée par JP. La santé du joint signale une lèvre de moins de 3 mm ; la profondeur est comparée à la
+plage usuelle de la famille de colle, la fiche du produit acheté fait foi.
+
+**Le joint suit la face.** Dans un bloc ou une plaque, la poche se creuse dans la face. Sur une **coque moulée**, le
+dessus est ouvert : une plage de collage « sur le dessus » monte sur un **massif adossé au grand côté avant**, jusqu'au
+plan de joint, évidé par dessous pour ne pas faire de masse (comme les bossages) ; la coque s'agrandit de la profondeur
+du massif pour que le volume demandé reste libre. Au fond de la coque (« à l'intérieur ») ou sur une paroi, la poche se
+creuse dans la paroi.
+
 Ce que l'outil en tire :
 
-- **la géométrie** : les plots dans la pièce du côté B ; un ruban double face n'en a pas, il est sa propre épaisseur ;
+- **la géométrie** : le logement de colle et sa lèvre, ou les plots, dans la pièce du côté B ;
 - **l'accouplement** : la pièce collée se pose à `gap` de l'autre — vérifié dans l'assemblage résolu ;
 - **la nomenclature** : le volume de colle, film plus 30 % de bourrelet, en mL (un ruban : en cm²) ;
-- **la gamme** : préparer les plages, déposer le cordon, appuyer jusqu'en butée sur les plots, maintenir, polymériser,
+- **la gamme** : préparer les plages, déposer le cordon, appuyer jusqu'en butée sur la lèvre d'appui (ou sur les plots), maintenir, polymériser,
   chacun avec son contrôle ; un film hors de la plage de la colle devient une question à l'atelier.
 
 ## La santé des accouplements

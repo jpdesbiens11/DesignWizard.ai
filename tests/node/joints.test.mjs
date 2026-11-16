@@ -64,3 +64,26 @@ test("an external interface is the contract with the outside : it is listed, and
   const s = synthesize({ name: "Capot collé", material: "AL6061-T6", form: "plate", interfaces: [{ type: "bond", side: "B", name: "Plage de collage", where: "-Z", params: { w: 30, h: 12, gap: 0.2, adhesive: "acrylic", prep: "degrease" } }, { type: "bolt_pattern", side: "A", name: "Fixation au mur", where: "+Z", external: true, params: { screw: "M4", pattern: { type: "rect", nx: 2, ny: 1, dx: 40, dy: 0 } } }] }, "S1").spec;
   assert.equal(s.interfaces.find((i) => i.type === "bolt_pattern").external, true); assert.equal(s.interfaces.find((i) => i.type === "bond").external, undefined); const b = buildPart(K, s); assert.equal(b.log.filter((l) => l.level === "error").length, 0); assert.ok(b.facts.bosses.length >= 1, "its pips are in the part");
 });
+
+test("a glue well : a pocket of the depth of the bond line inside a lip the mate rests on — and matter under it on a moulded shell", async () => {
+  const K = await kernel(), T = INTERFACE_TYPES.bond;
+  assert.equal(T.params.lip, 3); const well = T.compile("B", bondP, { well: true });
+  assert.deepEqual(well, [{ op: "pocket", rectUV: [40, 16], r: 1, depth: 0.2 }], "no lift : the mating plane is the lip itself"); assert.deepEqual(T.compile("A", bondP, { well: true }), []); assert.deepEqual(T.compile("B", { ...bondP, adhesive: "tape" }, { well: true }), [], "a tape is its own thickness");
+  assert.equal(T.compile("B", bondP, { pips: true })[0].op, "boss", "the pips are still there for who asks for them"); assert.deepEqual(T.compile("B", bondP, { pips: false }), []); assert.equal(interfaceSignature({ type: "bond", params: { ...bondP, lip: 5 } }), interfaceSignature({ type: "bond", params: bondP }), "the lip is the business of the B side only");
+  const glue = (extra = {}) => ({ type: "bond", side: "B", name: "Plage de collage", where: "+Z", params: { ...T.params }, opts: { well: true }, ...extra });
+  // in a block : the land grows by its lip, the pocket is cut in the face, the frame stays on the face
+  const blk = synthesize({ name: "Bloc", quantity: 1, material: "AL6061-T6", form: "block", interfaces: [glue()] }, "B-1"), bb = buildPart(K, blk.spec), pk = bb.facts.pockets.find((p) => p.iface === "IF1");
+  assert.equal(bb.log.filter((l) => l.level === "error").length, 0); assert.deepEqual([pk.depth, bb.facts.bosses.length], [0.2, 0]); assert.ok(Math.abs(bb.interfaces[0].frame.o[2] - bb.bbox[5]) < 1e-6, "the mate rests on the lip, at the level of the face");
+  assert.ok(bb.bbox[3] >= 36 && bb.bbox[4] >= 18, "30 × 12 and 3 mm of lip all round"); assert.match(blk.decisions.join("\n"), /lèvre d'appui de 3 mm/); assert.deepEqual(blk.proposed, []);
+  // on a moulded shell the top is open : the land stands on a block against a long wall, cored from underneath
+  const shell = synthesize({ name: "Carter", quantity: 10, material: "AL-A356-T6", form: "molded", interfaces: [glue()], envelope: { L: 100, W: 60, H: 25 } }, "S-1"), sb = buildPart(K, shell.spec), f = (id) => shell.spec.features.find((x) => x.id === id);
+  assert.equal(sb.log.filter((l) => l.level === "error").length, 0); assert.deepEqual([f("massif1").op, f("massif1").rect[2], f("massif1").h, f("evm1").op, f("evm1").face], ["pad", 36, "H - wall", "pocket", "-Z"]);
+  const at = sb.interfaces.find((i) => i.type === "bond").frame.o, wall = shell.spec.params.wall.value; assert.ok(Math.abs(at[2] - sb.bbox[5]) < 1e-6 && Math.abs(at[1] - (wall + 9)) < 1e-6, "the land is at the joint plane, against the front wall — not in the air over the cavity");
+  assert.ok(sb.facts.pockets.some((p) => p.iface === "IF1" && p.depth === 0.2)); assert.match(shell.decisions.join("\n"), /monte sur un massif de 36 × 18 mm adossé au grand côté avant, jusqu'au plan de joint, évidé par dessous/);
+  const bare = synthesize({ name: "Carter", quantity: 10, material: "AL-A356-T6", form: "molded", interfaces: [], envelope: { L: 100, W: 60, H: 25 } }, "S-2"); assert.ok(sb.bbox[4] - buildPart(K, bare.spec).bbox[4] >= 18 - 1e-6, "the volume asked for stays free : the shell grows by the depth of the land");
+  // what the companion adds of its own is said, so that the Shop can show it among the interfaces
+  assert.deepEqual(bare.proposed.map((x) => [x.type, x.name, x.side, x.face]), [["bolt_pattern", "Fixation du couvercle", "B", "+Z"], ["planar", "Plan de joint", "B", "+Z"]]); assert.deepEqual(shell.proposed.map((x) => x.name), ["Fixation du couvercle", "Plan de joint"]);
+  assert.deepEqual(synthesize({ name: "Carter", quantity: 10, material: "AL-A356-T6", form: "molded", interfaces: [], envelope: { L: 100, W: 60, H: 25 }, cover: false }, "S-3").proposed, [], "no closure asked : nothing is added");
+  const { briefIssues } = await import("../../web/js/core/shop_check.js"), b = { name: "Carter", fn: "Loge la carte", quantity: 10, material: "AL-A356-T6", form: "molded", interfaces: [] };
+  assert.deepEqual(briefIssues(b, null, { proposed: bare.proposed }).map((x) => [x.level, x.field]), [["todo", "proposed"]]); assert.match(briefIssues(b, null, { proposed: bare.proposed })[0].text, /ajoute de lui-même 2 interfaces que vous n'avez pas demandées \(« Fixation du couvercle », « Plan de joint »\) : gardez-les ou retirez-les/);
+});

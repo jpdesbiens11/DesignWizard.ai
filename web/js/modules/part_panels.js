@@ -6,7 +6,7 @@ import { store } from "../core/store.js";
 import { app } from "../core/app.js";
 import { interfaceDialog, nextIfaceId } from "../core/part_edit.js";
 import { INTERFACE_TYPES, interfaceType } from "../cad/interfaces.js";
-import { MATERIALS, PROCESSES, materialOrDefault } from "../cad/materials.js";
+import { PROCESSES, materialOrDefault, materialMenu, materialLabel } from "../cad/materials.js";
 import { validateSpec } from "../cad/build.js";
 import { applyFix } from "../analysis/dfx_api.js";
 import { toDwiz } from "../core/dwiz.js";
@@ -104,7 +104,7 @@ export function sheetPanel(body, { st, id }) {
   const text = (key, label, hint) => field(label, el("input", { type: "text", value: s[key] || "", onChange: set(key, label) }), hint);
   const mat = materialOrDefault(s.material);
   body.append(text("name", "Nom"), field("Numéro de pièce", el("input", { type: "text", value: s.id, disabled: true })), text("function", "Fonction", "Une phrase : à quoi sert la pièce dans le produit."),
-    field("Matériau", el("select", { onChange: set("material", "matériau") }, el("option", { value: "" }, "— à définir —"), MATERIALS.map((m) => el("option", { value: m.id, selected: m.id === s.material }, m.name)))),
+    field("Matériau", el("select", { onChange: set("material", "matériau") }, el("option", { value: "" }, "— à définir —"), materialMenu().map((f) => el("optgroup", { label: f.family }, f.list.map((m) => el("option", { value: m.id, selected: m.id === s.material }, materialLabel(m))))))),
     field("Procédé", el("select", { onChange: set("process", "procédé") }, el("option", { value: "" }, "— à définir —"), Object.entries(PROCESSES).map(([k, p]) => el("option", { value: k, selected: k === s.process }, p.fr))),
       s.material && s.process && mat.processes && mat.processes.length && !mat.processes.includes(s.process) ? "Ce matériau n'est pas courant pour ce procédé." : null),
     text("finish", "Finition"), text("revision", "Révision"));

@@ -10,7 +10,7 @@ import { store } from "../core/store.js";
 import { kernel } from "../cad/client.js";
 import { createViewport, showBuilt } from "../core/viewport.js";
 import { importPart } from "../core/importer.js";
-import { MATERIALS } from "../cad/materials.js";
+import { materialMenu, materialLabel } from "../cad/materials.js";
 import { THREADS } from "../cad/standards.js";
 import { PLATINGS, CONTACT_BASES, CONTACT_TESTS, contactEstimate } from "../cad/interfaces_elec.js";
 import { blankBusbar, busbarPart, busbarChecks, legsOf, locate, addContact, addTerminal, fit, FINISHES, INSULATIONS } from "../core/busbar.js";
@@ -108,7 +108,7 @@ function render(main, args) {
     const scroll = el("div", { class: "side-scroll" }); left.append(scroll);
     scroll.append(el("div", { class: "side-section" }, bars.map((p) => el("a", { class: "nav-item" + (p.id === id ? " active" : ""), href: `#/busbar/${encodeURIComponent(p.id)}` }, icon("power"), el("span", { class: "grow" }, p.name || p.id), el("small", null, `${p.id} · ${(p.elec || {}).net || ""}`)))));
     scroll.append(el("div", { class: "side-section" }, el("h3", null, "La bande"), field("Nom", el("input", { type: "text", value: d.name, onChange: (e) => change("Busbar : nom", (x) => { x.name = e.target.value; }) })),
-      el("div", { class: "form-row" }, field("Matière", el("select", { onChange: (e) => change("Busbar : matière", (x) => { x.material = e.target.value; }) }, MATERIALS.filter((m) => m.conductive && m.cls === "metal").map((m) => el("option", { value: m.id, selected: m.id === d.material }, m.name)))),
+      el("div", { class: "form-row" }, field("Matière", el("select", { onChange: (e) => change("Busbar : matière", (x) => { x.material = e.target.value; }) }, materialMenu((m) => m.conductive && m.cls === "metal").map((f) => el("optgroup", { label: f.family }, f.list.map((m) => el("option", { value: m.id, selected: m.id === d.material }, materialLabel(m))))))),
         field("Revêtement", el("select", { onChange: (e) => change("Busbar : revêtement", (x) => { x.finish = e.target.value; }) }, Object.entries(FINISHES).map(([k, l]) => el("option", { value: k, selected: k === (d.finish || "none") }, l))))),
       el("div", { class: "form-row" }, field("Potentiel", el("input", { type: "text", value: d.net, onChange: (e) => change("Busbar : potentiel", (x) => { x.net = e.target.value.trim() || "HV+"; }) }), "HV+, HV−, 48V, RS485-A…"), num("I", "Courant (A)", 1, 0)),
       el("div", { class: "form-row" }, num("W", "Largeur"), num("t", "Épaisseur", 0.1), d.legs.length > 1 ? num("r", "Rayon de pli", 0.5) : null),

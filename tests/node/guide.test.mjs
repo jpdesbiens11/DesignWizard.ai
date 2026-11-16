@@ -82,7 +82,21 @@ test("the Shop : a stock form chosen by hand greys the materials its process can
   const free = materialChoices(""), printed = materialChoices("print"), by = (g, cls) => g.find((x) => x.cls === cls);
   assert.deepEqual(free.map((g) => g.cls), MATERIAL_CLASSES.map((g) => g.cls)); assert.ok(free.every((g) => g.possible === g.list.length && g.list.length > 0 && /^#[0-9a-f]{6}$/.test(g.color) && g.icon)); assert.equal(new Set(MATERIAL_CLASSES.map((g) => g.color)).size, 4);
   assert.ok(!free.some((g) => g.list.some((m) => m.id === "EPOXY" || m.id === "GENERIC-COMPONENT")), "what is bought ready-made is not a choice of the Shop"); assert.ok(free.every((g) => g.list.every((m) => /^#[0-9a-f]{6}$/.test(m.color))), "every material has its swatch");
-  assert.deepEqual(by(printed, "plastic").list.filter((m) => m.ok).map((m) => m.id), ["PC", "ABS", "PEI-9085", "PEKK", "PA12", "PA11", "RESIN-SLA"]); assert.equal(by(printed, "sheet").possible, 0); assert.equal(by(printed, "pcb").possible, 0);
-  assert.deepEqual(by(printed, "metal").list.filter((m) => m.ok).map((m) => m.id), ["SS-316L", "SS-17-4PH", "ALSI10MG", "TI-6AL-4V", "IN718", "IN625"]); assert.match(by(printed, "metal").list.find((m) => m.id === "CU-C110").why, /ne s'imprime pas/);
+  assert.deepEqual(by(printed, "plastic").list.filter((m) => m.ok).map((m) => m.id).sort(), ["ABS", "PA11", "PA12", "PC", "PEI-9085", "PEKK", "RESIN-SLA"]); assert.equal(by(printed, "sheet").possible, 0); assert.equal(by(printed, "pcb").possible, 0);
+  assert.deepEqual(by(printed, "metal").list.filter((m) => m.ok).map((m) => m.id).sort(), ["ALSI10MG", "IN625", "IN718", "SS-17-4PH", "SS-316L", "TI-6AL-4V"]); assert.match(by(printed, "metal").list.find((m) => m.id === "CU-C110").why, /ne s'imprime pas/);
   assert.equal(by(materialChoices("print", (id) => id === "CU-C110"), "metal").list.find((m) => m.id === "CU-C110").ok, true, "a material the companion itself would put in this form is never greyed");
+});
+
+test("a menu of materials is filed by name, and each material keeps its processes in parentheses", async () => {
+  const { MATERIALS, materialMenu, materialFamily, materialLabel, materialShort, processWords, material } = await import("../../web/js/cad/materials.js");
+  const menu = materialMenu(), fams = menu.map((f) => f.family), of = (name) => menu.find((f) => f.family === name).list.map((m) => m.id);
+  assert.deepEqual(fams, [...fams].sort((a, b) => a.localeCompare(b, "fr", { numeric: true })), "the families in alphabetical order"); assert.equal(menu.reduce((n, f) => n + f.list.length, 0), MATERIALS.length, "every material is somewhere, once");
+  assert.deepEqual(of("Aluminium"), ["AL5052-H32", "AL6061-T6", "AL6063-T5", "AL-A356-T6", "AL-A380", "ALSI10MG"], "every aluminium together, whatever its process"); assert.deepEqual(of("Inox"), ["SS-17-4PH", "SS-316L", "SS-304"], "an English name is filed with its French family");
+  assert.deepEqual([materialFamily(material("STEEL-1018")), materialFamily(material("CU-C110")), materialFamily(material("BRASS-360")), materialFamily(material("IN718")), materialFamily(material("PA12")), materialFamily(material("PC-ABS")), materialFamily(material("PEKK"))], ["Acier", "Cuivre", "Laiton", "Nickel", "Polyamide (PA)", "Polycarbonate (PC)", "Hautes performances (PEEK, PEKK, PEI)"]);
+  assert.equal(materialLabel(material("AL6061-T6")), "Aluminium 6061-T6 (usinage, laser)"); assert.equal(materialLabel(material("AL6063-T5")), "Aluminium 6063-T5 (extrusion, usinage)", "the note that named a process gives way to the processes of the library");
+  assert.equal(materialLabel(material("PA12")), "PA12 (MJF / SLS)"); assert.equal(materialLabel(material("CU-C110")), "Copper C110 · ETP (tôlerie, laser, usinage)", "a note that is not a process stays"); assert.equal(materialShort(material("FR4-CTI600")), "FR4 PCB · high CTI 600");
+  assert.equal(new Set(MATERIALS.map(materialLabel)).size, MATERIALS.length, "no two materials read the same in a menu"); assert.equal(processWords(material("SS-304")), "tôlerie, usinage, laser", "milling and turning are one word"); assert.ok(MATERIALS.every((m) => materialFamily(m).length > 1));
+  assert.deepEqual(materialMenu((m) => m.conductive && m.cls === "metal").map((f) => f.family).slice(0, 3), ["Acier", "Aluminium", "Cuivre"]);
+  const { materialChoices } = await import("../../web/js/core/shop_check.js"), metals = materialChoices("")[0];
+  assert.deepEqual(metals.families.map((f) => f.family), ["Acier", "Aluminium", "Cuivre", "Inox", "Laiton", "Nickel", "Titane", "Zinc"]); assert.deepEqual(metals.list.map((m) => m.id), metals.families.flatMap((f) => f.list.map((m) => m.id))); assert.equal(metals.list.find((m) => m.id === "AL6061-T6").procs, "usinage, laser");
 });

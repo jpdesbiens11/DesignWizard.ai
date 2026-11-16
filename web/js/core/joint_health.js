@@ -43,7 +43,8 @@ export function jointHealth(asm, built, specs = {}, sol = null, clashes = []) {
       } else if (A.type === "bond") {
         const g = ADHESIVES[p.adhesive || "epoxy"];
         if (g && (p.gap < g.gap[0] - 1e-9 || p.gap > g.gap[1] + 1e-9)) say("check", `Film de colle de ${fr(p.gap)} mm hors de la plage de cette colle (${fr(g.gap[0])} à ${fr(g.gap[1])} mm).`);
-        if (o.pips === false && p.adhesive !== "tape") say("check", "Aucun plot de calage : l'épaisseur du film n'est pas tenue par la pièce.");
+        if (!o.well && o.pips === false && p.adhesive !== "tape") say("check", "Ni logement de colle ni plot de calage : l'épaisseur du film n'est pas tenue par la pièce, et la pièce qui s'appuie écrase la colle.");
+        if (o.well && p.adhesive !== "tape" && !(Number(p.lip ?? 3) >= 3 - 1e-9)) say("check", `Lèvre d'appui de ${fr(Number(p.lip) || 0)} mm autour du logement de colle : 3 mm et plus pour que la pièce qui s'appuie porte franchement.`);
       } else if (A.type === "contact" || A.type === "weld") {
         for (const id of [ia.part, ib.part]) { const mat = material(specs[id] && specs[id].material); if (mat && !mat.conductive) say("broken", `${id} est en ${mat.name} : un joint électrique relie deux conducteurs.`); }
         for (const t of (A.type === "contact" ? contactEstimate(A.params || {}) : weldEstimate(A.params || {})).notes) say("check", t);

@@ -38,7 +38,11 @@ test("a rail wants its clearance and its tongue inside ; a bond wants its film i
   assert.match(one(asmOf([M({ flip: true })]), built(0.05)).notes[0], /risque de coincer/); assert.match(one(asmOf([M({ flip: true })]), built(0.8)).notes[0], /flotte/);
   const bond = (side, gap, opts) => ({ id: "IF1", type: "bond", name: "Collage", key: "b", side, params: { w: 40, h: 16, gap, adhesive: "epoxy", prep: "abrade" }, ...(opts ? { opts } : {}) });
   const glued = (gap, opts) => ({ P1: { interfaces: [bond("A", gap)] }, P2: { interfaces: [bond("B", gap, opts)] } });
-  assert.equal(one(asmOf([M()]), glued(0.2)).state, "ok"); assert.match(one(asmOf([M()]), glued(3)).notes[0], /hors de la plage/); assert.match(one(asmOf([M()]), glued(0.2, { pips: false })).notes[0], /plot de calage/);
+  assert.equal(one(asmOf([M()]), glued(0.2)).state, "ok"); assert.match(one(asmOf([M()]), glued(3)).notes[0], /hors de la plage/); assert.match(one(asmOf([M()]), glued(0.2, { pips: false })).notes[0], /Ni logement de colle ni plot de calage/);
+  // a glue well holds the film : its lip is what the mate rests on, 3 mm and more
+  assert.equal(one(asmOf([M()]), glued(0.2, { well: true })).state, "ok"); assert.equal(one(asmOf([M()]), glued(0.2, { well: true, pips: false })).state, "ok", "the well is enough");
+  const narrow = { P1: { interfaces: [bond("A", 0.2)] }, P2: { interfaces: [{ ...bond("B", 0.2, { well: true }), params: { w: 40, h: 16, gap: 0.2, lip: 2, adhesive: "epoxy", prep: "abrade" } }] } };
+  assert.match(one(asmOf([M()]), narrow).notes[0], /Lèvre d'appui de 2 mm autour du logement de colle : 3 mm et plus/);
 });
 
 test("the assembly as a whole : joints counted, internal interfaces without a twin and loose parts make it « to check », and the register carries the health", () => {

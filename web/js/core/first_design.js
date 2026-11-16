@@ -38,7 +38,7 @@ const HOW = [
 ];
 const DESIGN = [
   "Les INTERFACES d'abord. Deux pièces qui se touchent partagent une interface : même \"type\", même \"key\", mêmes \"params\" ; \"side\": \"A\" sur l'une, \"B\" sur l'autre. C'est ce qui permet à l'assemblage de s'accoupler seul : une clé qui n'apparaît que sur une pièce est une interface vers l'extérieur du produit.",
-  "Une interface qui regarde l'extérieur du produit (châssis du client, mur, câble) porte \"external\": true. Un collage est une interface de type \"bond\" (plage w × h, film \"gap\", \"adhesive\", \"prep\") : la plateforme y met les plots de calage et compte la colle.",
+  "Une interface qui regarde l'extérieur du produit (châssis du client, mur, câble) porte \"external\": true. Un collage est une interface de type \"bond\" (plage w × h, film \"gap\", \"adhesive\", \"prep\" ; côté B : \"opts\": {\"well\": true} creuse un logement de colle de la profondeur du film, entouré d'une lèvre d'appui \"lip\" de 3 mm et plus) : la plateforme y met les plots de calage et compte la colle.",
   "Chaque cote utile est un paramètre nommé (\"params\"), jamais un nombre répété. Les repères sont courts et en majuscules, avec un préfixe commun au produit (ex. CAP-BOITIER, CAP-CARTE).",
   "Reste sobre pour un premier jet : 3 à 12 pièces conçues. Une pièce achetée est une pièce de \"family\": \"purchased\" réduite à son enveloppe et à ses interfaces.",
   "Chaque pièce dit sa \"function\" en une phrase, sa matière, son procédé et sa matière première (\"stock\") : une plaque, une tôle, un rond du commerce, ou \"molded\" pour une pièce moulée.",

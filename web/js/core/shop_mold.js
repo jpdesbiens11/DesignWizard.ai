@@ -41,7 +41,9 @@ export function molded(brief, items, log) {
   const boards = inside.filter((it) => it.type === "bolt_pattern"), so = boards.length ? r1(brief.standoff || 6) : 0;
   /* the cavity : what the designer asks to contain, and at least what the inside interfaces span */
   const span = (list, k) => Math.max(0, ...list.map((it) => it.fp[k] + 2 * Math.max(it.fp.edge, 4)));
-  const Lin = Math.max(env.L || 0, span(inside, "w"), span(under, "w"), 30), Win = Math.max(env.W || 0, span(inside, "h"), span(under, "h"), 20), Hin = Math.max(env.H || 0, so + (boards.length ? 12 : 0), ...sides.map((it) => it.fp.h + 2 * 4 + so), 10);
+  /* a bonded joint of the rim needs matter under it : the open top of a shell has none, so each land stands on a block against a long wall */
+  const lands = rim.filter((it) => it.type === "bond"), landRow = lands.reduce((s, it) => s + it.fp.w, 0) + 6 * Math.max(0, lands.length - 1), landDeep = Math.max(0, ...lands.map((it) => it.fp.h));
+  const Lin = Math.max(env.L || 0, span(inside, "w"), span(under, "w"), lands.length ? landRow + 36 : 0, 30), Win = Math.max(env.W || 0, span(inside, "h"), span(under, "h"), 20) + landDeep, Hin = Math.max(env.H || 0, so + (boards.length ? 12 : 0), ...sides.map((it) => it.fp.h + 2 * 4 + so), 10);
   /* one nominal wall : the usual figure for the material, thicker when the melt has far to go, inside the range of the material */
   const flow = (Lin + Win) / 2 + Hin, usual = Math.min(R.nominal, half((lim[0] + lim[1]) / 2)), wall = Math.min(lim[1], Math.max(lim[0], half(Math.max(usual, flow / R.flow))));
   log.push(`Procédé : ${R.fr} — ${mat.name} se moule entre ${fr(lim[0])} et ${fr(lim[1])} mm de paroi.`);
@@ -114,7 +116,18 @@ export function molded(brief, items, log) {
       : `Bossages pleins sous leur trou (${fr(H - wall - dt)} mm) : trop minces pour être évidés par dessous — une masse locale, à accepter ou à porter sur le couvercle.`);
     if (!rim.some((it) => it.type === "planar")) out.push({ id: `IF${items.length + (cover.auto ? 2 : 1)}`, type: "planar", name: "Plan de joint", key: `${cover.key}_joint`, side: "B", face: "+Z", at: ["L/2", "W/2"], params: { w: "L", h: "W" } });
   }
-  for (const it of rim) if (it !== cover) out.push(ifo(it, "+Z", ["L/2", "W/2"], it.type === "planar" ? { params: { ...it.params, w: "L", h: "W" } } : {}));
+  const plus = (base, d) => (Math.abs(d) < 1e-6 ? base : d > 0 ? `${base} + ${r1(d)}` : `${base} - ${r1(-d)}`);
+  let lx = -landRow / 2;
+  lands.forEach((it, k) => {
+    const pw = it.fp.w, ph = it.fp.h, x0 = lx; lx += pw + 6;
+    const cw = r1(pw - 2 * wall), cd = r1(ph - wall - (H - wall) * lean), cored = cw >= 3 && cd >= 3;      // cored from underneath, like the bosses : no mass under the land
+    features.push({ op: "pad", id: `massif${k + 1}`, name: "Massif de collage", face: "+Z", start: "wall", rect: [plus("L/2", x0), "wall / 2", r1(pw), `wall / 2 + ${r1(ph)}`], h: "H - wall", ...leaning });
+    if (cored) features.push({ op: "pocket", id: `evm${k + 1}`, name: "Évidement sous le massif de collage", face: "-Z", rect: [plus("L/2", x0 + wall), `wall + ${r1((H - wall) * lean)}`, cw, cd], depth: "H - wall" });
+    keep.push({ x: L / 2 + x0 + pw / 2, y: wall + ph / 2, r: Math.hypot(pw, ph) / 2 });
+    out.push(ifo(it, "+Z", [plus("L/2", x0 + pw / 2), `wall + ${r1(ph / 2)}`]));
+    log.push(`« ${it.name} » : le dessus d'une coque est ouvert — la plage de collage monte sur un massif de ${fr(pw)} × ${fr(ph)} mm adossé au grand côté avant, jusqu'au plan de joint${cored ? `, évidé par dessous (${fr(cw)} × ${fr(cd)} mm) pour ne pas faire de masse` : ", plein : trop étroit pour être évidé"}.`);
+  });
+  for (const it of rim) if (it !== cover && !lands.includes(it)) out.push(ifo(it, "+Z", ["L/2", "W/2"], it.type === "planar" ? { params: { ...it.params, w: "L", h: "W" } } : {}));
   /* a wide floor is stiffened by low ribs rather than by a thicker wall */
   const wide = Math.max(Lin, Win), nRib = wide > 100 ? Math.min(4, Math.ceil(wide / 80) - 1) : 0, rt = r1(Math.max(0.8, R.rib * wall)), rh = r1(Math.min(R.ribH * wall, so ? so - 1.5 : R.ribH * wall));
   if (nRib && rh >= 1.5) { const alongX = Lin >= Win, span = alongX ? L : W, free = (q) => !keep.some((k) => Math.abs((alongX ? k.x : k.y) - q) < k.r + rt / 2 + 1); let made = 0;

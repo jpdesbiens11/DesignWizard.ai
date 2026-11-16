@@ -10,7 +10,7 @@ import { partPrompt, anticipatedInterfaces, revisionPrompt } from "../core/promp
 import { extractJson, kindOf, importPart } from "../core/importer.js";
 import { validateSpec } from "../cad/build.js";
 import { INTERFACE_TYPES, interfaceSignature } from "../cad/interfaces.js";
-import { MATERIALS, PROCESSES } from "../cad/materials.js";
+import { PROCESSES, materialMenu, materialLabel } from "../cad/materials.js";
 import { Viewer } from "../core/viewer.js";
 import { showBuilt } from "../core/viewport.js";
 import { autoMate } from "../core/assembly_logic.js";
@@ -45,7 +45,7 @@ function interview(page) {
   const cons = el("textarea", { rows: 3, value: draft.constraints, placeholder: "Enveloppe disponible, efforts, température, tension, quantité, étanchéité…" });
   cons.style.fontFamily = "var(--font)"; cons.style.fontSize = ".9rem";
   const proc = el("select", null, el("option", { value: "" }, "Laisser Claude proposer"), Object.entries(PROCESSES).filter(([k]) => k !== "purchased").map(([k, v]) => el("option", { value: k, selected: k === draft.process }, v.fr)));
-  const mat = el("select", null, el("option", { value: "" }, "Laisser Claude proposer"), MATERIALS.filter((m) => m.id !== "GENERIC-COMPONENT").map((m) => el("option", { value: m.id, selected: m.id === draft.material }, m.name)));
+  const mat = el("select", null, el("option", { value: "" }, "Laisser Claude proposer"), materialMenu((m) => m.id !== "GENERIC-COMPONENT").map((f) => el("optgroup", { label: f.family }, f.list.map((m) => el("option", { value: m.id, selected: m.id === draft.material }, materialLabel(m))))));
   const neigh = el("div");
   for (const part of p.parts) {
     const cb = el("input", { type: "checkbox", checked: draft.neighbours.includes(part.id), onChange: () => { draft.neighbours = cb.checked ? [...draft.neighbours, part.id] : draft.neighbours.filter((x) => x !== part.id); update(); } });
