@@ -14,6 +14,7 @@ import { ENDS } from "./flex_tree.js";
 import { INSULATIONS } from "./busbar.js";
 import { LABEL_KINDS } from "./labels.js";
 import { FINISHES } from "./render_looks.js";
+import { MODEL_WORDS } from "../cad/connector_series.js";
 
 export const TERM_GROUPS = [
   { id: "process", label: "Procédés", hint: "comment la pièce se fabrique", icon: "cast", color: "#ee8a32" },
@@ -42,7 +43,7 @@ const FEATURES = [["Box", "bloc"], ["Cylinder", "cylindre"], ["Coil (helical tub
   ["Arch (spring blade)", "lame en pont"], ["Shell", "coque"], ["Fillet", "congé"], ["Chamfer", "chanfrein"], ["Rib", "nervure"], ["Gusset", "gousset"], ["Standoff", "colonnette"], ["Bend", "pli"], ["Flange", "bord plié"], ["Flat pattern", "développé à plat"], ["Bend relief", "dégagement d'angle"]];
 
 /** The tables a term comes from : every entry carries `label` (English) and `fr`. For the tests, and for the next brick. */
-export const TERM_TABLES = { PROCESSES, INTERFACE_TYPES, ADHESIVES, WELD_PROCESSES, PLATINGS, CONTACT_FORMS, CONTACT_BASES, STOCK_FORMS, SHOP_VERBS, AM_PROCESSES, LASER_FAMILIES, ENDS, INSULATIONS, LABEL_KINDS, FINISHES };
+export const TERM_TABLES = { MODEL_WORDS, PROCESSES, INTERFACE_TYPES, ADHESIVES, WELD_PROCESSES, PLATINGS, CONTACT_FORMS, CONTACT_BASES, STOCK_FORMS, SHOP_VERBS, AM_PROCESSES, LASER_FAMILIES, ENDS, INSULATIONS, LABEL_KINDS, FINISHES };
 
 /** The glossary : [{ group, en, fr, note }], in the order of the groups, then of the alphabet. */
 export function glossary() {
@@ -54,7 +55,7 @@ export function glossary() {
   all("operation", SHOP_VERBS, "verbe d'atelier"); for (const [en, fr] of FEATURES) add("operation", en, fr, "forme");
   all("stock", STOCK_FORMS); all("stock", LASER_FAMILIES, "matière en feuille, au laser");
   all("interface", INTERFACE_TYPES, "type d'interface"); all("interface", ADHESIVES, "colle"); all("interface", WELD_PROCESSES, "soudage"); add("interface", "Mate", "accouplement"); add("interface", "Dowel pin", "goupille de positionnement"); add("interface", "Heat-set insert", "insert posé à chaud"); add("interface", "Clearance hole", "trou de passage"); add("interface", "Tapped hole", "trou taraudé"); add("interface", "Counterbore", "lamage"); add("interface", "Countersink", "fraisure"); add("interface", "Slip fit / press fit", "ajustement glissant / serré");
-  all("electrical", PLATINGS, "revêtement"); all("electrical", CONTACT_FORMS, "forme de contact"); all("electrical", CONTACT_BASES, "matière de contact"); all("electrical", ENDS, "circuit flexible"); all("electrical", INSULATIONS, "isolant de busbar");
+  all("electrical", MODEL_WORDS, "modèle de connecteur"); all("electrical", PLATINGS, "revêtement"); all("electrical", CONTACT_FORMS, "forme de contact"); all("electrical", CONTACT_BASES, "matière de contact"); all("electrical", ENDS, "circuit flexible"); all("electrical", INSULATIONS, "isolant de busbar");
   all("finish", FINISHES, "finition du rendu"); all("finish", LABEL_KINDS, "étiquette");
   const order = TERM_GROUPS.map((g) => g.id);
   return rows.sort((a, b) => order.indexOf(a.group) - order.indexOf(b.group) || a.en.localeCompare(b.en, "en"));

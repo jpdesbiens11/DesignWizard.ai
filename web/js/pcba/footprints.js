@@ -2,7 +2,12 @@
    pad format of model.js. Dimensions are nominal patterns in the spirit of IPC-7351 (density level B): typical values,
    good for a prototype — the data sheet of the chosen part prevails.
    Conventions: the part is centred on its origin ; on two-row packages pin 1 is at the top of the left row and the
-   numbering runs counter-clockwise ; pad 1 of a through-hole connector is square. */
+   numbering runs counter-clockwise ; pad 1 of a through-hole connector is square.
+   The connectors of the electrical library have the land pattern of THEIR series (« JST-PH-4 », « MINIFIT-8 ») : built
+   from the dimensions the maker publishes (cad/connector_series.js), which say how they were checked. */
+
+import { SERIES, SERIES_PACKAGES } from "../cad/connector_series.js";
+import { modelFootprint } from "../cad/connector_models.js";
 
 const r3 = (v) => Math.round(v * 1000) / 1000;
 const pad = (n, x, y, w, h, shape = "rect", drill = 0) => (drill ? { n: String(n), x: r3(x), y: r3(y), w, h, shape, drill } : { n: String(n), x: r3(x), y: r3(y), w, h, shape });
@@ -99,12 +104,15 @@ const FAMILIES = [
   [/^SIP-(\d+)$/, (n) => pins(n, 1, 2.54, 1.7, 1.0, [n * 2.54 + 1.5, 6.0, 10.0], [n * 2.54 + 2.0, 6.5])],          // single-in-line module
 ];
 
+/** The series a land pattern name belongs to : « MINIFIT-8 » → { id: "molex-minifit", n: 8, S } ; null for any other name. */
+export function seriesPackage(name) { const m = /^([A-Z0-9]+(?:-[A-Z]+)?)-(\d+)$/.exec(String(name)), id = m && SERIES_PACKAGES[m[1]]; return id && +m[2] >= 1 && +m[2] <= 100 ? { id, n: +m[2], S: SERIES[id] } : null; }
 /** Land pattern of a package name, or null when the name is unknown. */
 export function footprint(name) {
   if (FIXED[name]) return FIXED[name]();
   for (const [re, make] of FAMILIES) { const m = re.exec(String(name)); if (m && +m[1] >= 1 && +m[1] <= 40) return make(+m[1]); }
-  return null;
+  const P = seriesPackage(name);
+  return P ? modelFootprint(P.S, P.n) : null;
 }
 /** Package names a user can pick ; the families are shown with « N » for the pin count. */
-export const packageList = () => [...Object.keys(FIXED), "HDR-1xN-2.54", "HDR-2xN-2.54", "HDR-2xN-1.27", "TB-N-5.08", "TB-N-3.5", "WTB-N-2.0", "SIP-N"];
+export const packageList = () => [...Object.keys(FIXED), "HDR-1xN-2.54", "HDR-2xN-2.54", "HDR-2xN-1.27", "TB-N-5.08", "TB-N-3.5", "WTB-N-2.0", "SIP-N", ...Object.keys(SERIES_PACKAGES).map((p) => `${p}-N`)];
 export const PACKAGES = FIXED;

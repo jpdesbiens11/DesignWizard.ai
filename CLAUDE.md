@@ -59,7 +59,11 @@ Consignes permanentes de JP (propriétaire du dépôt). Elles s'appliquent à to
   ne l'a pas été (`basis`, `SOURCES`) — ne jamais donner pour vérifié un chiffre qui ne l'est pas.
 - Connecteurs et cellules (demande de JP) : la bibliothèque renvoie aux **séries standard de l'industrie des grands
   fabricants** et aux normes publiées — fabricant et série cités en texte, comme référence de compatibilité, sans logo
-  ni dessin copié. Valeurs nominales publiées, avec la façon dont elles ont été vérifiées ; la fiche du fabricant fait foi.
+  ni dessin copié. Valeurs nominales publiées, avec la façon dont elles ont été vérifiées ; la fiche du fabricant fait foi. **Chaque série a son modèle**, reconstruit par
+  la plateforme d'après les cotes publiées (`web/js/cad/connector_series.js`, générateurs `cad/connector_models.js`), avec
+  son empreinte de carte ; chaque série dit le niveau de lecture de ses cotes (`dims` : lues, lues en partie, à vérifier)
+  et ce qui a été lu (`basis`). Aucun dessin ni modèle 3D de fabricant n'entre dans le dépôt. Toute nouvelle famille
+  arrive avec sa série.
 
 ## Documents de référence
 

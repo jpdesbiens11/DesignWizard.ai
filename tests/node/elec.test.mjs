@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { kernel } from "./kernel_helper.mjs";
 import { buildPart, validateSpec } from "../../web/js/cad/build.js";
 import { CONNECTORS, CELLS, ELEC_STANDARDS, CONNECTOR_KINDS, connector, cell, pickConnectors } from "../../web/js/cad/elec_library.js";
-import { connectorPart, cellPart, connectorEnvelope, poleNets } from "../../web/js/core/elec_parts.js";
+import { connectorPart, connectorBuild, cellPart, connectorEnvelope, poleNets } from "../../web/js/core/elec_parts.js";
 import { ELEC_INTERFACES, WELD_PROCESSES, PLATINGS, CONTACT_BASES, contactEstimate, weldEstimate, elecProcess } from "../../web/js/cad/interfaces_elec.js";
 import { INTERFACE_TYPES, compatible, interfaceSignature } from "../../web/js/cad/interfaces.js";
 import { solve, autoMate, joints, hardware } from "../../web/js/core/assembly_logic.js";
@@ -26,13 +26,13 @@ test("a high-voltage connector becomes a part : flange, body, one conductor per 
   assert.deepEqual(validateSpec(s).errors, []); assert.equal(s.process, "purchased"); assert.deepEqual(poleNets(c, 2, "HV"), ["HV+", "HV-"]); assert.deepEqual(poleNets(connector("jst-xh"), 6), ["LV"]);
   assert.deepEqual(Object.values(s.bodies).map((b) => [b.net, b.kind, b.material]), [["HV+", "conductor", "CU-C110"], ["HV-", "conductor", "CU-C110"]]);
   assert.deepEqual(s.interfaces.map((i) => [i.type, i.side, i.face, !!i.external]), [["cutout", "B", "-Y", false], ["planar", "A", "-Y", true]], "the connection leaves the product : external");
-  assert.deepEqual([s.library.ref, s.library.a, s.library.v, s.library.hvil], ["te-hvp800", 250, 1000, true]); assert.match(s.notes.join(" "), /TE Connectivity AMP\+ HVP 800 — 250 A par contact, 1000 V/); assert.match(s.notes.join(" "), /Forme indicative \(embase blindée à ports ronds\) dans une enveloppe indicative/);
+  assert.deepEqual([s.library.ref, s.library.a, s.library.v, s.library.hvil], ["te-hvp800", 250, 1000, true]); assert.match(s.notes.join(" "), /TE Connectivity AMP\+ HVP 800 — 250 A par contact, 1000 V/); assert.match(s.notes.join(" "), /Modélisé d'après les cotes publiées de la série — Shielded HV header, HVP 800 header — cotes à vérifier/); assert.match(connectorPart(c, { id: "CN-HV", indicative: true }).notes.join(" "), /Forme indicative \(embase blindée à ports ronds\) dans une enveloppe indicative/);
   const b = buildPart(K, s); assert.equal(b.log.filter((l) => l.level === "error").length, 0); assert.equal(b.bodies.length, 3);
   assert.deepEqual(b.bodies.map((x) => [x.name, x.conductive, x.net]), [["main", false, null], ["pole1", true, "HV+"], ["pole2", true, "HV-"]]);
-  const E = connectorEnvelope(c, 2); assert.ok(Math.abs((b.bbox[3] - b.bbox[0]) - (E.L + 2 * s.params.e.value)) < 0.01 && b.bbox[1] < -5, "the flange is wider than the body, the nose passes the wall");
+  const B = connectorBuild(c, { poles: 2 }); assert.equal(s.params.e.expr, String(B.e)); assert.ok(Math.abs((b.bbox[3] - b.bbox[0]) - (B.E.L + 2 * B.e)) < 0.01 && b.bbox[1] < -5, "the flange is wider than the body, the nose passes the wall");
   assert.deepEqual(fromDwiz(toDwiz(s)), s, "the part and its library reference survive the .dwiz file");
   const lv = connectorPart(connector("jst-xh"), { id: "CN-LV", poles: 6 }), bl = buildPart(K, lv); assert.equal(bl.log.filter((l) => l.level === "error").length, 0);
-  assert.deepEqual(lv.interfaces.map((i) => [i.face, !!i.external]), [["-Z", false], ["+Z", false]]); assert.ok(Math.abs((bl.bbox[3] - bl.bbox[0]) - 17.5) < 0.01, "2,5 mm pitch × (6 + 1)");
+  assert.deepEqual(lv.interfaces.map((i) => [i.face, !!i.external]), [["-Z", false], ["+Z", false]]); assert.ok(Math.abs((bl.bbox[3] - bl.bbox[0]) - 17.4) < 0.01, "the length the data sheet gives for 6 circuits : 5 × 2,5 + 4,9");
   K.flush();
 });
 

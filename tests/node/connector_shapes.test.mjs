@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import { CONNECTORS, CONNECTOR_KINDS } from "../../web/js/cad/elec_library.js";
 import { connectorSolids, connectorSolidsAt, connectorFeatures, shapeConstants, SHAPE_WORDS, TONES } from "../../web/js/core/connector_shapes.js";
 import { connectorPart, connectorEnvelope, poleNets, defaultPoles, useMakerModel, dropMakerModel } from "../../web/js/core/elec_parts.js";
+import { SERIES } from "../../web/js/cad/connector_series.js";
 import { buildPart, validateSpec } from "../../web/js/cad/build.js";
 import { evaluate as evalExpr } from "../../web/js/cad/expr.js";
 import { kernel } from "./kernel_helper.mjs";
@@ -39,12 +40,13 @@ test("the features of the part are the same solids, as expressions of the envelo
 
 test("every family builds, on a wall and on a board, with one conductor per net", async () => {
   const K = await kernel(), bad = [];
-  for (const c of CONNECTORS) for (const mount of ["panel", "board"]) { const s = connectorPart(c, { id: "CN-1", mount }), v = validateSpec(s).errors, b = buildPart(K, s), errs = b.log.filter((l) => l.level === "error").map((l) => l.msg);
+  for (const c of CONNECTORS) for (const mount of ["series", "panel", "board"]) { const s = connectorPart(c, mount === "series" ? { id: "CN-1" } : { id: "CN-1", mount, indicative: true }), v = validateSpec(s).errors, b = buildPart(K, s), errs = b.log.filter((l) => l.level === "error").map((l) => l.msg);      // the model of its series, then the indicative shape of its kind
     if (v.length || errs.length) bad.push(`${c.id} ${mount} : ${[...v, ...errs].join(" ; ")}`);
     else { const nets = poleNets(c, s.library.poles), cond = b.bodies.filter((x) => x.conductive); if (cond.length !== nets.length || cond.some((x, i) => x.net !== nets[i]) || b.bodies[0].name !== "main" || b.bodies[0].conductive) bad.push(`${c.id} ${mount} : bodies ${b.bodies.map((x) => `${x.name}:${x.net}`).join(", ")}`); }
     if (K.flush) K.flush(); }
   assert.deepEqual(bad, []);
-  const hv = buildPart(K, connectorPart(fam("te-hvp800"), { id: "CN-HV" })); assert.equal(hv.bodies[0].color, TONES.housing.hv, "a high-voltage connector shows its colour"); assert.equal(buildPart(K, connectorPart(fam("jst-xh"), { id: "CN-LV" })).bodies[0].color, TONES.housing.lv);
+  const hv = buildPart(K, connectorPart(fam("te-hvp800"), { id: "CN-HV", indicative: true })); assert.equal(hv.bodies[0].color, TONES.housing.hv, "an indicative high-voltage connector shows the colour of its domain"); assert.equal(buildPart(K, connectorPart(fam("jst-xh"), { id: "CN-LV", indicative: true })).bodies[0].color, TONES.housing.lv);
+  assert.equal(buildPart(K, connectorPart(fam("molex-microfit"), { id: "CN-MF" })).bodies[0].color, SERIES["molex-microfit"].color, "a series shows its own colour");
 });
 
 test("the maker's STEP takes the place of the indicative shape, and gives it back", () => {

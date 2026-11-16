@@ -311,6 +311,7 @@ button.dfx-kpi:hover, button.dfx-kpi:focus-visible { transform: translateY(-2px)
 .lib-card:hover { border-color: var(--dom); box-shadow: var(--shadow-sketch); } .lib-shot { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: contain; border-radius: var(--r-small); background: #fff; } .lib-shot.none { display: grid; place-items: center; color: var(--muted); background: var(--surface-2); }
 .lib-name { display: grid; line-height: 1.2; } .lib-name small { color: var(--muted); font-size: .76rem; } .lib-chips { display: flex; flex-wrap: wrap; gap: .2rem; } .lib-chips .chip { font-size: .72rem; padding: .08rem .4rem; max-width: 100%; }
 .lib-use { margin: 0; font-size: .8rem; color: var(--ink-soft); } .lib-foot { display: flex; align-items: center; justify-content: space-between; gap: .4rem; }
+.lib-badges { display: inline-flex; flex-wrap: wrap; gap: .25rem; } .lib-model { margin: 0 0 .5rem; padding: .4rem .6rem; border-left: 3px solid var(--acc); background: color-mix(in srgb, var(--acc) 6%, var(--surface)); border-radius: var(--r-small); } .lib-model p { margin: .15rem 0; }
 .lib-live { height: min(280px, 34vh); margin-bottom: .5rem; border: 1.4px solid var(--line); border-radius: var(--r-card); background: var(--surface); position: relative; overflow: hidden; }
 .lib-stage { position: fixed; left: -9999px; top: 0; width: 400px; height: 250px; pointer-events: none; }
 /* --- the branched flexible circuit : four tiles in a row, the branches grouped by the edge they leave, the card of the chosen one --- */

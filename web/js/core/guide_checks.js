@@ -21,6 +21,10 @@ export function partIssues(part, others = new Set()) {
   if (!part.process) add("todo", "aucun procédé : le DFx et la gamme ne savent pas comment elle se fabrique.");
   else if (!PROCESSES[part.process]) add("warn", `procédé « ${part.process} » inconnu.`);
   else if (mat && !bought && Array.isArray(mat.processes) && !mat.processes.includes(part.process)) add("warn", `${processName(part.process)} n'est pas un procédé courant pour ${mat.name}. Vérifiez la matière ou le procédé.`);
+  if (part.family === "connector" && part.library && !part.step) { const d = part.library.dims;      // a connector of the library : how far its shape can be trusted
+    if (d === "typed") add("warn", "connecteur modélisé d'après une enveloppe saisie de mémoire, non relue sur la fiche. Correctif : comparez-le au dessin du fabricant, ou déposez son modèle 3D officiel, avant de figer son logement ou son empreinte.");
+    else if (d === "part") add("warn", "connecteur dont le pas et les rangées sont lus, mais le corps saisi de mémoire. Correctif : comparez le corps au dessin du fabricant avant de figer son logement ou son empreinte.");
+    else if (!d) add("tip", "connecteur à la forme indicative de son genre : déposez le modèle 3D du fabricant quand la référence est choisie."); }
   for (const [k, p] of Object.entries(part.params || {})) {
     if (p === null || typeof p !== "object") continue;
     const v = p.value, label = p.label || k;

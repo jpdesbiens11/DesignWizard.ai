@@ -40,32 +40,59 @@ multiconducteur) ; HVA 630 porte 40 A ; le MC4 d'origine est à 1000 V selon IEC
 | **Interface de raccordement** | vers le câble ou l'appareil ; **externe** par défaut en haute tension : elle entre au contrat du produit avec son environnement, aucune pièce du projet ne s'y accouple |
 | **Référence** | `library` dans le fichier de la pièce : famille, courant, tension, normes, mode de vérification |
 
-### La forme d'un connecteur : indicative, par genre
+### Un modèle par série, d'après les cotes publiées
 
-Chaque **genre** de connecteur a sa forme, pour qu'on le reconnaisse dans la bibliothèque comme dans l'assemblage :
+Chaque famille de la bibliothèque a le **modèle de sa série** : un générateur (`web/js/cad/connector_models.js`) la
+reconstruit à partir des cotes que son fabricant publie (`web/js/cad/connector_series.js`) — le pas, les rangées, la
+façon dont la longueur grandit avec le nombre de circuits, la profondeur, la hauteur, le picot, le trou de la carte, la
+couleur. Une embase JST PH de 6 circuits fait 13,9 × 4,5 × 6,0 mm parce que sa fiche dit `B = A + 3,9` ; une Mini-Fit Jr.
+de 8 circuits a ses deux rangées à 5,50 mm, ses huit alvéoles et son verrou.
 
-| Genre | Forme indicative |
-|---|---|
-| Fil à carte | embase à picots : un fond, quatre parois, un picot par pôle, un verrou si la famille est verrouillée |
-| Fil à fil | boîtier de faisceau : corps, joint arrière, verrou |
-| Carte à carte | mezzanine : corps bas, fente, deux rangées de contacts |
-| Nappe FFC / FPC | corps bas, volet, fente d'entrée de la nappe |
-| Circulaire | corps cylindrique, écrou, nez fileté, presse-étoupe, contacts en cercle |
-| Bornier | corps à rehausse, une vis et une entrée de fil par pôle |
-| Haute tension blindé | bride à quatre trous, corps, un port rond par pôle avec son contact et son départ de câble, deux broches d'interverrouillage |
-| Puissance | un bloc par pôle, sa lame |
-| Sectionneur de service | bride, corps, levier |
+| Modèle | Ce qu'il dessine | Séries |
+|---|---|---|
+| Shrouded header | fond, parois ou une alvéole par circuit, fentes ou verrou, picots ou pattes CMS | JST PH, XH, GH · Molex PicoBlade, Micro-Fit 3.0, Mini-Fit Jr., Nano-Fit · Hirose DF13 |
+| Pin header | un isolant par broche, la broche | Samtec TSW |
+| Pluggable terminal block header | dos, joues, cloisons, un contact couché par pôle | Phoenix MSTB |
+| D-subminiature connector | bride, coquille en D, isolant, rangées de broches, trous de fixation | D-sub 9 à 50 |
+| FFC / FPC connector · Mezzanine connector | corps bas, volet ou fente, pattes, pattes de fixation | Hirose FH12 · DF40 |
+| Harness housing | cavités en rangées, joint arrière, verrou, verrou de coin ou tours selon la série | MX150, Superseal, DEUTSCH DT et DTM, Metri-Pack, Weather Pack |
+| Circular connector | écrou ou bride carrée, nez fileté, broches sur leur cercle | M8, M12, 38999 |
+| Shielded HV header | bride vissée, corps, face d'accouplement de la série : ports ronds ou fentes à lames, jupe commune ou une tour par pôle, verrou (CPA) ou levier, broches d'interverrouillage | HVA, HVP, HC-STAK, PowerLok, HVSL, HVR, Imperium |
+| Single-pole power connector · Cable coupler | fût, collet, départ coudé ; coupleur à manchon | SurLok Plus · MC4 |
+| Stackable power housing · Two-pole power connector | un bloc par pôle ; boîtier plat à deux contacts | Powerpole · SB, XT |
+| Service disconnect | base, fiche à fusible, levier | MSD |
 
-La forme est écrite **une seule fois**, en boîtes et en cylindres (`web/js/core/connector_shapes.js`), et lue deux
-fois : comme les opérations de la pièce — des expressions de `L`, `W`, `H` et `e`, de sorte que l'enveloppe se règle
-encore sur la fiche du fabricant — et comme solides de l'**aperçu 3D**. La bibliothèque montre un aperçu par famille,
-à la même échelle dans un genre (la plus grande famille remplit son image) ; le dialogue d'ajout montre la forme en 3D,
-à tourner à la souris, et la redessine quand le nombre de pôles ou le montage changent. Un connecteur haute tension
-arrive orange, un connecteur de signaux clair (c'est sa couleur à l'écran, pas une matière).
+**Ce n'est pas le dessin du fabricant, et rien n'en est copié** : ni dessin, ni modèle 3D, ni logo. Ce sont des nombres
+lus sur une fiche, et une géométrie de la plateforme construite à partir d'eux. Les modèles 3D des fabricants leur
+appartiennent : ils ne sont pas redistribués ici ; le lien vers le site du fabricant est sur la carte de la série.
 
-**Ce n'est pas le dessin du fabricant.** La forme et l'enveloppe sont **indicatives** : tirées du pas, du nombre de
-pôles et du courant, pour distinguer les genres et réserver la place. Aucune cote ni aucun modèle de fabricant n'a été
-repris : leurs pages refusent la lecture automatique, et leurs modèles leur appartiennent.
+**Ce que valent les cotes — dit sur chaque carte, dans la note de chaque pièce et par le guide :**
+
+| Niveau | Ce que cela veut dire | Séries |
+|---|---|---|
+| **cotes lues** | relevées sur la fiche ou le dessin du fabricant, ouvert et lu | JST PH, JST XH, Hirose DF13, Hirose FH12, Molex Mini-Fit Jr. (5) |
+| **cotes lues en partie** | pas, rangées, couleur, queue lus sur la page du produit ; corps saisi de mémoire | JST GH, Molex PicoBlade, Micro-Fit 3.0, Nano-Fit (4) |
+| **cotes à vérifier** | enveloppe saisie de mémoire, du bon ordre de grandeur : pour un aperçu et une première implantation | les 41 autres, dont **tous les connecteurs haute tension** |
+
+Le guide donne un « à vérifier » à toute pièce dont les cotes ne sont pas lues, jusqu'à ce que le modèle du fabricant
+soit déposé. Les pages de plusieurs fabricants refusent la lecture automatique : leurs séries restent « à vérifier »
+tant que quelqu'un n'a pas comparé le modèle à la fiche.
+
+**Prêt pour la carte.** Une série qui se pose sur une carte a son **empreinte** (`web/js/pcba/footprints.js`), au nom
+de la série et du nombre de circuits — `JST-PH-4`, `MINIFIT-8`, `FH12-20`, `DSUB-9` : une pastille par picot (la n° 1
+carrée) ou une plage par patte, le trou publié, les pattes de fixation, le corps et sa zone d'exclusion. La
+bibliothèque du PCBA les propose comme composants (`J-JST-PH-4`…, `web/js/pcba/library_series.js`), avec le courant et
+la tension de la famille. Les circuits des séries Molex à deux rangées sont numérotés rangée par rangée, comme sur
+leur dessin. L'empreinte hérite du niveau de ses cotes : celle d'une série « à vérifier » se compare au motif
+recommandé avant de lancer la carte.
+
+Une série ne s'étire pas : son enveloppe (`L`, `W`, `H`) est affichée, non modifiable. Le nombre de pôles s'ajuste à ce
+que la série permet (un D-sub existe en cinq tailles, deux rangées prennent un nombre pair). Une série décide seule de
+son montage — une embase sur une carte, une embase haute tension sur une paroi. Un boîtier de faisceau, sans bride,
+n'est pas vissé à la paroi.
+
+La **forme indicative par genre** (`web/js/core/connector_shapes.js`) reste la forme de repli d'une famille sans série :
+des expressions de `L`, `W`, `H` et `e`, dans une enveloppe tirée du pas, des pôles et du courant.
 
 ### Le modèle du fabricant, à la place
 
@@ -328,7 +355,9 @@ au retour, la liste des changements et ce que le circuit revenu demande, avant d
 - Le remplissage est une géométrie figée (STEP, lourde dans le fichier du projet) : il ne suit pas les pièces seul, il se
   recalcule. La gamme d'assemblage ne décrit pas encore la coulée.
 - Les rigidités diélectriques et les indices de résistance au cheminement des films sont des valeurs typiques.
-- Les enveloppes des connecteurs sont indicatives ; aucune empreinte de carte ni modèle du fabricant n'est fourni.
+- Connecteurs : 5 séries sur 50 ont des cotes lues sur la fiche ; 4 en partie ; 41 sont saisies de mémoire (tous les
+  connecteurs haute tension). Parois, fentes et verrous sont dessinés à l'œil ; le modèle du fabricant n'est pas fourni.
+  Les empreintes des séries CMS (GH, FH12, DF40) ont des plages saisies : à comparer au motif recommandé.
 - Les lignes marquées « extrait » sont à relire sur la fiche du fabricant ; les titres des documents LV 214 et LV 215
   (constructeurs allemands) ne sont pas publics.
 - La polarité interne d'une cellule n'est pas modélisée ; pas de constructeur de pack (série, parallèle) encore.

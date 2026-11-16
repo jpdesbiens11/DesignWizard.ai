@@ -11,7 +11,7 @@ L'explication autour du terme reste en français.
 - Chaque table de vocabulaire donne à ses entrées deux noms : `label`, le terme anglais — **celui que tous les écrans,
   les rapports, les gammes et les fichiers montrent** — et `fr`, son équivalent français.
 - Les procédés passent par une seule fonction : `processName(id)` (`web/js/cad/materials.js`).
-- Le **glossaire** (`web/js/core/terms.js`, écran Aide → « Glossaire », route `#/help/terms`) réunit tout : 184 termes
+- Le **glossaire** (`web/js/core/terms.js`, écran Aide → « Glossaire », route `#/help/terms`) réunit tout : 198 termes
   en sept groupes — procédés, mold, opérations et formes, matière première, interfaces et assemblage, électrique,
   finitions et marquage —, chacun avec son équivalent français, et une recherche dans les deux langues.
 - Un test relit le code : aucune table de vocabulaire ne peut avoir une entrée sans terme anglais, et aucun écran ne
