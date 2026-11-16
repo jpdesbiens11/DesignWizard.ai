@@ -5,8 +5,15 @@
    A value the tool put there is an example : it is marked, the next one to enter blinks, and the report waits.
    Route : #/physics or #/physics/<modelId>/<partId>. Runs added to the report live in project.physics. */
 
-import { el, clear, btn, toast } from "../core/dom.js";
-import { registerModule, setStatus, setGuide } from "../core/app.js";
+import { el, clear, btn, toast, download } from "../core/dom.js";
+import { app, registerModule, setStatus, setGuide, docMeta } from "../core/app.js";
+import { docx } from "../core/docx.js";
+import { pdfDoc } from "../core/pdfdoc.js";
+import { xlsx } from "../core/xlsx.js";
+import { logoPng } from "../core/brand_logo.js";
+import { physicsDoc, physicsBook } from "../analysis/physics/export.js";
+import { XL_LIVE } from "../analysis/physics/xl_formulas.js";
+import { shot } from "./plan_view.js";
 import { store } from "../core/store.js";
 import { kernel } from "../cad/client.js";
 import { createViewport } from "../core/viewport.js";
@@ -176,6 +183,16 @@ function render(main, args) {
     chip.textContent = "3D · aux dimensions entrées";
   }
 
+  /* ---------- what a calculation leaves with : the note (Word, PDF) at the template of the house, and the workbook to iterate offline ---------- */
+  const DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document", XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+  const meta = () => ({ date: new Date(), project: store.project ? store.project.name || store.project.id : "", author: (store.project && store.project.author) || "" }), slug = (t) => String(t).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9]+/g, "_").replace(/^_|_$/g, "").slice(0, 60) || "calcul";
+  const nowRun = () => ({ id: "now", name: (ui.name || runName(store.project, cur.id, partId)).trim(), model: cur.id, part: partId || "", inputs: r.inputs, when: new Date().toISOString() });
+  const noteOf = (runs, figures) => ({ ...physicsDoc(runs, store.project, { ...meta(), figures }), ...docMeta() });
+  const outNow = () => { const one = nowRun(), file = slug(one.name), fig = () => ({ now: shot(vp.viewer, "Le modèle du calcul, aux dimensions entrées", null, 110) }), live = XL_LIVE.includes(cur.id);
+    return { word: () => download(`${file}_note_de_calcul.docx`, docx(noteOf([one], fig())), DOCX), pdf: () => download(`${file}_note_de_calcul.pdf`, pdfDoc(noteOf([one], fig())), "application/pdf"),
+      excel: () => download(`${file}_calcul.xlsx`, xlsx(physicsBook(cur.id, r.inputs, { ...meta(), name: one.name, part: partId, version: app.version, logo: logoPng(), confidential: docMeta().confidential })), XLSX),
+      note: live ? "Le classeur de ce modèle est vivant : ses résultats sont des formules." : "Classeur : résultats à l'export, et un balayage par donnée pour essayer une valeur — ce modèle n'a pas encore ses formules." }; };
+  const outAll = () => { const runs = store.project.physics || [], file = slug(store.project.name || store.project.id || "projet"); return { word: () => download(`${file}_notes_de_calcul.docx`, docx(noteOf(runs)), DOCX), pdf: () => download(`${file}_notes_de_calcul.pdf`, pdfDoc(noteOf(runs)), "application/pdf") }; };
   /* ---------- right : the choice of the model, then what it answers ---------- */
   function drawRight(keep) {
     const was = right.querySelector(".side-scroll"), y = keep && was ? was.scrollTop : 0, rows = physicsSummary(store.project), c = guideCount(found);
@@ -187,11 +204,11 @@ function render(main, args) {
     if (ui.tab === "models") modelTiles(body, { cur, saved: rows, pick: (id) => open(id) });
     else if (ui.tab === "result") resultPanel(body, { cur, r, waits: c.blocking ? `Le rapport attend : ${c.blocking} point${c.blocking > 1 ? "s" : ""} à entrer ou à corriger — le guide du volet de gauche les montre.` : "",
       blocked: () => { toast("Entrez ou confirmez d'abord les valeurs que le guide demande.", "info"); goTo(found.find((x) => x.level === "error" || x.level === "todo")); },
-      name: ui.name || runName(store.project, cur.id, partId), setName: (v) => { ui.name = v; },
+      name: ui.name || runName(store.project, cur.id, partId), setName: (v) => { ui.name = v; }, out: outNow(),
       save: () => { const entry = { id: `phy-${Date.now().toString(36)}`, name: (ui.name || runName(store.project, cur.id, partId)).trim(), model: cur.id, part: partId || null, inputs: r.inputs, values: r.values, checks: r.checks, verdict: r.verdict, when: new Date().toISOString() };
         store.commit(`Physique : ${entry.name}`, (p) => { p.physics = p.physics || []; p.physics.push(entry); }); ui.name = ""; toast(`« ${entry.name} » gardé dans le projet${partId ? `, au nom de ${partId}` : ""}.`, "success"); file(entry); } });
     else if (ui.tab === "calc") calcPanel(body, { cur, r });
-    else savedPanel(body, { rows, project: store.project, remove: (id) => store.commit("Physique : calcul retiré du rapport", (p) => { p.physics = (p.physics || []).filter((x) => x.id !== id); }),
+    else savedPanel(body, { rows, project: store.project, out: outAll(), remove: (id) => store.commit("Physique : calcul retiré du rapport", (p) => { p.physics = (p.physics || []).filter((x) => x.id !== id); }),
       reopen: (id) => { const s = (store.project.physics || []).find((x) => x.id === id); if (!s || !model(s.model)) return; memory.set(s.model, { ...defaults(s.model), ...s.inputs }); prefillNotes.delete(s.model); entered.set(s.model, new Set(Object.keys(sessionDefaults(s.model))));
         ui.tab = "result"; open(s.model, s.part && store.part(s.part) ? s.part : ""); } });
     body.scrollTop = y;

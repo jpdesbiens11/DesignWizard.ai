@@ -187,6 +187,7 @@ Tout document qui sort de la plateforme dit qui l'a fait. Les mots viennent d'un
 |---|---|---|
 | Rapports et gammes en **PDF** (`core/pdfdoc.js`) | Symbole et nom sur la page de titre ; symbole, « DesignWizard.ai™ by DynamiteAgile™ » et titre en tête de chaque page | Au pied de chaque page, page de titre comprise |
 | Rapports et gammes en **Word** (`core/docx.js`) | En-tête de chaque page : symbole, nom, document, référence, révision, date, page | Pied de chaque page |
+| Classeurs **Excel** des calculs (`core/xlsx.js`) | Symbole et ligne de la marque en tête de chaque feuille | Au pied de chaque feuille imprimée, dans la feuille Notice et dans les propriétés du fichier |
 | **Dessins** PDF et SVG (`draw/drafting3.js`) | Symbole, nom et maison dans le cartouche | Sous le cadre de chaque feuille |
 | Revue de conception en **HTML** | Symbole et nom en tête | Bas de page |
 | **Présentation** (`web/presentation.html`, et son PDF) | Logotype de la couverture | Au pied de chaque page |

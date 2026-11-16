@@ -4,7 +4,7 @@
    with their margins. « Calcul » : the steps written like a hand calculation, the assumptions, the validity and the
    source. « Rapport » : the runs kept in the project. */
 
-import { el, btn, badge, table, fmt, icon } from "../core/dom.js";
+import { el, btn, badge, table, fmt, icon, toast } from "../core/dom.js";
 import { MODELS, DOMAINS, model, shortTitle, runsByPart } from "../analysis/physics/index.js";
 import { sketch, domainIcon } from "./physics_sketch.js";
 import { getUnits, quantity, toShown, shownUnit, dualOf, pressureEquivalents } from "../core/units.js";
@@ -72,6 +72,17 @@ export function resultPanel(body, o) {
   body.append(el("label", { class: "field phys-name" }, el("span", { class: "field-label" }, "Nom du calcul à garder"), el("input", { type: "text", value: o.name || "", "data-tip": "Le nom de la pièce d'abord : ses calculs se rangent ensemble, et vous pouvez en garder plusieurs au fil du temps", onInput: (e) => o.setName && o.setName(e.target.value) })));
   body.append(el("div", { class: "form-actions" }, btn("Garder ce calcul", () => (o.waits ? o.blocked() : o.save()), { primary: true, icon: "plus",
     tip: o.waits ? "Entrez ou confirmez d'abord les valeurs que le guide demande : un calcul au rapport ne garde que vos valeurs" : "Garde ce calcul sous ce nom (données, résultats, verdict) dans le projet, au nom de la pièce : il va au rapport de revue, et sa fiche est rangée dans Drive quand le projet y est" })));
+  if (o.out) body.append(exportBar(o.out, o.waits ? o.blocked : null, "Ce calcul, à emporter"));
+}
+/** The documents a calculation leaves with : the note in Word and in PDF, at the template of the house, and the workbook to iterate offline.
+    out : { word(), pdf(), excel() } — excel only for one calculation ; gate : what to do instead while the guide still asks for values. */
+export function exportBar(out, gate, title) {
+  const go = (fn) => async (e, b) => { if (gate) return gate(); b.disabled = true; try { await fn(); } catch (err) { console.error(err); toast(`Export : ${err.message}`, "error", 7000); } b.disabled = false; };
+  return el("div", { class: "side-section phys-out" }, el("h3", null, title), el("div", { class: "form-actions", style: { justifyContent: "flex-start", flexWrap: "wrap" } },
+    btn("Word", go(out.word), { small: true, icon: "download", tip: "La note de calcul en .docx, au gabarit des documents de la plateforme : cartouche, page de titre, approbation, données, résultats, vérifications, calcul" }),
+    btn("PDF", go(out.pdf), { small: true, icon: "pdf", tip: "La même note en PDF" }),
+    ...(out.excel ? [btn("Excel", go(out.excel), { small: true, primary: true, icon: "download", tip: "Un classeur .xlsx pour itérer hors ligne : cases jaunes à remplir, résultats, vérifications, balayages avec leurs courbes, base des médias, méthode" })] : [])),
+    ...(out.note ? [el("p", { class: "muted small", style: { margin: ".3rem 0 0" } }, out.note)] : []));
 }
 
 /** The calculation written like a hand calculation, with what it assumes and where it comes from. */
@@ -87,6 +98,7 @@ export function calcPanel(body, o) {
 /** The runs kept in the project, by part. o : { rows (physicsSummary), project, reopen(id), remove(id) } */
 export function savedPanel(body, o) {
   if (!o.rows.length) { body.append(el("p", { class: "muted" }, "Aucun calcul gardé. « Garder ce calcul », sous le résultat, le garde dans le projet sous son nom, au nom de sa pièce : plusieurs par pièce, au fil du temps.")); return; }
+  if (o.out) body.append(exportBar(o.out, null, `Les ${o.rows.length} calcul${o.rows.length > 1 ? "s gardés" : " gardé"}, en un document`));
   const rowOf = new Map(o.rows.map((r) => [r.id, r]));
   for (const g of runsByPart(o.project)) {
     body.append(el("div", { class: "side-section" }, el("h3", null, icon(g.part ? "part" : "folder"), el("span", { class: "grow" }, g.part ? `${g.name} · ${g.part}` : g.name), el("small", null, String(g.runs.length))), g.runs.map((run) => { const r = rowOf.get(run.id), m = model(run.model), d = domainOf(m);

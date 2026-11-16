@@ -15,7 +15,7 @@ import { projectIssues, issuesHere } from "./guide_checks.js";
 import { docIdentity } from "./brand.js";
 import { unitPicker } from "./units_ui.js";
 
-export const APP_VERSION = "0.62.0";
+export const APP_VERSION = "0.63.0";
 /** What every document of the open project carries beside its content : approval names, organisation, confidentiality note, extraction stamp (core/brand.js). */
 export const docMeta = (when = new Date()) => docIdentity(store.project, when, APP_VERSION);
 const modules = new Map();
