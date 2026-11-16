@@ -20,7 +20,7 @@ function fluidOf(i, S) {
   return { ...f, gas: base.phase === "gas" };
 }
 
-const pipe = { id: "pipe_flow", domain: "fluid", sketch: "pipe", title: "Écoulement dans un tube rond (Hagen-Poiseuille / Darcy-Weisbach)", question: "Quelle perte de charge dans ce canal, et l'écoulement est-il laminaire ?",
+const pipe = { id: "pipe_flow", domain: "fluid", sketch: "pipe", title: "Pressure loss in a circular tube (Hagen-Poiseuille / Darcy-Weisbach)", fr: "Écoulement dans un tube rond (Hagen-Poiseuille / Darcy-Weisbach)", question: "Quelle perte de charge dans ce canal, et l'écoulement est-il laminaire ?",
   inputs: [...fluidInputs(), num("d", "Diamètre intérieur d", "mm", 4, 0.01, 2000, 0.1, GEO), num("L", "Longueur L", "mm", 1000, 0.1, 1e6, 10, GEO), num("eps", "Rugosité de paroi ε (0 = lisse)", "µm", 1.5, 0, 5000, 0.5, GEO),
     num("Q", "Débit volumique Q", "L/min", 0.1, 0, 1e5, 0.05, FLOW), num("dp_max", "Perte de charge admissible (0 = sans objet)", "kPa", 10, 0, 1e5, 1, CRIT)],
   outputs: [out("dp_kPa", "Perte de charge", "kPa"), out("Re", "Nombre de Reynolds", ""), out("v", "Vitesse moyenne", "m/s"), out("f", "Coefficient de frottement (Darcy)", ""), out("Le", "Longueur d'établissement", "mm"),
@@ -58,7 +58,7 @@ const pipe = { id: "pipe_flow", domain: "fluid", sketch: "pipe", title: "Écoule
     return S.set({ dp_kPa: dp / 1e3, Re, v, f, Le: Le * 1e3, power: dp * Q, dp, turbulent: turbulent ? 1 : 0 });
   } };
 
-const orifice = { id: "orifice_flow", domain: "fluid", sketch: "orifice", title: "Orifice ou restriction (coefficient de décharge Cd)", question: "Quelle perte de charge crée ce trou calibré, ou quel débit laisse-t-il passer ?",
+const orifice = { id: "orifice_flow", domain: "fluid", sketch: "orifice", title: "Orifice or restriction (discharge coefficient Cd)", fr: "Orifice ou restriction (coefficient de décharge Cd)", question: "Quelle perte de charge crée ce trou calibré, ou quel débit laisse-t-il passer ?",
   inputs: [...fluidInputs(), num("d", "Diamètre de l'orifice d", "mm", 2, 0.01, 1000, 0.1, GEO), num("D", "Diamètre du tube amont D (0 = grand volume)", "mm", 0, 0, 5000, 0.5, GEO),
     num("Cd", "Coefficient de décharge Cd", "", 0.61, 0.1, 1, 0.01, GEO), num("Q", "Débit volumique Q", "L/min", 1, 0, 1e5, 0.1, FLOW), num("dp_max", "Perte de charge admissible (0 = sans objet)", "kPa", 100, 0, 1e5, 1, CRIT)],
   outputs: [out("dp_kPa", "Perte de charge", "kPa"), out("Q_max", "Débit à la perte de charge admissible", "L/min"), out("v", "Vitesse dans l'orifice", "m/s"), out("Re", "Reynolds dans l'orifice", ""), out("beta", "Rapport d / D", ""), out("dp", "Perte de charge", "Pa")],

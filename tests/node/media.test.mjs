@@ -18,7 +18,7 @@ test("the base holds the solids of the library of parts, then the liquids, then 
   for (const [k, d] of Object.entries(MEDIA_PROPS)) assert.ok(d.label && d.fr && typeof d.unit === "string" && !/[éèàç]/.test(d.label), k);
   // the menu : the states in their order, metals before plastics, a group in alphabetical order inside
   const menu = mediaMenu(); assert.deepEqual(menu.map((s) => s.id), ["solid", "liquid", "gas"]); const solids = menu[0].groups.map((g) => g.group);
-  assert.ok(solids.indexOf("Aluminium") < solids.indexOf("ABS") && solids.indexOf("Titane") < solids.indexOf("Polycarbonate (PC)"), "the metals come first"); assert.ok(solids.indexOf("Acier") < solids.indexOf("Aluminium") && solids.indexOf("Aluminium") < solids.indexOf("Cuivre"));
+  assert.ok(solids.indexOf("Aluminium") < solids.indexOf("ABS") && solids.indexOf("Titanium") < solids.indexOf("Polycarbonate (PC)"), "the metals come first"); assert.ok(solids.indexOf("Aluminium") < solids.indexOf("Copper") && solids.indexOf("Copper") < solids.indexOf("Steel"));
   for (const s of menu) for (const g of s.groups) assert.deepEqual(g.list.map((m) => m.name), [...g.list.map((m) => m.name)].sort((a, b) => a.localeCompare(b, "fr", { numeric: true })), `${g.group} is in the order of the names`);
   assert.deepEqual(mediaMenu(["liquid", "gas"]).map((s) => [s.id, s.count]), [["liquid", 5], ["gas", 4]]); assert.deepEqual(mediaMenu(null, "glycol").flatMap((s) => s.groups.flatMap((g) => g.list.map((m) => m.id))), ["glycol50"]); assert.deepEqual(mediaMenu(null, "hélium").map((s) => s.id), ["gas"], "found by its French name too"); assert.deepEqual(mediaMenu(null, "zzz"), []);
 });

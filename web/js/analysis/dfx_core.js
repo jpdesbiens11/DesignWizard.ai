@@ -10,6 +10,8 @@
    }
    A patch never contains code: it is applied by applyPatch() and the part is simply rebuilt. */
 
+import { ruleTitle, ruleTitleFr } from "./dfx_titles.js";
+
 export const SEVERITIES = ["error", "warn", "info"];
 const RANK = { error: 0, warn: 1, info: 2 };
 
@@ -23,7 +25,8 @@ export const round = (x, digits = 2) => { const p = 10 ** digits; return Math.ro
 
 /** One rule of the printable rule book. flags: {fix: true (auto-fix exists), manual: true (not checked automatically), category}. */
 export function rule(id, title, limit, severity, why, source, flags = {}) {
-  return { id, title, limit, severity, why, source, ...flags };
+  const fr = ruleTitleFr(title);      // the title is shown in English, as the trade names what the rule checks ; its French word goes to the glossary
+  return { id, title: ruleTitle(title), ...(fr ? { fr } : {}), limit, severity, why, source, ...flags };
 }
 
 const clean = (v) => (v === undefined || v === null ? null : typeof v === "number" ? (Number.isFinite(v) ? round(v, 4) : null) : v);   // no float noise in value / limit

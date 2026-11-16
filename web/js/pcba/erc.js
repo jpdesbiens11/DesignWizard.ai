@@ -5,6 +5,7 @@
 import { LIBRARY } from "./library.js";
 import { libraryOf, resolveBoard } from "./model.js";
 import { checkNetName } from "./netnames.js";
+import { ruleTitle } from "../analysis/dfx_titles.js";
 
 export const ERC_RULES = [
   { id: "ERC-01", title: "Fonction sans solution", why: "Une fonction que rien ne remplit est une exigence oubliée." },
@@ -18,7 +19,7 @@ export const ERC_RULES = [
   { id: "ERC-09", title: "Nom de net hors convention", why: "Un nom lisible évite les erreurs de câblage et de revue." },
   { id: "ERC-10", title: "Valeur manquante", why: "Sans valeur, le composant ne peut être ni commandé ni monté." },
   { id: "ERC-11", title: "Définition incohérente", why: "Composant, broche ou repère que la carte ne sait pas résoudre." },
-];
+].map((r) => ({ ...r, fr: r.title, title: ruleTitle(r.title) }));      // shown in English, as the trade names what the rule checks ; the French word goes to the glossary
 const TITLE = Object.fromEntries(ERC_RULES.map((r) => [r.id, r.title]));
 const FEEDS = new Set(["connector", "terminal", "inductor", "fuse", "mosfet", "transistor", "diode", "resistor", "testpoint", "switch", "relay", "transformer"]);
 const ACTIVE = new Set(["ic", "mcu", "sensor", "optocoupler"]);

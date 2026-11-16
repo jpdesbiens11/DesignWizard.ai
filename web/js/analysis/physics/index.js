@@ -18,10 +18,10 @@ export const DOMAINS = [{ id: "structure", label: "Structure", color: "#2563eb",
   { id: "fluid", label: "Fluides", color: "#0891b2", icon: "flow", hint: "Ça passe, à quel prix ?" }, { id: "thermal", label: "Thermique", color: "#ea580c", icon: "thermal", hint: "Ça chauffe ?" },
   { id: "electrical", label: "Électrique", color: "#b45309", icon: "power", hint: "Le courant passe sans brûler ?" }];
 /* the few words of a model on its tile : the long title and the question come once it is chosen */
-const SHORT = { beam_cantilever_point: "Porte-à-faux · charge en bout", beam_cantilever_udl: "Porte-à-faux · charge répartie", beam_simple_point: "Deux appuis · charge au centre", beam_simple_udl: "Deux appuis · charge répartie",
-  column_buckling: "Flambement", shaft_torsion: "Torsion d'un arbre", plate_pressure: "Plaque sous pression", thermal_mismatch: "Dilatation différentielle", bolted_joint: "Vis serrée", press_fit: "Emmanchement serré", dowel_pin: "Goupille cisaillée",
-  pipe_flow: "Tube · perte de charge", orifice_flow: "Orifice calibré", conduction_stack: "Paroi · conduction", junction_temperature: "Température de jonction", heatsink_natural: "Ailettes · air calme", heatsink_forced: "Ailettes · air soufflé",
-  lumped_mass: "Masse thermique", busbar: "Busbar", pcb_trace: "Piste de PCB", adiabatic_pulse: "Impulsion de courant" };
+const SHORT = { beam_cantilever_point: "Cantilever · end load", beam_cantilever_udl: "Cantilever · distributed load", beam_simple_point: "Two supports · center load", beam_simple_udl: "Two supports · distributed load",
+  column_buckling: "Column buckling", shaft_torsion: "Shaft torsion", plate_pressure: "Plate under pressure", thermal_mismatch: "Thermal mismatch", bolted_joint: "Bolted joint", press_fit: "Press fit", dowel_pin: "Dowel pin · shear",
+  pipe_flow: "Tube · pressure loss", orifice_flow: "Calibrated orifice", conduction_stack: "Wall · conduction", junction_temperature: "Junction temperature", heatsink_natural: "Fins · natural convection", heatsink_forced: "Fins · forced convection",
+  lumped_mass: "Thermal mass", busbar: "Busbar", pcb_trace: "PCB trace", adiabatic_pulse: "Current pulse" };
 export const shortTitle = (m) => (m ? SHORT[m.id] || m.title : "");
 /** The numeric inputs of a model that still hold the example the tool put there : neither typed, nor confirmed, nor read on a part.
     entered : the keys the designer typed or confirmed (a Set or a list). → keys, in the order of the form */

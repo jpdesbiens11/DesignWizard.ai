@@ -21,7 +21,7 @@ export function dfxItems(run) {
     out.push({ key: `${kind}:${ref}`, kind, ref, name: name || "", process: process || "", score: res && res.summary && typeof res.summary.score === "number" ? res.summary.score : null, errors, warnings, infos, state, points, unavailable: !!(res && res.unavailable), ...extra });
   };
   for (const p of (run && run.parts) || []) push("part", p.spec.id, p.spec.name, p.spec.process, p.res, { family: p.spec.family || "" });
-  for (const a of (run && run.asms) || []) push("assembly", a.asm.id, a.asm.name, "", a.error ? { findings: [{ id: "ASM-00", severity: "error", category: "DFA", title: "Assemblage impossible à évaluer", message: a.error, fix: null }], summary: null } : a.res, { metrics: (a.res && a.res.metrics) || {} });
+  for (const a of (run && run.asms) || []) push("assembly", a.asm.id, a.asm.name, "", a.error ? { findings: [{ id: "ASM-00", severity: "error", category: "DFA", title: "Assembly cannot be evaluated", message: a.error, fix: null }], summary: null } : a.res, { metrics: (a.res && a.res.metrics) || {} });
   return out.sort((a, b) => DFX_STATES[a.state].rank - DFX_STATES[b.state].rank || (a.kind === b.kind ? 0 : a.kind === "part" ? -1 : 1) || (a.ref < b.ref ? -1 : a.ref > b.ref ? 1 : 0));
 }
 /** What the top of the page counts : { error, warn, info, todo (error + warn), pass (items in order), items, score (mean of the parts, or null) } */

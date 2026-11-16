@@ -13,7 +13,7 @@ const PLATE = {
     alpha: [0.0138, 0.0188, 0.0226, 0.0251, 0.0267, 0.0277, 0.0284], cas: "8a", where: "au milieu des grands bords", name: "bords encastrés" },
 };
 
-const plate = { id: "plate_pressure", domain: "structure", sketch: "plate", title: "Plaque rectangulaire sous pression uniforme", question: "Le couvercle ou la paroi plate se bombe-t-il trop sous la pression ?",
+const plate = { id: "plate_pressure", domain: "structure", sketch: "plate", title: "Rectangular plate under uniform pressure", fr: "Plaque rectangulaire sous pression uniforme", question: "Le couvercle ou la paroi plate se bombe-t-il trop sous la pression ?",
   inputs: [num("a", "Grand côté a", "mm", 200, 1, 20000, 1, GEO), num("b", "Petit côté b", "mm", 150, 1, 20000, 1, GEO), num("t", "Épaisseur t", "mm", 3, 0.05, 500, 0.1, GEO),
     opt("edges", "Bords", "ss", [{ value: "ss", label: "Simplement appuyés (vissés, posés)" }, { value: "fixed", label: "Encastrés (soudés, bride rigide)" }], GEO),
     num("p", "Pression uniforme p", "kPa", 10, 0, 1e6, 1, LOAD), num("E", "Module d'Young E", "GPa", 69, 0.001, 500, 1, MAT), num("Re", "Limite élastique Re", "MPa", 276, 0.1, 3000, 1, MAT),
@@ -42,7 +42,7 @@ const plate = { id: "plate_pressure", domain: "structure", sketch: "plate", titl
 
 /* ---------- thermal expansion mismatch ---------- */
 const G1 = "Matériau 1", G2 = "Matériau 2", TH = "Températures";
-const expansion = { id: "thermal_mismatch", domain: "structure", sketch: "bimetal", title: "Dilatation différentielle de deux matériaux assemblés", question: "Les deux pièces assemblées se déchirent-elles quand la température change ?",
+const expansion = { id: "thermal_mismatch", domain: "structure", sketch: "bimetal", title: "Differential thermal expansion of two joined materials", fr: "Dilatation différentielle de deux matériaux assemblés", question: "Les deux pièces assemblées se déchirent-elles quand la température change ?",
   inputs: [num("L", "Longueur entre fixations L", "mm", 200, 0.1, 50000, 1, GEO), num("play", "Jeu disponible aux fixations (0 = liaison rigide)", "mm", 0, 0, 50, 0.05, GEO),
     num("cte1", "Coefficient de dilatation α₁", "µm/m·K", 23.6, 0, 400, 0.1, G1), num("E1", "Module d'Young E₁", "GPa", 69, 0.001, 500, 1, G1), num("A1", "Section A₁", "mm²", 100, 0.001, 1e7, 1, G1), num("Re1", "Limite élastique Re₁", "MPa", 276, 0.1, 3000, 1, G1),
     num("cte2", "Coefficient de dilatation α₂", "µm/m·K", 11.7, 0, 400, 0.1, G2), num("E2", "Module d'Young E₂", "GPa", 205, 0.001, 500, 1, G2), num("A2", "Section A₂", "mm²", 100, 0.001, 1e7, 1, G2), num("Re2", "Limite élastique Re₂", "MPa", 370, 0.1, 3000, 1, G2),

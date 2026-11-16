@@ -8,7 +8,7 @@ const INCROPERA = "Incropera, Fundamentals of Heat and Mass Transfer";
 const HEAT = "Puissance et températures", LAYERS = "Couches", FINS = "Ailettes";
 
 /* ---------- 1-D conduction through a wall or a stack ---------- */
-const wall = { id: "conduction_stack", domain: "thermal", sketch: "wall", title: "Conduction 1-D à travers une paroi ou un empilement", question: "Combien de degrés perd-on à travers cette paroi, cette interface thermique ?",
+const wall = { id: "conduction_stack", domain: "thermal", sketch: "wall", title: "1-D conduction through a wall or a stack", fr: "Conduction 1-D à travers une paroi ou un empilement", question: "Combien de degrés perd-on à travers cette paroi, cette interface thermique ?",
   inputs: [num("A", "Surface de passage de la chaleur", "mm²", 400, 0.01, 1e8, 10, GEO), num("P", "Puissance à évacuer", "W", 20, 0, 1e6, 1, HEAT), num("Tc", "Température du côté froid", "°C", 40, -273, 2000, 1, HEAT),
     num("Tmax", "Température admissible du côté chaud", "°C", 100, -273, 3000, 1, CRIT),
     num("t1", "Couche 1 : épaisseur", "mm", 3, 0, 1000, 0.1, LAYERS), num("k1", "Couche 1 : conductivité k", "W/m·K", 167, 0.001, 2500, 1, LAYERS),
@@ -40,7 +40,7 @@ const wall = { id: "conduction_stack", domain: "thermal", sketch: "wall", title:
   } };
 
 /* ---------- junction temperature chain ---------- */
-const junction = { id: "junction_temperature", domain: "thermal", sketch: "chain", title: "Température de jonction d'un composant (chaîne Rjc + Rcs + Rsa)", question: "Le composant de puissance reste-t-il sous sa température de jonction maximale ?",
+const junction = { id: "junction_temperature", domain: "thermal", sketch: "chain", title: "Component junction temperature (Rjc + Rcs + Rsa chain)", fr: "Température de jonction d'un composant (chaîne Rjc + Rcs + Rsa)", question: "Le composant de puissance reste-t-il sous sa température de jonction maximale ?",
   inputs: [num("P", "Puissance dissipée", "W", 10, 0, 1e5, 0.5, HEAT), num("Ta", "Température ambiante", "°C", 40, -60, 300, 1, HEAT),
     num("Rjc", "Rjc jonction → boîtier (data sheet)", "K/W", 1, 0, 1000, 0.1, "Résistances thermiques"), num("Rcs", "Rcs boîtier → dissipateur (interface)", "K/W", 0.5, 0, 1000, 0.1, "Résistances thermiques"),
     num("Rsa", "Rsa dissipateur → air", "K/W", 5, 0, 1000, 0.1, "Résistances thermiques"), num("Tjmax", "Température de jonction admissible", "°C", 125, -40, 400, 5, CRIT)],
@@ -81,7 +81,7 @@ export function channelNatural(dT, Ta, s, L) {
   const Nu = 1 / Math.sqrt(576 / (X * X) + 2.87 / Math.sqrt(X));
   return { h: Nu * air.k / s, Nu, Ra, X, air };
 }
-const sinkNatural = { id: "heatsink_natural", domain: "thermal", sketch: "fins-natural", title: "Dissipateur à ailettes en convection naturelle", question: "Ce dissipateur à ailettes verticales évacue-t-il la puissance sans ventilateur ?",
+const sinkNatural = { id: "heatsink_natural", domain: "thermal", sketch: "fins-natural", title: "Finned heat sink, natural convection", fr: "Dissipateur à ailettes en convection naturelle", question: "Ce dissipateur à ailettes verticales évacue-t-il la puissance sans ventilateur ?",
   inputs: [num("P", "Puissance à évacuer", "W", 20, 0, 1e5, 1, HEAT), num("Ta", "Température ambiante", "°C", 25, -40, 200, 1, HEAT), num("eps", "Émissivité de la surface (0 = sans rayonnement)", "", 0.8, 0, 1, 0.05, HEAT),
     num("Tmax", "Température admissible de la base", "°C", 80, -40, 500, 5, CRIT), ...finInputs()],
   outputs: [out("Ts", "Température de la base", "°C"), out("Rsa", "Résistance thermique dissipateur → air", "K/W"), out("dT", "Échauffement", "K"), out("h", "Coefficient de convection", "W/m²·K"), out("eta", "Rendement d'ailette", ""),
@@ -113,7 +113,7 @@ const sinkNatural = { id: "heatsink_natural", domain: "thermal", sketch: "fins-n
     return S.set({ Ts, Rsa: i.P > 0 ? dT / i.P : 0, dT, h: r.h, eta: r.eta, s: g.s * 1e3, s_opt: s_opt * 1e3, Q_conv: r.Qc, Q_rad: r.Qr, Ra_s: r.Ra });
   } };
 
-const sinkForced = { id: "heatsink_forced", domain: "thermal", sketch: "fins-forced", title: "Dissipateur à ailettes en convection forcée", question: "Avec ce débit d'air entre les ailettes, le dissipateur tient-il la température ?",
+const sinkForced = { id: "heatsink_forced", domain: "thermal", sketch: "fins-forced", title: "Finned heat sink, forced convection", fr: "Dissipateur à ailettes en convection forcée", question: "Avec ce débit d'air entre les ailettes, le dissipateur tient-il la température ?",
   inputs: [num("P", "Puissance à évacuer", "W", 50, 0, 1e6, 1, HEAT), num("Ta", "Température de l'air à l'entrée", "°C", 25, -40, 200, 1, HEAT), num("v", "Vitesse de l'air entre les ailettes", "m/s", 3, 0.05, 100, 0.1, HEAT),
     num("Tmax", "Température admissible de la base", "°C", 80, -40, 500, 5, CRIT), ...finInputs()],
   outputs: [out("Ts", "Température de la base", "°C"), out("Rsa", "Résistance thermique dissipateur → air", "K/W"), out("dT", "Échauffement de la base", "K"), out("h", "Coefficient de convection", "W/m²·K"), out("eta", "Rendement d'ailette", ""),
@@ -148,7 +148,7 @@ const sinkForced = { id: "heatsink_forced", domain: "thermal", sketch: "fins-for
   } };
 
 /* ---------- lumped thermal mass ---------- */
-const lumped = { id: "lumped_mass", domain: "thermal", sketch: "lump", title: "Masse thermique : constante de temps et échauffement", question: "En combien de temps cette pièce chauffe-t-elle, et jusqu'où ?",
+const lumped = { id: "lumped_mass", domain: "thermal", sketch: "lump", title: "Lumped thermal mass: time constant and temperature rise", fr: "Masse thermique : constante de temps et échauffement", question: "En combien de temps cette pièce chauffe-t-elle, et jusqu'où ?",
   inputs: [num("P", "Puissance dissipée dans la pièce", "W", 5, 0, 1e6, 1, HEAT), num("Ta", "Température ambiante (et initiale)", "°C", 25, -273, 1000, 1, HEAT), num("time", "Durée de fonctionnement", "s", 600, 0, 1e7, 10, HEAT),
     num("Tmax", "Température admissible", "°C", 80, -273, 3000, 5, CRIT),
     num("m", "Masse de la pièce", "g", 100, 0.001, 1e7, 1, "Pièce"), num("cp", "Capacité thermique massique cp", "J/kg·K", 896, 50, 5000, 10, "Pièce"), num("k", "Conductivité k", "W/m·K", 167, 0.01, 2500, 1, "Pièce"),

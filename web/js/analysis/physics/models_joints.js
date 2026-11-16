@@ -12,7 +12,7 @@ export const BOLT_CLASSES = { "4.8": { Sp: 310, Re: 340, Rm: 420 }, "8.8": { Sp:
 const E_BOLT = 205e3;   // MPa
 const TQ = "Serrage", PL = "Pièces serrées", TAP = "Taraudage";
 
-const bolt = { id: "bolted_joint", domain: "joints", sketch: "bolt", title: "Assemblage vissé métrique (couple → précharge)", question: "La vis tient-elle, et l'assemblage reste-t-il serré sous la charge ?",
+const bolt = { id: "bolted_joint", domain: "joints", sketch: "bolt", title: "Metric bolted joint (torque → preload)", fr: "Assemblage vissé métrique (couple → précharge)", question: "La vis tient-elle, et l'assemblage reste-t-il serré sous la charge ?",
   inputs: [opt("size", "Vis", "M6", Object.keys(THREADS).map((k) => ({ value: k, label: `${k} × ${String(THREADS[k][0]).replace(".", ",")}` })), TQ),
     opt("cls", "Classe de qualité", "8.8", Object.keys(BOLT_CLASSES).map((k) => ({ value: k, label: k })), TQ),
     num("T", "Couple de serrage", "N·m", 8, 0, 5000, 0.1, TQ), num("K", "Coefficient de serrage K (nut factor)", "", 0.2, 0.05, 0.5, 0.01, TQ), num("nb", "Nombre de vis", "", 4, 1, 200, 1, TQ),
@@ -74,7 +74,7 @@ const bolt = { id: "bolted_joint", domain: "joints", sketch: "bolt", title: "Ass
 
 /* ---------- interference fit (Lamé thick cylinders) ---------- */
 const HUB = "Moyeu", SHAFT = "Arbre";
-const pressfit = { id: "press_fit", domain: "joints", sketch: "pressfit", title: "Emmanchement serré d'un moyeu sur un arbre (Lamé)", question: "Le frettage transmet-il le couple sans fendre le moyeu ?",
+const pressfit = { id: "press_fit", domain: "joints", sketch: "pressfit", title: "Press fit of a hub on a shaft (Lamé)", fr: "Emmanchement serré d'un moyeu sur un arbre (Lamé)", question: "Le frettage transmet-il le couple sans fendre le moyeu ?",
   inputs: [num("d", "Diamètre nominal de l'ajustement d", "mm", 20, 0.5, 2000, 0.5, GEO), num("L", "Longueur emmanchée L", "mm", 20, 0.5, 2000, 0.5, GEO), num("delta", "Serrage diamétral δ", "µm", 20, 0, 2000, 1, GEO),
     num("mu", "Coefficient de frottement", "", 0.12, 0.01, 1, 0.01, GEO),
     num("Do", "Diamètre extérieur du moyeu", "mm", 40, 0.6, 5000, 0.5, HUB), num("Eh", "Module d'Young du moyeu", "GPa", 205, 0.01, 500, 1, HUB), num("nuh", "Coefficient de Poisson du moyeu", "", 0.29, 0, 0.5, 0.01, HUB), num("Re_h", "Limite élastique du moyeu", "MPa", 370, 1, 3000, 1, HUB),
@@ -109,7 +109,7 @@ const pressfit = { id: "press_fit", domain: "joints", sketch: "pressfit", title:
   } };
 
 /* ---------- dowel pin in shear ---------- */
-const pin = { id: "dowel_pin", domain: "joints", sketch: "pin", title: "Goupille ou pion de centrage en cisaillement", question: "La goupille reprend-elle l'effort tranchant sans se cisailler ni mater les pièces ?",
+const pin = { id: "dowel_pin", domain: "joints", sketch: "pin", title: "Dowel or locating pin in shear", fr: "Goupille ou pion de centrage en cisaillement", question: "La goupille reprend-elle l'effort tranchant sans se cisailler ni mater les pièces ?",
   inputs: [num("d", "Diamètre de la goupille d", "mm", 6, 0.5, 100, 0.5, GEO), num("np", "Nombre de goupilles", "", 1, 1, 50, 1, GEO),
     opt("planes", "Plans de cisaillement", "1", [{ value: "1", label: "Simple cisaillement (2 pièces)" }, { value: "2", label: "Double cisaillement (chape)" }], GEO),
     num("t", "Épaisseur portante la plus faible", "mm", 6, 0.1, 500, 0.5, GEO), num("F", "Effort tranchant total F", "N", 2000, 0, 1e8, 10, LOAD),

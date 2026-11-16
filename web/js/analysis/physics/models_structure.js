@@ -11,19 +11,19 @@ const sfInput = (def = 1.5) => num("sf", "Coefficient de sécurité demandé", "
 
 /* ---------- beams: delta = dn F L3 / (dd E I), M = F L / md, f1 = lam2 / (2 pi L2) sqrt(E I / rho A) ---------- */
 const BEAMS = [
-  { id: "beam_cantilever_point", sketch: "cantilever-point", title: "Poutre encastrée, charge en bout (cantilever)", question: "La poutre en porte-à-faux plie-t-elle trop sous une charge en bout ?",
+  { id: "beam_cantilever_point", sketch: "cantilever-point", title: "Cantilever beam, end load", fr: "Poutre encastrée, charge en bout (cantilever)", question: "La poutre en porte-à-faux plie-t-elle trop sous une charge en bout ?",
     sym: "F", load: "Force en bout F", dn: 1, dd: 3, md: 1, kv: 1, lam2: 3.516, cas: "1a", at: "en bout", mAt: "à l'encastrement", ends: "encastrée – libre" },
-  { id: "beam_cantilever_udl", sketch: "cantilever-udl", title: "Poutre encastrée, charge répartie (cantilever)", question: "Le porte-à-faux tient-il sous une charge répartie sur toute sa longueur ?",
+  { id: "beam_cantilever_udl", sketch: "cantilever-udl", title: "Cantilever beam, distributed load", fr: "Poutre encastrée, charge répartie (cantilever)", question: "Le porte-à-faux tient-il sous une charge répartie sur toute sa longueur ?",
     sym: "W", load: "Charge répartie totale W = q L", dn: 1, dd: 8, md: 2, kv: 1, lam2: 3.516, cas: "2a", at: "en bout", mAt: "à l'encastrement", ends: "encastrée – libre" },
-  { id: "beam_simple_point", sketch: "simple-point", title: "Poutre sur deux appuis, charge au centre", question: "La poutre posée sur deux appuis plie-t-elle trop sous une charge au milieu ?",
+  { id: "beam_simple_point", sketch: "simple-point", title: "Simply supported beam, center load", fr: "Poutre sur deux appuis, charge au centre", question: "La poutre posée sur deux appuis plie-t-elle trop sous une charge au milieu ?",
     sym: "F", load: "Force au centre F", dn: 1, dd: 48, md: 4, kv: 0.5, lam2: PI * PI, cas: "1e", at: "au centre", mAt: "au centre", ends: "appuyée – appuyée" },
-  { id: "beam_simple_udl", sketch: "simple-udl", title: "Poutre sur deux appuis, charge répartie", question: "La poutre posée sur deux appuis tient-elle sous une charge répartie ?",
+  { id: "beam_simple_udl", sketch: "simple-udl", title: "Simply supported beam, distributed load", fr: "Poutre sur deux appuis, charge répartie", question: "La poutre posée sur deux appuis tient-elle sous une charge répartie ?",
     sym: "W", load: "Charge répartie totale W = q L", dn: 5, dd: 384, md: 8, kv: 0.5, lam2: PI * PI, cas: "2e", at: "au centre", mAt: "au centre", ends: "appuyée – appuyée" },
 ];
 
 function beam(c) {
   const dTxt = `${c.dn > 1 ? c.dn + " " : ""}${c.sym} L³ / (${c.dd} E I)`, mTxt = c.md > 1 ? `${c.sym} L / ${c.md}` : `${c.sym} L`;
-  return { id: c.id, domain: "structure", title: c.title, question: c.question, sketch: c.sketch,
+  return { id: c.id, domain: "structure", title: c.title, fr: c.fr, question: c.question, sketch: c.sketch,
     inputs: [num("L", "Portée L", "mm", 200, 1, 50000, 1, GEO), ...sectionInputs(), num("F", c.load, "N", 50, 0, 1e7, 1, LOAD), ...matInputs(true),
       num("dlim", "Flèche admissible", "mm", 2, 0.001, 1000, 0.1, CRIT), sfInput()],
     outputs: [out("delta", "Flèche maximale", "mm"), out("sigma", "Contrainte de flexion", "MPa"), out("sf_yield", "Marge Re / σ", ""), out("f1", "1re fréquence propre", "Hz"),
@@ -56,7 +56,7 @@ function beam(c) {
 
 /* ---------- column buckling: Euler above the transition slenderness, Johnson parabola below ---------- */
 const ENDS = { pp: 1, ff: 2, fp: 0.7, fx: 0.5 };
-const buckling = { id: "column_buckling", domain: "structure", sketch: "column", title: "Flambement d'une colonne (Euler / Johnson)", question: "La pièce comprimée flambe-t-elle avant de s'écraser ?",
+const buckling = { id: "column_buckling", domain: "structure", sketch: "column", title: "Column buckling (Euler / Johnson)", fr: "Flambement d'une colonne (Euler / Johnson)", question: "La pièce comprimée flambe-t-elle avant de s'écraser ?",
   inputs: [num("L", "Longueur L", "mm", 300, 1, 50000, 1, GEO),
     opt("ends", "Liaisons aux extrémités", "pp", [{ value: "pp", label: "Articulée – articulée (K = 1)" }, { value: "ff", label: "Encastrée – libre (K = 2)" },
       { value: "fp", label: "Encastrée – articulée (K = 0,7)" }, { value: "fx", label: "Encastrée – encastrée (K = 0,5)" }], GEO),
@@ -88,7 +88,7 @@ const buckling = { id: "column_buckling", domain: "structure", sketch: "column",
   } };
 
 /* ---------- torsion of a round or tubular shaft ---------- */
-const torsion = { id: "shaft_torsion", domain: "structure", sketch: "shaft", title: "Torsion d'un arbre rond ou tubulaire", question: "L'arbre transmet-il le couple sans se vriller ni céder ?",
+const torsion = { id: "shaft_torsion", domain: "structure", sketch: "shaft", title: "Torsion of a round or tubular shaft", fr: "Torsion d'un arbre rond ou tubulaire", question: "L'arbre transmet-il le couple sans se vriller ni céder ?",
   inputs: [num("do", "Diamètre extérieur", "mm", 12, 0.1, 2000, 0.5, GEO), num("di", "Diamètre intérieur (0 = arbre plein)", "mm", 0, 0, 2000, 0.5, GEO), num("L", "Longueur sollicitée L", "mm", 150, 1, 50000, 1, GEO),
     num("T", "Couple T", "N·m", 10, 0, 1e6, 0.5, LOAD), num("G", "Module de cisaillement G", "GPa", 26, 0.0005, 200, 1, MAT), num("Re", "Limite élastique Re", "MPa", 276, 0.1, 3000, 1, MAT),
     num("theta_lim", "Angle de torsion admissible", "°", 2, 0.001, 360, 0.1, CRIT), sfInput()],

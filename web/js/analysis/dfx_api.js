@@ -9,7 +9,7 @@ async function load() {
   } catch (e) { console.warn("DFx engine not available:", e.message); mod = null; }
   return mod;
 }
-const failed = (e) => ({ findings: [{ id: "DFX-00", severity: "info", category: "DFx", title: "Moteur de règles", message: `Le moteur de règles a rencontré une erreur : ${e.message}. Les autres outils ne sont pas touchés.`, where: null, fix: null }],
+const failed = (e) => ({ findings: [{ id: "DFX-00", severity: "info", category: "DFx", title: "Rule engine", message: `Le moteur de règles a rencontré une erreur : ${e.message}. Les autres outils ne sont pas touchés.`, where: null, fix: null }],
   summary: { errors: 0, warnings: 0, infos: 1, score: null, status: "review" }, rules: [] });
 
 /** DFM / DFx findings of one built part. */

@@ -7,7 +7,7 @@ const CUR = "Courant et températures";
 const condInputs = () => [num("rho20", "Résistivité à 20 °C", "nΩ·m", 17.24, 1, 2000, 0.1, MAT), num("alpha", "Coefficient de température α₂₀", "1/K", 0.00393, 0, 0.01, 0.0001, MAT)];
 
 /* ---------- busbar or conductor ---------- */
-const busbar = { id: "busbar", domain: "electrical", sketch: "busbar", title: "Barre conductrice (busbar) : résistance, chute de tension, échauffement", question: "La barre conductrice chauffe-t-elle trop à ce courant ?",
+const busbar = { id: "busbar", domain: "electrical", sketch: "busbar", title: "Busbar: resistance, voltage drop, temperature rise", fr: "Barre conductrice (busbar) : résistance, chute de tension, échauffement", question: "La barre conductrice chauffe-t-elle trop à ce courant ?",
   inputs: [num("w", "Largeur w (côté vertical, barre sur chant)", "mm", 20, 0.1, 500, 0.5, GEO), num("t", "Épaisseur t", "mm", 3, 0.05, 100, 0.1, GEO), num("L", "Longueur L", "mm", 200, 1, 1e5, 5, GEO),
     num("I", "Courant permanent (DC ou efficace)", "A", 100, 0, 1e5, 5, CUR), num("Ta", "Température ambiante autour de la barre", "°C", 40, -60, 200, 1, CUR),
     num("eps", "Émissivité (cuivre nu oxydé 0,4 ; étamé 0,1 ; peint ou gainé 0,9)", "", 0.4, 0, 1, 0.05, CUR), num("hc", "Coefficient de convection imposé (0 = calculé)", "W/m²·K", 0, 0, 1000, 1, CUR), ...condInputs(),
@@ -41,7 +41,7 @@ const busbar = { id: "busbar", domain: "electrical", sketch: "busbar", title: "B
 
 /* ---------- PCB trace, IPC-2221: I = k dT^0.44 A^0.725 (A in mil2) ---------- */
 const MIL2 = 1 / (0.0254 * 0.0254);    // mil2 per mm2
-const trace = { id: "pcb_trace", domain: "electrical", sketch: "trace", title: "Piste de PCB : courant admissible (IPC-2221)", question: "Cette piste de circuit imprimé supporte-t-elle le courant ?",
+const trace = { id: "pcb_trace", domain: "electrical", sketch: "trace", title: "PCB trace: current capacity (IPC-2221)", fr: "Piste de PCB : courant admissible (IPC-2221)", question: "Cette piste de circuit imprimé supporte-t-elle le courant ?",
   inputs: [num("I", "Courant permanent", "A", 2, 0, 100, 0.1, CUR), num("Ta", "Température ambiante de la carte", "°C", 40, -60, 150, 1, CUR), num("dTmax", "Échauffement admissible de la piste", "K", 10, 1, 100, 1, CRIT),
     num("w", "Largeur de la piste", "mm", 1, 0.05, 50, 0.05, GEO), num("tcu", "Épaisseur de cuivre (35 µm = 1 oz)", "µm", 35, 5, 500, 5, GEO), num("L", "Longueur de la piste", "mm", 50, 0.1, 5000, 1, GEO),
     opt("layer", "Couche", "external", [{ value: "external", label: "Externe (k = 0,048)" }, { value: "internal", label: "Interne (k = 0,024)" }], GEO)],
@@ -68,7 +68,7 @@ const trace = { id: "pcb_trace", domain: "electrical", sketch: "trace", title: "
   } };
 
 /* ---------- short-time adiabatic heating (I2t) ---------- */
-const pulse = { id: "adiabatic_pulse", domain: "electrical", sketch: "pulse", title: "Échauffement adiabatique de courte durée (I²t, Onderdonk)", question: "Le conducteur survit-il à ce court-circuit ou à cette impulsion de courant ?",
+const pulse = { id: "adiabatic_pulse", domain: "electrical", sketch: "pulse", title: "Short-time adiabatic heating (I²t, Onderdonk)", fr: "Échauffement adiabatique de courte durée (I²t, Onderdonk)", question: "Le conducteur survit-il à ce court-circuit ou à cette impulsion de courant ?",
   inputs: [num("I", "Courant pendant l'impulsion (efficace)", "A", 1000, 0, 1e7, 50, CUR), num("time", "Durée", "s", 1, 1e-6, 100, 0.1, CUR), num("Ti", "Température initiale du conducteur", "°C", 40, -60, 500, 5, CUR),
     num("A", "Section du conducteur", "mm²", 10, 0.0001, 1e5, 0.5, GEO), ...condInputs(), num("rho", "Masse volumique", "kg/m³", 8890, 100, 25000, 10, MAT), num("cp", "Capacité thermique massique cp", "J/kg·K", 385, 50, 5000, 5, MAT),
     num("Tmelt", "Température de fusion", "°C", 1083, 100, 4000, 10, MAT), num("Tmax", "Température finale admissible (isolant, brasure)", "°C", 250, 0, 4000, 10, CRIT)],

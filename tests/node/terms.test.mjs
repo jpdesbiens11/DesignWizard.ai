@@ -23,8 +23,8 @@ test("every vocabulary table names its entries in English and keeps the French w
 
 test("the glossary gives every term its French equivalent, by nature, and finds a word in either language", () => {
   const g = glossary(), ids = TERM_GROUPS.map((x) => x.id);
-  assert.ok(g.length >= 170, `${g.length} terms`); assert.deepEqual(ids, ["process", "mold", "operation", "stock", "interface", "electrical", "finish"]); assert.ok(TERM_GROUPS.every((x) => x.label && x.hint && x.icon && /^#[0-9a-f]{6}$/.test(x.color)));
-  for (const r of g) { assert.ok(ids.includes(r.group) && r.en && r.fr, JSON.stringify(r)); assert.ok(!FRENCH.test(r.en), `« ${r.en} » is the English side`); }
+  assert.ok(g.length >= 170, `${g.length} terms`); assert.deepEqual(ids, ["process", "mold", "operation", "stock", "interface", "electrical", "finish", "analysis", "rules"]); assert.ok(TERM_GROUPS.every((x) => x.label && x.hint && x.icon && /^#[0-9a-f]{6}$/.test(x.color)));
+  for (const r of g) { assert.ok(ids.includes(r.group) && r.en && r.fr, JSON.stringify(r)); assert.ok(!FRENCH.test(r.en.replace(/Lamé/g, "Lame")), `« ${r.en} » is the English side`); }      // a proper name keeps its accent
   assert.equal(new Set(g.map((r) => `${r.group}|${r.en.toLowerCase()}`)).size, g.length, "a term is listed once in its group"); assert.deepEqual(g.map((r) => r.group), [...g.map((r) => r.group)].sort((a, b) => ids.indexOf(a) - ids.indexOf(b)), "in the order of the groups");
   const fr = (en) => (g.find((r) => r.en === en) || {}).fr;
   assert.equal(fr("High pressure die casting (HPDC)"), "Fonderie sous pression (haute pression)"); assert.equal(fr("Sand casting"), "Moulage au sable"); assert.equal(fr("Permanent mold casting"), "Moulage en coquille par gravité (moule permanent)"); assert.match(fr("Low pressure die casting (LPDC)"), /basse pression/);

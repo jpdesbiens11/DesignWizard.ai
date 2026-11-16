@@ -454,7 +454,7 @@ test('physicsSummary(): rows of the design-review report', async () => {
     { id: 'phy-2', model: 'pipe_flow', part: null, inputs: b.inputs, values: b.values, checks: b.checks, verdict: b.verdict, when: '2026-11-14T11:00:00.000Z' },
     { id: 'phy-3', model: 'removed_model', part: 'GONE', values: {}, checks: [], verdict: 'warn' }] };
   const rows = physicsSummary(JSON.parse(JSON.stringify(project))); assert.equal(rows.length, 3);
-  assert.deepEqual([rows[0].title, rows[0].part, rows[0].partName, rows[0].verdict, rows[0].verdictLabel], ['Poutre encastrée, charge en bout (cantilever)', 'P1', 'Bras', 'fail', 'NON']);
+  assert.deepEqual([rows[0].title, rows[0].part, rows[0].partName, rows[0].verdict, rows[0].verdictLabel], ['Cantilever beam, end load', 'P1', 'Bras', 'fail', 'NON']);
   assert.ok(rows[0].result.includes('Flèche maximale') && rows[0].result.includes('0,7619') && rows[0].result.endsWith('mm'), rows[0].result);
   assert.ok(rows[0].worst.includes('Flèche') && rows[0].worst.includes('0,656'), rows[0].worst); assert.deepEqual([rows[1].part, rows[1].verdictLabel], ['', 'OK']); assert.ok(rows[1].result.startsWith('Perte de charge'));
   assert.deepEqual([rows[2].title, rows[2].result, rows[2].verdictLabel], ['removed_model', '—', 'À vérifier']); assert.deepEqual(physicsSummary({}), []); assert.deepEqual(physicsSummary(null), []);
