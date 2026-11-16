@@ -4,7 +4,9 @@
    interfaces, commercial thickness, routing sheet — and shows it live. The same intent can be handed to Claude. */
 
 import { el, clear, icon, btn, badge, field, toast, copyText, fmt, fmtMass, debounce } from "../core/dom.js";
-import { registerModule, go, setStatus, setContext, app } from "../core/app.js";
+import { registerModule, go, setStatus, setContext, setGuide, app } from "../core/app.js";
+import { briefIssues } from "../core/shop_check.js";
+import { guideBox, guideCount, nudge } from "../core/guide.js";
 import { store } from "../core/store.js";
 import { kernel } from "../cad/client.js";
 import { Viewer } from "../core/viewer.js";
@@ -62,7 +64,12 @@ function render(main) {
   const left = el("div", { class: "atelier-brief" }), right = el("div", { class: "atelier-side" });
   page.append(el("div", { class: "atelier-grid" }, left, right));
   const rebuild = debounce(() => build(), 220);
-  const propose = () => { token++; create.disabled = true; rebuild(); };   // the shown part is stale from the first keystroke: no creation until it is rebuilt
+  /* what the brief lacks or gets wrong, said as it is typed : next to the proposal, and on the field that waits */
+  const guideHost = el("div");
+  const advise = () => { const list = briefIssues(brief, p), to = (x) => nudge(page.querySelector(`[data-brief="${x.field}"]`) || guideHost); clear(guideHost); const g = guideBox(list, { go: to }); if (g) guideHost.append(g);
+    for (const n of page.querySelectorAll("[data-brief]")) n.classList.toggle("need", list.some((x) => x.level === "todo" && x.field === n.dataset.brief));
+    setGuide(list.map((x) => ({ ...x, go: () => to(x) }))); return guideCount(list).blocking; };
+  const propose = () => { token++; create.disabled = true; advise(); rebuild(); };   // the shown part is stale from the first keystroke: no creation until it is rebuilt
   /* ---- the faces of the proposal answer the lists, and the mouse answers the faces ---- */
   const mark = (side, color, tag) => { if (!viewer) return; viewer.clearOverlays(tag); if (side) lightSide(viewer, side, { color, tag, ids: ["at"] }); };
   const chosen = () => brief.interfaces.find((x) => x.uid === active) || null;
@@ -80,7 +87,7 @@ function render(main) {
       : [{ title: "Vue" }, { label: "Cadrer tout", icon: "fit", run: () => viewer.fit() }, { label: "Vue isométrique", icon: "part", run: () => viewer.view("iso") }, { label: "Dessus", icon: "part", run: () => viewer.view("top") }, { label: "Face", icon: "part", run: () => viewer.view("front") }]); };
 
   /* 1 — intention */
-  const text = (key, label, ph, tag = "input") => { const i = el(tag, tag === "input" ? { type: "text", value: brief[key], placeholder: ph } : { rows: 2, value: brief[key], placeholder: ph }); i.addEventListener("input", () => { brief[key] = i.value; propose(); }); return field(label, i); };
+  const text = (key, label, ph, tag = "input") => { const i = el(tag, tag === "input" ? { type: "text", value: brief[key], placeholder: ph, "data-brief": key } : { rows: 2, value: brief[key], placeholder: ph, "data-brief": key }); i.addEventListener("input", () => { brief[key] = i.value; propose(); }); return field(label, i); };
   const qty = el("input", { type: "number", min: 1, step: 1, value: brief.quantity, onInput: (e) => { brief.quantity = Math.max(1, parseInt(e.target.value, 10) || 1); drawStock(); propose(); } });
   const prio = el("select", { onChange: (e) => { brief.priority = e.target.value; propose(); } }, [["", "Équilibre"], ["cost", "Le coût"], ["mass", "La masse"], ["stiffness", "La rigidité"], ["lead_time", "Le délai"]].map(([k, l]) => el("option", { value: k, selected: k === brief.priority }, l)));
   left.append(el("section", { class: "card taped" }, el("h2", null, el("span", { class: "step-no" }, "1"), "L'intention"),
@@ -111,7 +118,7 @@ function render(main) {
   const holder = el("div", { class: "viewport atelier-view" }), chips = el("div", { class: "atelier-chips" }), out = el("div");
   const create = btn("Créer la pièce", () => createPart(), { primary: true, icon: "check", disabled: true });
   const asmBox = el("input", { type: "checkbox", checked: brief.addToAsm, onChange: (e) => { brief.addToAsm = e.target.checked; } });
-  right.append(el("section", { class: "card taped" }, el("h2", null, el("span", { class: "step-no" }, "4"), "La pièce proposée"), holder, chips, out,
+  right.append(el("section", { class: "card taped" }, el("h2", null, el("span", { class: "step-no" }, "4"), "La pièce proposée"), guideHost, holder, chips, out,
     el("div", { class: "form-actions" }, el("label", { class: "check", style: { marginRight: "auto" } }, asmBox, p.assemblies.length ? `Ajouter à ${p.assemblies[0].id} et mater` : "Assembler avec ses voisines et mater"),
       btn("Affiner avec Claude", async () => { if (!current) return; toast((await copyText(shopPrompt(p, brief, current.spec))) ? "Prompt copié : collez-le dans Claude, puis collez sa réponse dans « Entrevue avec Claude »." : "Copie impossible.", "success", 6000); }, { icon: "wizard", tip: "Copie un prompt qui contient l'intention et cette proposition : Claude l'améliore sans toucher aux interfaces" }),
       create)));
@@ -244,7 +251,7 @@ function render(main) {
       drawProposal(res, built);
       runDfx(res.spec, built).then((dfx) => { if (mine === token) drawOrder(res, built, dfx); });
       const errs = built.log.filter((l) => l.level === "error");
-      create.disabled = !!errs.length || !built.bodies.length;
+      create.disabled = !!errs.length || !built.bodies.length || advise() > 0;      // what blocks in the brief (a part with no name) holds the creation
       setStatus(errs.length ? "Proposition à corriger" : "Proposition construite", errs.length ? "bad" : "done");
     } catch (e) { if (mine === token) { clear(out); out.append(el("p", { class: "form-error" }, e.message)); create.disabled = true; } }
   }

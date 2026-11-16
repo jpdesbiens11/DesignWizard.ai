@@ -10,8 +10,10 @@ import { THEMES, currentTheme, applyTheme } from "./theme.js";
 import { toDwiz } from "./dwiz.js";
 import { dwizFileName } from "./dwiz_names.js";
 import { mountPanes } from "./panes.js";
+import { guideBox, guideCount, guideSummary } from "./guide.js";
+import { projectIssues, issuesHere } from "./guide_checks.js";
 
-export const APP_VERSION = "0.36.0";
+export const APP_VERSION = "0.37.0";
 const modules = new Map();
 const ORDER = ["home", "shop", "parts", "pcb", "pcba", "assembly", "physics", "creepage", "dfx", "drawings", "review", "report"];
 const SHOP_SCREENS = new Set(["interfaces", "process", "extrusion", "library", "busbar", "flex"]);      // screens of the Shop : its tab stays lit on them (see modules/shop_tabs.js)
@@ -22,6 +24,35 @@ export const app = { modules, context: {}, version: APP_VERSION, current: null, 
 export function registerModule(def) { modules.set(def.key, def); }
 export function go(hash) { if (location.hash === hash) route(); else location.hash = hash; }
 export function setContext(ctx) { app.context = ctx || {}; }
+
+/* ---------- the guide of the top bar : what is missing or odd, on this screen and in the project ---------- */
+/** What only the current screen knows (the brief of the Shop, the load case of a simulation) : it hands its list here. */
+export function setGuide(list) { app.guide = Array.isArray(list) ? list : []; refreshGuide(); }
+function guideLists() {
+  const args = location.hash.replace(/^#\/?/, "").split("/").filter(Boolean).map(decodeURIComponent), key = app.current || "home";
+  const ref = (key === "parts" || key === "assembly") && args[1] ? args[1] : null, all = store.project ? projectIssues(store.project) : [];
+  const here = [...(app.guide || []), ...(key === "home" || key === "help" ? [] : issuesHere(all, key, ref))], taken = new Set(here);
+  return { here, rest: all.filter((x) => !taken.has(x)) };
+}
+function refreshGuide() {
+  const b = document.getElementById("guide-btn"); if (!b) return;
+  const g = guideLists(), c = guideCount(g.here), n = c.blocking + c.warn, all = guideSummary([...g.here, ...g.rest]);
+  b.querySelector(".guide-n").textContent = n ? String(n) : ""; b.classList.toggle("block", c.blocking > 0); b.classList.toggle("warn", !c.blocking && c.warn > 0);
+  b.dataset.tip = n ? `Guide — sur cet écran : ${guideSummary(g.here)}` : all ? `Guide — rien à signaler sur cet écran ; dans le projet : ${all}` : "Guide — rien à signaler";
+}
+function guideButton() {
+  const wrap = el("div", { class: "menu-wrap" }), shut = () => { const m = wrap.querySelector(".menu"); if (m) m.remove(); };
+  const follow = (x) => { shut(); if (x.go) x.go(); else if (x.hash) go(x.hash); };
+  const open = () => {
+    const was = wrap.querySelector(".menu"); document.querySelectorAll(".menu").forEach((m) => m.remove()); if (was) return;
+    const g = guideLists(), m = modules.get(app.current || "home");
+    wrap.append(el("div", { class: "menu guide-pop", role: "dialog", "aria-label": "Guide" }, el("h4", null, `Sur cet écran — ${m ? m.label : ""}`), guideBox(g.here, { go: follow, max: 8, quiet: "Rien à signaler ici." }),
+      el("h4", null, "Ailleurs dans le projet"), guideBox(g.rest, { go: follow, max: 8, quiet: "Rien à signaler." }),
+      el("p", { class: "muted small" }, "Le guide se met à jour pendant que vous travaillez. Un clic sur une ligne mène à l'endroit. ", el("a", { href: "#/help", onClick: shut }, "Aide et raccourcis →"))));
+  };
+  wrap.append(el("button", { class: "btn btn-small guide-btn", type: "button", id: "guide-btn", "aria-haspopup": "dialog", "data-tip": "Guide", onClick: open }, icon("info"), el("span", null, "Guide"), el("b", { class: "guide-n", "aria-live": "polite" })));
+  return wrap;
+}
 
 /* the borders of the side panels of a studio : put when a screen draws its studio, again when it rebuilds it */
 let panesWatch = null;
@@ -55,7 +86,7 @@ function topbar() {
     btn("", () => store.redo() || toast("Rien à rétablir."), { icon: "redo", small: true, tip: "Rétablir (Ctrl+Y)" }),
     menuButton("Onshape", "onshape", onshapeMenu), menuButton("Projet", "folder", projectMenu),
     menuButton("", session.account && session.account.admin ? "admin" : "user", accountMenu, session.account ? `Compte : ${session.account.email}` : "Compte Google, Drive et thème"),
-    el("a", { class: "btn btn-small", href: "#/help", "data-tip": "Aide, raccourcis et guide des collaborateurs" }, icon("help")));
+    guideButton(), el("a", { class: "btn btn-small", href: "#/help", "data-tip": "Aide, raccourcis et guide des collaborateurs" }, icon("help")));
   return el("header", { class: "topbar" },
     el("a", { class: "brand", href: "#/home", "aria-label": "DesignWizard.ai, accueil" }, icon("logo", "brand-logo"),
       el("span", { class: "brand-name" }, el("b", null, "DesignWizard", el("i", null, ".ai")), el("small", null, "by DynamiteAgile™"))),
@@ -126,7 +157,7 @@ function route() {
   const main = document.getElementById("main");
   if (app.cleanup) { try { app.cleanup(); } catch (e) { console.error(e); } app.cleanup = null; }
   clear(main);
-  app.context = {}; app.current = key; app.commands = [];
+  app.context = {}; app.current = key; app.commands = []; app.guide = [];
   document.documentElement.dataset.module = key;
   document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.key === (key === "mvp" || key === "team" || key === "plm" ? "review" : SHOP_SCREENS.has(key) ? "shop" : key)));
   const tab = document.querySelector(".tab.active"); if (tab && tab.scrollIntoView) tab.scrollIntoView({ block: "nearest", inline: "nearest" });      // the tool in use stays in sight in a narrow bar
@@ -139,7 +170,7 @@ function route() {
   }
   try { const c = m.render(main, parts.slice(1)); if (typeof c === "function") app.cleanup = c; }
   catch (e) { console.error(e); main.append(el("div", { class: "page" }, el("div", { class: "card" }, el("h2", null, "Cet écran n'a pas pu s'afficher"), el("p", { class: "form-error" }, e.message)))); }
-  studioPanes(main, key);
+  studioPanes(main, key); refreshGuide();
 }
 
 export async function start() {
@@ -150,7 +181,7 @@ export async function start() {
   const last = store.lastId();
   if (last) { try { await store.open(last); } catch (e) { /* the project is gone: stay on the home page */ } }
   if (!store.project) { try { const list = await store.list(); if (list.length) await store.open(list[0].id); } catch (e) { /* no project yet */ } }   // reopen the most recent one
-  window.addEventListener("hashchange", route);
+  window.addEventListener("hashchange", route); store.on("change", refreshGuide); store.on("project", refreshGuide);
   document.addEventListener("keydown", (e) => {
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement && document.activeElement.tagName);
     const mod = e.ctrlKey || e.metaKey;

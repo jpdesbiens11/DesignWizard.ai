@@ -5,7 +5,7 @@
    Route: #/fea or #/fea/<part|assembly id>. Runs kept for the review live in project.simulations. */
 
 import { el, clear, icon, btn, badge, field, table, fmt, toast } from "../core/dom.js";
-import { registerModule, setStatus } from "../core/app.js";
+import { registerModule, setStatus, setGuide } from "../core/app.js";
 import { store } from "../core/store.js";
 import { kernel } from "../cad/client.js";
 import { createViewport } from "../core/viewport.js";
@@ -263,7 +263,8 @@ function render(main, args) {
     const DEFAULT = { fixed: () => regions[0].key, loads: () => ({ region: regions[1].key, mode: "force", F: 100, dir: "-Z", p: 0.1, ask: ["F"] }), power: () => ({ region: regions[0].key, P: 5, ask: ["P"] }), fixedT: () => ({ region: regions[5].key, T: 25, ask: ["T"] }) };
     const aim = (set) => { if (st.view === "result") setView("model"); asking = set; view.style.cursor = "crosshair"; toast("Cliquez une face du produit, extérieure ou intérieure, ou une interface : elle s'allume sous le curseur. Face cachée ? Tournez la vue ou coupez-la.", "info", 4200); };
     const go = (x) => { if (x.id && st.sel !== x.id) select(x.id); setTimeout(() => { if (alive) nudge(left.querySelector(x.field ? `.bc-edit [data-field="${x.field}"]` : x.id ? `[data-bc="${x.id}"]` : ".bc-tree")); }, 90); };
-    sec.append(el("h3", null, "Cas de charge"), ...[guideBox(issues(), { go })].filter(Boolean), bcSection({ st, tree: loadTree(), regions: [...regions, ...usedPatches()], dirs: DIRS, select, changed, aim, relabel: () => { drawLeft(); drawSymbols(); },
+    const found = issues(); setGuide(found.map((x) => ({ ...x, go: () => go(x) })));      // the guide of the top bar says the same
+    sec.append(el("h3", null, "Cas de charge"), ...[guideBox(found, { go })].filter(Boolean), bcSection({ st, tree: loadTree(), regions: [...regions, ...usedPatches()], dirs: DIRS, select, changed, aim, relabel: () => { drawLeft(); drawSymbols(); },
       hover: (k, color) => { vp.viewer.clearOverlays("bchover"); if (k && !asking) lightRegion(k, color || LIT.named, "bchover"); },
       add: (key) => { st[key].push(DEFAULT[key]()); const g = loadTree().find((x) => x.key === key), it = g.items[g.items.length - 1]; st.sel = it.id; changed(); aim((k) => { if (key === "fixed") st.fixed[it.index] = k; else st[key][it.index].region = k; changed(); toEnter(); }); },
       remove: (key, i) => { st[key].splice(i, 1); st.sel = null; changed(); } }),

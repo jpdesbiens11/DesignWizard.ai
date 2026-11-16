@@ -317,3 +317,6 @@ input.need, select.need, textarea.need { border-color: var(--warn); animation: n
 @keyframes need-pulse { 0%, 100% { box-shadow: 0 0 0 0 transparent; background-color: var(--surface); } 50% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--hl-yellow) 80%, transparent); background-color: color-mix(in srgb, var(--hl-yellow) 38%, var(--surface)); } }
 @keyframes need-edge-g { 0%, 100% { border-left-color: var(--warn); } 50% { border-left-color: transparent; } }
 @media (prefers-reduced-motion: reduce) { input.need, select.need, textarea.need { box-shadow: 0 0 0 3px color-mix(in srgb, var(--hl-yellow) 80%, transparent); } }
+.guide-btn .guide-n { min-width: 1.15rem; padding: 0 .28rem; border-radius: 99px; font-size: .72rem; line-height: 1.15rem; text-align: center; background: var(--surface-2); color: var(--ink); } .guide-btn .guide-n:empty { display: none; }
+.guide-btn.warn .guide-n { background: color-mix(in srgb, var(--hl-yellow) 70%, transparent); } .guide-btn.block .guide-n { background: var(--danger); color: #fff; animation: need-edge-g 1.1s ease-in-out infinite; }
+.menu.guide-pop { width: min(430px, 92vw); max-height: 72vh; overflow: auto; padding: .6rem .7rem; } .guide-pop h4 { margin: .5rem 0 .2rem; font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); } .guide-pop h4:first-child { margin-top: 0; }
