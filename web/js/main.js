@@ -32,6 +32,7 @@ import "./modules/plm.js";
 import "./modules/report.js";
 import "./modules/onshape.js";
 import "./modules/help.js";
+import "./modules/start.js";
 import { connect, saveToDrive, openFromDrive } from "./modules/account.js";
 import { gate } from "./core/gate.js";
 import { session } from "./core/access.js";

@@ -8,6 +8,7 @@ import { demoBoard } from "../demo/demo_pcba.js";
 import { DEMO_HVB_PARTS, DEMO_HVB_ASSEMBLY } from "../demo/demo_hvb.js";
 import { DEMO_ROVER } from "../demo/demo_rover.js";
 import { DEMO_ROCKET } from "../demo/demo_rocket.js";
+import { firstSteps, firstStepsLine } from "../core/first_steps.js";
 
 const STEPS = [
   ["shop", "Atelier", "Dites l'intention : à quoi sert la pièce, ses interfaces, sa matière, sa matière première. Elle se construit sous vos yeux, sans esquisse — ou par une entrevue avec Claude."],
@@ -74,6 +75,11 @@ function render(main) {
         el("a", { class: "btn btn-primary gh", href: "https://github.com/jpdesbiens11/DesignWizard.ai", target: "_blank", rel: "noopener noreferrer", "data-tip": "Le code source, sous licence MIT" }, "GitHub"))),
     el("img", { src: `img/sketch/hero-${document.documentElement.dataset.theme || "carnet"}.svg`, alt: "" })));
 
+  /* first steps : where this project stands, and the next thing to do */
+  { const F = firstSteps(p), strip = el("a", { class: "fs-strip", href: "#/start", "data-first-steps": `${F.done}/${F.total}`, "data-tip": "Les huit étapes, de la page blanche à la révision libérée — elles se cochent d'après le projet" },
+      icon("sparkle"), el("span", { class: "grow" }, el("b", null, "Premiers pas"), el("small", null, `${firstStepsLine(F)}.`)),
+      el("span", { class: "fs-bar", "aria-hidden": "true" }, F.steps.map((s) => { const d = el("span", { class: "fs-tick" + (s.done ? " done" : s.next ? " next" : "") }); d.style.setProperty("--dom", s.color); return d; })), el("span", { class: "btn btn-small" }, F.next ? "Continuer" : "Revoir"));
+    page.append(strip); }
   page.append(el("h2", null, "Les briques"),
     el("p", { class: "muted", style: { marginTop: "-.3rem" } }, "L'objectif : commander en quelques jours des pièces faisables, prototyper la physique du produit, l'essayer au laboratoire — et fermer la boucle de conception avant de lancer la série."),
     el("div", { class: "bricks" }, BRICKS.map(([n, title, text, href]) => el(href ? "a" : "div", { class: "brick", href }, icon(`b${n}`), el("b", null, el("i", null, `B${n}`), title), el("small", null, text)))));

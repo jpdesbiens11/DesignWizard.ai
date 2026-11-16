@@ -60,3 +60,31 @@ pas, il dit ce qui manque **avant** qu'elles puissent tourner.
 Pas encore d'entrées propres aux écrans Pièce (au-delà de ce que disent les données), Assemblage (interférences, santé
 des joints — ils ont leurs propres indicateurs), Isolation, PCBA, Dessins et Commande. Le guide ne juge pas la
 conception : il ne remplace ni le DFx ni la revue.
+
+## Premiers pas
+
+Un nouveau venu a huit étapes devant lui, de la page blanche à la révision libérée, rangées par ce que l'on fait —
+**Commencer**, **Concevoir**, **Vérifier**, **Livrer** —, chaque groupe avec sa couleur, chaque étape avec son
+pictogramme (écran « Premiers pas », route `#/start` ; l'accueil et l'Aide y mènent).
+
+| # | Étape | Écran | Faite quand le projet montre… |
+|---|---|---|---|
+| 1 | Ouvrir un projet | Accueil | un projet ouvert |
+| 2 | Une première pièce, par son intention | Atelier (Shop) | au moins une pièce |
+| 3 | Des interfaces qui portent une clé | Interfaces | une interface avec sa clé |
+| 4 | Un assemblage qui se monte seul | Assemblage | deux pièces posées et un accouplement |
+| 5 | La physique, par un modèle simple | Physique | un calcul gardé |
+| 6 | Plus rien à corriger | DFx | une pièce, et aucune entrée « à corriger » ni « à entrer » dans le guide |
+| 7 | Passer en revue | Revue | un artéfact à l'état « Revu » |
+| 8 | Libérer une révision | Révisions | une révision libérée |
+
+**Rien ne se coche à la main** : une étape est faite quand le projet le montre, et se défait s'il ne le montre plus (une
+revue qui ne tient plus est à refaire). L'étape suivante est ouverte, avec **comment** la faire en deux ou trois lignes —
+c'est l'aide de son écran — et un bouton « Y aller ».
+
+Sur l'écran d'une étape qui n'est pas faite, **le guide de la barre du haut la rappelle** (niveau « conseil ») : ce que
+l'on y fait, et la première chose à faire. L'accueil dit où le projet en est (« 5 étapes sur 8 — ensuite : … »).
+
+Modèle pur et testé : `web/js/core/first_steps.js` (`FIRST_STEPS`, `firstSteps`, `firstStepHere`),
+`tests/node/first_steps.test.mjs` ; écran : `web/js/modules/start.js`. Ce que l'étape ne voit pas : un dessin ou un
+dossier téléchargé ne laisse pas de trace dans le projet — seule la révision libérée en laisse une.

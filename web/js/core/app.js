@@ -12,10 +12,11 @@ import { dwizFileName } from "./dwiz_names.js";
 import { mountPanes } from "./panes.js";
 import { guideBox, guideCount, guideSummary } from "./guide.js";
 import { projectIssues, issuesHere } from "./guide_checks.js";
+import { firstStepHere } from "./first_steps.js";
 import { docIdentity } from "./brand.js";
 import { unitPicker } from "./units_ui.js";
 
-export const APP_VERSION = "0.66.0";
+export const APP_VERSION = "0.67.0";
 /** What every document of the open project carries beside its content : approval names, organisation, confidentiality note, extraction stamp (core/brand.js). */
 export const docMeta = (when = new Date()) => docIdentity(store.project, when, APP_VERSION);
 const modules = new Map();
@@ -35,7 +36,8 @@ export function setGuide(list) { app.guide = Array.isArray(list) ? list : []; re
 function guideLists() {
   const args = location.hash.replace(/^#\/?/, "").split("/").filter(Boolean).map(decodeURIComponent), key = app.current || "home";
   const ref = (key === "parts" || key === "assembly") && args[1] ? args[1] : null, all = store.project ? projectIssues(store.project) : [];
-  const here = [...(app.guide || []), ...(key === "home" || key === "help" ? [] : issuesHere(all, key, ref))], taken = new Set(here);
+  const step = key === "start" ? null : firstStepHere(store.project, key);      // the first steps : what one does on this screen, until the project shows it is done
+  const here = [...(app.guide || []), ...(key === "home" || key === "help" ? [] : issuesHere(all, key, ref)), ...(step ? [step] : [])], taken = new Set(here);
   return { here, rest: all.filter((x) => !taken.has(x)) };
 }
 function refreshGuide() {

@@ -29,6 +29,7 @@ function render(main, args = []) {
   main.append(page);
   page.append(el("div", { class: "page-head" }, el("div", { class: "grow" }, el("h1", null, "Aide"), el("p", { class: "muted" }, `DesignWizard.ai by DynamiteAgile™ · version ${app.version} · ${store.mode === "server" ? "serveur local (projets sur le disque, Onshape disponible)" : "mode navigateur (aucun serveur)"}`))));
   const card = (title, ...kids) => el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, title), kids);
+  page.append(el("a", { class: "fs-strip", href: "#/start", "data-tip": "Huit étapes qui se cochent d'après le projet" }, icon("sparkle"), el("span", { class: "grow" }, el("b", null, "Premiers pas"), el("small", null, "De la page blanche à la révision libérée, en huit étapes — avec, pour chaque écran, ce que l'on y fait et comment.")), el("span", { class: "btn btn-small" }, "Ouvrir")));
   page.append(el("div", { class: "two-col" },
     card("L'idée en une minute", el("p", null, "Une pièce ne commence pas par un croquis mais par ses ", el("b", null, "interfaces"), " : ce qui la tient, la positionne ou la relie à ses voisines. Chaque interface a deux côtés (A et B) et des paramètres partagés."),
       el("ol", { style: { paddingLeft: "1.1rem" } }, el("li", null, el("b", null, "Interfaces"), " — décrivez la pièce et cochez ses voisins ; copiez le prompt générique dans Claude ; collez sa réponse : la pièce est construite."),
