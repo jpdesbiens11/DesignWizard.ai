@@ -54,6 +54,28 @@ export function makeKernel(oc) {
     return T(T(new oc.BRepPrimAPI_MakeRevol(face, T(new oc.gp_Ax1(pnt(base), dir(a))), 2 * Math.PI, true)).Shape());
   }
 
+  /** A tube wound in a helix : its centre line runs on a cylinder (r0 === r1) or a cone, from `base` along `axis`, `turns` turns over the
+      height h ; the tube has the outside diameter d and, when di > 0, a bore. The line is a straight line of the (angle, height) plane
+      of the surface, made a 3D curve ; a disc normal to its start is swept along it. */
+  function coil(base, axis, r0, r1, h, turns, d, di = 0) {
+    if (!(r0 > 1e-6 && r1 > 1e-6 && h > 1e-6 && turns > 1e-6 && d > 1e-6)) throw new KernelError(`Serpentin : rayons ${r0} et ${r1}, hauteur ${h}, ${turns} tour(s), tube de ${d}.`);
+    if (di >= d) throw new KernelError(`Serpentin : l'alésage (${di}) doit rester sous le diamètre du tube (${d}).`);
+    const a = v3.unit(axis), ax = T(new oc.gp_Ax3(pnt(base), dir(a))), ang = Math.atan2(r1 - r0, h), slant = h / Math.cos(ang), sweep = 2 * Math.PI * turns, len = Math.hypot(sweep, slant);
+    const surf = Math.abs(r1 - r0) < 1e-9 ? T(new oc.Geom_CylindricalSurface(ax, r0)) : T(new oc.Geom_ConicalSurface(ax, ang, r0));
+    const line = T(new oc.Geom2d_Line(T(new oc.gp_Pnt2d(0, 0)), T(new oc.gp_Dir2d(sweep, slant))));
+    const edge = T(T(new oc.BRepBuilderAPI_MakeEdge(line, surf, 0, len)).Edge());
+    oc.BRepLib.BuildCurves3d(edge);
+    const spine = T(T(new oc.BRepBuilderAPI_MakeWire(edge)).Wire());
+    const X = P3(T(ax.XDirection())), Y = P3(T(ax.YDirection())), start = v3.add(base, v3.mul(X, r0));
+    const tan = v3.unit(v3.add(v3.mul(Y, sweep / len * r0), v3.mul(v3.add(v3.mul(X, Math.sin(ang)), v3.mul(a, Math.cos(ang))), slant / len)));
+    const ring = (r, n) => T(T(new oc.BRepBuilderAPI_MakeWire(T(T(new oc.BRepBuilderAPI_MakeEdge(T(new oc.gp_Circ(T(new oc.gp_Ax2(pnt(start), dir(n))), r)))).Edge()))).Wire());
+    const mf = T(new oc.BRepBuilderAPI_MakeFace(ring(d / 2, tan), true));
+    if (di > 1e-6) mf.Add(ring(di / 2, v3.neg(tan)));                                  // the bore : the same circle, turned the other way
+    const pipe = T(new oc.BRepOffsetAPI_MakePipe(spine, T(mf.Face())));
+    if (!pipe.IsDone()) throw new KernelError("Serpentin : le balayage le long de l'hélice a échoué.");
+    return T(pipe.Shape());
+  }
+
   /* ---------- sketch -> face ---------- */
   function wireOfLoop(loop, to3) {
     const wb = T(new oc.BRepBuilderAPI_MakeWire());
@@ -373,7 +395,7 @@ export function makeKernel(oc) {
     return out;
   }
 
-  return { oc, flush, track: T, box, cylinder, cone, faceOfProfile, prism, revolve, fuse, cut, common, unify, compound, transform, isValid,
+  return { oc, flush, track: T, box, cylinder, cone, coil, faceOfProfile, prism, revolve, fuse, cut, common, unify, compound, transform, isValid,
     edgesInfo, facesInfo, bbox, props, distance, fillet, chamfer, shell, draft, tessellate, stepWrite, stepRead, hlr, section, explore };
 }
 

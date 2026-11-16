@@ -55,6 +55,18 @@ pièces achetées sont des **enveloppes indicatives**, pas des modèles de fourn
 matières n'a pas (PETG, EPDM, néodyme) est dit dans les notes de chaque pièce. À essayer dessus : la **gamme
 d'assemblage**, la **nomenclature** avec sa visserie, les **interférences**, la **couleur** de chaque pièce.
 
+Le quatrième, la **fusée à moteur hybride** (`web/js/demo/demo_rocket.js`), est un **exercice de CAO** : 8 po de
+diamètre, 3,66 m de long (environ 12 pi), quatre ailerons fixes. De la tuyère à l'ogive : la **tuyère refroidie** et
+son **serpentin en hélice** (l'opération `coil` du langage de pièce, une vraie hélice conique sur le divergent), sa
+jupe, la chambre de combustion et son **bloc de polyuréthane**, la plaque d'injection, la **vanne principale** du
+protoxyde d'azote et son actionneur hydraulique (la variante pyrotechnique est dite dans ses notes), le **réservoir**,
+la ligne qui amène au serpentin la part de comburant qui refroidit la tuyère, la baie avionique (cloison, platine,
+**carte de commande**, batterie, **faisceau**), le parachute et l'ogive ; autour, trois tronçons de coque emboîtés et
+deux boutons de rail. Vingt-deux pièces, vingt-six instances, vingt-cinq accouplements ; les ailerons sont calés à 45°
+des boutons de rail par l'angle de leur accouplement. **Rien n'y est dimensionné ni validé** — ni le récipient sous
+pression, ni le moteur, ni le vol : chaque pièce le dit dans ses notes. La jupe est translucide pour laisser voir le
+serpentin ; une **coupe** (bouton de la vue) montre l'intérieur.
+
 ## Ce que nous aimerions savoir
 
 - Le parcours « interfaces d'abord » vous semble-t-il naturel ? Où avez-vous hésité ?

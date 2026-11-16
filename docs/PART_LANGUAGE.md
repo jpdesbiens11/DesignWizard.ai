@@ -117,6 +117,7 @@ Common fields: "op", optional "id", "name", "body" (default "main"), "mode": "ad
 - {"op":"slot", "face":"+Z", "from":[x,y], "to":[x,y], "w":5, "depth":3}
 - {"op":"boss", "face":"+Z", "at":POS, "d":8, "h":6, "start":z, "hole":{"thread":"M3","depth":6}}
       // "tip": top diameter — makes a POINTED boss (a cone from "d" at the foot to "tip" at the top: an embossed contact or welding projection)
+- {"op":"coil", "d":6, "di":4, "r":40, "r1":60, "h":120, "turns":8, "at":[x,y,z], "axis":"Z"}   // a tube wound in a helix (cooling coil, spring): "at" = centre of the base, "r" = radius of the centre line there, "r1" at the top (a cone when it differs), "d" = tube diameter, "di" = its bore (0 or absent: solid); the pitch h / turns must exceed d
 - {"op":"arch", "face":"+Z", "at":POS, "l":6, "w":2, "h":0.6, "t":0.3, "dir":[0,1]}   // a spring blade formed in a strip: an arch of span l along dir (in the face plane), w wide, rising by h; t = blade thickness (hollow under it)
 - {"op":"shell", "t":2.5, "open":["+Z"]}                              // hollow the part, removing the listed faces
 - {"op":"tub", "size":[L,W,H], "wall":2.5, "rc":4, "rf":4, "draft":1}   // moulded shell open on +Z: one wall everywhere, outside radii rc (corners) and rf (floor), real draft in degrees (the rim keeps L x W, the floor is narrower)

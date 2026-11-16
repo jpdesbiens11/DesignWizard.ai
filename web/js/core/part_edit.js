@@ -13,6 +13,7 @@ import { STOCK_FORMS } from "../cad/stock.js";
 export const FEATURE_FORMS = {
   box: [["size", "Taille [x, y, z]", "json"], ["at", "Coin minimum [x, y, z]", "json"], ["mode", "Mode (add / cut)", "text"]],
   cylinder: [["d", "Diamètre", "num"], ["h", "Hauteur", "num"], ["at", "Centre de la base [x, y, z]", "json"], ["axis", "Axe (X, Y, Z)", "text"], ["mode", "Mode (add / cut)", "text"]],
+  coil: [["d", "Diamètre du tube", "num"], ["di", "Alésage du tube (0 : plein)", "num"], ["r", "Rayon de l'hélice à la base", "num"], ["r1", "Rayon de l'hélice en haut (cône)", "num"], ["h", "Hauteur", "num"], ["turns", "Nombre de tours", "num"], ["at", "Centre de la base [x, y, z]", "json"], ["axis", "Axe (X, Y, Z)", "text"]],
   extrude: [["profile", "Profil", "json", "rect, circle, slot, poly, path, gen…"], ["plane", "Plan (XY, XZ, YZ)", "text"], ["at", "Position du plan", "num"], ["length", "Longueur", "num"], ["mode", "Mode (add / cut)", "text"]],
   revolve: [["profile", "Profil (x = rayon)", "json"], ["plane", "Plan", "text"], ["axis", "Axe", "text"], ["angle", "Angle (°)", "num"]],
   hole: [["face", "Face", "face"], ["at", "Position(s)", "json", "[x,y] · [[x,y],…] · {grid:{…}} · {circle:{…}}"], ["d", "Diamètre", "num"], ["thread", "Filetage (M3, M4…)", "text"], ["depth", "Profondeur ou through", "num"],
@@ -42,10 +43,10 @@ export const FEATURE_FORMS = {
   deburr: [["note", "Consigne (vide = ébavurer, casser les angles)", "text"]],
   finish: [["note", "Finition", "text"]],
 };
-export const FEATURE_LABEL = { ...Object.fromEntries(Object.entries(SHOP_VERBS).map(([k, v]) => [k, v.fr])), box: "Bloc", cylinder: "Cylindre", extrude: "Extrusion de profil", revolve: "Révolution", hole: "Trou", pocket: "Poche", pad: "Bossage plat", slot: "Rainure",
+export const FEATURE_LABEL = { ...Object.fromEntries(Object.entries(SHOP_VERBS).map(([k, v]) => [k, v.fr])), box: "Bloc", cylinder: "Cylindre", coil: "Serpentin (tube en hélice)", extrude: "Extrusion de profil", revolve: "Révolution", hole: "Trou", pocket: "Poche", pad: "Bossage plat", slot: "Rainure",
   boss: "Bossage cylindrique", arch: "Lame en pont", shell: "Coque", fillet: "Congé", chamfer: "Chanfrein", interfaces: "— géométrie des interfaces —" };
 export const FEATURE_DEFAULT = {
-  box: { op: "box", size: [20, 20, 10], at: [0, 0, 0] }, cylinder: { op: "cylinder", d: 10, h: 10, at: [0, 0, 0], axis: "Z" },
+  box: { op: "box", size: [20, 20, 10], at: [0, 0, 0] }, cylinder: { op: "cylinder", d: 10, h: 10, at: [0, 0, 0], axis: "Z" }, coil: { op: "coil", d: 4, di: 3, r: 15, h: 40, turns: 6, at: [0, 0, 0], axis: "Z" },
   extrude: { op: "extrude", profile: { rect: [0, 0, 30, 20], r: 2 }, plane: "XY", at: 0, length: 10 }, hole: { op: "hole", face: "+Z", at: [10, 10], d: 5, depth: "through" },
   pocket: { op: "pocket", face: "+Z", rect: [5, 5, 20, 10], r: 2, depth: 3 }, pad: { op: "pad", face: "+Z", rect: [5, 5, 20, 10], r: 1, h: 2 }, slot: { op: "slot", face: "+Z", from: [5, 5], to: [25, 5], w: 4, depth: 2 },
   boss: { op: "boss", face: "+Z", at: [10, 10], d: 8, h: 6, hole: { thread: "M3", depth: 6 } }, shell: { op: "shell", t: 2, open: ["+Z"] }, fillet: { op: "fillet", r: 2, edges: "vertical" }, chamfer: { op: "chamfer", d: 0.5, edges: { face: "+Z" } },

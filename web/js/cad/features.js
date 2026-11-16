@@ -93,6 +93,15 @@ const OPS = {
     const min = f.center ? [f.center[0] - size[0] / 2, f.center[1] - size[1] / 2, f.center[2] - size[2] / 2] : (f.at || [0, 0, 0]).map((v, i) => num(v, `box at[${i}]`, f));
     apply(K, st, f, K.box(min, v3.add(min, size)));
   },
+  /** A tube wound in a helix (a cooling coil, a spring) : "at" = centre of the base of the helix, "r" = radius of its centre line there, "r1" at the
+      top (a cone when it differs), "h" = height, "turns", "d" = outside diameter of the tube, "di" = its bore (0 : solid). */
+  coil(K, st, f) {
+    const a = axisOf(f.axis, f), base = (f.at || [0, 0, 0]).map((v, i) => num(v, `coil at[${i}]`, f)), r = pos(f.r, "coil r", f), r1 = f.r1 === undefined || f.r1 === null ? r : pos(f.r1, "coil r1", f);
+    const h = pos(f.h, "coil h", f), turns = pos(f.turns, "coil turns", f), d = pos(f.d, "coil d", f), di = f.di ? pos(f.di, "coil di", f) : 0;
+    if (h / turns < d - 1e-9) throw new FeatureError(`coil : le pas (${Math.round(h / turns * 100) / 100}) est plus court que le diamètre du tube (${d}) — les spires se traversent.`, f);
+    if (Math.min(r, r1) <= d / 2) throw new FeatureError(`coil : le rayon de l'hélice (${Math.min(r, r1)}) doit dépasser le rayon du tube (${d / 2}).`, f);
+    apply(K, st, f, K.coil(base, a, r, r1, h, turns, d, di));
+  },
   cylinder(K, st, f) {
     const a = axisOf(f.axis, f), base = (f.at || [0, 0, 0]).map((v, i) => num(v, `cylinder at[${i}]`, f));
     const h = pos(f.h ?? f.length, "cylinder h", f), d = pos(f.d, "cylinder d", f);
