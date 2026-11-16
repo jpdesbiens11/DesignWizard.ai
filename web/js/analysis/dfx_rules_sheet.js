@@ -11,7 +11,7 @@ import { laserProfile, sheetSeries } from "../cad/special_processes.js";
 import { checkFolded } from "./dfx_rules_folded.js";
 
 const S = {
-  sm: "Guides DFM de tôlerie (Protolabs, Xometry — sheet metal design guide)", thumb: "Règle de pouce (rule of thumb), à confirmer avec le fournisseur",
+  sm: "Guides DFM de tôlerie (Protolabs, Xometry — sheet metal design guide), connus par résumés : à confirmer avec le tôlier", thumb: "Règle de pouce (rule of thumb), à confirmer avec le fournisseur",
   stock: "Liste des épaisseurs en stock (standards.js — SHEET_GAUGES)", comp: "Pratique composites — joints boulonnés, à confirmer avec les admissibles", router: "Pratique CNC router",
 };
 const R = {

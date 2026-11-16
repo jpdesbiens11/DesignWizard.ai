@@ -72,5 +72,5 @@ export function trlReferences() {
     ...[s.url ? el("p", { class: "small" }, el("a", { href: s.url, target: "_blank", rel: "noopener noreferrer" }, s.url)) : null].filter(Boolean));
   return el("section", { class: "card trl-refs" }, el("h2", null, "Références — définitions des niveaux de maturité"),
     el("p", { class: "muted" }, "Le texte officiel est l'anglais cité ; le français à côté est une traduction de la plateforme. Quand un contrat cite une norme précise, c'est elle qui fait foi. Un clic sur une référence dit ce qu'elle couvre et comment elle a été vérifiée."),
-    TRL_SOURCES.map(row));
+    TRL_SOURCES.map(row), el("p", { class: "small" }, el("a", { href: "#/help/sources" }, "Les sources des autres outils (isolement, dessins, calculs, fabrication, cartes) sont dans l'aide →")));
 }

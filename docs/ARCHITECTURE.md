@@ -111,7 +111,8 @@ tools/                     génération des icônes Carnet, de la doc du langage
 
 - Dessins : cotes hors tout, cotes de détail des opérations simples, motifs de vis, tableau des trous, GD&T des
   interfaces, une coupe A-A hachurée ([DESSINS.md](DESSINS.md)) ; pas de chaîne de cotes, de coupe brisée ni de vue de détail.
-- Pas de famille tôlerie pliée (déplié, rayon de pliage).
+- Tôlerie pliée : la famille existe (plis, développé à plat, DXF avec lignes de pliage) ; ses règles sont des valeurs
+  typiques, jamais confrontées à une table de pliage ([TOLERIE.md](TOLERIE.md)).
 - Mates : par interfaces uniquement ; pas de contraintes libres entre faces quelconques.
 - Une pièce importée en STEP n'a ni paramètres ni dessin ; les noms de ses solides sont lus au mieux.
 - À plusieurs : en miroir, synchronisé par Drive ou par échange de fichiers ([EQUIPE.md](EQUIPE.md)) ; pas de temps réel.

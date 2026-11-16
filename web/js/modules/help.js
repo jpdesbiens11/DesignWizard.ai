@@ -6,6 +6,7 @@ import { registerModule, app } from "../core/app.js";
 import { store } from "../core/store.js";
 import { NL_EXAMPLES } from "../core/nl.js";
 import { LANGUAGE_REFERENCE } from "../cad/language_doc.js";
+import { sourcesCard } from "./help_sources.js";
 
 const REPO = "https://github.com/jpdesbiens11/DesignWizard.ai";
 const KEYS = [["Ctrl + K", "La baguette : aller partout, lancer une commande, modifier la pièce en langage courant"], ["Guide", "Le bouton « Guide » de la barre du haut : ce qui manque ou cloche sur l'écran et dans le projet ; un clic sur une ligne mène à l'endroit. Un champ qui clignote attend votre valeur"], ["Ctrl + B", "Cacher ou montrer le volet de gauche d'un studio (le bouton est aussi sur sa bordure) ; sa largeur est la même sur tous les écrans"], ["Ctrl + Z / Ctrl + Y", "Annuler / rétablir (60 étapes, par projet)"], ["Ctrl + S", "Enregistrer tout de suite (l'enregistrement est aussi automatique)"],
@@ -16,13 +17,13 @@ const KEYS = [["Ctrl + K", "La baguette : aller partout, lancer une commande, mo
   ["Dans l'assemblage : H · I · Maj + H", "Masquer la pièce choisie, l'isoler, tout afficher ; Entrée l'ouvre, Suppr la retire"], ["Dans la simulation : clic droit sur une face", "Appui ici, effort ici, pression ici, source de chaleur ici"],
   ["Dans l'Atelier : clic sur la pièce proposée", "Met l'interface choisie sur cette face (elle passe au vert) ; clic droit : ajouter une interface ici"], ["Ctrl + C · ?", "Copier la mesure de la sélection · afficher les gestes de la vue"],
   ["Double clic sur un perçage", "Ouvrir l'opération ou l'interface qui l'a percé"], ["H · T · P · B · I", "Sur la face choisie : trou, taraudage, poche, bossage, interface"], ["R · C", "Sur les arêtes choisies : congé, chanfrein"], ["N", "Regarder la face choisie de face"], ["Suppr", "Retirer l'opération du perçage choisi"], ["Échap", "Tout désélectionner"]];
-const LIMITS = ["Les dessins cotent l'enveloppe et renvoient au tableau des trous ; les cotes de détail ne sont pas encore placées une à une.", "La tôlerie pliée (déplié, rayon de pliage) n'a pas encore sa famille dédiée : utilisez « extrude » d'un profil en L ou en U.",
+const LIMITS = ["Les valeurs intégrées (tables, règles de pouce, propriétés de matières) ont chacune leur niveau de vérification : voir « Sources des méthodes, conventions et normes », plus haut.",
   "Les contraintes d'assemblage sont les mates d'interfaces ; pas encore de contraintes libres (coaxial, distance) entre faces quelconques.", "L'envoi vers Onshape est testé contre un serveur simulé : la première utilisation sur un vrai compte est à faire sur un document d'essai.",
   "Les tables IEC 60664-1 intégrées sont à vérifier contre votre copie de la norme avant toute décision de certification.", "Une pièce importée en STEP est affichée, assemblée, analysée et exportée, mais n'a ni paramètres ni dessin."];
 const ROADMAP = ["Entrevue directement dans l'app avec une clé d'API Claude (aujourd'hui : copier / coller).", "« Envelopper » : générer le boîtier autour des pièces choisies, avec colonnettes et découpes alignées sur leurs interfaces.", "Mates natifs Onshape et variables Onshape reliées aux paramètres de la plateforme.",
-  "Chaînes de cotes (tolérancement statistique) calculées le long des interfaces.", "Bibliothèque de pièces standard (visserie, connecteurs, cellules) insérées en 3D depuis la BOM.", "Revue à plusieurs : commentaires épinglés sur le 3D et sur le rapport."];
+  "Chaînes de cotes (tolérancement statistique) calculées le long des interfaces.", "Visserie insérée en 3D depuis la nomenclature (les connecteurs et les cellules viennent déjà de la bibliothèque électrique).", "Revue à plusieurs : annotations sur le rapport (les messages épinglés sur le 3D existent)."];
 
-function render(main) {
+function render(main, args = []) {
   const page = el("div", { class: "page" });
   main.append(page);
   page.append(el("div", { class: "page-head" }, el("div", { class: "grow" }, el("h1", null, "Aide"), el("p", { class: "muted" }, `DesignWizard.ai by DynamiteAgile™ · version ${app.version} · ${store.mode === "server" ? "serveur local (projets sur le disque, Onshape disponible)" : "mode navigateur (aucun serveur)"}`))));
@@ -39,6 +40,7 @@ function render(main) {
     el("ol", { style: { paddingLeft: "1.1rem" } }, el("li", null, "Écrivez votre demande, comme à un technicien ou à un stagiaire."), el("li", null, "Copiez la demande et l'artéfact (.dwiz), collez-les dans votre assistant."), el("li", null, "Collez sa réponse : l'écran liste chaque ajout, modification et retrait, et signale ce que les vérifications refusent."), el("li", null, "Appliquez — ou non. C'est une seule étape, que Ctrl + Z annule."))));
   page.append(card("Gammes : parler avec le fournisseur et avec le prototypage", el("p", null, "L'onglet « Gamme » d'une pièce écrit sa fabrication phase par phase — poste, prise de pièce, opérations, outils, contrôles — avec les questions à poser au fournisseur. Celui d'un assemblage écrit le montage, une étape par pièce, avec les vis, les couples indicatifs et les clés ; l'étape « Fabrication » du PCBA porte la gamme d'assemblage de la carte."),
     el("ul", { style: { paddingLeft: "1.1rem" } }, el("li", null, "Cliquez une phase : la vue montre la pièce après cette phase, ou le produit à cette étape du montage."), el("li", null, "Notez ce qui se dit sous chaque phase, ajoutez vos points à discuter : ils restent dans l'artéfact."), el("li", null, "Sortez la gamme en Word, en PDF (images de chaque étape, colonne « Réponse », signatures) ou en texte pour un courriel."), el("li", null, "Ce sont des propositions : la gamme de l'atelier fait foi."))));
+  page.append(sourcesCard(args[0] === "sources" ? args[1] || "sources" : ""));
   page.append(card("Raccourcis", el("table", { class: "data" }, el("tbody", null, KEYS.map(([k, t]) => el("tr", null, el("td", { class: "nowrap" }, k.split(" · ").map((x, i) => [i ? " · " : "", el("kbd", null, x)])), el("td", null, t)))))));
   page.append(el("div", { class: "two-col" },
     card("La baguette comprend", el("p", { class: "muted" }, "Dans une pièce, ouvrez la baguette (Ctrl + K) et écrivez ce que vous voulez. Elle annonce ce qu'elle va faire avant de le faire ; Ctrl + Z l'annule."), el("ul", { style: { paddingLeft: "1.1rem" } }, NL_EXAMPLES.map((x) => el("li", null, el("code", null, x))))),

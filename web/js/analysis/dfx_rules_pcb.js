@@ -15,7 +15,7 @@ const R = {
   p01: rule("PCB-01", "Trou au bord de carte", "Bord du trou au bord de carte ≥ épaisseur de la carte", "warn", "Le bord se fissure au détourage.", S.fab),
   p02: rule("PCB-02", "Couronne de tête de vis", "Couronne sans cuivre Ø ≈ rondelle (≈ 2 × trou) autour de chaque trou de fixation", "warn", "La tête de vis court-circuite le cuivre.", S.prac),
   p03: rule("PCB-03", "Rayon de détourage", "Angles intérieurs du contour ≥ R1,0 (fraise Ø2) ; angles extérieurs R1,0 conseillés", "warn", "La fraise de détourage ne fait pas d'angle vif intérieur ; un angle extérieur vif s'ébrèche.", S.fab, { fix: true }),
-  p04: rule("PCB-04", "Carte plane", "Une carte est plane (épaisseur constante)", "error", "Un PCB ne se plie pas et ne s'usine pas en relief.", "", { manual: true }),
+  p04: rule("PCB-04", "Carte plane", "Une carte est plane (épaisseur constante)", "error", "Un PCB ne se plie pas et ne s'usine pas en relief.", "Pratique PCB", { manual: true }),
   p05: rule("PCB-05", "Épaisseur standard", "0,8 · 1,0 · 1,2 · 1,6 · 2,0 · 2,4 mm (1,6 mm par défaut)", "warn", "Une autre épaisseur coûte plus cher et allonge le délai.", S.fab, { fix: true }),
   p06: rule("PCB-06", "Composant au bord de carte", "Composant à ≥ 2 mm du bord ; connecteurs et pièces hautes (≥ 5 mm) peuvent dépasser volontairement", "warn", "Dépanélisation, manutention et rails de convoyeur ont besoin d'une marge.", "IPC-2221 (edge clearance) ; règle de pouce", { fix: true }),
   p07: rule("PCB-07", "Composants superposés", "Deux empreintes du même côté ne se recouvrent pas", "warn", "Collision des boîtiers au placement.", S.prac),
@@ -25,10 +25,10 @@ const R = {
   p13: rule("PCB-13", "Zones sous tension et trous de fixation", "Distance de la zone à la tête de vis ≥ IPC-2221B B2 à la tension du net", "warn", "La vis est au potentiel du châssis : arc vers la structure.", S.ipc),
   p20: rule("PCB-20", "Accès aux connecteurs", "Zone libre devant chaque connecteur (sens d'enfichage)", "warn", "La fiche du faisceau ne peut pas être insérée.", S.prac, { manual: true }),
   p21: rule("PCB-21", "Composants près des trous de fixation", "Rien sous la rondelle (+ 0,5 mm) ; pièces hautes (≥ 5 mm) à ≥ 2,5 mm de la rondelle (accès outil)", "warn", "La tête de vis ou la douille touche le composant.", S.iso),
-  l01: rule("LIB-01", "Utiliser tel quel", "Aucune modification d'une pièce achetée", "info", "Garde la garantie et les données du fournisseur valides.", ""),
-  l02: rule("LIB-02", "Modèle simplifié", "Pas de filets ni de moletage : encombrement et masse seulement", "info", "Un modèle détaillé alourdit l'assemblage sans rien apporter.", ""),
+  l01: rule("LIB-01", "Utiliser tel quel", "Aucune modification d'une pièce achetée", "info", "Garde la garantie et les données du fournisseur valides.", "Pratique courante"),
+  l02: rule("LIB-02", "Modèle simplifié", "Pas de filets ni de moletage : encombrement et masse seulement", "info", "Un modèle détaillé alourdit l'assemblage sans rien apporter.", "Pratique courante"),
   l03: rule("LIB-03", "Visserie et aluminium", "Inox ou acier zingué avec l'aluminium : vérifier les couples galvaniques ; isoler le carbone de l'aluminium", "info", "Corrosion galvanique.", "Pratique courante", { manual: true }),
-  l04: rule("LIB-04", "Référence fournisseur", "Fournisseur et référence exacte (MPN) renseignés", "info", "Sans référence, la pièce ne peut pas être commandée.", ""),
+  l04: rule("LIB-04", "Référence fournisseur", "Fournisseur et référence exacte (MPN) renseignés", "info", "Sans référence, la pièce ne peut pas être commandée.", "Pratique courante"),
 };
 export const BOOK_PCB = [
   { process: "pcb", category: "DFM", steps: ["Carte de 1,6 mm sauf raison contraire", "Trous de fixation = une interface bolt_pattern, avec une couronne sans cuivre pour la tête de vis", "Contour : angles ≥ R1,0 pour la fraise Ø2",

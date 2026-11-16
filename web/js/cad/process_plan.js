@@ -62,7 +62,7 @@ function questions(spec, r, facts, opts) {
   const deep = (facts.holes || []).filter((h) => !h.through && h.depth > 5 * h.d);
   if (deep.length) add("Perçages", `${deep.length} perçage(s) borgne(s) de plus de 5 fois le diamètre : débourrage ou foret long, quelle tolérance de position tenez-vous au fond ?`);
   if ((spec.interfaces || []).some((i) => i.type === "fit" || i.type === "pins")) add("Tolérances", "Les ajustements (alésages, goupilles) sont-ils alésés ou interpolés ? Quel moyen de contrôle ?");
-  add("Tolérances", "Tolérance générale ISO 2768-m et cotes d'interface à ± 0,1 : y a-t-il une cote que vous déconseillez à ce prix ?");
+  add("Tolérances", "Tolérance générale ISO 2768-mK et cotes d'interface à ± 0,1 : y a-t-il une cote que vous déconseillez à ce prix ?");
   if (spec.finish && !/brut|aucun/i.test(spec.finish)) add("Finition", `Finition « ${spec.finish} » : faite chez vous ou sous-traitée ? Délai ajouté ? Zones à épargner (filetages, portées, appuis électriques) ?`);
   if (proc === "sheet_metal") add("Pliage", "Rayon de pliage et outillage disponibles ? Sens du laminage par rapport aux plis ? Tolérance d'angle ?");
   if (proc === "laser_cut" || proc === "sheet_metal") add("Découpe", "Quelle source laser et quel gaz pour cette matière ? Bavure, oxyde ou bord carbonisé : quel état de bord est livré, comment est-il contrôlé ?");

@@ -132,7 +132,7 @@ function render(main, args) {
     notes.style.fontFamily = "var(--font)"; notes.style.fontSize = ".88rem";
     const saveNotes = () => { const list = notes.value.split("\n").map((s) => s.trim()).filter(Boolean); if (isAsm) store.updateAssembly(id, (x) => { x.notes = list; }, `${id} : notes du dessin`); else store.updatePart(id, (x) => { x.notes = list; }, `${id} : notes du dessin`); };
     body.append(el("div", { class: "side-section" }, el("h3", null, isAsm ? "Notes propres à l'assemblage" : "Notes propres à la pièce"), notes, el("div", { class: "form-actions" }, btn("Appliquer les notes", saveNotes, { small: true })),
-      el("p", { class: "muted", style: { fontSize: ".8rem" } }, "Les notes générales (ASME Y14.5, matériau, tolérances, classes de cotes) sont ajoutées seules, toujours en bas à gauche de la feuille.")));
+      el("p", { class: "muted", style: { fontSize: ".8rem" } }, "Les notes générales (ASME Y14.5, matériau, tolérances, classes de cotes) sont ajoutées seules, toujours en bas à gauche de la feuille.", " ", el("a", { href: "#/help/sources/drawing" }, "Sources de la méthode →"))));
     if (st.doc && !isAsm) body.append(el("div", { class: "side-section" }, el("h3", null, "Envoi"), el("p", { class: "muted", style: { fontSize: ".84rem" } }, "Le PDF et le dessin natif Onshape partent avec l'assemblage."), el("a", { class: "btn btn-small", href: "#/onshape" }, icon("onshape"), "Envoyer vers Onshape")));
   }
   app.commands = [{ label: "Dessin : télécharger le PDF", hint: "dessin", icon: "pdf", keys: "pdf dessin drawing", run: pdf }];

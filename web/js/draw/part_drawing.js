@@ -95,7 +95,7 @@ export function drawingNotes(spec, sem, dims) {
   for (const g of sem.gdt) if (g.rule) rules.set(g.rule, [...(rules.get(g.rule) || []), g.name]);
   return [`Cotation et tolérancement géométrique interprétés selon ASME Y14.5-2018 ; cotes en millimètres ; tolérances générales des cotes non tolérancées : ISO 2768-mK.`,
     `Matériau : ${mat.name}.${spec.finish ? ` Finition : ${spec.finish}.` : ""} Procédé : ${(PROCESSES[spec.process] || {}).fr || "à définir"}. Casser les arêtes vives 0,2 à 0,5 mm ; ébavurer.`,
-    "Chaque cote porte une bulle ronde numérotée, sur la vue qui la montre ou au tableau (feuille 2 quand il y en a une). Chaque tolérance géométrique porte un drapeau hexagonal (T1, T2…) : sur l'élément qu'elle contrôle, et au tableau des tolérances. Les cotes encadrées (entre crochets au tableau) sont des cotes de base : elles situent un groupe tolérancé en position par rapport aux références A, B et C.",
+    "Chaque cote porte une bulle ronde numérotée, sur la vue qui la montre ou au tableau (feuille 2 quand il y en a une). Chaque tolérance géométrique porte un drapeau hexagonal (T1, T2… — repère propre à ce dessin, pas un symbole de la norme) : sur l'élément qu'elle contrôle, et au tableau des tolérances. Les cotes encadrées (entre crochets au tableau) sont des cotes de base : elles situent un groupe tolérancé en position par rapport aux références A, B et C.",
     ...classNotes(dims), ...[...rules].map(([rule, names]) => `Tolérances de position calculées (${rule}) : ${names.join(" ; ")}.`), ...(spec.notes || [])];
 }
 /** The height a block of notes takes. */
