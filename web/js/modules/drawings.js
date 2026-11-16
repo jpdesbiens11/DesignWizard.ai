@@ -27,7 +27,7 @@ function sheetOpts(key, rev, extra) {
     status: d.status || (now === "ok" ? "Revu" : now === "changed" ? "À revalider" : "Préliminaire"), date: new Date().toISOString().slice(0, 10), revisions, organisation: d.organisation || "", confidential: confidentialNote(d.organisation, d.confidentiality), ...extra };
 }
 const render2 = (compose, data, title) => { const svg = new SvgSheet({ width: PW, height: PH, title }), info = compose(svg, data);
-  return { svg: svg.toString(0), info, pdfBytes: () => { const pdf = new PdfSheet({ width: PW, height: PH, title }); compose(pdf, data); return pdf.toBytes(); } }; };
+  return { svg: svg.toString(0), svgs: svg.toStrings(), info, pdfBytes: () => { const pdf = new PdfSheet({ width: PW, height: PH, title }); compose(pdf, data); return pdf.toBytes(); } }; };
 
 /** Build the drawing of a part. Returns {svg, pdfBytes(), info, built, spec}. Shared with Rapport and Onshape. */
 export async function makeDrawing(partId, extra = {}) {
@@ -81,7 +81,7 @@ function render(main, args) {
       const doc = isAsm ? await makeAssemblyDrawing(id) : await makeDrawing(id);
       if (token !== st.token) return;
       st.doc = doc;
-      clear(center); center.append(svgNode(doc.svg));
+      clear(center); (doc.svgs || [doc.svg]).forEach((markup, i, all) => { if (all.length > 1) center.append(el("p", { class: "sheet-no" }, `Feuille ${i + 1} / ${all.length}`)); center.append(svgNode(markup)); });
       setStatus(`Dessin de ${id} à l'échelle ${doc.info.scale}`, "done");
       renderDims(); renderRight();
     } catch (e) { if (token !== st.token) return; clear(center); center.append(el("div", { class: "card" }, el("h2", null, "Dessin impossible"), el("p", { class: "form-error" }, e.message))); }

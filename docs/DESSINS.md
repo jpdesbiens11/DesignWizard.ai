@@ -9,10 +9,32 @@ Format **tabloïd** — 11 × 17 po (431,8 × 279,4 mm, ANSI B), paysage — pou
 
 | Zone | Contenu |
 |---|---|
-| **Bas à gauche** | les notes, toujours : la référence à **ASME Y14.5-2018**, la matière et le procédé, le sens des cotes encadrées, la légende des classes en usage, puis les notes propres à la pièce |
-| **Milieu** | les trois vues standard — plan, élévation, profil — à la plus grande échelle normalisée qui tient, centrées dans ce qui reste hors des notes et de la colonne du cartouche |
-| **Haut à droite** | le tableau des révisions, puis une petite vue isométrique (illustrative, hors échelle) |
-| **Bas à droite** | le cartouche ; au-dessus : pour une pièce, les tolérances géométriques, le tableau des trous et celui des cotes de définition ; pour un assemblage, la **nomenclature** |
+| **Bande du bas** | à gauche les notes, toujours : la référence à **ASME Y14.5-2018**, la matière et le procédé, le sens des bulles, des drapeaux et des cotes encadrées, la légende des classes en usage, puis les notes propres à la pièce ; à droite le **cartouche** |
+| **Tout le reste** | les trois vues standard — plan, élévation, profil — à la **plus grande échelle qui tient** : elles prennent la feuille. Seules les rangées de cotes dont la pièce a besoin sont gardées libres autour d'elles |
+| **Coin haut à droite** | là où trois vues laissent la feuille vide : le tableau des révisions, une petite vue isométrique (illustrative, hors échelle), le tableau des **tolérances géométriques** et le **tableau des trous** (150 mm de large). La vue de droite passe dessous, ou tout le bloc reste à sa gauche |
+| **Feuille 2** | pour une pièce, le tableau des **cotes de définition** que la feuille 1 ne montre pas sur une vue, en colonnes, avec le même cadre et le même cartouche (« 1/2 », « 2/2 ») ; pour un assemblage, la **nomenclature** reste au-dessus du cartouche |
+
+Échelles : 10:1, 5:1, 2:1, 1:1, **1:1,5**, 1:2, 1:2,5, 1:4, 1:5, 1:10, 1:20. Le 1:1,5 et le 1:2,5 sont des échelles
+intermédiaires : elles évitent de tomber d'un coup à la moitié quand le 1:1 ne tient pas. La base du boîtier de la
+démonstration (160 × 110 × 42 mm) se dessine au 1:1,5 ; elle était au 1:2,5 quand une colonne de tableaux prenait
+toute la droite de la feuille.
+
+## Les tolérances géométriques : un drapeau sur l'élément, le même au tableau
+
+Un cadre de tolérance posé loin de la vue ne dit pas ce qu'il contrôle. Chaque tolérance porte donc un **drapeau
+hexagonal** — T1, T2… — distinct de la bulle ronde d'une cote :
+
+- **sur la vue**, le drapeau est relié par une **flèche** à ce qu'il contrôle : pour un motif de trous, un trou du
+  motif (le plus à l'extérieur ; « 4× » au tableau dit les autres) ; pour une surface — planéité d'un plan de joint,
+  d'une plage d'appui — son arête, sur la vue de droite, qui porte le moins de cotes ; pour un passage ou un
+  ajustement, son centre dans la vue qui lui fait face. Deux drapeaux ne se posent pas l'un sur l'autre ;
+- **au tableau « Tolérances géométriques »** du coin, une ligne par drapeau : le drapeau, le **cadre de tolérance**
+  (symbole, zone, modificateur, références), puis ce à quoi il s'applique — le nombre, les **repères des trous**
+  (« A1–A4 », les mêmes qu'au tableau des trous et que sur la vue) et le nom de l'interface.
+
+C'est la pratique que la norme admet quand les cadres ne tiennent pas sur les vues : un tableau, avec un repérage sans
+équivoque. ASME Y14.5 n'a pas été relue ligne à ligne pour ce point : la forme du drapeau (un hexagone) est un choix de
+la plateforme, dit en note sur chaque dessin.
 
 ## Chaque cote a sa bulle
 
@@ -55,8 +77,9 @@ et à droite de la vue de face.
 
 Une pièce qui a quelque chose à l'intérieur — coque, poche, trou, bossage — reçoit une **coupe A-A** : le plan passe en
 travers de la longueur, par le milieu ; ce qui est entre l'œil et le plan est retiré ; la **face coupée est hachurée**.
-La coupe prend la rangée de la vue de dessus, à sa droite, à l'échelle de la feuille quand elle tient (sinon à une
-échelle plus petite, écrite sous son titre). Le **plan de coupe** est tracé sur la vue de dessus, avec ses flèches dans
+La coupe prend la **rangée de la vue de face**, à droite de la vue de droite, à l'échelle de la feuille : le calcul de
+l'échelle lui garde cette place. À défaut, elle se met à droite de la vue de dessus, au besoin à une échelle plus
+petite, écrite sous son titre. Le **plan de coupe** est tracé sur la vue de dessus, avec ses flèches dans
 le sens du regard et la lettre A.
 
 Dans l'écran Dessins, « Coupe A-A » règle le plan : automatique, en travers de la longueur ou de la largeur avec sa

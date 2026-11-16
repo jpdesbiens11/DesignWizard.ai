@@ -1,11 +1,14 @@
-/* DesignWizard.ai — composes the 2D drawing of a part on a Sheet (PDF or SVG backend), on a tabloid page (11 × 17 in) :
-   the three standard views fitted in the middle of the sheet, a small isometric view top right, the notes always bottom
-   left, the title block bottom right with the tables above it. Every dimension the design defines is there — on the view
-   that shows it, or in a table — with its round balloon, and its class symbol (reference, SC, CSC) right after it. A part
+/* DesignWizard.ai — composes the 2D drawing of a part on a Sheet (PDF or SVG backend), on a tabloid page (11 × 17 in).
+   The views take the sheet : the three standard views at the largest scale that fits, the notes in a band at the bottom
+   beside the title block, and — in the top right corner a three-view layout leaves empty — the revisions, a small
+   isometric view, the geometric tolerances and the holes as tables. A geometric tolerance is tied to what it controls :
+   a hexagonal flag (T1, T2…) with a leader on the feature, the same flag in the table beside its frame and the tags of
+   its holes. The long table of the definition dimensions goes to a second sheet. Every dimension the design defines is
+   there — on the view that shows it, or in a table — with its round balloon, and its class symbol right after it. A part
    with something inside gets a section A-A, hatched, beside the top view, and its cutting plane on the top view. Datums and geometric
    tolerances come from the interfaces and read as ASME Y14.5. Pure layout code (browser and Node). */
 
-import { PAPER, STYLE, LW, dimLinear, centerMark, featureControlFrame, datumFeature, viewLabel, drawBorder, drawTitleBlock, drawNotes, drawTable, drawRevisionTable, leaderNote, sectionArrows, TITLE_BLOCK_H } from "./drafting.js";
+import { PAPER, STYLE, LW, dimLinear, centerMark, featureControlFrame, datumFeature, viewLabel, drawBorder, drawTitleBlock, drawNotes, drawTable, drawRevisionTable, leaderNote, sectionArrows, arrowHead, fitText, TITLE_BLOCK_H, TITLE_BLOCK_W } from "./drafting.js";
 import { hatch } from "./hatch.js";
 import { interfaceType, patternPoints } from "../cad/interfaces.js";
 import { materialOrDefault, PROCESSES } from "../cad/materials.js";
@@ -21,8 +24,8 @@ export const VIEW_DEFS = {
 /** The views to ask the kernel for : the standard ones, and the section when the part has one (cad/section_view.js : sectionOf). */
 export const viewRequest = (section = null) => [...Object.entries(VIEW_DEFS).map(([name, v]) => ({ name, dir: v.dir, xdir: v.xdir, hidden: v.hidden !== false })), ...(section ? [{ ...section, name: "section", hidden: false }] : [])];
 export const SHEET = "TABLOID";
-const SCALES = [[10, "10:1"], [5, "5:1"], [2, "2:1"], [1, "1:1"], [0.5, "1:2"], [0.4, "1:2,5"], [0.25, "1:4"], [0.2, "1:5"], [0.1, "1:10"], [0.05, "1:20"]];
-const RAD = Math.PI / 180, BAL_R = 2.5, RIGHT_W = 180;
+const SCALES = [[10, "10:1"], [5, "5:1"], [2, "2:1"], [1, "1:1"], [2 / 3, "1:1,5"], [0.5, "1:2"], [0.4, "1:2,5"], [0.25, "1:4"], [0.2, "1:5"], [0.1, "1:10"], [0.05, "1:20"]];
+const RAD = Math.PI / 180, BAL_R = 2.5, STACK_W = 150, GDT_ROW = 6.2;
 
 export function bounds(view) {
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
@@ -46,6 +49,18 @@ export function classSymbol(sheet, x, y, cls, h = 4.4) {
   sheet.polyline(pts, { w: LW.medium, close: true });
   const label = cls.toUpperCase(); sheet.text(x + w + 0.7, y + 0.95, label, { size: 2.6, font: "bold" });
   return w + 0.7 + sheet.textWidth(label, { size: 2.6, font: "bold" });
+}
+/** The flag of a geometric tolerance : a hexagon with its tag — not a round balloon, which numbers a dimension — and a leader with an arrow to what it controls. */
+export function gdtFlag(sheet, c, tag, to = null, r = 3.3) {
+  if (to) { const a = Math.atan2(to[1] - c[1], to[0] - c[0]); sheet.line(c[0] + r * Math.cos(a), c[1] + r * Math.sin(a), to[0], to[1], { w: LW.thin }); arrowHead(sheet, to, a / RAD, { len: 2.6 }); }
+  sheet.polyline(Array.from({ length: 6 }, (_, i) => [c[0] + r * Math.cos(i * Math.PI / 3), c[1] + r * Math.sin(i * Math.PI / 3)]), { w: LW.medium, close: true, fill: "#ffffff" });
+  sheet.text(c[0], c[1] + r * 0.27, tag, { size: r * 0.7, font: "bold", align: "center" });
+}
+/** Hole tags as one reads them : « A1–A4 » for a run, « A1, A3 » otherwise. */
+export function tagRange(tags) {
+  const list = [...tags], m = list.map((t) => /^([A-Z]+)(\d+)$/.exec(t));
+  if (list.length > 2 && m.every((x) => x && x[1] === m[0][1]) && m.every((x, i) => !i || +x[2] === +m[i - 1][2] + 1)) return `${list[0]}–${list[list.length - 1]}`;
+  return list.join(", ");
 }
 /** What follows the text of a dimension drawn on a view : its balloon, then its class symbol, along the direction of the text — never over it. */
 function annotate(sheet, d, r) {
@@ -80,7 +95,7 @@ export function drawingNotes(spec, sem, dims) {
   for (const g of sem.gdt) if (g.rule) rules.set(g.rule, [...(rules.get(g.rule) || []), g.name]);
   return [`Cotation et tolérancement géométrique interprétés selon ASME Y14.5-2018 ; cotes en millimètres ; tolérances générales des cotes non tolérancées : ISO 2768-mK.`,
     `Matériau : ${mat.name}.${spec.finish ? ` Finition : ${spec.finish}.` : ""} Procédé : ${(PROCESSES[spec.process] || {}).fr || "à définir"}. Casser les arêtes vives 0,2 à 0,5 mm ; ébavurer.`,
-    "Chaque cote porte une bulle numérotée, sur la vue qui la montre ou au tableau. Les cotes encadrées (entre crochets au tableau) sont des cotes de base : elles situent un groupe tolérancé en position par rapport aux références A, B et C.",
+    "Chaque cote porte une bulle ronde numérotée, sur la vue qui la montre ou au tableau (feuille 2 quand il y en a une). Chaque tolérance géométrique porte un drapeau hexagonal (T1, T2…) : sur l'élément qu'elle contrôle, et au tableau des tolérances. Les cotes encadrées (entre crochets au tableau) sont des cotes de base : elles situent un groupe tolérancé en position par rapport aux références A, B et C.",
     ...classNotes(dims), ...[...rules].map(([rule, names]) => `Tolérances de position calculées (${rule}) : ${names.join(" ; ")}.`), ...(spec.notes || [])];
 }
 /** The height a block of notes takes. */
@@ -91,16 +106,31 @@ export function composeDrawing(sheet, data) {
   const { spec, built, views, project } = data, o = data.opts || {};
   const frame = drawBorder(sheet, { confidential: o.confidential }), mat = materialOrDefault(spec.material), sem = drawingSemantics(spec, built), dims = dimensionList(spec, built), holes = holeRows(built);
   const B = { front: bounds(views.front), top: bounds(views.top), right: bounds(views.right), iso: bounds(views.iso) }, third = (o.projection || "third") === "third";
-  /* the furniture first : it says what room is left for the views */
-  const notes = drawingNotes(spec, sem, dims), notesW = 150, nH = Math.min(notesHeight(sheet, notes, notesW), 80), notesY = frame.y + frame.h - nH - 3, colX = frame.x + frame.w - RIGHT_W;
+  /* the furniture first : it says what room is left for the views. Bottom band : the notes beside the title block. Top right corner :
+     the revisions, the isometric view, the geometric tolerances and the holes — where three views leave the sheet empty. */
+  const flags = sem.gdt.map((g, i) => ({ ...g, flag: `T${i + 1}` })), holeDims = dims.filter((d) => d.table === "holes");
+  const notes = drawingNotes(spec, sem, dims), notesW = frame.w - TITLE_BLOCK_W - 12, nH = Math.min(notesHeight(sheet, notes, notesW), 70), notesY = frame.y + frame.h - nH - 3, bandH = Math.max(TITLE_BLOCK_H, nH) + 6;
   const revs = o.revisions && o.revisions.length ? o.revisions : [{ rev: spec.revision || "A", description: o.revisionText || "Émission", date: o.date || "", by: o.drawnBy || "" }];
-  const revH = (Math.min(revs.length, 4) + 2) * 5, isoBox = { x: frame.x + frame.w - 66, y: frame.y + revH + 3, w: 62, h: 48 };
-  /* the three views, at the largest standard scale that fits, centred in what is left */
-  const gap = 24, padL = 34, padR = 40, padT = 31, padB = 36, area = { x: frame.x + 4, y: frame.y + 4, w: colX - frame.x - 10, h: notesY - frame.y - 10 };
-  let scale = SCALES[SCALES.length - 1];
-  for (const sc of SCALES) { const k = sc[0]; if ((B.front.w + B.right.w) * k + gap + padL + padR <= area.w && (B.front.h + B.top.h) * k + gap + padT + padB <= area.h) { scale = sc; break; } }
-  const s = scale[0], bw = (B.front.w + B.right.w) * s + gap, bh = (B.front.h + B.top.h) * s + gap;
-  const fx = area.x + padL + (area.w - padL - padR - bw) / 2, y0 = area.y + padT + (area.h - padT - padB - bh) / 2;
+  const revH = (Math.min(revs.length, 4) + 2) * 5, stackX = frame.x + frame.w - STACK_W, isoBox = { x: frame.x + frame.w - 60, y: frame.y + revH + 3, w: 56, h: 36 };
+  const gdtH = flags.length ? 5 + flags.length * GDT_ROW + 3 : 0, holesH = holeDims.length ? (holeDims.length + 2) * 4.4 + 3 : 0, stackBottom = isoBox.y + isoBox.h + 3 + gdtH + holesH, stack = { x: stackX, y: frame.y, w: STACK_W, h: stackBottom - frame.y };
+  /* the three views, at the largest standard scale that fits : top and front on the left, the right view beside the front one — under
+     the tables of the corner, or left of them */
+  /* the room the dimensions take round the views : a row is 8 mm ; only the rows this part needs are kept free */
+  const rowsOn = (view) => Math.min(3, dims.filter((d) => d.on === view && d.dir === "h" && d.kind !== "overall").length), padT = 11 + 8 * Math.max(1, rowsOn("top")), padB = 18 + 8 * Math.min(3, 1 + rowsOn("front"));
+  const gap = 24, padL = 34, padR = 40, topR = 40, area = { x: frame.x + 4, y: frame.y + 4, w: frame.w - 8, h: frame.h - bandH - 8 };
+  const sec = views.section && views.section.cut && views.section.cut.length ? views.section : null, Bs = sec ? bounds(sec) : null;      // a section A-A has its place in the row of the front view, right of the right view
+  const fitAt = (k) => {
+    const secW = Bs ? 30 + Bs.w * k : 0, colW = padL + Math.max(B.front.w, B.top.w) * k, W = colW + gap + B.right.w * k + padR + secW, H = padT + B.top.h * k + gap + Math.max(B.front.h, Bs ? Bs.h : 0) * k + padB;
+    if (W > area.w || H > area.h || area.x + colW + topR > stackX - 4) return null;
+    const span = B.front.w * k + gap + B.right.w * k + padR - 16 + secW, mid = area.x + padL + Math.max(0, Math.min((area.w - W) / 2, stackX - 4 - topR - (area.x + colW))), tops = [area.y + (area.h - H) / 2, area.y + area.h - H];      // 16 : the right view rarely carries three rows of dimensions
+    /* the right view under the tables of the corner, the block centred — or, when the corner comes too low, the whole block left of it */
+    for (const top of tops) { const fy = (third ? top + padT + B.top.h * k + gap : top + padT) - Math.max(0, (Bs ? Bs.h : 0) - B.front.h) * k; if (mid + span <= stackX - 4 || fy - 4 >= stackBottom) return { x: mid, y: top + padT }; }
+    const leftMost = stackX - 4 - span; if (leftMost >= area.x + padL) return { x: Math.min(mid, leftMost), y: tops[0] + padT };
+    return null;
+  };
+  let scale = SCALES[SCALES.length - 1], fit = null;
+  for (const sc of SCALES) { const f = fitAt(sc[0]); if (f) { scale = sc; fit = f; break; } }
+  const s = scale[0], bw = (B.front.w + B.right.w) * s + gap, bh = (B.front.h + B.top.h) * s + gap, fx = fit ? fit.x : area.x + padL, y0 = fit ? fit.y : area.y + padT;
   const topY = third ? y0 : y0 + B.front.h * s + gap, frontY = third ? y0 + B.top.h * s + gap : y0, rightX = fx + B.front.w * s + gap;
   const T = { front: drawView(sheet, views.front, B.front, fx, frontY, s, o.hidden !== false), top: drawView(sheet, views.top, B.top, fx, topY, s, o.hidden !== false), right: drawView(sheet, views.right, B.right, rightX, frontY, s, o.hidden !== false) };
   const isoS = Math.min(isoBox.w / Math.max(B.iso.w, 1), isoBox.h / Math.max(B.iso.h, 1));                       // illustrative, not to scale
@@ -136,18 +166,21 @@ export function composeDrawing(sheet, data) {
   for (const d of dims.filter((x) => x.kind === "pattern")) place(d, T[d.on](d.p1), T[d.on](d.p2), d.on, slotsOf(d));
   /* the section A-A : in the row of the top view, clear of its dimensions, at the scale of the sheet when it fits — its cut face hatched,
      its plane shown on the top view with the arrows of the look */
-  let section = null; const sec = views.section && views.section.cut && views.section.cut.length ? views.section : null;
+  let section = null;
   if (sec) {
-    const Bs = bounds(sec), rows = used["top:vR"] || 0, sx = Math.max(rightX, fx + B.top.w * s + (rows ? 30 + 10 * rows : 0)), rowH = B.top.h * s, roomW = area.x + area.w - sx - 4, roomH = rowH + padT - 14;
-    const k = SCALES.find((c) => c[0] <= s && Bs.w * c[0] <= roomW && Bs.h * c[0] <= roomH);
+    const rows = used["top:vR"] || 0, sx = Math.max(rightX, fx + B.top.w * s + (rows ? 30 + 10 * rows : 0)), rowH = B.top.h * s, roomW = (topY < stackBottom + 4 ? stackX - 6 : area.x + area.w - 4) - sx, roomH = rowH + padT - 14;
+    /* at the scale of the sheet : in the row of the front view, right of the right view — the fit of the views kept that room ; beside the
+       top view otherwise, at a smaller scale as the last resort, said under the view */
+    const rx = rightX + B.right.w * s + 30, ry = frontY + B.front.h * s - Bs.h * s, inRow = rx + Bs.w * s <= area.x + area.w - 2 && ry >= area.y && (ry - 3 >= stackBottom || rx + Bs.w * s <= stackX - 4), beside = !inRow && Bs.w * s <= roomW && Bs.h * s <= roomH;
+    const k = beside || inRow ? scale : SCALES.find((c) => c[0] <= s && Bs.w * c[0] <= roomW && Bs.h * c[0] <= roomH);
     if (k) {
-      const sw = Bs.w * k[0], sh = Bs.h * k[0], sy = third ? topY + rowH - sh : topY, TS = drawView(sheet, sec, Bs, sx, sy, k[0], false);
+      const sw = Bs.w * k[0], sh = Bs.h * k[0], px = inRow ? rx : sx, sy = inRow ? ry : third ? topY + rowH - sh : topY, TS = drawView(sheet, sec, Bs, px, sy, k[0], false);
       for (const [a, b] of hatch(sec.cut.map((pl) => pl.map(TS)), 1.3, 45)) sheet.line(a[0], a[1], b[0], b[1], { w: LW.fine, color: "#333333" });      // close lines : a thin wall must still show that it is cut
       for (const pl of sec.cut) sheet.polyline(pl.map(TS), { w: LW.visible, cap: "round" });
-      viewLabel(sheet, sx + sw / 2, sy + sh + 4, "COUPE A-A", k[0] !== s ? `ÉCHELLE ${k[1]}` : "", { size: 3.6 });
+      viewLabel(sheet, px + sw / 2, sy + sh + 4, "COUPE A-A", k[0] !== s ? `ÉCHELLE ${k[1]}` : "", { size: 3.6 });
       const at = sec.plane.at, ends = sec.plane.axis === "x" ? [T.top([at, B.top.y1]), T.top([at, B.top.y0])] : [T.top([B.top.x1, at]), T.top([B.top.x0, at])], out = 5, ux = Math.sign(ends[1][0] - ends[0][0]), uy = Math.sign(ends[1][1] - ends[0][1]);
       sectionArrows(sheet, [ends[0][0] - ux * out, ends[0][1] - uy * out], [ends[1][0] + ux * out, ends[1][1] + uy * out], "A", { size: 3.6, arrowLen: 7 });
-      section = { x: sx, y: sy, w: sw, h: sh, scale: k[1], axis: sec.plane.axis, at };
+      section = { x: px, y: sy, w: sw, h: sh, scale: k[1], axis: sec.plane.axis, at };
     }
   }
   /* holes : centre marks and tags in the view that faces them */
@@ -164,33 +197,60 @@ export function composeDrawing(sheet, data) {
     else if (F.axis === 1) { const p = T.top([B.top.x0 + B.top.w * (used["top:hB"] && third ? 0.66 : 0.2), bb[1]]); datumFeature(sheet, p[0], p[1], d.letter, { dir: "down" }); }      // clear of the dimensions that stand under the top view
     else { const p = T.front([B.front.x0 + B.front.w * 0.2, bb[2]]); datumFeature(sheet, p[0], p[1], d.letter, { dir: "down" }); }
   }
-  /* right column, under the isometric view and above the title block : geometric tolerances, then the tables — every row with its balloon */
-  const limit = frame.y + frame.h - TITLE_BLOCK_H - 4; let gy = frame.y + revH + 6, left = 0;      // the tolerances stand beside the isometric view, the tables under it
-  for (const g of sem.gdt) {
-    if (gy + 9 > limit) { left++; continue; }
-    const tagged = holes.find((h) => h.iface === g.iface && pos.has(h.tag)), text = `${g.count > 1 ? `${g.count}× ` : ""}${g.name}${g.fit ? ` ${g.fit}` : ""}`;
-    const fr = featureControlFrame(sheet, colX, gy, { symbol: g.symbol, tolerance: f2(g.tolerance), diameter: g.diameter, modifier: g.modifier, datums: g.datums }, { h: 6, leaderTo: tagged && sem.gdt.length <= 3 ? pos.get(tagged.tag) : undefined });
-    const room = (gy < isoBox.y + isoBox.h + 2 ? isoBox.x : frame.x + frame.w) - colX - (fr.width || 44) - 5, fit = Math.max(8, Math.floor(room / 1.25));
-    sheet.text(colX + (fr.width || 44) + 2.5, gy + 4.1, text.length > fit ? `${text.slice(0, fit - 1)}…` : text, { size: 2.5 });
-    gy += (fr.height || 6) + 2.2;
+  /* geometric tolerances : each one is tied to what it controls by a flag — on the feature in a view, with a leader, and in the table of
+     the corner beside its frame. A hole pattern is flagged on one of its holes (« 4× » says the rest) ; a surface on its edge. */
+  const centre = { top: [fx + B.top.w * s / 2, topY + B.top.h * s / 2], front: [fx + B.front.w * s / 2, frontY + B.front.h * s / 2], right: [rightX + B.right.w * s / 2, frontY + B.right.h * s / 2] }, put = [];
+  flags.forEach((g, i) => {
+    const it = (built.interfaces || []).find((x) => x.id === g.iface), hs = holes.filter((h) => h.iface === g.iface && pos.has(h.tag)); let to = null, dir = [0.7, -0.7];
+    g.tags = hs.length ? tagRange(hs.map((h) => h.tag)) : "";
+    if (g.symbol !== "flatness" && hs.length) { const v = viewOf[hs[0].face], far = hs.reduce((b0, h) => (Math.hypot(pos.get(h.tag)[0] - centre[v][0], pos.get(h.tag)[1] - centre[v][1]) > Math.hypot(pos.get(b0.tag)[0] - centre[v][0], pos.get(b0.tag)[1] - centre[v][1]) ? h : b0)), c = pos.get(far.tag), d = [c[0] - centre[v][0], c[1] - centre[v][1]], n = Math.hypot(d[0], d[1]) || 1;
+      dir = [d[0] / n, d[1] / n]; to = [c[0] + dir[0] * Math.max(far.d / 2 * s, 0.8), c[1] + dir[1] * Math.max(far.d / 2 * s, 0.8)]; }
+    else if (it && it.frame) { const F = FACES[it.face] || FACES["+Z"], org = it.frame.o, up = F.n[F.axis] > 0;
+      if (g.symbol === "flatness" || it.type === "planar" || it.type === "bond") {                                // a surface : flagged where it shows as an edge
+        const q = 0.42 + 0.08 * (i % 3);                           // on the right view when it can : it carries the fewest dimensions, and no datum symbol
+        if (F.axis === 2) { to = T.right([B.right.x0 + B.right.w * q, org[2]]); dir = [0, up ? -1 : 1]; }
+        else if (F.axis === 1) { to = T.right([org[1], B.right.y0 + B.right.h * q]); dir = [up ? 1 : -1, 0]; }
+        else { to = T.front([org[0], B.front.y0 + B.front.h * q]); dir = [up ? 1 : -1, 0]; }
+      } else { const v = viewOf[it.face] || "top", ax = VIEW_DEFS[v].ax, c = T[v]([org[ax[0]], org[ax[1]]]), d = [c[0] - centre[v][0], c[1] - centre[v][1]], n = Math.hypot(d[0], d[1]); to = c; dir = n > 1 ? [d[0] / n, d[1] / n] : [0.7, -0.7]; }
+    }
+    if (!to) return;
+    let c = null; for (let k = 0; k < 9 && !c; k++) { const a = Math.atan2(dir[1], dir[0]) + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 0.6, q = [to[0] + Math.cos(a) * 11, to[1] + Math.sin(a) * 11]; if (!put.some((p) => Math.hypot(p[0] - q[0], p[1] - q[1]) < 8)) c = q; }
+    c = c || [to[0] + dir[0] * 11, to[1] + dir[1] * 11]; put.push(c); gdtFlag(sheet, c, g.flag, to); g.at = c;
+  });
+  /* the corner : under the isometric view, the tolerances then the holes — every row with its flag or its balloon */
+  let gy = isoBox.y + isoBox.h + 3, left = 0;
+  if (flags.length) {
+    sheet.rect(stackX, gy, STACK_W - 2, 5 + flags.length * GDT_ROW, { w: LW.medium }); sheet.line(stackX, gy + 5, stackX + STACK_W - 2, gy + 5, { w: LW.fine }); sheet.text(stackX + (STACK_W - 2) / 2, gy + 3.6, "TOLÉRANCES GÉOMÉTRIQUES", { size: 2.4, font: "bold", align: "center" });
+    flags.forEach((g, i) => { const ry = gy + 5 + i * GDT_ROW; if (i) sheet.line(stackX, ry, stackX + STACK_W - 2, ry, { w: LW.fine }); gdtFlag(sheet, [stackX + 5, ry + GDT_ROW / 2], g.flag, null, 2.6);
+      const fr = featureControlFrame(sheet, stackX + 10.5, ry + (GDT_ROW - 4.8) / 2, { symbol: g.symbol, tolerance: f2(g.tolerance), diameter: g.diameter, modifier: g.modifier, datums: g.datums }, { h: 4.8 }), tx = stackX + 10.5 + (fr.width || 40) + 2.5;
+      const words = fitText(sheet, [g.count > 1 ? `${g.count}×` : "", g.tags, g.name, g.fit].filter(Boolean).join(" · "), stackX + STACK_W - 3.5 - tx, 2.4, "sans", 0.72); sheet.text(tx, ry + GDT_ROW / 2 + 0.9, words.str, { size: words.size }); });
+    gy += 5 + flags.length * GDT_ROW + 3;
   }
-  gy = Math.max(gy + 3, isoBox.y + isoBox.h + 5);
-  const tableOf = (title, list, cols, cells) => {
-    if (!list.length) return; const room = Math.floor((limit - gy) / 4.4) - 2; if (room < 1) { left += list.length; return; }
-    const shown = list.slice(0, room), t = drawTable(sheet, colX + 7, gy, cols, shown.map(cells), { size: 2.2, rowH: 4.4, title });
-    shown.forEach((d, i) => { const cy = gy + (i + 2) * 4.4 + 2.2; balloon(sheet, [colX + 3.2, cy], d.n, 2); if (d.cls === "sc" || d.cls === "csc") classSymbol(sheet, colX + 7 + t.w + 1.2, cy, d.cls, 3.4); });
-    left += list.length - shown.length; gy += t.h + 5;
+  const tableOf = (title, list, cols, cells, x, y, room) => {
+    if (!list.length) return 0; const shown = list.slice(0, Math.max(0, room)), t = drawTable(sheet, x + 7, y, cols, shown.map(cells), { size: 2.2, rowH: 4.4, title });
+    shown.forEach((d, i) => { const cy = y + (i + 2) * 4.4 + 2.2; balloon(sheet, [x + 3.2, cy], d.n, 2); if (d.cls === "sc" || d.cls === "csc") classSymbol(sheet, x + 7 + t.w + 1.2, cy, d.cls, 3.4); });
+    return shown.length;
   };
-  /* the holes first : their table is short, and the definition table takes what room is left */
-  tableOf("TABLEAU DES TROUS", dims.filter((d) => d.table === "holes"), [{ title: "Repères", width: 22 }, { title: "Trou", width: 28 }, { title: "Description", width: 88 }], (d) => [d.tags, dimText(d), d.label]);
-  tableOf("COTES DE DÉFINITION", dims.filter((d) => d.table === "def" || ((d.kind === "pattern" || d.kind === "detail") && !onView.includes(d.key))), [{ title: "Cote", width: 110 }, { title: "Valeur", width: 30, align: "right" }], (d) => [d.label, `${d.basic && d.cls !== "ref" ? "[" : ""}${dimText(d)}${d.basic && d.cls !== "ref" ? "]" : ""}`]);
-  if (left) sheet.text(colX, Math.min(gy, limit), `… et ${left} autre(s) élément(s) : voir le modèle 3D et la liste des cotes.`, { size: 2.3, font: "italic" });
+  left += holeDims.length - tableOf("TABLEAU DES TROUS", holeDims, [{ title: "Repères", width: 22 }, { title: "Trou", width: 28 }, { title: "Description", width: 88 }], (d) => [d.tags, dimText(d), d.label], stackX, gy, holeDims.length);
+  /* the definition dimensions that no view shows : a long table, on a second sheet — the views keep the first one */
+  const defs = dims.filter((d) => d.table === "def" || ((d.kind === "pattern" || d.kind === "detail") && !onView.includes(d.key))), sheets = defs.length ? 2 : 1;
+  if (left) sheet.text(stackX, Math.min(gy + holesH, frame.y + frame.h - bandH - 4), `… et ${left} autre(s) élément(s) : voir le modèle 3D.`, { size: 2.3, font: "italic" });
   drawNotes(sheet, frame.x + 4, notesY, notesW, notes, { title: "NOTES", size: 2.3 });
   viewLabel(sheet, fx + B.front.w * s / 2, frontY + B.front.h * s + 10 + 8 * (used["front:h"] || 1) + 5, "", `ÉCHELLE ${scale[1]}`);
   drawRevisionTable(sheet, frame.x + frame.w, frame.y, revs.slice(-4), { align: "right" });
-  drawTitleBlock(sheet, frame, { title: spec.name || spec.id, partNumber: spec.id, revision: spec.revision || "A", material: mat.name, finish: spec.finish || "—", mass: built.mass >= 1000 ? `${f2(built.mass / 1000)} kg` : `${f2(built.mass)} g`,
-    scale: scale[1], sheet: "1/1", size: "B (11 × 17)", drawnBy: o.drawnBy || "", checkedBy: o.checkedBy || "", approvedBy: o.approvedBy || "", date: o.date || "", company: o.organisation || "DesignWizard.ai", project: (project && project.name) || "",
+  const block = (n) => drawTitleBlock(sheet, frame, { title: spec.name || spec.id, partNumber: spec.id, revision: spec.revision || "A", material: mat.name, finish: spec.finish || "—", mass: built.mass >= 1000 ? `${f2(built.mass / 1000)} kg` : `${f2(built.mass)} g`,
+    scale: n === 1 ? scale[1] : "—", sheet: `${n}/${sheets}`, size: "B (11 × 17)", drawnBy: o.drawnBy || "", checkedBy: o.checkedBy || "", approvedBy: o.approvedBy || "", date: o.date || "", company: o.organisation || "DesignWizard.ai", project: (project && project.name) || "",
     generalTolerance: "ISO 2768-mK", projection: third ? "third" : "first", units: "mm", status: o.status || "Préliminaire" });
-  return { scale: scale[1], holes, gdt: sem.gdt, datums: sem.datums, notes, dims, onView, section, layout: { notes: { x: frame.x + 4, y: notesY, w: notesW, h: nH }, iso: isoBox, views: { x: fx, y: y0, w: bw, h: bh }, area, frame } };
+  block(1);
+  if (sheets === 2) {                                           // sheet 2 : the table of the definition dimensions, in columns, with the same frame and title block
+    sheet.newPage(); drawBorder(sheet, { confidential: o.confidential }); drawRevisionTable(sheet, frame.x + frame.w, frame.y, revs.slice(-4), { align: "right" });
+    sheet.text(frame.x + 6, frame.y + 9, `COTES DE DÉFINITION — ${spec.id} ${spec.name || ""}`.trim(), { size: 4.2, font: "bold" }); sheet.text(frame.x + 6, frame.y + 14.5, "Les cotes que la feuille 1 ne montre pas sur une vue, chacune avec sa bulle. Une cote entre crochets est une cote de base : elle situe un groupe tolérancé en position par rapport aux références.", { size: 2.4 });
+    const cols = [{ title: "Cote", width: 104 }, { title: "Valeur", width: 26, align: "right" }], colW = 150, top = frame.y + 20, per = (k) => Math.floor((frame.y + frame.h - (frame.x + 6 + (k + 1) * colW > frame.x + frame.w - TITLE_BLOCK_W ? TITLE_BLOCK_H + 6 : 4) - top) / 4.4) - 2;
+    let at = 0; for (let k = 0; at < defs.length && frame.x + 6 + (k + 1) * colW <= frame.x + frame.w - 2; k++) at += tableOf(k ? "COTES DE DÉFINITION (suite)" : "COTES DE DÉFINITION", defs.slice(at), cols, (d) => [d.label, `${d.basic && d.cls !== "ref" ? "[" : ""}${dimText(d)}${d.basic && d.cls !== "ref" ? "]" : ""}`], frame.x + 6 + k * colW, top, per(k));
+    if (at < defs.length) sheet.text(frame.x + 6, frame.y + frame.h - 4, `… et ${defs.length - at} autre(s) cote(s) : voir la liste des cotes du modèle.`, { size: 2.3, font: "italic" });
+    block(2);
+  }
+  const boxes = { top: { x: fx, y: topY, w: B.top.w * s, h: B.top.h * s }, front: { x: fx, y: frontY, w: B.front.w * s, h: B.front.h * s }, right: { x: rightX, y: frontY, w: B.right.w * s, h: B.right.h * s } };
+  return { scale: scale[1], sheets, holes, gdt: flags, datums: sem.datums, notes, dims, onView, section, layout: { notes: { x: frame.x + 4, y: notesY, w: notesW, h: nH }, iso: isoBox, stack, views: { x: fx, y: y0, w: bw, h: bh }, boxes, area, frame } };
 }
 export { PAPER };
