@@ -6,6 +6,7 @@ import { store, freshName } from "../core/store.js";
 import { DEMO_DRIVE } from "../demo/demo_drive.js";
 import { demoBoard } from "../demo/demo_pcba.js";
 import { DEMO_HVB_PARTS, DEMO_HVB_ASSEMBLY } from "../demo/demo_hvb.js";
+import { DEMO_ROVER } from "../demo/demo_rover.js";
 
 const STEPS = [
   ["shop", "Atelier", "Dites l'intention : à quoi sert la pièce, ses interfaces, sa matière, sa matière première. Elle se construit sous vos yeux, sans esquisse — ou par une entrevue avec Claude."],
@@ -97,6 +98,7 @@ function render(main) {
   page.append(el("h2", { style: { marginTop: "1.6rem" } }, "Exemples"));
   page.append(el("div", { class: "grid" },
     el("button", { class: "card lift", type: "button", onClick: () => loadDemo(DEMO_DRIVE, "#/assembly/DRV-ASM") }, el("h3", null, icon("power"), " Variateur compact 400 V"), el("p", { class: "muted", style: { margin: 0, fontSize: ".86rem" } }, "Puissance, contrôle, capteurs, CPU, deux PCB, boîtier, dissipateur extrudé. L'écart HV+ / HV- est volontairement juste : l'analyse d'isolation le trouve.")),
+    el("button", { class: "card lift", type: "button", "data-example": "rover", onClick: () => loadDemo(DEMO_ROVER, "#/assembly/RVR-ASM") }, el("h3", null, icon("assembly"), " Rover — véhicule autonome"), el("p", { class: "muted", style: { margin: 0, fontSize: ".86rem" } }, "Le Rover de la visite guidée de DynamiteAgile, en 3D : châssis 1:16, plaque découpée au laser, boîtier et pare-chocs imprimés, Raspberry Pi, capteurs. Vingt-quatre pièces, trente instances, toutes accouplées par leurs interfaces.")),
     el("button", { class: "card lift", type: "button", onClick: () => loadDemo(HVB_PROJECT, "#/creepage/DEMO-HVB") }, el("h3", null, icon("creepage"), " DEMO-HVB — busbars 800 V"), el("p", { class: "muted", style: { margin: 0, fontSize: ".86rem" } }, "Le produit d'exemple de la formation Creepage & Clearance : nervure, fente, rainure, capot. Distances connues par construction."))));
   if (p) page.append(el("p", { class: "muted", style: { marginTop: "1.2rem", fontSize: ".84rem" } }, `Projet ouvert : ${p.name} — ${p.parts.length} pièce(s), ${p.assemblies.length} assemblage(s), ${fmt(JSON.stringify(p).length / 1024, 0)} Ko.`));
 }

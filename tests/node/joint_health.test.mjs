@@ -17,6 +17,7 @@ test("a bolted joint is healthy when both sides agree, to check when the thread 
   const plastic = one(asmOf([M()]), built, { ...specs, P2: { material: "PC-ABS" } }); assert.equal(plastic.state, "check"); assert.match(plastic.notes.join(" "), /insert/);
   assert.equal(one(asmOf([M()]), { ...built, P2: { interfaces: [bolt("B", { opts: { thread: "insert" } })] } }, { ...specs, P2: { material: "PC-ABS" } }).state, "ok", "an insert in plastic is healthy");
   assert.equal(one(asmOf([M()]), { ...built, P2: { interfaces: [bolt("B", { opts: { depth: 10, port: true } })] } }, { ...specs, P2: { material: "PVC-U" } }).state, "ok", "a screw channel of a profile is not a tapped hole");
+  assert.deepEqual(one(asmOf([M()]), { ...built, P2: { interfaces: [bolt("B", { opts: { thread: "clearance", depth: 3 } })] } }, { ...specs, P2: { material: "PMMA" } }), { id: "M1", state: "ok", notes: [] }, "a plain hole with a nut behind is no thread : nothing to say about its depth or about plastic");
 });
 
 test("a joint that drifted is to check ; a joint that lost a side, clashes or fights the others is broken", () => {

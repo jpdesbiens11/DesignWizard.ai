@@ -46,6 +46,15 @@ Le second exemple, **DEMO-HVB**, est le produit de référence de la formation C
 connues par construction, vous pouvez donc juger le moteur d'isolation (clearance 16,56 mm et creepage 26 mm entre
 HV+ et HV−).
 
+Le troisième, le **Rover**, est le produit de la visite guidée de DynamiteAgile, en 3D (`web/js/demo/demo_rover.js`) :
+un robot autonome sur un châssis tout-terrain 1:16. Vingt-quatre pièces aux références `RVR-…` de sa nomenclature,
+trente instances (quatre roues, trois capteurs à ultrasons, deux microrupteurs) et vingt-neuf accouplements : seul le
+châssis est fixe, tout le reste tient par ses interfaces — plaque porte-modules découpée au laser sur ses colonnettes,
+boîtier imprimé et son cordon de joint, modules vissés dessus et dessous la plaque, pare-chocs sur ses deux tiges. Les
+pièces achetées sont des **enveloppes indicatives**, pas des modèles de fournisseur ; ce que la bibliothèque de
+matières n'a pas (PETG, EPDM, néodyme) est dit dans les notes de chaque pièce. À essayer dessus : la **gamme
+d'assemblage**, la **nomenclature** avec sa visserie, les **interférences**, la **couleur** de chaque pièce.
+
 ## Ce que nous aimerions savoir
 
 - Le parcours « interfaces d'abord » vous semble-t-il naturel ? Où avez-vous hésité ?

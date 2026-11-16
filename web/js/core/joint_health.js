@@ -32,8 +32,9 @@ export function jointHealth(asm, built, specs = {}, sol = null, clashes = []) {
       const [T, tp] = A.side === "B" ? [A, ia.part] : [B, ib.part], p = T.params || {}, o = T.opts || {};       // T : the side B, the one that carries the geometry
       if (A.type === "bolt_pattern" && !o.port) {
         const th = thread(p.screw), mat = specs[tp] && specs[tp].material, need = th ? engagement(mat) * th.d : 0, plastic = material(mat) && material(mat).cls !== "metal";
-        if (th && typeof o.depth === "number" && o.thread !== "insert" && o.depth < need - 0.05) say("check", `Prise de filet de ${fr(o.depth)} mm dans ${tp} : il en faut ${fr(need)} (${fr(engagement(mat))} × d pour cette matière).`);
-        if (plastic && o.thread !== "insert" && !o.standoff) say("check", `Filet taillé dans le plastique de ${tp} : un insert tient mieux au remontage.`);
+        const cut = o.thread !== "insert" && o.thread !== "clearance";                 // a thread cut in the part itself : not an insert, not a plain hole with a nut behind
+        if (th && typeof o.depth === "number" && cut && o.depth < need - 0.05) say("check", `Prise de filet de ${fr(o.depth)} mm dans ${tp} : il en faut ${fr(need)} (${fr(engagement(mat))} × d pour cette matière).`);
+        if (plastic && cut && !o.standoff) say("check", `Filet taillé dans le plastique de ${tp} : un insert tient mieux au remontage.`);
       } else if (A.type === "rail") {
         const c = o.clearance ?? 0.2;
         if (c < 0.1) say("check", `Jeu de ${fr(c)} mm par face dans la glissière : la pièce risque de coincer (0,1 mm au moins).`);
