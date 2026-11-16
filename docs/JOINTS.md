@@ -125,3 +125,38 @@ pièces qu'il joint et la couleur de son état (rouge, orange, vert).
 - Un accouplement rompu dit pourquoi sous son nom, et le guide de la barre du haut le compte.
 
 Modèle pur : `web/js/core/asm_tree.js` (`mateTree`, `mateLabels`, `MATE_COLORS`) ; dessin : `web/js/modules/asm_tree.js`.
+
+## Un mate, montré
+
+Un clic sur un mate — sa fiche dans l'onglet **Mates**, sa ligne dans l'arbre ou son étiquette sur le modèle — montre
+**ce qu'il est**, quelle que soit la nature de l'interface. Le même code sert les neuf types
+(`web/js/core/mate_view.js`, pur et testé ; `web/js/modules/asm_mate.js` pour l'écran).
+
+- **Dans la vue 3D** : les deux pièces du joint passent en transparence et ce qui les tient apparaît à sa place —
+  chaque vis avec sa tête (posée sur la face, noyée dans son lamage ou fraisée), son insert ou son écrou ; chaque
+  goupille à cheval sur le plan de joint, chassée du côté B ; la portée d'un ajustement ; le contour de la zone d'appui,
+  du film de colle, de l'ouverture d'un panneau, de la rainure, de la zone soudée ou de la zone de contact. Le repère de
+  l'interface et le nom du joint (`M1 — Bolt pattern`) sont posés sur le plan de joint. Un second clic rend aux pièces
+  leur aspect.
+- **Dans la fiche** : une **coupe schématique** du joint (A au-dessus, B en dessous, ce qui les lie au milieu ; les
+  valeurs écrites sont les vraies, les proportions ne le sont pas), les deux côtés nommés — pièce, interface — et le
+  tableau de **ce qui définit le joint**.
+
+| Type | Ce que la fiche dit | Ce que la vue montre |
+|---|---|---|
+| Bolt pattern | Screws (quantité, norme, longueur), Pattern, Side A — clearance hole (jeu, counterbore ou countersink), Side B — thread (tapped hole, heat-set insert, ou clearance hole et hex nut), standoff, Grip, Position tolerance | tête et tige de chaque vis, insert ou écrou |
+| Dowel pins | Dowel pins (quantité, norme), Pitch, Side A — slip fit (F7), Side B — press fit (P7), Position tolerance | chaque goupille, à sa profondeur |
+| Shaft / bore fit | Fit (Ø et ajustement), Side A — shaft, Side B — bore, Perpendicularity | la portée de l'arbre, le contour de l'alésage |
+| Planar contact | Contact area, pad, Flatness | le contour de l'appui |
+| Bonded joint | Adhesive, Bond area, Bond line, glue well ou pips, Quantity | le contour du film de colle |
+| Panel cut-out | Opening, Side A — panel, Fixing | le contour de l'ouverture |
+| Rail | Side A — tongue, Side B — groove (profondeur, jeu), Length | le contour de la rainure |
+| Welded or wire-bonded joint | Process, Weld area, Welds ou Wires, Side A — tab, Current | la zone soudée |
+| Pressure contact | Form, Contact area, Contact points, Plating, Force, Current | la zone de contact |
+
+Le **côté A** est toujours celui où la vis entre, l'arbre, la languette, le panneau ; le **côté B** le filetage,
+l'alésage, la rainure — quel que soit l'ordre dans lequel le mate nomme ses deux pièces.
+
+Ce que cela ne fait pas : la visserie montrée est une **représentation** (cylindres aux cotes de la norme — tête, tige,
+insert, écrou —, sans filet ni empreinte) ; elle n'entre ni dans la masse ni dans la recherche d'interférences, et une
+tête de vis qui toucherait une troisième pièce n'est pas signalée. La coupe est un schéma, pas une coupe du modèle.

@@ -20,6 +20,8 @@ import { INTERFACE_TYPES } from "../cad/interfaces.js";
 import { gammeTab, showWhole } from "./asm_gamme.js";
 import { mateTree, mateFind, mateLabels } from "../core/asm_tree.js";
 import { mateSection } from "./asm_tree.js";
+import { mateDefinition } from "../core/mate_view.js";
+import { showMate, clearMate, mateDetail } from "./asm_mate.js";
 import { nudge } from "../core/guide.js";
 
 function render(main, args) {
@@ -101,8 +103,11 @@ function render(main, args) {
       b.style.borderColor = it.color; b.style.setProperty("--bc", it.color); b.dataset.tip = `${it.text}${it.notes.length ? ` — ${it.notes[0]}` : ""}`;
     }
     for (const x of st.interference || []) if (x.volume > 0 && x.at) { v.addMarker(x.at, "#ff5a4f", "mate", 1.6); v.addLabel(x.at, `Interférence ${fmt(x.volume, 0)} mm³`, "mate", "err"); }
+    const md = st.mate ? defOf(st.mate) : null; if (md) showMate(v, md); else clearMate(v);       // the chosen mate : its hardware in place, its two parts see-through
     pins.draw();
   }
+  /** What a mate is : its two sides, its plane, its hardware, its facts (core/mate_view.js). */
+  function defOf(mid) { const c = st.ctx, m = c && (c.asm.mates || []).find((k) => k.id === mid); return m ? mateDefinition(c.asm, c.built, c.sol.placements, m, Object.fromEntries(c.asm.instances.map((i) => [i.id, instName(c.asm, i.id)]))) : null; }
   async function checkInterference(quiet = false) {
     if (!st.ctx) return;
     const { asm: a, built, sol } = st.ctx, pairs = [], names = [];
@@ -215,10 +220,11 @@ function render(main, args) {
     body.append(el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, `Joints (${(a.mates || []).length})`), reg.length ? btn("Registre (.csv)", () => download(`${id}-joints.csv`, jointsCsv(reg), "text/csv"), { small: true, icon: "download", tip: "Le registre des joints : numéro, genre, pièces, clé, visserie ou colle, procédé" }) : null)));
     for (const m of a.mates || []) {
       const ia = a.instances.find((i) => i.id === m.a.inst), fa = ia && ifaceOf(built, ia.part, m.a.iface), pb = sol.problems.find((p) => p.mate === m.id);
-      body.append(el("div", { class: "card", "data-mate": m.id, style: { marginBottom: ".5rem", padding: ".5rem .65rem", ...(st.mate === m.id ? { outline: "2px solid var(--acc)" } : {}) } },
+      body.append(el("div", { class: "card", "data-mate": m.id, "data-tip": st.mate === m.id ? null : "Cliquer : voir ce joint — ses deux interfaces, sa visserie, sa coupe", style: { marginBottom: ".5rem", padding: ".5rem .65rem", cursor: "pointer", ...(st.mate === m.id ? { outline: "2px solid var(--acc)" } : {}) }, onClick: (e) => { if (e.target.closest("button, a, input, select")) return; selectMate(st.mate === m.id ? null : m.id); } },
         el("div", { style: { display: "flex", gap: ".35rem", alignItems: "center", flexWrap: "wrap" } }, el("b", null, m.id), badge(byId.get(m.id) ? byId.get(m.id).kind : fa ? INTERFACE_TYPES[fa.type].fr : "?", byId.get(m.id) && byId.get(m.id).type === "bond" ? "info" : "neutral"), m.linked === false ? badge("non lié", "warn") : badge("lié 🔗", "ok"), hOf.get(m.id) ? badge(HEALTH[hOf.get(m.id).state].fr, HEALTH[hOf.get(m.id).state].tone) : null),
         el("p", { style: { margin: ".25rem 0", fontSize: ".84rem" } }, `${instName(a, m.a.inst)} (${m.a.iface}) ↔ ${instName(a, m.b.inst)} (${m.b.iface})`), ...(hOf.get(m.id) ? hOf.get(m.id).notes : pb ? [pb.msg] : []).map((t) => el("p", { class: "form-error", style: { fontSize: ".8rem" } }, t)),
         byId.get(m.id) && (byId.get(m.id).hardware.length || byId.get(m.id).process) ? el("p", { class: "muted", style: { margin: ".15rem 0", fontSize: ".8rem" } }, [byId.get(m.id).hardware.map((h) => `${String(h.qty).replace(".", ",")}${h.unit ? ` ${h.unit}` : " ×"} ${h.name}`).join(" + "), byId.get(m.id).process].filter(Boolean).join(" — ")) : null,
+        st.mate === m.id ? mateDetail(defOf(m.id)) : null,
         el("div", { class: "form-actions", style: { justifyContent: "flex-start", marginTop: ".2rem" } },
           btn(m.linked === false ? "Lier" : "Délier", () => store.updateAssembly(id, (x) => { const q = x.mates.find((k) => k.id === m.id); q.linked = q.linked === false; }, `${m.id} ${m.linked === false ? "lié" : "délié"}`), { small: true, icon: m.linked === false ? "link" : "unlink", tip: "Lié : les paramètres de l'interface sont partagés" }),
           btn("90°", () => store.updateAssembly(id, (x) => { const q = x.mates.find((k) => k.id === m.id); q.angle = ((q.angle || 0) + 90) % 360; }, `${m.id} tourné de 90°`), { small: true, icon: "refresh", tip: "Tourner la pièce B de 90° autour de la normale de l'interface" }),
