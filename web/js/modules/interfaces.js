@@ -74,7 +74,7 @@ function interview(page) {
         btn("Copier le prompt", async () => { toast((await copyText(promptBox.textContent)) ? "Prompt copié : collez-le dans Claude." : "Copie impossible : sélectionnez le texte à la main.", "success"); mark(2); }, { primary: true, icon: "copy" }))));
 
   /* 3. paste the answer */
-  const answer = el("textarea", { rows: 8, spellcheck: false, value: draft.answer, placeholder: "Collez ici la réponse complète de Claude (le bloc JSON suffit, le reste du texte est ignoré)." });
+  const answer = el("textarea", { rows: 8, spellcheck: false, value: draft.answer, "aria-label": "Réponse de Claude à coller", placeholder: "Collez ici la réponse complète de Claude (le bloc JSON suffit, le reste du texte est ignoré)." });
   const verdict = el("div"), holder = el("div", { class: "viewport", style: { height: "300px", border: "1.4px dashed rgba(38,50,63,.3)", borderRadius: "14px", marginTop: ".6rem" } });
   holder.classList.add("hidden");
   const create = btn("Créer la pièce", () => createPart(), { primary: true, icon: "check", disabled: true });

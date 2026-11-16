@@ -13,7 +13,7 @@ import { mountPanes } from "./panes.js";
 import { guideBox, guideCount, guideSummary } from "./guide.js";
 import { projectIssues, issuesHere } from "./guide_checks.js";
 
-export const APP_VERSION = "0.37.0";
+export const APP_VERSION = "0.37.1";
 const modules = new Map();
 const ORDER = ["home", "shop", "parts", "pcb", "pcba", "assembly", "physics", "creepage", "dfx", "drawings", "review", "report"];
 const SHOP_SCREENS = new Set(["interfaces", "process", "extrusion", "library", "busbar", "flex"]);      // screens of the Shop : its tab stays lit on them (see modules/shop_tabs.js)
@@ -158,6 +158,7 @@ function route() {
   if (app.cleanup) { try { app.cleanup(); } catch (e) { console.error(e); } app.cleanup = null; }
   clear(main);
   app.context = {}; app.current = key; app.commands = []; app.guide = [];
+  setStatus("Prêt");      // what the last screen said (« … construit en 300 ms ») is not about this one
   document.documentElement.dataset.module = key;
   document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.key === (key === "mvp" || key === "team" || key === "plm" ? "review" : SHOP_SCREENS.has(key) ? "shop" : key)));
   const tab = document.querySelector(".tab.active"); if (tab && tab.scrollIntoView) tab.scrollIntoView({ block: "nearest", inline: "nearest" });      // the tool in use stays in sight in a narrow bar

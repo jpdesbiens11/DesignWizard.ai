@@ -126,7 +126,7 @@ function render(main, args) {
       sem.datums.map((x) => el("p", { style: { fontSize: ".84rem", margin: "0 0 .25rem" } }, badge(x.letter, "info"), ` face ${x.face} — ${x.why}`)),
       sem.gdt.map((g) => el("p", { style: { fontSize: ".84rem", margin: "0 0 .25rem" } }, badge(g.symbol, "neutral"), ` ${g.diameter ? "Ø" : ""}${fmt(g.tolerance, 2)}${g.modifier === "mmc" ? " Ⓜ" : ""}${g.datums.length ? ` | ${g.datums.join(" | ")}` : ""} — ${g.name}`, g.rule ? el("small", { class: "muted" }, ` (${g.rule})`) : null)),
       !sem.gdt.length && el("p", { class: "muted", style: { fontSize: ".84rem" } }, "Aucune interface : pas de tolérance géométrique générée.")));
-    const notes = el("textarea", { rows: 6, value: (spec.notes || []).join("\n"), placeholder: "Une note par ligne (traitement, marquage, contrôle…)" });
+    const notes = el("textarea", { rows: 6, value: (spec.notes || []).join("\n"), "aria-label": "Notes du dessin, une par ligne", placeholder: "Une note par ligne (traitement, marquage, contrôle…)" });
     notes.style.fontFamily = "var(--font)"; notes.style.fontSize = ".88rem";
     const saveNotes = () => { const list = notes.value.split("\n").map((s) => s.trim()).filter(Boolean); if (isAsm) store.updateAssembly(id, (x) => { x.notes = list; }, `${id} : notes du dessin`); else store.updatePart(id, (x) => { x.notes = list; }, `${id} : notes du dessin`); };
     body.append(el("div", { class: "side-section" }, el("h3", null, isAsm ? "Notes propres à l'assemblage" : "Notes propres à la pièce"), notes, el("div", { class: "form-actions" }, btn("Appliquer les notes", saveNotes, { small: true })),
