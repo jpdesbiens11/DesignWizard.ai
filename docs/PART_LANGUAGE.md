@@ -20,7 +20,7 @@ Functions: min max abs sqrt floor ceil round sin cos tan (degrees) hypot clamp(v
   "name": "Short name of the part",
   "function": "One sentence: what the part does in the product.",
   "family": "prismatic | plate | sheet | enclosure | extrusion | pcb | busbar | turned | purchased",
-  "process": "cnc_milling | cnc_turning | sheet_metal | laser_cut | extrusion_al | extrusion_plastic | injection_molding | die_casting | sand_casting | fdm | mjf | sla | lpbf | pcb | purchased",
+  "process": "cnc_milling | cnc_turning | sheet_metal | laser_cut | extrusion_al | extrusion_plastic | injection_molding | die_casting | lp_die_casting | permanent_mold | sand_casting | fdm | mjf | sla | lpbf | pcb | purchased",
   "material": "AL6061-T6 | AL6063-T5 | AL5052-H32 | CU-C110 | BRASS-360 | SS-304 | STEEL-1018 | PA66-GF30 | PC | PC-ABS | ABS | PBT-GF30 | PPS-GF40 | POM | PEEK | PEI-9085 | PA12 | PVC-U | SILICONE | FR4 | FR4-CTI600",
   "elec": { "kind": "conductor | insulator | chassis | none", "net": "HV+" },   // electrical role (isolation analysis); optional
   "intent": { "loads": "20 N at the tip, vibration", "environment": "-20..60 °C, indoor", "quantity": 50, "priority": "cost | mass | stiffness | lead_time" },   // optional: why the part exists
@@ -224,8 +224,10 @@ A .dwiz document is accepted as an answer in place of the JSON object; both are 
 | `extrusion_al` | Extrusion aluminium |
 | `extrusion_plastic` | Extrusion plastique |
 | `injection_molding` | Moulage par injection |
-| `die_casting` | Fonderie sous pression |
-| `sand_casting` | Fonderie par gravité (sable ou coquille) |
+| `die_casting` | Fonderie sous pression (haute pression) |
+| `lp_die_casting` | Fonderie basse pression (moule métallique rempli par le bas) |
+| `permanent_mold` | Moulage en coquille par gravité (moule permanent) |
+| `sand_casting` | Moulage au sable |
 | `fdm` | Impression 3D FDM |
 | `mjf` | Impression 3D MJF / SLS |
 | `sla` | Impression 3D résine (SLA) |
@@ -250,9 +252,9 @@ A .dwiz document is accepted as an answer in place of the JSON object; both are 
 | `TI-6AL-4V` | Titane Ti-6Al-4V (grade 5 ; ELI : grade 23) | 4.43 | conducteur |
 | `IN718` | Alliage de nickel 718 (Inconel 718) | 8.19 | conducteur |
 | `IN625` | Alliage de nickel 625 (Inconel 625) | 8.44 | conducteur |
-| `AL-A380` | Aluminium A380 (fonderie sous pression) | 2.71 | conducteur |
-| `ZAMAK-3` | Zamak 3 (zinc, fonderie sous pression) | 6.6 | conducteur |
-| `AL-A356-T6` | Aluminium A356-T6 (fonderie par gravité) | 2.68 | conducteur |
+| `AL-A380` | Aluminium A380 (die casting) | 2.71 | conducteur |
+| `ZAMAK-3` | Zamak 3 (zinc, die casting) | 6.6 | conducteur |
+| `AL-A356-T6` | Aluminium A356-T6 (casting) | 2.68 | conducteur |
 | `PA66-GF30` | PA66-GF30 | 1.36 | 400 |
 | `PC` | Polycarbonate | 1.2 | 250 |
 | `PC-ABS` | PC/ABS | 1.15 | 250 |

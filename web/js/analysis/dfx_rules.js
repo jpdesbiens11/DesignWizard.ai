@@ -3,7 +3,7 @@
    (facts, material, evaluated spec, lazy mesh wall thickness, patch helpers) and collects the findings.
    A rule never throws: every rule runs inside ctx.run(), a failing rule is skipped and listed in `skipped`. */
 
-import { material, PROCESSES } from "../cad/materials.js";
+import { material, PROCESSES, processName } from "../cad/materials.js";
 import { evalDeep } from "../cad/expr.js";
 import { makeFinding, sortFindings, summarize, meshWallThickness, num } from "./dfx_core.js";
 import { BOOK_CNC, checkMilling, checkTurning, checkHoleSizes } from "./dfx_rules_cnc.js";
@@ -29,7 +29,7 @@ function merged(books) {
   return out;
 }
 export const RULEBOOK = merged([...BOOK_CNC, ...BOOK_SHEET, ...BOOK_EXTRUSION, ...BOOK_PLASTIC, ...BOOK_SPECIAL, ...BOOK_CASTING, ...BOOK_PCB, ...BOOK_GENERAL, ...BOOK_ASSEMBLY])
-  .map((b) => ({ ...b, title: b.title || (PROCESSES[b.process] || {}).label || b.process, fr: b.fr || (PROCESSES[b.process] || {}).fr || b.process,
+  .map((b) => ({ ...b, title: b.title || (PROCESSES[b.process] || {}).label || b.process, fr: b.fr || processName(b.process) || b.process,
     rules: /^extrusion_/.test(b.process) ? [...b.rules, ...AFTER_EXTRUSION] : b.rules }));
 
 const INDEX = new Map(), BY_PROCESS = new Map();
@@ -49,7 +49,7 @@ const categoryOf = (id) => { const e = INDEX.get(id); return e ? (e.rule.categor
 const RUNNERS = {
   cnc_milling: [checkMilling], cnc_turning: [checkTurning], sheet_metal: [checkSheet], laser_cut: [checkPlate, checkLaser],
   extrusion_al: [checkExtrusion, checkHoleSizes], extrusion_plastic: [checkExtrusion, checkHoleSizes],
-  injection_molding: [checkMolding], die_casting: [checkCasting], sand_casting: [checkCasting], fdm: [checkPrinting, checkAdditive], mjf: [checkPrinting, checkAdditive], sla: [checkPrinting, checkAdditive], lpbf: [checkAdditive], pcb: [checkPcb], purchased: [checkPurchased],
+  injection_molding: [checkMolding], die_casting: [checkCasting], lp_die_casting: [checkCasting], permanent_mold: [checkCasting], sand_casting: [checkCasting], fdm: [checkPrinting, checkAdditive], mjf: [checkPrinting, checkAdditive], sla: [checkPrinting, checkAdditive], lpbf: [checkAdditive], pcb: [checkPcb], purchased: [checkPurchased],
 };
 const FACT_LISTS = ["holes", "pockets", "bosses", "fillets", "chamfers", "shells", "extrudes", "revolves"];
 

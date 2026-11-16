@@ -7,7 +7,7 @@ import { FACES } from "../cad/vec.js";
 import { rule, num, round, groupBy } from "./dfx_core.js";
 import { LASER_FAMILIES, laserProfile, laserLimits, AM_PROCESSES, AM_MATERIALS, amMaterial, amLimits } from "../cad/special_processes.js";
 import { sheetThickness, holeSides } from "./dfx_rules_sheet.js";
-import { PROCESSES, material } from "../cad/materials.js";
+import { PROCESSES, material, processName } from "../cad/materials.js";
 import { supportReport, rankDirections, buildDir, DIR_WORDS } from "./am_supports.js";
 
 const S = { laser: "Fabricants de machines laser, gazier, guide de conception des tôles découpées, publications sur la découpe laser des cartes — docs/PROCEDES.md",
@@ -111,7 +111,7 @@ export function checkAdditive(ctx) {
   ctx.run("AM-10", () => {
     const m = ctx.mat;
     if (!m || (m.processes || []).includes(proc)) return;
-    if (M && M.process !== proc) ctx.add("AM-10", { value: PROCESSES[proc].fr, limit: PROCESSES[M.process].fr, message: `${m.name} en « ${PROCESSES[proc].fr} » : cette matière s'imprime en « ${PROCESSES[M.process].fr} ». Correctif : changer de procédé, ou choisir une matière du procédé (${materialsOf(proc)}).`,
+    if (M && M.process !== proc) ctx.add("AM-10", { value: processName(proc), limit: processName(M.process), message: `${m.name} en « ${processName(proc)} » : cette matière s'imprime en « ${processName(M.process)} ». Correctif : changer de procédé, ou choisir une matière du procédé (${materialsOf(proc)}).`,
       fix: ctx.fix(`Passer en ${M.proc.short}`, { target: "spec", id: null, path: "process", value: M.process }) });
     else ctx.add("AM-10", { severity: (m.cls === "metal") !== metal ? "error" : "warn", value: m.name, limit: materialsOf(proc), message: `${m.name} n'est pas une matière « ${P.fr} » de la bibliothèque. Matières du procédé : ${materialsOf(proc)}. Correctif : choisir l'une d'elles, ou confirmer avec le fournisseur que la sienne s'imprime.` });
   });

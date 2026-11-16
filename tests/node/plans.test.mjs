@@ -34,7 +34,7 @@ test("manufacturing routing: phases with station, work holding, tools and checks
   spec.plan = { notes: { "setup:-Z": "Le fournisseur propose un taraudage par déformation." }, points: ["Demander un essai d'anodisation sur chute."] };
   const noted = processPlan(spec, built); assert.equal(noted.phases[1].note, "Le fournisseur propose un taraudage par déformation."); assert.deepEqual(noted.points, ["Demander un essai d'anodisation sur chute."]); assert.ok(planText(noted).includes("Note : Le fournisseur"));
   assert.deepEqual(fromDwiz(toDwiz(spec)), spec, "notes travel in the .dwiz file");
-  const cover = part("DRV-COVER"), cp = processPlan(cover, buildPart(K, cover)); assert.equal(cp.phases[0].title, "Mise en forme"); assert.ok(cp.questions.some((q) => /Plan de joint, points d'injection/.test(q.text))); assert.equal(stateSpec(cover, cp, 0), null);
+  const cover = part("DRV-COVER"), cp = processPlan(cover, buildPart(K, cover)); assert.equal(cp.phases[0].title, "Mise en forme"); assert.ok(cp.questions.some((q) => /Parting line, gate et ejector pins/.test(q.text))); assert.equal(stateSpec(cover, cp, 0), null);
 });
 
 test("assembly routing: order from the mated interfaces, screws, torques, tools, checks ; reordered by hand", () => {

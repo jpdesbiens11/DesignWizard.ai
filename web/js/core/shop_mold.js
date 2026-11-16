@@ -18,16 +18,23 @@ export const P = (value, min, max, label, group = "Enveloppe", step = 0.5) => ({
     inner = inside radius over wall ; rib = rib thickness over wall ; ribH = rib height over wall ; boss = boss
     diameter over its hole ; draft = degrees outside / inside ; skim = stock left on machined faces. */
 export const MOLD_RULES = {
-  injection_molding: { fr: "moulage par injection", wall: [1.0, 4.0], nominal: 2.5, flow: 150, inner: 0.5, rib: 0.55, ribH: 3, boss: 2.0, draft: [1, 1], skim: 0, thread: "insert",
-    notes: ["Dépouille 1° sur toutes les parois parallèles au démoulage (2° sur une face grainée)", "Tolérances générales des pièces plastiques moulées ISO 20457", "Seuil d'injection et éjecteurs hors des faces d'aspect ; plan de joint au bord supérieur"] },
-  die_casting: { fr: "fonderie sous pression", wall: [1.5, 4.5], nominal: 2.5, flow: 110, inner: 0.6, rib: 0.8, ribH: 4, boss: 2.5, draft: [1, 2], skim: 0.5, thread: "tapped",
-    notes: ["Dépouille 1° à l'extérieur, 2° sur les noyaux", "Taraudages, alésages et plans d'appui repris en usinage (surépaisseur 0,5 mm)", "Tolérances générales des pièces de fonderie ISO 8062-3 ; porosité à contrôler dans les zones taraudées"] },
-  sand_casting: { fr: "fonderie par gravité", wall: [4.0, 12.0], nominal: 5, flow: 60, inner: 0.75, rib: 0.8, ribH: 4, boss: 2.5, draft: [2, 3], skim: 2.5, thread: "tapped",
-    notes: ["Dépouille 2° à l'extérieur, 3° sur les noyaux", "Taraudages, alésages et plans d'appui repris en usinage (surépaisseur 2,5 mm)", "Tolérances générales des pièces de fonderie ISO 8062-3"] },
+  injection_molding: { label: "Injection molding", fr: "moulage par injection", wall: [1.0, 4.0], nominal: 2.5, flow: 150, inner: 0.5, rib: 0.55, ribH: 3, boss: 2.0, draft: [1, 1], skim: 0, thread: "insert",
+    notes: ["Draft 1° sur toutes les parois parallèles au pull (2° sur une face grainée)", "Tolérances générales des pièces plastiques moulées ISO 20457", "Gate et ejector pins hors des faces d'aspect ; parting line au bord supérieur"] },
+  die_casting: { label: "High pressure die casting", fr: "fonderie sous pression", wall: [1.5, 4.5], nominal: 2.5, flow: 110, inner: 0.6, rib: 0.8, ribH: 4, boss: 2.5, draft: [1, 2], skim: 0.5, thread: "tapped",
+    notes: ["Draft 1° à l'extérieur, 2° sur les cores", "Taraudages, alésages et plans d'appui repris en usinage (surépaisseur 0,5 mm)", "Tolérances générales des pièces de fonderie ISO 8062-3 ; porosité à contrôler dans les zones taraudées"] },
+  lp_die_casting: { label: "Low pressure die casting", fr: "fonderie basse pression", wall: [3.0, 10.0], ownWall: true, nominal: 4, flow: 80, inner: 0.6, rib: 0.8, ribH: 4, boss: 2.5, draft: [2, 3], skim: 1.5, thread: "tapped",
+    basis: "Paroi d'environ 3 mm au minimum : vue en extrait dans des guides de fournisseurs. Draft, surépaisseur et longueur d'écoulement : pris entre le die casting et la gravité, sans lecture — à fixer avec la fonderie.",
+    notes: ["Draft 2° à l'extérieur, 3° sur les cores", "Rempli par le bas (riser tube), sous faible pression : gate au point bas, risers en haut sur les masses isolées", "Taraudages, alésages et plans d'appui repris en usinage (surépaisseur 1,5 mm)", "Tolérances générales des pièces de fonderie ISO 8062-3"] },
+  permanent_mold: { label: "Permanent mold casting", fr: "moulage en coquille par gravité", wall: [4.0, 12.0], nominal: 5, flow: 70, inner: 0.75, rib: 0.8, ribH: 4, boss: 2.5, draft: [2, 3], skim: 1.5, thread: "tapped",
+    basis: "Paroi : un guide de fonderie lu en extrait demande environ 4,6 mm, d'autres 3 à 4,5 mm. Draft 2° à 3° selon la hauteur, d'après le même guide. Surépaisseur et longueur d'écoulement : sans lecture — à fixer avec la fonderie.",
+    notes: ["Draft 2° à l'extérieur, 3° sur les cores", "Moule métallique rempli par gravité : gate au parting line, risers en haut sur les masses", "Taraudages, alésages et plans d'appui repris en usinage (surépaisseur 1,5 mm)", "Tolérances générales des pièces de fonderie ISO 8062-3"] },
+  sand_casting: { label: "Sand casting", fr: "moulage au sable", wall: [4.0, 12.0], nominal: 5, flow: 60, inner: 0.75, rib: 0.8, ribH: 4, boss: 2.5, draft: [2, 3], skim: 2.5, thread: "tapped",
+    notes: ["Draft 2° à l'extérieur, 3° sur les cores", "Taraudages, alésages et plans d'appui repris en usinage (surépaisseur 2,5 mm)", "Tolérances générales des pièces de fonderie ISO 8062-3"] },
 };
-/** The moulding process a material goes to. */
+/** The moulding processes a material goes to, in its own order ; and the one it goes to first. */
+export function moldProcesses(matId) { const m = material(matId); return m ? m.processes.filter((p) => MOLD_RULES[p]) : []; }
 export function moldProcess(matId) {
-  const m = material(matId), own = m ? ["injection_molding", "die_casting", "sand_casting"].find((p) => m.processes.includes(p)) : null;
+  const m = material(matId), own = moldProcesses(matId)[0];
   return own || (m && m.cls === "metal" ? "die_casting" : "injection_molding");
 }
 
@@ -36,7 +43,7 @@ export function molded(brief, items, log) {
   const arch = moldArch(brief, items);                          // a shell that holds, a cover that closes, a ribbed plate that carries
   if (arch === "cover") return moldedCover(brief, items, log);
   if (arch === "plate") return moldedPlate(brief, items, log);
-  const proc = brief.process && MOLD_RULES[brief.process] ? brief.process : moldProcess(brief.material), R = MOLD_RULES[proc], mat = material(brief.material) || { name: brief.material }, lim = mat.wall || R.wall, env = brief.envelope || {}, metal = R.thread === "tapped";
+  const proc = brief.process && MOLD_RULES[brief.process] ? brief.process : moldProcess(brief.material), R = MOLD_RULES[proc], mat = material(brief.material) || { name: brief.material }, lim = R.ownWall ? R.wall : mat.wall || R.wall, env = brief.envelope || {}, metal = R.thread === "tapped";
   const inside = items.filter((it) => it.inside), rim = items.filter((it) => !it.inside && it.where === "+Z"), under = items.filter((it) => !it.inside && it.where === "-Z"), sides = items.filter((it) => !it.inside && it.where[1] !== "Z");
   const boards = inside.filter((it) => it.type === "bolt_pattern"), so = boards.length ? r1(brief.standoff || 6) : 0;
   /* the cavity : what the designer asks to contain, and at least what the inside interfaces span */
@@ -46,16 +53,16 @@ export function molded(brief, items, log) {
   const Lin = Math.max(env.L || 0, span(inside, "w"), span(under, "w"), lands.length ? landRow + 36 : 0, 30), Win = Math.max(env.W || 0, span(inside, "h"), span(under, "h"), 20) + landDeep, Hin = Math.max(env.H || 0, so + (boards.length ? 12 : 0), ...sides.map((it) => it.fp.h + 2 * 4 + so), 10);
   /* one nominal wall : the usual figure for the material, thicker when the melt has far to go, inside the range of the material */
   const flow = (Lin + Win) / 2 + Hin, usual = Math.min(R.nominal, half((lim[0] + lim[1]) / 2)), wall = Math.min(lim[1], Math.max(lim[0], half(Math.max(usual, flow / R.flow))));
-  log.push(`Procédé : ${R.fr} — ${mat.name} se moule entre ${fr(lim[0])} et ${fr(lim[1])} mm de paroi.`);
-  log.push(`Paroi nominale ${fr(wall)} mm, la même partout : ${flow / R.flow > usual ? `la matière parcourt environ ${fr(flow)} mm depuis le seuil, soit ${Math.round(flow / wall)} fois la paroi (limite ${R.flow})` : `valeur usuelle pour cette matière ; longueur d'écoulement ${fr(flow)} mm, soit ${Math.round(flow / wall)} fois la paroi (limite ${R.flow})`}.`);
+  log.push(`Procédé : ${R.label} — ${mat.name} se moule entre ${fr(lim[0])} et ${fr(lim[1])} mm de paroi.`);
+  log.push(`Paroi nominale ${fr(wall)} mm, la même partout : ${flow / R.flow > usual ? `la matière parcourt environ ${fr(flow)} mm depuis le gate, soit ${Math.round(flow / wall)} fois la paroi (limite ${R.flow})` : `valeur usuelle pour cette matière ; longueur d'écoulement ${fr(flow)} mm, soit ${Math.round(flow / wall)} fois la paroi (limite ${R.flow})`}.`);
   /* the draft is real : walls, bosses, gussets and ribs lean in the model. One wall everywhere means one angle for the outside and
      the cores : the larger of the two the process asks for. The floor is narrower than the rim, so the volume is counted at the floor. */
   const dp = brief.draft === false ? 0 : Math.max(R.draft[0], R.draft[1]), lean = Math.tan(dp * Math.PI / 180);
   const L = half(Lin + 2 * wall + 2 * Hin * lean), W = half(Win + 2 * wall + 2 * Hin * lean), H = half(Hin + wall), rc = half(Math.max((1 + R.inner) * wall, 3)), rf = half((1 + R.inner) * wall);
-  log.push(`Volume à contenir ${fr(Lin)} × ${fr(Win)} × ${fr(Hin)} mm → extérieur ${fr(L)} × ${fr(W)} × ${fr(H)} mm, ouvert sur le dessus (sens de démoulage +Z, plan de joint au bord).`);
+  log.push(`Volume à contenir ${fr(Lin)} × ${fr(Win)} × ${fr(Hin)} mm → extérieur ${fr(L)} × ${fr(W)} × ${fr(H)} mm, ouvert sur le dessus (pull +Z, parting line au bord).`);
   log.push(`Rayons : ${fr(rc)} mm aux angles verticaux et ${fr(rf)} mm au fond à l'extérieur — il reste ${fr(rc - wall)} et ${fr(rf - wall)} mm à l'intérieur (règle : rayon intérieur ≥ ${fr(R.inner)} × paroi), et la paroi garde son épaisseur dans les angles.`);
   const features = [{ op: "tub", id: "coque", name: "Coque", size: ["L", "W", "H"], wall: "wall", rc: "rc", rf: "rf", ...(dp ? { draft: "dp" } : {}) }], out = [], params = { L: P(L, 20, Math.max(400, 2 * L), "Longueur extérieure", "Enveloppe", 1), W: P(W, 15, Math.max(300, 2 * W), "Largeur extérieure", "Enveloppe", 1), H: P(H, 8, Math.max(200, 2 * H), "Hauteur extérieure", "Enveloppe", 1),
-    wall: P(wall, lim[0], lim[1], "Paroi nominale", "Moulage", 0.1), rc: P(rc, r1((1 + R.inner) * lim[0]), 25, "Rayon des angles verticaux", "Moulage"), rf: P(rf, r1((1 + R.inner) * lim[0]), 25, "Rayon du fond", "Moulage"), ...(dp ? { dp: { value: dp, min: 0.5, max: 5, step: 0.5, unit: "°", label: "Dépouille", group: "Moulage" } } : {}) };
+    wall: P(wall, lim[0], lim[1], "Paroi nominale", "Moulage", 0.1), rc: P(rc, r1((1 + R.inner) * lim[0]), 25, "Rayon des angles verticaux", "Moulage"), rf: P(rf, r1((1 + R.inner) * lim[0]), 25, "Rayon du fond", "Moulage"), ...(dp ? { dp: { value: dp, min: 0.5, max: 5, step: 0.5, unit: "°", label: "Draft", group: "Moulage" } } : {}) };
   const leaning = dp ? { draft: "dp" } : {};
   const ifo = (it, face, at, extra = {}) => { const o = { id: it.id, type: it.type, name: it.name, key: it.key, partner: it.partner, side: it.side, external: it.external, face, at, params: it.params, opts: it.opts, ...extra }; for (const k of Object.keys(o)) if (o[k] === undefined) delete o[k]; return o; };
   const bossOf = (screw) => { const th = thread(screw), hole = metal ? th.tap : th.insert[0]; return half(metal ? R.boss * hole : Math.max(R.boss * hole, hole + 2 * 0.8 * wall)); };
@@ -86,7 +93,7 @@ export function molded(brief, items, log) {
     for (const face of faces) at.forEach((k, i) => features.push({ op: "pocket", id: `clip${face[0] === "-" ? "a" : "b"}${i + 1}`, name: "Fenêtre de clip", face, rect: [`${alongL ? "L" : "W"} * ${k} - ${r1(ww / 2)}`, zb, ww, wh], depth: `wall + ${r1(0.5 + H * lean)}` }));
     out.push({ id: `IF${items.length + 1}`, type: "planar", name: "Plan de joint", key: `${slug}_couvercle_joint`, side: "B", face: "+Z", at: ["L/2", "W/2"], params: { w: "L", h: "W" } });
     log.push(`Fermeture par clips : ${2 * clips.n} fenêtres de ${fr(ww)} × ${fr(wh)} mm dans les grands côtés, à ${fr(clips.lb)} mm sous le bord. La lame du couvercle (${fr(clips.t)} mm d'épaisseur, ${fr(clips.lb)} mm de long) fléchit de ${fr(clips.y)} mm : déformation ${fr(100 * clips.strain)} % pour ${fr(100 * clips.eps)} % admis (règle : ε = 1,5 × épaisseur × flèche / longueur²).`);
-    log.push("Chaque rangée de fenêtres demande un tiroir dans le moule du boîtier, et chaque crochet un éjecteur incliné dans celui du couvercle : c'est le prix de l'absence de vis.");
+    log.push("Chaque rangée de fenêtres demande un slide dans le mold du boîtier, et chaque crochet un lifter dans celui du couvercle : c'est le prix de l'absence de vis.");
   }
   if (!cover && !clips && brief.cover !== false) { cover = { id: `IF${items.length + 1}`, type: "bolt_pattern", name: "Fixation du couvercle", key: `${slug}_couvercle`, side: "B", where: "+Z", params: { ...INTERFACE_TYPES.bolt_pattern.params, screw: "M3" }, auto: true };
     log.push("Aucune fermeture déclarée : quatre vis M3 aux coins et un plan de joint sont proposés pour un couvercle (retirez-les s'il n'y en a pas)."); }
@@ -111,8 +118,8 @@ export function molded(brief, items, log) {
     if (db >= 2) features.push({ op: "hole", id: "evid", name: "Évidement sous les bossages", face: "-Z", d: pin, depth: db, at: { grid } });
     out.push(ifo(cover, "+Z", ["L/2", "W/2"], { side: "B", opts: { ...(cover.opts || {}), ...(metal ? { depth: dt } : { thread: "insert", depth: dt }) } }));
     if (d > slim) log.push(`Bossages de fermeture portés de Ø ${fr(slim)} à Ø ${fr(d)} mm : hauts de ${fr(H - wall)} mm, ils ne doivent pas dépasser 3 fois leur diamètre.`);
-    log.push(`Fermeture : 4 bossages Ø ${fr(d)} mm détachés des parois de ${fr(gap)} mm et reliés par des goussets de ${fr(rib)} mm — un bossage noyé dans l'angle ferait une masse, donc une retassure.`);
-    log.push(db >= 2 ? `Bossages noyautés des deux côtés : ${metal ? `le taraudage ${cover.params.screw} descend de ${fr(dt)} mm` : `le trou d'insert descend de ${fr(dt)} mm (3 × Ø au plus pour une broche)`}, et un évidement Ø ${fr(pin)} × ${fr(db)} mm monte du dessous${left > 0.05 ? ` ; il reste ${fr(left + wall)} mm pleins entre les deux` : ` ; il ne reste qu'un voile de ${fr(wall)} mm`}. Les évidements se voient sous le fond.`
+    log.push(`Fermeture : 4 bossages Ø ${fr(d)} mm détachés des parois de ${fr(gap)} mm et reliés par des goussets de ${fr(rib)} mm — un bossage noyé dans l'angle ferait une masse, donc un sink mark (retassure).`);
+    log.push(db >= 2 ? `Bossages noyautés des deux côtés : ${metal ? `le taraudage ${cover.params.screw} descend de ${fr(dt)} mm` : `le trou d'insert descend de ${fr(dt)} mm (3 × Ø au plus pour un core pin)`}, et un évidement Ø ${fr(pin)} × ${fr(db)} mm monte du dessous${left > 0.05 ? ` ; il reste ${fr(left + wall)} mm pleins entre les deux` : ` ; il ne reste qu'un voile de ${fr(wall)} mm`}. Les évidements se voient sous le fond.`
       : `Bossages pleins sous leur trou (${fr(H - wall - dt)} mm) : trop minces pour être évidés par dessous — une masse locale, à accepter ou à porter sur le couvercle.`);
     if (!rim.some((it) => it.type === "planar")) out.push({ id: `IF${items.length + (cover.auto ? 2 : 1)}`, type: "planar", name: "Plan de joint", key: `${cover.key}_joint`, side: "B", face: "+Z", at: ["L/2", "W/2"], params: { w: "L", h: "W" } });
   }
@@ -143,11 +150,11 @@ export function molded(brief, items, log) {
   for (const face of ["-Y", "+Y", "-X", "+X"]) { const on = sides.filter((it) => it.where === face), tot = on.reduce((s, it) => s + it.fp.w, 0) + 8 * (on.length - 1); let u = -tot / 2;
     for (const it of on) { const du = r1(u + it.fp.w / 2); u += it.fp.w + 8; slides++;
       out.push(ifo(it, face, [du ? `${face[1] === "Y" ? "L" : "W"}/2 ${du > 0 ? "+" : "-"} ${Math.abs(du)}` : `${face[1] === "Y" ? "L" : "W"}/2`, it.type === "cutout" ? `wall + ${so ? "so + 1.6 + " : ""}${r1((it.params.h || it.params.d || 8) / 2 + (so ? 0 : 4))}` : zc], it.type === "cutout" ? { opts: { ...(it.opts || {}), depth: `wall + ${r1(0.5 + H * lean)}` } } : {})); } }       // a leaning wall is further in at its foot : the opening goes that much deeper
-  if (slides) log.push(`${slides} ouverture(s) ou fixation(s) dans les parois latérales : chacune demande un tiroir dans le moule. L'ouvrir jusqu'au plan de joint, ou la porter par le couvercle, le supprime.`);
+  if (slides) log.push(`${slides} ouverture(s) ou fixation(s) dans les parois latérales : chacune demande un slide dans le mold. L'ouvrir jusqu'au parting line, ou la porter par le couvercle, le supprime.`);
   features.push({ op: "interfaces" });
-  log.push(dp ? `Dépouille de ${fr(dp)}° modélisée : parois, bossages, goussets et nervures penchent réellement (${R.draft[0] === R.draft[1] ? "extérieur et noyaux" : `le procédé demande ${fr(R.draft[0])}° dehors et ${fr(R.draft[1])}° sur les noyaux : une seule paroi impose le plus grand des deux`}). Sur ${fr(H)} mm de haut, le fond est plus étroit de ${fr(H * lean)} mm par côté : le volume à contenir est compté au fond.`
-    : `Dépouille ${fr(R.draft[0])}° à l'extérieur et ${fr(R.draft[1])}° à l'intérieur, déclarée pour le mouliste (modèle droit, à votre demande) : sur ${fr(H)} mm de haut, ${fr(H * Math.tan(R.draft[1] * Math.PI / 180))} mm par face.`);
+  log.push(dp ? `Draft de ${fr(dp)}° modélisé : parois, bossages, goussets et nervures penchent réellement (${R.draft[0] === R.draft[1] ? "extérieur et cores" : `le procédé demande ${fr(R.draft[0])}° dehors et ${fr(R.draft[1])}° sur les cores : une seule paroi impose le plus grand des deux`}). Sur ${fr(H)} mm de haut, le fond est plus étroit de ${fr(H * lean)} mm par côté : le volume à contenir est compté au fond.`
+    : `Draft ${fr(R.draft[0])}° à l'extérieur et ${fr(R.draft[1])}° à l'intérieur, déclaré pour le mouliste (modèle droit, à votre demande) : sur ${fr(H)} mm de haut, ${fr(H * Math.tan(R.draft[1] * Math.PI / 180))} mm par face.`);
   if (metal) log.push(`Métal coulé : aucun filetage ne vient de fonderie — taraudages et plans d'appui sont repris en usinage, avec ${fr(R.skim)} mm de surépaisseur.`);
   return { family: "enclosure", process: proc, params, stock: { form: "molded" }, features, interfaces: out, notes: R.notes,
-    mold: { process: proc, pull: "+Z", parting: "bord supérieur", wall, draft: dp || R.draft[0], draft_inside: dp || R.draft[1], modelled: dp > 0, arch: "shell", L, W, H, rc, ...(cover ? { closure: "screws", gap: r1(Math.max(wall, 1.5) + 2 * (H - wall) * lean) } : clips ? { closure: "clips", clips: { walls: L >= W ? "Y" : "X", at: clips.n === 3 ? [0.2, 0.5, 0.8] : [0.25, 0.75], lb: clips.lb, t: clips.t, y: clips.y, hh: clips.hh, wb: clips.wb, j: 0.25, strain: r1(1000 * clips.strain) / 1000, limit: clips.eps } } : {}), slides, machined: metal ? R.skim : 0, gate: metal ? "attaque de coulée sur un petit côté, évents à l'opposé" : "seuil au centre du fond, côté intérieur", ejection: "éjecteurs sur les bossages, les nervures et le pourtour du fond" } };
+    mold: { process: proc, pull: "+Z", parting: "bord supérieur", wall, draft: dp || R.draft[0], draft_inside: dp || R.draft[1], modelled: dp > 0, arch: "shell", L, W, H, rc, ...(cover ? { closure: "screws", gap: r1(Math.max(wall, 1.5) + 2 * (H - wall) * lean) } : clips ? { closure: "clips", clips: { walls: L >= W ? "Y" : "X", at: clips.n === 3 ? [0.2, 0.5, 0.8] : [0.25, 0.75], lb: clips.lb, t: clips.t, y: clips.y, hh: clips.hh, wb: clips.wb, j: 0.25, strain: r1(1000 * clips.strain) / 1000, limit: clips.eps } } : {}), slides, machined: metal ? R.skim : 0, gate: metal ? "gate sur un petit côté, vents à l'opposé" : "gate au centre du fond", ejection: "ejector pins sur les bossages, les nervures et le pourtour du fond" } };
 }

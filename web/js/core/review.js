@@ -10,7 +10,7 @@
    Pure functions : the caller applies them inside one undoable step. */
 
 import { model } from "../analysis/physics/index.js";
-import { material, PROCESSES } from "../cad/materials.js";
+import { material, PROCESSES, processName } from "../cad/materials.js";
 
 export const REVIEW_STATES = {
   draft: { fr: "Brouillon IA", tone: "warn", text: "écrit ou modifié par une IA, pas encore relu" },
@@ -45,7 +45,7 @@ export function artefactOf(project, key) { const [kind, id] = split(key); return
 const ledger = (project) => { project.review = project.review || { items: {} }; project.review.items = project.review.items || {}; return project.review.items; };
 
 function describe(project, kind, d) {
-  if (kind === "part") { const m = material(d.material); return { name: d.name || "", facts: [PROCESSES[d.process] ? PROCESSES[d.process].fr : d.process, m ? m.name : d.material].filter(Boolean).join(" · ") }; }
+  if (kind === "part") { const m = material(d.material); return { name: d.name || "", facts: [PROCESSES[d.process] ? processName(d.process) : d.process, m ? m.name : d.material].filter(Boolean).join(" · ") }; }
   if (kind === "assembly") return { name: d.name || "", facts: `${(d.instances || []).length} pièce(s), ${(d.mates || []).length} liaison(s)` };
   if (kind === "board") return { name: d.name || "", facts: `${(d.functions || []).filter((f) => !f.parent).length} fonction(s), ${(d.parts || []).length} composant(s)` };
   if (kind === "physics") { const m = model(d.model); return { name: m ? m.title : d.model, facts: [d.part, d.why].filter(Boolean).join(" — ") }; }

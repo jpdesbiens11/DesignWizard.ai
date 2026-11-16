@@ -120,7 +120,7 @@ export function sheetPanel(body, { st, id }) {
   const mat = materialOrDefault(s.material);
   body.append(text("name", "Nom"), field("Numéro de pièce", el("input", { type: "text", value: s.id, disabled: true })), text("function", "Fonction", "Une phrase : à quoi sert la pièce dans le produit."),
     field("Matériau", el("select", { onChange: set("material", "matériau") }, el("option", { value: "" }, "— à définir —"), materialMenu().map((f) => el("optgroup", { label: f.family }, f.list.map((m) => el("option", { value: m.id, selected: m.id === s.material }, materialLabel(m))))))),
-    field("Procédé", el("select", { onChange: set("process", "procédé") }, el("option", { value: "" }, "— à définir —"), Object.entries(PROCESSES).map(([k, p]) => el("option", { value: k, selected: k === s.process }, p.fr))),
+    field("Procédé", el("select", { onChange: set("process", "procédé") }, el("option", { value: "" }, "— à définir —"), Object.entries(PROCESSES).map(([k, p]) => el("option", { value: k, selected: k === s.process }, p.label))),
       s.material && s.process && mat.processes && mat.processes.length && !mat.processes.includes(s.process) ? "Ce matériau n'est pas courant pour ce procédé." : null),
     text("finish", "Finition"), text("revision", "Révision"),
     el("div", { class: "field look-field" }, el("span", { class: "field-label" }, "Couleur à l'écran"), el("div", { class: "look-line" }, lookSwatch(s, { big: true }), el("span", null, lookOf(s).color ? colorName(lookOf(s).color) : `celle de la matière (${mat.name})`)),

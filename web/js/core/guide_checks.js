@@ -5,7 +5,8 @@
    An entry : { level ("error" | "todo" | "warn" | "tip"), text, screen (module key), ref (id of the part or assembly),
    hash (where to go) }. Levels are those of core/guide.js. */
 
-import { material, PROCESSES } from "../cad/materials.js";
+import { material, PROCESSES, processName } from "../cad/materials.js";
+import { moldPlan, moldGuide } from "./mold_plan.js";
 
 const paramValue = (p) => (p !== null && typeof p === "object" ? p.value : p);
 const GEOMETRY = ["features", "stock", "folded", "extrusion", "pcb", "step", "busbar"];
@@ -19,7 +20,7 @@ export function partIssues(part, others = new Set()) {
   else if (!mat) add("warn", `matière « ${part.material} » inconnue de la bibliothèque : ses propriétés ne seront pas trouvées.`);
   if (!part.process) add("todo", "aucun procédé : le DFx et la gamme ne savent pas comment elle se fabrique.");
   else if (!PROCESSES[part.process]) add("warn", `procédé « ${part.process} » inconnu.`);
-  else if (mat && !bought && Array.isArray(mat.processes) && !mat.processes.includes(part.process)) add("warn", `${PROCESSES[part.process].fr} n'est pas un procédé courant pour ${mat.name}. Vérifiez la matière ou le procédé.`);
+  else if (mat && !bought && Array.isArray(mat.processes) && !mat.processes.includes(part.process)) add("warn", `${processName(part.process)} n'est pas un procédé courant pour ${mat.name}. Vérifiez la matière ou le procédé.`);
   for (const [k, p] of Object.entries(part.params || {})) {
     if (p === null || typeof p !== "object") continue;
     const v = p.value, label = p.label || k;
@@ -34,6 +35,7 @@ export function partIssues(part, others = new Set()) {
     if (!it.key) add("todo", `interface ${it.id || ""} « ${it.name || it.type} » sans clé : aucune pièce voisine ne pourra s'y accoupler.`);
     else if (!it.external && !others.has(it.key)) add("tip", `interface ${it.id || ""} « ${it.name || it.type} » libre : aucune autre pièce du projet ne porte sa clé. Créez la voisine dans l'Atelier (elle la reprendra), ou marquez l'interface « externe ».`);
   }
+  for (const g of moldGuide(moldPlan(part))) if (g.field) add(g.level === "check" ? "warn" : g.level, `mold : ${g.text}`);      // a moulded part : its gate to confirm, its slides, what marks a face that must stay clean
   if (!part.function && !bought) add("tip", "à quoi sert-elle ? Une phrase (« function ») aide la revue, et l'IA quand vous lui confiez la pièce.");
   return out;
 }

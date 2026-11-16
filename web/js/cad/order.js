@@ -4,7 +4,7 @@
    Lead times are TYPICAL figures of express prototype shops (working days, door to door excluded); they rank the
    options and show what slows a part down. The shop's own quote prevails. */
 
-import { PROCESSES, materialOrDefault } from "./materials.js";
+import { PROCESSES, materialOrDefault, processName } from "./materials.js";
 
 /* process -> [fastest, usual] working days for a simple part in 1 to 10 pieces, and what kind of route it is */
 export const LEAD = {
@@ -20,8 +20,10 @@ export const LEAD = {
   purchased: { days: [2, 10], proto: true, shop: "fournisseur" },
   extrusion_al: { days: [20, 40], proto: false, shop: "extrusion (filière dédiée)", instead: "usinez le prototype dans une barre ou une plaque (3 à 6 jours), gardez la filière pour la série" },
   extrusion_plastic: { days: [20, 40], proto: false, shop: "extrusion plastique (filière dédiée)", instead: "imprimez le prototype (1 à 4 jours), gardez la filière pour la série" },
-  die_casting: { days: [30, 60], proto: false, shop: "fonderie sous pression (moule dédié)", instead: "usinez le prototype dans la masse (3 à 6 jours) pour valider la physique, gardez le moule pour la série" },
-  sand_casting: { days: [15, 30], proto: false, shop: "fonderie par gravité (modèle et moule)", instead: "usinez le prototype dans la masse (3 à 6 jours), ou faites imprimer le modèle de fonderie" },
+  die_casting: { days: [30, 60], proto: false, shop: "high pressure die casting (moule dédié)", instead: "usinez le prototype dans la masse (3 à 6 jours) pour valider la physique, gardez le moule pour la série" },
+  lp_die_casting: { days: [30, 60], proto: false, shop: "low pressure die casting (moule métallique dédié)", instead: "usinez le prototype dans la masse (3 à 6 jours) pour valider la physique, gardez le moule pour la série" },
+  permanent_mold: { days: [25, 50], proto: false, shop: "permanent mold casting (moule métallique dédié)", instead: "usinez le prototype dans la masse (3 à 6 jours), ou coulez-le en sand casting, gardez le moule permanent pour la série" },
+  sand_casting: { days: [15, 30], proto: false, shop: "sand casting (pattern et moule en sable)", instead: "usinez le prototype dans la masse (3 à 6 jours), ou faites imprimer le modèle de fonderie" },
   injection_molding: { days: [25, 50], proto: false, shop: "injection (moule dédié)", instead: "imprimez le prototype en MJF PA12 ou usinez-le (2 à 6 jours) pour valider la physique, gardez le moule pour la série" },
 };
 const SLOW_FINISH = /anodis|peint|paint|chrom|nickel|zingu|zinc|galvan|passiv|poudre|powder|plating|trait/i;
@@ -37,7 +39,7 @@ export function orderCheck(spec, built, dfx, route, order = spec.order || {}) {
   if (dfx && dfx.summary && dfx.summary.warnings) cautions.push(`${dfx.summary.warnings} remarque(s) DFx à vérifier avec l'atelier.`);
   if (!dfx || dfx.unavailable) cautions.push("Règles DFx non évaluées.");
   let [lo, hi] = L ? L.days : [5, 15];
-  if (L) drivers.push(`${PROCESSES[spec.process].fr} : ${lo} à ${hi} jours ouvrables pour une pièce simple.`);
+  if (L) drivers.push(`${processName(spec.process)} : ${lo} à ${hi} jours ouvrables pour une pièce simple.`);
   if (L && !L.proto) cautions.push(`Ce procédé demande un outillage : ce n'est pas une voie de prototype. Pour tester vite, ${L.instead}.`);
   const st = route && route.stock;
   if (st && !st.additive && !st.standard) { lo += 2; hi += 5; drivers.push("Brut hors série : approvisionnement spécial (+2 à +5 j)."); }
@@ -60,7 +62,7 @@ export function rfqText(spec, built, route, check, order = spec.order || {}, fil
   const mat = materialOrDefault(spec.material), bb = built.bbox, n = (x) => (Math.round(x * 10) / 10).toLocaleString("fr-CA");
   const lines = [`DEMANDE DE PRIX — PROTOTYPE`, ``, `Pièce : ${spec.id} — ${spec.name || ""}${spec.revision ? ` (rév. ${spec.revision})` : ""}`, `Quantité : ${check.quantity}`,
     order.need_by ? `Livraison souhaitée : ${order.need_by}` : `Livraison souhaitée : au plus tôt (délai visé : ${check.days[0]} à ${check.days[1]} jours ouvrables)`,
-    ``, `Matériau : ${mat.name}`, `Procédé : ${PROCESSES[spec.process] ? PROCESSES[spec.process].fr : "à convenir"}`, route && route.stock ? `Matière première : ${route.stock.label}` : null,
+    ``, `Matériau : ${mat.name}`, `Procédé : ${PROCESSES[spec.process] ? processName(spec.process) : "à convenir"}`, route && route.stock ? `Matière première : ${route.stock.label}` : null,
     `Enveloppe : ${n(bb[3] - bb[0])} × ${n(bb[4] - bb[1])} × ${n(bb[5] - bb[2])} mm — masse ${n(built.mass)} g`, `Finition : ${spec.finish || "brut d'usinage, ébavuré"}`,
     `Tolérances : selon le dessin joint ; générales ISO 2768-mK sauf indication.`, ``, `Usage : prototype d'essai en laboratoire. Le délai compte plus que l'aspect ; signalez toute cote qui allonge le délai, nous l'adapterons.`];
   if (route && route.steps.length) lines.push(``, `Gamme envisagée (indicative, l'atelier reste maître de sa méthode) :`, ...route.steps.filter((s) => s.kind !== "check").map((s) => `  ${String(s.n).padStart(3)}  ${s.text}`));

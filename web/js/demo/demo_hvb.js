@@ -10,7 +10,7 @@ export const DEMO_HVB_PARTS = [
     function: "Plancher du boîtier, au potentiel du Chassis.", elec: { kind: "conductor", net: "Chassis" },
     features: [box(-5, -5, -3, 125, 65, 0)] },
   { dw: "part/1", id: "HVB-BASE", name: "Insulator base", family: "prismatic", process: "injection_molding", material: "PA66-GF30",
-    function: "Plaque isolante qui porte les busbars, avec nervure barrière, fente et rainure.", elec: { kind: "insulator" },
+    function: "Plaque isolante qui porte les busbars, avec nervure barrière, fente et rainure.", elec: { kind: "insulator" }, mold: { pull: "+Z", gating: { kind: "edge", side: "-X" } },
     features: [box(0, 0, 0, 120, 60, 4), box(52, 8, 4, 54, 52, 14, { name: "Barrier rib" }),
       box(60, 39.6, 2, 100, 40.4, 4.2, { mode: "cut", name: "Narrow slot 0.8 mm" }), box(8, 14, 2, 50, 17, 4.2, { mode: "cut", name: "Wide groove 3 mm" })] },
   { dw: "part/1", id: "HVB-BB-PLUS", name: "Busbar HV+", family: "busbar", process: "laser_cut", material: "CU-C110",
@@ -20,7 +20,7 @@ export const DEMO_HVB_PARTS = [
   { dw: "part/1", id: "HVB-LV", name: "Terminal LV sense", family: "prismatic", process: "cnc_milling", material: "BRASS-360",
     function: "Borne de mesure basse tension (12 V).", elec: { kind: "conductor", net: "LV sense" }, features: [box(80, 44, 4, 86, 48, 6)] },
   { dw: "part/1", id: "HVB-COVER", name: "Cover", family: "enclosure", process: "injection_molding", material: "PC",
-    function: "Capot isolant tenu 0,5 mm au-dessus de la plaque.", elec: { kind: "insulator" },
+    function: "Capot isolant tenu 0,5 mm au-dessus de la plaque.", elec: { kind: "insulator" }, mold: { pull: "-Z", gating: { kind: "pin", side: "+Z" } },
     features: [box(4, 4, 4.5, 104, 56, 20), box(6, 6, 4.3, 102, 54, 18, { mode: "cut" })] },
 ];
 

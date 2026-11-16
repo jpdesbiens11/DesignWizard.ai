@@ -7,7 +7,7 @@ const P = (value, min, max, label, group = "Enveloppe", step = 1) => ({ value, m
 
 const BASE = {
   dw: "part/1", id: "DRV-BASE", name: "Base du boîtier", family: "enclosure", process: "injection_molding", material: "PC-ABS", revision: "A",
-  function: "Loge les deux cartes, porte le dissipateur et reçoit le couvercle.", finish: "Grain fin VDI 27, noir", elec: { kind: "insulator" },
+  function: "Loge les deux cartes, porte le dissipateur et reçoit le couvercle.", finish: "Grain fin VDI 27, noir", elec: { kind: "insulator" }, mold: { pull: "+Z", gating: { kind: "pin", side: "-Z" } },
   params: { L: P(160, 120, 260, "Longueur"), W: P(110, 80, 200, "Largeur"), H: P(42, 25, 90, "Hauteur"), wall: P(2.5, 1.5, 4, "Paroi", "Enveloppe", 0.1), rc: P(6, 2, 15, "Rayon des coins", "Détails", 0.5),
     so: P(6, 4, 15, "Hauteur des colonnettes", "Cartes", 0.5), pwrX: P(47, 40, 70, "Centre carte de puissance (X)", "Cartes", 0.5), ctlX: P(122, 100, 140, "Centre carte de contrôle (X)", "Cartes", 0.5),
     winL: P(44, 20, 60, "Fenêtre thermique (X)", "Dissipateur"), winW: P(50, 20, 70, "Fenêtre thermique (Y)", "Dissipateur"), conW: P(18, 8, 40, "Largeur connecteur E/S", "Connecteur"), conH: P(9, 4, 20, "Hauteur connecteur E/S", "Connecteur") },
@@ -33,7 +33,7 @@ const BASE = {
 
 const COVER = {
   dw: "part/1", id: "DRV-COVER", name: "Couvercle", family: "plate", process: "injection_molding", material: "PC-ABS", revision: "A",
-  function: "Ferme le boîtier et protège les cartes.", elec: { kind: "insulator" },
+  function: "Ferme le boîtier et protège les cartes.", elec: { kind: "insulator" }, mold: { pull: "-Z", gating: { kind: "pin", side: "-Z" } },
   params: { L: P(160, 120, 260, "Longueur"), W: P(110, 80, 200, "Largeur"), t: P(2.5, 1.5, 4, "Épaisseur", "Enveloppe", 0.1), rc: P(6, 2, 15, "Rayon des coins", "Détails", 0.5),
     sx: P(148, 60, 250, "Entraxe des vis en X", "Fixation", 0.5), sy: P(98, 40, 190, "Entraxe des vis en Y", "Fixation", 0.5) },
   interfaces: [

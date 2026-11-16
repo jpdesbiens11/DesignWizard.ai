@@ -4,7 +4,7 @@
    insert suppliers' boss guidance; edge distances and slenderness limits are rules of thumb. */
 
 import { THREADS, clearanceHole } from "../cad/standards.js";
-import { MATERIALS, PROCESSES } from "../cad/materials.js";
+import { MATERIALS, PROCESSES, processName } from "../cad/materials.js";
 import { patternPoints } from "../cad/interfaces.js";
 import { rule, num, round, groupBy } from "./dfx_core.js";
 
@@ -188,7 +188,7 @@ export function checkGeneral(ctx) {
     if (!ctx.mat || !PROCESSES[spec.process] || spec.process === "purchased" || (ctx.mat.processes || []).includes(spec.process)) return;
     const alt = MATERIALS.find((m) => m.cls === ctx.mat.cls && (m.processes || []).includes(spec.process));
     ctx.add("GEN-03", { value: spec.material, limit: spec.process,
-      message: `${ctx.mat.name} n'est pas une matière courante pour « ${PROCESSES[spec.process].fr} » (ses process : ${(ctx.mat.processes || []).join(", ") || "aucun"}). Correctif : ${alt ? `passer à ${alt.id} (${alt.name})` : "choisir une matière proposée pour ce process"}, ou changer de process.`,
+      message: `${ctx.mat.name} n'est pas une matière courante pour « ${processName(spec.process)} » (ses process : ${(ctx.mat.processes || []).join(", ") || "aucun"}). Correctif : ${alt ? `passer à ${alt.id} (${alt.name})` : "choisir une matière proposée pour ce process"}, ou changer de process.`,
       fix: alt ? { label: `Passer à ${alt.id}`, patch: [{ target: "spec", id: null, path: "material", value: alt.id }] } : null });
   });
   ctx.run("GEN-04", () => {

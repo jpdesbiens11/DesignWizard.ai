@@ -14,15 +14,15 @@ const S = {
   ge: "eFunda ; Stratasys Direct ; GE Plastics design guide", rm: "Rapidmade MJF design guide",
 };
 const M = {
-  m01: rule("MLD-01", "Paroi dans la plage matière", "Entre le mini et le maxi de la matière (ex. ABS 1,2 à 3,5 mm)", "error", "Trop mince : la pièce ne se remplit pas ; trop épais : retassures, vides, cycle long.", S.wall, { fix: true }),
-  m02: rule("MLD-02", "Dépouille (draft)", "≥ 0,5° (1° conseillé), + 1° par 0,025 mm de grain", "info", "Sans dépouille la pièce frotte et se marque à l'éjection. Le langage ne décrit pas la dépouille : à porter au plan.", S.pl, { manual: true }),
+  m01: rule("MLD-01", "Paroi dans la plage matière", "Entre le mini et le maxi de la matière (ex. ABS 1,2 à 3,5 mm)", "error", "Trop mince : la pièce ne se remplit pas ; trop épais : sink marks (retassures), vides, cycle long.", S.wall, { fix: true }),
+  m02: rule("MLD-02", "Draft", "≥ 0,5° (1° conseillé), + 1° par 0,025 mm de grain", "info", "Sans draft la pièce frotte et se marque à l'éjection.", S.pl, { manual: true }),
   m03: rule("MLD-03", "Bossages", "Ø extérieur du bossage ≥ 2 × Ø du trou", "warn", "Un bossage trop mince éclate au vissage ou à la pose de l'insert.", S.cov, { fix: true }),
   m04: rule("MLD-04", "Rayons intérieurs", "Rayon intérieur ≥ 0,5 × paroi", "warn", "Un angle vif concentre les contraintes et gêne l'écoulement.", S.cov, { fix: true }),
   m05: rule("MLD-05", "UL94 à l'épaisseur réelle", "La classe de flamme (V-0…) n'est valable qu'à partir de l'épaisseur testée", "info", "Un boîtier électrique doit tenir sa classe à sa paroi la plus mince.", S.ul),
   m06: rule("MLD-06", "Longueur d'écoulement", "Longueur d'écoulement / paroi ≤ 150:1", "warn", "Au-delà, le front de matière fige avant de remplir (short shot).", S.thumb),
-  m07: rule("MLD-07", "Contre-dépouilles (side actions)", "Aucune ouverture sur les faces latérales si possible", "info", "Chaque ouverture latérale demande un tiroir : coût et entretien du moule.", S.bd),
+  m07: rule("MLD-07", "Undercuts (side actions)", "Aucune ouverture sur les faces latérales si possible", "info", "Chaque ouverture latérale demande un slide : coût et entretien du mold.", S.bd),
   m08: rule("MLD-08", "Parois uniformes", "Épaisseurs dans un rapport ≤ 1,5:1 (transition progressive, ≤ 1,25 entre parois voisines)", "warn", "Retassures, vides et gauchissement aux changements d'épaisseur.", S.wall),
-  m10: rule("MLD-10", "Broches de noyau (core pins)", "Trou borgne : profondeur ≤ 3 × Ø ; trou débouchant : ≤ 6 × Ø", "warn", "Une broche longue et fine fléchit sous la pression d'injection.", S.thumb),
+  m10: rule("MLD-10", "Core pins", "Trou borgne : profondeur ≤ 3 × Ø ; trou débouchant : ≤ 6 × Ø", "warn", "Un core pin long et fin fléchit sous la pression d'injection.", S.thumb),
   m11: rule("MLD-11", "Clips élastiques", "Déformation de la lame ε = 1,5 × épaisseur × flèche / longueur² ≤ 2 % (1 % pour une matière chargée de fibres)", "warn", "Au-delà la lame blanchit, se déforme pour de bon ou casse au premier encliquetage.", S.thumb),
 };
 const H = {
@@ -39,8 +39,8 @@ const H = {
   a02: rule("AM-02", "Sections massives (MJF)", "Épaisseur ≤ 10 mm : évider au-delà", "info", "Accumulation de chaleur, retrait et coût de poudre.", "HP MJF design guide"),
 };
 export const BOOK_PLASTIC = [
-  { process: "injection_molding", category: "DFM", steps: ["Parois uniformes dans la plage de la matière", "Dépouille sur toutes les parois parallèles au démoulage", "Nervures et bossages : 40 à 60 % de la paroi, bossage Ø ≥ 2 × trou",
-    "Rayons intérieurs ≥ 0,5 × paroi", "Pas d'ouverture latérale (tiroirs) si possible", "Classe de flamme à l'épaisseur réelle"], rules: [M.m01, M.m08, M.m02, M.m03, M.m04, M.m05, M.m06, M.m07, M.m10, M.m11] },
+  { process: "injection_molding", category: "DFM", steps: ["Parois uniformes dans la plage de la matière", "Draft sur toutes les parois parallèles au pull", "Nervures et bossages : 40 à 60 % de la paroi, bossage Ø ≥ 2 × trou",
+    "Rayons intérieurs ≥ 0,5 × paroi", "Pas d'ouverture latérale (slides) si possible", "Classe de flamme à l'épaisseur réelle"], rules: [M.m01, M.m08, M.m02, M.m03, M.m04, M.m05, M.m06, M.m07, M.m10, M.m11] },
   { process: "fdm", category: "DFM", steps: ["Blocs de ce qui entre dans la pièce, du bas vers le haut", "Paroi ≥ minimum du process (≥ 1,5 mm pour la tenue au feu)", "Orienter pour limiter les supports", "Bossages hors de la cavité, inserts à chaud",
     "Jeux d'assemblage ≥ 0,3 mm par côté"], rules: [H.h01, H.h02, H.h04, H.h05, H.h07, H.h08, H.h10, H.h12, H.h13, H.h14] },
   { process: "mjf", category: "DFM", steps: ["Paroi ≥ 0,9 mm, sections ≤ 10 mm (évider)", "Trous ≥ Ø1, prévoir le dépoudrage des cavités", "Jeux d'assemblage ≥ 0,2 mm par côté", "Rayons intérieurs ≥ 0,5 × paroi", "PA12 : UL94 HB seulement"],
@@ -79,7 +79,7 @@ export function checkMolding(ctx) {
   ctx.run("MLD-01", () => {
     ctx.checkWalls("MLD-01", { rec: lim[0], min: lim[0], what: `de moulage pour ${name}` });
     for (const s of facts.shells) if (s.t > lim[1] + 1e-6) ctx.add("MLD-01", { severity: "warn", value: s.t, limit: lim[1], unit: "mm", feature: s.source,
-      message: `Paroi (shell « ${s.source} ») de ${num(s.t)} mm : au-dessus du maximum de moulage pour ${name} (${num(lim[1])} mm) — retassures, vides, cycle long. Correctif : ramener la paroi à ${num(lim[1])} mm et rigidifier par des nervures.`,
+      message: `Paroi (shell « ${s.source} ») de ${num(s.t)} mm : au-dessus du maximum de moulage pour ${name} (${num(lim[1])} mm) — sink marks, vides, cycle long. Correctif : ramener la paroi à ${num(lim[1])} mm et rigidifier par des nervures.`,
       fix: ctx.fix(`Ramener la paroi à ${num(lim[1])} mm`, ctx.patch(s, "t", lim[1])) });
     const w = ctx.wall(), solid = !facts.shells.length ? (w ? w.median : dims ? Math.min(...dims) : null) : null;
     if (solid > lim[1] + 1e-6) ctx.add("MLD-01", { severity: "warn", value: round(solid), limit: lim[1], unit: "mm",
@@ -97,9 +97,9 @@ export function checkMolding(ctx) {
     const pull = facts.shells.length && FACES[facts.shells[0].open && facts.shells[0].open[0]] ? FACES[facts.shells[0].open[0]].axis : 2, Hh = dims[pull];
     const made = (facts.drafts || []).length ? Math.min(...facts.drafts.map((d) => d.angle)) : 0;
     if (made > 0) { ctx.add("MLD-02", { severity: made < 0.5 - 1e-9 ? "warn" : "info", value: made, limit: 0.5, unit: "°", feature: facts.drafts[0].source,
-      message: `Dépouille modélisée : ${num(made)}° (${facts.drafts.map((d) => d.what).filter((v, i, all) => v && all.indexOf(v) === i).join(", ") || "corps"}) ; les bossages et nervures qui portent « draft » penchent aussi. Limite : ≥ 0,5° (1° conseillé, + 1° par 0,025 mm de grain) ; sur ${num(Hh)} mm de démoulage, ${num(made)}° représentent ${num(Hh * Math.tan(made * Math.PI / 180))} mm par face, déjà dans le modèle.${made < 0.5 - 1e-9 ? " Correctif : porter la dépouille à 1°." : ""}` }); return; }
+      message: `Draft modélisé : ${num(made)}° (${facts.drafts.map((d) => d.what).filter((v, i, all) => v && all.indexOf(v) === i).join(", ") || "corps"}) ; les bossages et nervures qui portent « draft » penchent aussi. Limite : ≥ 0,5° (1° conseillé, + 1° par 0,025 mm de grain) ; sur ${num(Hh)} mm de démoulage, ${num(made)}° représentent ${num(Hh * Math.tan(made * Math.PI / 180))} mm par face, déjà dans le modèle.${made < 0.5 - 1e-9 ? " Correctif : porter le draft à 1°." : ""}` }); return; }
     ctx.add("MLD-02", { value: 0, limit: 0.5, unit: "°",
-      message: `Dépouille : le langage ne la décrit pas (0° modélisé). Limite : ≥ 0,5° (1° conseillé, + 1° par 0,025 mm de grain) ; sur ${num(Hh)} mm de hauteur de démoulage, 1° représente ${num(Hh * Math.tan(Math.PI / 180))} mm par face. Correctif : porter la dépouille au plan et en tenir compte dans les jeux.` });
+      message: `Draft : le modèle reste droit (0° modélisé). Limite : ≥ 0,5° (1° conseillé, + 1° par 0,025 mm de grain) ; sur ${num(Hh)} mm de hauteur de démoulage, 1° représente ${num(Hh * Math.tan(Math.PI / 180))} mm par face. Correctif : porter la dépouille au plan et en tenir compte dans les jeux.` });
   });
   ctx.run("MLD-03", () => checkBossRatio(ctx, "MLD-03"));
   ctx.run("MLD-04", () => insideRadii(ctx, "MLD-04", null));
@@ -121,7 +121,7 @@ export function checkMolding(ctx) {
     const side = new Set();
     for (const x of [...facts.holes, ...facts.pockets]) if (x.face && FACES[x.face] && FACES[x.face].axis !== pull) side.add(x.face);
     if (side.size) ctx.add("MLD-07", { severity: side.size >= 3 ? "warn" : "info", value: side.size, limit: 0, unit: "faces latérales",
-      message: `Ouvertures ou trous sur ${side.size} face(s) latérale(s) (${[...side].sort().join(", ")}), perpendiculaires au démoulage (axe ${"XYZ"[pull]}) : chaque face demande un tiroir (side action) ; limite conseillée : 0. Correctif : déplacer ces ouvertures sur la face de démoulage, les ouvrir jusqu'au plan de joint (encoche en U), ou accepter le coût du tiroir.` });
+      message: `Ouvertures ou trous sur ${side.size} face(s) latérale(s) (${[...side].sort().join(", ")}), perpendiculaires au pull (axe ${"XYZ"[pull]}) : chaque face demande un slide (side action) ; limite conseillée : 0. Correctif : déplacer ces ouvertures sur la face de démoulage, les ouvrir jusqu'au parting line (encoche en U), ou accepter le coût du tiroir.` });
   });
   ctx.run("MLD-11", () => {
     const c = ctx.spec.mold && ctx.spec.mold.clips; if (!c || !(c.lb > 0)) return;
@@ -134,7 +134,7 @@ export function checkMolding(ctx) {
       const h = g[0], k = h.through ? 6 : 3, depth = h.through ? (ctx.hollow ? t : null) : h.depth;
       if (!(depth > 0) || !(h.d > 0) || depth <= k * h.d + 1e-6) continue;
       ctx.add("MLD-10", { value: round(depth / h.d), limit: k, unit: "× Ø", where: h.at, feature: h.source, iface: h.iface,
-        message: `${holeLabel(g)} ${h.through ? "débouchant" : "borgne"} : profondeur ${num(depth)} mm = ${num(depth / h.d, 1)} × Ø. Limite : ${k} × Ø (${num(k * h.d)} mm), sinon la broche de noyau fléchit. Correctif : réduire la profondeur à ${num(k * h.d)} mm ou augmenter le Ø.` });
+        message: `${holeLabel(g)} ${h.through ? "débouchant" : "borgne"} : profondeur ${num(depth)} mm = ${num(depth / h.d, 1)} × Ø. Limite : ${k} × Ø (${num(k * h.d)} mm), sinon le core pin fléchit. Correctif : réduire la profondeur à ${num(k * h.d)} mm ou augmenter le Ø.` });
     }
   });
 }

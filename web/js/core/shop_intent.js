@@ -7,7 +7,7 @@
 
 import { INTERFACE_TYPES, patternPoints } from "../cad/interfaces.js";
 import { thread } from "../cad/standards.js";
-import { material } from "../cad/materials.js";
+import { material, MOLD_PROCESSES } from "../cad/materials.js";
 import { STOCK_FORMS, PLATE_THICKNESS, ROUND_BARS, ANGLE_LEGS, ANGLE_THICKNESS, FLAT_THICKNESS, nextStd } from "../cad/stock.js";
 import { SHEET_GAUGES } from "../cad/standards.js";
 import { molded, moldProcess } from "./shop_mold.js";
@@ -68,7 +68,7 @@ export function recommend(brief) {
   const faces = new Set((brief.interfaces || []).map((i) => i.where || "+Z")), axes = new Set([...faces].map((f) => f[1])), mat = material(brief.material);
   const q = Number(brief.quantity) || 1, plastic = mat && mat.cls !== "metal";
   const onlyAxis = (brief.interfaces || []).length > 0 && (brief.interfaces || []).every((i) => i.type === "fit" || (i.type === "bolt_pattern" && i.params && i.params.pattern && i.params.pattern.type === "circle"));
-  const additive = plastic && ["fdm", "mjf", "sla"].find((k) => mat.processes.includes(k)), casts = mat && ["die_casting", "sand_casting"].find((k) => mat.processes.includes(k));
+  const additive = plastic && ["fdm", "mjf", "sla"].find((k) => mat.processes.includes(k)), casts = mat && ["die_casting", "lp_die_casting", "permanent_mold", "sand_casting"].find((k) => mat.processes.includes(k));
   const holds = (brief.interfaces || []).some((i) => i.inside) || (brief.envelope && (brief.envelope.L || brief.envelope.W || brief.envelope.H));
   const extr = mat && mat.processes.find((k) => /^extrusion_/.test(k));
   if (mat && (mat.cls === "sheet" || mat.cls === "pcb")) return { form: "sheet", process: "laser_cut", why: `${mat.name} : une matière en feuille — la pièce se découpe à plat, au laser de précision.` };
@@ -203,7 +203,7 @@ export function synthesize(brief, id = "PN-0001") {
   const log = [], rec = recommend(brief), form = brief.form && SHOP_FORMS[brief.form] ? brief.form : rec.form;
   const b = { ...brief, form, process: brief.process || SHOP_FORMS[form], material: brief.material || (form === "print" ? "PA12" : form === "molded" ? "PC-ABS" : form === "profile" ? "AL6063-T5" : "AL6061-T6") };
   if (form === "profile") b.process = extrusionProcess(b.material);
-  if (form === "molded") b.process = brief.process && /molding|casting/.test(brief.process) ? brief.process : moldProcess(b.material);
+  if (form === "molded") b.process = MOLD_PROCESSES.includes(brief.process) ? brief.process : moldProcess(b.material);
   if (form === "print" && !(brief.process && AM_PROCESSES[brief.process])) b.process = printProcess(b.material) || "fdm";
   const fold = form === "sheet" && foldSides(b).length > 0;      // a metal sheet with folded edges : the press brake after the laser
   if (form === "sheet") b.process = fold ? "sheet_metal" : "laser_cut";

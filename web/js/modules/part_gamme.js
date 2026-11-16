@@ -11,7 +11,7 @@ import { kernel } from "../cad/client.js";
 import { processPlan, stateSpec } from "../cad/process_plan.js";
 import { planPanel, shot, setPlanNote, setPlanPoints } from "./plan_view.js";
 
-const NO_STOCK = new Set(["die_casting", "sand_casting", "injection_molding", "fdm", "mjf", "sla", "lpbf", "pcb", "extrusion_al", "extrusion_plastic", "purchased"]);      // processes that do not start from a bar or a plate
+const NO_STOCK = new Set(["die_casting", "lp_die_casting", "permanent_mold", "sand_casting", "injection_molding", "fdm", "mjf", "sla", "lpbf", "pcb", "extrusion_al", "extrusion_plastic", "purchased"]);      // processes that do not start from a bar or a plate
 
 export function gammePanel(body, ctx) {
   const { st, id, editStock, vp } = ctx, s = st.spec, b = st.built;

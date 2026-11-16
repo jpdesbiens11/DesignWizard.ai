@@ -12,7 +12,7 @@ import { kernel } from "../cad/client.js";
 import { Viewer } from "../core/viewer.js";
 import { showBuilt } from "../core/viewport.js";
 import { synthesize, recommend, SHOP_FORMS, WHERE } from "../core/shop_intent.js";
-import { moldProcess, MOLD_RULES } from "../core/shop_mold.js";
+import { moldProcess, moldProcesses, MOLD_RULES } from "../core/shop_mold.js";
 import { moldArch, hostOf } from "../core/shop_mold_more.js";
 import { extrusionProcess, EXTRUSION_RULES, DEFAULT_CONTENTS } from "../core/shop_extrusion.js";
 import { routing } from "../cad/shop.js";
@@ -21,7 +21,7 @@ import { INTERFACE_TYPES, interfaceSignature, ADHESIVES, BOND_PREPS } from "../c
 import { THREADS } from "../cad/standards.js";
 import { WELD_PROCESSES, PLATINGS, CONTACT_FORMS } from "../cad/interfaces_elec.js";
 import { contactFormPicker } from "./contact_forms.js";
-import { PROCESSES, material } from "../cad/materials.js";
+import { PROCESSES, material, processName } from "../cad/materials.js";
 import { anticipatedInterfaces, shopPrompt } from "../core/prompts.js";
 import { importPart } from "../core/importer.js";
 import { runDfx } from "../analysis/dfx_api.js";
@@ -223,28 +223,30 @@ function render(main) {
       stockGrid.append(el("button", { class: "stock-card" + (on ? " on" : "") + (odd ? " odd" : ""), type: "button", "aria-pressed": on ? "true" : "false", "data-tip": f.hint, onClick: () => { brief.form = brief.form === form ? "" : form;      // a click chooses this stock by hand ; a second one gives the choice back to the companion
         if (prof && brief.form && !canExtrude) { brief.material = plastic ? "PVC-U" : "AL6063-T5"; toast(`Matière changée pour ${material(brief.material).name} : celle d'avant ne s'extrude pas.`, "info", 4500); }
         drawStock(); propose(); } },
-        icon(f.icon), el("b", null, f.fr), el("small", null, PROCESSES[mould ? moldProcess(brief.material) : prof ? extrusionProcess(brief.material) : form === "print" ? printProcess(brief.material) || proc : form === "sheet" && foldSides(brief).length ? "sheet_metal" : proc].fr), form === rec.form ? badge("Conseillé", "ok") : null, brief.form === form ? badge("Choisi", "info") : null));
+        icon(f.icon), el("b", null, f.fr), el("small", null, processName(mould ? moldProcess(brief.material) : prof ? extrusionProcess(brief.material) : form === "print" ? printProcess(brief.material) || proc : form === "sheet" && foldSides(brief).length ? "sheet_metal" : proc)), form === rec.form ? badge("Conseillé", "ok") : null, brief.form === form ? badge("Choisi", "info") : null));
     }
     /* a moulded part is drawn around what it holds : the designer gives the volume to contain, the rules of the moulder do the rest */
     clear(moldBox);
     const moulded = (brief.form || rec.form) === "molded";
     if (moulded) {
-      const proc = moldProcess(brief.material), R = MOLD_RULES[proc], lim = (mat && mat.wall) || R.wall, again = () => propose(), arch = moldArch(brief, brief.interfaces), metal = R.thread === "tapped";
+      const procs = moldProcesses(brief.material); if (brief.process && !procs.includes(brief.process)) brief.process = undefined;        // another material : its own processes
+      const proc = brief.process || moldProcess(brief.material), R = MOLD_RULES[proc], lim = R.ownWall ? R.wall : (mat && mat.wall) || R.wall, again = () => propose(), arch = moldArch(brief, brief.interfaces), metal = R.thread === "tapped";
       const pick = (k, label, tip) => el("button", { class: "btn btn-small" + (arch === k ? " btn-primary" : ""), type: "button", "aria-pressed": arch === k ? "true" : "false", "data-tip": tip, onClick: () => { brief.arch = k; drawStock(); propose(); } }, label);
       const wallTxt = `paroi de ${String(lim[0]).replace(".", ",")} à ${String(lim[1]).replace(".", ",")} mm pour cette matière`;
-      moldBox.append(el("div", { class: "atelier-hint", style: { marginTop: ".6rem" } }, icon("cast"), el("div", null, el("b", null, `Pièce moulée — ${PROCESSES[proc].fr.toLowerCase()}`),
+      moldBox.append(el("div", { class: "atelier-hint", style: { marginTop: ".6rem" } }, icon("cast"), el("div", null, el("b", null, `Pièce moulée — ${processName(proc)}`),
         el("div", { class: "form-actions", style: { justifyContent: "flex-start", margin: ".35rem 0", flexWrap: "wrap" } }, pick("shell", "Coque — elle contient", "Un boîtier, un carter : dessiné autour du volume à loger et de ce qui se fixe dedans"),
           pick("cover", "Couvercle — il ferme", "Assorti au boîtier voisin : même contour, lèvre de centrage, trous au droit de ses bossages ou crochets dans ses fenêtres"), pick("plate", "Platine nervurée — elle porte", "Une pièce pleine : une paroi, une ceinture et des nervures croisées dessous, des bossages sous ses filets")),
-        el("p", { class: "small", style: { margin: ".2rem 0 0" } }, arch === "cover" ? `Cochez plus haut le boîtier que ce couvercle ferme : il en reprend le contour, les rayons, la dépouille et la fermeture (vis ou clips). Lèvre de centrage, nervures, ${wallTxt}.`
+        el("p", { class: "small", style: { margin: ".2rem 0 0" } }, arch === "cover" ? `Cochez plus haut le boîtier que ce couvercle ferme : il en reprend le contour, les rayons, le draft et la fermeture (vis ou clips). Lèvre de centrage, nervures, ${wallTxt}.`
           : arch === "plate" ? `Donnez la longueur et la largeur ; les interfaces se posent dessus. Une seule paroi (${wallTxt}), une ceinture et des nervures croisées dessous, des bossages${metal ? " taraudés après coulée" : " à inserts"} sous les filets.`
-          : `Dites le volume à contenir ; cochez « à l'intérieur » les interfaces de ce qui se fixe dedans. La pièce se dessine seule : ${wallTxt}, rayons, bossages${metal ? " taraudés après coulée" : " avec inserts"}, nervures, dépouille réelle.`))));
+          : `Dites le volume à contenir ; cochez « à l'intérieur » les interfaces de ce qui se fixe dedans. La pièce se dessine seule : ${wallTxt}, rayons, bossages${metal ? " taraudés après coulée" : " avec inserts"}, nervures, draft réel.`))));
+      if (procs.length > 1) moldBox.append(el("div", { class: "form-actions", style: { justifyContent: "flex-start", margin: ".4rem 0 0", flexWrap: "wrap", gap: ".3rem" } }, el("small", { class: "muted" }, "Procédé :"), procs.map((k) => el("button", { class: "btn btn-small" + (k === proc ? " btn-primary" : ""), type: "button", "aria-pressed": k === proc ? "true" : "false", "data-mold-process": k, "data-tip": `${processName(k)} — paroi ${String((MOLD_RULES[k].ownWall ? MOLD_RULES[k].wall : (mat && mat.wall) || MOLD_RULES[k].wall)[0]).replace(".", ",")} mm et plus, draft ${MOLD_RULES[k].draft[0]}° / ${MOLD_RULES[k].draft[1]}°`, onClick: () => { brief.process = k; drawStock(); propose(); } }, MOLD_RULES[k].label))));
       if (arch !== "cover") { brief.envelope = brief.envelope || { L: 100, W: 60, H: 25 };
         moldBox.append(el("div", { class: "form-row tight" }, numIn(brief.envelope, "L", arch === "plate" ? "Longueur" : "Longueur à contenir", again), numIn(brief.envelope, "W", arch === "plate" ? "Largeur" : "Largeur à contenir", again),
           arch === "shell" ? numIn(brief.envelope, "H", "Hauteur à contenir", again) : null,
           arch === "shell" ? field("Colonnettes (mm)", el("input", { type: "number", value: brief.standoff ?? 6, step: 0.5, min: 3, onInput: (e) => { const v = parseFloat(e.target.value); if (v >= 3) { brief.standoff = v; again(); } } })) : null,
           arch === "shell" ? field("Fermeture", el("select", { "data-tip": "Des vis dans des bossages, ou des clips : des fenêtres dans les grands côtés, où s'accrochent les crochets du couvercle", onChange: (e) => { brief.closure = e.target.value === "clips" ? "clips" : undefined; brief.cover = e.target.value === "none" ? false : undefined; again(); } },
             [["screws", "Vis dans des bossages"], ["clips", metal ? "Clips (plastique seulement)" : "Clips, sans vis"], ["none", "Aucune"]].map(([k, l]) => el("option", { value: k, selected: k === (brief.cover === false ? "none" : brief.closure === "clips" ? "clips" : "screws") }, l)))) : null)); }
-      moldBox.append(el("label", { class: "check small" }, el("input", { type: "checkbox", checked: brief.draft !== false, onChange: (e) => { brief.draft = e.target.checked ? undefined : false; again(); } }), `Dépouille modélisée dans la géométrie (${Math.max(R.draft[0], R.draft[1])}°) — décochez pour un modèle droit, dépouille déclarée seulement`));
+      moldBox.append(el("label", { class: "check small" }, el("input", { type: "checkbox", checked: brief.draft !== false, onChange: (e) => { brief.draft = e.target.checked ? undefined : false; again(); } }), `Draft modélisé dans la géométrie (${Math.max(R.draft[0], R.draft[1])}°) — décochez pour un modèle droit, draft déclaré seulement`));
     }
     /* an extruded profile is drawn around what slides, rests or simply fits in it */
     clear(profBox);
@@ -296,7 +298,7 @@ function render(main) {
       r.utilisation !== null ? el("span", { class: "chip" + (r.utilisation < 0.25 ? " bad" : " done"), "data-tip": "Part du brut qui reste dans la pièce (l'inverse du ratio « buy-to-fly »)" }, `${Math.round(r.utilisation * 100)} % du brut utilisé`) : null,
       el("span", { class: "chip" }, `${r.setups.length || 1} posage(s) · ${r.tools.length} outil(s)`)].filter(Boolean));     // append(null) would write the word « null »
     for (const l of built.log.filter((x) => x.level === "error")) out.append(el("p", { class: "form-error" }, l.msg));
-    if (st) out.append(el("div", { class: "atelier-stock" }, icon(STOCK_FORMS[st.form].icon), el("div", null, el("b", null, st.label), el("small", null, `${material(res.spec.material).name} · ${PROCESSES[res.spec.process].fr}`))));
+    if (st) out.append(el("div", { class: "atelier-stock" }, icon(STOCK_FORMS[st.form].icon), el("div", null, el("b", null, st.label), el("small", null, `${material(res.spec.material).name} · ${processName(res.spec.process)}`))));
     out.append(el("h3", null, "Gamme de fabrication"), el("ol", { class: "gamme" }, r.steps.map((s) => el("li", { class: `g-${s.kind}` }, el("span", { class: "g-n" }, s.n), el("span", { class: "grow" }, s.text), s.face && s.kind !== "stock" ? badge(WHERE[s.face] || s.face, "neutral") : null))));
     if (r.tools.length) out.append(el("p", { class: "muted small" }, el("b", null, "Outils : "), r.tools.join(" · ")));
     for (const a of r.advice) out.append(el("p", { class: "atelier-hint warn" }, icon("warning"), " ", a));

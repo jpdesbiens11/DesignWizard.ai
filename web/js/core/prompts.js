@@ -5,7 +5,7 @@
 import { LANGUAGE_REFERENCE } from "../cad/language_doc.js";
 import { evaluatedParams } from "./links.js";
 import { INTERFACE_TYPES } from "../cad/interfaces.js";
-import { PROCESSES } from "../cad/materials.js";
+import { PROCESSES, processName } from "../cad/materials.js";
 import { processSheet } from "../cad/special_processes.js";
 import { FOLD_RULES } from "./shop_folded.js";
 
@@ -49,7 +49,7 @@ export function partPrompt(project, opts) {
   lines.push(`PIÈCE À CONCEVOIR : ${opts.name || "(à nommer)"}`);
   if (opts.fn) lines.push(`FONCTION : ${opts.fn}`);
   if (opts.family) lines.push(`FAMILLE ENVISAGÉE : ${opts.family}`);
-  if (opts.process) lines.push(`PROCÉDÉ ENVISAGÉ : ${opts.process} (${(PROCESSES[opts.process] || {}).fr || ""})`);
+  if (opts.process) lines.push(`PROCÉDÉ ENVISAGÉ : ${opts.process} (${processName(opts.process) || ""})`);
   if (opts.material) lines.push(`MATÉRIAU ENVISAGÉ : ${opts.material}`);
   if (opts.constraints) lines.push(`CONTRAINTES ET CONTEXTE : ${opts.constraints}`);
   lines.push("");
@@ -107,7 +107,7 @@ export function shopPrompt(project, brief, spec) {
     "", `PIÈCE : ${spec.id} — ${spec.name || ""}`, "INTENTION :", ...(intent.length ? intent : ["- (à préciser pendant l'entrevue)"]),
     "", "CE QUI EST IMPOSÉ : le \"id\" de la pièce ; pour chaque interface son \"type\", sa \"key\", ses \"params\" et son \"side\" ; la forme de la matière première, sauf si tu démontres qu'une autre forme du commerce enlève un posage ou des copeaux.",
     "", "CE QUE TU PEUX AMÉLIORER : l'enveloppe et l'épaisseur (taille du commerce), la position des interfaces, les allègements, nervures, rayons et chanfreins, le nombre de posages, les notes de dessin, la finition — toujours avec les verbes d'atelier (drill, tap, cbore, mill, step, turn…) et des paramètres nommés.",
-    ...(sheet.length ? ["", `CE QUE LE PROCÉDÉ DEMANDE À CETTE MATIÈRE (${(PROCESSES[spec.process] || {}).fr || spec.process}) — à respecter :`, ...sheet.map((x) => `- ${x}`)] : []),
+    ...(sheet.length ? ["", `CE QUE LE PROCÉDÉ DEMANDE À CETTE MATIÈRE (${processName(spec.process) || spec.process}) — à respecter :`, ...sheet.map((x) => `- ${x}`)] : []),
     "", "MÉTHODE", "1. Pose-moi au plus 5 questions, une à la fois, avec une réponse par défaut, seulement si l'intention ne suffit pas (efforts, rigidité, masse, aspect, coût).",
     "2. Réponds par UN SEUL objet JSON « part/1 » complet dans un bloc de code ; consigne tes choix dans \"interview.assumptions\".",
     "", "PROPOSITION ACTUELLE :", "```json", j(spec), "```", "", "LANGAGE DE LA RÉPONSE (à respecter à la lettre) :", "", LANGUAGE_REFERENCE].join("\n");

@@ -7,7 +7,7 @@
 export const DFX_FILTERS = [["todo", "À régler"], ["error", "À corriger"], ["warn", "À vérifier"], ["info", "Conseils"], ["pass", "Conformes"], ["all", "Tout"]];
 export const DFX_STATES = { fail: { fr: "à corriger", tone: "danger", rank: 0 }, review: { fr: "à vérifier", tone: "warn", rank: 1 }, pass: { fr: "conforme", tone: "ok", rank: 2 } };
 /* the pictogram of a process, among those of the sprite */
-export const PROCESS_ICON = { cnc_milling: "mill", cnc_turning: "lathe", sheet_metal: "bend", laser_cut: "laser", extrusion_al: "extrusion", extrusion_plastic: "extrusion", injection_molding: "cast", die_casting: "cast", sand_casting: "cast",
+export const PROCESS_ICON = { cnc_milling: "mill", cnc_turning: "lathe", sheet_metal: "bend", laser_cut: "laser", extrusion_al: "extrusion", extrusion_plastic: "extrusion", injection_molding: "cast", die_casting: "cast", lp_die_casting: "cast", permanent_mold: "cast", sand_casting: "cast",
   fdm: "print3d", mjf: "print3d", sla: "print3d", lpbf: "print3d", pcb: "pcb", purchased: "library" };
 const count = (list, sev) => list.filter((f) => f.severity === sev).length;
 

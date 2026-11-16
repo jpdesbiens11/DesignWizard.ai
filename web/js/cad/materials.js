@@ -16,9 +16,9 @@ export const MATERIALS = [
   { id: "TI-6AL-4V", name: "Titane Ti-6Al-4V (grade 5 ; ELI : grade 23)", cls: "metal", rho: 4.43, conductive: true, color: "#8e8f96", k: 6.7, E: 114, processes: ["lpbf", "cnc_milling", "cnc_turning", "laser_cut"] },
   { id: "IN718", name: "Alliage de nickel 718 (Inconel 718)", cls: "metal", rho: 8.19, conductive: true, color: "#7f8689", k: 11.4, E: 200, processes: ["lpbf", "cnc_milling", "cnc_turning"] },
   { id: "IN625", name: "Alliage de nickel 625 (Inconel 625)", cls: "metal", rho: 8.44, conductive: true, color: "#868c8e", k: 9.8, E: 207, processes: ["lpbf", "cnc_milling", "cnc_turning"] },
-  { id: "AL-A380", name: "Aluminium A380 (fonderie sous pression)", cls: "metal", rho: 2.71, conductive: true, color: "#aeb6bb", k: 96, E: 71, wall: [1.5, 4.5], processes: ["die_casting"] },
-  { id: "ZAMAK-3", name: "Zamak 3 (zinc, fonderie sous pression)", cls: "metal", rho: 6.60, conductive: true, color: "#a3a9ad", k: 113, E: 86, wall: [0.8, 3.5], processes: ["die_casting"] },
-  { id: "AL-A356-T6", name: "Aluminium A356-T6 (fonderie par gravité)", cls: "metal", rho: 2.68, conductive: true, color: "#b3bbc0", k: 151, E: 72, wall: [4.0, 12.0], processes: ["sand_casting", "cnc_milling"] },
+  { id: "AL-A380", name: "Aluminium A380 (die casting)", cls: "metal", rho: 2.71, conductive: true, color: "#aeb6bb", k: 96, E: 71, wall: [1.5, 4.5], processes: ["die_casting"] },
+  { id: "ZAMAK-3", name: "Zamak 3 (zinc, die casting)", cls: "metal", rho: 6.60, conductive: true, color: "#a3a9ad", k: 113, E: 86, wall: [0.8, 3.5], processes: ["die_casting"] },
+  { id: "AL-A356-T6", name: "Aluminium A356-T6 (casting)", cls: "metal", rho: 2.68, conductive: true, color: "#b3bbc0", k: 151, E: 72, wall: [4.0, 12.0], processes: ["sand_casting", "permanent_mold", "lp_die_casting", "cnc_milling"] },
   { id: "PA66-GF30", name: "PA66-GF30", cls: "plastic", rho: 1.36, conductive: false, cti: 400, color: "#3a3d42", wall: [0.75, 3.0], ul94: "HB (V-0 grades exist)", processes: ["injection_molding"] },
   { id: "PC", name: "Polycarbonate", cls: "plastic", rho: 1.20, conductive: false, cti: 250, color: "#cfe4f2", wall: [1.0, 3.8], ul94: "V-2 / V-0 by grade", opacity: 0.55, processes: ["injection_molding", "cnc_milling", "extrusion_plastic", "fdm"] },
   { id: "PC-ABS", name: "PC/ABS", cls: "plastic", rho: 1.15, conductive: false, cti: 250, color: "#5d6670", wall: [1.2, 3.5], ul94: "V-0 by grade", processes: ["injection_molding"] },
@@ -47,23 +47,29 @@ export const MATERIALS = [
   { id: "GENERIC-COMPONENT", name: "Electronic component (plastic body)", cls: "plastic", rho: 1.60, conductive: false, cti: 175, color: "#2b2f35", processes: ["purchased"] },
 ];
 
-export const PROCESSES = {
+export const PROCESSES = {      // label : the term of the trade, in English — what every screen shows ; fr : its French gloss, for the glossary
   cnc_milling: { label: "CNC milling", fr: "Usinage CNC (fraisage)" },
   cnc_turning: { label: "CNC turning", fr: "Tournage CNC" },
-  sheet_metal: { label: "Sheet metal", fr: "Tôlerie (découpe laser + pliage)" },
+  sheet_metal: { label: "Sheet metal (laser cutting + bending)", fr: "Tôlerie (découpe laser + pliage)" },
   laser_cut: { label: "Precision laser cutting (sheet, plate)", fr: "Découpe laser de précision (feuille, plaque)" },
   extrusion_al: { label: "Aluminium extrusion", fr: "Extrusion aluminium" },
   extrusion_plastic: { label: "Plastic extrusion", fr: "Extrusion plastique" },
-  injection_molding: { label: "Injection moulding", fr: "Moulage par injection" },
-  die_casting: { label: "High-pressure die casting", fr: "Fonderie sous pression" },
-  sand_casting: { label: "Gravity casting (sand or permanent mould)", fr: "Fonderie par gravité (sable ou coquille)" },
+  injection_molding: { label: "Injection molding", fr: "Moulage par injection" },
+  die_casting: { label: "High pressure die casting (HPDC)", fr: "Fonderie sous pression (haute pression)" },
+  lp_die_casting: { label: "Low pressure die casting (LPDC)", fr: "Fonderie basse pression (moule métallique rempli par le bas)" },
+  permanent_mold: { label: "Permanent mold casting", fr: "Moulage en coquille par gravité (moule permanent)" },
+  sand_casting: { label: "Sand casting", fr: "Moulage au sable" },
   fdm: { label: "FDM 3D printing", fr: "Impression 3D FDM" },
   mjf: { label: "MJF / SLS 3D printing", fr: "Impression 3D MJF / SLS" },
   sla: { label: "SLA resin 3D printing", fr: "Impression 3D résine (SLA)" },
-  lpbf: { label: "Metal 3D printing (laser powder bed fusion)", fr: "Impression 3D métal (fusion laser sur lit de poudre)" },
+  lpbf: { label: "Metal 3D printing (LPBF)", fr: "Impression 3D métal (fusion laser sur lit de poudre)" },
   pcb: { label: "PCB fabrication", fr: "Fabrication de PCB" },
   purchased: { label: "Purchased part", fr: "Pièce achetée" },
 };
+/** The name of a process as the trade says it, in English ("" when it is unknown). */
+export const processName = (id) => (PROCESSES[id] ? PROCESSES[id].label : "");
+/** The processes that fill a mold : the casting ones, and with injection the moulding ones. */
+export const CAST_PROCESSES = ["die_casting", "lp_die_casting", "permanent_mold", "sand_casting"], MOLD_PROCESSES = ["injection_molding", ...CAST_PROCESSES];
 
 const BY_ID = new Map(MATERIALS.map((m) => [m.id, m]));
 export function material(id) { return BY_ID.get(id) || BY_ID.get(String(id || "").toUpperCase()) || null; }
@@ -72,15 +78,15 @@ export function materialOrDefault(id) { return material(id) || { id: id || "?", 
 const FAMILIES = [[/^alumin/i, "Aluminium"], [/^(stainless|inox)/i, "Inox"], [/^(steel|acier)/i, "Acier"], [/^(copper|cuivre)/i, "Cuivre"], [/^(brass|laiton)/i, "Laiton"], [/^titan/i, "Titane"], [/nickel|inconel/i, "Nickel"], [/^zamak/i, "Zinc"],
   [/^PA\d/, "Polyamide (PA)"], [/^(PC\b|polycarbonate)/i, "Polycarbonate (PC)"], [/^ABS/, "ABS"], [/^PBT/, "PBT"], [/^PPS/, "PPS"], [/^POM/, "POM"], [/^(PEEK|PEKK|PEI)/, "Hautes performances (PEEK, PEKK, PEI)"], [/^résine/i, "Résine"], [/^(acryl|PMMA)/i, "Acrylique (PMMA)"], [/^PVC/, "PVC"],
   [/^(epoxy|electronic)/i, "Composants achetés"], [/silicone|pad thermique|composé thermique/i, "Élastomères et thermique"], [/^FR4/, "FR4"], [/nomex|aramid/i, "Papier aramide"], [/^film/i, "Films isolants"], [/^cellule/i, "Cellules"]];
-const PROC_WORD = { cnc_milling: "usinage", cnc_turning: "usinage", sheet_metal: "tôlerie", laser_cut: "laser", extrusion_al: "extrusion", extrusion_plastic: "extrusion", injection_molding: "injection", die_casting: "fonderie sous pression", sand_casting: "fonderie par gravité",
-  fdm: "FDM", mjf: "MJF / SLS", sla: "SLA", lpbf: "impression 3D métal", pcb: "carte", molded_rubber: "moulage", purchased: "acheté" };
+const PROC_WORD = { cnc_milling: "machining", cnc_turning: "machining", sheet_metal: "sheet metal", laser_cut: "laser", extrusion_al: "extrusion", extrusion_plastic: "extrusion", injection_molding: "injection molding", die_casting: "HPDC", lp_die_casting: "LPDC", permanent_mold: "permanent mold", sand_casting: "sand casting",
+  fdm: "FDM", mjf: "MJF / SLS", sla: "SLA", lpbf: "LPBF", pcb: "PCB", molded_rubber: "molding", purchased: "purchased" };
 /** The family a material is filed under in a menu : its name, not its grade. */
 export function materialFamily(m) { const f = m && FAMILIES.find(([re]) => re.test(m.name)); return f ? f[1] : m ? m.name.split(/[\s(]/)[0] : ""; }
-/** Its processes in a few words, for the parentheses of a menu : « usinage, laser ». */
-export function processWords(m) { return [...new Set(((m && m.processes) || []).map((k) => PROC_WORD[k] || (PROCESSES[k] ? PROCESSES[k].fr : k)))].join(", "); }
+/** Its processes in a few words, for the parentheses of a menu : « machining, laser ». */
+export function processWords(m) { return [...new Set(((m && m.processes) || []).map((k) => PROC_WORD[k] || processName(k) || k))].join(", "); }
 /** Its name as one reads it in a list : a note in parentheses that names a process goes (the processes come after, from the
     library) ; any other note — a temper, a grade, a CTI — stays, after a dot. */
-export const materialShort = (m) => (m ? m.name.replace(/\s*\(([^)]*)\)\s*$/, (all, note) => (/extrusion|sheet|MJF|SLS|FDM|SLA|fonderie|impression 3D/i.test(note) ? "" : ` · ${note}`)) : "");
+export const materialShort = (m) => (m ? m.name.replace(/\s*\(([^)]*)\)\s*$/, (all, note) => (/extrusion|sheet|MJF|SLS|FDM|SLA|fonderie|casting|molding|impression 3D/i.test(note) ? "" : ` · ${note}`)) : "");
 /** The label of a material in a menu : « Aluminium 6061-T6 (usinage, laser) ». */
 export const materialLabel = (m) => { const w = processWords(m); return `${materialShort(m)}${w ? ` (${w})` : ""}`; };
 /** A menu of materials, filed by name : [{ family, list: [material] }], the families in alphabetical order and, in a family, the grades too.

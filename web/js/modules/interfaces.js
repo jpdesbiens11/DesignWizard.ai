@@ -44,7 +44,7 @@ function interview(page) {
   const fn = el("input", { type: "text", value: draft.fn, placeholder: "Ex. : Tient le capteur face à l'aimant du rotor, réglable de ± 1 mm" });
   const cons = el("textarea", { rows: 3, value: draft.constraints, placeholder: "Enveloppe disponible, efforts, température, tension, quantité, étanchéité…" });
   cons.style.fontFamily = "var(--font)"; cons.style.fontSize = ".9rem";
-  const proc = el("select", null, el("option", { value: "" }, "Laisser Claude proposer"), Object.entries(PROCESSES).filter(([k]) => k !== "purchased").map(([k, v]) => el("option", { value: k, selected: k === draft.process }, v.fr)));
+  const proc = el("select", null, el("option", { value: "" }, "Laisser Claude proposer"), Object.entries(PROCESSES).filter(([k]) => k !== "purchased").map(([k, v]) => el("option", { value: k, selected: k === draft.process }, v.label)));
   const mat = el("select", null, el("option", { value: "" }, "Laisser Claude proposer"), materialMenu((m) => m.id !== "GENERIC-COMPONENT").map((f) => el("optgroup", { label: f.family }, f.list.map((m) => el("option", { value: m.id, selected: m.id === draft.material }, materialLabel(m))))));
   const neigh = el("div");
   for (const part of p.parts) {

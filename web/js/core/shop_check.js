@@ -9,7 +9,7 @@ import { printProcess } from "../cad/special_processes.js";
 const FORM_NEEDS = {
   sheet: [(m) => m.processes.includes("laser_cut") || m.processes.includes("sheet_metal"), "ne se vend pas en tôle ni en feuille"],
   print: [(m) => !!printProcess(m.id), "ne s'imprime pas"],
-  molded: [(m) => ["injection_molding", "die_casting", "sand_casting"].some((k) => m.processes.includes(k)), "ne se moule pas"],
+  molded: [(m) => ["injection_molding", "die_casting", "lp_die_casting", "permanent_mold", "sand_casting"].some((k) => m.processes.includes(k)), "ne se moule pas"],
   profile: [(m) => m.processes.some((k) => /^extrusion_/.test(k)), "ne s'extrude pas"],
 };
 const SOLID = ["plate", "block", "bar_flat", "bar_round", "angle"];

@@ -4,7 +4,7 @@
    (operations in shop order) and proposes ; the supplier's own routing prevails. */
 
 import { routing, FACE_FR } from "./shop.js";
-import { PROCESSES, material } from "./materials.js";
+import { PROCESSES, material, processName } from "./materials.js";
 import { evalDeep, resolveParams } from "./expr.js";
 import { patternPoints, interfaceType } from "./interfaces.js";
 import { thread, clearanceHole } from "./standards.js";
@@ -14,9 +14,9 @@ const fr = (v, d = 2) => (typeof v === "number" && Number.isFinite(v) ? String(M
 const OPPOSITE = { "+X": "-X", "-X": "+X", "+Y": "-Y", "-Y": "+Y", "+Z": "-Z", "-Z": "+Z" };
 const STATION = { cnc_milling: ["Scie à ruban", "Centre d'usinage 3 axes"], cnc_turning: ["Scie ou embarreur", "Tour à commande numérique"], laser_cut: ["Découpe laser de précision", "Perceuse, taraudeuse"], sheet_metal: ["Découpe laser", "Presse plieuse, taraudeuse"],
   extrusion_al: ["Presse à filer, scie", "Centre d'usinage (reprises)"], extrusion_plastic: ["Extrudeuse, scie", "Perceuse (reprises)"], fdm: ["Imprimante 3D (dépôt de fil)", "Établi (reprises)"], mjf: ["Imprimante 3D (lit de poudre)", "Établi (reprises)"], sla: ["Imprimante 3D (résine)", "Établi (reprises)"], lpbf: ["Machine de fusion laser sur lit de poudre, four de détente", "Centre d'usinage (reprises)"],
-  injection_molding: ["Presse à injecter", "Établi (reprises)"], die_casting: ["Fonderie sous pression", "Centre d'usinage (reprises)"], sand_casting: ["Fonderie", "Centre d'usinage (reprises)"], pcb: ["Fabricant de circuits imprimés", "Fabricant de circuits imprimés"] };
-const NEAR_NET = new Set(["fdm", "mjf", "sla", "lpbf", "injection_molding", "die_casting", "sand_casting"]);
-const RAW = { extrusion_al: "profilé filé sur une filière dédiée", extrusion_plastic: "profilé extrudé sur une filière dédiée", injection_molding: "matière en granulés", die_casting: "alliage en lingots", sand_casting: "alliage en lingots", fdm: "filament", mjf: "poudre", sla: "résine liquide", lpbf: "poudre métallique certifiée (lot et nombre de réutilisations)", pcb: "panneau FR-4" };
+  injection_molding: ["Presse à injecter", "Établi (reprises)"], die_casting: ["Fonderie — high pressure die casting", "Centre d'usinage (reprises)"], lp_die_casting: ["Fonderie — low pressure die casting", "Centre d'usinage (reprises)"], permanent_mold: ["Fonderie — permanent mold", "Centre d'usinage (reprises)"], sand_casting: ["Fonderie — sand casting", "Centre d'usinage (reprises)"], pcb: ["Fabricant de circuits imprimés", "Fabricant de circuits imprimés"] };
+const NEAR_NET = new Set(["fdm", "mjf", "sla", "lpbf", "injection_molding", "die_casting", "lp_die_casting", "permanent_mold", "sand_casting"]);
+const RAW = { extrusion_al: "profilé filé sur une filière dédiée", extrusion_plastic: "profilé extrudé sur une filière dédiée", injection_molding: "matière en granulés", die_casting: "alliage en lingots", lp_die_casting: "alliage en lingots", permanent_mold: "alliage en lingots", sand_casting: "alliage en lingots", fdm: "filament", mjf: "poudre", sla: "résine liquide", lpbf: "poudre métallique certifiée (lot et nombre de réutilisations)", pcb: "panneau FR-4" };
 /** How an operation is checked, read from what it says. */
 function controlOf(text) {
   if (/Tarauder|taraud|insert/i.test(text)) return "Tampon fileté entre / n'entre pas";
@@ -68,8 +68,8 @@ function questions(spec, r, facts, opts) {
   if (proc === "laser_cut" || proc === "sheet_metal") add("Découpe", "Quelle source laser et quel gaz pour cette matière ? Bavure, oxyde ou bord carbonisé : quel état de bord est livré, comment est-il contrôlé ?");
   if (proc === "fdm" || proc === "mjf" || proc === "sla") add("Impression", "Orientation d'impression proposée ? Supports sur quelles faces ? Tenue des cotes d'interface sans reprise ?");
   if (proc === "lpbf") add("Impression métal", "Orientation et supports proposés ? Détente avant séparation, compaction isostatique, traitement de l'alliage : qui les fait, avec quel certificat ? Éprouvettes fabriquées avec la pièce ? Lot de poudre et nombre de réutilisations ?");
-  if (proc === "injection_molding") add("Outillage", "Plan de joint, points d'injection et éjecteurs proposés ? Dépouilles suffisantes ? Moule prototype (aluminium) ou série ?");
-  if (proc === "die_casting" || proc === "sand_casting") { add("Outillage", "Plan de joint, attaques de coulée, évents et éjecteurs proposés ? Dépouilles suffisantes ? Prix et durée de vie du moule ?"); add("Fonderie", "Quelle porosité garantissez-vous dans les zones taraudées et étanches ? Contrôle par radiographie ou par ressuage ?"); add("Reprises", "Quelles surépaisseurs d'usinage sur les plans d'appui et les alésages ? Les reprises sont-elles faites chez vous ?"); }
+  if (proc === "injection_molding") add("Outillage", "Parting line, gate et ejector pins proposés ? Slides ou lifters nécessaires ? Draft suffisant ? Moule prototype (aluminium) ou série ?");
+  if (["die_casting", "lp_die_casting", "permanent_mold", "sand_casting"].includes(proc)) { add("Outillage", "Parting line, gate, risers, overflows et vents proposés ? Slides ou cores nécessaires ? Ce que le gate et les risers laissent une fois sciés et poncés ? Draft suffisant ? Prix et durée de vie du moule ?"); add("Fonderie", "Quelle porosité garantissez-vous dans les zones taraudées et étanches ? Contrôle par radiographie ou par ressuage ?"); add("Reprises", "Quelles surépaisseurs d'usinage sur les plans d'appui et les alésages ? Les reprises sont-elles faites chez vous ?"); }
   if (proc === "extrusion_al" || proc === "extrusion_plastic") add("Outillage", "Prix et délai de la filière ? Longueur minimale de commande ? Tolérances du profil (EN 755-9) ?");
   if (proc === "pcb") add("Circuit imprimé", "Classe de fabrication, finition et délai ? Essai électrique à 100 % ?");
   add("Contrôle", "Fournissez-vous un relevé des cotes d'interface avec la première pièce ?");
@@ -101,7 +101,7 @@ export function processPlan(spec, built, opts = {}) {
   phase("pack", "Marquage et conditionnement", "Expédition", [], { force: true, checks: [`Identifier : ${spec.id}, révision ${spec.revision || "A"}`, "Protéger les faces d'appui et les filetages ; emballer pièce par pièce"] });
   const m = material(spec.material), st = r.stock, qty = (opts.order && opts.order.quantity) || (spec.order && spec.order.quantity) || (spec.intent && spec.intent.quantity) || null;
   return finishPlan({ kind: "fabrication", id: spec.id, name: spec.name || "", revision: spec.revision || "A",
-    facts: [["Matériau", m ? m.name : spec.material || "à définir"], ["Procédé", PROCESSES[proc] ? PROCESSES[proc].fr : proc || "à définir"], ["Matière première", st ? st.label : RAW[proc] || (spec.extrusion ? RAW.extrusion_al : spec.pcb ? RAW.pcb : "à définir")], ...(spec.finish ? [["Finition", spec.finish]] : []), ...(qty ? [["Quantité", String(qty)]] : []),
+    facts: [["Matériau", m ? m.name : spec.material || "à définir"], ["Procédé", PROCESSES[proc] ? processName(proc) : proc || "à définir"], ["Matière première", st ? st.label : RAW[proc] || (spec.extrusion ? RAW.extrusion_al : spec.pcb ? RAW.pcb : "à définir")], ...(spec.finish ? [["Finition", spec.finish]] : []), ...(qty ? [["Quantité", String(qty)]] : []),
       ["Posages", String(r.setups.length || 1)], ...(r.utilisation !== null ? [["Matière utile", `${Math.round(r.utilisation * 100)} % du brut`]] : [])],
     phases, characteristics: chars, questions: questions(spec, r, facts, opts), advice: r.advice, points: (spec.plan && spec.plan.points) || [], setups: r.setups, utilisation: r.utilisation });
 }

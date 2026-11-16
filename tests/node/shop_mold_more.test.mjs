@@ -51,7 +51,7 @@ test("clips : a blade sized by its strain, windows in the housing, hooks on the 
     clean(hm, `${mat} housing with windows`); assert.equal(cm.b.log.filter((l) => l.level === "error").length, 0); assert.equal(cm.d.summary.errors, 0); assert.ok(clash(K, hm.b, cm.b, hostOf(h).H) < 0.01, `${mat} : the hooks stand in the windows, nothing collides`);
     assert.ok(Math.abs(cm.b.bbox[2] + (k.lb + k.hh)) < 0.06, "the blades reach down to the windows");
     const rule = hm.d.findings.find((f) => f.id === "MLD-11"); assert.ok(rule && rule.severity === "info" && new RegExp(`déformation ${String(Math.round(1000 * k.strain) / 10).replace(".", ",")}`).test(rule.message), rule && rule.message);
-    assert.ok(hr.decisions.some((t) => /Fermeture par clips : 4 fenêtres/.test(t)) && hr.decisions.some((t) => /tiroir/.test(t)));
+    assert.ok(hr.decisions.some((t) => /Fermeture par clips : 4 fenêtres/.test(t)) && hr.decisions.some((t) => /slide/.test(t)));
     const stiff = JSON.parse(JSON.stringify(h)); stiff.mold.clips.lb = 5; assert.ok(checkPart(stiff, hm.b).findings.some((f) => f.id === "MLD-11" && f.severity === "warn" && /allonger la lame/.test(f.message)));
   }
   const metal = housing("AL-A380", { closure: "clips" }); assert.equal(metal.spec.mold.closure, "screws"); assert.ok(metal.decisions.some((t) => /métal ne fléchit pas/.test(t)));
@@ -70,6 +70,6 @@ test("a solid ribbed plate : one wall, a rim and crossed ribs underneath, bosses
     const boss = s.features.find((f) => f.op === "boss"); assert.equal(boss.face, "-Z"); assert.equal(boss.at.length, 4); assert.equal(boss.draft, "dp");
     const mod = s.interfaces.find((i) => i.name === "Fixation du module"); assert.equal(mod.face, "+Z"); assert.ok(mat === "PC-ABS" ? mod.opts.thread === "insert" && mod.opts.depth > wall : mod.opts.depth >= 8, "the thread goes deeper than the wall : into the boss");
     assert.ok(Math.abs(m.w.median - wall) < 0.05 && m.w.p90 <= 1.5 * wall + 0.05, `ribs are not masses : ${m.w.p90.toFixed(2)} mm at most for a wall of ${wall}`); assert.ok(m.b.bbox[2] < -wall, "the ribs hang under the plate"); assert.ok(Math.abs(m.b.bbox[5] - wall) < 1e-6, "its top stays flat for what bolts on");
-    for (const w of [/Pièce pleine nervurée/, /ceinture et \d+ nervure\(s\) croisée/, /bossage\(s\) Ø .* sous la plaque/, /Dépouille de \d° modélisée/]) assert.ok(r.decisions.some((t) => w.test(t)), String(w));
+    for (const w of [/Pièce pleine nervurée/, /ceinture et \d+ nervure\(s\) croisée/, /bossage\(s\) Ø .* sous la plaque/, /Draft de \d° modélisé/]) assert.ok(r.decisions.some((t) => w.test(t)), String(w));
   }
 });

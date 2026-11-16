@@ -97,7 +97,7 @@ test("a printing material goes to its process in the Shop, and its routing sheet
 
 test("DFx of a printed metal part : the material in its process, walls, holes, supports, powder, plate", () => {
   const block = [{ op: "box", size: [60, 40, 30] }];
-  const wrong = check(printed("TI-6AL-4V", "fdm", block)); assert.equal(find(wrong, "AM-10").severity, "error"); assert.match(find(wrong, "AM-10").message, /s'imprime en « Impression 3D métal/); assert.equal(applyPatch(printed("TI-6AL-4V", "fdm", block), find(wrong, "AM-10").fix.patch).process, "lpbf", "one click sends the titanium to its process");
+  const wrong = check(printed("TI-6AL-4V", "fdm", block)); assert.equal(find(wrong, "AM-10").severity, "error"); assert.match(find(wrong, "AM-10").message, /s'imprime en « Metal 3D printing/); assert.equal(applyPatch(printed("TI-6AL-4V", "fdm", block), find(wrong, "AM-10").fix.patch).process, "lpbf", "one click sends the titanium to its process");
   assert.equal(find(check(printed("AL6061-T6", "lpbf", block)), "AM-10").severity, "warn", "a metal the library does not print : to confirm"); assert.equal(find(check(printed("PA12", "lpbf", block)), "AM-10").severity, "error"); assert.ok(!find(check(printed("IN718", "lpbf", block)), "AM-10"));
   const thin = check(printed("IN718", "lpbf", [{ op: "box", size: [60, 40, 30] }, { op: "shell", id: "coque", t: 0.3, open: ["+Z"] }])); assert.deepEqual([find(thin, "AM-11").severity, find(thin, "AM-11").limit, !!find(thin, "AM-11").fix], ["error", 1, true]);
   assert.equal(find(check(printed("IN718", "lpbf", [{ op: "box", size: [60, 40, 30] }, { op: "shell", id: "coque", t: 0.7, open: ["+Z"] }])), "AM-11").severity, "warn", "between what prints and what is advised");
@@ -126,7 +126,7 @@ test("the sheet of a process goes to an AI : in the prompt of the Shop, and as a
   const paper = processSheet("laser_cut", "NOMEX-410", 0.25); assert.match(paper.join("\n"), /laser CO2.*Dans 0,25 mm : trou ≥ Ø0,5, fente ≥ 0,5 mm, pont de matière ≥ 1,5 mm, angles rentrants R ≥ 0,5 mm/s);
   assert.match(processSheet("laser_cut", "CU-C110", 2).join("\n"), /laser à fibre.*Dans 2 mm : trou ≥ Ø2 \(Ø1 possible au laser\), fente ≥ 2 mm, pont de matière ≥ 4 mm/s); assert.equal(processSheet("laser_cut", "PVC-U").length, 2);
   assert.match(processSheet("lpbf", "TI-6AL-4V").join("\n"), /Paroi ≥ 0,4 mm \(1 mm conseillé\).*Supports sous 45° du plateau.*2 ouvertures ≥ Ø3.*Pièce en fatigue : compaction isostatique/s); assert.deepEqual(processSheet("cnc_milling", "AL6061-T6"), []);
-  const spec = shop({ material: "NOMEX-410", interfaces: [bolt()] }), prompt = shopPrompt({ name: "Module" }, { fn: "Isoler" }, spec); assert.match(prompt, /CE QUE LE PROCÉDÉ DEMANDE À CETTE MATIÈRE \(Découpe laser de précision.*Dans 0,25 mm : trou ≥ Ø0,5/s);
+  const spec = shop({ material: "NOMEX-410", interfaces: [bolt()] }), prompt = shopPrompt({ name: "Module" }, { fn: "Isoler" }, spec); assert.match(prompt, /CE QUE LE PROCÉDÉ DEMANDE À CETTE MATIÈRE \(Precision laser cutting.*Dans 0,25 mm : trou ≥ Ø0,5/s);
   assert.ok(!/CE QUE LE PROCÉDÉ DEMANDE/.test(shopPrompt({ name: "Module" }, {}, shop({ material: "AL6061-T6", interfaces: [bolt()] }))), "a milled part : nothing added");
   const cut = processBrief("laser", MATERIALS), am = processBrief("impression", MATERIALS);
   assert.match(cut, /^Voici ce que la DÉCOUPE LASER DE PRÉCISION/); for (const id of ["NOMEX-410", "FR4", "CU-C110", "PMMA", "PVC-U", "TI-6AL-4V"]) assert.ok(cut.includes(`## ${id} — `), id); assert.ok(!cut.includes("## SILICONE"));

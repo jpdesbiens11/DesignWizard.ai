@@ -23,7 +23,7 @@ import { trlLevel } from "../core/trl.js";
 import { teamRows } from "../core/team.js";
 import { plmRows } from "../core/plm.js";
 import { specialRows } from "../cad/special_processes.js";
-import { PROCESSES, materialOrDefault } from "../cad/materials.js";
+import { PROCESSES, materialOrDefault, processName } from "../cad/materials.js";
 import { INTERFACE_TYPES } from "../cad/interfaces.js";
 import { LEVEL_LABEL } from "../analysis/cc_rules.js";
 import { processPlan } from "../cad/process_plan.js";
@@ -156,7 +156,7 @@ function render(main) {
       const s = x.spec, b = x.built, sum = x.res.summary || {};
       const route = b ? routing(s, b) : null, oc = b ? orderCheck(s, b, x.res, route) : null, gamme = b && !s.step ? processPlan(s, b, { route, dfx: x.res }) : null;
       const sec = el("section", { class: "card", style: { marginBottom: "1rem", breakInside: "avoid" } }, el("h2", null, `${s.id} — ${s.name || ""} `, sum.errors ? badge(`${sum.errors} à corriger`, "danger") : sum.warnings ? badge(`${sum.warnings} à vérifier`, "warn") : badge("conforme", "ok")));
-      const facts = el("table", { class: "data" }, el("tbody", null, [["Fonction", s.function || "—"], ["Matériau", materialOrDefault(s.material).name], ["Procédé", (PROCESSES[s.process] || {}).fr || "—"], ["Masse", b ? fmtMass(b.mass) : "—"],
+      const facts = el("table", { class: "data" }, el("tbody", null, [["Fonction", s.function || "—"], ["Matériau", materialOrDefault(s.material).name], ["Procédé", processName(s.process) || "—"], ["Masse", b ? fmtMass(b.mass) : "—"],
         ["Enveloppe", b ? `${fmt(b.bbox[3] - b.bbox[0], 1)} × ${fmt(b.bbox[4] - b.bbox[1], 1)} × ${fmt(b.bbox[5] - b.bbox[2], 1)} mm` : "—"], ["Révision", s.revision || "—"], ["Score DFx", typeof sum.score === "number" ? `${sum.score} / 100` : "—"],
         ["Interfaces", (b ? b.interfaces : []).map((i) => `${i.name} (${i.side})`).join(" · ") || "aucune"],
         ["Matière première", route && route.stock ? `${route.stock.label}${route.utilisation !== null ? ` — ${Math.round(route.utilisation * 100)} % utilisé` : ""}` : "non déclarée"],

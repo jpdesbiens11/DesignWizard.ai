@@ -10,7 +10,7 @@ import { stockFeatures, stockForm } from "./stock.js";
 import { AM_PROCESSES, printSteps, cutStep, DIR_WORDS, buildDir } from "./special_processes.js";
 import { evalDeep } from "./expr.js";
 import { FACES, faceKey } from "./vec.js";
-import { PROCESSES } from "./materials.js";
+import { PROCESSES, processName } from "./materials.js";
 import { foldSteps } from "./family_folded.js";
 
 const BIG = 4000;                                              // "beyond the part" for open cuts (mm)
@@ -135,7 +135,10 @@ const BEAM = new Set(["laser_cut", "sheet_metal"]);              // the contour 
 const CUT_BY_PROCESS = { laser_cut: "Découper le contour au laser / jet d'eau", sheet_metal: "Découper le contour au laser", pcb: "Détourer le panneau", cnc_turning: "Tronçonner", extrusion_al: "Couper à longueur", extrusion_plastic: "Couper à longueur" };
 const NEAR_NET = { fdm: [], mjf: [], sla: [], lpbf: [],      // printed : the steps come from the process and the material (special_processes.js)
   injection_molding: ["Mouler par injection (outillage dédié)", "Dégrapper et contrôler les retassures"],
-  die_casting: ["Couler sous pression (moule acier dédié)", "Détourer : carottes, masselottes et bavures ; contrôler la porosité"], sand_casting: ["Couler par gravité (moule sable ou coquille)", "Dessabler, ébarber, traiter thermiquement si la nuance le demande"] };
+  die_casting: ["Couler en high pressure die casting (die en acier dédié)", "Détourer au trim die : runner, ingate, overflows et flash ; contrôler la porosité"],
+  lp_die_casting: ["Couler en low pressure die casting (moule métallique rempli par le bas, sous faible pression)", "Scier le gate et les risers, meuler et poncer (buff) à fleur ; traiter thermiquement si la nuance le demande ; contrôler la porosité"],
+  permanent_mold: ["Couler en permanent mold (moule métallique, par gravité)", "Scier le gate et les risers, meuler et poncer (buff) à fleur ; traiter thermiquement si la nuance le demande"],
+  sand_casting: ["Couler en sand casting (moule en sable, par gravité)", "Décocher, scier le gate et les risers, ébarber et meuler à fleur ; traiter thermiquement si la nuance le demande"] };
 
 /** Routing sheet of a part. `built` = result of the kernel build (params.scope, facts). */
 export function routing(spec, built) {
@@ -219,6 +222,6 @@ export function routing(spec, built) {
   if (setups.length > 2 && (proc === "cnc_milling" || !proc)) advice.push(`${setups.length} faces usinées (${setups.map((f) => FACE_FR[f] || f).join(", ")}) : autant de posages. Correctif : regroupez les usinages sur une ou deux faces.`);
   const utilisation = st && st.rawVolume && built && built.volume ? built.volume / st.rawVolume : null;
   if (utilisation !== null && utilisation < 0.25 && !st.additive) advice.push(`Seulement ${Math.round(utilisation * 100)} % du brut reste dans la pièce (ratio matière ${fr(1 / utilisation, 1)}:1). Correctif : un brut plus proche de la forme (cornière, tube, profilé) ou un autre procédé.`);
-  return { steps, tools: [...tools], setups, advice, stock: st, utilisation, process: PROCESSES[proc] ? PROCESSES[proc].fr : null };
+  return { steps, tools: [...tools], setups, advice, stock: st, utilisation, process: PROCESSES[proc] ? processName(proc) : null };
 }
 export { FACE_FR };

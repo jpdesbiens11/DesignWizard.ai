@@ -10,7 +10,7 @@ import { store } from "../core/store.js";
 import { kernel } from "../cad/client.js";
 import { runDfx, runDfa, rulebook, applyFix } from "../analysis/dfx_api.js";
 import { buildAssembly } from "../core/asm_scene.js";
-import { PROCESSES } from "../cad/materials.js";
+import { PROCESSES, processName } from "../cad/materials.js";
 import { nudge } from "../core/guide.js";
 import { DFX_FILTERS, DFX_STATES, PROCESS_ICON, dfxItems, dfxCounts, dfxView, dfxHash, ruleOf, measureText, fixOutcome } from "../analysis/dfx_board.js";
 
@@ -71,7 +71,7 @@ function render(main, args) {
       el("div", { class: "kpi" }, el("b", null, c.score === null ? "—" : String(c.score)), el("span", null, "Score DFx moyen / 100"))),
     ...[only ? el("p", { class: "dfx-only" }, icon("search"), ` Seuls les points de ${only} sont montrés. `, el("a", { href: "#/dfx" }, "Voir tout le projet")) : null].filter(Boolean));
   }
-  const head = (it) => { const st = DFX_STATES[it.state], m = it.metrics || {}, proc = it.kind === "part" ? (PROCESSES[it.process] || {}).fr || "procédé non défini" : "assemblage";
+  const head = (it) => { const st = DFX_STATES[it.state], m = it.metrics || {}, proc = it.kind === "part" ? processName(it.process) || "procédé non défini" : "assemblage";
     const metrics = Object.entries({ instances: "pièces", uniqueParts: "pièces uniques", fasteners: "fixations", fastenerTypes: "types de fixation", directions: "directions de montage", dfaIndex: "indice DFA" }).filter(([k]) => m[k] !== undefined).map(([k, l]) => `${typeof m[k] === "number" ? fmt(m[k], 1) : m[k]} ${l}`).join(" · ");
     return el("header", { class: "dfx-head" }, icon(it.kind === "assembly" ? "assembly" : PROCESS_ICON[it.process] || "part"), el("div", { class: "grow" }, el("b", null, `${it.ref}${it.name ? " — " + it.name : ""}`), el("small", null, [proc, it.score === null ? "" : `score ${it.score} / 100`, metrics].filter(Boolean).join(" · "))),
       ...[it.errors ? badge(`${it.errors} à corriger`, "danger") : null, it.warnings ? badge(`${it.warnings} à vérifier`, "warn") : null, it.state === "pass" ? badge(it.unavailable ? "moteur absent" : st.fr, it.unavailable ? "neutral" : "ok") : null].filter(Boolean),
@@ -102,7 +102,7 @@ function render(main, args) {
     clear(list);
     const view = dfxView(items, ui.filter, only), title = (DFX_FILTERS.find(([k]) => k === ui.filter) || DFX_FILTERS[0])[1];
     if (ui.filter === "pass") {
-      list.append(el("h2", null, `Conformes (${view.length})`), view.length ? el("div", { class: "dfx-passes" }, view.map((it) => el("a", { class: "dfx-pass", href: dfxHash(it), "data-tip": `${(PROCESSES[it.process] || {}).fr || (it.kind === "assembly" ? "assemblage" : "")}${it.infos ? ` · ${it.infos} conseil${it.infos > 1 ? "s" : ""}` : ""}` }, icon("check"), el("b", null, it.ref), el("span", null, it.name), it.score === null ? null : el("small", null, String(it.score)))))
+      list.append(el("h2", null, `Conformes (${view.length})`), view.length ? el("div", { class: "dfx-passes" }, view.map((it) => el("a", { class: "dfx-pass", href: dfxHash(it), "data-tip": `${processName(it.process) || (it.kind === "assembly" ? "assemblage" : "")}${it.infos ? ` · ${it.infos} conseil${it.infos > 1 ? "s" : ""}` : ""}` }, icon("check"), el("b", null, it.ref), el("span", null, it.name), it.score === null ? null : el("small", null, String(it.score)))))
         : el("p", { class: "dfx-none muted" }, "Rien n'est encore conforme : les points à régler sont sous « Points à régler »."));
       return;
     }

@@ -24,11 +24,11 @@ export function clipPlan(matId, wall, depth, long) {
   return { n: long > 160 ? 3 : 2, t, y, lb, hh, wb: r1(Math.max(5, 2.5 * wall)), eps, strain: 1.5 * t * y / (lb * lb), fits: lb + hh + 2 <= depth };
 }
 
-const head = (brief) => { const proc = brief.process && MOLD_RULES[brief.process] ? brief.process : moldProcess(brief.material), R = MOLD_RULES[proc], mat = material(brief.material) || { name: brief.material }; return { proc, R, mat, lim: mat.wall || R.wall, metal: R.thread === "tapped" }; };
+const head = (brief) => { const proc = brief.process && MOLD_RULES[brief.process] ? brief.process : moldProcess(brief.material), R = MOLD_RULES[proc], mat = material(brief.material) || { name: brief.material }; return { proc, R, mat, lim: R.ownWall ? R.wall : mat.wall || R.wall, metal: R.thread === "tapped" }; };
 const nominal = (R, lim, flow) => Math.min(lim[1], Math.max(lim[0], half(Math.max(Math.min(R.nominal, half((lim[0] + lim[1]) / 2)), flow / R.flow))));
 const ifo = (it, face, at, extra = {}) => { const o = { id: it.id, type: it.type, name: it.name, key: it.key, partner: it.partner, side: it.side, external: it.external, face, at, params: it.params, opts: it.opts, ...extra }; for (const k of Object.keys(o)) if (o[k] === undefined) delete o[k]; return o; };
 const r2 = (x) => Math.round(x * 100) / 100;                    // clearances are counted in hundredths
-const angle = (dp) => ({ value: dp, min: 0.5, max: 5, step: 0.5, unit: "°", label: "Dépouille", group: "Moulage" });
+const angle = (dp) => ({ value: dp, min: 0.5, max: 5, step: 0.5, unit: "°", label: "Draft", group: "Moulage" });
 
 /** The cover of a moulded housing. items : the interfaces it takes from the housing (joint plane, screws) and its own. */
 export function moldedCover(brief, items, log) {
@@ -37,7 +37,7 @@ export function moldedCover(brief, items, log) {
   const L = half((host && host.L) || (joint && Number(joint.params.w)) || env.L || 100), W = half((host && host.W) || (joint && Number(joint.params.h)) || env.W || 60), wall = nominal(R, lim, (L + W) / 2);
   const hw = (host && host.wall) || wall, rc = (host && host.rc) || half(Math.max((1 + R.inner) * wall, 3)), dp = brief.draft === false ? 0 : (host && host.dp) || Math.max(R.draft[0], R.draft[1]), j = 0.25, lt = r1(Math.max(0.8, R.rib * wall)), o = r2(hw + j);
   const lipH = r1(Math.min(2 * wall, host ? 0.3 * (host.H - hw) - 0.5 : 2 * wall)), lip = lipH >= 1.5 && L - 2 * (o + lt) > 6 && W - 2 * (o + lt) > 6, leaning = dp ? { draft: "dp" } : {};
-  log.push(`Procédé : ${R.fr} — ${mat.name}. Couvercle${host ? ` assorti à ${host.id}` : ""} : même contour (${fr(L)} × ${fr(W)} mm), mêmes rayons d'angle (${fr(rc)} mm), une paroi de ${fr(wall)} mm.`);
+  log.push(`Procédé : ${R.label} — ${mat.name}. Couvercle${host ? ` assorti à ${host.id}` : ""} : même contour (${fr(L)} × ${fr(W)} mm), mêmes rayons d'angle (${fr(rc)} mm), une paroi de ${fr(wall)} mm.`);
   const params = { L: P(L, 20, Math.max(400, 2 * L), "Longueur", "Enveloppe", 1), W: P(W, 15, Math.max(300, 2 * W), "Largeur", "Enveloppe", 1), wall: P(wall, lim[0], lim[1], "Paroi nominale", "Moulage", 0.1), rc: P(rc, 0.5, 25, "Rayon des angles", "Moulage"), ...(dp ? { dp: angle(dp) } : {}) };
   const features = [{ op: "box", id: "plaque", name: "Plaque du couvercle", size: ["L", "W", "wall"] }, { op: "fillet", id: "angles", name: "Rayons des angles", r: "rc", edges: "vertical" }], out = [];
   if (lip) {
@@ -56,7 +56,7 @@ export function moldedCover(brief, items, log) {
     for (const side of [0, 1]) for (const k of c.at) { n++; const u = `${len} * ${k} - ${r1(c.wb / 2)}`, b0 = side ? `${far} - ${r2(hw + c.j + c.t)}` : r2(hw + c.j), h0 = side ? `${far} - ${r2(hw + c.j + 0.3)}` : r2(hw + c.j - c.y);
       features.push({ op: "pad", id: `lame${n}`, name: "Lame de clip", face: "-Z", start: 0, rect: X ? [u, b0, c.wb, c.t] : [b0, u, c.t, c.wb], h: r1(c.lb + c.hh) },
         { op: "box", id: `croc${n}`, name: "Crochet de clip", at: X ? [u, h0, -r1(c.lb + c.hh)] : [h0, u, -r1(c.lb + c.hh)], size: X ? [c.wb, r1(c.y + 0.3), c.hh] : [r1(c.y + 0.3), c.wb, c.hh] }); }
-    log.push(`Fermeture par clips : ${n} lames de ${fr(c.t)} × ${fr(c.wb)} mm, longues de ${fr(c.lb)} mm, crochet de ${fr(c.y)} mm — les cotes du boîtier ${host.id}. Déformation à l'encliquetage ${fr(100 * c.strain)} % pour ${fr(100 * c.limit)} % admis. Chaque crochet demande un éjecteur incliné.`);
+    log.push(`Fermeture par clips : ${n} lames de ${fr(c.t)} × ${fr(c.wb)} mm, longues de ${fr(c.lb)} mm, crochet de ${fr(c.y)} mm — les cotes du boîtier ${host.id}. Déformation à l'encliquetage ${fr(100 * c.strain)} % pour ${fr(100 * c.limit)} % admis. Chaque crochet demande un lifter.`);
   } else if (c) log.push("Le boîtier attend des clips, mais ce couvercle est en métal coulé : il ne fléchit pas — revoir la fermeture du boîtier (vis).");
   for (const it of items) {
     if (it === joint) out.push(ifo(it, "-Z", ["L/2", "W/2"], { level: 0, params: { ...it.params, w: "L", h: "W" } }));
@@ -65,10 +65,10 @@ export function moldedCover(brief, items, log) {
   }
   if (screws) log.push(`Vis ${screws.params.screw} : trous de passage au droit des bossages du boîtier ; les têtes restent en saillie sur ${fr(wall)} mm de paroi (pour les noyer, épaissir localement).`);
   features.push({ op: "interfaces" });
-  log.push(dp ? `Dépouille de ${fr(dp)}° modélisée sur la lèvre et les nervures ; la tranche du couvercle (${fr(wall)} mm) reste droite.` : "Modèle droit, à votre demande : dépouille à porter au moule.");
+  log.push(dp ? `Draft de ${fr(dp)}° modélisé sur la lèvre et les nervures ; la tranche du couvercle (${fr(wall)} mm) reste droite.` : "Modèle droit, à votre demande : draft à porter au mold.");
   return { family: "plate", process: proc, params, stock: { form: "molded" }, features, interfaces: out, notes: R.notes,
     mold: { process: proc, arch: "cover", pull: "-Z", parting: "face supérieure", wall, draft: dp || R.draft[0], draft_inside: dp || R.draft[1], modelled: dp > 0, slides: 0, lifters: c && !metal ? 2 * c.at.length : 0, machined: metal ? R.skim : 0,
-      gate: metal ? "attaque de coulée sur un petit côté" : "seuil sous le couvercle, au centre", ejection: "éjecteurs sur la lèvre et les nervures", ...(host ? { host: host.id } : {}) } };
+      gate: metal ? "gate sur un petit côté" : "gate sous le couvercle, au centre", ejection: "ejector pins sur la lèvre et les nervures", ...(host ? { host: host.id } : {}) } };
 }
 
 /** A solid part that carries : a flat wall, a rim and crossed ribs underneath, bosses under its threads. */
@@ -76,7 +76,7 @@ export function moldedPlate(brief, items, log) {
   const { proc, R, mat, lim, metal } = head(brief), env = brief.envelope || {}, span = (k) => Math.max(0, ...items.map((it) => it.fp[k] + 2 * Math.max(it.fp.edge, 5)));
   const L = half(Math.max(env.L || 0, span("w"), 40)), W = half(Math.max(env.W || 0, span("h"), 30)), wall = nominal(R, lim, (L + W) / 2), dp = brief.draft === false ? 0 : Math.max(R.draft[0], R.draft[1]), leaning = dp ? { draft: "dp" } : {};
   const rc = half(Math.max(1.5 * wall, 3)), rt = r1(Math.max(0.8, R.rib * wall)), rh = r1(R.ribH * wall), keep = [], out = [];
-  log.push(`Procédé : ${R.fr} — ${mat.name}. Pièce pleine nervurée : une plaque de ${fr(L)} × ${fr(W)} mm à la paroi nominale de ${fr(wall)} mm ; la raideur vient des nervures, pas de l'épaisseur.`);
+  log.push(`Procédé : ${R.label} — ${mat.name}. Pièce pleine nervurée : une plaque de ${fr(L)} × ${fr(W)} mm à la paroi nominale de ${fr(wall)} mm ; la raideur vient des nervures, pas de l'épaisseur.`);
   const params = { L: P(L, 20, Math.max(400, 2 * L), "Longueur", "Enveloppe", 1), W: P(W, 15, Math.max(300, 2 * W), "Largeur", "Enveloppe", 1), wall: P(wall, lim[0], lim[1], "Paroi nominale", "Moulage", 0.1), rc: P(rc, 0.5, 25, "Rayon des angles", "Moulage"), rh: P(rh, r1(wall), r1(2 * R.ribH * wall), "Hauteur des nervures", "Moulage"), ...(dp ? { dp: angle(dp) } : {}) };
   const features = [{ op: "box", id: "plaque", name: "Plaque", size: ["L", "W", "wall"] }, { op: "fillet", id: "angles", name: "Rayons des angles", r: "rc", edges: "vertical" },
     { op: "pad", id: "ceinture", name: "Ceinture", face: "-Z", start: 0, rect: [0, 0, "L", "W"], r: "rc", h: "rh" }, { op: "pocket", id: "ceinture_int", name: "Intérieur de la ceinture", face: "-Z", start: "0 - rh", rect: [rt, rt, `L - ${r1(2 * rt)}`, `W - ${r1(2 * rt)}`], r: r1(Math.max(0.3, rc - rt)), depth: "rh" }];
@@ -100,10 +100,10 @@ export function moldedPlate(brief, items, log) {
       features.push({ op: "pad", id: `${along ? "nx" : "ny"}${k}`, name: "Nervure", face: "-Z", start: 0, rect: along ? [q, r1(rt - 0.2), rt, span2] : [r1(rt - 0.2), q, span2, rt], h: "rh", ...leaning }); } void cross; }
   log.push(`Dessous : une ceinture et ${made} nervure(s) croisée(s) de ${fr(rt)} mm (${Math.round(100 * rt / wall)} % de la paroi), hautes de ${fr(rh)} mm (${R.ribH} fois la paroi), au pas de 45 mm environ ; une nervure s'écarte d'un trou ou d'un bossage.`);
   features.push({ op: "interfaces" });
-  log.push(dp ? `Dépouille de ${fr(dp)}° modélisée sur les nervures et les bossages.` : "Modèle droit, à votre demande : dépouille à porter au moule.");
+  log.push(dp ? `Draft de ${fr(dp)}° modélisé sur les nervures et les bossages.` : "Modèle droit, à votre demande : draft à porter au mold.");
   if (metal) log.push(`Métal coulé : taraudages et plans d'appui repris en usinage, avec ${fr(R.skim)} mm de surépaisseur.`);
   return { family: "plate", process: proc, params, stock: { form: "molded" }, features, interfaces: out, notes: R.notes,
-    mold: { process: proc, arch: "plate", pull: "-Z", parting: "face supérieure", wall, draft: dp || R.draft[0], draft_inside: dp || R.draft[1], modelled: dp > 0, slides: 0, machined: metal ? R.skim : 0, gate: metal ? "attaque de coulée sur un petit côté" : "seuil au centre de la plaque, côté nervures", ejection: "éjecteurs sur les nervures et les bossages" } };
+    mold: { process: proc, arch: "plate", pull: "-Z", parting: "face supérieure", wall, draft: dp || R.draft[0], draft_inside: dp || R.draft[1], modelled: dp > 0, slides: 0, machined: metal ? R.skim : 0, gate: metal ? "gate sur un petit côté" : "gate au centre de la plaque, côté nervures", ejection: "ejector pins sur les nervures et les bossages" } };
 }
 
 /** What a cover needs to know of its housing, read from the housing's file : sizes, wall, radii, draft, and how it closes. */

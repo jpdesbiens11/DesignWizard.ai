@@ -11,7 +11,7 @@
 import { PAPER, STYLE, LW, dimLinear, centerMark, featureControlFrame, datumFeature, viewLabel, drawBorder, drawTitleBlock, drawNotes, drawTable, drawRevisionTable, leaderNote, sectionArrows, arrowHead, fitText, TITLE_BLOCK_H, TITLE_BLOCK_W } from "./drafting.js";
 import { hatch } from "./hatch.js";
 import { interfaceType, patternPoints } from "../cad/interfaces.js";
-import { materialOrDefault, PROCESSES } from "../cad/materials.js";
+import { materialOrDefault, PROCESSES, processName } from "../cad/materials.js";
 import { FACES } from "../cad/vec.js";
 import { dimensionList, holeRows, dimText, classNotes, f2 } from "./dim_model.js";
 
@@ -94,7 +94,7 @@ export function drawingNotes(spec, sem, dims) {
   const mat = materialOrDefault(spec.material), rules = new Map();
   for (const g of sem.gdt) if (g.rule) rules.set(g.rule, [...(rules.get(g.rule) || []), g.name]);
   return [`Cotation et tolérancement géométrique interprétés selon ASME Y14.5-2018 ; cotes en millimètres ; tolérances générales des cotes non tolérancées : ISO 2768-mK.`,
-    `Matériau : ${mat.name}.${spec.finish ? ` Finition : ${spec.finish}.` : ""} Procédé : ${(PROCESSES[spec.process] || {}).fr || "à définir"}. Casser les arêtes vives 0,2 à 0,5 mm ; ébavurer.`,
+    `Matériau : ${mat.name}.${spec.finish ? ` Finition : ${spec.finish}.` : ""} Procédé : ${processName(spec.process) || "à définir"}. Casser les arêtes vives 0,2 à 0,5 mm ; ébavurer.`,
     "Chaque cote porte une bulle ronde numérotée, sur la vue qui la montre ou au tableau (feuille 2 quand il y en a une). Chaque tolérance géométrique porte un drapeau hexagonal (T1, T2… — repère propre à ce dessin, pas un symbole de la norme) : sur l'élément qu'elle contrôle, et au tableau des tolérances. Les cotes encadrées (entre crochets au tableau) sont des cotes de base : elles situent un groupe tolérancé en position par rapport aux références A, B et C.",
     ...classNotes(dims), ...[...rules].map(([rule, names]) => `Tolérances de position calculées (${rule}) : ${names.join(" ; ")}.`), ...(spec.notes || [])];
 }
