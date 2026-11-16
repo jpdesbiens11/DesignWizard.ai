@@ -7,7 +7,7 @@ import { interfaceSignature, ADHESIVES } from "../cad/interfaces.js";
 import { thread } from "../cad/standards.js";
 import { material } from "../cad/materials.js";
 import { ifaceOf, freeInterfaces } from "./assembly_logic.js";
-import { contactEstimate, weldEstimate } from "../cad/interfaces_elec.js";
+import { contactEstimate, weldEstimate, contactFormNotes } from "../cad/interfaces_elec.js";
 
 export const HEALTH = { ok: { fr: "Sain", tone: "ok" }, check: { fr: "À vérifier", tone: "warn" }, broken: { fr: "Rompu", tone: "danger" } };
 const RANK = { ok: 0, check: 1, broken: 2 }, fr = (x) => String(Math.round(x * 100) / 100).replace(".", ",");
@@ -47,7 +47,7 @@ export function jointHealth(asm, built, specs = {}, sol = null, clashes = []) {
         if (o.well && p.adhesive !== "tape" && !(Number(p.lip ?? 3) >= 3 - 1e-9)) say("check", `Lèvre d'appui de ${fr(Number(p.lip) || 0)} mm autour du logement de colle : 3 mm et plus pour que la pièce qui s'appuie porte franchement.`);
       } else if (A.type === "contact" || A.type === "weld") {
         for (const id of [ia.part, ib.part]) { const mat = material(specs[id] && specs[id].material); if (mat && !mat.conductive) say("broken", `${id} est en ${mat.name} : un joint électrique relie deux conducteurs.`); }
-        for (const t of (A.type === "contact" ? contactEstimate(A.params || {}) : weldEstimate(A.params || {})).notes) say("check", t);
+        for (const t of (A.type === "contact" ? [...contactEstimate(A.params || {}).notes, ...contactFormNotes(A.params || {}, A.opts || {})] : weldEstimate(A.params || {}).notes)) say("check", t);
         if (A.type === "contact" && !(asm.mates || []).some((x) => x !== m && [x.a.inst, x.b.inst].includes(m.a.inst) && [x.a.inst, x.b.inst].includes(m.b.inst) && ["bolt_pattern", "pins"].includes((ifaceOf(built, (inst.get(x.a.inst) || {}).part, x.a.iface) || {}).type)))
           say("check", "Aucun serrage entre les deux barres : un contact à pression demande une vis ou un clip qui tienne l'effort.");
       }

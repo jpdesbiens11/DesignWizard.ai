@@ -7,7 +7,7 @@
 import { resolveParams, evalDeep } from "../cad/expr.js";
 import { patternPoints, interfaceType, ADHESIVES, BOND_PREPS } from "../cad/interfaces.js";
 import { finishPlan } from "./plan_doc.js";
-import { WELD_PROCESSES, PLATINGS, CONTACT_TESTS, contactEstimate } from "../cad/interfaces_elec.js";
+import { WELD_PROCESSES, PLATINGS, CONTACT_TESTS, CONTACT_FORMS, contactEstimate, contactForm } from "../cad/interfaces_elec.js";
 
 const TORQUE = { M2: 0.3, "M2.5": 0.6, M3: 1.1, M4: 2.6, M5: 5.2, M6: 9, M8: 22, M10: 43, M12: 75 };      // N·m, steel class 8.8, dry
 const BOARD = { M2: 0.2, "M2.5": 0.4, M3: 0.6, M4: 1.2 }, HEX = { M2: 1.5, "M2.5": 2, M3: 2.5, M4: 3, M5: 4, M6: 5, M8: 6, M10: 8, M12: 10 };
@@ -82,7 +82,8 @@ export function assemblyPlan(asm, project, ctx = {}) {
         ops.push({ text: `${W.prep} — ${label}`, tools: [] }, { text: `${W.fr} : ${n} ${W.unit}${n > 1 ? "s" : ""} entre ${nameOf(ia)} et ${nameOf(ib)}, zone de ${fr(A.params.w)} × ${fr(A.params.h)} mm`, tools: [W.tool], control: W.control });
         for (const h of hw(m, A, B)) { const row = totals.get(h.id) || { id: h.id, name: h.name, qty: 0 }; row.qty += h.qty; totals.set(h.id, row); } }
       else if (A.type === "contact") { const P = PLATINGS[A.params.plating] || PLATINGS.Ag, e = contactEstimate(A.params); pressed++;
-        ops.push({ text: `Vérifier les deux plages de contact (${P.fr.toLowerCase()}) : propres, sans rayure ni trace de doigt — ${label}`, tools: ["Gants"] }, { text: `Presser ${nameOf(ia)} sur ${nameOf(ib)} jusqu'en butée : les ${Math.round(A.params.n || 1)} lamelles fléchissent`, tools: [], control: `Résistance de la liaison en 4 fils : environ ${fr(e.rTotal)} mΩ attendus` });
+        ops.push({ text: `Vérifier les deux plages de contact (${P.fr.toLowerCase()}) : propres, sans rayure ni trace de doigt — ${label}`, tools: ["Gants"] }, A.params.weld === "projection" && contactForm(A.params, A.opts) === "cone" ? { text: `Souder par bossage ${nameOf(ia)} sur ${nameOf(ib)} : les ${Math.round(A.params.n || 1)} bossages fondent ensemble sous l'effort et le courant — paramètres de la qualification`, tools: ["Soudeuse par résistance, électrodes planes"], control: "Arrachement sur éprouvettes ; résistance de la liaison en 4 fils" }
+          : { text: `Presser ${nameOf(ia)} sur ${nameOf(ib)} jusqu'en butée : les ${Math.round(A.params.n || 1)} ${CONTACT_FORMS[contactForm(A.params, A.opts)].unit}s ${contactForm(A.params, A.opts) === "cone" ? "portent" : "fléchissent"}`, tools: [], control: `Résistance de la liaison en 4 fils : environ ${fr(e.rTotal)} mΩ attendus` });
         for (const h of hw(m, A, B)) { const row = totals.get(h.id) || { id: h.id, name: h.name, qty: 0 }; row.qty += h.qty; totals.set(h.id, row); } }
       else if (A.type === "rail") ops.push({ text: `Glisser ${nameOf(ia)} dans la glissière de ${nameOf(ib)} jusqu'en butée — ${label}`, tools: [], control: "Butée atteinte, pas de point dur" });
     }

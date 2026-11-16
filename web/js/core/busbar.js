@@ -4,12 +4,14 @@
    plating, the side it presses on. The definition is kept in the part (spec.busbar) : the part is written again from it at
    each change. Pure : no kernel, no DOM.
    def = { name, material, net, W, t, r, I, finish, legs: [{ L, bend }], terminals: [{ id, leg, s, y, screw, key }],
-           contacts: [{ id, leg, side, s, y, turn, role, w, h, n, gap, force, plating, base, duty, i, key }] }
+           contacts: [{ id, leg, side, s, y, turn, role, form, weld, u, w, h, n, gap, force, plating, base, duty, i, key }] }
+   form : cone (pointed bosses embossed in the bar), bridge (spring blades lanced in a thin bar) or band (a band of lamellae laid on
+   the land) — a contact without a form is a band, as before ; weld : "projection" when the bosses are welded ; u : volts d.c.
    leg.bend : the turn BEFORE the leg, +90 (up) or −90 (down) ; s : distance along the leg, from its start ; y : across the width ;
-   side : +1 the face on the left of the travel (the top of the first leg), −1 the other ; role : "A" carries the lamellae, "B" is the flat land. */
+   side : +1 the face on the left of the travel (the top of the first leg), −1 the other ; role : "A" carries the contact points, "B" is the flat land. */
 
 import { material } from "../cad/materials.js";
-import { ELEC_INTERFACES, PLATINGS, contactEstimate } from "../cad/interfaces_elec.js";
+import { ELEC_INTERFACES, PLATINGS, CONTACT_FORMS, contactEstimate, contactForm, contactFormNotes, contactAdvice } from "../cad/interfaces_elec.js";
 import { props } from "../analysis/physics/props.js";
 
 const r2 = (x) => Math.round(x * 100) / 100, fr = (x) => String(r2(x)).replace(".", ",");
@@ -73,8 +75,14 @@ const nextId = (list, prefix) => `${prefix}${list.reduce((m, x) => Math.max(m, p
 /** A new terminal or contact where the designer pointed : it takes the next number of its kind, for good. where : { leg, side, s, y }. */
 export function addTerminal(def, where, screw = "M6") { const t = { id: nextId(def.terminals, "T"), leg: where.leg, s: where.s, y: r2(def.W / 2), screw }; def.terminals.push(t); return t; }
 export function addContact(def, where, o = {}) {
-  const P = ELEC_INTERFACES.contact.params, w = Math.min(P.w, def.W - 2), c = { id: nextId(def.contacts, "CT"), leg: where.leg, side: where.side, s: where.s, y: where.y ?? r2(def.W / 2), turn: 0, role: "A", w, h: Math.min(P.h, def.W - 2), n: P.n, gap: P.gap, force: P.force, plating: P.plating, base: P.base, duty: "power", i: def.I || P.i, ...o };
+  const P = ELEC_INTERFACES.contact.params, w = Math.min(P.w, def.W - 2), i = def.I || P.i, form = contactAdvice({ i, t: def.t }).form;
+  const c = { id: nextId(def.contacts, "CT"), leg: where.leg, side: where.side, s: where.s, y: where.y ?? r2(def.W / 2), turn: 0, role: "A", form, w, h: Math.min(P.h, def.W - 2), n: P.n, gap: form === "cone" ? 0.5 : P.gap, force: P.force, plating: P.plating, base: form === "band" ? P.base : "Cu", duty: "power", i, ...o };
   def.contacts.push(c); fit(def, c); return c;
+}
+/** The parameters of the interface of a contact : what the designer set, and — for a form made in the bar itself — the thickness of the bar. */
+export function contactParams(def, c) {
+  const form = contactForm(c, { band: c.band });
+  return { w: c.w, h: c.h, n: c.n, gap: c.gap, force: c.force, plating: c.plating, base: c.base, duty: c.duty, i: c.i, ...(c.form ? { form: c.form } : {}), ...(c.u > 0 ? { u: c.u } : {}), ...(c.weld === "projection" ? { weld: "projection" } : {}), ...(form === "bridge" ? { t: Math.min(def.t, c.t || def.t) } : {}) };
 }
 /** Keeps a contact on the flat part of its leg and inside the width. */
 export function fit(def, c) {
@@ -97,7 +105,7 @@ export function busbarChecks(def) {
     if (t.s < lo - 0.01 || t.s > hi + 0.01) say("check", `${t.id} (${t.screw}) : à moins de 1,5 × d d'un bout ou trop près d'un pli de la branche ${g.i + 1}.`);
     if (def.W < 2.5 * d) say("check", `${t.id} (${t.screw}) : largeur de ${fr(def.W)} mm pour une vis de ${d} mm — il reste peu de section autour du trou.`); }
   for (const c of def.contacts) { const g = legs[c.leg]; if (!g) { say("bad", `${c.id} : sa branche n'existe plus.`); continue; }
-    for (const n of contactEstimate(c).notes) say("check", `${c.id} : ${n}`);
+    for (const n of [...contactEstimate(c).notes, ...contactFormNotes(contactParams(def, c), { band: c.band })]) say("check", `${c.id} : ${n}`);
     if (c.duty === "power" && def.finish === "none") say("check", `${c.id} : plage de contact sur cuivre nu — l'oxyde monte la résistance avec le temps ; revêtir la plage (${PLATINGS[c.plating].fr.toLowerCase()}).`); }
   return { S: r2(S), J: r2(J), length: r2(len), flat: r2(flat), bends, R: R * 1e6, P: I * I * R, dU: I * R * 1e3, notes, ok: !notes.some((n) => n.level === "bad") };
 }
@@ -107,8 +115,8 @@ export function busbarPart(def, id, before = null) {
   const terminals = def.terminals.filter((t) => legs[t.leg]).map((t) => { const side = 1, q = onLeg(def, legs, t.leg, side, t.s, t.y ?? def.W / 2);
     return { id: t.id, type: "bolt_pattern", name: `Borne ${t.id} — ${def.net}`, key: t.key || `${key}_${t.id.toLowerCase()}`, side: "A", face: q.face, level: q.level, at: q.at, params: { screw: t.screw || "M6", pattern: { type: "single" } }, opts: { depth: r2(def.t + 0.5) } }; });
   const contacts = def.contacts.filter((c) => legs[c.leg]).map((c) => { const q = onLeg(def, legs, c.leg, c.side, c.s, c.y), rot = (q.along + (c.turn ? 90 : 0)) % 180;
-    return { id: c.id, type: "contact", name: `Contact à lamelles ${c.id} — ${def.net}`, key: c.key || `${key}_${c.id.toLowerCase()}`, side: c.role === "B" ? "B" : "A", face: q.face, level: q.level, at: q.at, ...(rot ? { rot } : {}), ...(c.external ? { external: true } : {}),
-      params: { w: c.w, h: c.h, n: c.n, gap: c.gap, force: c.force, plating: c.plating, base: c.base, duty: c.duty, i: c.i }, opts: { band: c.band || "insert" } }; });
+    return { id: c.id, type: "contact", name: `${CONTACT_FORMS[contactForm(c, { band: c.band })].name} ${c.id} — ${def.net}`, key: c.key || `${key}_${c.id.toLowerCase()}`, side: c.role === "B" ? "B" : "A", face: q.face, level: q.level, at: q.at, ...(rot ? { rot } : {}), ...(c.external ? { external: true } : {}),
+      params: contactParams(def, c), opts: { band: c.band || (c.form && c.form !== "band" ? "integral" : "insert") } }; });
   const ins = def.insulation && def.insulation.t > 0 && material(def.insulation.material) ? def.insulation : null;
   const kept = ((before && before.interfaces) || []).filter((i) => !mine.has(i.id) && !/^(T|CT)\d+$/.test(i.id)), ch = busbarChecks(def);
   return { ...(before ? { revision: before.revision, characteristics: before.characteristics } : {}), dw: "part/1", id, name: def.name || "Busbar", function: `Conduit ${def.net}${def.I ? ` : ${fr(def.I)} A` : ""} entre ${def.terminals.length + def.contacts.length} point(s) de raccordement`,

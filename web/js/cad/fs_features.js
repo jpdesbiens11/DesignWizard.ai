@@ -55,6 +55,7 @@ const EMIT = {
     emitPocket(G, { ...f, slot: [a[0], a[1], b[0], b[1], f.w], profile: undefined, rect: undefined, circle: undefined }, G.next());
   },
   boss(G, f) { emitBoss(G, f, null, G.next()); },
+  arch(G, f) { throw new Skip("lame en pont (arch) : à former dans Onshape — une esquisse en arc sur le chant, extrudée sur la largeur de la lame"); },
   shell(G, f) {
     const N = G.next(), body = G.bodyQ(f.body), t = pos(G.S(f.t, "shell t"), "shell t");
     const faces = [].concat(f.open || ["+Z"]).map((k) => `dwPlanarFaces(context, ${body}, ${dirFs(FACES[faceKey(k)].n)})`);
@@ -142,7 +143,9 @@ function emitBoss(G, f, pts, N) {
   const list = pts || emitPos(G, N, f.at), tools = `dwTools${N}`, u = V(`dwU${N}`), v = V(`dwV${N}`);
   G.emit(`var ${tools} = [];`);
   loopHead(G, N, list);
-  toolInLoop(G, N, "fCylinder", "boss", tools, [["bottomCenter", vecMm(onFace(F, u, v, sub(level, K(0.05 * s))))], ["topCenter", vecMm(onFace(F, u, v, add(level, mul(K(s), h))))], ["radius", mm(div(d, K(2)))]]);
+  const tip = f.tip === undefined || f.tip === null ? null : pos(G.S(f.tip, "boss tip"), "boss tip");      // a pointed boss : a cone from d at the foot to « tip » at the top
+  if (tip) toolInLoop(G, N, "fCone", "boss", tools, [["bottomCenter", vecMm(onFace(F, u, v, level))], ["topCenter", vecMm(onFace(F, u, v, add(level, mul(K(s), h))))], ["bottomRadius", mm(div(d, K(2)))], ["topRadius", mm(div(tip, K(2)))]]);
+  else toolInLoop(G, N, "fCylinder", "boss", tools, [["bottomCenter", vecMm(onFace(F, u, v, sub(level, K(0.05 * s))))], ["topCenter", vecMm(onFace(F, u, v, add(level, mul(K(s), h))))], ["radius", mm(div(d, K(2)))]]);
   G.close();
   apply(G, f, `qUnion(${tools})`, N, "add", tools);
   if (hole) {

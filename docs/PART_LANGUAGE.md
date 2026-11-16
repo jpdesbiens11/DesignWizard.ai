@@ -116,6 +116,8 @@ Common fields: "op", optional "id", "name", "body" (default "main"), "mode": "ad
 - {"op":"pad", "face":"+Z", "rect":[x,y,w,h], "r":0, "h":2, "start":z} // raised counterpart of pocket
 - {"op":"slot", "face":"+Z", "from":[x,y], "to":[x,y], "w":5, "depth":3}
 - {"op":"boss", "face":"+Z", "at":POS, "d":8, "h":6, "start":z, "hole":{"thread":"M3","depth":6}}
+      // "tip": top diameter — makes a POINTED boss (a cone from "d" at the foot to "tip" at the top: an embossed contact or welding projection)
+- {"op":"arch", "face":"+Z", "at":POS, "l":6, "w":2, "h":0.6, "t":0.3, "dir":[0,1]}   // a spring blade formed in a strip: an arch of span l along dir (in the face plane), w wide, rising by h; t = blade thickness (hollow under it)
 - {"op":"shell", "t":2.5, "open":["+Z"]}                              // hollow the part, removing the listed faces
 - {"op":"tub", "size":[L,W,H], "wall":2.5, "rc":4, "rf":4, "draft":1}   // moulded shell open on +Z: one wall everywhere, outside radii rc (corners) and rf (floor), real draft in degrees (the rim keeps L x W, the floor is narrower)
 - {"op":"draft", "angle":1, "pull":"+Z", "neutral":z}                    // lean the faces of the body that run along the pull; do it before the fillets
@@ -204,7 +206,7 @@ A .dwiz document is accepted as an answer in place of the JSON object; both are 
 | `rail` | Glissière / guide-carte | Une languette (bord de PCB, tôle, nervure) glisse dans une rainure. A = languette (aucune géométrie ajoutée) ; B = rainure usinée ou extrudée le long de u. |
 | `pins` | Goupilles de positionnement | Deux goupilles donnent la position précise. A = trous glissants ; B = trous serrés où les goupilles sont chassées. |
 | `weld` | Joint soudé ou câblé par fils | Liaison électrique permanente entre deux conducteurs sur une zone de w × h. A = le côté mince (languette, bout de busbar, départ des fils) ; B = la borne (capot de cellule, barre épaisse, plage). « process » : laser, resistance, ultrasonic, wirebond. « n » : cordons, points ou fils ; « t » : épaisseur de la languette ; « wire » et « wireMat » (Al, Cu) pour le wirebonding ; « i » : courant à porter (A). Aucune géométrie ajoutée. |
-| `contact` | Contact à lamelles | Contact à pression entre deux plages PLANES de conducteurs massifs (busbars) : zone de w × h. A = le côté qui porte la bande de lamelles estampées (« n » points) ; B = la plage plane revêtue. Pressées l'une sur l'autre, les lamelles fléchissent : « gap » est la hauteur comprimée, « force » l'effort par point (N). « plating » : Ag, Sn, Au, Ni ; « base » : CuBe, CuNiSi, CuSn ; « duty » : power ou signal ; « i » : courant à porter (A). Un serrage (vis, clip) doit tenir les deux barres. |
+| `contact` | Contact à pression | Contact à pression entre deux plages PLANES de conducteurs massifs (busbars) : zone de w × h. A = le côté qui porte les points de contact (« n ») ; B = la plage plane revêtue. « form » : cone (bossages emboutis en pointe dans la barre, de 1 mm et plus), bridge (lames cambrées en pont dans une barre mince ; « t » épaisseur de la lame) ou band (bande de lamelles rapportée). « gap » : la hauteur comprimée ; « force » : l'effort par point (N). « plating » : Ag, Sn, Au, Ni ; « base » : Cu, CuBe, CuNiSi, CuSn ; « duty » : power ou signal ; « i » : courant (A) ; « u » : tension de service (V continu). « weld » : projection — les bossages servent de bossages de soudage (option). Un serrage (vis, clip) doit tenir les deux barres. |
 
 ## Générateurs de profil
 

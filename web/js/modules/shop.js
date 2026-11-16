@@ -19,7 +19,8 @@ import { routing } from "../cad/shop.js";
 import { STOCK_FORMS } from "../cad/stock.js";
 import { INTERFACE_TYPES, interfaceSignature, ADHESIVES, BOND_PREPS } from "../cad/interfaces.js";
 import { THREADS } from "../cad/standards.js";
-import { WELD_PROCESSES, PLATINGS } from "../cad/interfaces_elec.js";
+import { WELD_PROCESSES, PLATINGS, CONTACT_FORMS } from "../cad/interfaces_elec.js";
+import { contactFormPicker } from "./contact_forms.js";
 import { PROCESSES, material } from "../cad/materials.js";
 import { anticipatedInterfaces, shopPrompt } from "../core/prompts.js";
 import { importPart } from "../core/importer.js";
@@ -48,7 +49,7 @@ const SHAPES = [
   { type: "pins", side: "A", icon: "ruler", name: "Goupilles de positionnement", title: "Je me positionne par goupilles", text: "Deux goupilles donnent la position exacte." },
   { type: "rail", side: "B", icon: "minus", name: "Glissière", title: "Je guide une carte", text: "Une rainure où glisse le bord d'un PCB ou d'une tôle." },
   { type: "weld", side: "A", icon: "power", name: "Soudure", title: "Je me soude sur…", text: "Liaison électrique permanente : laser, résistance, ultrasons ou fils câblés (wirebonding)." },
-  { type: "contact", side: "A", icon: "power", name: "Contact à lamelles", title: "Je fais contact par pression", text: "Une bande de lamelles estampées sur une plage plane de busbar : signal ou puissance." },
+  { type: "contact", side: "A", icon: "power", name: "Contact à pression", title: "Je fais contact par pression", params: { form: "cone", gap: 0.5, base: "Cu" }, text: "Des bossages en pointe, des lames à ressort ou une bande de lamelles entre deux plages planes de busbar : du signal à la puissance." },
 ];
 const OPPOSITE = { "+Z": "-Z", "-Z": "+Z", "+X": "-X", "-X": "+X", "+Y": "-Y", "-Y": "+Y" };
 const numIn = (obj, key, label, redraw, step = 1) => field(label, el("input", { type: "number", value: obj[key] ?? "", step, min: 0, onInput: (e) => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) { obj[key] = v; redraw(); } } }));
@@ -149,7 +150,7 @@ function render(main) {
   }
   function addShape(s, where = "+Z") {
     const t = INTERFACE_TYPES[s.type];
-    brief.interfaces.push({ uid: ++uid, type: s.type, side: s.side, name: s.name, partner: "", where, params: JSON.parse(JSON.stringify(t.params)), ...(s.opts ? { opts: { ...s.opts } } : {}) }); active = uid; flash = where;
+    brief.interfaces.push({ uid: ++uid, type: s.type, side: s.side, name: s.name, partner: "", where, params: { ...JSON.parse(JSON.stringify(t.params)), ...(s.params || {}) }, ...(s.opts ? { opts: { ...s.opts } } : {}) }); active = uid; flash = where;
     if (s.type === "cutout") delete brief.interfaces.at(-1).params.fix;
     drawIfaces(); drawStock(); propose();
   }
@@ -175,7 +176,9 @@ function render(main) {
     else if (it.type === "rail") row.append(numIn(q, "t", "Épaisseur", redraw, 0.1), numIn(q, "depth", "Profondeur", redraw, 0.5), numIn(q, "length", "Longueur", redraw));
     else if (it.type === "weld") row.append(field("Procédé", el("select", { onChange: (e) => { q.process = e.target.value; redraw(); } }, Object.entries(WELD_PROCESSES).map(([k, w]) => el("option", { value: k, selected: k === q.process }, w.fr)))), numIn(q, "w", "Longueur de la zone", redraw, 0.5), numIn(q, "h", "Largeur", redraw, 0.5), numIn(q, "n", "Cordons, points ou fils", redraw), numIn(q, "i", "Courant (A)", redraw));
     else if (it.type === "contact") row.append(numIn(q, "w", "Longueur de la plage", redraw, 0.5), numIn(q, "h", "Largeur", redraw, 0.5), numIn(q, "n", "Points de contact", redraw), numIn(q, "i", "Courant (A)", redraw),
-      field("Revêtement", el("select", { onChange: (e) => { q.plating = e.target.value; redraw(); } }, Object.entries(PLATINGS).map(([k, v]) => el("option", { value: k, selected: k === q.plating }, v.fr)))), field("Usage", el("select", { onChange: (e) => { q.duty = e.target.value; redraw(); } }, [["power", "Puissance"], ["signal", "Signal"]].map(([k, l]) => el("option", { value: k, selected: k === q.duty }, l)))));
+      field("Revêtement", el("select", { onChange: (e) => { q.plating = e.target.value; redraw(); } }, Object.entries(PLATINGS).map(([k, v]) => el("option", { value: k, selected: k === q.plating }, v.fr)))), field("Usage", el("select", { onChange: (e) => { q.duty = e.target.value; redraw(); } }, [["power", "Puissance"], ["signal", "Signal"]].map(([k, l]) => el("option", { value: k, selected: k === q.duty }, l)))), numIn(q, "u", "Tension (V continu)", redraw),
+      el("div", { class: "cf-wide" }, contactFormPicker({ p: q, opts: it.opts || {}, pick: (k) => { q.form = k; if (k !== "cone") delete q.weld; drawIfaces(); redraw(); }, apply: (a) => { q.form = a.form; q.plating = a.plating; q.n = Math.max(q.n || 1, a.n); drawIfaces(); redraw(); } }),
+        ...[q.form === "cone" ? el("label", { class: "check small", "data-tip": "Option : les bossages servent de bossages de soudage. Permanent, et à qualifier : l'ISO 8167 ne couvre pas le cuivre." }, el("input", { type: "checkbox", checked: q.weld === "projection", onChange: (e) => { if (e.target.checked) q.weld = "projection"; else delete q.weld; drawIfaces(); redraw(); } }), "Souder par bossage (option)") : null].filter(Boolean)));
     else if (it.type === "pins") row.append(numIn(q, "d", "Ø goupille", redraw, 0.5), numIn(q, "pitch", "Entraxe", redraw), numIn(q, "n", "Nombre", redraw));
     return row;
   }

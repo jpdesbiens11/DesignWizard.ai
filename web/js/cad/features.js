@@ -175,9 +175,11 @@ const OPS = {
   boss(K, st, f) {
     const face = faceKey(f.face || "+Z"), F = FACES[face], body = f.body || st.main, level = faceLevel(K, st, f, face, body);
     const d = pos(f.d, "boss d", f), h = pos(f.h, "boss h", f), sink = 0.05, tools = [], cuts = [], lean = Math.tan(leanOf(f) * Math.PI / 180);
+    const tip = f.tip === undefined || f.tip === null ? null : pos(f.tip, "boss tip", f);      // a pointed boss (an embossed projection) : d at the foot, « tip » at the top
+    if (tip !== null && tip >= d) throw new FeatureError(`boss : « tip » (${tip}) doit être plus petit que « d » (${d}) — c'est le diamètre du sommet d'un bossage en pointe.`, f);
     for (const p of positions(f.at, f)) {
       const o = facePoint(face, p, level);
-      tools.push(lean > 0 ? K.cone(v3.sub(o, v3.mul(F.n, sink)), F.n, d / 2 + (h + sink) * lean, d / 2, h + sink) : K.cylinder(v3.sub(o, v3.mul(F.n, sink)), F.n, d / 2, h + sink));      // drafted : a cone, its diameter kept at the top
+      tools.push(tip !== null ? K.cone(v3.sub(o, v3.mul(F.n, sink)), F.n, d / 2 + sink * (d - tip) / (2 * h), tip / 2, h + sink) : lean > 0 ? K.cone(v3.sub(o, v3.mul(F.n, sink)), F.n, d / 2 + (h + sink) * lean, d / 2, h + sink) : K.cylinder(v3.sub(o, v3.mul(F.n, sink)), F.n, d / 2, h + sink));      // drafted : a cone, its diameter kept at the top
       if (f.hole) {
         const th = f.hole.thread ? THREADS[String(f.hole.thread).toUpperCase()] : null;
         const hd = f.hole.d !== undefined ? pos(f.hole.d, "boss hole d", f) : (th ? th.tap : null);
@@ -192,6 +194,27 @@ const OPS = {
     }
     for (const t of tools) apply(K, st, f, t, "add");
     if (cuts.length) apply(K, st, f, cuts, "cut");
+  },
+  /** An arched blade standing on a face — a spring bridge lanced and formed in a strip : it leaves the face, rises by h at mid-span and
+      comes back, over a span l along « dir » ([x, y] in the plane of the face ; default its first axis), w wide. t : the thickness of
+      the blade — the arch is hollow under it when t < h. */
+  arch(K, st, f) {
+    const face = faceKey(f.face || "+Z"), F = FACES[face], body = f.body || st.main, level = faceLevel(K, st, f, face, body);
+    const l = pos(f.l, "arch l", f), w = pos(f.w, "arch w", f), h = pos(f.h, "arch h", f), t = f.t === undefined || f.t === null ? h : pos(f.t, "arch t", f), sink = 0.05;
+    if (h >= l / 2) throw new FeatureError(`arch : la flèche (${h}) doit rester sous la moitié de la portée (${l}).`, f);
+    const dv = Array.isArray(f.dir) ? [num(f.dir[0], "arch dir[0]", f), num(f.dir[1], "arch dir[1]", f)] : [1, 0], dl = Math.hypot(dv[0], dv[1]);
+    if (dl < 1e-9) throw new FeatureError("arch : « dir » est un vecteur [x, y] non nul dans le plan de la face.", f);
+    const D = [0, 0, 0]; D[F.plane[0]] = dv[0] / dl; D[F.plane[1]] = dv[1] / dl;
+    const Wd = v3.cross(F.n, D), R = (l * l / 4 + h * h) / (2 * h), tools = [];
+    for (const p of positions(f.at, f)) {
+      const o = facePoint(face, p, level), c = v3.sub(o, v3.mul(F.n, R - h)), half = l / 2 + w + 1, lo = [0, 0, 0], hi = [0, 0, 0];
+      for (let a = 0; a < 3; a++) { const along = level + F.n[a] * (h + 1), under = level - F.n[a] * sink; lo[a] = a === F.axis ? Math.min(along, under) : o[a] - half; hi[a] = a === F.axis ? Math.max(along, under) : o[a] + half; }
+      let tool = K.common(K.cylinder(v3.sub(c, v3.mul(Wd, w / 2)), Wd, R, w), K.box(lo, hi));
+      if (t < h - 1e-6) tool = K.cut(tool, [K.cylinder(v3.sub(c, v3.mul(Wd, w / 2 + 0.5)), Wd, R - t, w + 1)]);       // the blade alone : the daylight under the bridge
+      tools.push(tool);
+      st.facts.bosses.push({ d: l, h, face, at: o, hole: null, source: f.id, iface: f.iface || null, arch: true });
+    }
+    for (const tool of tools) apply(K, st, f, tool, "add");
   },
   /** A moulded tub : a rounded box open on +Z, one wall everywhere, with a real draft. The outside and the inside are each a block
       that leans, then gets its corner radii and its floor radius ; one is taken out of the other — no offset surface, so it holds for

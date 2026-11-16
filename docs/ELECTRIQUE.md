@@ -57,15 +57,47 @@ préparation, l'outillage et le contrôle de chaque procédé. Pour le **wirebon
 nomenclature et leur **courant de fusion** est estimé (Preece, `I = K · d^1,5`) : le fil sert souvent de fusible de
 cellule, ce courant se choisit.
 
-**`contact` — contact à lamelles.** Deux plages **planes** de conducteurs massifs pressées l'une sur l'autre : une
-bande de lamelles estampées côté A (`n` points), une plage revêtue côté B. Dans la géométrie, un bossage par point tient
-la hauteur comprimée (`gap`) ; le plan d'accouplement est sur leurs sommets. Paramètres : zone, nombre de points, effort
-par point, usage (`power` ou `signal`), courant à porter, et :
+**`contact` — contact à pression.** Deux plages **planes** de conducteurs massifs pressées l'une sur l'autre : les
+points de contact côté A (`n` points), une plage revêtue côté B. Le plan d'accouplement est sur leurs sommets, à la
+hauteur comprimée (`gap`). Le contact prend une de **trois formes** (`form`), que l'écran montre par leur coupe :
+
+| Forme | Ce que c'est | Pour quoi | Dans la géométrie |
+|---|---|---|---|
+| **Bossages coniques** (`cone`) | des bossages **emboutis en pointe** dans la barre elle-même — rien à rapporter | une barre de 1 mm et plus | un cône par point : Ø de la série de l'ISO 8167 (type sphérique : Ø 1,6 à 8 mm, hauteur du quart du diamètre), sommet de 0,3 × Ø |
+| **Lames à ressort** (`bridge`) | des lames **découpées et cambrées en pont** dans une barre mince : chacune fléchit | une barre de moins de 1 mm | une arche par point, avec le jour dessous ; `t` est l'épaisseur de la lame (celle de la barre) |
+| **Bande de lamelles rapportée** (`band`) | une bande de lamelles en alliage à ressort, revêtue, posée entre les deux plages | les forts courants : beaucoup de points en parallèle | un plot par point, et la bande à la nomenclature |
+
+Un contact enregistré avant les formes reste une bande. Une **option** (`weld: projection`) fait des bossages des
+**bossages de soudage** : sous l'effort et le courant ils fondent, et les deux barres sont soudées. La liaison devient
+permanente, et elle est à qualifier : l'ISO 8167 couvre les aciers, les inox et les alliages de nickel jusqu'à 3 mm,
+**pas le cuivre ni l'aluminium**.
+
+**Selon le courant et la tension.** La carte du contact dit ce que la plateforme choisirait — et pourquoi — pour le
+courant, la tension de service (`u`) et l'épaisseur de la barre ; « Appliquer le conseil » prend la forme, le
+revêtement et le nombre de points :
+
+- la **forme** : bande au-delà de 150 A, lames sous 1 mm d'épaisseur, bossages sinon ;
+- le **revêtement** : or dur sur nickel pour un signal, argent pour la puissance ;
+- le **nombre de points** : le plus petit qui porte le courant, d'après l'estimation de Holm ;
+- la **classe de tension** de l'ISO 6469-3 : A jusqu'à 60 V continu (30 V alternatif), B1 de 60 à 75 V, B2 de 75 à
+  1500 V. En classe B, la plage nue doit être hors d'atteinte (capot, gaine à fenêtre) et les distances d'isolement se
+  vérifient dans l'outil Isolation ; les normes à respecter changent (USCAR-37, LV 215-1 au lieu de USCAR-2, LV 214).
+
+Les seuils de 150 A et de 1 mm sont des **repères de la plateforme** ; celui de 1 mm suit ce que l'ISO 8167 dit des
+bossages sphériques (« recommandés à partir de 1 mm »).
+
+**La lame à ressort**, au premier ordre, est une poutre encastrée à ses deux pieds et chargée au milieu : raideur
+`k = 192 E I / L³`, contrainte `12 E t δ / L²` — huit fois celle d'une languette libre de même longueur. La carte donne
+la **course élastique** de la lame (jusqu'où elle fléchit et revient) et l'effort à cette course ; au-delà, la lame se
+met en place une fois pour toutes. Une lame formée dans le cuivre de la barre revient très peu (quelques centièmes) et
+se relâche à chaud : la carte le dit, et propose un alliage à ressort ou une bande rapportée.
+
+Paramètres communs : zone, nombre de points, effort par point, usage (`power` ou `signal`), courant, tension, et :
 
 | | Choix | Normes |
 |---|---|---|
 | **Revêtement** | argent (puissance), étain (économique, sensible au fretting), or dur sur nickel (signal), nickel | ASTM B700 / ISO 4521 ; ASTM B545 / ISO 2093 ; ASTM B488 / ISO 27874 ; ASTM B689 |
-| **Ressort** | cuivre-béryllium C17200, cuivre-nickel-silicium C70250, bronze phosphoreux C51900 | ASTM B194 ; ASTM B422 ; ASTM B103 |
+| **Ressort** | cuivre-béryllium C17200, cuivre-nickel-silicium C70250, bronze phosphoreux C51900 — ou le cuivre de la barre, pour une forme faite dans la barre | ASTM B194 ; ASTM B422 ; ASTM B103 |
 | **Essais** | résistance de contact, courant admissible et échauffement | IEC 60512-2-1, IEC 60512-5-2 |
 
 L'estimation est du premier ordre (théorie de Holm) : rayon du point `a = √(F / πH)`, résistance de constriction
@@ -87,14 +119,15 @@ réécrite à chaque changement.
   se prennent sur la fibre du milieu, d'un sommet de pli au suivant. Une seule branche : une barre droite, seulement
   découpée.
 - **Les bornes** (`T1`, `T2`…) : un trou de passage pour une vis, une interface vissée que l'autre pièce reprend.
-- **Les contacts à lamelles** (`CT1`, `CT2`…) : posés seulement sur une **face plane** d'une branche, hors des plis.
-  Chacun garde son numéro pour toujours.
+- **Les contacts à pression** (`CT1`, `CT2`…) : posés seulement sur une **face plane** d'une branche, hors des plis.
+  Un contact neuf prend la forme que la barre appelle (bossages, lames ou bande) ; elle se change d'un clic sur sa
+  coupe. Chacun garde son numéro pour toujours.
 
 **À la souris et au clavier**, dans la vue 3D :
 
 | Geste | Effet |
 |---|---|
-| Clic droit sur une face plane | « Poser un contact à lamelles ici », « Poser une borne vissée ici », ou « Déplacer CT1 ici » |
+| Clic droit sur une face plane | « Poser un contact à pression ici », « Poser une borne vissée ici », ou « Déplacer CT1 ici » |
 | Clic sur une face | y déplacer le raccordement choisi |
 | ← → ↑ ↓ | le pousser de 1 mm le long de la branche ou en travers (Maj : 5 mm ; Alt : 0,1 mm) ; il reste sur le plat et dans la largeur |
 | R · V | tourner le contact d'un quart de tour · l'envoyer sur l'autre face de la branche |
@@ -211,3 +244,10 @@ annulable.
   (constructeurs allemands) ne sont pas publics.
 - La polarité interne d'une cellule n'est pas modélisée ; pas de constructeur de pack (série, parallèle) encore.
 - Les estimations de contact et de fil sont des ordres de grandeur : l'essai et la fiche du composant acheté prévalent.
+- Formes de contact — **lu** : l'extrait d'aperçu du projet final ISO/FDIS 8167:2021 (domaine d'application, types de
+  bossages, tableau 1 des bossages sphériques) et celui du projet ISO/DIS 6469-3:2020 (tableau 1 des classes de
+  tension). **Non lu** : le reste de ces deux normes. **Résumés de recherche seulement** : les bandes à lamelles des
+  fabricants (leurs pages ont refusé la lecture) — aucun chiffre de fabricant n'est repris. Les modules et les limites
+  élastiques des alliages à ressort sont des valeurs typiques, écrites de pratique, non relues sur une fiche. Aucune
+  de ces formes n'a été confrontée à une pièce ni à un essai ; l'empreinte du poinçon au dos d'un bossage embouti
+  n'est pas modélisée ; le FeatureScript écrit le bossage en cône et laisse la lame à former dans Onshape.

@@ -42,7 +42,7 @@ test("a contact is laid where the designer points : the leg, the face, the place
   const t2 = addTerminal(def, { leg: 2, side: 1, s: 38, y: 3 }); assert.deepEqual([t2.id, t2.y], ["T2", 10], "a terminal sits in the middle of the width");
   const s = busbarPart(def, "BB-1"), b = buildPart(K, s); assert.equal(b.log.filter((l) => l.level === "error").length, 0);
   const I = Object.fromEntries(b.interfaces.map((i) => [i.id, i])); assert.deepEqual(Object.keys(I), ["T1", "T2", "CT2", "CT3"]);
-  assert.deepEqual([I.CT2.type, I.CT2.side, I.CT2.face, I.CT2.frame.n, I.CT2.name], ["contact", "A", "+X", [1, 0, 0], "Contact à lamelles CT2 — HV+"]); assert.ok(Math.abs(I.CT2.frame.o[0] - 62.1) < 0.01 && Math.abs(I.CT2.frame.o[2] - 15) < 0.01, "on the +X face of the upright leg, on the tops of its lamellae");
+  assert.deepEqual([I.CT2.type, I.CT2.side, I.CT2.face, I.CT2.frame.n, I.CT2.name], ["contact", "A", "+X", [1, 0, 0], "Contact à bossages CT2 — HV+"]); assert.ok(Math.abs(I.CT2.frame.o[0] - 62) < 0.01 && Math.abs(I.CT2.frame.o[2] - 15) < 0.01, "on the +X face of the upright leg, on the tops of its bosses (0,5 mm)");
   assert.deepEqual(onLeg(def, legsOf(def), 1, -1, 13.5, 5), { face: "+X", level: 61.5, at: [5, 15], along: 90 }); assert.equal(s.interfaces.find((i) => i.id === "CT2").rot, 90, "on an upright leg the contact still runs along the leg");
   assert.deepEqual(busbarChecks(def).notes, [], "gold, half a newton, a signal : nothing to say");
   /* written again from its definition, the part keeps what the definition does not own */

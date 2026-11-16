@@ -20,7 +20,7 @@ export const FEATURE_FORMS = {
   pocket: [["face", "Face", "face"], ["rect", "Rectangle [x, y, l, h]", "json"], ["profile", "ou profil", "json"], ["r", "Rayon des coins", "num"], ["depth", "Profondeur ou through", "num"], ["start", "Niveau de départ", "num"]],
   pad: [["face", "Face", "face"], ["rect", "Rectangle [x, y, l, h]", "json"], ["r", "Rayon des coins", "num"], ["h", "Hauteur", "num"], ["start", "Niveau de départ", "num"]],
   slot: [["face", "Face", "face"], ["from", "Début [x, y]", "json"], ["to", "Fin [x, y]", "json"], ["w", "Largeur", "num"], ["depth", "Profondeur ou through", "num"]],
-  boss: [["face", "Face", "face"], ["at", "Position(s)", "json"], ["d", "Diamètre", "num"], ["h", "Hauteur", "num"], ["hole", "Trou {thread | d, depth}", "json"], ["start", "Niveau de départ", "num"]],
+  boss: [["face", "Face", "face"], ["at", "Position(s)", "json"], ["d", "Diamètre", "num"], ["h", "Hauteur", "num"], ["tip", "Ø du sommet (bossage en pointe)", "num"], ["hole", "Trou {thread | d, depth}", "json"], ["start", "Niveau de départ", "num"]],
   shell: [["t", "Épaisseur de paroi", "num"], ["open", "Faces ouvertes", "json", '["+Z"]']],
   fillet: [["r", "Rayon", "num"], ["edges", "Arêtes", "json", '"all" · "vertical" · {"face":"+Z"} · {"dir":"X"} · {"box":[…]}']],
   chamfer: [["d", "Taille", "num"], ["edges", "Arêtes", "json"]],
@@ -43,7 +43,7 @@ export const FEATURE_FORMS = {
   finish: [["note", "Finition", "text"]],
 };
 export const FEATURE_LABEL = { ...Object.fromEntries(Object.entries(SHOP_VERBS).map(([k, v]) => [k, v.fr])), box: "Bloc", cylinder: "Cylindre", extrude: "Extrusion de profil", revolve: "Révolution", hole: "Trou", pocket: "Poche", pad: "Bossage plat", slot: "Rainure",
-  boss: "Bossage cylindrique", shell: "Coque", fillet: "Congé", chamfer: "Chanfrein", interfaces: "— géométrie des interfaces —" };
+  boss: "Bossage cylindrique", arch: "Lame en pont", shell: "Coque", fillet: "Congé", chamfer: "Chanfrein", interfaces: "— géométrie des interfaces —" };
 export const FEATURE_DEFAULT = {
   box: { op: "box", size: [20, 20, 10], at: [0, 0, 0] }, cylinder: { op: "cylinder", d: 10, h: 10, at: [0, 0, 0], axis: "Z" },
   extrude: { op: "extrude", profile: { rect: [0, 0, 30, 20], r: 2 }, plane: "XY", at: 0, length: 10 }, hole: { op: "hole", face: "+Z", at: [10, 10], d: 5, depth: "through" },

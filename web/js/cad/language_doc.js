@@ -110,6 +110,8 @@ Common fields: "op", optional "id", "name", "body" (default "main"), "mode": "ad
 - {"op":"pad", "face":"+Z", "rect":[x,y,w,h], "r":0, "h":2, "start":z} // raised counterpart of pocket
 - {"op":"slot", "face":"+Z", "from":[x,y], "to":[x,y], "w":5, "depth":3}
 - {"op":"boss", "face":"+Z", "at":POS, "d":8, "h":6, "start":z, "hole":{"thread":"M3","depth":6}}
+      // "tip": top diameter — makes a POINTED boss (a cone from "d" at the foot to "tip" at the top: an embossed contact or welding projection)
+- {"op":"arch", "face":"+Z", "at":POS, "l":6, "w":2, "h":0.6, "t":0.3, "dir":[0,1]}   // a spring blade formed in a strip: an arch of span l along dir (in the face plane), w wide, rising by h; t = blade thickness (hollow under it)
 - {"op":"shell", "t":2.5, "open":["+Z"]}                              // hollow the part, removing the listed faces
 - {"op":"tub", "size":[L,W,H], "wall":2.5, "rc":4, "rf":4, "draft":1}   // moulded shell open on +Z: one wall everywhere, outside radii rc (corners) and rf (floor), real draft in degrees (the rim keeps L x W, the floor is narrower)
 - {"op":"draft", "angle":1, "pull":"+Z", "neutral":z}                    // lean the faces of the body that run along the pull; do it before the fillets

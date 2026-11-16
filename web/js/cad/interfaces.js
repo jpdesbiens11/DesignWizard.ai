@@ -210,6 +210,7 @@ export function compileInterface(iface, level) {
     const f = { ...raw, id: `${iface.id}.${k + 1}`, iface: iface.id, face, body: iface.body };
     if (raw.uv) { f.at = raw.uv.map(toFace); delete f.uv; }
     if (raw.op === "boss") { f.start = raw.below ? level - raw.h : level; delete f.below; if (raw.lift) { fr.o = v3.add(fr.o, v3.mul(fr.n, raw.lift)); delete f.lift; } }      // lift : the mating plane is on the tops (gap-control pips)
+    else if (raw.op === "arch") { const a0 = toFace([0, 0]), a1 = toFace(raw.dirUV || [1, 0]); f.dir = [round2(a1[0] - a0[0]), round2(a1[1] - a0[1])]; delete f.dirUV; f.start = level; if (raw.lift) { fr.o = v3.add(fr.o, v3.mul(fr.n, raw.lift)); delete f.lift; } }      // a spring blade : its span turns with the interface
     else if (raw.op === "pad") { Object.assign(f, padFeature(raw, fr, F, level)); fr.o = v3.add(fr.o, v3.mul(fr.n, raw.t)); }   // the mating plane is the top of the pad
     else f.start = level;
     if (raw.rectUV) {

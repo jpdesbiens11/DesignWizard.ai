@@ -12,8 +12,9 @@ import { createViewport, showBuilt } from "../core/viewport.js";
 import { importPart } from "../core/importer.js";
 import { materialMenu, materialLabel } from "../cad/materials.js";
 import { THREADS } from "../cad/standards.js";
-import { PLATINGS, CONTACT_BASES, CONTACT_TESTS, contactEstimate } from "../cad/interfaces_elec.js";
-import { blankBusbar, busbarPart, busbarChecks, legsOf, locate, addContact, addTerminal, fit, FINISHES, INSULATIONS } from "../core/busbar.js";
+import { PLATINGS, CONTACT_BASES, CONTACT_TESTS, CONTACT_FORMS, contactEstimate, contactForm, contactFormNotes } from "../cad/interfaces_elec.js";
+import { contactFormPicker, FORM_COLOR } from "./contact_forms.js";
+import { blankBusbar, busbarPart, busbarChecks, legsOf, locate, addContact, addTerminal, fit, FINISHES, INSULATIONS, contactParams } from "../core/busbar.js";
 import { blankLaminate, blankLamFlex, laminatePart, laminateChecks, PAPER_THICKNESS } from "../core/busbar_lam.js";
 import { modal } from "../core/dom.js";
 
@@ -66,7 +67,7 @@ function render(main, args) {
   const menuFor = (h) => {
     const w = h && h.normal ? locate(def(), h.local || h.point, h.normal) : null;
     if (!w) return h ? [{ title: "Tranche ou pli : un raccordement se pose sur une face plane" }] : null;
-    return [{ title: `Branche ${w.leg + 1} — à ${fr(w.s, 1)} mm du début` }, { label: "Poser un contact à lamelles ici", icon: "power", run: () => change("Contact à lamelles posé", (d) => { st.sel = addContact(d, w).id; }) },      // chosen before the screen redraws
+    return [{ title: `Branche ${w.leg + 1} — à ${fr(w.s, 1)} mm du début` }, { label: "Poser un contact à pression ici", icon: "power", run: () => change("Contact à pression posé", (d) => { st.sel = addContact(d, w).id; }) },      // chosen before the screen redraws
       { label: "Poser une borne vissée ici", icon: "bolt", run: () => change("Borne posée", (d) => { st.sel = addTerminal(d, w).id; }) }, ...(item() ? [{ label: `Déplacer ${st.sel} ici`, icon: "mate", run: () => place(w) }] : [])];
   };
   const onKey = (e) => {
@@ -128,20 +129,26 @@ function render(main, args) {
     clear(right); const d = def(), all = [...d.terminals, ...d.contacts];
     right.append(el("div", { class: "side-head" }, el("h2", null, "Raccordements"), el("a", { class: "btn btn-small", href: `#/parts/${encodeURIComponent(id)}`, "data-tip": "Ouvrir dans le studio de pièce : dessin, DFx, interfaces" }, icon("part"))));
     const body = el("div", { class: "side-scroll" }); right.append(body);
-    if (!all.length) body.append(el("p", { class: "atelier-hint" }, icon("info"), " Clic droit sur une face plane de la barre : « Poser un contact à lamelles ici » ou « Poser une borne vissée ici »."));
+    if (!all.length) body.append(el("p", { class: "atelier-hint" }, icon("info"), " Clic droit sur une face plane de la barre : « Poser un contact à pression ici » ou « Poser une borne vissée ici »."));
     for (const x of all) {
       const on = x.id === st.sel, ct = isContact(x), set = (label, fn) => { st.sel = x.id; edit(`${x.id} : ${label}`, fn); };
       const pick = (key, label, opts, tip) => field(label, el("select", { "data-tip": tip || null, onChange: (e) => set(label, (q) => { q[key] = e.target.value; }) }, opts.map(([k, l]) => el("option", { value: k, selected: k === x[key] }, l))));
       const num = (key, label, step = 0.5, min = 0) => field(label, el("input", { type: "number", value: x[key], step, min, onChange: (e) => { const v = parseFloat(e.target.value); if (v >= min) set(label, (q) => { q[key] = v; }); } }));
-      const card = el("div", { class: "card" + (on ? " taped" : ""), style: { padding: ".55rem .7rem", marginBottom: ".5rem", cursor: "pointer" }, "data-conn": x.id, onClick: (e) => { if (/^(INPUT|SELECT|BUTTON|LABEL)$/.test(e.target.tagName)) return; st.sel = on ? null : x.id; mark(); renderRight(); } },
-        el("div", { style: { display: "flex", gap: ".4rem", alignItems: "center", flexWrap: "wrap" } }, el("b", null, x.id), badge(ct ? "Contact à lamelles" : `Borne ${x.screw}`, ct ? "info" : "neutral"), el("small", { class: "muted" }, `branche ${x.leg + 1} · à ${fr(x.s, 1)} mm${ct ? ` · ${x.side > 0 ? "face du dessus" : "face du dessous"}` : ""}`)));
-      if (ct) { const e = contactEstimate(x), P = PLATINGS[x.plating];
-        card.append(el("p", { class: "small", style: { margin: ".25rem 0" } }, `${x.n} points · ${P.fr.toLowerCase()} · ≈ ${fr(e.rTotal, 3)} mΩ · ≈ ${fr(e.iMax, 0)} A `, badge(e.ok ? "estimation" : "à vérifier", e.ok ? "ok" : "warn")));
-        if (on) card.append(el("div", { class: "form-row tight" }, pick("role", "Ce côté porte", [["A", "les lamelles"], ["B", "la plage plane"]], "L'autre barre porte l'autre moitié, avec la même clé"), pick("duty", "Usage", [["power", "Puissance"], ["signal", "Signal (RS-485, mesure)"]])),
+      const card = el("div", { class: "card" + (on ? " taped" : ""), style: { padding: ".55rem .7rem", marginBottom: ".5rem", cursor: "pointer" }, "data-conn": x.id, onClick: (e) => { if (e.target.closest("input, select, button, label, .cf-box")) return; st.sel = on ? null : x.id; mark(); renderRight(); } },
+        el("div", { style: { display: "flex", gap: ".4rem", alignItems: "center", flexWrap: "wrap" } }, el("b", null, x.id), badge(ct ? CONTACT_FORMS[contactForm(x, { band: x.band })].name : `Borne ${x.screw}`, ct ? "info" : "neutral"), el("small", { class: "muted" }, `branche ${x.leg + 1} · à ${fr(x.s, 1)} mm${ct ? ` · ${x.side > 0 ? "face du dessus" : "face du dessous"}` : ""}`)));
+      if (ct) { const e = contactEstimate(x), P = PLATINGS[x.plating], Q = contactParams(d, x), more = contactFormNotes(Q, { band: x.band });
+        card.append(el("p", { class: "small", style: { margin: ".25rem 0" } }, `${x.n} points · ${P.fr.toLowerCase()} · ≈ ${fr(e.rTotal, 3)} mΩ · ≈ ${fr(e.iMax, 0)} A `, badge(e.ok && !more.length ? "estimation" : "à vérifier", e.ok && !more.length ? "ok" : "warn")));
+        if (on) { const form = contactForm(x, { band: x.band });
+          card.style.borderLeft = `5px solid ${FORM_COLOR[form]}`;
+          card.append(contactFormPicker({ p: Q, opts: { band: x.band }, t: d.t, pick: (k) => set(`forme : ${CONTACT_FORMS[k].fr.toLowerCase()}`, (q) => { q.form = k; delete q.band; if (k !== "cone") delete q.weld; if (k !== "band" && !["Cu", "CuBe", "CuNiSi", "CuSn"].includes(q.base)) q.base = "Cu"; }),
+            apply: (a) => set("conseil appliqué", (q) => { q.form = a.form; delete q.band; q.plating = a.plating; q.n = Math.max(q.n || 1, a.n); if (a.form !== "cone") delete q.weld; }) }),
+            ...[form === "cone" ? el("label", { class: "check small", "data-tip": "Option : les bossages servent de bossages de soudage — sous l'effort et le courant, ils fondent et les deux barres sont soudées. Permanent, et à qualifier : l'ISO 8167 ne couvre pas le cuivre." },
+              el("input", { type: "checkbox", checked: x.weld === "projection", onChange: (ev) => set("soudage par bossage", (q) => { if (ev.target.checked) q.weld = "projection"; else delete q.weld; }) }), "Souder par bossage (option)") : null].filter(Boolean)); }
+        if (on) card.append(el("div", { class: "form-row tight" }, pick("role", "Ce côté porte", [["A", "les points de contact"], ["B", "la plage plane"]], "L'autre barre porte l'autre moitié, avec la même clé"), pick("duty", "Usage", [["power", "Puissance"], ["signal", "Signal (RS-485, mesure)"]])),
           el("div", { class: "form-row tight" }, pick("plating", "Revêtement", Object.entries(PLATINGS).map(([k, v]) => [k, v.fr]), P.use), pick("base", "Ressort", Object.entries(CONTACT_BASES).map(([k, v]) => [k, v.fr.split(" (")[0]]), CONTACT_BASES[x.base].use)),
-          el("div", { class: "form-row tight" }, num("w", "Longueur"), num("h", "Largeur"), num("n", "Points", 1, 1)), el("div", { class: "form-row tight" }, num("force", "Effort par point (N)", 0.1, 0.1), num("gap", "Hauteur comprimée", 0.1, 0.1), num("i", "Courant (A)", 1, 0)),
+          el("div", { class: "form-row tight" }, num("w", "Longueur"), num("h", "Largeur"), num("n", "Points", 1, 1)), el("div", { class: "form-row tight" }, num("force", "Effort par point (N)", 0.1, 0.1), num("gap", "Hauteur comprimée", 0.1, 0.1), num("i", "Courant (A)", 1, 0), num("u", "Tension (V continu)", 1, 0)),
           el("label", { class: "check small" }, el("input", { type: "checkbox", checked: !!x.external, onChange: (ev) => set("externe", (q) => { if (ev.target.checked) q.external = true; else delete q.external; }) }), "Externe : l'autre barre n'est pas dans le projet"),
-          el("p", { class: "muted", style: { fontSize: ".76rem" } }, `${P.std} ; ressort ${CONTACT_BASES[x.base].std}. ${CONTACT_TESTS}. Estimation du premier ordre : l'essai fait foi.`), ...e.notes.map((t) => el("p", { class: "atelier-hint warn", style: { fontSize: ".8rem" } }, t)));
+          el("p", { class: "muted", style: { fontSize: ".76rem" } }, `${P.std} ; ressort ${CONTACT_BASES[x.base].std}. ${CONTACT_TESTS}. Estimation du premier ordre : l'essai fait foi.`), ...[...e.notes, ...more].map((t) => el("p", { class: "atelier-hint warn", style: { fontSize: ".8rem" } }, t)));
       } else if (on) card.append(el("div", { class: "form-row tight" }, pick("screw", "Vis", Object.keys(THREADS).map((k) => [k, k])), num("s", "Position sur la branche", 0.5)));
       if (on) card.append(el("div", { class: "form-actions", style: { justifyContent: "flex-start", flexWrap: "wrap" } }, ...(ct ? [btn("Tourner", () => set("tourné", (q) => { q.turn = q.turn ? 0 : 1; }), { small: true, icon: "refresh", tip: "Un quart de tour (R)" }), btn("Autre face", () => set("autre face", (q) => { q.side = -q.side; }), { small: true, icon: "layers", tip: "La face opposée de la branche (V)" })] : []),
         btn("Retirer", () => { const gone = x.id; st.sel = null; change(`${gone} retiré`, (q) => { q.terminals = q.terminals.filter((k) => k.id !== gone); q.contacts = q.contacts.filter((k) => k.id !== gone); }); }, { small: true, icon: "trash", danger: true })));
