@@ -38,6 +38,15 @@ dessins écrits en anglais et cotés en millimètres ou en pouces (Dessins), les
 les captures ont été refaites sur la version 0.70. L'écran de la bibliothèque électrique n'est pas montré en capture :
 il cite des fabricants par leur nom, ce que le matériel de présentation évite.
 
+## Ce qui a changé depuis (v0.71 à v0.73)
+
+Pas de page nouvelle ; le texte suit l'outil : l'anglais des dessins porte aussi le vocabulaire du projet (Dessins, avec
+une note sur le dialogue et l'aller-retour IA) ; le choix d'unités suit dans le busbar, le circuit flexible, les
+étiquettes, la simulation, l'isolation et les documents (Pièce, DFx) ; la carte se lit en mil et en pouces
+(Électrique) ; le calcul reste en SI et le verdict du classeur lit le domaine de validité (Physique). Seule la capture
+du dessin a été refaite (v0.71) : les autres écrans n'ont pas changé d'aspect en SI. Le pied de chaque page a été
+desserré : la ligne de la plateforme et la note de la marque ne se touchent plus à l'impression.
+
 ## Le fil conducteur
 
 Douze stations, dans l'ordre d'un projet : Idée · Atelier · Pièce · Procédés · Électrique · Assemblage · Physique ·

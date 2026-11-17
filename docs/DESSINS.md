@@ -23,7 +23,11 @@ dessins du projet ; les écrans, eux, gardent le texte tel qu'il a été tapé.
   lignes, que l'on relit avant d'enregistrer. Les clés hors de la liste sont ignorées.
 - **Guide** : un conseil dit combien de textes du projet sont encore écrits tels quels sur la feuille en vue.
 - Les **projets de démonstration** arrivent avec leur anglais (`web/js/demo/demo_words.js` : variateur, rover, fusée,
-  busbars) : leurs dessins sont en anglais d'un bout à l'autre ; un test le garantit.
+  busbars) : leurs dessins sont en anglais d'un bout à l'autre ; un test le garantit. Ces traductions sont proposées
+  par l'outil et **n'ont pas été relues par quelqu'un du métier** : `node tools/words_review.mjs <fichier.xlsx>` écrit le
+  classeur à faire relire — une feuille par démonstration, chaque texte avec sa nature (nom de pièce, finition,
+  interface, paramètre, note), la pièce où il se trouve, son anglais, et deux colonnes jaunes pour la correction et
+  une remarque. Les corrections se reportent à la main dans `demo_words.js`.
 - Restent tels que tapés : les descriptions du journal des révisions, et le texte des clés du projet (numéros de pièce).
 
 **Unités.** Le dessin suit le choix d'unités (`docs/UNITES.md`) : en SI, des millimètres ; dans le système impérial, des
