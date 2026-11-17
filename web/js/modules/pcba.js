@@ -4,7 +4,7 @@
    (schematic, layers, stack-up, rules, net classes, bill of materials, outputs) stay one click away at all times. */
 
 import { el, clear, icon, btn, badge, toast, svg, promptBox, confirmBox } from "../core/dom.js";
-import { registerModule, go } from "../core/app.js";
+import { registerModule, go, setGuide } from "../core/app.js";
 import { store } from "../core/store.js";
 import { emptyBoard, resolveBoard } from "../pcba/model.js";
 import { LIBRARY } from "../pcba/library.js";
@@ -18,6 +18,7 @@ import { inheritFromPart } from "../pcba/twin.js";
 import { demoBoard } from "../demo/demo_pcba.js";
 import { DESIGN_STEPS } from "./pcba_steps.js";
 import { boardProse } from "../pcba/board_units.js";
+import { boardChecksGuide } from "../pcba/guide.js";
 import { OUTPUT_STEPS, CLASSIC } from "./pcba_out.js";
 
 const STEPS = { ...DESIGN_STEPS, ...OUTPUT_STEPS };
@@ -74,6 +75,7 @@ function render(main, args) {
     if (!ui.layers) ui.layers = new Set(["bottom", "in2", "in1", "top", "silk_top", "outline"]);
     const nav = (step) => { ui.step = step; ui.classic = null; ui.focus = null; history.replaceState(null, "", `#/pcba/${encodeURIComponent(id)}/${step}`); draw(); };
     ctx.nav = nav; ctx.redraw = draw;
+    setGuide(boardChecksGuide(board, ctx).map((x) => ({ ...x, text: boardProse(x.text), screen: "pcba", ref: id, hash: `#/pcba/${encodeURIComponent(id)}/${x.step}` })));      // what the checks found, for the Guide of the top bar — a board reads in mil
     clear(head);
     head.append(el("div", { class: "pcba-title" }, icon("chip"),
       store.boards.length > 1 ? el("select", { "aria-label": "Carte", onChange: (e) => { ui.ref = ui.net = ui.fn = null; go(`#/pcba/${encodeURIComponent(e.target.value)}`); } }, store.boards.map((b) => el("option", { value: b.id, selected: b.id === id }, `${b.id} — ${b.name || ""}`))) : el("b", null, `${board.id} — ${board.name || ""}`),

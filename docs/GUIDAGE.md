@@ -42,9 +42,11 @@ Chaque ligne dit **ce qui cloche, pourquoi, et le correctif** quand il y en a un
 | Étiquettes | Étiquette à poser ; texte à écrire (son champ clignote) ; image à apporter ; plus longue que le tour du cylindre, ou que son demi-tour ; pièce porteuse disparue ; texte sous 2 mm ; encre et fond de la même couleur | `web/js/core/labels.js` — `labelGuide` |
 | Rendu | Décor, point de vue ou format inconnu ; finition inconnue ; couleur illisible ; finition gardée pour une pièce sortie de l'assemblage ; couleur sans effet sur la finition choisie | `web/js/core/render_looks.js` — `renderGuide` |
 | Simulation (cas de charge) | Produit tenu nulle part ; aucun effort ; chaleur sans sortie ; face disparue ; effort sur une face encastrée ; unité douteuse ; valeurs d'exemple | `web/js/analysis/fea/case_check.js` — `caseIssues` |
+| Carte électronique (PCBA) | Dit sur tous les écrans : carte sans fonction ; fonction sans solution ; élément proposé par une IA à relire (avec l'édition et la clause des normes citées) ; carte nue sans largeur ou sans hauteur ; aucun trou de fixation ; composants à placer ; net haute tension sans tension ; composants sans référence de fabricant. Dit sur l'écran de la carte, d'après ses vérifications : erreurs et avertissements du contrôle électrique ; points à régler à l'implantation ; défauts de placement ; liaisons à router ; erreurs et avertissements des règles de conception, une fois le layout complet ; dossier prêt, à faire relire par l'atelier. Un clic mène à l'étape du parcours — ou à la vue classique — où cela se règle | `web/js/pcba/guide.js` — `boardGuide` (repris par `projectIssues`), `boardChecksGuide` |
 
 Les règles de fabrication restent au DFx, les règles électriques à la carte et à l'Isolation : le guide ne les double
-pas, il dit ce qui manque **avant** qu'elles puissent tourner.
+pas, il dit ce qui manque **avant** qu'elles puissent tourner. Pour une carte, il compte ce que ses vérifications ont
+trouvé et nomme la première règle : le détail, constat par constat, reste à l'étape Vérifications.
 
 ## Ajouter un écran au guide
 
@@ -58,7 +60,7 @@ pas, il dit ce qui manque **avant** qu'elles puissent tourner.
 ## Ce qui n'est pas fait
 
 Pas encore d'entrées propres aux écrans Pièce (au-delà de ce que disent les données), Assemblage (interférences, santé
-des joints — ils ont leurs propres indicateurs), Isolation, PCBA, Dessins et Commande. Le guide ne juge pas la
+des joints — ils ont leurs propres indicateurs), Isolation, Dessins (au-delà de l'anglais des textes) et Commande. Le guide ne juge pas la
 conception : il ne remplace ni le DFx ni la revue.
 
 ## Premiers pas

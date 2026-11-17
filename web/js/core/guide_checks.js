@@ -7,6 +7,7 @@
 
 import { material, PROCESSES, processName } from "../cad/materials.js";
 import { moldPlan, moldGuide } from "./mold_plan.js";
+import { boardGuide } from "../pcba/guide.js";
 
 const paramValue = (p) => (p !== null && typeof p === "object" ? p.value : p);
 const GEOMETRY = ["features", "stock", "folded", "extrusion", "pcb", "step", "busbar"];
@@ -85,6 +86,7 @@ export function projectIssues(project) {
   }
   for (const a of asms) out.push(...assemblyIssues(a, byId));
   out.push(...teamIssues(project));
+  for (const b of project.boards || []) out.push(...boardGuide(b).map((x) => ({ ...x, screen: "pcba", ref: b.id, hash: `#/pcba/${encodeURIComponent(b.id)}/${x.step}` })));      // what a board shows of itself ; its screen adds what its checks find
   if (asms.length) { const placed = new Set(asms.flatMap((a) => (a.instances || []).map((i) => i.part)));
     for (const p of parts) if (!placed.has(p.id)) out.push({ level: "tip", text: `${p.id} — dans le projet, mais dans aucun assemblage.`, screen: "assembly", ref: p.id, hash: `#/assembly/${encodeURIComponent(asms[0].id)}` }); }
   return out;

@@ -198,6 +198,14 @@ cherche est à un clic, dans la barre « Vues classiques » :
 
 Les fichiers sortent aux extensions que ces outils et les ateliers reconnaissent, et s'y rouvrent pour contrôle.
 
+### Le guide
+
+Le bouton « Guide » de la barre du haut dit ce que la carte demande encore, en quatre niveaux — à corriger, à entrer, à
+vérifier, conseil : une fonction sans solution, un brouillon d'IA à relire, des composants à placer, des liaisons à
+router, les erreurs du contrôle électrique et des règles de conception. Un clic sur une ligne ouvre l'étape où cela se
+règle. Ce que la carte montre d'elle-même se lit depuis n'importe quel écran (« Ailleurs dans le projet ») ; ce que
+ses vérifications trouvent, sur son écran (`web/js/pcba/guide.js` ; voir [GUIDAGE.md](GUIDAGE.md)).
+
 ### Unités : le mil et le pouce
 
 Avec le système impérial (bouton des préférences), la carte se lit comme le métier la lit en Amérique du Nord :
