@@ -9,6 +9,7 @@ import { netsOf, isolationGuide } from "../analysis/cc_guide.js";
 import { store } from "../core/store.js";
 import { createViewport } from "../core/viewport.js";
 import { buildAssembly, showAssembly } from "../core/asm_scene.js";
+import { kernel } from "../cad/client.js";
 import { sceneBody } from "../analysis/cc_scene.js";
 import { bodyGroups } from "../analysis/cc_groups.js";
 import { charredEdge } from "../cad/special_processes.js";
@@ -102,9 +103,10 @@ function render(main, args) {
 
   async function rebuild(first) {
     const token = ++st.token;
-    vp.setBusy(st.ctx ? "" : "Construction de l'assemblage…");
+    const stop = () => { st.token++; kernel.cancel(); setStatus("Construction annulée", ""); vp.setBusy("Construction annulée : l'assemblage n'est pas affiché.", { stopped: true, retry: () => rebuild(true) }); };
+    vp.setBusy(st.ctx ? "" : "Construction de l'assemblage…", { cancel: stop });
     try {
-      const ctx = await buildAssembly(asm(), (t) => vp.setBusy(st.ctx ? "" : t));
+      const ctx = await buildAssembly(asm(), (t, done, total) => vp.setBusy(st.ctx ? "" : t, { done, total, cancel: stop }));
       if (token !== st.token) return;
       const bodies = sceneOf(asm(), ctx), sig = JSON.stringify([bodies.map((b) => [b.id, b.kind, b.net, b.group, b.pos.length, b.cutEdge]), Object.values(ctx.sol.placements)]);
       if (st.sig && st.sig !== sig) { st.results = null; st.sel = null; }           // the geometry or the roles changed: measurements are stale
@@ -154,10 +156,10 @@ function render(main, args) {
     st.running = true; st.results = null; st.sel = null; renderRight();
     const w = new Worker(new URL("../analysis/cc_worker.js", import.meta.url), { type: "module" });
     st.worker = w;
-    const t0 = performance.now();
+    const t0 = performance.now(), halt = () => { w.terminate(); st.worker = null; st.running = false; vp.setBusy(""); setStatus("Analyse d'isolation annulée", ""); toast("Analyse annulée : aucun résultat n'a été gardé.", "info"); renderRight(); };
     w.onmessage = (e) => {
       const m = e.data;
-      if (m.progress) { vp.setBusy(`Mesure des chemins ${m.progress.done + 1} / ${m.progress.total} : ${m.progress.pair}`); return; }
+      if (m.progress) { vp.setBusy(`Mesure des chemins ${m.progress.done + 1} / ${m.progress.total} : ${m.progress.pair}`, { done: m.progress.done, total: m.progress.total, cancel: halt }); return; }
       w.terminate(); st.worker = null; st.running = false; vp.setBusy("");
       if (!m.ok) { toast(`Analyse interrompue : ${m.error}`, "error", 8000); renderRight(); return; }
       st.results = m.results.map((r) => { const p = ps.find((x) => x.a === r.a && x.b === r.b); return { ...r, req: p.req, level: p.level, verdict: judge(p.req, r) }; });
@@ -172,7 +174,7 @@ function render(main, args) {
     const I = iso();
     w.postMessage({ id: 1, bodies: st.bodies.map((b) => ({ id: b.id, name: b.name, kind: b.kind, net: b.net, group: b.group, printed: b.printed, cutEdge: !!b.cutEdge, pos: b.pos, idx: b.idx })),
       pairs: ps.map((p) => ({ a: p.a, b: p.b, x: p.req.x_mm ?? 1, maxClearance: Math.max(40, (p.req.clearance_mm || 5) * 8), maxCreepage: Math.max(60, (Math.max(...Object.values(p.req.creepage_mm).filter((v) => v)) || 8) * 8) })), opts: {} });
-    vp.setBusy("Préparation de la scène…");
+    vp.setBusy("Préparation de la scène…", { cancel: halt });
   }
 
   /* ---------- left: nets, conditions, roles ---------- */

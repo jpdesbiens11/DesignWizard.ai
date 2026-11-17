@@ -17,6 +17,7 @@ import { confirmDraft, draftsOf } from "../core/ai_draft.js";
 import { boardView, layerList } from "./pcba_view.js";
 import { boardLen, boardDims, boardNum, boardUnit, boardField, boardBack, boardLabel, boardProse, foilField, foilBack, copperName } from "../pcba/board_units.js";
 import { penTool, copperCard, dragCorner } from "./pcba_trace.js";
+import { busyVeil } from "../core/busy.js";
 
 const num = (value, onChange, step = "any", w = "5.2rem") => el("input", { type: "number", value, step, style: { width: w }, onChange: (e) => { const x = parseFloat(e.target.value); if (Number.isFinite(x)) onChange(x); } });
 const txt = (value, onChange, w = "100%") => el("input", { type: "text", value: value ?? "", spellcheck: false, style: { width: w }, onChange: (e) => onChange(e.target.value.trim()) });
@@ -29,17 +30,18 @@ export const ui$ = { num, txt, sel, section, scroll, hint, sevBadge };
 
 /** Runs a long job in the worker and writes its result back as one undoable step. */
 export function runJob(ctx, cmd, label, opts, onInfo) {
-  const w = new Worker(new URL("../pcba/worker.js", import.meta.url), { type: "module" }), busy = el("div", { class: "pcba-busy" }, el("div", { class: "card" }, icon("refresh"), el("b", null, label), el("span", { class: "muted" }, "…")));
-  document.body.append(busy);
+  const w = new Worker(new URL("../pcba/worker.js", import.meta.url), { type: "module" }), busy = busyVeil(document.body, "pcba-busy");
+  const cancel = () => { w.terminate(); busy.dispose(); toast(`${label} : annulé — la carte n'a pas changé.`, "info"); };      // nothing was written yet : the board is as it was
+  busy.set(`${label}…`, { cancel });
   w.onmessage = (e) => {
     const m = e.data;
-    if (m.progress) { busy.querySelector("span").textContent = `${m.progress.done} liaison(s) — ${m.progress.net}`; return; }
-    w.terminate(); busy.remove();
+    if (m.progress) { busy.set(`${label} — ${m.progress.done} liaison(s) : ${m.progress.net}`, { cancel }); return; }
+    w.terminate(); busy.dispose();
     if (!m.ok) { toast(m.error, "error"); return; }
     ctx.update((b) => { for (const k of ["blocks", "parts", "tracks", "vias"]) b[k] = m.board[k]; }, label);
     if (onInfo) onInfo(m.info);
   };
-  w.onerror = (e) => { w.terminate(); busy.remove(); toast(`Le calcul a échoué : ${e.message || "erreur du module"}.`, "error"); };
+  w.onerror = (e) => { w.terminate(); busy.dispose(); toast(`Le calcul a échoué : ${e.message || "erreur du module"}.`, "error"); };
   w.postMessage({ id: 1, cmd, board: JSON.parse(JSON.stringify(ctx.board)), opts: opts || {} });
 }
 

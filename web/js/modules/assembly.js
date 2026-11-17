@@ -58,9 +58,10 @@ function render(main, args) {
   async function rebuild(first) {
     const token = ++st.token, a = asm();
     if (a.pendingAutoMate) { store.updateAssembly(id, (x) => { delete x.pendingAutoMate; }, `${id} : préparation`); return; }
-    vp.setBusy(st.ctx ? "" : "Construction de l'assemblage…");
+    const stop = () => { st.token++; kernel.cancel(); setStatus("Construction annulée", ""); info.textContent = "construction annulée"; info.className = "chip"; vp.setBusy("Construction annulée : l'assemblage n'est pas affiché.", { stopped: true, retry: () => rebuild(true) }); };
+    vp.setBusy(st.ctx ? "" : "Construction de l'assemblage…", { cancel: stop });
     try {
-      const ctx = await buildAssembly(a, (t) => vp.setBusy(st.ctx ? "" : t));
+      const ctx = await buildAssembly(a, (t, done, total) => vp.setBusy(st.ctx ? "" : t, { done, total, cancel: stop }));
       if (token !== st.token) return;
       // a part was just added: mate what can be mated, then solve again (one more undo step)
       const cand = candidates(ctx.asm, ctx.built);
@@ -118,7 +119,7 @@ function render(main, args) {
       pairs.push({ a: { key: a.instances[i].part, matrix: sol.placements[a.instances[i].id] }, b: { key: a.instances[j].part, matrix: sol.placements[a.instances[j].id] } });
       names.push([a.instances[i], a.instances[j]]);
     }
-    const mine = st.token; if (!quiet) vp.setBusy(`Recherche d'interférences sur ${pairs.length} paire(s)…`);
+    const mine = st.token; if (!quiet) vp.setBusy(`Recherche d'interférences sur ${pairs.length} paire(s)…`, { cancel: () => { kernel.cancel(); vp.setBusy(""); clash.textContent = "interférences : recherche annulée"; clash.className = "chip"; rebuild(); } });      // the kernel starts afresh : the parts are built again, quietly
     try {
       const res = await kernel.interference(pairs); if (mine !== st.token) return;
       st.interference = res.map((r, k) => ({ ...r, a: names[k][0].part, b: names[k][1].part, ia: names[k][0].id, ib: names[k][1].id })).filter((r) => r.volume > 0.5);
@@ -126,7 +127,7 @@ function render(main, args) {
       clash.textContent = st.interference.length ? `${st.interference.length} interférence(s)` : "aucune interférence"; clash.className = `chip ${st.interference.length ? "bad" : "done"}`; clash.dataset.tip = st.interference.length ? st.interference.map((r) => `${r.a} ∩ ${r.b} : ${fmt(r.volume, 1)} mm³`).join(" · ") : `${pairs.length} paire(s) de pièces voisines comparées`;
       if (!quiet || st.interference.length) toast(st.interference.length ? `${st.interference.length} interférence(s) trouvée(s) : ${st.interference.map((r) => `${r.a} ∩ ${r.b}`).slice(0, 3).join(", ")}.` : "Aucune interférence entre les pièces.", st.interference.length ? "warn" : "success");
       if (!quiet) st.tab = "dfa";
-    } catch (e) { if (!quiet) toast(e.message, "error"); }
+    } catch (e) { if (e && e.cancelled) return; if (!quiet) toast(e.message, "error"); }
     if (!quiet) vp.setBusy(""); overlays(); renderRight();
   }
 

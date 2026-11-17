@@ -15,6 +15,7 @@ import { composeAssemblyDrawing } from "../draw/asm_drawing.js";
 import { getUnits } from "../core/units.js";
 import { sayWith, drawingTexts, wordsIssues } from "../core/drawing_words.js";
 import { drawingIssues } from "../core/drawing_guide.js";
+import { busyVeil } from "../core/busy.js";
 import { wordsSection } from "./drawing_words.js";
 import { DIM_CLASSES, setDimClass, dimText } from "../draw/dim_model.js";
 import { buildAssembly } from "../core/asm_scene.js";
@@ -79,18 +80,20 @@ function render(main, args) {
   const st = { doc: null, token: 0, dim: null }, artefact = () => (isAsm ? store.assembly(id) : store.part(id));
   const d = () => store.project.drawing || {};
   const setD = (key, val, label) => store.commit(`Dessins : ${label}`, (p) => { p.drawing = { ...(p.drawing || {}), [key]: val }; });
+  const veil = busyVeil(center, "sheet-busy");      // the sheet being projected : what, for how long, and a button to cancel
   const off = store.on("change", () => { if (!artefact()) { go("#/drawings"); return; } build(); });
   async function build() {
     const token = ++st.token;
-    if (!st.doc) { clear(center); center.append(el("p", { class: "muted" }, "Projection des vues et mise en page…")); }
+    const stop = () => { st.token++; kernel.cancel(); setStatus("Dessin annulé", ""); veil.set("Dessin annulé : la feuille n'est pas tracée.", { stopped: true, retry: build }); };
+    if (!st.doc) { clear(center); center.append(veil.node); veil.set("Projection des vues et mise en page…", { cancel: stop }); }
     try {
       const doc = isAsm ? await makeAssemblyDrawing(id) : await makeDrawing(id);
       if (token !== st.token) return;
-      st.doc = doc;
+      st.doc = doc; veil.set("");
       clear(center); (doc.svgs || [doc.svg]).forEach((markup, i, all) => { if (all.length > 1) center.append(el("p", { class: "sheet-no" }, `Feuille ${i + 1} / ${all.length}`)); center.append(svgNode(markup)); });
       setStatus(`Dessin de ${id} à l'échelle ${doc.info.scale}`, "done");
       renderDims(); renderRight();
-    } catch (e) { if (token !== st.token) return; clear(center); center.append(el("div", { class: "card" }, el("h2", null, "Dessin impossible"), el("p", { class: "form-error" }, e.message))); }
+    } catch (e) { if (token !== st.token) return; veil.set(""); clear(center); center.append(el("div", { class: "card" }, el("h2", null, "Dessin impossible"), el("p", { class: "form-error" }, e.message))); }
   }
   /* every dimension of the sheet, with its balloon number : each can stay normal, become a reference, or a special characteristic */
   function renderDims() {

@@ -17,7 +17,7 @@ import { docIdentity } from "./brand.js";
 import { unitPicker } from "./units_ui.js";
 import { installStepper } from "./stepper.js";
 
-export const APP_VERSION = "0.77.0";
+export const APP_VERSION = "0.78.0";
 /** What every document of the open project carries beside its content : approval names, organisation, confidentiality note, extraction stamp (core/brand.js). */
 export const docMeta = (when = new Date()) => docIdentity(store.project, when, APP_VERSION);
 const modules = new Map();
@@ -172,7 +172,7 @@ function route() {
   if (app.cleanup) { try { app.cleanup(); } catch (e) { console.error(e); } app.cleanup = null; }
   clear(main);
   app.context = {}; app.current = key; app.commands = []; app.guide = [];
-  setStatus("Prêt");      // what the last screen said (« … construit en 300 ms ») is not about this one
+  setStatus(kernel.stage().text || "Prêt", kernel.stage().text ? "busy" : "");      // what the last screen said (« … construit en 300 ms ») is not about this one — but a kernel still arriving is
   document.documentElement.dataset.module = key;
   document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.key === (key === "mvp" || key === "team" || key === "plm" ? "review" : SHOP_SCREENS.has(key) ? "shop" : key)));
   const tab = document.querySelector(".tab.active"); if (tab && tab.scrollIntoView) tab.scrollIntoView({ block: "nearest", inline: "nearest" });      // the tool in use stays in sight in a narrow bar

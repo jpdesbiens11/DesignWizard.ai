@@ -14,8 +14,10 @@ const cache = new Map();          // partId -> { bodies: [{name, shape}], rgb: {
 async function kernel(base) {
   if (K) return K;
   if (!loading) {
-    self.postMessage({ stage: "Chargement du noyau CAO (une seule fois, environ 23 Mo)…" });
-    loading = loadKernel(base).then((k) => { K = k; self.postMessage({ stage: "" }); return k; });
+    const LOADING = "Chargement du noyau CAO"; let said = 0;
+    self.postMessage({ stage: `${LOADING} (une seule fois, environ 23 Mo)…` });
+    loading = loadKernel(base, {}, (got, total) => { const now = Date.now(); if (now - said < 150 && got < total) return; said = now; self.postMessage({ stage: got < total ? LOADING : "Préparation du noyau CAO…", done: got, total }); })
+      .then((k) => { K = k; self.postMessage({ stage: "" }); return k; }, (e) => { loading = null; self.postMessage({ stage: "" }); throw e; });      // a download that failed can be tried again
   }
   return loading;
 }

@@ -65,7 +65,8 @@ export function partStudio(main, args, cfg) {
   /* ---------- build ---------- */
   async function rebuild(first, overrides) {
     const token = ++st.token;
-    vp.setBusy(st.built ? "" : "Construction de la pièce…");
+    const stop = () => { st.token++; kernel.cancel(); setStatus("Construction annulée", ""); vp.setBusy("Construction annulée : la pièce n'est pas affichée.", { stopped: true, retry: () => rebuild(true) }); };
+    vp.setBusy(st.built ? "" : "Construction de la pièce…", { cancel: stop });
     setContext({ spec: st.spec, built: st.built });
     try {
       const built = await kernel.build(st.spec, overrides, overrides ? `${st.spec.id}~live` : st.spec.id);

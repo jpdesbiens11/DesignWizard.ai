@@ -248,7 +248,21 @@ button.dw-view-label { pointer-events: auto; cursor: pointer; min-height: 24px; 
 .view-tools input[type="range"] { width: 90px; }
 .view-status { position: absolute; left: .7rem; bottom: .6rem; right: .7rem; display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; pointer-events: none; }
 .view-status > * { pointer-events: auto; } .view-status .chip { max-width: none; white-space: normal; overflow: visible; }      /* what the view says is read whole : there is room */
-.view-busy { position: absolute; inset: 0; display: grid; place-items: center; background: color-mix(in srgb, var(--paper) 55%, transparent); font-family: var(--hand); font-size: 1.05rem; color: var(--graphite); pointer-events: none; }
+.view-busy { position: absolute; inset: 0; z-index: 7; display: grid; place-items: center; background: color-mix(in srgb, var(--paper) 55%, transparent); color: var(--graphite); pointer-events: none; }
+/* a long operation : what, how far, for how long — and a button to cancel (core/busy.js) */
+.busy-card { pointer-events: auto; display: grid; gap: .45rem; width: min(26rem, 86%); padding: .8rem 1rem .85rem; background: var(--surface); border: 1.4px solid color-mix(in srgb, var(--graphite) 24%, transparent); border-radius: var(--r-card); box-shadow: var(--shadow-sketch, 0 6px 22px rgba(11, 27, 51, .16)); }
+.busy-head { display: flex; align-items: center; gap: .55rem; } .busy-title { flex: 1 1 auto; font: 600 .95rem/1.3 var(--sans, inherit); color: var(--ink-strong); overflow-wrap: anywhere; }
+.busy-time { flex: none; font-variant-numeric: tabular-nums; color: var(--muted); font-size: .8rem; }
+.busy-spin { flex: none; width: 15px; height: 15px; border: 2.4px solid color-mix(in srgb, var(--primary) 22%, transparent); border-top-color: var(--primary); border-radius: 50%; animation: busy-spin .8s linear infinite; }
+@keyframes busy-spin { to { transform: rotate(360deg); } }
+.busy-bar { position: relative; height: 7px; overflow: hidden; border-radius: 4px; background: color-mix(in srgb, var(--graphite) 12%, transparent); }
+.busy-bar i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 4px; background: var(--primary); transition: width .25s ease; }
+.busy-bar.unknown i { width: 34%; animation: busy-slide 1.25s ease-in-out infinite; } @keyframes busy-slide { 0% { left: -34%; } 100% { left: 100%; } }
+.busy-sub { color: var(--ink-soft); font-size: .8rem; } .busy-hint { margin: 0; padding: .35rem .5rem; border-radius: var(--r-small); background: var(--warn-soft); color: var(--warn-ink); font-size: .8rem; }
+.busy-actions { display: flex; gap: .4rem; justify-content: flex-end; } .busy-card [hidden] { display: none; }
+.busy-card.stopped { border-style: dashed; }
+.sheet-busy { display: grid; place-items: center; min-height: 46vh; }
+@media (prefers-reduced-motion: reduce) { .busy-spin, .busy-bar.unknown i { animation-duration: 3s; } }
 
 /* ---------- parameters ---------- */
 .param { display: grid; grid-template-columns: minmax(0, 1fr) 112px; gap: .15rem .5rem; align-items: center; padding: .28rem 0; border-bottom: 1px dashed color-mix(in srgb, var(--graphite) 14%, transparent); }

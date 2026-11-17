@@ -2,6 +2,7 @@
    (standard views, fit, x-ray, section, exploded view, measure, picture) and a busy veil. */
 
 import { el, btn, icon, download, toast, copyText, modal } from "./dom.js";
+import { busyVeil } from "./busy.js";
 import { Viewer } from "./viewer.js";
 import { popupMenu, createSelection } from "./view_select.js";
 import { snapPrefs, snapMenu } from "./view_place.js";
@@ -31,10 +32,10 @@ export function createViewport(host, opts = {}) {
   viewer.snapOn = () => snapPrefs().direction;                   // the second point of a measure is caught onto an axis, unless switched off (right click)
   const picked = el("div", { class: "chip picked view-picked hidden", "data-tip": "Ce qui est sélectionné, et ce qu'il mesure. Ctrl + clic pour ajouter ; Échap pour tout désélectionner." });
   if (opts.select !== false) sel = createSelection(viewer, (items) => { picked.textContent = items.length ? sel.measure() : ""; picked.classList.toggle("hidden", !items.length); if (opts.onSelect) opts.onSelect(items); });
-  const busy = el("div", { class: "view-busy hidden" }, "");
   const status = el("div", { class: "view-status" });
   const tools = el("div", { class: "view-tools" });
-  host.append(tools, status, picked, busy);
+  host.append(tools, status, picked);
+  const busy = busyVeil(host);      // what is being done, how far, for how long — and a button to cancel (core/busy.js)
 
   const group = (...items) => { const g = el("div", { class: "group" }, items); tools.append(g); return g; };
   const vbtn = (label, tip, fn, ico) => btn(label, fn, { small: true, tip, icon: ico });
@@ -111,13 +112,14 @@ export function createViewport(host, opts = {}) {
 
   const api = {
     viewer, tools, status, group, sel, picked, contextMenu,
-    setBusy(text) { busy.textContent = text || ""; busy.classList.toggle("hidden", !text); },
+    /** The veil of a long operation. o : { done, total, cancel(), retry(), stopped } — see core/busy.js. An empty text hides it. */
+    setBusy(text, o) { busy.set(text, o); },
     setStatus(...nodes) { status.replaceChildren(...nodes.filter(Boolean)); },
     resetSection() { secSel.value = ""; applySection(); },
     menu,
     /** A cut through a point, square to an axis ("x", "y" or "z") : the plane passes where the designer pointed. */
     sectionAt(axis, coord) { const bb = viewer.bbox(), i = "xyz".indexOf(axis), lo = bb.min.getComponent(i), hi = bb.max.getComponent(i); secSel.value = axis; secPos.value = String(Math.max(0, Math.min(1, (coord - lo) / ((hi - lo) || 1)))); applySection(); },
-    dispose() { viewer.dispose(); },
+    dispose() { busy.dispose(); viewer.dispose(); },
   };
   return api;
 }

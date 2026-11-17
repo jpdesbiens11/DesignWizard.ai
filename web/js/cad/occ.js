@@ -399,9 +399,24 @@ export function makeKernel(oc) {
     edgesInfo, facesInfo, bbox, props, distance, fillet, chamfer, shell, draft, tessellate, stepWrite, stepRead, hlr, section, explore };
 }
 
-/** Load the kernel. In the browser pass the URL of the vendor folder; in Node pass {wasmBinary}. */
-export async function loadKernel(baseUrl, extra = {}) {
+/** The size of the kernel file, in bytes : what a download counts towards (a server may send it compressed, and then says another length). */
+export const KERNEL_BYTES = 22980267;
+/* the kernel file, compiled as it arrives, its bytes counted on the way : onProgress(received, total) */
+async function streamKernel(url, imports, onProgress) {
+  const res = await fetch(url, { credentials: "same-origin" });
+  if (!res.ok || !res.body) throw new KernelError(`Le noyau CAO n'a pas pu être téléchargé (réponse ${res.status}). Correctif : vérifiez la connexion, puis réessayez.`);
+  const reader = res.body.getReader(); let got = 0;
+  const counted = new ReadableStream({ async pull(c) { const { done, value } = await reader.read(); if (done) { onProgress(KERNEL_BYTES, KERNEL_BYTES); c.close(); return; } got += value.byteLength; onProgress(Math.min(got, KERNEL_BYTES), KERNEL_BYTES); c.enqueue(value); },
+    cancel(reason) { return reader.cancel(reason); } });
+  return WebAssembly.instantiateStreaming(new Response(counted, { headers: { "Content-Type": "application/wasm" } }), imports);
+}
+/** Load the kernel. In the browser pass the URL of the vendor folder; in Node pass {wasmBinary}. onProgress(received, total) : told as the
+    kernel file arrives (browser only) — without it, the loader fetches the file by itself, silently. */
+export async function loadKernel(baseUrl, extra = {}, onProgress = null) {
   const mod = await import(/* @vite-ignore */ baseUrl + "replicad_single.js");
-  const oc = await mod.default({ locateFile: (f) => baseUrl + f, print: () => {}, printErr: () => {}, ...extra });
+  const watch = !!onProgress && !extra.wasmBinary && typeof fetch === "function" && typeof ReadableStream === "function" && typeof WebAssembly.instantiateStreaming === "function";
+  let fail = null; const broke = new Promise((ok, no) => { fail = no; });
+  const hook = watch ? { instantiateWasm: (imports, ready) => { streamKernel(baseUrl + "replicad_single.wasm", imports, onProgress).then((r) => ready(r.instance, r.module), fail); return {}; } } : {};
+  const oc = await Promise.race([mod.default({ locateFile: (f) => baseUrl + f, print: () => {}, printErr: () => {}, ...hook, ...extra }), broke]);
   return makeKernel(oc);
 }

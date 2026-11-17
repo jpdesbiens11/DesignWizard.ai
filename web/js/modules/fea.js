@@ -157,19 +157,20 @@ function render(main, args) {
 
   /* ---------- geometry and mesh ---------- */
   async function loadGeometry() {
-    vp.setBusy("Construction de la géométrie…"); last = null; runs = []; st.view = "model";
+    const stop = () => { kernel.cancel(); setStatus("Construction annulée", ""); vp.setBusy("Construction annulée : rien à simuler pour l'instant.", { stopped: true, retry: loadGeometry }); };
+    vp.setBusy("Construction de la géométrie…", { cancel: stop }); last = null; runs = []; st.view = "model";
     try {
       if (st.target.type === "part") {
         const built = await kernel.build(store.part(st.target.id));
         geo = { bodies: built.bodies.map((b) => ({ name: b.name, pos: b.mesh.pos, idx: b.mesh.idx, material: feaMaterial(b.material) })), interfaces: built.interfaces, material: store.part(st.target.id).material };
       } else {
-        const ctx = await buildAssembly(store.assembly(st.target.id)), bodies = [];
+        const ctx = await buildAssembly(store.assembly(st.target.id), (t, done, total) => vp.setBusy(t, { done, total, cancel: stop })), bodies = [];
         for (const inst of ctx.asm.instances) for (const b of ctx.built[inst.part].bodies) bodies.push({ name: `${inst.part} · ${b.name}`, pos: b.mesh.pos, idx: b.mesh.idx, matrix: ctx.sol.placements[inst.id], material: feaMaterial(b.material) });
         geo = { bodies, interfaces: [] };
       }
       if (!alive) return;
       remesh(true);
-    } catch (e) { vp.setBusy(""); info.textContent = e.message; info.className = "chip bad"; }
+    } catch (e) { if (e && e.cancelled) return; vp.setBusy(""); info.textContent = e.message; info.className = "chip bad"; }
   }
   function remesh(first) {
     { const one = oneSymmetry(st.cuts); if (one.dropped.length) { st.cuts = one.cuts; toast(`Une seule symétrie à la fois pour l'instant : le plan ${one.dropped.join(", ")} devient une coupe libre.`, "warn", 6000); } }
@@ -329,11 +330,12 @@ function render(main, args) {
     if (worker) worker.terminate();
     worker = new Worker(new URL("../analysis/fea/worker.js", import.meta.url), { type: "module" });
     const id = ++seq, kind = st.kind, est = estimate;
-    vp.setBusy("Résolution…"); setStatus("Simulation en cours…", "busy");
+    const halt = () => { if (worker) { worker.terminate(); worker = null; } vp.setBusy(""); setStatus("Simulation annulée", ""); toast("Simulation annulée : le dernier résultat gardé reste affichable.", "info"); };
+    vp.setBusy("Résolution…", { cancel: halt }); setStatus("Simulation en cours…", "busy");
     worker.onmessage = (e) => {
       const m = e.data;
       if (m.id !== id || !alive) return;
-      if (m.progress !== undefined) { vp.setBusy(`Résolution… itération ${m.progress.iteration || ""}`); return; }
+      if (m.progress !== undefined) { vp.setBusy(`Résolution… itération ${m.progress.iteration || ""}`, { cancel: halt }); return; }
       vp.setBusy(""); worker.terminate(); worker = null;
       if (!m.ok) { setStatus("Simulation impossible", "bad"); toast(m.error, "error", 9000); return; }
       const s = m.skin, lo = kind === "thermal" ? m.result.minT.value : 0, hi = kind === "thermal" ? m.result.maxT.value : m.result.maxVm.value;

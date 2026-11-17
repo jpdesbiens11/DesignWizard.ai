@@ -163,6 +163,35 @@ vérifié dans un navigateur), styles dans `web/css/app.css`. Un champ peut s'en
 
 Pas encore essayé sur un écran tactile ; la molette de la souris ne change pas une valeur.
 
+## Une opération longue dit où elle en est, et s'annule
+
+Demande de JP, après un assemblage resté sur « Construction 1 / 24 » sans autre signe de vie : c'était le noyau
+géométrique — 23 Mo, téléchargés une fois par session — qui arrivait lentement, pendant que la barre du haut disait
+« Prêt ». Désormais, toute opération qui peut durer montre le même **voile** :
+
+- **ce qui se fait**, dans ses mots (« Construction 5 / 24 : RVR-2200-04 », « Mesure des chemins 3 / 6 ») ;
+- **une ligne de progression** : la part faite quand elle se compte, une barre qui défile quand elle ne se compte pas ;
+- pendant l'arrivée du noyau, **ses octets** — « Chargement du noyau CAO — 8,4 / 23 Mo, une seule fois » — et la barre
+  est alors la sienne : c'est lui que l'on attend ;
+- **le temps écoulé**, dès trois secondes ;
+- après quinze secondes sans rien de neuf, **un mot** : le téléchargement n'avance plus (connexion, VPN), ou
+  l'opération est plus longue que prévu ;
+- un bouton **Annuler**. L'opération s'arrête tout de suite ; le voile dit ce qui n'a pas été fait et offre
+  **Reprendre**. Rien ne repart tout seul.
+
+Où : la construction d'une pièce et d'un assemblage, la recherche d'interférences, la construction et l'analyse de
+l'isolation, la géométrie et la résolution d'une simulation, la projection d'un dessin, le placement et le routage
+d'une carte. Annuler une opération du noyau l'arrête pour de bon (le noyau repart à la demande suivante, depuis le
+cache du navigateur) ; annuler un routage ou une analyse laisse le projet tel qu'il était.
+
+La barre du haut ne dit plus « Prêt » en changeant d'écran tant que le noyau arrive.
+
+Code : `web/js/core/progress.js` (ce que le voile montre : pur, testé), `web/js/core/busy.js` (le voile),
+`vp.setBusy(texte, { done, total, cancel, retry, stopped })` dans une vue 3D, `busyVeil(hôte)` ailleurs ;
+`kernel.cancel()` et `kernel.stage()` dans `web/js/cad/client.js` ; le noyau compte ses octets dans
+`web/js/cad/occ.js` (`loadKernel`). Pas encore de voile sur le chargement d'un projet depuis Drive, ni sur le bilan
+DFx de tout un projet.
+
 ## Ce que l'audit ne voit pas
 
 Il mesure des boîtes, pas le sens : un libellé obscur, un ordre d'actions illogique, une couleur mal choisie, une

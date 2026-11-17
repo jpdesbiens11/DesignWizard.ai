@@ -7,15 +7,16 @@ import { solve, hardware, bom, massProps } from "./assembly_logic.js";
 import { showBuilt } from "./viewport.js";
 import { bboxTransform, bboxUnion } from "../cad/vec.js";
 
-/** Build the parts used by `asm`. Returns {built, sol, errors, hardware, bom, mass, bbox}. */
+/** Build the parts used by `asm`. Returns {built, sol, errors, hardware, bom, mass, bbox}. onProgress(text, done, total) before each part ;
+    an operation the user cancelled (kernel.cancel) ends the construction at once. */
 export async function buildAssembly(asm, onProgress) {
   const ids = [...new Set(asm.instances.map((i) => i.part))], built = {}, errors = [];
   let n = 0;
   for (const id of ids) {
     const spec = store.part(id);
     if (!spec) { errors.push(`Pièce « ${id} » absente du projet.`); continue; }
-    if (onProgress) onProgress(`Construction ${++n} / ${ids.length} : ${id}`);
-    try { built[id] = await kernel.build(spec); } catch (e) { errors.push(`${id} : ${e.message}`); }
+    if (onProgress) onProgress(`Construction ${++n} / ${ids.length} : ${id}`, n - 1, ids.length);
+    try { built[id] = await kernel.build(spec); } catch (e) { if (e && e.cancelled) throw e; errors.push(`${id} : ${e.message}`); }
   }
   const usable = { ...asm, instances: asm.instances.filter((i) => built[i.part]) };
   const sol = solve(usable, built);
