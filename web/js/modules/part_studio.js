@@ -4,7 +4,7 @@
 
 import { el, clear, icon, btn, badge, toast, modal, fmt, fmtMass, fmtLen, fmtDims, download, confirmBox } from "../core/dom.js";
 import { store } from "../core/store.js";
-import { app, go, setContext, setStatus } from "../core/app.js";
+import { app, go, setContext, setStatus, setGuide } from "../core/app.js";
 import { kernel } from "../cad/client.js";
 import { createViewport, showBuilt } from "../core/viewport.js";
 import { mountPins } from "./view_pins.js";
@@ -202,6 +202,7 @@ export function partStudio(main, args, cfg) {
   /* ---------- right: inspector ---------- */
   function renderRight() {
     clear(right);
+    if (st.orderGuide && st.tab !== "files") { st.orderGuide = false; setGuide([]); }      // the order has its lines in the guide while its tab is open
     const tabs = [["params", "Paramètres"], ["ifaces", "Interfaces"], ["gamme", "Gamme"], ["dfx", "DFx"], ...(isPrinted(st.spec) ? [["print", "Impression"]] : []), ...(isFolded(st.spec) ? [["fold", "Développé"]] : []), ...(isMolded(st.spec) ? [["mold", "Mold"]] : []), ["files", "Artéfacts"], ["sheet", "Fiche"], ["json", "Fichier"], ...((cfg.tabs || []).map((t) => [t.key, t.label]))];
     if ((st.tab === "print" && !isPrinted(st.spec)) || (st.tab === "fold" && !isFolded(st.spec)) || (st.tab === "mold" && !isMolded(st.spec))) st.tab = "params";
     if (st.tab !== "mold") clearMold(vp.viewer);              // the gate, the parting line and the risers show only on the tab of the mold

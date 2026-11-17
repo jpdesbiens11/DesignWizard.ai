@@ -57,6 +57,18 @@ export function orderCheck(spec, built, dfx, route, order = spec.order || {}) {
     label: !ready ? "À corriger avant de commander" : L && !L.proto ? "Fabricable, mais pas en délai de prototype" : `Prête à commander — ${lo} à ${hi} jours ouvrables` };
 }
 
+/** What the order of a part still asks for, for the guide. check : orderCheck(…) ; order : what the part keeps of its order (spec.order).
+    A quantity that nobody gave is the tool's own (1) : it is to confirm. → [{ level, text, field }] */
+export function orderGuide(spec, check, order = (spec && spec.order) || {}) {
+  const out = [], s = spec || {}, id = s.id || "Pièce", say = (level, text, field) => out.push({ level, text: `${id} — commande : ${text}`, field });
+  if (!check) return out;
+  for (const t of check.blockers || []) say("error", t, "blockers");
+  if (!(order.quantity > 0) && !(s.intent && s.intent.quantity > 0)) say("todo", "quantité à confirmer — 1 par défaut : entrez la vôtre, ou gardez-la (Entrée).", "quantity");
+  for (const t of check.cautions || []) say("warn", t, "cautions");
+  if (check.ready && !order.need_by) say("tip", "aucune date de livraison souhaitée : la demande de prix dira « au plus tôt ».", "need_by");
+  return out;
+}
+
 /** Request for quotation, in French, ready to send to a shop with the order package. */
 export function rfqText(spec, built, route, check, order = spec.order || {}, files = []) {
   const mat = materialOrDefault(spec.material), bb = built.bbox, n = (x) => (Math.round(x * 10) / 10).toLocaleString("fr-CA");

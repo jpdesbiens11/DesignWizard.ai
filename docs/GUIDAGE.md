@@ -43,6 +43,9 @@ Chaque ligne dit **ce qui cloche, pourquoi, et le correctif** quand il y en a un
 | Rendu | Décor, point de vue ou format inconnu ; finition inconnue ; couleur illisible ; finition gardée pour une pièce sortie de l'assemblage ; couleur sans effet sur la finition choisie | `web/js/core/render_looks.js` — `renderGuide` |
 | Simulation (cas de charge) | Produit tenu nulle part ; aucun effort ; chaleur sans sortie ; face disparue ; effort sur une face encastrée ; unité douteuse ; valeurs d'exemple | `web/js/analysis/fea/case_check.js` — `caseIssues` |
 | Carte électronique (PCBA) | Dit sur tous les écrans : carte sans fonction ; fonction sans solution ; élément proposé par une IA à relire (avec l'édition et la clause des normes citées) ; carte nue sans largeur ou sans hauteur ; aucun trou de fixation ; composants à placer ; net haute tension sans tension ; composants sans référence de fabricant. Dit sur l'écran de la carte, d'après ses vérifications : erreurs et avertissements du contrôle électrique ; points à régler à l'implantation ; défauts de placement ; liaisons à router ; erreurs et avertissements des règles de conception, une fois le layout complet ; dossier prêt, à faire relire par l'atelier. Un clic mène à l'étape du parcours — ou à la vue classique — où cela se règle | `web/js/pcba/guide.js` — `boardGuide` (repris par `projectIssues`), `boardChecksGuide` |
+| Isolation | Dit sur tous les écrans, pour chaque assemblage qui porte des potentiels : aucune tension entrée ; analyse pas encore lancée (un conseil) ; paires en défaut, avec la distance mesurée et la distance requise de la première ; paires sans verdict ; résultats périmés quand un potentiel analysé n'existe plus. Sur l'écran Isolation seulement : moins de deux potentiels, rien à comparer. Ses lignes restent en millimètres : c'est un calcul | `web/js/analysis/cc_guide.js` — `netsOf`, `isolationGuide` (repris par `projectIssues`) |
+| Dessins | Cartouche sans dessinateur ; « Vérifié » et « Approuvé » à remplir avant d'émettre ; statut « Émis » sans vérificateur ou sans approbateur (à corriger) ; artéfact changé depuis sa revue ; aucune organisation pour la note de confidentialité ; textes du projet sans anglais. Un clic mène au champ du cartouche | `web/js/core/drawing_guide.js` — `drawingIssues` ; `core/drawing_words.js` — `wordsIssues` |
+| Commande (onglet Artéfacts d'une pièce) | Ce qui bloque la commande (la pièce ne se construit pas, matière ou procédé absents, règles DFx à corriger) ; ce qui la ralentit (remarques DFx, procédé à outillage, matière première non déclarée) ; **quantité à confirmer** quand personne ne l'a donnée — son champ clignote, Entrée la garde ; aucune date de livraison souhaitée. Ces lignes ne sont dites que pendant que l'onglet est ouvert | `web/js/cad/order.js` — `orderGuide` (d'après `orderCheck`) |
 
 Les règles de fabrication restent au DFx, les règles électriques à la carte et à l'Isolation : le guide ne les double
 pas, il dit ce qui manque **avant** qu'elles puissent tourner. Pour une carte, il compte ce que ses vérifications ont
@@ -59,8 +62,9 @@ trouvé et nomme la première règle : le détail, constat par constat, reste à
 
 ## Ce qui n'est pas fait
 
-Pas encore d'entrées propres aux écrans Pièce (au-delà de ce que disent les données), Assemblage (interférences, santé
-des joints — ils ont leurs propres indicateurs), Isolation, Dessins (au-delà de l'anglais des textes) et Commande. Le guide ne juge pas la
+Pas encore d'entrées propres aux écrans Pièce (au-delà de ce que disent les données) et Assemblage (interférences, santé
+des joints — ils ont leurs propres indicateurs). L'isolation ne voit pas que la géométrie a bougé depuis la dernière
+analyse : seulement qu'un potentiel analysé a disparu. Le guide ne juge pas la
 conception : il ne remplace ni le DFx ni la revue.
 
 ## Premiers pas

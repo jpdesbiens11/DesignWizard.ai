@@ -14,6 +14,7 @@ import { composeDrawing, viewRequest, PAPER, drawingSemantics } from "../draw/pa
 import { composeAssemblyDrawing } from "../draw/asm_drawing.js";
 import { getUnits } from "../core/units.js";
 import { sayWith, drawingTexts, wordsIssues } from "../core/drawing_words.js";
+import { drawingIssues } from "../core/drawing_guide.js";
 import { wordsSection } from "./drawing_words.js";
 import { DIM_CLASSES, setDimClass, dimText } from "../draw/dim_model.js";
 import { buildAssembly } from "../core/asm_scene.js";
@@ -114,7 +115,8 @@ function render(main, args) {
     const body = el("div", { class: "side-scroll" });
     right.append(body);
     /* the English of what the project writes on this sheet : the guide says how many texts have none */
-    const texts = drawingTexts(store.project, `${isAsm ? "assembly" : "part"}:${id}`, isAsm && st.doc ? st.doc.info.rows : null); setGuide(wordsIssues(d().words, texts));
+    const texts = drawingTexts(store.project, `${isAsm ? "assembly" : "part"}:${id}`, isAsm && st.doc ? st.doc.info.rows : null); const key = `${isAsm ? "assembly" : "part"}:${id}`, focus = (f) => () => { const n = right.querySelector(`[data-field="${f}"]`); if (n) { n.scrollIntoView({ block: "center" }); n.focus(); } };
+    setGuide([...drawingIssues(d(), { id, author: store.project.author, state: (reviewItems(store.project).find((x) => x.key === key) || {}).state }).map((x) => ({ ...x, go: focus(x.field) })), ...wordsIssues(d().words, texts)]);      // the title block, the review, then the English of the texts
     /* the section A-A of a part : where the plane passes. « Automatique » : across the length, through the middle, when the part has something inside. */
     const sectionRow = () => { const own = spec.section || null, bb = st.doc && st.doc.built ? st.doc.built.bbox : null, mode = !own ? "auto" : own.axis === "none" ? "none" : own.axis === "y" ? "y" : "x", i = mode === "y" ? 1 : 0;
       const setSec = (v, label) => store.updatePart(id, (p) => { if (v) p.section = v; else delete p.section; }, `${id} : coupe A-A — ${label}`);
@@ -122,7 +124,7 @@ function render(main, args) {
       return el("div", { class: "form-row" }, field("Coupe A-A", el("select", { "aria-label": "Coupe A-A", onChange: (e) => { const m = e.target.value; setSec(m === "auto" ? null : m === "none" ? { axis: "none" } : { axis: m }, e.target.selectedOptions[0].textContent); } },
           [["auto", "Automatique"], ["x", "En travers de la longueur (plan YZ)"], ["y", "En travers de la largeur (plan XZ)"], ["none", "Aucune"]].map(([v, l]) => el("option", { value: v, selected: v === mode }, l))), "Le plan est montré sur la vue de dessus ; la face coupée est hachurée"),
         mode === "x" || mode === "y" ? unitField(`Position du plan ${mode.toUpperCase()} (mm)`, { "aria-label": "Position du plan de coupe", value: Math.round(at * 100) / 100, min: lo, max: hi, step: 1 }, (v) => { if (Number.isFinite(v)) setSec({ axis: mode, at: Math.max(lo + 0.1, Math.min(hi - 0.1, v)) }, inUnits(`plan ${mode.toUpperCase()} = ${Math.round(v * 100) / 100} mm`)); }, { event: "onChange", hint: inUnits(`Entre ${Math.round(lo)} et ${Math.round(hi)} mm`) }) : null); };
-    const text = (key, label, hint) => field(label, el("input", { type: "text", value: d()[key] || "", onChange: (e) => setD(key, e.target.value, label) }), hint);
+    const text = (key, label, hint) => field(label, el("input", { type: "text", "data-field": key, value: d()[key] || "", onChange: (e) => setD(key, e.target.value, label) }), hint);
     const setRev = (v) => (isAsm ? store.updateAssembly(id, (x) => { x.revision = v || undefined; }, `${id} : révision`) : store.updatePart(id, (x) => { x.revision = v || undefined; }, `${id} : révision`));
     body.append(el("div", { class: "side-section" }, el("h3", null, "Cartouche"), el("div", { class: "form-row" }, text("drawnBy", "Dessiné"), text("checkedBy", "Vérifié")), el("div", { class: "form-row" }, text("approvedBy", "Approuvé"), text("status", "Statut", "Préliminaire, Pour revue, Émis…")),
       text("organisation", "Organisation", "À qui appartiennent les documents du projet : dans le cartouche et dans la note de confidentialité de tous les livrables"), text("confidentiality", "Note de confidentialité", "Laissez vide pour la note d'usage : « CONFIDENTIEL — ce document et les informations qu'il contient sont la propriété de… »"),

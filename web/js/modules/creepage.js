@@ -4,7 +4,8 @@
    Paths are drawn in red: full line = clearance [clr] through air, dashed = creepage [crp] along the surfaces. */
 
 import { el, clear, icon, btn, badge, field, toast, fmt, modal, table } from "../core/dom.js";
-import { registerModule, go, setStatus } from "../core/app.js";
+import { registerModule, go, setStatus, setGuide } from "../core/app.js";
+import { netsOf, isolationGuide } from "../analysis/cc_guide.js";
 import { store } from "../core/store.js";
 import { createViewport } from "../core/viewport.js";
 import { buildAssembly, showAssembly } from "../core/asm_scene.js";
@@ -20,17 +21,7 @@ const pairKey = (a, b) => [a, b].sort().join("|");
 const GROUP_ORDER = ["I", "II", "IIIa", "IIIb"];
 
 /** Nets of an assembly: those saved in asm.isolation, completed with the nets declared by the parts (elec.net, pcb.nets). */
-export function collectNets(asm) {
-  const nets = new Map((((asm.isolation || {}).nets) || []).map((n) => [n.name, { ...n }]));
-  for (const inst of asm.instances) {
-    const s = store.part(inst.part);
-    if (!s) continue;
-    for (const [name, def] of Object.entries((s.pcb && s.pcb.nets) || {})) if (!nets.has(name)) nets.set(name, { name, kind: def.kind || "dc", voltage: def.voltage ?? 0, floating: !!def.floating });
-    const own = s.elec && s.elec.net;
-    if (own && !nets.has(own)) nets.set(own, { name: own, kind: "dc", voltage: 0 });
-  }
-  return [...nets.values()];
-}
+export const collectNets = (asm) => netsOf(asm, (id) => store.part(id));
 
 /** Scene bodies (world meshes with roles) of a built assembly, with the overrides saved in the analysis. */
 export function sceneOf(asm, ctx) {
@@ -188,6 +179,7 @@ function render(main, args) {
   function renderLeft() {
     clear(left);
     const I = iso(), P = I.params;
+    setGuide(isolationGuide(asm(), I.nets, { here: true }).filter((x) => x.field === "nets").map((x) => ({ ...x, si: true })));      // the guide of the project says the rest (core/guide_checks.js) ; an assembly without potentials is worth a word here only
     left.append(el("img", { class: "side-mark", src: "img/marks/creepage.svg", alt: "" }), el("div", { class: "side-head" }, el("h2", null, "Isolation")));
     const scroll = el("div", { class: "side-scroll" });
     left.append(scroll);
@@ -267,7 +259,7 @@ function render(main, args) {
         selP.req.tests && el("p", { class: "muted", style: { fontSize: ".8rem" } }, `Essais après assemblage : diélectrique ${fmt(selP.req.tests.hipot_rms, 0)} V rms ${selP.req.tests.duration_s} s (production ${fmt(selP.req.tests.production_rms, 0)} V ${selP.req.tests.production_s} s, équivalent DC ${fmt(selP.req.tests.dc_equivalent, 0)} V) · isolement ≥ ${fmt(selP.req.tests.ir_min_ohm_dc / 1000, 0)} kΩ · décharges partielles ${fmt(selP.req.tests.pd_initial, 0)} puis ${fmt(selP.req.tests.pd_extinction, 0)} V, ≤ ${selP.req.tests.pd_max_pc} pC.`)));
     } else if (st.results) body.append(el("p", { class: "muted", style: { fontSize: ".84rem" } }, st.results.some((r) => r.verdict.ok === false) ? "Les chemins en défaut sont tracés en rouge dans la vue. Corrigez la géométrie (écart, nervure, rainure plus large que X) dans la pièce concernée, puis relancez l'analyse." : "Toutes les paires respectent les distances requises."));
   }
-  return () => { off(); st.token++; if (st.worker) st.worker.terminate(); vp.dispose(); };
+  return () => { off(); st.token++; if (st.worker) st.worker.terminate(); vp.dispose(); setGuide([]); };
 }
 /** What to say when the creepage path of a pair takes the cut edge of a laser-cut insulator. */
 function cutNote(r, bodies) {

@@ -8,6 +8,7 @@
 import { material, PROCESSES, processName } from "../cad/materials.js";
 import { moldPlan, moldGuide } from "./mold_plan.js";
 import { boardGuide } from "../pcba/guide.js";
+import { netsOf, isolationGuide } from "../analysis/cc_guide.js";
 
 const paramValue = (p) => (p !== null && typeof p === "object" ? p.value : p);
 const GEOMETRY = ["features", "stock", "folded", "extrusion", "pcb", "step", "busbar"];
@@ -85,6 +86,7 @@ export function projectIssues(project) {
     out.push(...partIssues(p, others));
   }
   for (const a of asms) out.push(...assemblyIssues(a, byId));
+  for (const a of asms) out.push(...isolationGuide(a, netsOf(a, (id) => byId.get(id))).map((x) => ({ ...x, si: true, screen: "creepage", ref: a.id, hash: `#/creepage/${encodeURIComponent(a.id)}` })));      // a calculation : its lines stay in millimetres
   out.push(...teamIssues(project));
   for (const b of project.boards || []) out.push(...boardGuide(b).map((x) => ({ ...x, screen: "pcba", ref: b.id, hash: `#/pcba/${encodeURIComponent(b.id)}/${x.step}` })));      // what a board shows of itself ; its screen adds what its checks find
   if (asms.length) { const placed = new Set(asms.flatMap((a) => (a.instances || []).map((i) => i.part)));

@@ -4,6 +4,8 @@
 
 import { el, icon, btn, badge, field, fmt, toast, download, copyText } from "../core/dom.js";
 import { store } from "../core/store.js";
+import { setGuide } from "../core/app.js";
+import { orderGuide } from "../cad/order.js";
 import { routing, stockFromFirstFeature } from "../cad/shop.js";
 import { STOCK_FORMS } from "../cad/stock.js";
 import { session } from "../core/access.js";
@@ -66,8 +68,10 @@ export function artifactsPanel(body, { st, id }) {
     const drawOrder = async () => {
       let s;
       try { s = await orderStatus(id, order); } catch (e) { orderBox.replaceChildren(el("p", { class: "form-error" }, e.message)); return; }
-      const c = s.check, qty = el("input", { type: "number", min: 1, step: 1, value: order.quantity, onChange: (e) => { order.quantity = Math.max(1, parseInt(e.target.value, 10) || 1); keep(); } });
-      const need = el("input", { type: "date", value: order.need_by || "", onChange: (e) => { if (e.target.value) order.need_by = e.target.value; else delete order.need_by; keep(); } });
+      const kept = store.part(id) || st.spec, guide = orderGuide(kept, s.check), asked = guide.some((x) => x.field === "quantity");      // a quantity nobody gave is the tool's own : its field blinks until it is entered or kept
+      if (st.tab === "files") { st.orderGuide = true; setGuide(guide.map((x) => ({ ...x, go: () => { const n = orderBox.querySelector(`[data-field="${x.field}"]`); if (n) { n.scrollIntoView({ block: "center" }); n.focus(); } } }))); }
+      const c = s.check, qty = el("input", { type: "number", min: 1, step: 1, value: order.quantity, "data-field": "quantity", class: asked ? "need" : null, onChange: (e) => { order.quantity = Math.max(1, parseInt(e.target.value, 10) || 1); keep(); }, onKeydown: (e) => { if (e.key === "Enter" && asked) keep(); } });
+      const need = el("input", { type: "date", "data-field": "need_by", value: order.need_by || "", onChange: (e) => { if (e.target.value) order.need_by = e.target.value; else delete order.need_by; keep(); } });
       orderBox.replaceChildren(...[el("p", null, badge(c.ready ? (c.express ? "Express" : "Prête") : "À corriger", c.ready ? (c.express ? "ok" : "info") : "danger"), " ", el("b", null, c.label)),
         ...c.blockers.map((t) => el("p", { class: "form-error" }, t)), ...c.cautions.map((t) => el("p", { class: "atelier-hint warn" }, icon("warning"), " ", t)),
         c.drivers.length ? el("ul", { class: "decisions" }, c.drivers.map((t) => el("li", null, t))) : null,
