@@ -6,6 +6,7 @@ import { el, clear, icon, btn, badge, toast, modal, fmt, fmtMass, fmtLen, fmtDim
 import { store } from "../core/store.js";
 import { app, go, setContext, setStatus, setGuide } from "../core/app.js";
 import { kernel } from "../cad/client.js";
+import { underVeil } from "../core/busy.js";
 import { createViewport, showBuilt } from "../core/viewport.js";
 import { mountPins } from "./view_pins.js";
 import { TEMPLATES, fromTemplate } from "../cad/templates.js";
@@ -170,7 +171,8 @@ export function partStudio(main, args, cfg) {
     scroll.append(tree);
     scroll.append(el("div", { class: "side-section" }, el("h3", null, "Pièce"),
       btn("Dupliquer", () => { const c = JSON.parse(JSON.stringify(s)); c.id = store.uniqueId(s.id); c.name = `${s.name || s.id} (copie)`; const nid = store.addPart(c, `Pièce dupliquée : ${s.id}`); go(`#/${cfg.key}/${encodeURIComponent(nid)}`); }, { small: true, icon: "copy" }), " ",
-      btn("STEP", async () => { try { download(`${s.id}.step`, await kernel.step([{ key: s.id, name: `${s.id} ${s.name || ""}`.trim() }], s.id), "application/step"); } catch (e) { toast(e.message, "error"); } }, { small: true, icon: "step", tip: "Télécharger le STEP AP214 de la pièce" }), " ",
+      btn("STEP", async () => { try { const bytes = await underVeil({ set: (t, o) => vp.setBusy(t, o) }, `Écriture du STEP de ${s.id}…`, async () => { await kernel.build(s); return kernel.step([{ key: s.id, name: `${s.id} ${s.name || ""}`.trim() }], s.id); }, { after: () => rebuild(), cancelled: "Export annulé : aucun fichier n'a été écrit." });
+        if (bytes !== undefined) download(`${s.id}.step`, bytes, "application/step"); } catch (e) { toast(e.message, "error"); } }, { small: true, icon: "step", tip: "Télécharger le STEP AP214 de la pièce" }), " ",
       btn("Supprimer", async () => { if (await confirmBox("Supprimer la pièce", `Supprimer ${s.id} du projet (et de ses assemblages) ? Ctrl+Z l'annule.`, "Supprimer", true)) { store.removePart(s.id); go(`#/${cfg.key}`); } }, { small: true, icon: "trash", danger: true })));
   }
   function iconBtn(name, tip, fn, transform) {

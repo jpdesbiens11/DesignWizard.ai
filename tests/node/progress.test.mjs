@@ -41,3 +41,25 @@ test("what a veil shows : the kernel on its way first, then the operation, with 
 test("the size the kernel download counts towards is the size of the file", () => {
   assert.equal(statSync(new URL("../../web/vendor/occ/replicad_single.wasm", import.meta.url)).size, KERNEL_BYTES);
 });
+
+test("a long job that can be called off : its veil, its steps, and a cancel that is final", async () => {
+  const { cancellable } = await import("../../web/js/core/progress.js");
+  const run = () => { const seen = [], calls = { hide: 0, stop: 0 }; return { seen, calls, opts: { text: "Dossier de commande…", show: (t, o) => seen.push({ t, ...o }), hide: () => { calls.hide++; }, stop: () => { calls.stop++; } } }; };
+  /* to its end : the veil says each step, then goes away */
+  let r = run(), out = await cancellable(async (say) => { say("Dossier de commande 1 / 6 : STEP AP214", 0, 6); say("", 3, 6); return "zip"; }, r.opts);
+  assert.equal(out, "zip"); assert.deepEqual(r.seen.map((x) => [x.t, x.done, x.total]), [["Dossier de commande…", undefined, undefined], ["Dossier de commande 1 / 6 : STEP AP214", 0, 6], ["Dossier de commande…", 3, 6]]);
+  assert.ok(r.seen.every((x) => typeof x.cancel === "function"), "every step can be stopped"); assert.deepEqual(r.calls, { hide: 1, stop: 0 });
+  /* a step that must run to its end shows no cancel, and says what it waits for */
+  r = run(); await cancellable(async (say) => { say("Écriture dans Google Drive…", undefined, undefined, { kind: "drive", hold: true }); }, r.opts);
+  assert.equal(r.seen[1].cancel, undefined); assert.equal(r.seen[1].kind, "drive");
+  /* cancelled : the veil goes at once, what runs is stopped once, the result is nothing — whatever the job answers afterwards */
+  r = run(); let release; const late = new Promise((ok) => { release = ok; });
+  const p = cancellable(async (say, signal) => { await late; say("still here ?", 1, 2); return signal.off ? "late result" : "result"; }, r.opts);
+  r.seen[0].cancel(); r.seen[0].cancel(); assert.deepEqual(r.calls, { hide: 1, stop: 1 }, "a second click does nothing more"); release();
+  assert.equal(await p, undefined); assert.equal(r.seen.length, 1, "a job that was stopped no longer draws its veil"); assert.deepEqual(r.calls, { hide: 1, stop: 1 });
+  /* an error of the job is the job's ; the error of a cancellation is not one */
+  r = run(); await assert.rejects(cancellable(async () => { throw new Error("STEP impossible"); }, r.opts), /STEP impossible/); assert.equal(r.calls.hide, 1);
+  r = run(); assert.equal(await cancellable(async () => { throw Object.assign(new Error("Opération annulée."), { cancelled: true }); }, r.opts), undefined); assert.deepEqual(r.calls, { hide: 1, stop: 0 });
+  r = run(); const q = cancellable(async () => { await late; throw new Error("the kernel was stopped under it"); }, r.opts); r.seen[0].cancel(); assert.equal(await q, undefined, "what a stopped job throws is not shown");
+  assert.equal(await cancellable(async () => 7), 7, "no veil given : the job still runs");
+});

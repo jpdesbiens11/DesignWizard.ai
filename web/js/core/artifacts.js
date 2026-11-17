@@ -61,10 +61,14 @@ export async function makeArtifact(partId, key) {
   out.bytes = stampText(out.name, await def.make(spec, out));      // text artefacts carry the note of the platform ; the PDF and the STL carry it by their own writers
   return out;
 }
-/** Every applicable artefact of a part. A failing one is reported in `errors`, the others are kept. */
-export async function partArtifacts(partId, keys) {
+/** Every applicable artefact of a part. A failing one is reported in `errors`, the others are kept ; a cancellation stops them all.
+    onStep(label, done, total) says which file is being written. */
+export async function partArtifacts(partId, keys, onStep = () => {}) {
   const spec = store.part(partId), list = artifactsFor(spec).filter((a) => !keys || keys.includes(a.key)), files = [], errors = [];
-  for (const a of list) { try { files.push(await makeArtifact(partId, a.key)); } catch (e) { errors.push({ key: a.key, label: a.label, message: e.message }); } }
+  for (const [i, a] of list.entries()) {
+    onStep(a.label, i, list.length);
+    try { files.push(await makeArtifact(partId, a.key)); } catch (e) { if (e && e.cancelled) throw e; errors.push({ key: a.key, label: a.label, message: e.message }); }
+  }
   return { files, errors };
 }
 /** STEP and bill of materials of an assembly. */
@@ -75,7 +79,7 @@ export async function assemblyArtifacts(asmId) {
   try {
     const items = ctx.asm.instances.map((i) => { const s = store.part(i.part); return { key: i.part, name: `${i.part} ${s.name || ""}`.trim(), instanceName: `${i.part} ${i.id}`, matrix: ctx.sol.placements[i.id] }; });
     files.push({ key: "step", name: `${asm.id}.step`, mime: "application/step", bytes: await kernel.step(items, `${asm.id} ${asm.name || ""}`.trim()), warnings: [] });
-  } catch (e) { errors.push({ key: "step", label: "STEP", message: e.message }); }
+  } catch (e) { if (e && e.cancelled) throw e; errors.push({ key: "step", label: "STEP", message: e.message }); }
   files.push({ key: "dwiz", name: `${asm.id}.assembly.dwiz`, mime: "text/plain", bytes: toDwiz(asm), warnings: [] });
   files.push({ key: "bom", name: `${asm.id}_nomenclature.csv`, mime: "text/csv", warnings: [],
     bytes: "﻿Item;Reference;Designation;Quantite;Materiau;Procede;Masse_g\n" + ctx.bom.map((r) => [r.item, r.id, `"${(r.name || "").replace(/"/g, '""')}"`, r.qty, r.material, r.process, r.mass === null ? "" : r.mass.toFixed(1)].join(";")).join("\n") });
@@ -94,7 +98,7 @@ export async function projectArtifacts(onStep = () => {}) {
   for (const asm of p.assemblies) {
     onStep(`${asm.id} : STEP et nomenclature…`);
     try { const r = await assemblyArtifacts(asm.id); for (const f of r.files) items.push({ of: { kind: "assembly", id: asm.id, name: asm.name || "" }, name: f.name, mime: f.mime, bytes: f.bytes }); errors.push(...r.errors.map((e) => ({ ...e, of: asm.id }))); }
-    catch (e) { errors.push({ key: "step", label: "Assemblage", message: e.message, of: asm.id }); }
+    catch (e) { if (e && e.cancelled) throw e; errors.push({ key: "step", label: "Assemblage", message: e.message, of: asm.id }); }
   }
   if ((p.physics || []).length) items.push({ path: [TREE.analyses], name: "physique.dwiz", mime: "text/plain", bytes: toDwiz({ dw: "analysis/1", id: "physique", name: "Physique vérifiée", runs: p.physics }) });
   return { items, errors };
@@ -105,10 +109,13 @@ export async function orderStatus(partId, order) {
   const spec = store.part(partId), built = await kernel.build(spec), dfx = await runDfx(spec, built), route = routing(spec, built);
   return { spec, built, dfx, route, check: orderCheck(spec, built, dfx, route, order || spec.order || {}) };
 }
-/** The order package of a prototype part: one .zip with the request for quotation and every file a shop needs. */
-export async function orderPackage(partId, order) {
+/** The order package of a prototype part: one .zip with the request for quotation and every file a shop needs.
+    onStep(text, done, total) says where it stands : the check of the part, then each file, then the archive. */
+export async function orderPackage(partId, order, onStep = () => {}) {
+  onStep("Vérification de la pièce avant la commande…");
   const st = await orderStatus(partId, order), spec = st.spec, keys = artifactsFor(spec).map((a) => a.key).filter((k) => k !== "fs");
-  const { files, errors } = await partArtifacts(partId, keys);
+  const { files, errors } = await partArtifacts(partId, keys, (label, i, n) => onStep(`Dossier de commande ${i + 1} / ${n} : ${label}`, i, n));
+  onStep("Dossier de commande : archive…", keys.length, keys.length);
   const rfq = rfqText(spec, st.built, st.route, st.check, order || spec.order || {}, files.map((f) => f.name));
   const bytes = zip([{ name: `${spec.id}/demande_de_prix.txt`, bytes: stampText("demande_de_prix.txt", rfq) }, ...files.map((f) => ({ name: `${spec.id}/${f.name}`, bytes: f.bytes }))]);
   return { name: `${spec.id}_commande.zip`, bytes, rfq, files: files.map((f) => f.name), errors, check: st.check };

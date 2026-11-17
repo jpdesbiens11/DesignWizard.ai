@@ -6,6 +6,7 @@ import { el, clear, icon, btn, badge, field, toast, fmt, table } from "../core/d
 import { registerModule, setStatus } from "../core/app.js";
 import { store } from "../core/store.js";
 import { kernel } from "../cad/client.js";
+import { underVeil, pageVeil } from "../core/busy.js";
 import * as api from "../onshape/api.js";
 import { planPush, pushToOnshape } from "../onshape/push.js";
 import { buildAssembly } from "../core/asm_scene.js";
@@ -90,25 +91,32 @@ function render(main, args) {
       el("div", { class: "form-actions" }, btn("Préparer et vérifier l'envoi", () => prepare(), { primary: true, icon: "play", disabled: !state.doc || !store.assemblies.length, tip: state.doc ? "Construit le STEP et les dessins, puis montre ce qui sera créé" : "Choisissez d'abord un document" })), out);
     cols.append(send);
 
+    /* Preparing builds the assembly, its STEP and every drawing ; sending talks to Onshape for a while. Both run under the veil of the page :
+       what is being done, how far, for how long — and « Annuler », which stops the kernel, or stops the send between two requests. */
     async function prepare() {
-      clear(out); out.append(el("p", { class: "muted" }, "Construction du STEP et des dessins…"));
+      clear(out);
       try {
-        const asm = store.assembly(asmSel.value), ctx = await buildAssembly(asm, (t) => setStatus(t, "busy"));
-        if (ctx.errors.length) throw new Error(ctx.errors.join(" "));
-        const items = ctx.asm.instances.map((i) => { const s = store.part(i.part); return { key: i.part, name: `${i.part} ${s.name || ""}`.trim(), instanceName: `${i.part} ${i.id}`, matrix: ctx.sol.placements[i.id] }; });
-        const stepText = await kernel.step(items, `${asm.id} ${asm.name || ""}`.trim());
-        const parts = [];
-        for (const pid of [...new Set(ctx.asm.instances.map((i) => i.part))]) {
-          const s = store.part(pid), entry = { id: pid, name: `${pid} ${s.name || ""}`.trim(), revision: s.revision || "A", material: materialOrDefault(s.material).name, description: s.function || s.name || "" };
-          if (!s.step && (oPdf.checked || oNative.checked)) {
-            setStatus(`Dessin : ${pid}`, "busy");
-            try { const d = await makeDrawing(pid); if (oPdf.checked) entry.pdfBytes = d.pdfBytes(); entry.drawing = { title: `${pid} ${s.name || ""}`.trim(), size: "A3", notes: d.info.notes, gdt: d.info.gdt.map((g) => ({ symbol: g.symbol, tolerance: g.tolerance, datums: g.datums, name: g.name })) }; } catch (e) { entry.drawingError = e.message; }
+        const job = await underVeil(pageVeil(), "Préparation de l'envoi…", async (say) => {
+          const asm = store.assembly(asmSel.value), ctx = await buildAssembly(asm, (t, done, total) => { setStatus(t, "busy"); say(t, done, total); });
+          if (ctx.errors.length) throw new Error(ctx.errors.join(" "));
+          const items = ctx.asm.instances.map((i) => { const s = store.part(i.part); return { key: i.part, name: `${i.part} ${s.name || ""}`.trim(), instanceName: `${i.part} ${i.id}`, matrix: ctx.sol.placements[i.id] }; });
+          say(`Écriture du STEP de l'assemblage — ${items.length} pièce(s)…`);
+          const stepText = await kernel.step(items, `${asm.id} ${asm.name || ""}`.trim());
+          const parts = [], ids = [...new Set(ctx.asm.instances.map((i) => i.part))];
+          for (const [k, pid] of ids.entries()) {
+            const s = store.part(pid), entry = { id: pid, name: `${pid} ${s.name || ""}`.trim(), revision: s.revision || "A", material: materialOrDefault(s.material).name, description: s.function || s.name || "" };
+            if (!s.step && (oPdf.checked || oNative.checked)) {
+              setStatus(`Dessin : ${pid}`, "busy"); say(`Dessin ${k + 1} / ${ids.length} : ${pid}`, k, ids.length);
+              try { const d = await makeDrawing(pid); if (oPdf.checked) entry.pdfBytes = d.pdfBytes(); entry.drawing = { title: `${pid} ${s.name || ""}`.trim(), size: "A3", notes: d.info.notes, gdt: d.info.gdt.map((g) => ({ symbol: g.symbol, tolerance: g.tolerance, datums: g.datums, name: g.name })) }; }
+              catch (e) { if (e && e.cancelled) throw e; entry.drawingError = e.message; }
+            }
+            parts.push(entry);
           }
-          parts.push(entry);
-        }
-        const job = { did: state.doc.id, wid: state.doc.defaultWorkspaceId, assemblyName: `${asm.id} ${asm.name || ""}`.trim(), stepText, parts, options: { nativeDrawings: oNative.checked, attachPdf: oPdf.checked, setMetadata: oMeta.checked } };
+          return { did: state.doc.id, wid: state.doc.defaultWorkspaceId, assemblyName: `${asm.id} ${asm.name || ""}`.trim(), stepText, parts, options: { nativeDrawings: oNative.checked, attachPdf: oPdf.checked, setMetadata: oMeta.checked } };
+        }, { cancelled: "Préparation annulée : rien n'a été envoyé." });
+        if (!job) { setStatus("Préparation annulée", ""); out.append(el("p", { class: "muted" }, "Préparation annulée : rien n'a été envoyé.")); return; }
+        const { stepText, parts } = job;
         setStatus("Envoi prêt", "done"); mark(2);
-        clear(out);
         out.append(...[el("h3", { style: { marginTop: ".8rem" } }, `Ce qui sera créé dans « ${state.doc.name} »`), el("ul", { style: { fontSize: ".88rem", paddingLeft: "1.1rem" } }, planPush(job).map((l) => el("li", null, l))),
           state.doc.public ? el("p", { class: "form-error" }, "Ce document est PUBLIC : tout son contenu sera visible de tous.") : null,
           el("p", { class: "muted", style: { fontSize: ".82rem" } }, `STEP : ${fmt(stepText.length / 1024, 0)} Ko · ${parts.filter((x) => x.pdfBytes).length} PDF · rien n'est envoyé avant votre confirmation.`),
@@ -120,11 +128,18 @@ function render(main, args) {
       const log = el("div", { class: "prompt-box", style: { maxHeight: "220px" } });
       out.append(log);
       try {
-        const res = await pushToOnshape(job, (p) => { log.append(el("div", null, `${p.done !== undefined && p.total ? `[${p.done}/${p.total}] ` : ""}${p.label || p.step}${p.detail ? ` — ${p.detail}` : ""}`)); log.scrollTop = log.scrollHeight; setStatus(p.label || "Envoi Onshape", "busy"); });
-        setStatus(res.ok ? "Envoyé vers Onshape" : "Envoi incomplet", res.ok ? "done" : "bad");
-        out.append(el("div", { class: "card", style: { marginTop: ".6rem" } }, el("h3", null, res.ok ? "Envoi terminé" : "Envoi incomplet"), res.documentUrl && el("a", { class: "btn btn-primary", href: res.documentUrl, target: "_blank", rel: "noopener noreferrer" }, icon("external"), "Ouvrir le document dans Onshape"),
+        let sending = null;      // a send that is stopped ends the request in flight, then comes back with what Onshape already holds
+        const sent = await underVeil(pageVeil(), "Envoi vers Onshape…", (say, signal) => {
+          sending = pushToOnshape({ ...job, signal }, (p) => { log.append(el("div", null, `${p.done !== undefined && p.total ? `[${p.done}/${p.total}] ` : ""}${p.label || p.step}${p.detail ? ` — ${p.detail}` : ""}`)); log.scrollTop = log.scrollHeight; setStatus(p.label || "Envoi Onshape", "busy");
+            say(`${p.label || "Envoi vers Onshape"}${p.detail ? ` — ${p.detail}` : ""}`, p.done, p.total); });
+          return sending;
+        }, { kernel: false, cancelled: "Arrêt demandé : l'envoi s'arrête après la requête en cours. Ce qui est déjà créé dans Onshape y reste." });
+        const res = sent || await sending;
+        setStatus(res.stopped ? "Envoi arrêté" : res.ok ? "Envoyé vers Onshape" : "Envoi incomplet", res.ok && !res.stopped ? "done" : "bad");
+        out.append(el("div", { class: "card", style: { marginTop: ".6rem" } }, el("h3", null, res.stopped ? "Envoi arrêté" : res.ok ? "Envoi terminé" : "Envoi incomplet"), res.documentUrl && el("a", { class: "btn btn-primary", href: res.documentUrl, target: "_blank", rel: "noopener noreferrer" }, icon("external"), "Ouvrir le document dans Onshape"),
           el("p", { style: { marginTop: ".5rem", fontSize: ".88rem" } }, `${(res.elements.partStudios || []).length} Part Studio(s) · ${res.elements.assembly ? "1 assemblage" : "pas d'assemblage"} · ${(res.elements.drawings || []).length} dessin(s) natif(s) · ${(res.elements.pdfs || []).length} PDF`),
-          (res.warnings || []).map((w) => el("p", { class: "form-error", style: { fontSize: ".84rem" } }, w))));
+          (res.warnings || []).map((w) => el("p", { class: "form-error", style: { fontSize: ".84rem" } }, w)),
+          res.stopped ? el("div", { class: "form-actions" }, btn("Reprendre l'envoi", () => run(job), { icon: "refresh", tip: "Renvoie tout : Onshape garde aussi ce qui a déjà été créé" })) : null));
         store.commit("Envoi vers Onshape", (p) => { p.onshape = { documentId: job.did, documentName: state.doc.name, url: res.documentUrl || "", when: new Date().toISOString(), assembly: job.assemblyName }; });
       } catch (e) { out.append(el("p", { class: "form-error" }, e.message)); setStatus("Envoi interrompu", "bad"); }
     }

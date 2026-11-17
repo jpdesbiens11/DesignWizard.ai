@@ -3,11 +3,12 @@
    once — the veil shows its bytes : the first operation of a session is the one that waits for it.
    veil.set(text, o) : o { done, total, cancel() (shows « Annuler »), stopped (true : nothing runs — a notice, with retry) , retry(),
    kind ("drive" : what waits for Google Drive) }. pageVeil() is the one of the whole page, for what no screen owns (a project being loaded).
-   veil.set("") hides it. The words and the numbers come from core/progress.js. */
+   veil.set("") hides it. The words and the numbers come from core/progress.js.
+   underVeil(veil, text, job) runs an export or a send under a veil : the same look, and a cancel that stops the kernel. */
 
-import { el, btn } from "./dom.js";
+import { el, btn, toast } from "./dom.js";
 import { kernel } from "../cad/client.js";
-import { busyView } from "./progress.js";
+import { busyView, cancellable } from "./progress.js";
 
 export function busyVeil(host, cls = "view-busy") {
   const title = el("b", { class: "busy-title" }), sub = el("small", { class: "busy-sub" }), fill = el("i"), bar = el("div", { class: "busy-bar", role: "progressbar", "aria-valuemin": "0", "aria-valuemax": "100" }, fill);
@@ -40,6 +41,15 @@ export function busyVeil(host, cls = "view-busy") {
     },
     get on() { return !!cur && !cur.stopped; },
     dispose() { clearInterval(timer); if (off) off(); node.remove(); } };
+}
+/** A long export or send under a veil, with a button that really stops it. veil : anything with set(text, o) — a busyVeil, pageVeil(), or
+    { set: vp.setBusy } for a 3D view. job(say, signal) as in progress.cancellable : say(text, done, total, { kind, hold }).
+    o : { kernel (false : the job does not use the kernel, it is left alone), stop() (what else to stop), after() (what to put back : once
+    stopped the kernel starts afresh, its shapes are built again), cancelled (the word said : what was, or was not, written) }.
+    Resolves with the job's result, or with undefined once cancelled. */
+export function underVeil(veil, text, job, o = {}) {
+  return cancellable(job, { text, show: (t, x) => veil.set(t, x), hide: () => veil.set(""),
+    stop: () => { if (o.kernel !== false) kernel.cancel(); if (o.stop) o.stop(); if (o.after) o.after(); toast(o.cancelled || "Opération annulée : rien n'a été écrit.", "info", 6000); } });
 }
 let page = null;
 /** The veil of the whole page : one for the application, made when first asked for. */

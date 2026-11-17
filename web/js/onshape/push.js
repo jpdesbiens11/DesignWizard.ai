@@ -153,8 +153,10 @@ function buildAnnotations(part, o) {
 }
 
 /**
- * pushToOnshape(job, onProgress) -> { ok, documentUrl, elements:{assembly?, partStudios, drawings, pdfs}, warnings }
+ * pushToOnshape(job, onProgress) -> { ok, documentUrl, elements:{assembly?, partStudios, drawings, pdfs}, warnings, stopped? }
  * `ok` is true when the STEP was converted by Onshape; read `warnings` for everything that was skipped.
+ * `job.signal` (optional, { off }) stops the send between two steps once `off` is true: nothing more is sent, what Onshape
+ * already holds stays there, and the result comes back with `stopped: true` and a warning that says so.
  * `deps` (optional) replaces the api module in tests.
  */
 export async function pushToOnshape(job, onProgress, deps) {
@@ -178,7 +180,18 @@ export async function pushToOnshape(job, onProgress, deps) {
   };
   const warn = (prefix, e) => warnings.push(`${prefix} : ${e && e.message ? e.message : e}`);
   const fatal = (e) => e && (e.status === 401 || e.status === 402);
-  const finish = () => { done = total; tick(6, 'Envoi vers Onshape terminé', `${warnings.length} avertissement(s)`); return result; };
+  const finish = () => { done = total; tick(6, result.stopped ? 'Envoi vers Onshape arrêté' : 'Envoi vers Onshape terminé', `${warnings.length} avertissement(s)`); return result; };
+  const off = () => !!(job.signal && job.signal.off);
+  /** True once the person stopped the send : said once, in the warnings. */
+  const halted = () => {
+    if (!off()) return false;
+    if (!result.stopped) {
+      result.stopped = true;
+      warnings.push('Envoi arrêté à votre demande : rien de plus n\'a été envoyé. Ce qui était déjà créé dans Onshape y reste. '
+        + 'Correctif : relancez l\'envoi pour le compléter, ou supprimez ces onglets dans Onshape.');
+    }
+    return true;
+  };
   const wait = { timeoutMs: o.timeoutMs, intervalMs: o.pollMs };
   Object.keys(wait).forEach((k) => wait[k] === undefined && delete wait[k]);
 
@@ -194,6 +207,7 @@ export async function pushToOnshape(job, onProgress, deps) {
     warn('Lecture des onglets du document impossible', e);
     if (fatal(e)) return finish();
   }
+  if (halted()) return finish();
   let upload = null;
   if (!job.stepText) {
     warnings.push('Aucun STEP à envoyer : la géométrie 3D est absente. Correctif : générez l\'assemblage avant l\'envoi.');
@@ -209,14 +223,16 @@ export async function pushToOnshape(job, onProgress, deps) {
   tick(1, 'Envoi du STEP vers Onshape', stepFileName(job), 1);
 
   // ---- 2. wait for the translation ----
+  if (halted()) return finish();
   let translated = null;
   if (upload) {
     tick(2, 'Conversion du STEP par Onshape', 'en cours…');
     try {
       translated = await A.waitTranslation(upload.translationId, { ...wait,
-        onTick: (s) => tick(2, 'Conversion du STEP par Onshape', `${Math.round(s.elapsedMs / 1000)} s`) });
-    } catch (e) { warn('Conversion du STEP', e); }
+        onTick: (s) => { if (off()) throw new Error('arrêt demandé'); tick(2, 'Conversion du STEP par Onshape', `${Math.round(s.elapsedMs / 1000)} s`); } });
+    } catch (e) { if (!off()) warn('Conversion du STEP', e); }
   }
+  if (halted()) return finish();
   tick(2, 'Conversion du STEP par Onshape', translated ? 'terminée' : 'non effectuée', 1);
   result.ok = !!translated;
 
@@ -258,6 +274,7 @@ export async function pushToOnshape(job, onProgress, deps) {
 
   // ---- 4. PDF drawings as blob tabs ----
   for (const part of parts.filter((p) => o.attachPdf && hasPdf(p))) {
+    if (halted()) return finish();
     const name = pdfTabName(part);
     tick(4, 'Envoi des plans PDF', name);
     const same = (n) => n === name || n === name.replace(/\.pdf$/, '');
@@ -272,6 +289,7 @@ export async function pushToOnshape(job, onProgress, deps) {
   // ---- 5. native drawings: create them all first, then annotate (lets Onshape finish generating views) ----
   const toAnnotate = [];
   for (const part of (o.nativeDrawings ? parts : [])) {
+    if (halted()) return finish();
     const target = matches.get(part);
     const name = drawingName(part);
     tick(5, 'Création des dessins natifs Onshape', name);
@@ -288,6 +306,7 @@ export async function pushToOnshape(job, onProgress, deps) {
     tick(5, 'Création des dessins natifs Onshape', name, 1);
   }
   for (const { part, entry } of toAnnotate) {
+    if (halted()) return finish();
     const annotations = buildAnnotations(part, o);
     if (!annotations.length) continue;
     tick(5, 'Ajout des notes sur les dessins', entry.name);
@@ -316,6 +335,7 @@ export async function pushToOnshape(job, onProgress, deps) {
 
   // ---- 6. part metadata ----
   for (const part of (o.setMetadata ? parts : [])) {
+    if (halted()) return finish();
     const target = matches.get(part);
     tick(6, 'Renseignement des propriétés des pièces', String(part.id));
     if (target && target.partId) {

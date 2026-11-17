@@ -7,6 +7,7 @@ import { registerModule, go, setStatus, app } from "../core/app.js";
 import { store } from "../core/store.js";
 import { lookSwatch } from "./part_look.js";
 import { kernel } from "../cad/client.js";
+import { underVeil } from "../core/busy.js";
 import { createViewport } from "../core/viewport.js";
 import { mountPins } from "./view_pins.js";
 import { buildAssembly, showAssembly } from "../core/asm_scene.js";
@@ -188,7 +189,9 @@ function render(main, args) {
     if (!st.ctx) return;
     try {
       const items = st.ctx.asm.instances.map((i) => { const s = store.part(i.part); return { key: i.part, name: `${i.part} ${s.name || ""}`.trim(), instanceName: `${i.part} ${i.id}`, matrix: st.ctx.sol.placements[i.id] }; });
-      download(`${id}.step`, await kernel.step(items, `${id} ${asm().name || ""}`.trim()), "application/step");
+      const bytes = await underVeil({ set: (t, o) => vp.setBusy(t, o) }, `Écriture du STEP de l'assemblage — ${items.length} pièce(s)…`, () => kernel.step(items, `${id} ${asm().name || ""}`.trim()),
+        { after: () => rebuild(), cancelled: "Export annulé : aucun fichier n'a été écrit." });      // once stopped the kernel starts afresh : the parts are built again, quietly
+      if (bytes !== undefined) download(`${id}.step`, bytes, "application/step");
     } catch (e) { toast(e.message, "error"); }
   }
 

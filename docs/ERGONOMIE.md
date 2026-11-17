@@ -192,12 +192,27 @@ qu'une attente. Le voile dit alors ce qui se passe et depuis quand, et, si Drive
 
 La barre du haut ne dit plus « Prêt » en changeant d'écran tant que le noyau arrive.
 
+**Les exports aussi** (v0.80.0). Un fichier qui s'écrit peut durer autant qu'une construction :
+
+- **STEP d'un assemblage** et STEP d'une pièce : le voile de la vue, et Annuler.
+- **Dossier de commande**, demande de prix, « Tout télécharger » et chaque fichier d'échange d'une pièce : le voile
+  compte les fichiers (« Dossier de commande 4 / 6 : DXF — vues »). Annulé, aucun fichier n'est téléchargé.
+- **Ranger la commande dans Drive** : la préparation s'annule ; une fois l'écriture dans Drive commencée, elle va à
+  son terme (même exception que pour un projet).
+- **Envoi vers Onshape** : la préparation (assemblage, STEP, « Dessin 3 / 6 ») s'annule comme une construction.
+  L'envoi lui-même s'arrête **entre deux requêtes** : celle qui est partie finit, rien ne suit, et le résultat dit ce
+  qu'Onshape garde déjà — ce qui est créé là-bas y reste — avec « Reprendre l'envoi ».
+
+Après une annulation, le noyau repart de zéro : l'écran reconstruit sa pièce ou son assemblage sans rien demander.
+
 Code : `web/js/core/progress.js` (ce que le voile montre : pur, testé), `web/js/core/busy.js` (le voile),
 `vp.setBusy(texte, { done, total, cancel, retry, stopped })` dans une vue 3D, `busyVeil(hôte)` ailleurs ;
 `kernel.cancel()` et `kernel.stage()` dans `web/js/cad/client.js` ; le noyau compte ses octets dans
 `web/js/cad/occ.js` (`loadKernel`) ; `pageVeil()` pour ce qu'aucun écran ne porte (un projet qui se charge) ;
-`store.cancelOpen()` pour renoncer à une ouverture. Sans voile encore : les exports d'un clic (STEP d'un assemblage,
-dossier de commande) et l'envoi vers Onshape.
+`store.cancelOpen()` pour renoncer à une ouverture. Un export ou un envoi passe par `underVeil(voile, texte, tâche)`
+(`core/busy.js`), posé sur `cancellable` (`core/progress.js`, pur, testé) : la tâche reçoit `say(texte, fait, total)`
+pour faire avancer le voile et un `signal` pour s'arrêter entre deux étapes ; `job.signal` arrête `pushToOnshape`.
+Sans voile encore : les sorties d'une carte (Gerber, perçage : écrites d'un trait) et la synchronisation d'équipe.
 
 ## Ce que l'audit ne voit pas
 

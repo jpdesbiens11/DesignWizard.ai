@@ -30,6 +30,20 @@ export function stallHint(ms, kind, canCancel = true) {
   const what = kind === "download" ? "Le téléchargement n'avance plus : vérifiez la connexion — un VPN le ralentit beaucoup." : kind === "drive" ? "Google Drive tarde à répondre : vérifiez la connexion." : "C'est plus long que prévu : l'opération tourne encore.";
   return `${what} ${canCancel ? "Vous pouvez annuler, puis réessayer." : "Laissez-la finir : l'arrêter maintenant laisserait un travail à moitié écrit."}`;
 }
+/** A long job that can be called off. opts : { text, show(text, o), hide(), stop() } — show draws the veil (o : { done, total, kind, cancel } ;
+    cancel is absent for a step that must run to its end), hide takes it away, stop really stops what runs (the kernel, a request in flight).
+    job(say, signal) : say(text, done, total, { kind, hold }) moves the veil — hold : true for a step that must not be stopped half-way ;
+    signal.off turns true once cancelled, for a job that can stop between two steps.
+    Resolves with the job's result ; with undefined once cancelled, whatever the job did afterwards. An error of the job is thrown again,
+    unless it is the error of a cancellation. */
+export async function cancellable(job, { text = "", show = () => {}, hide = () => {}, stop } = {}) {
+  const signal = { off: false };
+  const cancel = () => { if (signal.off) return; signal.off = true; hide(); if (stop) stop(); };
+  const say = (t, done, total, o = {}) => { if (!signal.off) show(t || text, { done, total, kind: o.kind, cancel: o.hold ? undefined : cancel }); };
+  say(text);
+  try { const r = await job(say, signal); if (signal.off) return undefined; hide(); return r; }
+  catch (e) { if (signal.off) return undefined; hide(); if (e && e.cancelled) return undefined; throw e; }
+}
 /** What a veil shows. o : { text, done, total (of the operation), stage : { text, done, total } (of the kernel, bytes), kind ("drive" for what
     waits for Google Drive), canCancel, startedAt, changedAt, now }.
     → { title, sub, ratio (0…1 or null : unknown), elapsed, hint, kind } */
