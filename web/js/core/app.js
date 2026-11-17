@@ -16,7 +16,7 @@ import { firstStepHere } from "./first_steps.js";
 import { docIdentity } from "./brand.js";
 import { unitPicker } from "./units_ui.js";
 
-export const APP_VERSION = "0.70.1";
+export const APP_VERSION = "0.70.2";
 /** What every document of the open project carries beside its content : approval names, organisation, confidentiality note, extraction stamp (core/brand.js). */
 export const docMeta = (when = new Date()) => docIdentity(store.project, when, APP_VERSION);
 const modules = new Map();

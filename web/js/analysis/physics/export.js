@@ -111,10 +111,13 @@ export function physicsBook(modelId, inputs, meta = {}) {
         { v: c ? c.margin : "—", f: gate(`IF(${bottom}=0,IF(${top}>0,999,0),ROUND(MIN(999,MAX(0,${top}/${bottom})),3))`), s: "value" }, { v: c ? wordOf(c) : "—", f: gate(`IF(E${R}<1,"${x.soft ? "JUSTE" : "NON"}",IF(E${R}<${x.sf ? tok(x.sf) : "1"},"JUSTE","OK"))`), s: "verdict" }]);
       verdicts.push({ ref: `F${R}` }); checkRows.push({ label: x.label, row: R }); }
     else for (const c of r.checks) { put([{ v: c.label, s: "label" }, { v: c.value, s: "value" }, { v: c.limit, s: "value" }, { v: c.unit, s: "unit" }, { v: c.margin, s: "value" }, { v: wordOf(c), s: "verdict" }]); verdicts.push({ ref: `F${at()}` }); }
-    const first = verdicts[0].ref, last = verdicts[verdicts.length - 1].ref;
-    if (live) rows[vRow][1] = { v: rows[vRow][1].v, f: `IF(COUNTIF(${first}:${last},"NON")>0,"NON",IF(COUNTIF(${first}:${last},"JUSTE")>0,"JUSTE","OK"))`, s: "verdict" }; }
+  }
+  /* the domain of validity : each line says in words where the model stands, and « OK » or « JUSTE » beside — a word of context says nothing more */
+  if (live && X.flags.length) { put([]); put([{ v: "DOMAINE DE VALIDITÉ", s: "head" }, { v: "", s: "head" }, { v: "", s: "head" }, { v: "", s: "head" }, { v: "", s: "head" }, { v: "Dans le domaine", s: "head" }]);
+    for (const f of X.flags) { const R = at() + 1; put([{ v: f.label, s: "label" }, { f: tok(f.f), s: "text" }, null, null, null, f.info ? { v: "—", s: "verdict" } : { f: f.out ? `IF(${tok(f.out)},"JUSTE","OK")` : `IF(B${R}="${f.ok || "Oui"}","OK","JUSTE")`, s: "verdict" }]); merges.push(`B${R}:E${R}`); if (!f.info) verdicts.push({ ref: `F${R}` }); } }
+  /* the verdict of the sheet : what the platform says — NON when a check fails, JUSTE when a margin is short or the model is outside its domain */
+  if (live && verdicts.length) { const first = verdicts[0].ref, last = verdicts[verdicts.length - 1].ref; rows[vRow][1] = { v: rows[vRow][1].v, f: `IF(COUNTIF(${first}:${last},"NON")>0,"NON",IF(COUNTIF(${first}:${last},"JUSTE")>0,"JUSTE","OK"))`, s: "verdict" }; }
   verdicts.push({ ref: `B${vRow + 1}` });
-  if (live && X.flags.length) { put([]); put([{ v: "DOMAINE DE VALIDITÉ", s: "head" }, { v: "", s: "head" }, { v: "", s: "head" }, { v: "", s: "head" }]); for (const f of X.flags) { const row = put([{ v: f.label, s: "label" }, { f: tok(f.f), s: "text" }]); merges.push(`B${row + 1}:F${row + 1}`); } }
   if (r.warnings.length) { put([]); put([{ v: "LIMITES DE VALIDITÉ RELEVÉES À L'EXPORT", s: "head" }]); for (const w of r.warnings) { const row = put([{ v: w, s: "warn" }], 30); merges.push(`A${row + 1}:F${row + 1}`); } }
   put([]); { const row = put([{ v: FOOT_NOTE, s: "note" }], 28); merges.push(`A${row + 1}:F${row + 1}`); }
   /* ---------- the sweeps : one input at a time, a curve, and a cell to try a value ---------- */

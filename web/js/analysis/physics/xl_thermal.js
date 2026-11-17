@@ -25,7 +25,7 @@ const lumped = {
     { key: "dTinf", label: "Échauffement en régime permanent", unit: "K", f: "{P}/{h:hA}" }, { key: "room", label: "Échauffement admissible Tmax − Ta", unit: "K", f: "{Tmax}-{Ta}" }],
   outputs: { C: "{h:m}*{cp}", tau: "{o:C}/{h:hA}", T_inf: "{Ta}+{h:dTinf}", T_t: "{Ta}+{h:dTinf}*(1-EXP(-{time}/{o:tau}))", rate: "{P}/{o:C}", Bi: "{h}*({h:m}/{rho}/{h:A})/{k}", t_lim: 'IF(AND({h:dTinf}>{h:room},{h:room}>0),-{o:tau}*LN(1-{h:room}/{h:dTinf}),"—")' },
   checks: [{ label: "Température à la fin de la durée vs température admissible", unit: "°C", value: "{o:T_t}", limit: "{Tmax}", ref: "{Ta}" }, { label: "Température en régime permanent vs température admissible", unit: "°C", value: "{o:T_inf}", limit: "{Tmax}", ref: "{Ta}", soft: true }],
-  flags: [{ label: "Température uniforme (Biot < 0,1)", f: 'IF({o:Bi}>0.1,"NON : le modèle à une seule masse sous-estime la température près de la source","Oui")' }, { label: "Service", f: 'IF({o:T_inf}>{Tmax},"Ne tient qu\'en service limité dans le temps : voir le temps pour atteindre la limite","Tient en régime permanent")' }],
+  flags: [{ label: "Température uniforme (Biot < 0,1)", f: 'IF({o:Bi}>0.1,"NON : le modèle à une seule masse sous-estime la température près de la source","Oui")' }, { label: "Service", info: true, f: 'IF({o:T_inf}>{Tmax},"Ne tient qu\'en service limité dans le temps : voir le temps pour atteindre la limite","Tient en régime permanent")' }],
 };
 
 /* ---------- plate-fin heat sinks : the geometry they share ---------- */

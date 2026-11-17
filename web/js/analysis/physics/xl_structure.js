@@ -28,7 +28,7 @@ const buckling = {
   outputs: { Le: "{h:K}*{L}", lambda: "{o:Le}/{h:r}", lambda1: "SQRT(2*PI()^2*{E}*1000/{Re})", johnson: "IF({o:lambda}<{o:lambda1},1,0)",
     sigma_cr: "IF({o:lambda}<{o:lambda1},{Re}*(1-{Re}*{o:lambda}^2/(4*PI()^2*{E}*1000)),PI()^2*{E}*1000/{o:lambda}^2)", Pcr: "{o:sigma_cr}*{h:A}", sigma: "{F}/{h:A}", margin: upTo999("{o:Pcr}", "{F}") },
   checks: [{ label: "Effort de compression vs charge critique de flambement", unit: "N", value: "{F}", limit: "{o:Pcr}", sf: "{sf}" }, { label: "Contrainte de compression vs limite élastique", unit: "MPa", value: "{o:sigma}", limit: "{Re}" }],
-  flags: [{ label: "Régime", f: 'IF({o:johnson}=1,"Johnson : élancement sous la limite d\'Euler, flambement inélastique","Euler : flambement élastique")' }, { label: "Élancement (λ ≤ 200)", f: 'IF({o:lambda}>200,"NON : colonne très sensible aux défauts de rectitude","Oui")' }, TUBE],
+  flags: [{ label: "Régime", ok: "Euler : flambement élastique", f: 'IF({o:johnson}=1,"Johnson : élancement sous la limite d\'Euler, flambement inélastique","Euler : flambement élastique")' }, { label: "Élancement (λ ≤ 200)", f: 'IF({o:lambda}>200,"NON : colonne très sensible aux défauts de rectitude","Oui")' }, TUBE],
 };
 
 const torsion = {
@@ -53,7 +53,7 @@ const mismatch = {
   checks: [{ label: "Contrainte dans le matériau 1 vs limite élastique", unit: "MPa", value: "{o:sigma1}", limit: "{Re1}", sf: "{sf}" }, { label: "Contrainte dans le matériau 2 vs limite élastique", unit: "MPa", value: "{o:sigma2}", limit: "{Re2}", sf: "{sf}" },
     { label: "Dilatation différentielle vs jeu disponible", unit: "mm", value: "ABS({o:delta})", limit: "{play}", soft: true, when: "{play}>0" }],
   flags: [{ label: "Écart de température (|ΔT| ≤ 150 K)", f: 'IF(ABS({o:dT})>150,"NON : les coefficients de dilatation et les modules varient, prendre des valeurs moyennes sur la plage","Oui")' },
-    { label: "Jeu aux fixations", f: 'IF({play}>0,IF(ABS({o:delta})>{play},"Le jeu ne suffit pas : les pièces se contraignent","Le jeu absorbe toute la dilatation"),"Liaison rigide")' }],
+    { label: "Jeu aux fixations", info: true, f: 'IF({play}>0,IF(ABS({o:delta})>{play},"Le jeu ne suffit pas : les pièces se contraignent","Le jeu absorbe toute la dilatation"),"Liaison rigide")' }],
 };
 
 export const XL_STRUCTURE = { beam_cantilever_point: beam(1, 3, 1, 1, 3.516), beam_cantilever_udl: beam(1, 8, 2, 1, 3.516), beam_simple_point: beam(1, 48, 4, 0.5, "PI()^2"), beam_simple_udl: beam(5, 384, 8, 0.5, "PI()^2"),

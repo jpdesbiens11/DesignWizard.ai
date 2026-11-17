@@ -24,8 +24,8 @@ const bolt = {
     { label: "Matage de la tôle vs limite élastique", unit: "MPa", value: "{o:sigma_br}", limit: "{Re_p}", sf: "1.25", when: "{Fs}>0" },
     { label: "Arrachement du taraudage vs effort dans la vis", unit: "N", value: "{o:Fb}", limit: "{o:F_strip}", sf: "1.5", when: TAPPED },
     { label: "Prise de filet vs prise « la vis casse avant le filet »", unit: "mm", value: "{Le}", limit: "{o:Le_min}", min: true, soft: true, when: TAPPED }],
-  flags: [{ label: "Précharge (60 à 90 % de Sp)", f: 'IF({o:sigma_i}>{h:Sp},"NON : la vis plastifie au serrage",IF({o:sigma_i}>0.9*{h:Sp},"Au-dessus de 90 % de Sp : avec ± 25 % de dispersion la vis peut plastifier",IF({o:sigma_i}<0.4*{h:Sp},"Vis peu serrée (< 40 % de Sp) : risque de desserrage","Oui")))' },
-    { label: "Assemblage serré sous la charge", f: 'IF({h:Fm}<=0,"NON : l\'assemblage se décolle, toute la charge passe dans les vis","Oui")' },
+  flags: [{ label: "Précharge (60 à 90 % de Sp)", info: true, f: 'IF({o:sigma_i}>{h:Sp},"NON : la vis plastifie au serrage",IF({o:sigma_i}>0.9*{h:Sp},"Au-dessus de 90 % de Sp : avec ± 25 % de dispersion la vis peut plastifier",IF({o:sigma_i}<0.4*{h:Sp},"Vis peu serrée (< 40 % de Sp) : risque de desserrage","Oui")))' },
+    { label: "Assemblage serré sous la charge", info: true, f: 'IF({h:Fm}<=0,"NON : l\'assemblage se décolle, toute la charge passe dans les vis","Oui")' },
     { label: "Épaisseur serrée (≥ d)", f: 'IF({lk}<{h:d},"NON : vis courte, très raide, qui perd sa précharge au moindre tassement","Oui")' },
     { label: "Prise de filet (≤ 2,5 d)", f: `IF(AND(${TAPPED},{Le}>2.5*{h:d}),"Au-delà de 2,5 d les premiers filets portent l'essentiel : la longueur en plus ne sert presque plus","Oui")` }],
 };

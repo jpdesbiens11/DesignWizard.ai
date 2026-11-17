@@ -42,7 +42,12 @@ on change une case jaune, ou le média, tout suit ; une pression en kPa se lit a
   assemblage vissé, glissement, arrachement du taraudage, couple à transmettre d'un frettage, jeu d'une dilatation —
   affiche « — » et **se réveille quand sa case jaune est remplie**. Une température se juge sur son échauffement
   au-dessus de la référence ; une règle de pouce ne dit jamais « NON », au pire « JUSTE ».
-- **Domaine de validité** : chaque limite que le modèle signale à l'écran a sa ligne, en mots, recalculée.
+- **Domaine de validité** : chaque limite que le modèle signale à l'écran a sa ligne, en mots, recalculée, avec son état
+  à côté — « OK » dans le domaine, « JUSTE » dehors. Une ligne de contexte (le jeu d'une dilatation, la précharge
+  d'une vis) affiche « — » : le modèle n'en fait pas une limite.
+- **Le verdict du haut de la feuille est celui de l'écran** : « NON » quand une vérification échoue, « JUSTE » quand une
+  marge est courte **ou que le modèle sort de son domaine de validité**, « OK » sinon. Il lit les vérifications et les
+  lignes du domaine d'un seul `COUNTIF`.
 - **Feuille Solveur.** Trois modèles cherchent une valeur qui n'a pas de formule directe. Un tableur n'a pas de
   solveur dans ses formules : le classeur refait donc les pas de la plateforme, un par ligne. Dissipateur à l'air libre
   (bilan convection + rayonnement) : dichotomie de 36 pas ; busbar (Joule contre convection et rayonnement) : dichotomie
@@ -59,10 +64,13 @@ Une formule qui nommerait une case absente du classeur fait échouer l'export, a
   la puissance, les puissances de gauche à droite, une division par zéro qui est une **erreur** et non un infini, `IF`
   qui ne calcule que sa branche. Le classeur de chaque modèle est recalculé ainsi pour 115 jeux de cases jaunes (les
   valeurs proposées, puis ce qui réveille chaque branche : autre choix, charge nulle, cote hors plage, autre média) :
-  chaque résultat redonne celui de la plateforme à 0,01 % près, chaque marge au millième, chaque verdict, et chaque
-  vérification s'est réveillée dans un cas au moins.
+  chaque résultat redonne celui de la plateforme à 0,01 % près, chaque marge au millième, chaque verdict — celui de chaque
+  vérification et **celui du haut de la feuille, égal au verdict de l'écran dans les 115 cas**, dont 40 hors du domaine de
+  validité et 16 où toutes les vérifications passent : seul le domaine y dit « JUSTE » —, et chaque vérification s'est
+  réveillée dans un cas au moins.
 - **Dans LibreOffice, une fois** (17 novembre 2026) : 100 jeux tapés dans les cases jaunes des 21 classeurs, recalculés
-  par LibreOffice — 791 résultats et 234 vérifications, **tous égaux à la plateforme**, aucune cellule en erreur, y
+  par LibreOffice — 791 résultats, 234 vérifications et les 100 verdicts de feuille (dont 14 « JUSTE » par le seul
+  domaine de validité), **tous égaux à la plateforme**, aucune cellule en erreur, y
   compris une classe de vis relue comme un nombre (8.8) après un choix dans la liste. Le fichier s'ouvre aussi avec
   `openpyxl`.
 - **Non vérifié : Microsoft Excel lui-même** (non disponible ici), et l'allure des graphiques dans Excel. Les fonctions
@@ -76,8 +84,5 @@ Une formule qui nommerait une case absente du classeur fait échouer l'export, a
 - La case d'essai de la feuille Iterations interpole, une seule donnée à la fois : exacte aux points du tableau,
   approchée entre eux.
 - Le classeur reste en unités du modèle (mm, N, MPa, kPa, °C), quel que soit le choix d'unités de l'écran.
-- Le verdict du haut de la feuille compte les vérifications ; il ne lit pas les lignes « Domaine de validité » : hors
-  du domaine, le classeur recalcule et ces lignes le disent, mais le verdict ne passe pas seul à « JUSTE » comme à
-  l'écran.
 - La feuille Solveur alourdit le fichier (environ 200 Ko pour un dissipateur, contre 100 Ko) : c'est le prix d'un
   bilan résolu sans macro.
