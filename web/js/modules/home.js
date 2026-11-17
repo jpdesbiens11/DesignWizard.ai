@@ -11,6 +11,7 @@ import { WORDS_HVB } from "../demo/demo_words.js";
 import { DEMO_ROVER } from "../demo/demo_rover.js";
 import { DEMO_ROCKET } from "../demo/demo_rocket.js";
 import { firstSteps, firstStepsLine } from "../core/first_steps.js";
+import { showFilm, filmLength } from "../core/film.js";
 
 const STEPS = [
   ["shop", "Atelier", "Dites l'intention : à quoi sert la pièce, ses interfaces, sa matière, sa matière première. Elle se construit sous vos yeux, sans esquisse — ou par une entrevue avec Claude."],
@@ -79,6 +80,7 @@ function render(main) {
         btn("Charger la démonstration « Variateur 400 V »", () => loadDemo(DEMO_DRIVE, "#/assembly/DRV-ASM"), { primary: true, icon: "sparkle", tip: "Boîtier moulé, deux PCB, dissipateur extrudé : tout est déjà relié par ses interfaces" }),
         btn("Premier design avec une IA…", () => app.firstDesign(), { icon: "wizard", tip: "Décrivez le produit : l'assistant de votre choix mène l'entrevue et rend un premier design complet — pièces, assemblage, carte, analyses — à passer en revue ici" }),
         btn("Nouveau projet", async () => { const name = await promptBox("Nouveau projet", "Nom du projet", "Mon produit"); if (name) { await store.create(name); go("#/shop"); } }, { icon: "plus" }),
+        btn(`Voir la vidéo (${filmLength()})`, () => showFilm(), { icon: "play", tip: "La plateforme en deux minutes et demie, sur ses vrais écrans — en français ou en anglais" }),
         el("a", { class: "btn", href: "presentation.html", target: "_blank", rel: "noopener", "data-tip": "De la conception d'aujourd'hui à l'assemblage prêt à commander, brique par brique — une vingtaine de pages à faire défiler" }, icon("eye"), "Présentation guidée"),
         btn("Importer…", () => app.pickFile(), { icon: "upload", tip: "Projet .json, pièce JSON d'une entrevue, ou fichier STEP — vous pouvez aussi coller (Ctrl+V) ou déposer un fichier n'importe où" }),
         el("a", { class: "btn btn-primary gh", href: "https://github.com/jpdesbiens11/DesignWizard.ai", target: "_blank", rel: "noopener noreferrer", "data-tip": "Le code source, sous licence MIT" }, "GitHub"))),

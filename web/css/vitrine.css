@@ -85,6 +85,11 @@ main > section { padding: 2.6rem 0 .4rem; }
 
 .call { margin-top: 2.6rem; padding: 1.6rem 1.6rem 1.4rem; border-top: 8px solid var(--hl-yellow); }
 .english { color: var(--muted); font-size: .95rem; } .english h2 { font-size: 1.1rem; }
+/* the film : one player per language, no script — the French one under the hero, the English one in the English summary */
+video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; background: var(--surface); border: 2px solid var(--graphite); border-radius: var(--r-card); box-shadow: 6px 7px 0 color-mix(in srgb, var(--graphite) 14%, transparent); }
+.film { margin-top: 1.4rem; } .english video { margin-top: .6rem; } .english h2#film-en { margin-top: 1.4rem; }
+.said { margin-top: .9rem; font-size: .93rem; color: var(--muted); } .said summary { cursor: pointer; width: fit-content; font-weight: 600; color: var(--primary); }
+.said ol { margin: .5rem 0 0; padding-left: 1.4rem; columns: 2 24rem; column-gap: 2.4rem; } .said li { margin: 0 0 .3rem; break-inside: avoid; }
 footer { display: flex; align-items: center; gap: .9rem; margin-top: 2.4rem; padding: 1.2rem 0 2.4rem; border-top: 1.6px solid var(--edge); color: var(--muted); font-size: .88rem; }
 footer p { margin: 0; }
 

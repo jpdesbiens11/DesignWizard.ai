@@ -76,8 +76,27 @@ MIME = {
     ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif", ".webp": "image/webp",
     ".ico": "image/x-icon", ".txt": "text/plain; charset=utf-8", ".md": "text/markdown; charset=utf-8",
     ".map": "application/json; charset=utf-8", ".woff2": "font/woff2", ".woff": "font/woff", ".ttf": "font/ttf",
+    ".mp4": "video/mp4", ".vtt": "text/vtt; charset=utf-8",
 }
 NO_STORE = {"Cache-Control": "no-store"}
+
+
+def _byte_range(header, size):
+    """« bytes=a-b », « bytes=a- » or « bytes=-n » for a file of `size` bytes : (first, last), None when no single
+    range is asked (the whole file is sent), or "bad" when it lies outside the file."""
+    if not header or not header.startswith("bytes=") or "," in header:
+        return None
+    a, sep, b = header[6:].strip().partition("-")
+    if not sep or not (a.isdigit() or a == "") or not (b.isdigit() or b == "") or (a == "" and b == ""):
+        return None
+    if a == "":
+        n = int(b)
+        return "bad" if n == 0 or size == 0 else (max(0, size - n), size - 1)
+    first = int(a)
+    if first >= size:
+        return "bad"
+    last = min(int(b), size - 1) if b else size - 1
+    return "bad" if last < first else (first, last)
 OID = r"([A-Za-z0-9]{1,64})"          # Onshape id segment
 PID = r"([A-Za-z0-9_\-]{1,64})"       # project id segment
 
@@ -227,14 +246,36 @@ class Handler(BaseHTTPRequestHandler):
     def _file(self, path: Path, ctype: str, extra: dict):
         with open(path, "rb") as f:
             size = path.stat().st_size
-            self.send_response(200)
+            # A player asks for a film by pieces (« Range: bytes=a-b ») : without them it cannot jump ahead, and some will not play at all.
+            span = _byte_range(self.headers.get("Range"), size)
+            if span == "bad":
+                self.send_response(416)
+                self.send_header("Content-Range", f"bytes */{size}")
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+                return
+            first, last = span or (0, size - 1)
+            self.send_response(206 if span else 200)
             self.send_header("Content-Type", ctype)
-            self.send_header("Content-Length", str(size))
+            self.send_header("Content-Length", str(max(0, last - first + 1)))
+            self.send_header("Accept-Ranges", "bytes")
+            if span:
+                self.send_header("Content-Range", f"bytes {first}-{last}/{size}")
             for key, value in extra.items():
                 self.send_header(key, value)
             self.end_headers()
             if self.command != "HEAD":
-                shutil.copyfileobj(f, self.wfile, 256 * 1024)
+                if span:
+                    f.seek(first)
+                    left = last - first + 1
+                    while left > 0:
+                        chunk = f.read(min(256 * 1024, left))
+                        if not chunk:
+                            break
+                        self.wfile.write(chunk)
+                        left -= len(chunk)
+                else:
+                    shutil.copyfileobj(f, self.wfile, 256 * 1024)
 
     # ---------- JSON API ----------
     def _api(self, path: str, q: dict):

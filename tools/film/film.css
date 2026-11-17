@@ -1,0 +1,33 @@
+/* DesignWizard.ai — the film : one stage of 1600 × 900, drawn from the time alone (film.js) — no animation runs by itself, so that a frame
+   is the same whenever it is drawn. The colours and the paper are those of the platform (web/css/app.css). */
+.film-page { margin: 0; overflow: hidden; background: #fcfbf7; }
+.stage { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; transform-origin: 0 0; overflow: hidden; font-family: "Inter Display", Inter, var(--font); color: var(--ink-strong);
+  background-color: var(--paper); background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size: 32px 32px; }
+.scene { position: absolute; inset: 0; opacity: 0; }
+/* a sentence on paper */
+.words { display: grid; place-content: center; gap: 26px; padding: 0 90px 90px; text-align: center; }
+.words .big { margin: 0; font-size: 76px; font-weight: 750; line-height: 1.08; letter-spacing: -1.5px; }
+.words .small { margin: 0; font-size: 36px; font-weight: 450; color: var(--ink-soft); }
+.words .big mark, .logo-card .slogan mark { background: linear-gradient(transparent 58%, var(--hl-yellow) 58% 92%, transparent 92%); color: inherit; padding: 0 6px; }
+/* the name */
+.logo-card { display: grid; place-content: center; justify-items: center; gap: 22px; padding-bottom: 90px; text-align: center; }
+.logo-card img.mark { width: 150px; height: 150px; }
+.logo-card .name { margin: 0; font-size: 84px; font-weight: 780; letter-spacing: -2px; } .logo-card .name i { font-style: normal; color: var(--primary); }
+.logo-card .by { margin: -14px 0 0; font-size: 24px; color: var(--muted); }
+.logo-card .slogan { margin: 14px 0 0; font-size: 52px; font-weight: 650; letter-spacing: -.8px; }
+.logo-card .small { margin: 0; font-size: 30px; color: var(--ink-soft); }
+.logo-card .legal { position: absolute; left: 0; right: 0; bottom: 122px; margin: 0; font-size: 17px; color: var(--muted); }
+/* a screen of the platform, framed — the names carry « fm- » where the platform's stylesheet already has a class of that name */
+.shot .frame { position: absolute; left: 44px; top: 84px; width: 1136px; height: 710px; overflow: hidden; border-radius: 16px; background: #fff; border: 2px solid var(--graphite); box-shadow: 9px 10px 0 rgba(38, 50, 63, .16); }
+.shot .frame .pic { position: absolute; left: 0; top: 0; width: 1136px; height: 710px; transform-origin: 0 0; opacity: 0; }
+.shot .frame .pic img { display: block; width: 1136px; height: 710px; }
+.shot .fm-brand { position: absolute; left: 44px; top: 26px; display: flex; align-items: center; gap: 12px; font-size: 25px; font-weight: 720; } .shot .fm-brand img { width: 40px; height: 40px; } .shot .fm-brand i { font-style: normal; color: var(--primary); }
+.shot .fm-side { position: absolute; left: 1218px; top: 96px; width: 340px; }
+.shot .station { margin: 0 0 12px; font-size: 19px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--primary); }
+.shot .title { margin: 0 0 26px; font-size: 39px; font-weight: 740; line-height: 1.12; letter-spacing: -.6px; }
+.shot .fm-chip { display: flex; align-items: center; gap: 12px; margin: 0 0 16px; padding: 13px 16px; border-radius: 12px; background: #fff; border: 2px solid var(--graphite); box-shadow: 4px 5px 0 rgba(38, 50, 63, .13); font-size: 23px; font-weight: 600; line-height: 1.2; opacity: 0; }
+.shot .fm-chip::before { content: ""; flex: none; width: 14px; height: 14px; border-radius: 50%; background: var(--hl-yellow); border: 2px solid var(--graphite); }
+/* what the voice says */
+.caption { position: absolute; left: 0; right: 0; bottom: 30px; display: grid; place-items: center; opacity: 0; }
+.caption span { max-width: 1320px; padding: 11px 26px 13px; border-radius: 14px; background: rgba(11, 27, 51, .9); color: #fff; font-size: 32px; font-weight: 560; line-height: 1.25; text-align: center; }
+.progress { position: absolute; left: 0; bottom: 0; height: 7px; background: var(--primary); }
