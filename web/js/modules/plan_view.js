@@ -3,7 +3,7 @@
    kept in the artefact, the points to discuss, the sheet as text, Word and PDF with the pictures of the view, and the
    AI round trip on the artefact, the computed sheet given for reference. */
 
-import { el, icon, btn, badge, toast, download, copyText } from "../core/dom.js";
+import { el, icon, btn, badge, toast, download, copyText, inUnits } from "../core/dom.js";
 import { app, docMeta } from "../core/app.js";
 import { store } from "../core/store.js";
 import { planText, planDoc, planKeys, PLAN_KINDS } from "../core/plan_doc.js";
@@ -51,16 +51,16 @@ export function planPanel(body, plan, o = {}) {
         el(o.onSelect ? "button" : "div", { type: o.onSelect ? "button" : null, class: "plan-pick", "data-tip": o.onSelect ? "Voir cette phase dans la vue (un second clic revient à l'ensemble)" : null, onClick: o.onSelect ? () => o.onSelect(ph, i) : null },
           el("span", { class: "g-n" }, ph.n), el("span", { class: "grow" }, el("b", null, ph.title), ph.station ? el("small", null, ph.station) : null)),
         ph.outsourced ? badge("sous-traité", "warn") : null, o.phaseExtra ? o.phaseExtra(ph, i) : null),
-      ph.hold ? el("p", { class: "plan-hold" }, icon("lock"), el("span", null, `Prise de pièce : ${ph.hold}`)) : null,
-      ph.ops.length ? el("ol", { class: "plan-ops" }, ph.ops.map((op) => el("li", null, el("span", { class: "g-n" }, op.n), el("div", { class: "grow" }, op.text,
-        op.tools.length ? el("small", null, `Outillage : ${op.tools.join(" ; ")}`) : null, op.control ? el("small", null, `Contrôle : ${op.control}`) : null)))) : null,
+      ph.hold ? el("p", { class: "plan-hold" }, icon("lock"), el("span", null, inUnits(`Prise de pièce : ${ph.hold}`))) : null,
+      ph.ops.length ? el("ol", { class: "plan-ops" }, ph.ops.map((op) => el("li", null, el("span", { class: "g-n" }, op.n), el("div", { class: "grow" }, inUnits(op.text),
+        op.tools.length ? el("small", null, inUnits(`Outillage : ${op.tools.join(" ; ")}`)) : null, op.control ? el("small", null, inUnits(`Contrôle : ${op.control}`)) : null)))) : null,
       ph.checks.length ? el("ul", { class: "plan-checks" }, ph.checks.map((c) => el("li", null, icon("check"), el("span", null, c)))) : null,
       o.onNote ? note : ph.note ? el("p", { class: "plan-hold" }, `Note : ${ph.note}`) : null));
   });
   body.append(list);
   if (plan.hardware.length) body.append(el("div", { class: "side-section" }, el("h3", null, "Visserie et fournitures"), el("ul", { class: "plan-list" }, plan.hardware.map((h) => el("li", null, el("b", null, `${h.qty} × `), h.name)))));
-  if (plan.tools.length) body.append(el("div", { class: "side-section" }, el("h3", null, "Outillage"), el("p", { class: "small" }, plan.tools.join(" · "))));
-  if (plan.characteristics.length) body.append(el("div", { class: "side-section" }, el("h3", null, "Caractéristiques à tenir"), el("ul", { class: "plan-list" }, plan.characteristics.map((c) => el("li", null, c.text, c.control ? el("small", null, c.control) : null)))));
+  if (plan.tools.length) body.append(el("div", { class: "side-section" }, el("h3", null, "Outillage"), el("p", { class: "small" }, inUnits(plan.tools.join(" · ")))));
+  if (plan.characteristics.length) body.append(el("div", { class: "side-section" }, el("h3", null, "Caractéristiques à tenir"), el("ul", { class: "plan-list" }, plan.characteristics.map((c) => el("li", null, inUnits(c.text), c.control ? el("small", null, inUnits(c.control)) : null)))));
   const points = plan.points || [], add = el("input", { type: "text", placeholder: "Ajouter un point à discuter…", "aria-label": "Nouveau point à discuter" });
   const push = () => { const t = add.value.trim(); if (t && o.onPoints) o.onPoints([...points, t]); };
   add.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); push(); } });
@@ -68,7 +68,7 @@ export function planPanel(body, plan, o = {}) {
     el("ol", { class: "plan-questions" }, plan.questions.map((q) => el("li", null, badge(q.topic, "neutral"), " ", q.text)),
       points.map((t, i) => el("li", { class: "mine" }, badge("À voir", "info"), " ", t, o.onPoints ? el("button", { class: "icon-btn", type: "button", "aria-label": "Retirer ce point", "data-tip": "Retirer ce point", onClick: () => o.onPoints(points.filter((x, k) => k !== i)) }, icon("cross")) : null))),
     o.onPoints ? el("div", { class: "plan-add" }, add, btn("", push, { small: true, icon: "plus", tip: "Ajouter ce point" })) : null));
-  if (plan.advice.length) body.append(el("div", { class: "side-section" }, el("h3", null, "Remarques tirées du modèle"), plan.advice.map((a) => el("p", { class: "atelier-hint warn" }, icon("warning"), " ", a))));
+  if (plan.advice.length) body.append(el("div", { class: "side-section" }, el("h3", null, "Remarques tirées du modèle"), plan.advice.map((a) => el("p", { class: "atelier-hint warn" }, icon("warning"), " ", inUnits(a)))));
 }
 
 /** Writes a note or the list of points in the « plan » of an artefact (the object is the artefact being edited). */

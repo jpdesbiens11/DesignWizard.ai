@@ -4,6 +4,7 @@
    (specialCard), where the designer picks the thickness of the sheet. */
 
 import { el, btn, badge, field, table, icon, toast, copyText } from "../core/dom.js";
+import { getUnits, shownUnit, fromShown, fieldValue, converts } from "../core/units.js";
 import { registerModule, go, app } from "../core/app.js";
 import { MATERIALS, PROCESSES, material, processName } from "../cad/materials.js";
 import { LASER_FAMILIES, laserProfile, AM_PROCESSES, AM_MATERIALS, printProcess, processSheet, processBrief, sheetSeries, sheetDefault, sheetWord, SOURCES } from "../cad/special_processes.js";
@@ -30,7 +31,7 @@ function foldRow(brief, again) {
     el("p", { class: "small", style: { margin: ".2rem 0" } }, "Cochez les côtés de la base à relever, ou placez une interface sur un côté : il devient un bord plié qui la porte. Un seul rayon, des bords d'au moins 4 × l'épaisseur, des trous loin des plis, des dégagements aux angles — valeurs typiques de guides publiés ; la table de pliage de l'atelier fait foi."),
     el("div", { class: "form-actions", style: { justifyContent: "flex-start", flexWrap: "wrap", margin: ".2rem 0" } }, Object.entries(FOLD_SIDES).map(([side, S]) => el("label", { class: "check small", "data-tip": forced.has(side) ? "Ce côté porte une interface : il est plié" : `Relever le côté ${S.fr} de la base` },
       el("input", { type: "checkbox", checked: on.includes(side), disabled: forced.has(side), onChange: (e) => tick(side, e.target.checked) }), S.fr))),
-    on.length ? el("div", { class: "form-row tight" }, field("Hauteur des bords (mm)", el("input", { type: "number", min: 0, step: 1, value: F.h ?? "", placeholder: "au plus juste", "data-tip": "Vide : la plus petite hauteur que la presse plieuse tient et qui porte les interfaces", onChange: (e) => { const v = parseFloat(e.target.value); set({ h: v > 0 ? v : undefined }); } })),
+    on.length ? el("div", { class: "form-row tight" }, field(converts("mm", getUnits()) ? `Hauteur des bords (${shownUnit("mm", getUnits())})` : "Hauteur des bords (mm)", el("input", { type: "number", min: 0, step: converts("mm", getUnits()) ? "any" : 1, value: F.h === undefined || F.h === null ? "" : fieldValue(F.h, "mm", getUnits()), placeholder: "au plus juste", "data-tip": "Vide : la plus petite hauteur que la presse plieuse tient et qui porte les interfaces", onChange: (e) => { const v = fromShown(parseFloat(e.target.value), "mm", getUnits()); set({ h: v > 0 ? v : undefined }); } })),
       field("Sens des plis", el("select", { onChange: (e) => set({ dir: e.target.value }) }, [["up", "Vers le haut"], ["down", "Vers le bas"]].map(([k, l]) => el("option", { value: k, selected: (F.dir || "up") === k }, l))))) : null));
 }
 

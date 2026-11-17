@@ -28,6 +28,11 @@ test("what a selection measures : one entity, two, several", () => {
   assert.equal(measureOf([V([0, 0, 0]), V([3, 4, 0])]), "Distance 5 mm (ΔX 3 · ΔY 4 · ΔZ 0)"); assert.equal(measureOf([F([0, 0, 10], [0, 0, 1]), F([5, 5, 0], [0, 0, -1])]), "10 mm entre faces parallèles");
   assert.equal(measureOf([F([0, 0, 10], [0, 0, 1]), F([20, 0, 5], [1, 0, 0])]), "Angle 90° entre les faces"); assert.equal(measureOf([F([0, 0, 10], [0, 0, 1]), V([3, 3, 4])]), "6 mm du point à la face");
   const C = (o) => ({ kind: "face", at: o, face: { type: "cylinder", r: 2, o, axis: [0, 0, 1] } }); assert.equal(measureOf([C([0, 0, 0]), C([30, 40, 7])]), "Entraxe 50 mm");
+  // in the imperial system the same measures read in inches ; what had no unit (a point, a diameter, the three deltas) gets one, an angle stays an angle
+  const IMP = { system: "imperial" };
+  assert.equal(measureOf([V([25.4, 50.8, 0])], IMP), "Point (1 ; 2 ; 0) in"); assert.equal(measureOf([E(40)], IMP), "Arête droite · 1,575 in"); assert.equal(measureOf([F([0, 0, 10], [0, 0, 1])], IMP), "Face plane · 1,24 in²");
+  assert.equal(measureOf([{ kind: "face", at: [0, 0, 0], face: { type: "cylinder", r: 2.75, inner: true } }], IMP), "Cylindre Ø 0,2165 in (alésage)"); assert.equal(measureOf([V([0, 0, 0]), V([3, 4, 0])], IMP), "Distance 0,1969 in (ΔX 0,1181 · ΔY 0,1575 · ΔZ 0 in)");
+  assert.equal(measureOf([F([0, 0, 10], [0, 0, 1]), F([20, 0, 5], [1, 0, 0])], IMP), "Angle 90° entre les faces"); assert.equal(measureOf([C([0, 0, 0]), C([30, 40, 7])], IMP), "Entraxe 1,969 in"); assert.equal(measureOf([V([0, 0, 0]), V([3, 4, 0])], { system: "si" }), "Distance 5 mm (ΔX 3 · ΔY 4 · ΔZ 0)");
   assert.equal(measureOf([E(40), E(20), F([0, 0, 0], [0, 0, 1]), V([0, 0, 0])]), "1 face · 2 arêtes · 1 point · 60 mm d'arêtes");
 });
 

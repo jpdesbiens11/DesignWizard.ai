@@ -1,7 +1,7 @@
 /* DesignWizard.ai — inspector panels of the part studio: parameters (sliders with live rebuild), interfaces,
    DFx findings with one-click fixes, data sheet, raw JSON. */
 
-import { el, clear, icon, btn, badge, field, toast, fmt, fmtMass, copyText, download } from "../core/dom.js";
+import { el, clear, icon, btn, badge, field, toast, fmt, fmtMass, fmtLen, fmtDims, inUnits, copyText, download } from "../core/dom.js";
 import { store } from "../core/store.js";
 import { app } from "../core/app.js";
 import { interfaceDialog, nextIfaceId } from "../core/part_edit.js";
@@ -15,31 +15,32 @@ import { applyFix } from "../analysis/dfx_api.js";
 import { toDwiz } from "../core/dwiz.js";
 import { dwizFileName } from "../core/dwiz_names.js";
 import { extractJson } from "../core/importer.js";
+import { getUnits, shownUnit, toShown, fromShown, fieldValue, converts } from "../core/units.js";
 
 /* ---------- parameters ---------- */
 export function paramsPanel(body, { st, id, live }) {
   const defs = Object.entries(st.spec.params || {});
   if (!defs.length) { body.append(el("p", { class: "muted" }, "Cette pièce n'a pas de paramètres. Ajoutez-en dans l'onglet JSON (« params »), ou demandez-les à l'entrevue.")); return; }
-  const scope = st.built ? st.built.params.scope : {}, pending = {};
+  const scope = st.built ? st.built.params.scope : {}, pending = {}, U = getUnits();      // a parameter is kept in its own unit (mm) ; it is read and typed in the unit chosen
   const groups = new Map();
   for (const [name, raw] of defs) { const d = raw !== null && typeof raw === "object" ? raw : { value: raw }; const g = d.group || "Paramètres"; if (!groups.has(g)) groups.set(g, []); groups.get(g).push([name, d]); }
   for (const [g, list] of groups) {
     const sec = el("div", { class: "side-section" }, el("h3", null, g));
     for (const [name, d] of list) {
-      const derived = d.expr !== undefined, val = typeof d.value === "number" ? d.value : scope[name];
-      const num = el("input", { type: derived || typeof d.value === "string" ? "text" : "number", value: derived ? fmt(scope[name], 3) : (typeof d.value === "string" ? d.value : val), step: d.step || "any", disabled: derived, "aria-label": d.label || name });
-      const row = el("div", { class: "param" + (derived ? " derived" : "") }, el("label", { "data-tip": derived ? `Calculé : ${d.expr}` : d.note || null }, d.label || name, el("small", null, name + (d.unit ? ` · ${d.unit}` : ""))), num);
+      const derived = d.expr !== undefined, val = typeof d.value === "number" ? d.value : scope[name], unit = d.unit || "", conv = converts(unit, U), back = (x) => fromShown(x, unit, U);
+      const num = el("input", { type: derived || typeof d.value === "string" ? "text" : "number", value: derived ? fmt(toShown(scope[name], unit, U), conv ? 4 : 3) : (typeof d.value === "string" ? d.value : fieldValue(val, unit, U)), step: conv ? "any" : d.step || "any", disabled: derived, "aria-label": d.label || name });
+      const row = el("div", { class: "param" + (derived ? " derived" : "") }, el("label", { "data-tip": derived ? `Calculé : ${d.expr}` : d.note || null }, d.label || name, el("small", null, name + (unit ? ` · ${shownUnit(unit, U)}` : ""))), num);
       if (!derived && typeof d.value === "number" && typeof d.min === "number" && typeof d.max === "number") {
-        const range = el("input", { type: "range", min: d.min, max: d.max, step: d.step || (d.max - d.min) / 200, value: val, "aria-label": `${d.label || name} (curseur)` });
-        range.addEventListener("input", () => { num.value = range.value; pending[name] = +range.value; live({ ...pending }); });
-        range.addEventListener("change", () => commit(name, +range.value, num));
+        const range = el("input", { type: "range", min: toShown(d.min, unit, U), max: toShown(d.max, unit, U), step: toShown(d.step || (d.max - d.min) / 200, unit, U), value: toShown(val, unit, U), "aria-label": `${d.label || name} (curseur)` });
+        range.addEventListener("input", () => { num.value = conv ? Number((+range.value).toPrecision(5)) : range.value; pending[name] = back(+range.value); live({ ...pending }); });
+        range.addEventListener("change", () => commit(name, back(+range.value), num));
         row.append(range);
       }
       num.addEventListener("keydown", (e) => { if (e.key === "Enter") num.blur(); });
       num.addEventListener("change", () => {
         const v = num.type === "number" ? parseFloat(num.value) : (/^-?\d+([.,]\d+)?$/.test(num.value.trim()) ? parseFloat(num.value.replace(",", ".")) : num.value.trim());
         if (v === "" || (typeof v === "number" && Number.isNaN(v))) { num.classList.add("bad"); return; }
-        commit(name, v, num);
+        commit(name, typeof v === "number" ? back(v) : v, num);
       });
       sec.append(row);
     }
@@ -92,8 +93,8 @@ export function dfxPanel(body, { st, id, vp }) {
   if (!res.findings.length) body.append(el("div", { class: "card" }, icon("check"), " Aucune remarque : la pièce respecte les règles évaluées."));
   for (const f of res.findings) {
     const card = el("div", { class: `finding ${f.severity}`, onClick: () => { if (f.where) { vp.viewer.clearOverlays("focus"); vp.viewer.addMarker(f.where, "#0c66e4", "focus", 1.8); } } }, el("span", { class: "sev" }),
-      el("div", null, el("b", null, f.title), el("span", { class: "id" }, f.id)), el("p", null, f.message));
-    if (f.fix && f.fix.patch) card.append(btn(f.fix.label || "Appliquer le correctif", (e) => {
+      el("div", null, el("b", null, f.title), el("span", { class: "id" }, f.id)), el("p", null, inUnits(f.message)));
+    if (f.fix && f.fix.patch) card.append(btn(inUnits(f.fix.label) || "Appliquer le correctif", (e) => {
       e.stopPropagation();
       try { store.updatePart(id, (x) => applyFix(x, f.fix.patch), `Correctif ${f.id} : ${f.fix.label || ""}`); toast(`Correctif appliqué : ${f.fix.label || f.id}`, "success"); } catch (err) { toast(err.message, "error"); }
     }, { small: true, icon: "sparkle", cls: "fix", tip: "Applique le correctif proposé (annulable avec Ctrl+Z)" }));
@@ -132,8 +133,8 @@ export function sheetPanel(body, { st, id }) {
       [["", "Automatique (selon le matériau)"], ["conductor", "Conducteur"], ["insulator", "Isolant"], ["chassis", "Chassis"], ["none", "Ignoré"]].map(([k, l]) => el("option", { value: k, selected: k === (elec.kind || "") }, l)))),
       field("Net", el("input", { type: "text", value: elec.net || "", placeholder: "HV+, GND…", onChange: (e) => store.updatePart(id, (x) => { x.elec = { ...(x.elec || {}), net: e.target.value.trim() || undefined }; }, `${s.id} : net`) })))));
   if (b) body.append(el("div", { class: "side-section" }, el("h3", null, "Propriétés calculées"), el("table", { class: "data" }, el("tbody", null,
-    [["Masse", fmtMass(b.mass)], ["Volume", `${fmt(b.volume / 1000, 2)} cm³`], ["Enveloppe", `${fmt(b.bbox[3] - b.bbox[0], 2)} × ${fmt(b.bbox[4] - b.bbox[1], 2)} × ${fmt(b.bbox[5] - b.bbox[2], 2)} mm`],
-      ["Centre de gravité", b.cog.map((x) => fmt(x, 1)).join(" ; ")], ["Corps", b.bodies.map((x) => x.name).join(", ")], ["Trous", String(b.facts.holes.length)], ["Densité", `${mat.rho} g/cm³`]].map(([k, v]) => el("tr", null, el("td", null, k), el("td", null, v)))))));
+    [["Masse", fmtMass(b.mass)], ["Volume", fmtLen(b.volume / 1000, 2, "cm³")], ["Enveloppe", fmtDims([b.bbox[3] - b.bbox[0], b.bbox[4] - b.bbox[1], b.bbox[5] - b.bbox[2]], 2)],
+      ["Centre de gravité", fmtDims(b.cog, 1).replace(/ × /g, " ; ")], ["Corps", b.bodies.map((x) => x.name).join(", ")], ["Trous", String(b.facts.holes.length)], ["Densité", `${mat.rho} g/cm³`]].map(([k, v]) => el("tr", null, el("td", null, k), el("td", null, v)))))));
   if (b && b.log.length) body.append(el("div", { class: "side-section" }, el("h3", null, "Journal du noyau"), b.log.map((l) => el("p", { class: l.level === "error" ? "form-error" : "muted", style: { fontSize: ".82rem" } }, l.msg))));
   if (s.interview) body.append(el("div", { class: "side-section" }, el("h3", null, "Entrevue d'origine"),
     (s.interview.questions || []).map((q) => el("p", { style: { fontSize: ".82rem" } }, el("b", null, q.q), " — ", q.a)), (s.interview.assumptions || []).map((a) => el("p", { class: "muted", style: { fontSize: ".82rem" } }, "Hypothèse : ", a))));

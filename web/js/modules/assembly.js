@@ -2,7 +2,7 @@
    dependency: change one side, the other part adapts. Exploded view, BOM with the implied hardware, interference
    check, complementary-part generator, STEP of the assembly, and the assembly routing step by step (asm_gamme.js). */
 
-import { el, clear, icon, btn, badge, toast, modal, fmt, fmtMass, download, promptBox, confirmBox, table } from "../core/dom.js";
+import { el, clear, icon, btn, badge, toast, modal, fmt, fmtMass, fmtDims, inUnits, download, promptBox, confirmBox, table } from "../core/dom.js";
 import { registerModule, go, setStatus, app } from "../core/app.js";
 import { store } from "../core/store.js";
 import { lookSwatch } from "./part_look.js";
@@ -76,7 +76,7 @@ function render(main, args) {
       if (!st.fitted) { st.fitted = true; vp.viewer.view("iso"); } else vp.viewer.invalidate();
       vp.setBusy("");
       const s = ctx.sol;
-      info.textContent = `${ctx.asm.instances.length} pièce(s) · ${(a.mates || []).length} mate(s) · ${fmtMass(ctx.mass.mass)} · ${fmt(ctx.bbox[3] - ctx.bbox[0], 0)} × ${fmt(ctx.bbox[4] - ctx.bbox[1], 0)} × ${fmt(ctx.bbox[5] - ctx.bbox[2], 0)} mm`
+      info.textContent = `${ctx.asm.instances.length} pièce(s) · ${(a.mates || []).length} mate(s) · ${fmtMass(ctx.mass.mass)} · ${fmtDims([ctx.bbox[3] - ctx.bbox[0], ctx.bbox[4] - ctx.bbox[1], ctx.bbox[5] - ctx.bbox[2]], 0)}`
         + (s.floating.length ? ` · ${s.floating.length} pièce(s) non matée(s)` : "") + (ctx.errors.length ? ` · ${ctx.errors.length} erreur(s)` : "");
       info.className = "chip" + (ctx.errors.length || s.problems.length ? " bad" : "");
       setStatus(`${id} assemblé`, "done");
@@ -275,7 +275,7 @@ function render(main, args) {
     const inst = a.instances.find((i) => i.id === st.sel);
     if (!inst) { body.append(el("p", { class: "muted" }, "Cliquez une pièce dans la vue 3D ou dans la liste.")); return; }
     const spec = store.part(inst.part), b = st.ctx.built[inst.part], m = st.ctx.sol.placements[inst.id];
-    body.append(el("h3", null, spec.name || spec.id), el("p", { class: "muted", style: { fontSize: ".84rem" } }, `${spec.id} · occurrence ${inst.id} · ${fmtMass(b.mass)} · position ${[m[12], m[13], m[14]].map((x) => fmt(x, 1)).join(" ; ")}`),
+    body.append(el("h3", null, spec.name || spec.id), el("p", { class: "muted", style: { fontSize: ".84rem" } }, `${spec.id} · occurrence ${inst.id} · ${fmtMass(b.mass)} · position ${fmtDims([m[12], m[13], m[14]], 1).replace(/ × /g, " ; ")}`),
       el("div", { class: "form-actions", style: { justifyContent: "flex-start" } }, el("a", { class: "btn btn-small btn-primary", href: `#/${spec.family === "pcb" ? "pcb" : spec.family === "extrusion" ? "extrusion" : "parts"}/${encodeURIComponent(spec.id)}` }, icon("edit"), "Ouvrir la pièce"),
         btn(inst.fixed ? "Libérer" : "Fixer", () => store.updateAssembly(id, (x) => { const i = x.instances.find((q) => q.id === inst.id); if (i.fixed) delete i.fixed; else i.fixed = true; }, `${inst.part} ${inst.fixed ? "libérée" : "fixée"}`), { small: true, icon: "lock" }),
         spec.fill ? btn("Recalculer", () => { const host = a.instances.find((q) => q.id === spec.fill.of); if (host) import("./asm_fill.js").then((m) => m.openFill(id, host.id, st.ctx, spec.id)); else toast("Le contenant de ce remplissage n'est plus dans l'assemblage.", "warn"); }, { small: true, icon: "refresh", tip: "Reprendre le volume libre avec les pièces telles qu'elles sont posées aujourd'hui" })
@@ -306,7 +306,7 @@ function render(main, args) {
     if (st.interference === null) body.append(el("p", { class: "muted", style: { fontSize: ".84rem" } }, "Interférences : non vérifiées (bouton « Interférences » dans la vue)."));
     if (!d || d.unavailable) { body.append(el("p", { class: "muted" }, "Le moteur DFA n'est pas chargé dans cette version.")); return; }
     if (d.metrics && Object.keys(d.metrics).length) body.append(el("div", { class: "kpis" }, Object.entries({ instances: "Pièces", uniqueParts: "Pièces uniques", fasteners: "Fixations", fastenerTypes: "Types de fixation", directions: "Directions de montage" }).filter(([k]) => d.metrics[k] !== undefined).map(([k, l]) => el("div", { class: "kpi" }, el("b", null, String(d.metrics[k])), el("span", null, l)))));
-    for (const f of d.findings) body.append(el("div", { class: `finding ${f.severity}` }, el("span", { class: "sev" }), el("div", null, el("b", null, f.title), el("span", { class: "id" }, f.id)), el("p", null, f.message)));
+    for (const f of d.findings) body.append(el("div", { class: `finding ${f.severity}` }, el("span", { class: "sev" }), el("div", null, el("b", null, f.title), el("span", { class: "id" }, f.id)), el("p", null, inUnits(f.message))));
     if (!d.findings.length) body.append(el("div", { class: "card" }, icon("check"), " Aucune remarque DFA."));
   }
 

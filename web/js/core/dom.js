@@ -2,6 +2,7 @@
    never innerHTML on data. el() ignores null / undefined / false children. */
 
 import { stampText } from "./brand.js";
+import { getUnits, massText, measure, measures, proseUnits } from "./units.js";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -143,4 +144,13 @@ export async function copyText(text) {
 }
 export const fmt = (v, d = 2) => (typeof v === "number" && Number.isFinite(v) ? (Math.round(v * 10 ** d) / 10 ** d).toLocaleString("fr-CA", { maximumFractionDigits: d }) : "—");
 export function debounce(fn, ms = 250) { let t = 0; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
-export function fmtMass(g) { return g >= 1000 ? `${fmt(g / 1000, 2)} kg` : `${fmt(g, 1)} g`; }
+/* ---------- quantities, in the units the designer chose (core/units.js) : the tools keep their millimetres, the screens convert as they write ---------- */
+const local = (x) => (typeof x === "number" ? x.toLocaleString("fr-CA", { maximumFractionDigits: 6 }) : String(x));
+/** A mass given in grams : « 111,1 g », « 1,83 kg » — with ounces or pounds beside in the imperial system. */
+export function fmtMass(g) { return massText(g, getUnits(), local); }
+/** A length given in millimetres, with its unit : « 12,5 mm » or « 0,4921 in ». unit : another unit of the tools (« mm² », « cm³ », « N », « MPa »…). */
+export const fmtLen = (v, d = 2, unit = "mm") => measure(v, unit, d, getUnits(), local);
+/** Several dimensions in millimetres and one unit : « 160 × 110 × 42 mm ». */
+export const fmtDims = (list, d = 1, unit = "mm") => measures(list, unit, d, getUnits(), local);
+/** A sentence written in millimetres, read in the units chosen. */
+export const inUnits = (text) => proseUnits(text, getUnits());

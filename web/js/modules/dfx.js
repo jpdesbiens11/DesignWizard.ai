@@ -4,7 +4,7 @@
    is kept apart, behind its own count. Routes : #/dfx (the points to settle), #/dfx/points/<reference> (those of one part
    or assembly), #/dfx/regles (the rule book), #/dfx/regles/<rule> (one rule in the book). */
 
-import { el, clear, icon, btn, badge, table, fmt, toast, debounce } from "../core/dom.js";
+import { el, clear, icon, btn, badge, table, fmt, inUnits, toast, debounce } from "../core/dom.js";
 import { registerModule, setStatus } from "../core/app.js";
 import { store } from "../core/store.js";
 import { kernel } from "../cad/client.js";
@@ -50,7 +50,7 @@ function render(main, args) {
       if (!book.length) { box.append(el("p", { class: "muted" }, "Le livre des règles n'est pas chargé dans cette version.")); return; }
       box.append(el("div", { class: "form-actions no-print" }, btn("Imprimer le livre des règles", () => window.print(), { icon: "pdf" })));
       for (const b of book) box.append(el("div", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, b.fr || b.title || b.process), b.steps && el("p", { class: "muted" }, `Étapes de conception : ${b.steps.join(" → ")}`),
-        table(["Règle", "Titre", "Limite", "Niveau", "Pourquoi", "Source"], (b.rules || []).map((r) => [el("code", { id: `rule-${r.id}` }, r.id), r.title, r.limit || "", badge(SEV[r.severity === "error" || r.severity === "warn" ? r.severity : "info"][0], SEV[r.severity === "error" || r.severity === "warn" ? r.severity : "info"][1]), r.why || "", el("small", { class: "muted" }, r.source || "")]))));
+        table(["Règle", "Titre", "Limite", "Niveau", "Pourquoi", "Source"], (b.rules || []).map((r) => [el("code", { id: `rule-${r.id}` }, r.id), r.title, inUnits(r.limit || ""), badge(SEV[r.severity === "error" || r.severity === "warn" ? r.severity : "info"][0], SEV[r.severity === "error" || r.severity === "warn" ? r.severity : "info"][1]), r.why || "", el("small", { class: "muted" }, r.source || "")]))));
       if (args[1]) setTimeout(() => { const at = document.getElementById(`rule-${args[1]}`); if (alive && at) nudge(at.closest("tr") || at); }, 80);
     });
     return () => { alive = false; };
@@ -78,9 +78,9 @@ function render(main, args) {
       el("a", { class: "btn btn-small", href: dfxHash(it), "data-tip": it.kind === "assembly" ? "Ouvrir l'assemblage" : "Ouvrir la pièce sur son onglet DFx : le point s'y voit sur le modèle" }, icon("external"), el("span", null, "Ouvrir"))); };
   function point(it, f) {
     const r = ruleOf(book, f.id), measured = measureText(f, (v) => fmt(v, 3));
-    const card = el("div", { class: `finding ${f.severity} dfx-point`, "data-rule": f.id }, el("span", { class: "sev" }), el("div", null, el("b", null, f.title), el("a", { class: "id", href: `#/dfx/regles/${encodeURIComponent(f.id)}`, "data-tip": "La règle, dans le livre des règles" }, f.id), " ", badge(SEV[f.severity][0], SEV[f.severity][1])), el("p", null, f.message),
-      ...[measured ? el("p", { class: "dfx-measure" }, measured) : null, r && r.why ? el("p", { class: "dfx-why" }, el("b", null, "Pourquoi — "), r.why, r.source ? el("small", { class: "muted" }, ` (${r.source})`) : null) : null].filter(Boolean));
-    if (it.kind === "part" && f.fix && f.fix.patch) card.append(btn(f.fix.label || "Appliquer le correctif", (e, b) => tryFix(it, f, card, b), { small: true, primary: true, icon: "sparkle", cls: "fix", tip: "Essaie le correctif, puis l'applique ici même s'il ne crée rien à corriger (annulable avec Ctrl+Z)" }));
+    const card = el("div", { class: `finding ${f.severity} dfx-point`, "data-rule": f.id }, el("span", { class: "sev" }), el("div", null, el("b", null, f.title), el("a", { class: "id", href: `#/dfx/regles/${encodeURIComponent(f.id)}`, "data-tip": "La règle, dans le livre des règles" }, f.id), " ", badge(SEV[f.severity][0], SEV[f.severity][1])), el("p", null, inUnits(f.message)),
+      ...[measured ? el("p", { class: "dfx-measure" }, inUnits(measured)) : null, r && r.why ? el("p", { class: "dfx-why" }, el("b", null, "Pourquoi — "), inUnits(r.why), r.source ? el("small", { class: "muted" }, ` (${r.source})`) : null) : null].filter(Boolean));
+    if (it.kind === "part" && f.fix && f.fix.patch) card.append(btn(inUnits(f.fix.label) || "Appliquer le correctif", (e, b) => tryFix(it, f, card, b), { small: true, primary: true, icon: "sparkle", cls: "fix", tip: "Essaie le correctif, puis l'applique ici même s'il ne crée rien à corriger (annulable avec Ctrl+Z)" }));
     return card;
   }
   /* a fix is tried before it is applied : one that would create a point to fix is held back, and says why */

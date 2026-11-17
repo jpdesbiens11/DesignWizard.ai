@@ -2,7 +2,7 @@
    left by everything already in place, and the result becomes a part of the assembly — with its volume, its mass, its
    place in the bill of materials. Done again in one click when the parts around it move. */
 
-import { el, btn, field, toast, modal, fmt, fmtMass } from "../core/dom.js";
+import { el, btn, field, toast, modal, fmt, fmtMass, fmtLen } from "../core/dom.js";
 import { store } from "../core/store.js";
 import { kernel } from "../cad/client.js";
 import { material } from "../cad/materials.js";
@@ -20,7 +20,7 @@ export function openFill(asmId, instId, ctx, redo = null) {
       const pre = await kernel.fill({ key: inst.part, matrix: M }, [], null), z0 = pre.bbox[2], z1 = pre.bbox[5];       // the empty housing first : its cavity gives the levels
       st.res = await kernel.fill({ key: inst.part, matrix: M }, others, z0 + (z1 - z0) * st.pct / 100, `Remplissage de ${spec.id}`);
       const m = material(st.material), g = st.res.volume / 1000 * m.rho;
-      out.textContent = `${fmt(st.res.volume / 1000, 1)} cm³ de ${m.name.toLowerCase()} — ${fmtMass(g)}, jusqu'à ${fmt(st.res.bbox[5] - st.res.bbox[2], 1)} mm au-dessus du fond de la cavité (cavité vide : ${fmt(pre.volume / 1000, 1)} cm³).`;
+      out.textContent = `${fmtLen(st.res.volume / 1000, 1, "cm³")} de ${m.name.toLowerCase()} — ${fmtMass(g)}, jusqu'à ${fmtLen(st.res.bbox[5] - st.res.bbox[2], 1)} au-dessus du fond de la cavité (cavité vide : ${fmtLen(pre.volume / 1000, 1, "cm³")}).`;
       go.disabled = false;
     } catch (e) { st.res = null; out.textContent = e.message; }
   }

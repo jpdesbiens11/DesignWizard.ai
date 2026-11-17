@@ -4,7 +4,7 @@
    nudge it, V sends it to the other face, Delete removes it. Right, the sensors and every track with what it can carry.
    The definition goes to an AI and comes back with a preview of what changed. Route : #/flex/<part>. */
 
-import { el, clear, icon, btn, badge, field, toast, fmt, fmtMass, debounce, modal, copyText, table } from "../core/dom.js";
+import { el, clear, icon, btn, badge, field, toast, fmt, fmtMass, inUnits, debounce, modal, copyText, table } from "../core/dom.js";
 import { registerModule, go, setStatus, setContext, setGuide } from "../core/app.js";
 import { store } from "../core/store.js";
 import { kernel } from "../cad/client.js";
@@ -75,7 +75,7 @@ function render(main, args) {
       const built = await kernel.build(spec); if (token !== st.token) return;
       st.built = built; setContext({ spec, built }); vp.viewer.clear(); showBuilt(vp.viewer, built, { prefix: "fx" }); if (first) vp.viewer.view("iso"); mark();
       const c = flexChecks(spec.flex), errs = built.log.filter((l) => l.level === "error"), bad = c.notes.filter((n) => n.level === "bad").length, chk = c.notes.filter((n) => n.level === "check").length;
-      info.textContent = `${c.rows.length} pistes sur ${fr(c.used, 1)} / ${fr(spec.flex.W, 1)} mm · ${fr(c.length, 0)} mm · ${spec.flex.sensors.length} capteur(s) · ${fmtMass(built.mass)}`;
+      info.textContent = `${inUnits(`${c.rows.length} pistes sur ${fr(c.used, 1)} mm de ${fr(spec.flex.W, 1)} mm · ${fr(c.length, 0)} mm`)} · ${spec.flex.sensors.length} capteur(s) · ${fmtMass(built.mass)}`;
       verdict.textContent = errs.length ? "ne se construit pas" : bad ? `${bad} à corriger` : chk ? `${chk} à vérifier` : "dans les règles"; verdict.className = `chip ${errs.length || bad ? "bad" : chk ? "warn" : "done"}`; verdict.dataset.tip = [...errs.map((e) => e.msg), ...c.notes.map((n) => n.text)].join(" · ") || "Pistes, plis et queue suivent les règles du métier";
       setStatus(`${id} construit`, "done");
     } catch (e) { if (token === st.token) { info.textContent = e.message; info.className = "chip bad"; } }

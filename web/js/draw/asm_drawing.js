@@ -6,7 +6,7 @@
 
 import { LW, dimLinear, drawBorder, drawTitleBlock, drawNotes, drawTable, drawRevisionTable, viewLabel, TITLE_BLOCK_H } from "./drafting.js";
 import { bounds, drawView, balloon, notesHeight } from "./part_drawing.js";
-import { f2 } from "./dim_model.js";
+import { len, massOf, drawingUnit, inDrawingUnits } from "./dim_model.js";
 
 const SCALES = [[5, "5:1"], [2, "2:1"], [1, "1:1"], [0.5, "1:2"], [0.4, "1:2.5"], [0.25, "1:4"], [0.2, "1:5"], [0.1, "1:10"], [0.05, "1:20"], [0.02, "1:50"]];
 const RIGHT_W = 180, ITEM_R = 4, AX = { front: [0, 2], top: [0, 1], right: [1, 2] };
@@ -23,11 +23,12 @@ export function placeBalloons(items, box, out = 13, r = ITEM_R) {
 }
 
 /** data = { asm, project, views, bbox, rows (the BOM), centers: { partId: [x, y, z] }, mass, joints, opts }. Returns what was drawn. */
-export function composeAssemblyDrawing(sheet, data) {
+export function composeAssemblyDrawing(sheet, data) { return inDrawingUnits((data.opts || {}).units, () => composeSheet(sheet, data)); }
+function composeSheet(sheet, data) {
   const { asm, project, views, bbox: bb, rows } = data, o = data.opts || {}, frame = drawBorder(sheet, { confidential: o.confidential });
   const B = { front: bounds(views.front), top: bounds(views.top), right: bounds(views.right), iso: bounds(views.iso) }, third = (o.projection || "third") === "third";
   const parts = rows.filter((r) => r.kind === "part"), hw = rows.filter((r) => r.kind !== "part");
-  const notes = ["Dimensioning per ASME Y14.5-2018; dimensions in millimetres; overall dimensions of the assembled product.", "Balloons refer to the items of the bill of materials; each part is defined by its own drawing, at the revision shown.",
+  const notes = [`Dimensioning per ASME Y14.5-2018; dimensions in ${drawingUnit() === "in" ? "inches, converted from the millimetre model (1 in = 25.4 mm)" : "millimetres"}; overall dimensions of the assembled product.`, "Balloons refer to the items of the bill of materials; each part is defined by its own drawing, at the revision shown.",
     `${asm.instances.length} part(s) placed, ${(asm.mates || []).length} joint(s)${hw.length ? `, fasteners and consumables: ${hw.length} line(s) of the bill of materials` : ""}.`, "Assembly sequence, tooling and tightening torques: see the assembly routing.", ...(asm.notes || [])];
   const notesW = 150, nH = Math.min(notesHeight(sheet, notes, notesW), 80), notesY = frame.y + frame.h - nH - 3, colX = frame.x + frame.w - RIGHT_W;
   const revs = o.revisions && o.revisions.length ? o.revisions : [{ rev: asm.revision || "A", description: "Initial release", date: o.date || "", by: o.drawnBy || "" }];
@@ -52,7 +53,7 @@ export function composeAssemblyDrawing(sheet, data) {
   }
   /* overall dimensions, numbered after the items */
   let n = rows.length;
-  const dim = (p1, p2, dir, off, value) => { const r = dimLinear(sheet, p1, p2, { dir, offset: off, text: f2(value) }), a = r.angle * Math.PI / 180, al = [Math.cos(a), Math.sin(a)], up = [Math.sin(a), -Math.cos(a)], run = sheet.textWidth(r.text, { size: 3.5 }) / 2 + 4.5;
+  const dim = (p1, p2, dir, off, value) => { const r = dimLinear(sheet, p1, p2, { dir, offset: off, text: len(value) }), a = r.angle * Math.PI / 180, al = [Math.cos(a), Math.sin(a)], up = [Math.sin(a), -Math.cos(a)], run = sheet.textWidth(r.text, { size: 3.5 }) / 2 + 4.5;
     balloon(sheet, [r.x + al[0] * run + up[0] * 2.3, r.y + al[1] * run + up[1] * 2.3], ++n); return n; };
   const dims = [["Overall length", bb[3] - bb[0], dim(T.front([B.front.x0, B.front.y0]), T.front([B.front.x1, B.front.y0]), "h", 24, bb[3] - bb[0])],
     ["Overall height", bb[5] - bb[2], dim(T.front([B.front.x0, B.front.y0]), T.front([B.front.x0, B.front.y1]), "v", -24, bb[5] - bb[2])],
@@ -65,9 +66,9 @@ export function composeAssemblyDrawing(sheet, data) {
   drawNotes(sheet, frame.x + 4, notesY, notesW, notes, { title: "NOTES", size: 2.3 });
   viewLabel(sheet, fx + B.front.w * s / 2, frontY + B.front.h * s + 34, "", `SCALE ${scale[1]}`);
   drawRevisionTable(sheet, frame.x + frame.w, frame.y, revs.slice(-4), { align: "right" });
-  drawTitleBlock(sheet, frame, { title: asm.name || asm.id, partNumber: asm.id, revision: asm.revision || "A", material: "Assembly", finish: "—", mass: data.mass >= 1000 ? `${f2(data.mass / 1000)} kg` : `${f2(data.mass || 0)} g`,
+  drawTitleBlock(sheet, frame, { title: asm.name || asm.id, partNumber: asm.id, revision: asm.revision || "A", material: "Assembly", finish: "—", mass: massOf(data.mass || 0),
     scale: scale[1], sheet: "1/1", size: "B (11 × 17)", drawnBy: o.drawnBy || "", checkedBy: o.checkedBy || "", approvedBy: o.approvedBy || "", date: o.date || "", company: o.organisation || "DesignWizard.ai", project: (project && project.name) || "",
-    generalTolerance: "ISO 2768-mK", projection: third ? "third" : "first", units: "mm", status: o.status || "Preliminary" });
+    generalTolerance: "ISO 2768-mK", projection: third ? "third" : "first", units: drawingUnit(), status: o.status || "Preliminary" });
   return { scale: scale[1], notes, items: parts.map((r) => ({ item: r.item, id: r.id, view: where[r.id] || null })), dims: dims.map(([label, value, k]) => ({ n: k, label, value })), bom: shown.length,
     layout: { notes: { x: frame.x + 4, y: notesY, w: notesW, h: nH }, iso: isoBox, views: { x: fx, y: y0, w: bw, h: bh }, bom: { x: colX, y: frame.y + frame.h - TITLE_BLOCK_H - th, w: RIGHT_W, h: th }, area, frame } };
 }

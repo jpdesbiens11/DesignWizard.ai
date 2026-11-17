@@ -12,6 +12,11 @@ anglais, avec le point décimal (2.5 ; échelle 1:1.5). Ce que le projet a écri
 de la pièce, finition) reste tel qu'il a été tapé ; la note de confidentialité et la note de la marque sont des phrases
 fixes (`docs/BRAND.md`). Voir `docs/TERMES.md`.
 
+**Unités.** Le dessin suit le choix d'unités (`docs/UNITES.md`) : en SI, des millimètres ; dans le système impérial, des
+**pouces** — trois décimales, sans zéro avant le point (`.472`), la note 1 dit que les cotes sont converties du modèle en
+millimètres, la case Units dit « in », la masse ajoute les onces ou les livres. Les clés des cotes restent en
+millimètres : une classe SC ou CSC tient d'un système à l'autre. La tolérance générale reste ISO 2768-mK.
+
 ## La feuille
 
 Format **tabloïd** — 11 × 17 po (431,8 × 279,4 mm, ANSI B), paysage — pour l'écran et pour le PDF vectoriel.

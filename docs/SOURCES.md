@@ -40,7 +40,7 @@ Le registre ne dit jamais plus que ce qui a été fait.
 | **choix maison** | convention de la plateforme, ou valeur donnée par le propriétaire du projet : aucune norme derrière |
 | **non lu** | citée par sa désignation ; le texte n'a pas été lu |
 
-Aujourd'hui, 69 lignes : 4 lues, 15 testées, 1 page lue, 8 en extrait, 14 à vérifier, 10 d'usage, 15 choix maison,
+Aujourd'hui, 70 lignes : 4 lues, 15 testées, 1 page lue, 8 en extrait, 15 à vérifier, 10 d'usage, 15 choix maison,
 2 non lues. Les deux que JP a nommées :
 
 - **Lignes de fuite et distances dans l'air — IEC 60664-1** : *à vérifier*. Les tables sont saisies d'après les tables

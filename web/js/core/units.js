@@ -19,7 +19,7 @@ export const PRESSURE_UNITS = { kPa: 1, bar: 100, psi: PSI, atm: 101.325 };
 const IMPERIAL = {
   "mm": ["in", IN], "µm": ["µin", IN / 1000], "mm²": ["in²", IN ** 2], "cm²": ["in²", IN ** 2 / 100], "mm³": ["in³", IN ** 3], "mm⁴": ["in⁴", IN ** 4],
   "N": ["lbf", LBF], "kN": ["lbf", LBF / 1000], "N·m": ["lbf·in", LBF * IN / 1000], "N·mm": ["lbf·in", LBF * IN], "N/mm": ["lbf/in", LBF / IN], "N·m/rad": ["lbf·in/rad", LBF * IN / 1000],
-  "MPa": ["ksi", PSI], "GPa": ["Msi", PSI], "kPa": ["psi", PSI], "Pa": ["psi", PSI * 1000], "L/min": ["gal/min", GAL],
+  "MPa": ["ksi", PSI], "GPa": ["Msi", PSI], "kPa": ["psi", PSI], "Pa": ["psi", PSI * 1000], "L/min": ["gal/min", GAL], "cm³": ["in³", IN ** 3 / 1000],
 };
 /* a mass keeps its SI unit and adds the imperial one in brackets */
 const DUAL = { "kg": ["lb", LB], "g": ["oz", LB * 1000 / 16] };
@@ -70,6 +70,39 @@ export function quantity(v, unit, prefs, num = (x) => String(x).replace(".", ","
 }
 /** A number to put in a field : as it is when nothing converts, five significant digits when it does (4 mm reads 0.15748 in). */
 export const fieldValue = (v, unit, prefs) => (typeof v === "number" && Number.isFinite(v) ? Number(toShown(v, unit, prefs).toPrecision(converts(unit, prefs) ? 5 : 12)) : v);
+
+/* ---------- a length, a mass, a list of dimensions, a sentence : what the screens of the parts, the assemblies and the drawings write ---------- */
+const comma = (x) => String(x).replace(".", ",");
+/** A number to read in the unit shown : `d` decimals when nothing converts (the tool's own unit), four significant digits when it does (42 mm reads 1,654 in). */
+export const shownNumber = (v, unit, d = 2, prefs) => (typeof v !== "number" || !Number.isFinite(v) ? v : converts(unit, prefs) ? Number(toShown(v, unit, prefs).toPrecision(4)) : Math.round(v * 10 ** d) / 10 ** d);
+/** A quantity to read, rounded as a screen rounds it : « 12,5 mm », « 0,4921 in », « 1,83 kg (4,03 lb) ». */
+export function measure(v, unit, d = 2, prefs, num = comma) {
+  if (typeof v !== "number" || !Number.isFinite(v)) return "—";
+  const u = shownUnit(unit, prefs), dual = dualOf(v, unit, prefs);
+  return `${num(shownNumber(v, unit, d, prefs))}${u ? ` ${u}` : ""}${dual ? ` (${num(Number(dual[0].toPrecision(3)))} ${dual[1]})` : ""}`;
+}
+/** Several dimensions and one unit : « 160 × 110 × 42 mm », « 6,299 × 4,331 × 1,654 in ». */
+export const measures = (list, unit, d = 1, prefs, num = comma) => `${list.map((v) => num(shownNumber(v, unit, d, prefs))).join(" × ")} ${shownUnit(unit, prefs)}`;
+/** A mass given in grams, as it reads : grams under a kilogram, kilograms above — and, in the imperial system, ounces or pounds beside. */
+export const massText = (g, prefs, num = comma) => (typeof g !== "number" || !Number.isFinite(g) ? "—" : g >= 1000 ? measure(g / 1000, "kg", 2, prefs, num) : measure(g, "g", 1, prefs, num));
+
+/* the quantities a sentence may carry : one number or several (« 160 × 110 × 42 mm », « de 0,2 à 0,4 mm », « 0.2 to 0.5 mm »), then a unit that converts */
+const NUMBER = "(?:\\d{1,3}(?:[ \\u00a0\\u202f]\\d{3})+(?!\\d)|\\d+)(?:[.,]\\d+)?", JOIN = "(?:\\s*[×–-]\\s*|\\s+(?:x|à|et|ou|to|and|or)\\s+)";
+const PROSE_UNITS = [...Object.keys(IMPERIAL), "kPa", ...Object.keys(DUAL)].filter((u, i, a) => a.indexOf(u) === i).sort((a, b) => b.length - a.length);
+const PROSE = new RegExp(`(?<![\\d.,])(${NUMBER}(?:${JOIN}${NUMBER})*)(\\s?)(${PROSE_UNITS.map((u) => u.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&")).join("|")})(?![A-Za-zÀ-ÿ0-9²³⁴·/])`, "g");
+/** A sentence written in the units of the tools, read in the units chosen : every quantity it carries is converted where it stands, to three
+    significant digits, written the way the sentence writes its numbers (comma or point) ; a mass gets its imperial reading in brackets.
+    Nothing changes in SI, nor in what is not a quantity (« M3 × 0,5 », « 1,5 d », « ISO 2768 »). */
+export function proseUnits(text, prefs) {
+  if (typeof text !== "string" || !text) return text;
+  const u = tidyUnits(prefs); if (u.system === "si" && u.pressure === "auto") return text;
+  return text.replace(PROSE, (all, nums, gap, unit) => {
+    const dual = DUAL[unit] && u.system === "imperial", k = dual ? DUAL[unit][1] : rule(unit, u)[1]; if (k === 1 && !dual) return all;
+    const point = /\d\.\d/.test(nums) && !/,/.test(nums), read = (t) => Number(t.replace(/[ \u00a0\u202f]/g, "").replace(",", ".")), write = (v) => { const t = String(Number(v.toPrecision(3))); return point ? t : t.replace(".", ","); };
+    if (dual) return new RegExp(`^${NUMBER}$`).test(nums) ? `${all} (${write(read(nums) / k)} ${DUAL[unit][0]})` : all;
+    return `${nums.replace(new RegExp(NUMBER, "g"), (t) => write(read(t) / k))}${gap || " "}${rule(unit, u)[0]}`;
+  });
+}
 
 /* ---------- the choice, kept in this browser ---------- */
 const KEY = "dw.units";

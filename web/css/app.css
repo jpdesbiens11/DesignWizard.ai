@@ -251,7 +251,7 @@ button.dw-view-label { pointer-events: auto; cursor: pointer; min-height: 24px; 
 .view-busy { position: absolute; inset: 0; display: grid; place-items: center; background: color-mix(in srgb, var(--paper) 55%, transparent); font-family: var(--hand); font-size: 1.05rem; color: var(--graphite); pointer-events: none; }
 
 /* ---------- parameters ---------- */
-.param { display: grid; grid-template-columns: minmax(0, 1fr) 86px; gap: .15rem .5rem; align-items: center; padding: .28rem 0; border-bottom: 1px dashed color-mix(in srgb, var(--graphite) 14%, transparent); }
+.param { display: grid; grid-template-columns: minmax(0, 1fr) 98px; gap: .15rem .5rem; align-items: center; padding: .28rem 0; border-bottom: 1px dashed color-mix(in srgb, var(--graphite) 14%, transparent); }
 .param label { font-size: .86rem; line-height: 1.2; overflow-wrap: anywhere; }
 .param label small { color: var(--muted); font-family: var(--mono); font-size: .74rem; margin-left: .3rem; }
 .param input[type="number"], .param input[type="text"] { padding: .2rem .4rem; text-align: right; font-variant-numeric: tabular-nums; }

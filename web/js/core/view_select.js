@@ -5,6 +5,7 @@
 
 import { el, icon } from "./dom.js";
 import { lightFace } from "./view_marks.js";
+import { getUnits, measure, shownNumber, shownUnit, converts } from "./units.js";
 
 export const SEL = { chosen: "#ff8a00", hover: "#35c2ff" };
 const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]), r3 = (v) => Math.round(v * 1000) / 1000;
@@ -35,25 +36,25 @@ export function entityOf(hit, mesh, tol) {
   return { kind: "face", key: `f:${hit.id}:${hit.faceId}`, id: hit.id, faceId: hit.faceId, face: hit.face, at: P.map(r3), normal: hit.normal, hit };
 }
 
-const f2 = (v) => String(Math.round(v * 100) / 100).replace(".", ",");
-/** What a selection measures, in plain words : the size of one entity, the distance between two. → text */
-export function measureOf(items) {
-  const one = (x) => (x.kind === "vertex" ? `Point (${x.at.map(f2).join(" ; ")})` : x.kind === "edge" ? (x.edge.type === "circle" ? `Arête circulaire Ø ${f2(2 * x.edge.r)}${x.edge.len ? ` · ${f2(x.edge.len)} mm` : ""}` : `Arête${x.edge.type === "line" ? " droite" : ""} · ${f2(x.edge.len || 0)} mm`)
-    : !x.face ? "Surface" : x.face.type === "plane" ? `Face plane${x.face.area ? ` · ${f2(x.face.area)} mm²` : ""}` : x.face.type === "cylinder" ? `Cylindre Ø ${f2(2 * x.face.r)}${x.face.inner ? " (alésage)" : ""}` : `Surface ${x.face.type}`);
+/** What a selection measures, in plain words : the size of one entity, the distance between two — in the units given (core/units.js ; millimetres without). → text */
+export function measureOf(items, units) {
+  const L = (v) => measure(v, "mm", 2, units), A = (v) => measure(v, "mm²", 2, units), conv = converts("mm", units), tag = conv ? ` ${shownUnit("mm", units)}` : "", f2 = (v) => String(shownNumber(v, "mm", 2, units)).replace(".", ",");
+  const one = (x) => (x.kind === "vertex" ? `Point (${x.at.map(f2).join(" ; ")})${tag}` : x.kind === "edge" ? (x.edge.type === "circle" ? `Arête circulaire Ø ${f2(2 * x.edge.r)}${tag}${x.edge.len ? ` · ${L(x.edge.len)}` : ""}` : `Arête${x.edge.type === "line" ? " droite" : ""} · ${L(x.edge.len || 0)}`)
+    : !x.face ? "Surface" : x.face.type === "plane" ? `Face plane${x.face.area ? ` · ${A(x.face.area)}` : ""}` : x.face.type === "cylinder" ? `Cylindre Ø ${f2(2 * x.face.r)}${tag}${x.face.inner ? " (alésage)" : ""}` : `Surface ${x.face.type}`);
   if (!items.length) return "";
   if (items.length === 1) return one(items[0]);
   if (items.length === 2) {
     const [a, b] = items, plane = (x) => x.kind === "face" && x.face && x.face.type === "plane", axis = (x) => (x.kind === "face" && x.face && x.face.type === "cylinder" ? { o: x.face.o, d: x.face.axis } : x.kind === "edge" && x.edge.type === "circle" && x.edge.c && x.edge.axis ? { o: x.edge.c, d: x.edge.axis } : null);
-    if (a.kind === "vertex" && b.kind === "vertex") return `Distance ${f2(dist(a.at, b.at))} mm (ΔX ${f2(Math.abs(a.at[0] - b.at[0]))} · ΔY ${f2(Math.abs(a.at[1] - b.at[1]))} · ΔZ ${f2(Math.abs(a.at[2] - b.at[2]))})`;
-    if (plane(a) && plane(b)) { const n = a.face.n, dot = Math.abs(n[0] * b.face.n[0] + n[1] * b.face.n[1] + n[2] * b.face.n[2]); if (dot > 0.9995) return `${f2(Math.abs((b.at[0] - a.at[0]) * n[0] + (b.at[1] - a.at[1]) * n[1] + (b.at[2] - a.at[2]) * n[2]))} mm entre faces parallèles`; return `Angle ${f2(Math.acos(Math.min(1, dot)) * 180 / Math.PI)}° entre les faces`; }
+    if (a.kind === "vertex" && b.kind === "vertex") return `Distance ${L(dist(a.at, b.at))} (ΔX ${f2(Math.abs(a.at[0] - b.at[0]))} · ΔY ${f2(Math.abs(a.at[1] - b.at[1]))} · ΔZ ${f2(Math.abs(a.at[2] - b.at[2]))}${tag})`;
+    if (plane(a) && plane(b)) { const n = a.face.n, dot = Math.abs(n[0] * b.face.n[0] + n[1] * b.face.n[1] + n[2] * b.face.n[2]); if (dot > 0.9995) return `${L(Math.abs((b.at[0] - a.at[0]) * n[0] + (b.at[1] - a.at[1]) * n[1] + (b.at[2] - a.at[2]) * n[2]))} entre faces parallèles`; return `Angle ${String(Math.round(Math.acos(Math.min(1, dot)) * 18000 / Math.PI) / 100).replace(".", ",")}° entre les faces`; }
     const pl = plane(a) ? a : plane(b) ? b : null, other = pl === a ? b : a;
-    if (pl && other.kind !== "face") return `${f2(Math.abs((other.at[0] - pl.at[0]) * pl.face.n[0] + (other.at[1] - pl.at[1]) * pl.face.n[1] + (other.at[2] - pl.at[2]) * pl.face.n[2]))} mm du ${other.kind === "vertex" ? "point" : "milieu de l'arête"} à la face`;
+    if (pl && other.kind !== "face") return `${L(Math.abs((other.at[0] - pl.at[0]) * pl.face.n[0] + (other.at[1] - pl.at[1]) * pl.face.n[1] + (other.at[2] - pl.at[2]) * pl.face.n[2]))} du ${other.kind === "vertex" ? "point" : "milieu de l'arête"} à la face`;
     const xa = axis(a), xb = axis(b);
-    if (xa && xb && xa.o && xb.o && xa.d && xb.d) { const w = [xb.o[0] - xa.o[0], xb.o[1] - xa.o[1], xb.o[2] - xa.o[2]], t = w[0] * xa.d[0] + w[1] * xa.d[1] + w[2] * xa.d[2]; return `Entraxe ${f2(Math.hypot(w[0] - t * xa.d[0], w[1] - t * xa.d[1], w[2] - t * xa.d[2]))} mm`; }
-    return `Distance ${f2(dist(a.at, b.at))} mm entre les deux éléments`;
+    if (xa && xb && xa.o && xb.o && xa.d && xb.d) { const w = [xb.o[0] - xa.o[0], xb.o[1] - xa.o[1], xb.o[2] - xa.o[2]], t = w[0] * xa.d[0] + w[1] * xa.d[1] + w[2] * xa.d[2]; return `Entraxe ${L(Math.hypot(w[0] - t * xa.d[0], w[1] - t * xa.d[1], w[2] - t * xa.d[2]))}`; }
+    return `Distance ${L(dist(a.at, b.at))} entre les deux éléments`;
   }
   const n = (k) => items.filter((x) => x.kind === k).length, part = (c, one1, many) => (c ? `${c} ${c > 1 ? many : one1}` : null), len = items.filter((x) => x.kind === "edge").reduce((s, x) => s + (x.edge.len || 0), 0);
-  return [part(n("face"), "face", "faces"), part(n("edge"), "arête", "arêtes"), part(n("vertex"), "point", "points")].filter(Boolean).join(" · ") + (len ? ` · ${f2(len)} mm d'arêtes` : "");
+  return [part(n("face"), "face", "faces"), part(n("edge"), "arête", "arêtes"), part(n("vertex"), "point", "points")].filter(Boolean).join(" · ") + (len ? ` · ${L(len)} d'arêtes` : "");
 }
 
 /** An entity seen in the frame of the view. m = the 16 elements of the matrix of its object (column-major) : points move and turn,
@@ -86,7 +87,7 @@ export function createSelection(viewer, onChange) {
     set(list) { items.clear(); for (const x of list) items.set(x.key, x); draw(); },
     clear() { if (items.size) { items.clear(); draw(); } },
     hover(x) { const k = x ? x.key : null; if (k === hovered) return; hovered = k; viewer.clearOverlays("selhover"); if (x && !items.has(x.key)) paint(x, SEL.hover, "selhover"); },
-    redraw: draw, measure: () => measureOf([...items.values()].map((x) => { const o = viewer.objects.get(x.id); return o ? inWorld(x, o.group.matrixWorld.elements) : x; })),
+    redraw: draw, measure: () => measureOf([...items.values()].map((x) => { const o = viewer.objects.get(x.id); return o ? inWorld(x, o.group.matrixWorld.elements) : x; }), getUnits()),
   };
 }
 

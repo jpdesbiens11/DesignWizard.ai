@@ -3,7 +3,8 @@
    raw stock is taken from the rack. The shop companion writes the part at once — smallest envelope carrying the
    interfaces, commercial thickness, routing sheet — and shows it live. The same intent can be handed to Claude. */
 
-import { el, clear, icon, btn, badge, field, toast, copyText, fmt, fmtMass, debounce } from "../core/dom.js";
+import { el, clear, icon, btn, badge, field, toast, copyText, fmt, fmtMass, fmtDims, inUnits, debounce } from "../core/dom.js";
+import { getUnits, shownUnit, fromShown, fieldValue, converts } from "../core/units.js";
 import { registerModule, go, setStatus, setContext, setGuide, app } from "../core/app.js";
 import { briefIssues, formTakes, materialChoices } from "../core/shop_check.js";
 import { guideBox, guideCount, nudge } from "../core/guide.js";
@@ -52,7 +53,10 @@ const SHAPES = [
   { type: "contact", side: "A", icon: "power", name: "Contact à pression", title: "Je fais contact par pression", params: { form: "cone", gap: 0.5, base: "Cu" }, text: "Des bossages en pointe, des lames à ressort ou une bande de lamelles entre deux plages planes de busbar : du signal à la puissance." },
 ];
 const OPPOSITE = { "+Z": "-Z", "-Z": "+Z", "+X": "-X", "-X": "+X", "+Y": "-Y", "-Y": "+Y" };
-const numIn = (obj, key, label, redraw, step = 1) => field(label, el("input", { type: "number", value: obj[key] ?? "", step, min: 0, onInput: (e) => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) { obj[key] = v; redraw(); } } }));
+/* a length of the brief is kept in millimetres ; its field shows and takes the unit chosen (core/units.js). A count, a current, a voltage are what they are. */
+const COUNTS = new Set(["n", "nx", "ny", "i", "u"]), inMm = (v) => fromShown(v, "mm", getUnits()), mmShown = (v) => fieldValue(v, "mm", getUnits()), mmLabel = (label) => (converts("mm", getUnits()) ? `${label.replace(/ \(mm\)$/, "")} (${shownUnit("mm", getUnits())})` : label);
+const numIn = (obj, key, label, redraw, step = 1) => { const len = !COUNTS.has(key), conv = len && converts("mm", getUnits());
+  return field(len ? mmLabel(label) : label, el("input", { type: "number", value: obj[key] === undefined || obj[key] === null ? "" : len ? mmShown(obj[key]) : obj[key], step: conv ? "any" : step, min: 0, onInput: (e) => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) { obj[key] = len ? inMm(v) : v; redraw(); } } })); };
 
 function render(main) {
   if (app.shopPreset) { brief = { ...blank(), ...app.shopPreset }; app.shopPreset = null; }      // sent by the screen of the special processes : this material, this process
@@ -165,11 +169,11 @@ function render(main) {
       else if (pat.type !== "single") row.append(numIn(pat, "nx", "En X", redraw), numIn(pat, "ny", "En Y", redraw), numIn(pat, "dx", "Entraxe X", redraw, 0.5), numIn(pat, "dy", "Entraxe Y", redraw, 0.5));
     } else if (it.type === "planar") row.append(numIn(q, "w", "Largeur", redraw), numIn(q, "h", "Hauteur", redraw));
     else if (it.type === "bond") { const a = ADHESIVES[q.adhesive] || ADHESIVES.epoxy, pickOf = (key, list) => el("select", { onChange: (e) => { q[key] = e.target.value; if (key === "adhesive") { const g = ADHESIVES[q.adhesive].gap; if (q.gap < g[0] || q.gap > g[1]) q.gap = g[0] <= 0.2 && g[1] >= 0.2 ? 0.2 : g[0]; drawIfaces(); } redraw(); } }, list.map(([k, l]) => el("option", { value: k, selected: k === q[key] }, l)));
-      row.append(numIn(q, "w", "Longueur de la plage", redraw, 0.5), numIn(q, "h", "Largeur", redraw, 0.5), field("Film de colle (mm)", el("input", { type: "number", value: q.gap, step: 0.05, min: 0.02, "data-tip": `C'est la profondeur du logement de colle (0,2 à 0,4 mm d'usage), ou la hauteur des plots. Plage usuelle de cette colle : ${String(a.gap[0]).replace(".", ",")} à ${String(a.gap[1]).replace(".", ",")} mm`, onInput: (e) => { const v = parseFloat(e.target.value); if (v > 0) { q.gap = v; redraw(); } } })),
+      row.append(numIn(q, "w", "Longueur de la plage", redraw, 0.5), numIn(q, "h", "Largeur", redraw, 0.5), field(mmLabel("Film de colle (mm)"), el("input", { type: "number", value: mmShown(q.gap), step: "any", min: 0, "data-tip": inUnits(`C'est la profondeur du logement de colle (0,2 à 0,4 mm d'usage), ou la hauteur des plots. Plage usuelle de cette colle : ${String(a.gap[0]).replace(".", ",")} à ${String(a.gap[1]).replace(".", ",")} mm`), onInput: (e) => { const v = inMm(parseFloat(e.target.value)); if (v > 0) { q.gap = v; redraw(); } } })),
         ...(it.side === "B" && q.adhesive !== "tape" ? [field("Le film est tenu par", el("select", { "data-tip": "Un logement de colle : une poche de la profondeur du film, entourée d'une lèvre sur laquelle l'autre pièce s'appuie sans écraser la colle. Ou des plots de calage de la hauteur du film.",
           onChange: (e) => { it.opts = { ...(it.opts || {}) }; delete it.opts.well; delete it.opts.pips; if (e.target.value === "well") it.opts.well = true; else if (e.target.value === "none") it.opts.pips = false; drawIfaces(); redraw(); } },
           [["well", "Un logement de colle"], ["pips", "Des plots de calage"], ["none", "Rien"]].map(([k, l]) => el("option", { value: k, selected: k === (it.opts && it.opts.well ? "well" : it.opts && it.opts.pips === false ? "none" : "pips") }, l)))),
-          ...(it.opts && it.opts.well ? [field("Lèvre d'appui (mm)", el("input", { type: "number", value: q.lip ?? 3, step: 0.5, min: 1, class: q.lip < 3 ? "bad" : null, "data-tip": "La bande pleine qui entoure le logement : 3 mm et plus, pour que la pièce qui s'appuie porte franchement", onInput: (e) => { const v = parseFloat(e.target.value); if (v > 0) { q.lip = v; e.target.classList.toggle("bad", v < 3); redraw(); } } }))] : [])] : []),
+          ...(it.opts && it.opts.well ? [field(mmLabel("Lèvre d'appui (mm)"), el("input", { type: "number", value: mmShown(q.lip ?? 3), step: "any", min: 0, class: q.lip < 3 ? "bad" : null, "data-tip": inUnits("La bande pleine qui entoure le logement : 3 mm et plus, pour que la pièce qui s'appuie porte franchement"), onInput: (e) => { const v = inMm(parseFloat(e.target.value)); if (v > 0) { q.lip = v; e.target.classList.toggle("bad", v < 3); redraw(); } } }))] : [])] : []),
         field("Colle", pickOf("adhesive", Object.entries(ADHESIVES).map(([k, v]) => [k, v.label]))), field("Préparation", pickOf("prep", Object.entries(BOND_PREPS).map(([k, v]) => [k, v.split(",")[0].split(" à ")[0]])))); }
     else if (it.type === "fit") row.append(numIn(q, "d", "Diamètre", redraw, 0.5), numIn(q, "length", "Longueur", redraw, 0.5));
     else if (it.type === "cutout") row.append(numIn(q, "w", "Largeur", redraw, 0.5), numIn(q, "h", "Hauteur", redraw, 0.5), numIn(q, "r", "Rayon", redraw, 0.5));
@@ -243,7 +247,7 @@ function render(main) {
       if (arch !== "cover") { brief.envelope = brief.envelope || { L: 100, W: 60, H: 25 };
         moldBox.append(el("div", { class: "form-row tight" }, numIn(brief.envelope, "L", arch === "plate" ? "Longueur" : "Longueur à contenir", again), numIn(brief.envelope, "W", arch === "plate" ? "Largeur" : "Largeur à contenir", again),
           arch === "shell" ? numIn(brief.envelope, "H", "Hauteur à contenir", again) : null,
-          arch === "shell" ? field("Colonnettes (mm)", el("input", { type: "number", value: brief.standoff ?? 6, step: 0.5, min: 3, onInput: (e) => { const v = parseFloat(e.target.value); if (v >= 3) { brief.standoff = v; again(); } } })) : null,
+          arch === "shell" ? field(mmLabel("Colonnettes (mm)"), el("input", { type: "number", value: mmShown(brief.standoff ?? 6), step: "any", min: 0, onInput: (e) => { const v = inMm(parseFloat(e.target.value)); if (v >= 3) { brief.standoff = v; again(); } } })) : null,
           arch === "shell" ? field("Fermeture", el("select", { "data-tip": "Des vis dans des bossages, ou des clips : des fenêtres dans les grands côtés, où s'accrochent les crochets du couvercle", onChange: (e) => { brief.closure = e.target.value === "clips" ? "clips" : undefined; brief.cover = e.target.value === "none" ? false : undefined; again(); } },
             [["screws", "Vis dans des bossages"], ["clips", metal ? "Clips (plastique seulement)" : "Clips, sans vis"], ["none", "Aucune"]].map(([k, l]) => el("option", { value: k, selected: k === (brief.cover === false ? "none" : brief.closure === "clips" ? "clips" : "screws") }, l)))) : null)); }
       moldBox.append(el("label", { class: "check small" }, el("input", { type: "checkbox", checked: brief.draft !== false, onChange: (e) => { brief.draft = e.target.checked ? undefined : false; again(); } }), `Draft modélisé dans la géométrie (${Math.max(R.draft[0], R.draft[1])}°) — décochez pour un modèle droit, draft déclaré seulement`));
@@ -294,15 +298,15 @@ function render(main) {
   function drawProposal(res, built) {
     const r = routing(res.spec, built), bb = built.bbox, st = built.facts.stock;
     clear(chips); clear(out);
-    chips.append(...[el("span", { class: "chip" }, fmtMass(built.mass)), el("span", { class: "chip" }, `${fmt(bb[3] - bb[0], 1)} × ${fmt(bb[4] - bb[1], 1)} × ${fmt(bb[5] - bb[2], bb[5] - bb[2] < 1 ? 3 : 1)} mm`),
+    chips.append(...[el("span", { class: "chip" }, fmtMass(built.mass)), el("span", { class: "chip" }, fmtDims([bb[3] - bb[0], bb[4] - bb[1], bb[5] - bb[2]], bb[5] - bb[2] < 1 ? 3 : 1)),
       r.utilisation !== null ? el("span", { class: "chip" + (r.utilisation < 0.25 ? " bad" : " done"), "data-tip": "Part du brut qui reste dans la pièce (l'inverse du ratio « buy-to-fly »)" }, `${Math.round(r.utilisation * 100)} % du brut utilisé`) : null,
       el("span", { class: "chip" }, `${r.setups.length || 1} posage(s) · ${r.tools.length} outil(s)`)].filter(Boolean));     // append(null) would write the word « null »
     for (const l of built.log.filter((x) => x.level === "error")) out.append(el("p", { class: "form-error" }, l.msg));
-    if (st) out.append(el("div", { class: "atelier-stock" }, icon(STOCK_FORMS[st.form].icon), el("div", null, el("b", null, st.label), el("small", null, `${material(res.spec.material).name} · ${processName(res.spec.process)}`))));
-    out.append(el("h3", null, "Gamme de fabrication"), el("ol", { class: "gamme" }, r.steps.map((s) => el("li", { class: `g-${s.kind}` }, el("span", { class: "g-n" }, s.n), el("span", { class: "grow" }, s.text), s.face && s.kind !== "stock" ? badge(WHERE[s.face] || s.face, "neutral") : null))));
-    if (r.tools.length) out.append(el("p", { class: "muted small" }, el("b", null, "Outils : "), r.tools.join(" · ")));
-    for (const a of r.advice) out.append(el("p", { class: "atelier-hint warn" }, icon("warning"), " ", a));
-    out.append(el("h3", null, "Ce que le compagnon a décidé"), el("ul", { class: "decisions" }, res.decisions.map((d) => el("li", null, d))));
+    if (st) out.append(el("div", { class: "atelier-stock" }, icon(STOCK_FORMS[st.form].icon), el("div", null, el("b", null, inUnits(st.label)), el("small", null, `${material(res.spec.material).name} · ${processName(res.spec.process)}`))));
+    out.append(el("h3", null, "Gamme de fabrication"), el("ol", { class: "gamme" }, r.steps.map((s) => el("li", { class: `g-${s.kind}` }, el("span", { class: "g-n" }, s.n), el("span", { class: "grow" }, inUnits(s.text)), s.face && s.kind !== "stock" ? badge(WHERE[s.face] || s.face, "neutral") : null))));
+    if (r.tools.length) out.append(el("p", { class: "muted small" }, el("b", null, "Outils : "), inUnits(r.tools.join(" · "))));
+    for (const a of r.advice) out.append(el("p", { class: "atelier-hint warn" }, icon("warning"), " ", inUnits(a)));
+    out.append(el("h3", null, "Ce que le compagnon a décidé"), el("ul", { class: "decisions" }, res.decisions.map((d) => el("li", null, inUnits(d)))));
   }
   /** Born manufacturable: the DFx verdict and the prototype lead time of the proposal, before the part even exists. */
   function drawOrder(res, built, dfx) {

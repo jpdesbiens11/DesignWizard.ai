@@ -10,7 +10,7 @@ import { composeDrawing, viewRequest, bounds, PAPER, tagRange } from "../../web/
 import { hatch } from "../../web/js/draw/hatch.js";
 import { sectionOf, sectionView } from "../../web/js/cad/section_view.js";
 import { composeAssemblyDrawing, placeBalloons } from "../../web/js/draw/asm_drawing.js";
-import { dimensionList, locateParams, setDimClass, dimText, classNotes, DIM_CLASSES } from "../../web/js/draw/dim_model.js";
+import { dimensionList, locateParams, setDimClass, dimText, classNotes, DIM_CLASSES, inchText, inDrawingUnits, len, massOf, drawingUnit, holeRows } from "../../web/js/draw/dim_model.js";
 import { solve, bom } from "../../web/js/core/assembly_logic.js";
 import { matPoint } from "../../web/js/cad/vec.js";
 import { toDwiz, fromDwiz } from "../../web/js/core/dwiz.js";
@@ -61,6 +61,23 @@ test("a part drawing is a tabloid sheet : notes bottom left, isometric view top 
   for (const d of info.dims.filter((x) => info.onView.includes(x.key))) assert.match(text, new RegExp(`>${d.n}<`), `balloon ${d.n} is on the sheet`);
   assert.match(info.notes[0], /ASME Y14\.5/); assert.ok(info.notes.some((n) => /Triangle “CSC”/.test(n)));
   const pdf = new PdfSheet({ width: PAPER.TABLOID[0], height: PAPER.TABLOID[1], title: spec.id }); composeDrawing(pdf, { spec, built, views, project: DEMO_DRIVE, opts: {} }); assert.ok(pdf.toBytes().length > 20000);
+  K.flush();
+});
+
+test("a drawing follows the units chosen : inches with three decimals and no zero before the point — the keys of the dimensions do not move", async () => {
+  assert.deepEqual([inchText(4.5), inchText(25.4), inchText(0.2), inchText(-12.7), inchText(160)], [".177", "1.000", ".008", "-.500", "6.299"], "an inch dimension as ASME Y14.5 writes it");
+  assert.deepEqual([len(160), drawingUnit(), massOf(111.13), massOf(1830)], ["160", "mm", "111.13 g", "1.83 kg"]); const IMP = { system: "imperial" };
+  assert.deepEqual(inDrawingUnits(IMP, () => [len(160), drawingUnit(), massOf(111.13), massOf(1830)]), ["6.299", "in", "111.13 g (3.92 oz)", "1.83 kg (4.03 lb)"]); assert.equal(len(160), "160", "millimetres again once the sheet is written");
+  assert.throws(() => inDrawingUnits(IMP, () => { throw new Error("x"); })); assert.equal(drawingUnit(), "mm", "even when the composition fails");
+  const K = await kernel(), spec = JSON.parse(JSON.stringify(DEMO_DRIVE.parts[0])), built = buildPart(K, spec), views = hlr(K, built.bodies[0].shape), sheet = () => new SvgSheet({ width: PAPER.TABLOID[0], height: PAPER.TABLOID[1], title: spec.id });
+  const a = sheet(), mm = composeDrawing(a, { spec, built, views, project: DEMO_DRIVE, opts: { date: "2026-01-01" } }), b = sheet(), inch = composeDrawing(b, { spec, built, views, project: DEMO_DRIVE, opts: { date: "2026-01-01", units: IMP } }), ta = a.toStrings().join("\n"), tb = b.toStrings().join("\n");
+  assert.deepEqual(inch.dims.map((d) => d.key), mm.dims.map((d) => d.key), "a class given to a dimension holds whatever the units"); assert.deepEqual(inch.dims.map((d) => d.value), mm.dims.map((d) => d.value), "the model stays in millimetres");
+  assert.deepEqual([mm.dims[0].text, inch.dims[0].text, mm.dims[1].text, inch.dims[1].text], ["160", "6.299", "110", "4.331"]); assert.equal(inch.scale, mm.scale); assert.deepEqual(inch.layout.boxes, mm.layout.boxes, "the same sheet, other figures");
+  const hole = (list) => list.find((d) => d.kind === "hole"); assert.match(hole(mm.dims).text, /^\d+× Ø \d/); assert.match(hole(inch.dims).text, /^\d+× Ø \.\d{3}$/); assert.equal(hole(inch.dims).key, hole(mm.dims).key);
+  assert.match(ta, /dimensions in millimetres;/); assert.match(ta, /Break sharp edges 0\.2 to 0\.5 mm/); assert.match(ta, />mm<\/text>/); assert.ok(!/\(\d+\.\d+ oz\)/.test(ta));
+  assert.match(tb, /dimensions in inches, converted from the millimetre model \(1 in = 25\.4 mm\);/); assert.match(tb, /Break sharp edges \.008 to \.020 in/); assert.match(tb, />in<\/text>/); assert.match(tb, /\d g \(\d+\.\d+ oz\)/); assert.match(tb, />6\.299<\/text>/); assert.ok(!/>160<\/text>/.test(tb));
+  assert.deepEqual(holeRows(built).map((h) => h.desc), inDrawingUnits(IMP, () => holeRows(built).map((h) => h.desc)), "the description that names a group of holes stays in millimetres"); assert.ok(inDrawingUnits(IMP, () => holeRows(built).some((h) => /depth \.\d{3}/.test(h.text))));
+  assert.equal(dimensionList(spec, built)[0].text, "160");
   K.flush();
 });
 

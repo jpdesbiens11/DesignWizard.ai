@@ -2,7 +2,7 @@
    and the inspector (parameters with sliders, interfaces, live DFx, data sheet, JSON). Every edit is one undo step and
    rebuilds the part in the kernel worker; linked interfaces adapt the neighbouring parts. */
 
-import { el, clear, icon, btn, badge, toast, modal, fmt, fmtMass, download, confirmBox } from "../core/dom.js";
+import { el, clear, icon, btn, badge, toast, modal, fmt, fmtMass, fmtLen, fmtDims, download, confirmBox } from "../core/dom.js";
 import { store } from "../core/store.js";
 import { app, go, setContext, setStatus } from "../core/app.js";
 import { kernel } from "../cad/client.js";
@@ -75,7 +75,7 @@ export function partStudio(main, args, cfg) {
       paint(built); if (gest) gest.sel.clear();
       if (first) vp.viewer.view("iso");
       const errs = built.log.filter((l) => l.level === "error").length, warns = built.log.filter((l) => l.level === "warn").length, bb = built.bbox;
-      info.textContent = `${fmtMass(built.mass)} · ${fmt(bb[3] - bb[0], 1)} × ${fmt(bb[4] - bb[1], 1)} × ${fmt(bb[5] - bb[2], 1)} mm · ${fmt(built.volume / 1000, 1)} cm³ · ${built.ms} ms`;
+      info.textContent = `${fmtMass(built.mass)} · ${fmtDims([bb[3] - bb[0], bb[4] - bb[1], bb[5] - bb[2]], 1)} · ${fmtLen(built.volume / 1000, 1, "cm³")} · ${built.ms} ms`;
       info.className = "chip" + (errs ? " bad" : "");
       if (errs) info.textContent = `${errs} erreur(s) de construction · ` + info.textContent;
       setStatus(errs ? `${st.spec.id} : ${errs} erreur(s)` : `${st.spec.id} construit en ${built.ms} ms`, errs ? "bad" : "done");

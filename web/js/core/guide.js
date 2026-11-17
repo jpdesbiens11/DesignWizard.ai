@@ -4,7 +4,7 @@
    the fields that wait for a value so that they blink until they are entered.
    An entry : { level: "error" | "todo" | "warn" | "tip", text, id?, field?, go?: () => void, fix?: { label, run } }. */
 
-import { el, icon, btn } from "./dom.js";
+import { el, icon, btn, inUnits } from "./dom.js";
 
 export const GUIDE_LEVELS = {
   error: { fr: "À corriger", icon: "warning", rank: 0, blocks: true },
@@ -24,7 +24,7 @@ export function guideBox(list, o = {}) {
   const all = guideSort(list), max = o.max || 6;
   if (!all.length) return o.quiet ? el("p", { class: "guide-ok small" }, icon("check"), " ", o.quiet) : null;
   const line = (x) => {
-    const L = GUIDE_LEVELS[x.level], act = x.go || (o.go ? () => o.go(x) : null), body = [icon(L.icon), el("span", { class: "guide-text" }, el("b", null, `${L.fr} — `), x.text)];
+    const L = GUIDE_LEVELS[x.level], act = x.go || (o.go ? () => o.go(x) : null), body = [icon(L.icon), el("span", { class: "guide-text" }, el("b", null, `${L.fr} — `), inUnits(x.text))];
     const node = act ? el("button", { class: `guide-line ${x.level}`, type: "button", onClick: act, "data-tip": "Y aller" }, body) : el("div", { class: `guide-line ${x.level}` }, body);
     return x.fix ? el("div", { class: "guide-fix" }, node, btn(x.fix.label, x.fix.run, { small: true, icon: "check" })) : node;
   };

@@ -4,7 +4,7 @@
    nudge it, R turns it, V sends it to the other face, + and − change its points, Delete removes it. Right, each connection
    with its number (T1, CT1…), its drop-down choices and what it is worth. Route : #/busbar/<part>. */
 
-import { el, clear, icon, btn, badge, field, toast, fmt, fmtMass, debounce } from "../core/dom.js";
+import { el, clear, icon, btn, badge, field, toast, fmt, fmtMass, inUnits, debounce } from "../core/dom.js";
 import { registerModule, go, setStatus, setContext } from "../core/app.js";
 import { store } from "../core/store.js";
 import { kernel } from "../cad/client.js";
@@ -103,7 +103,7 @@ function render(main, args) {
       const built = await kernel.build(spec); if (token !== st.token) return;
       st.built = built; setContext({ spec, built }); vp.viewer.clear(); showBuilt(vp.viewer, built, { prefix: "bb" }); if (first) vp.viewer.view("iso"); mark();
       const c = busbarChecks(spec.busbar), errs = built.log.filter((l) => l.level === "error"), bad = c.notes.filter((n) => n.level === "bad").length, chk = c.notes.filter((n) => n.level === "check").length;
-      info.textContent = `${fr(c.S, 1)} mm² · ${fr(c.J)} A/mm² · ${fr(c.length, 1)} mm${c.bends ? ` · développé ≈ ${fr(c.flat, 1)} mm` : ""} · ${fmtMass(built.mass)}`;
+      info.textContent = `${inUnits(`${fr(c.S, 1)} mm² · ${fr(c.J)} A/mm² · ${fr(c.length, 1)} mm${c.bends ? ` · développé ≈ ${fr(c.flat, 1)} mm` : ""}`)} · ${fmtMass(built.mass)}`;
       verdict.textContent = errs.length ? "ne se construit pas" : bad ? `${bad} à corriger` : chk ? `${chk} à vérifier` : "dans les règles"; verdict.className = `chip ${errs.length || bad ? "bad" : chk ? "warn" : "done"}`; verdict.dataset.tip = [...errs.map((e) => e.msg), ...c.notes.map((n) => n.text)].join(" · ") || "Section, pliage, bornes et contacts suivent les règles du métier";
       setStatus(`${id} construit`, "done");
     } catch (e) { if (token === st.token) { info.textContent = e.message; info.className = "chip bad"; } }

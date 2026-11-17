@@ -5,6 +5,7 @@
 import * as THREE from "../../vendor/three/three.module.min.js";
 import { triadOf, gridOf, gridKey } from "./view_grid.js";
 import { snapDirection } from "./snap.js";
+import { getUnits, measure, measures } from "./units.js";
 
 const GRAPHITE = 0x26323f;
 /** Colour of a design token (themes.css), read on the element so each theme draws its own edges. */
@@ -234,7 +235,7 @@ export class Viewer {
     if (key === this._gridKey && this.grid) return; this._gridKey = key; this._dropGrid();
     const g = gridOf(box, eye), lines = (arr, opacity) => { const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.BufferAttribute(arr, 3)); return new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: this.edgeColor.clone(), transparent: true, opacity, depthWrite: false })); };
     this.grid = new THREE.Group(); this.grid.add(lines(g.minor, 0.13), lines(g.heavy, 0.34)); this.grid.renderOrder = -1; this.scene.add(this.grid);
-    this.gridNote.hidden = false; this.gridNote.textContent = `grille ${String(g.step).replace(".", ",")} mm`;
+    this.gridNote.hidden = false; this.gridNote.textContent = `grille ${fmtLen(g.step, 3)}`;
   }
   _bind() {
     const c = this.canvas;
@@ -329,18 +330,18 @@ export class Viewer {
     const caught = this._caught(hit); if (caught.ref) hit = { ...hit, point: caught.point, caught: caught.ref };
     this.measure.push(hit);
     this.addMarker(hit.point, "#0c66e4", "measure");
-    if (hit.face && hit.face.type === "cylinder" && this.measure.length === 1) this.addLabel(hit.point, `Ø ${fmt(hit.face.r * 2)}`, "measure");
+    if (hit.face && hit.face.type === "cylinder" && this.measure.length === 1) this.addLabel(hit.point, `Ø ${fmtLen(hit.face.r * 2)}`, "measure");
     if (this.measure.length === 2) {
       const [a, b] = this.measure, pa = new THREE.Vector3(...a.point), pb = new THREE.Vector3(...b.point);
-      let d = pa.distanceTo(pb), text = `${fmt(d)} mm`;
+      let d = pa.distanceTo(pb), text = fmtLen(d);
       if (a.normal && b.normal && a.face && b.face && a.face.type === "plane" && b.face.type === "plane") {
         const na = new THREE.Vector3(...a.normal), nb = new THREE.Vector3(...b.normal);
         const gap = Math.abs(pb.clone().sub(pa).dot(na));
-        if (Math.abs(Math.abs(na.dot(nb)) - 1) < 1e-3 && gap > 1e-6) { d = gap; text = `${fmt(d)} mm entre faces ∥`; }      // two points of one same face : the distance between the points
+        if (Math.abs(Math.abs(na.dot(nb)) - 1) < 1e-3 && gap > 1e-6) { d = gap; text = `${fmtLen(d)} entre faces ∥`; }      // two points of one same face : the distance between the points
       }
       const dv = pb.clone().sub(pa);
       this.addPath([a.point, b.point], "#0c66e4", "measure", 0.5);
-      this.addLabel(pa.clone().add(pb).multiplyScalar(0.5).toArray(), `${text}${b.caught ? ` ∥ ${b.caught}` : ""}  (ΔX ${fmt(Math.abs(dv.x))} · ΔY ${fmt(Math.abs(dv.y))} · ΔZ ${fmt(Math.abs(dv.z))})`, "measure");
+      this.addLabel(pa.clone().add(pb).multiplyScalar(0.5).toArray(), `${text}${b.caught ? ` ∥ ${b.caught}` : ""}  (ΔX · ΔY · ΔZ : ${fmtDims([Math.abs(dv.x), Math.abs(dv.y), Math.abs(dv.z)], 2)})`, "measure");
       if (this.opts.onMeasure) this.opts.onMeasure({ d, a, b });
     }
     this.dirty = true;
@@ -430,5 +431,7 @@ export class Viewer {
     try { return take(); } finally { set(this.edgeColor); this.dirty = true; }
   }
 }
-const fmt = (v) => (Math.round(v * 100) / 100).toLocaleString("fr-CA");
+/* a length measured on the model, in the units chosen (core/units.js) */
+const local = (x) => (typeof x === "number" ? x.toLocaleString("fr-CA", { maximumFractionDigits: 6 }) : String(x));
+const fmtLen = (v, d = 2) => measure(v, "mm", d, getUnits(), local), fmtDims = (list, d = 2) => measures(list, "mm", d, getUnits(), local);
 export { VIEWS };

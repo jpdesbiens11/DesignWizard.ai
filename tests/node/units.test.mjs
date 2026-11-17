@@ -2,7 +2,7 @@
    metre per second and the kilogram — and a choice of its own for a pressure : kPa, bar, psi, atm. */
 import test from "node:test";
 import assert from "node:assert/strict";
-import { UNIT_SYSTEMS, PRESSURE_UNITS, SI_UNITS, tidyUnits, pressureUnit, shownUnit, toShown, fromShown, converts, dualOf, pressureEquivalents, quantity, fieldValue, getUnits, setUnits } from "../../web/js/core/units.js";
+import { UNIT_SYSTEMS, PRESSURE_UNITS, SI_UNITS, tidyUnits, pressureUnit, shownUnit, toShown, fromShown, converts, dualOf, pressureEquivalents, quantity, fieldValue, getUnits, setUnits, shownNumber, measure, measures, massText, proseUnits } from "../../web/js/core/units.js";
 import { MODELS, model, defaults, run } from "../../web/js/analysis/physics/index.js";
 import { sceneOf } from "../../web/js/analysis/physics/scene3d.js";
 import { physicsSummary, qty } from "../../web/js/modules/physics_panels.js";
@@ -65,4 +65,26 @@ test("the pressure loss in a round pipe reads in kPa, psi, bar and atm, and the 
   const si = sceneOf(m, defaults("pipe_flow")).labels.map((l) => l.text).join(" / "), imp = sceneOf(m, defaults("pipe_flow"), IMP).labels.map((l) => l.text).join(" / ");
   assert.match(si, /Ø4 intérieur · L = 1000 mm/); assert.match(si, /Q = 0,1 L\/min/); assert.match(imp, /Ø0,157 in intérieur · L = 39,4 in/); assert.match(imp, /Q = 0,0264 gal\/min/);
   for (const mod of MODELS) for (const l of sceneOf(mod, defaults(mod.id), IMP).labels) assert.ok(!/NaN|undefined| mm\b|\bkPa\b/.test(l.text), `${mod.id} : « ${l.text} »`);
+});
+
+test("a length, a mass, a list of dimensions : the tools keep their millimetres, the screens write the unit chosen", () => {
+  assert.deepEqual([measure(12.5, "mm", 2), measure(12.5, "mm", 2, IMP), measure(42, "mm", 1, IMP), measure(0.5, "mm", 2, IMP)], ["12,5 mm", "0,4921 in", "1,654 in", "0,01969 in"]);
+  assert.deepEqual([shownNumber(12.3456, "mm", 2), shownNumber(12.3456, "mm", 2, IMP), shownNumber(Infinity, "mm"), shownNumber(45, "°", 1, IMP)], [12.35, 0.486, Infinity, 45], "d decimals in the tool's unit, four significant digits when it converts");
+  assert.equal(measures([160, 110, 42], "mm", 1), "160 × 110 × 42 mm"); assert.equal(measures([160, 110, 42], "mm", 1, IMP), "6,299 × 4,331 × 1,654 in"); assert.equal(measure(58.3, "cm³", 1, IMP), "3,558 in³"); assert.equal(measure(800, "mm²", 2, IMP), "1,24 in²");
+  assert.deepEqual([massText(111.13), massText(1830), massText(111.13, IMP), massText(1830, IMP), massText(NaN)], ["111,1 g", "1,83 kg", "111,1 g (3,92 oz)", "1,83 kg (4,03 lb)", "—"], "a mass keeps the kilogram and adds the pound");
+  assert.equal(measure(NaN, "mm"), "—"); assert.equal(measure(3, "", 0, IMP), "3"); assert.equal(measure(2.5, "mm", 2, IMP, (x) => String(x)), "0.09843 in", "the caller's own way to write a number");
+});
+
+test("a sentence written in millimetres is read in the unit chosen : every quantity where it stands, nothing else", () => {
+  const same = ["Vis M3 × 0,5, prise 1,5 d, ISO 2768-mK, 90°, 25 °C, 3 A/mm², 100 mm/s, 12 V, 4 trous."];
+  for (const t of same) { assert.equal(proseUnits(t, IMP), t); assert.equal(proseUnits(t, SI_UNITS), t); }
+  assert.equal(proseUnits("Enveloppe 160 × 110 × 42 mm, masse 111,1 g.", SI_UNITS), "Enveloppe 160 × 110 × 42 mm, masse 111,1 g.", "nothing changes in SI");
+  assert.equal(proseUnits("Enveloppe 160 × 110 × 42 mm, masse 111,1 g.", IMP), "Enveloppe 6,3 × 4,33 × 1,65 in, masse 111,1 g (3,92 oz).");
+  assert.equal(proseUnits("Lèvre de plus de 3 mm, profondeur de 0,2 à 0,4 mm ; jeu 0,2–0,4 mm ; ±0,05 mm.", IMP), "Lèvre de plus de 0,118 in, profondeur de 0,00787 à 0,0157 in ; jeu 0,00787–0,0157 in ; ±0,00197 in.");
+  assert.equal(proseUnits("Break sharp edges 0.2 to 0.5 mm; deburr.", IMP), "Break sharp edges 0.00787 to 0.0197 in; deburr.", "a sentence written with points keeps its points");
+  assert.equal(proseUnits("Section 3 mm² ; 276 MPa ; 69 GPa ; 12 N/mm ; 1 250 N ; 15 N·m ; 2,5 kN ; 35 µm ; 58,3 cm³ ; barres de 6 000 mm.", IMP), "Section 0,00465 in² ; 40 ksi ; 10 Msi ; 68,5 lbf/in ; 281 lbf ; 133 lbf·in ; 562 lbf ; 1380 µin ; 3,56 in³ ; barres de 236 in.");
+  assert.equal(proseUnits("Masse 1,83 kg ; 12 kPa ; 2,5 L/min.", IMP), "Masse 1,83 kg (4,03 lb) ; 1,74 psi ; 0,66 gal/min."); assert.equal(proseUnits("12 kPa et 3 mm", { system: "si", pressure: "bar" }), "0,12 bar et 3 mm", "a pressure has its own choice");
+  assert.equal(proseUnits("les 4 trous de 3,4 mm", IMP), "les 4 trous de 0,134 in", "a count is not a thousand"); assert.equal(proseUnits("", IMP), ""); assert.equal(proseUnits(null, IMP), null); assert.equal(proseUnits(12, IMP), 12);
+  // what comes back in millimetres is what was typed : a field converts both ways
+  for (const mm of [3, 6.35, 12.7, 160, 0.2]) near(fromShown(fieldValue(mm, "mm", IMP), "mm", IMP), mm, 1e-4);
 });

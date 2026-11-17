@@ -12,6 +12,7 @@ import { PdfSheet } from "../draw/pdf.js";
 import { sectionOf } from "../cad/section_view.js";
 import { composeDrawing, viewRequest, PAPER, drawingSemantics } from "../draw/part_drawing.js";
 import { composeAssemblyDrawing } from "../draw/asm_drawing.js";
+import { getUnits } from "../core/units.js";
 import { DIM_CLASSES, setDimClass, dimText } from "../draw/dim_model.js";
 import { buildAssembly } from "../core/asm_scene.js";
 import { matPoint } from "../cad/vec.js";
@@ -26,7 +27,7 @@ function sheetOpts(key, rev, extra) {
   const d = (store.project.drawing || {}), led = ((store.project.review || {}).items || {})[key] || {}, now = (reviewItems(store.project).find((x) => x.key === key) || {}).state;      // the state as it is today : a reviewed artefact that changed — or whose parts moved on — is no longer « reviewed »
   const revisions = (led.history || []).filter((h) => h.rev).map((h) => ({ rev: h.rev, description: h.note || "", date: String(h.when || "").slice(0, 10), by: led.by || d.checkedBy || "" }));
   return { projection: d.projection || "third", hidden: d.hidden !== false, drawnBy: d.drawnBy || store.project.author || "", checkedBy: d.checkedBy || "", approvedBy: d.approvedBy || "",
-    status: d.status || (now === "ok" ? "Reviewed" : now === "changed" ? "To revalidate" : "Preliminary"), date: new Date().toISOString().slice(0, 10), revisions, organisation: d.organisation || "", confidential: confidentialNote(d.organisation, d.confidentiality), ...extra };
+    status: d.status || (now === "ok" ? "Reviewed" : now === "changed" ? "To revalidate" : "Preliminary"), date: new Date().toISOString().slice(0, 10), revisions, organisation: d.organisation || "", confidential: confidentialNote(d.organisation, d.confidentiality), units: getUnits(), ...extra };
 }
 const render2 = (compose, data, title) => { const svg = new SvgSheet({ width: PW, height: PH, title }), info = compose(svg, data);
   return { svg: svg.toString(0), svgs: svg.toStrings(), info, pdfBytes: () => { const pdf = new PdfSheet({ width: PW, height: PH, title }); compose(pdf, data); return pdf.toBytes(); } }; };
