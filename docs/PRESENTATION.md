@@ -25,8 +25,18 @@ en bas de chaque page, des notes pour le présentateur, une annexe de questions 
 - L'adresse garde la page : `presentation.html#9` ouvre la page 9.
 - **PDF** : Ctrl + P → « Enregistrer au format PDF » ; chaque page de la présentation est une page du PDF.
 
-Environ 25 pages pour une vingtaine de minutes, puis l'outil en direct : charger la démonstration, ouvrir l'Atelier,
+Vingt-six pages et une annexe, pour une vingtaine de minutes, puis l'outil en direct : charger la démonstration, ouvrir l'Atelier,
 ajouter une interface, suivre la pièce jusqu'à son dossier de commande.
+
+## Ce qu'elle montre depuis la v0.70
+
+Mise à jour avec ce qui est arrivé depuis la v0.58 : une page de plus à la station Physique — « Un média, pas une
+valeur — et le calcul part avec vous » (base des médias, note de calcul Word et PDF, classeur Excel vivant pour les 21
+modèles) — et, dans les pages existantes : les mots de l'atelier en anglais et le choix d'unités SI ou impérial (Pièce),
+le plan du mold (Procédés), les cinquante séries de connecteurs avec leur modèle et leur empreinte (Électrique), les
+dessins écrits en anglais et cotés en millimètres ou en pouces (Dessins), les premiers pas guidés (dernière page). Toutes
+les captures ont été refaites sur la version 0.70. L'écran de la bibliothèque électrique n'est pas montré en capture :
+il cite des fabricants par leur nom, ce que le matériel de présentation évite.
 
 ## Le fil conducteur
 

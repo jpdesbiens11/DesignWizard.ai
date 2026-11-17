@@ -163,14 +163,15 @@
     <div class="side">
       <h3 class="r">Avec les outils d'aujourd'hui</h3><p class="before r">Des fonctions génériques ; la fabricabilité se vérifie ailleurs, plus tard.</p>
       <h3 class="r">Ici</h3>
-      <ul><li class="r">Des verbes d'atelier : percer, tarauder, lamer, épauler, charioter.</li>
+      <ul><li class="r">Les mots de l'atelier, en anglais comme le métier les nomme — drill, tap, counterbore — et leur glossaire.</li>
         <li class="r">Tout se fait à la souris sur le modèle : un clic droit sur une face propose le trou, la poche, l'interface.</li>
-        <li class="r">Les règles de fabrication tournent en direct, avec un correctif en un clic.</li></ul>
+        <li class="r">Les règles de fabrication tournent en direct, avec un correctif en un clic.</li>
+        <li class="r">SI ou impérial : on lit et l'on tape en millimètres ou en pouces ; le projet reste en millimètres.</li></ul>
       <a class="go r" href="index.html#/parts" target="_blank" rel="noopener">Ouvrir dans la démo →</a>
     </div>
   </div>
   <p class="take r">La pièce est un fichier texte lisible : ses paramètres, ses interfaces, ses opérations dans l'ordre de l'atelier.</p>
-  <aside class="notes"><ul><li>Chaque paramètre a son curseur : la pièce se reconstruit en direct, les interfaces suivent.</li><li>L'onglet DFx du studio liste les règles enfreintes avec leur limite et le correctif proposé.</li><li>Le fichier « .dwiz » se relit à l'œil et se confie tel quel à une IA.</li></ul></aside>
+  <aside class="notes"><ul><li>Chaque paramètre a son curseur : la pièce se reconstruit en direct, les interfaces suivent.</li><li>L'onglet DFx du studio liste les règles enfreintes avec leur limite et le correctif proposé.</li><li>Le fichier « .dwiz » se relit à l'œil et se confie tel quel à une IA.</li><li>Le choix d'unités suit dans l'Atelier, l'assemblage, DFx, le guide et les dessins ; ce qui reste en millimètres est écrit dans la documentation.</li></ul></aside>
 </section>
 
 <section class="slide" data-stage="procedes">
@@ -181,7 +182,7 @@
     <div class="side">
       <h3 class="r">Avec les outils d'aujourd'hui</h3><p class="before r">Les règles du mouleur, du découpeur ou de l'imprimeur arrivent avec le devis.</p>
       <h3 class="r">Ici</h3>
-      <ul><li class="r">Une pièce moulée ou un profilé se dessine seul autour de ce qu'il contient.</li>
+      <ul><li class="r">Une pièce moulée ou un profilé se dessine seul autour de ce qu'il contient ; le plan du mold se lit sur la pièce.</li>
         <li class="r">Laser : chaque matière en feuille a son laser, ses épaisseurs, l'état de son bord.</li>
         <li class="r">Tôle pliée : le développé à plat et son DXF avec lignes de pliage.</li>
         <li class="r">Impression 3D, du polyamide au titane : la suite après impression est dans la gamme.</li></ul>
@@ -200,14 +201,14 @@
     <div class="side">
       <h3 class="r">Avec les outils d'aujourd'hui</h3><p class="before r">Le mécanicien et l'électricien travaillent dans deux outils, et se parlent par captures d'écran.</p>
       <h3 class="r">Ici</h3>
-      <ul><li class="r">Une bibliothèque de connecteurs et de cellules : séries standard de l'industrie, valeurs nominales publiées.</li>
+      <ul><li class="r">Cinquante séries de connecteurs, LV et HV : chacune a son modèle, reconstruit d'après les cotes publiées, et son empreinte de carte.</li>
         <li class="r">Busbar plié ou laminé, circuit flexible de mesure : section, densité de courant, échauffement estimé.</li>
         <li class="r">Soudure, contact à lamelles, borne vissée : ce sont des interfaces, elles se matent.</li></ul>
       <a class="go r" href="index.html#/library" target="_blank" rel="noopener">Ouvrir dans la démo →</a>
     </div>
   </div>
   <p class="take r">Un conducteur porte son potentiel : l'analyse d'isolation le lira plus loin.</p>
-  <aside class="notes"><ul><li>Les fabricants et les séries sont cités comme références de compatibilité ; la fiche du fabricant fait foi.</li><li>Le busbar laminé empile conducteurs, papier isolant et enveloppe ; l'outil vérifie ce que le papier doit tenir.</li></ul></aside>
+  <aside class="notes"><ul><li>Les fabricants et les séries sont cités comme références de compatibilité ; la fiche du fabricant fait foi.</li><li>Chaque série dit ce qui a été lu : cotes lues, lues en partie, à vérifier. Quand une série est retenue, la spec et le STEP du fabricant prennent le relais.</li><li>Le busbar laminé empile conducteurs, papier isolant et enveloppe ; l'outil vérifie ce que le papier doit tenir.</li></ul></aside>
 </section>
 
 <section class="slide" data-stage="electrique">
@@ -262,6 +263,24 @@
   </div>
   <p class="take r">Un ordre de grandeur juste, tout de suite, vaut mieux qu'un calcul fin trop tard.</p>
   <aside class="notes"><ul><li>Chaque modèle montre ses formules, ses hypothèses et sa source.</li><li>La simulation est volontairement simple : elle recoupe le calcul à la main et montre où regarder. Ce n'est pas une note de calcul certifiée.</li></ul></aside>
+</section>
+
+<section class="slide" data-stage="physique">
+  <p class="kicker r">Brique 7, suite · Le calcul à emporter</p>
+  <h2 class="r">Un média, pas une valeur — et le calcul part avec vous</h2>
+  <div class="cols">
+    <figure class="shot r"><img src="img/tour/calcul.jpg" alt="Un modèle analytique : le média choisi et ses propriétés à gauche, le modèle au centre, le résultat et les exports Word, PDF et Excel à droite" width="1600" height="1000"><figcaption>Physique → Modèles analytiques : le média à gauche, le modèle au centre, le résultat à emporter à droite.</figcaption></figure>
+    <div class="side">
+      <h3 class="r">Avec les outils d'aujourd'hui</h3><p class="before r">Un module d'Young tapé de mémoire dans un tableur que personne ne relit.</p>
+      <h3 class="r">Ici</h3>
+      <ul><li class="r">On choisit un média — un aluminium, une eau glycolée, l'air — et ses propriétés suivent, écrites à côté.</li>
+        <li class="r">La note de calcul sort en Word et en PDF, au gabarit des documents du projet.</li>
+        <li class="r">Le classeur Excel est vivant pour les 21 modèles : une case jaune change, résultats, marges et verdict suivent.</li></ul>
+      <a class="go r" href="index.html#/physics" target="_blank" rel="noopener">Ouvrir dans la démo →</a>
+    </div>
+  </div>
+  <p class="take r">Un calcul que l'on peut refaire sans l'outil est un calcul que l'on peut relire.</p>
+  <aside class="notes"><ul><li>Les formules du classeur sont recalculées par les tests, et l'ont été une fois dans LibreOffice : égales à la plateforme. Excel lui-même n'a pas été essayé.</li><li>Trois modèles cherchent une valeur pas à pas : le classeur refait les pas dans une feuille « Solveur », sans macro.</li><li>Les propriétés des médias sont des valeurs typiques ; chaque média dit d'où viennent les siennes.</li></ul></aside>
 </section>
 
 <section class="slide" data-stage="isolation">
@@ -328,12 +347,12 @@
       <h3 class="r">Ici</h3>
       <ul><li class="r">Vues, isométrique, coupe A-A hachurée, cartouche et notes : placés d'office.</li>
         <li class="r">Des cotes à bulles numérotées, les tolérances géométriques sur les interfaces, les caractéristiques spéciales.</li>
-        <li class="r">PDF et DXF ; le dessin porte la révision de la pièce.</li></ul>
+        <li class="r">Écrit en anglais, coté en millimètres ou en pouces ; PDF et DXF ; le dessin porte la révision de la pièce.</li></ul>
       <a class="go r" href="index.html#/drawings" target="_blank" rel="noopener">Ouvrir dans la démo →</a>
     </div>
   </div>
   <p class="take r">Ce que le dessin cote en premier, ce sont les interfaces : ce que le voisin doit retrouver.</p>
-  <aside class="notes"><ul><li>La cotation suit ASME Y14.5. Les bulles numérotent les cotes pour le rapport de contrôle.</li><li>Le dessin n'est pas un fichier à part : il se régénère depuis la pièce.</li></ul></aside>
+  <aside class="notes"><ul><li>La cotation suit ASME Y14.5. Les bulles numérotent les cotes pour le rapport de contrôle.</li><li>Le dessin n'est pas un fichier à part : il se régénère depuis la pièce.</li><li>Les cotes se rangent en arbre, par nature ; une classe SC ou CSC donnée à une cote tient d'un système d'unités à l'autre.</li></ul></aside>
 </section>
 
 <section class="slide" data-stage="revue">
@@ -420,7 +439,7 @@
   <div class="cards c3">
     <div class="card n1 r"><h3>1 · Ouvrir</h3><p>Sur votre poste, sans compte : cloner le dépôt et lancer <code>python designwizard.py</code>.</p><small>La démo en ligne s'ouvre sur approbation : demandez l'accès.</small></div>
     <div class="card n2 r"><h3>2 · Charger la démonstration</h3><p>Un variateur compact : boîtier moulé, deux cartes, dissipateur extrudé.</p></div>
-    <div class="card n3 r"><h3>3 · Suivre les onglets</h3><p>De gauche à droite : c'est l'ordre de cette présentation.</p></div>
+    <div class="card n3 r"><h3>3 · Suivre les premiers pas</h3><p>Huit étapes, de la page blanche à la révision libérée ; elles se cochent d'après le projet.</p><small>Les onglets, de gauche à droite, suivent l'ordre de cette présentation.</small></div>
   </div>
   <ul class="list cards c3">
     <li class="r">Quelle étape de votre parcours vous coûte le plus de tours ?</li>

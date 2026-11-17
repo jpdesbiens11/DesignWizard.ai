@@ -29,13 +29,14 @@ if (want("gamme")) { await open("#/parts/DRV-HEATSINK", 9000); await tab("Gamme"
 if (want("pcba")) { await open("#/pcba", 6000); await shot("pcba"); }
 if (want("assemblage")) { await open("#/assembly/DRV-ASM", 14000); await shot("assemblage"); }
 if (want("simulation")) { await open("#/fea", 9000); await shot("simulation"); }
+if (want("calcul")) { await open("#/physics/heatsink_natural", 2500); const all = page.getByRole("button", { name: /Tout confirmer/ }); if (await all.count()) { await all.first().click(); await wait(600); } await page.locator(".phys-tabs [data-tab='result']").click().catch(() => {}); await wait(1500); await shot("calcul"); }
 if (want("dfx")) { await open("#/dfx", 12000); await shot("dfx"); }
 if (want("dessin")) { await open("#/drawings/DRV-BASE", 14000); await shot("dessin"); }
 if (want("revue")) { await open("#/review", 6000); await shot("revue"); }
 if (want("rapport")) { await open("#/report", 15000); await shot("rapport"); }
 if (want("isolation") || want("busbar")) {
   await demo("DEMO-HVB");
-  if (want("isolation")) { await open("#/creepage/DEMO-HVB", 9000); await page.getByRole("button", { name: /Analyser/ }).first().click(); await wait(25000); await shot("isolation"); }
+  if (want("isolation")) { await open("#/creepage/DEMO-HVB", 9000); await page.getByRole("button", { name: /Analyser/ }).first().click(); await page.mouse.move(760, 520); await wait(25000); await shot("isolation"); }      // the pointer leaves the button : its tip would hide a heading
   if (want("busbar")) { await open("#/busbar", 2500); await page.getByRole("button", { name: /Nouveau busbar/ }).first().click(); await wait(9000); await shot("busbar"); }
 }
 console.log("errors:", errors.length ? errors.join(" || ") : "none");
