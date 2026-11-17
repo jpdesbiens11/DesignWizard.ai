@@ -19,12 +19,13 @@ export function guideCount(list) { const c = { error: 0, todo: 0, warn: 0, tip: 
 /** One line that sums a list up : « 1 à corriger · 2 à entrer » ; empty when there is nothing. */
 export function guideSummary(list) { const c = guideCount(list); return Object.keys(GUIDE_LEVELS).filter((k) => c[k]).map((k) => `${c[k]} ${GUIDE_LEVELS[k].fr.toLowerCase()}`).join(" · "); }
 
-/** The list as an element (null when it is empty). o : { title, go(entry) (a click on a line), max (lines shown, default 6), quiet (a word when all is well) }. */
+/** The list as an element (null when it is empty). o : { title, go(entry) (a click on a line), max (lines shown, default 6), quiet (a word when all is well),
+    si (true : the list of a calculation, written in SI and left so) }. An entry may say `si` for itself. */
 export function guideBox(list, o = {}) {
   const all = guideSort(list), max = o.max || 6;
   if (!all.length) return o.quiet ? el("p", { class: "guide-ok small" }, icon("check"), " ", o.quiet) : null;
   const line = (x) => {
-    const L = GUIDE_LEVELS[x.level], act = x.go || (o.go ? () => o.go(x) : null), body = [icon(L.icon), el("span", { class: "guide-text" }, el("b", null, `${L.fr} — `), inUnits(x.text))];
+    const L = GUIDE_LEVELS[x.level], act = x.go || (o.go ? () => o.go(x) : null), body = [icon(L.icon), el("span", { class: "guide-text" }, el("b", null, `${L.fr} — `), x.si || o.si ? x.text : inUnits(x.text))];
     const node = act ? el("button", { class: `guide-line ${x.level}`, type: "button", onClick: act, "data-tip": "Y aller" }, body) : el("div", { class: `guide-line ${x.level}` }, body);
     return x.fix ? el("div", { class: "guide-fix" }, node, btn(x.fix.label, x.fix.run, { small: true, icon: "check" })) : node;
   };

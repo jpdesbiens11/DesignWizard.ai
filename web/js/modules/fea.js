@@ -4,7 +4,7 @@
    what a good analyst does first. The simulation then runs in a worker and is compared with that estimate.
    Route: #/fea or #/fea/<part|assembly id>. Runs kept for the review live in project.simulations. */
 
-import { el, clear, icon, btn, badge, field, table, fmt, inUnits, toast, confirmBox } from "../core/dom.js";
+import { el, clear, icon, btn, badge, field, table, fmt, toast, confirmBox } from "../core/dom.js";
 import { registerModule, setStatus, setGuide } from "../core/app.js";
 import { store } from "../core/store.js";
 import { kernel } from "../cad/client.js";
@@ -63,7 +63,7 @@ function render(main, args) {
     if (patches.has(key)) return patches.get(key);
     const p = parsePatchKey(key); if (!p || !whole) return null;
     const i = patchInfo(whole, p), r = { key, patch: p, n: SIDES[p.dir], gone: !i, list: [{ patch: p }],
-      label: i ? inUnits(`Face pointée, tournée vers ${TOWARD[p.dir]}${i.level !== null ? ` — ${"xyz"["XYZ".indexOf(p.dir[1])]} = ${fmt(i.level, 1)} mm` : ""}, ${fmt(i.area / 100, 1)} cm²`) : "Face pointée — introuvable sur ce maillage" };
+      label: i ? `Face pointée, tournée vers ${TOWARD[p.dir]}${i.level !== null ? ` — ${"xyz"["XYZ".indexOf(p.dir[1])]} = ${fmt(i.level, 1)} mm` : ""}, ${fmt(i.area / 100, 1)} cm²` : "Face pointée — introuvable sur ce maillage" };
     patches.set(key, r); return r;
   }
   const regionOf = (key) => regions.find((r) => r.key === key) || patchRegion(key);
@@ -117,7 +117,7 @@ function render(main, args) {
     return [{ title: name }, ...here, ...(here.length ? ["—"] : []),
       ...(st.kind !== "thermal" && !st.fixed.includes(k) ? [{ label: "Appui ici (encastrement)", icon: "lock", run: add(() => { st.fixed.push(k); }, `Appui sur ${name}`, ["A", "fixed"]) }] : []),
       ...(st.kind === "structure" ? [{ label: `Effort ici : 100 N vers ${into}`, icon: "bolt", run: add(() => { st.loads.push({ region: k, mode: "force", F: 100, dir: into, p: 0.1, ask: ["F"] }); }, `Effort sur ${name} : entrez sa valeur à gauche`, ["E", "loads"]) },
-        { label: inUnits("Pression ici : 0,1 MPa"), icon: "flow", run: add(() => { st.loads.push({ region: k, mode: "pressure", F: 100, dir: into, p: 0.1, ask: ["p"] }); }, `Pression sur ${name} : entrez sa valeur à gauche`, ["E", "loads"]) }] : []),
+        { label: "Pression ici : 0,1 MPa", icon: "flow", run: add(() => { st.loads.push({ region: k, mode: "pressure", F: 100, dir: into, p: 0.1, ask: ["p"] }); }, `Pression sur ${name} : entrez sa valeur à gauche`, ["E", "loads"]) }] : []),
       ...(heat ? [{ label: "Source de chaleur ici : 5 W", icon: "thermal", run: add(() => { st.power.push({ region: k, P: 5, ask: ["P"] }); }, `Source sur ${name} : entrez sa puissance à gauche`, ["Q", "power"]) }, { label: "Température imposée ici : 25 °C", icon: "thermal", run: add(() => { st.fixedT.push({ region: k, T: 25, ask: ["T"] }); }, `Température imposée sur ${name} : entrez-la à gauche`, ["T", "fixedT"]) }] : [])];
   }
   /** The symbols of the load case : clamps where the product is held, arrows where it is pushed and which way, marks for heat —
@@ -138,7 +138,7 @@ function render(main, args) {
       else for (const s of spots(it.region, 2)) gem(v, s.p, { tag, color: it.color });
     }
     for (const it of bcLabels(tree, st.show, st.sel)) { const s = it.kind === "symmetry" ? planeSpots(it.plane, 1)[0] : spots(it.region, 1)[0]; if (!s) continue;
-      const b = v.addLabel(s.p, inUnits(it.short), tag, `bc${it.selected ? " sel" : ""}`, () => select(it.selected ? null : it.id)); b.style.borderColor = it.color; b.style.setProperty("--bc", it.color); b.dataset.tip = `${it.text} — ${it.where}`; b.setAttribute("aria-label", `${it.id} : ${it.text}, ${it.where}`); }
+      const b = v.addLabel(s.p, it.short, tag, `bc${it.selected ? " sel" : ""}`, () => select(it.selected ? null : it.id)); b.style.borderColor = it.color; b.style.setProperty("--bc", it.color); b.dataset.tip = `${it.text} — ${it.where}`; b.setAttribute("aria-label", `${it.id} : ${it.text}, ${it.where}`); }
     const cur = st.sel ? bcFind(tree, st.sel) : null; if (cur && cur.item.region) lightRegion(cur.item.region, cur.item.color, "bcsel");
   }
   /* where a plane of symmetry shows its clamps : on the plane, spread over what is kept, pointing at the half that was removed */
@@ -202,7 +202,7 @@ function render(main, args) {
   function showMesh() {
     const s = skin(model, null), col = new Float32Array(s.pos.length).fill(0.72);
     vp.viewer.clear(); vp.viewer.addField("fea", { pos: s.pos, idx: s.idx, col, epos: s.epos, pickable: true });
-    info.textContent = `${model.cut ? `Modèle ${fraction(model.cut.copies)} · ` : ""}${model.nCells.toLocaleString("fr-CA")} cubes de ${inUnits(`${fmt(model.grid.h, 2)} mm`)} · ${model.nNodes.toLocaleString("fr-CA")} nœuds`; info.className = "chip";
+    info.textContent = `${model.cut ? `Modèle ${fraction(model.cut.copies)} · ` : ""}${model.nCells.toLocaleString("fr-CA")} cubes de ${fmt(model.grid.h, 2)} mm · ${model.nNodes.toLocaleString("fr-CA")} nœuds`; info.className = "chip";
   }
   /* ---------- the two views : the model with its conditions, the last result ---------- */
   /** The case or the mesh changed : the result is kept, said to be of before, and the model comes back to the view. */
@@ -218,7 +218,7 @@ function render(main, args) {
   function peak() {
     const o = vp.viewer, thermal = last.kind === "thermal", p = thermal ? last.result.maxT : last.result.maxVm; o.clearOverlays("bc");
     if (!thermal && st.quantity === "fs" && last.fs) { const S = safetySummary(last.fs, st.fsTarget); if (S.min !== null && S.at >= 0) { const at = Array.from(last.skin.pos.subarray(3 * S.at, 3 * S.at + 3)); o.addMarker(at, "#ff5a4f", "bc", 1.8); o.addLabel(at, `FS ${Number.isFinite(S.min) ? show(S.min, 2) : "∞"}`, "bc", S.min < st.fsTarget ? "err" : ""); } return; }
-    o.addMarker(p.at, "#ff5a4f", "bc", 1.8); o.addLabel(p.at, thermal ? `${show(p.value, 1)} °C` : inUnits(`${show(p.value, 1)} MPa`), "bc", "err");
+    o.addMarker(p.at, "#ff5a4f", "bc", 1.8); o.addLabel(p.at, thermal ? `${show(p.value, 1)} °C` : `${show(p.value, 1)} MPa`, "bc", "err");
   }
   /** The simple regions of a choice: one for a face, one per screw for a bolted interface (the effort is shared between them). */
   const listOf = (key) => (regionOf(key) || regions[0]).list;
@@ -276,8 +276,8 @@ function render(main, args) {
     const DEFAULT = { fixed: () => regions[0].key, loads: () => ({ region: regions[1].key, mode: "force", F: 100, dir: "-Z", p: 0.1, ask: ["F"] }), power: () => ({ region: regions[0].key, P: 5, ask: ["P"] }), fixedT: () => ({ region: regions[5].key, T: 25, ask: ["T"] }) };
     const aim = (set) => { if (st.view === "result") setView("model"); asking = set; view.style.cursor = "crosshair"; toast("Cliquez une face du produit, extérieure ou intérieure, ou une interface : elle s'allume sous le curseur. Face cachée ? Tournez la vue ou coupez-la.", "info", 4200); };
     const go = (x) => { if (x.id && st.sel !== x.id) select(x.id); setTimeout(() => { if (alive) nudge(left.querySelector(x.field ? `.bc-edit [data-field="${x.field}"]` : x.id ? `[data-bc="${x.id}"]` : ".bc-tree")); }, 90); };
-    const found = issues(); setGuide(found.map((x) => ({ ...x, go: () => go(x) })));      // the guide of the top bar says the same
-    sec.append(el("h3", null, "Cas de charge"), ...[guideBox(found, { go })].filter(Boolean), bcSection({ st, tree: loadTree(), regions: [...regions, ...usedPatches()], dirs: DIRS, select, changed, aim, relabel: () => { drawLeft(); drawSymbols(); },
+    const found = issues(); setGuide(found.map((x) => ({ ...x, si: true, go: () => go(x) })));      // the guide of the top bar says the same
+    sec.append(el("h3", null, "Cas de charge"), ...[guideBox(found, { go, si: true })].filter(Boolean), bcSection({ st, tree: loadTree(), regions: [...regions, ...usedPatches()], dirs: DIRS, select, changed, aim, relabel: () => { drawLeft(); drawSymbols(); },
       hover: (k, color) => { vp.viewer.clearOverlays("bchover"); if (k && !asking) lightRegion(k, color || LIT.named, "bchover"); },
       add: (key) => { st[key].push(DEFAULT[key]()); const g = loadTree().find((x) => x.key === key), it = g.items[g.items.length - 1]; st.sel = it.id; changed(); aim((k) => { if (key === "fixed") st.fixed[it.index] = k; else st[key][it.index].region = k; changed(); toEnter(); }); },
       remove: (key, i) => { st[key].splice(i, 1); st.sel = null; changed(); }, unsym }),
@@ -290,7 +290,7 @@ function render(main, args) {
       st.conv.on ? el("div", { class: "bc-row" }, num(st.conv.h, (v) => { st.conv.h = v; changed(); }), el("small", null, "W/m²·K"), num(st.conv.Tamb, (v) => { st.conv.Tamb = v; changed(); }), el("small", null, "°C")) : null,
       el("p", { class: "muted small" }, "Air calme : 5 à 15 W/m²·K ; air soufflé : 25 à 100 ; plaque froide à eau : 500 et plus.")].filter(Boolean));
     const m = geo.bodies[0].material;
-    scroll.append(el("div", { class: "side-section" }, el("h3", null, "Matériau"), el("p", { class: "small" }, geo.bodies.length > 1 ? `${geo.bodies.length} corps, chacun avec son matériau ; contacts collés, conduction parfaite.` : inUnits(`${m.name} — E ${fmt(m.E / 1000, 1)} GPa, ν ${m.nu}, k ${fmt(m.k, 1)} W/m·K${m.alpha ? `, α ${fmt(m.alpha * 1e6, 1)} µm/m·K` : ""}${m.Re ? `, Re ${fmt(m.Re, 0)} MPa` : ""}.`)),
+    scroll.append(el("div", { class: "side-section" }, el("h3", null, "Matériau"), el("p", { class: "small" }, geo.bodies.length > 1 ? `${geo.bodies.length} corps, chacun avec son matériau ; contacts collés, conduction parfaite.` : `${m.name} — E ${fmt(m.E / 1000, 1)} GPa, ν ${m.nu}, k ${fmt(m.k, 1)} W/m·K${m.alpha ? `, α ${fmt(m.alpha * 1e6, 1)} µm/m·K` : ""}${m.Re ? `, Re ${fmt(m.Re, 0)} MPa` : ""}.`),
       el("p", { class: "muted small" }, "Valeurs typiques : la fiche de la nuance fait foi.")));
   }
 

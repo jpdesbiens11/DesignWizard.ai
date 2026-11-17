@@ -7,7 +7,7 @@
 import { el, btn, badge, table, fmt, icon, toast } from "../core/dom.js";
 import { MODELS, DOMAINS, model, shortTitle, runsByPart } from "../analysis/physics/index.js";
 import { sketch, domainIcon } from "./physics_sketch.js";
-import { getUnits, quantity, toShown, shownUnit, dualOf, pressureEquivalents } from "../core/units.js";
+import { CALC_UNITS, quantity, toShown, shownUnit, dualOf, pressureEquivalents } from "../core/units.js";
 
 export const VERDICT = { ok: ["OK", "ok"], warn: ["À vérifier", "warn"], fail: ["NON", "danger"] };
 export const verdictBadge = (v) => badge((VERDICT[v] || VERDICT.warn)[0], (VERDICT[v] || VERDICT.warn)[1]);
@@ -21,11 +21,11 @@ export function show(v) {
   return fmt(v, a === 0 || a >= 1000 ? 0 : a >= 100 ? 1 : a >= 10 ? 2 : a >= 1 ? 3 : Math.min(9, 3 - Math.floor(Math.log10(a))));
 }
 
-/** A value with its unit, in the units the designer chose (core/units.js) : « 0,096 psi », « 1,83 kg (4,03 lb) ». */
-export const qty = (v, unit, U = getUnits()) => quantity(v, unit, U, show);
+/** A value with its unit, in the units of a calculation — SI, whatever the design is read in : « 0,662 kPa », « 1,83 kg ». */
+export const qty = (v, unit, U = CALC_UNITS) => quantity(v, unit, U, show);
 
 /** Rows of the design-review report : one per saved run (title, part, verdict, key result, tightest check). */
-export function physicsSummary(project, U = getUnits()) {
+export function physicsSummary(project, U = CALC_UNITS) {
   const parts = (project && project.parts) || [];
   return ((project && project.physics) || []).map((r) => {
     const m = model(r.model), values = r.values || {}, o = m && m.outputs.find((x) => typeof values[x.key] === "number");
@@ -56,7 +56,7 @@ export function modelTiles(body, o) {
 const checkState = (c) => (c.ok ? (c.tight ? ["juste", "warn"] : ["OK", "ok"]) : c.soft ? ["à vérifier", "warn"] : ["NON", "danger"]);
 /** The result of the run. o : { cur, r (the run), waits (text : why the report must wait, or ""), save(), blocked() } */
 export function resultPanel(body, o) {
-  const { cur, r } = o, U = getUnits();
+  const { cur, r } = o, U = CALC_UNITS;
   if (!cur || !r) { body.append(el("p", { class: "muted" }, "Choisissez d'abord un modèle : le verdict, les valeurs et les marges s'écrivent ici pendant que vous tapez.")); return; }
   body.append(el("div", { class: `phys-verdict ${r.verdict}` }, verdictBadge(r.verdict), el("span", null, VERDICT_TEXT[r.verdict] || "")));
   if (o.waits) body.append(el("p", { class: "phys-eg small" }, o.waits));
@@ -89,7 +89,7 @@ export function exportBar(out, gate, title) {
 export function calcPanel(body, o) {
   const { cur, r } = o;
   if (!cur || !r) { body.append(el("p", { class: "muted" }, "Le calcul d'un modèle s'écrit ici, étape par étape, avec ses hypothèses et sa source.")); return; }
-  body.append(el("div", { class: "side-section" }, el("h3", null, "Calcul"), ...(getUnits().system === "imperial" ? [el("p", { class: "muted small" }, "Le calcul s'écrit en SI, comme dans sa source ; les résultats et les vérifications sont convertis à l'affichage.")] : []), el("ol", { class: "phys-steps" }, r.steps.map((s) => el("li", null, s)))),
+  body.append(el("div", { class: "side-section" }, el("h3", null, "Calcul"), el("ol", { class: "phys-steps" }, r.steps.map((s) => el("li", null, s)))),
     el("div", { class: "side-section" }, el("h3", null, "Hypothèses"), el("ul", { class: "phys-steps" }, cur.assumptions.map((a) => el("li", null, a)))),
     el("div", { class: "side-section" }, el("h3", null, "Domaine de validité"), el("p", { class: "small" }, cur.validity)),
     el("div", { class: "side-section" }, el("h3", null, "Référence"), el("p", { class: "muted small" }, cur.reference)));

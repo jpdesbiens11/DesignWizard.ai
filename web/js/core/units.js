@@ -30,6 +30,9 @@ export function tidyUnits(p) {
   return { system, pressure };
 }
 export const SI_UNITS = Object.freeze({ system: "si", pressure: "auto" });
+/** The units of a calculation — analytical models, simulation, isolation, calculation note, workbook : SI, whatever the designer chose for the
+    design (the owner's rule : an engineering calculation is always written in SI). */
+export const CALC_UNITS = SI_UNITS;
 /** The pressure unit in force : the one chosen, or the one of the system. */
 export const pressureUnit = (prefs) => { const u = tidyUnits(prefs); return u.pressure !== "auto" ? u.pressure : u.system === "imperial" ? "psi" : "kPa"; };
 
@@ -111,26 +114,30 @@ export function proseUnits(text, prefs, o = {}) {
 /* a document to read (the neutral model core/docx.js and core/pdfdoc.js print) : its sentences, its lists, the cells of its tables, read in the units chosen.
    What a block IS — its type, its style, a colour, a picture — is left alone ; a value and its unit kept in two cells of a table stay as they are, together. */
 const DOC_KEEP = new Set(["type", "style", "fill", "align", "kind", "id", "png", "pngSize", "widths", "reference", "revision", "date"]);
-/** A document model in the units chosen. Nothing changes in SI. */
+/** A document model in the units chosen. Nothing changes in SI. o.si : a pattern — a section whose heading matches it stays as written, down to the
+    next heading of its level or above (the sections that report calculations keep their SI units). */
 export function docUnits(doc, prefs, o = {}) {
   const u = tidyUnits(prefs); if (!doc || (u.system === "si" && u.pressure === "auto")) return doc;
+  let kept = 0;      // the level of the heading that opened a section left as written — 0 outside one
+  const asWritten = (b) => { const m = o.si && b && /^h([1-6])$/.exec(b.type || ""); if (m) { if (o.si.test(b.text || "")) kept = +m[1]; else if (kept && +m[1] <= kept) kept = 0; } return kept > 0; };
   const walk = (v, key) => (typeof v === "string" ? (DOC_KEEP.has(key) ? v : proseUnits(v, u, o)) : Array.isArray(v) ? v.map((x) => walk(x, key)) : v && typeof v === "object" && !(v instanceof Uint8Array) && !(v instanceof Date) ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, DOC_KEEP.has(k) ? x : walk(x, k)])) : v);
-  return { ...doc, blocks: walk(doc.blocks || [], "blocks") };
+  return { ...doc, blocks: (doc.blocks || []).map((b) => (asWritten(b) ? b : walk(b, "blocks"))) };
 }
 
 /* ---------- the choice, kept in this browser ---------- */
 const KEY = "dw.units";
 let memo = null;
-/** The units in force. Without a browser (tests, tools) : SI. */
+/** The units in force. Without a browser (tests, tools) : SI. The choice is the SYSTEM : a pressure follows it (kPa, or psi) — the unit of a
+    pressure was once a choice of its own, for the analytical models, which now stay in SI ; a choice kept by an older version is not read. */
 export function getUnits() {
   if (memo) return memo;
   let p = null;
   try { p = typeof localStorage !== "undefined" ? JSON.parse(localStorage.getItem(KEY) || "null") : null; } catch (e) { p = null; }
-  memo = tidyUnits(p); return memo;
+  memo = tidyUnits({ system: p && p.system }); return memo;
 }
 /** Changes the units and tells the screens (« dw:units » on the window). → the units in force */
 export function setUnits(patch) {
-  memo = tidyUnits({ ...getUnits(), ...patch });
+  memo = tidyUnits({ system: { ...getUnits(), ...patch }.system });
   try { if (typeof localStorage !== "undefined") localStorage.setItem(KEY, JSON.stringify(memo)); } catch (e) { /* private window : the choice lasts for this page only */ }
   if (typeof window !== "undefined" && typeof CustomEvent !== "undefined") window.dispatchEvent(new CustomEvent("dw:units", { detail: memo }));
   return memo;

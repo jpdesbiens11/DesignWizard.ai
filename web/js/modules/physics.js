@@ -26,8 +26,7 @@ import { TREE, itemFolderName } from "../google/drive_fs.js";
 import { sceneOf } from "../analysis/physics/scene3d.js";
 import { sketch, domainIcon } from "./physics_sketch.js";
 import { physicsSummary, show, qty, verdictBadge, domainOf, modelTiles, resultPanel, calcPanel, savedPanel, tabBar } from "./physics_panels.js";
-import { getUnits, shownUnit, fromShown, fieldValue, converts } from "../core/units.js";
-import { unitPicker } from "../core/units_ui.js";
+import { CALC_UNITS, shownUnit, fromShown, fieldValue, converts } from "../core/units.js";
 
 export { physicsSummary, show };
 
@@ -79,7 +78,7 @@ function render(main, args) {
     r = cur ? run(cur.id, inputs) : null;
     const eg = examples();
     found = inputIssues(cur, inputs, r, { examples: eg, read: Object.keys(notes()), part: partId }).map((x) => (x.examples ? { ...x, fix: { label: "Tout confirmer", run: confirmAll } } : x));
-    setGuide(found.map((x) => ({ ...x, go: () => goTo(x) })));
+    setGuide(found.map((x) => ({ ...x, si: true, go: () => goTo(x) })));
     for (const [key, f] of fields) {
       const v = inputs[key], bad = !f.def.options && (v === null || v === undefined || !Number.isFinite(v) || v < f.def.min || v > f.def.max), isEg = eg.includes(key);
       f.row.style.display = inputActive(f.def, inputs) ? "" : "none";
@@ -87,7 +86,7 @@ function render(main, args) {
       if (isEg) f.input.dataset.tip = f.slot ? "Média proposé : choisissez le vôtre, ou Entrée pour le garder" : "Valeur d'exemple : tapez la vôtre, ou Entrée pour la garder"; else delete f.input.dataset.tip;
     }
     if (r && r.media) { for (const [key, o] of derived) if (r.media.values[key] !== undefined) o.out.textContent = qty(r.media.values[key], o.unit); for (const [key, host] of shownOf) drawShown(host, r.media.shown.find((x) => x.slot === key)); }      // a fluid changes with its temperature
-    clear(guideHost); const g = guideBox(found, { go: goTo }); if (g) guideHost.append(g);
+    clear(guideHost); const g = guideBox(found, { go: goTo, si: true }); if (g) guideHost.append(g);
     drawTop(); if (ui.tab !== "models") drawRight(true);
     clearTimeout(timer); timer = setTimeout(() => { if (alive) drawScene(refit); }, refit ? 0 : 90);
   }
@@ -110,7 +109,7 @@ function render(main, args) {
     const scroll = el("div", { class: "side-scroll" });
     left.append(scroll);
     scroll.append(el("div", { class: "subtabs" }, el("a", { class: "subtab active", href: "#/physics" }, "Modèles analytiques"), el("a", { class: "subtab", href: "#/fea" }, "Simulation")));
-    const U = getUnits(), units = el("div", { class: "side-section phys-units" }, el("h3", null, "Unités"), unitPicker(), el("a", { class: "btn btn-small", href: "#/media", style: { marginTop: ".45rem" }, "data-tip": "Les solides, les liquides et les gaz que les modèles connaissent, avec leurs propriétés et leurs sources" }, "Base des médias"));      // what is typed and what is read : SI inside, converted at the edges
+    const U = CALC_UNITS, units = el("div", { class: "side-section phys-units" }, el("h3", null, "Unités"), el("p", { class: "muted small", "data-calc-units": "si", style: { margin: 0 } }, "Les calculs s'écrivent en SI — mm, N, MPa, kPa, °C — quel que soit le système choisi pour la conception."), el("a", { class: "btn btn-small", href: "#/media", style: { marginTop: ".45rem" }, "data-tip": "Les solides, les liquides et les gaz que les modèles connaissent, avec leurs propriétés et leurs sources" }, "Base des médias"));      // an engineering calculation is written in SI : nothing here follows the choice of units
     if (!cur) {
       scroll.append(guideHost, units, el("p", { class: "muted small" }, "Des modèles analytiques reconnus et simples — une poutre, un tube, une vis, une ailette — qui répondent à 80 % de la question « la physique derrière cette pièce fonctionne-t-elle ? »."),
         el("p", { class: "muted small" }, "Chaque calcul montre ses formules, ses hypothèses et sa source ; la simulation par éléments finis simplifiés, puis l'essai, confirment le reste. Les entrées du modèle choisi viennent ici."));
@@ -175,7 +174,7 @@ function render(main, args) {
     const v = vp.viewer;
     v.clear();
     if (!cur) { chip.textContent = "3D · choisissez un modèle"; return; }
-    const sc = sceneOf(cur, inputs, getUnits()), own = domainOf(cur).color;      // the part under study takes the colour of its physics, as in the diagram
+    const sc = sceneOf(cur, inputs, CALC_UNITS), own = domainOf(cur).color;      // the part under study takes the colour of its physics, as in the diagram
     for (const s of sc.solids) v.add({ id: s.id, mesh: s.mesh, color: s.color || own, opacity: s.opacity, pickable: false });
     for (const m of sc.marks) { if (m.t === "gem") gem(v, m.at, { color: m.color, tag: "phys" }); else (m.t === "clamp" ? clamp : arrow)(v, m.at, m.dir, { color: m.color, tag: "phys" }); }
     for (const l of sc.labels) v.addLabel(l.at, l.text, "phys", "phys-label");
@@ -221,11 +220,9 @@ function render(main, args) {
     catch (e) { toast(`Drive : la fiche du calcul n'a pas pu être rangée (${e.message}). Le calcul reste dans le projet.`, "error", 7000); }
   }
   const off = store.on("change", () => { if (alive) drawRight(true); });
-  const onUnits = () => { if (!alive) return; drawLeft(); update(); drawRight(true); };      // another system, another pressure unit : the same values, read otherwise
-  window.addEventListener("dw:units", onUnits);
   if (cur) { inputs = take(cur.id); carry(); }
   drawLeft(); update(true); drawRight();
-  return () => { alive = false; clearTimeout(timer); off(); window.removeEventListener("dw:units", onUnits); vp.dispose(); };
+  return () => { alive = false; clearTimeout(timer); off(); vp.dispose(); };
 }
 
 registerModule({ key: "physics", label: "Physique", icon: "physics", tip: "Modèles analytiques reconnus : poutre, flambement, vis, tube, dissipateur, busbar… avec verdict, marges et calcul détaillé", render });

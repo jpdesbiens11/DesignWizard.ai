@@ -3,8 +3,7 @@
    lights up on the model and opens its values ; the eye of a type shows or hides its labels in the view. The model of the
    tree is analysis/fea/bc_tree.js ; this module only draws it. */
 
-import { el, btn, icon, inUnits } from "../core/dom.js";
-import { getUnits, shownUnit, fieldValue, fromShown } from "../core/units.js";
+import { el, btn, icon } from "../core/dom.js";
 import { needField } from "../core/guide.js";
 
 /** o : { st, tree, regions, dirs, select(id), hover(regionKey | null), changed(), aim(setRegion), add(groupKey), remove(groupKey, index), relabel(),
@@ -15,10 +14,9 @@ export function bcSection(o) {
   const dot = (color) => { const d = el("span", { class: "bc-dot", "aria-hidden": "true" }); d.style.background = color; return d; };
   /* x : the item ; f : its field. A field still asked for blinks, and carries a tick that keeps the value as it is. */
   const num = (x, f, unit) => { const ask = Array.isArray(x.ask) && x.ask.includes(f), done = () => { if (Array.isArray(x.ask)) { x.ask = x.ask.filter((k) => k !== f); if (!x.ask.length) delete x.ask; } };
-    const U = getUnits(), shown = shownUnit(unit, U);      // an effort is kept in newtons, a pressure in megapascals : the field reads and takes the unit chosen
-    const input = el("input", { type: "number", value: fieldValue(x[f], unit, U), step: "any", "aria-label": shown, "data-field": f, onChange: (e) => { const v = fromShown(parseFloat(e.target.value), unit, U); if (Number.isFinite(v)) { x[f] = v; done(); o.changed(); } }, onKeydown: (e) => { if (e.key === "Enter" && ask) { done(); o.changed(); } } });
-    return el("label", { class: "bc-val" + (ask ? " ask" : "") }, ask ? needField(input, { hint: "Valeur d'exemple : tapez la vôtre, ou confirmez-la (Entrée, ou la coche)" }) : input, el("small", null, shown),
-      ...(ask ? [el("button", { class: "icon-btn ask-ok", type: "button", "aria-label": `Garder ${fieldValue(x[f], unit, U)} ${shown}`, "data-tip": "Garder cette valeur", onClick: () => { done(); o.changed(); } }, icon("check"))] : [])); };
+    const input = el("input", { type: "number", value: x[f], step: "any", "aria-label": unit, "data-field": f, onChange: (e) => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) { x[f] = v; done(); o.changed(); } }, onKeydown: (e) => { if (e.key === "Enter" && ask) { done(); o.changed(); } } });
+    return el("label", { class: "bc-val" + (ask ? " ask" : "") }, ask ? needField(input, { hint: "Valeur d'exemple : tapez la vôtre, ou confirmez-la (Entrée, ou la coche)" }) : input, el("small", null, unit),
+      ...(ask ? [el("button", { class: "icon-btn ask-ok", type: "button", "aria-label": `Garder ${x[f]} ${unit}`, "data-tip": "Garder cette valeur", onClick: () => { done(); o.changed(); } }, icon("check"))] : [])); };
   const pick = (value, opts, set, label) => el("select", { "aria-label": label, onChange: (e) => { set(e.target.value); o.changed(); } }, opts.map(([k, l]) => el("option", { value: k, selected: k === value }, l)));
   /* the values of the selected item, and where it is : by the mouse first, by the list of regions for what is hard to click */
   function editor(g, it) {
@@ -42,7 +40,7 @@ export function bcSection(o) {
     for (const it of g.items) {
       const sel = st.sel === it.id, row = el("div", { class: "bc-item" + (sel ? " sel" : "") + (it.ask.length ? " ask" : ""), role: "treeitem", "aria-selected": sel ? "true" : "false", tabindex: "0", "data-bc": it.id,
         onClick: () => o.select(sel ? null : it.id), onKeydown: (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); o.select(sel ? null : it.id); } }, onMouseenter: () => { if (it.region) o.hover(it.region, it.color); }, onMouseleave: () => o.hover(null) },
-        dot(it.color), el("b", null, it.id), el("span", { class: "bc-text" }, el("span", null, inUnits(it.text)), el("small", null, inUnits(it.where))), ...(it.ask.length ? [el("span", { class: "bc-ask", "data-tip": "Une valeur d'exemple attend la vôtre" }, "à entrer")] : []),
+        dot(it.color), el("b", null, it.id), el("span", { class: "bc-text" }, el("span", null, it.text), el("small", null, it.where)), ...(it.ask.length ? [el("span", { class: "bc-ask", "data-tip": "Une valeur d'exemple attend la vôtre" }, "à entrer")] : []),
         el("button", { class: "icon-btn", type: "button", "aria-label": `Retirer ${it.id}`, "data-tip": it.locked ? "Frontière bloquée par la symétrie : elle part avec elle" : "Retirer", onClick: (e) => { e.stopPropagation(); if (it.locked) o.unsym(it); else o.remove(g.key, it.index); } }, it.locked ? icon("lock") : "×"));
       if (sel) row.style.borderColor = it.color;
       box.append(row); if (sel) box.append(editor(g, it));

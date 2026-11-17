@@ -217,7 +217,7 @@ function render(main) {
       const model = { title: "Dossier de revue de conception", subtitle: p.name || p.id, kind: "Rapport de revue de conception", subject: "Revue de conception", reference: `${p.id}-REVUE`, revision: led.rev || "A", author: p.author || "", date: new Date(), header: `${p.name || p.id} — revue de conception`,
         blocks: [{ type: "toc" }, ...blocks, { type: "h1", text: "Signatures" }, { type: "signatures", roles: ["Concepteur", "Vérificateur", "Approbateur"] }], ...docMeta() };
       if (r.date || r.decision) model.revisions = [{ rev: model.revision, reason: r.decision ? `Revue : ${r.decision}` : "Revue de conception", sections: "Toutes", by: p.author || "", date: r.date || new Date().toISOString().slice(0, 10) }];
-      const shown = docUnits(model, getUnits());      // the file reads in the units chosen, as the screens do
+      const shown = docUnits(model, getUnits(), { si: /^(?:Physique — modèles analytiques|Simulations — éléments finis|Isolation — creepage)/ });      // the file reads in the units chosen, as the screens do — its calculations stay in SI
       if (kind === "pdf") download(`${p.id}_revue_de_conception.pdf`, pdfDoc(shown), "application/pdf"); else download(`${p.id}_revue_de_conception.docx`, docx(shown), "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
       toast(kind === "pdf" ? "Dossier enregistré en PDF." : "Dossier enregistré en Word.", "success");
     } catch (e) { console.error(e); toast(`Dossier ${kind === "pdf" ? "PDF" : "Word"} : ${e.message}`, "error", 7000); }

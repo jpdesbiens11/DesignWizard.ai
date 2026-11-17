@@ -332,7 +332,7 @@ details.term-group > summary { cursor: pointer; list-style: none; } details.term
 .media-group h3 { margin: .7rem 0 .25rem; font-size: .8rem; color: var(--dom); } .media-table th small { font-weight: 400; color: var(--muted); } .media-row { cursor: pointer; } .media-row:hover td, .media-row:focus-visible td { background: color-mix(in srgb, var(--dom) 9%, var(--surface)); } .media-row.sel td { background: color-mix(in srgb, var(--dom) 16%, var(--surface)); }
 .media-more > td { background: var(--surface-2); padding: .5rem .7rem; } .media-detail table { max-width: 34rem; }
 /* --- the choice of the units : the system, then the unit of a pressure (core/units_ui.js) --- */
-.unit-pick { display: grid; gap: .3rem; justify-items: start; } .unit-line { display: flex; align-items: center; gap: .45rem; } .unit-line small { color: var(--muted); font-size: .76rem; }
+.unit-pick { display: grid; gap: .3rem; justify-items: start; } .unit-note { display: block; max-width: 15.5rem; color: var(--muted); font-size: .74rem; line-height: 1.3; }
 .unit-seg { display: inline-flex; border: 1.4px solid color-mix(in srgb, var(--graphite) 28%, transparent); border-radius: var(--r-small); overflow: hidden; background: var(--surface); }
 .unit-seg button { border: 0; background: none; padding: .2rem .6rem; font: inherit; font-size: .8rem; color: var(--muted); cursor: pointer; } .unit-seg button + button { border-left: 1.3px solid color-mix(in srgb, var(--graphite) 18%, transparent); }
 .unit-seg button.on { background: color-mix(in srgb, var(--acc) 30%, var(--surface)); color: var(--ink); font-weight: 700; } .unit-seg button:hover { color: var(--ink); } .unit-seg button:focus-visible { outline: 2px solid var(--acc); outline-offset: -2px; }

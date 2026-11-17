@@ -4,8 +4,7 @@
    next run. The result is read as a stress (or a temperature) on an adjustable scale, or as a SAFETY FACTOR against the
    factor aimed at : red below it, then orange, blue, green. The trials of the session are listed, to see a case converge. */
 
-import { el, btn, badge, table, icon, fmt, inUnits } from "../core/dom.js";
-import { getUnits, shownUnit, toShown, fromShown } from "../core/units.js";
+import { el, btn, badge, table, icon, fmt } from "../core/dom.js";
 import { VERDICT, show } from "../analysis/fea/summary.js";
 import { FS_TARGETS, FS_COLORS, fsBands, safetySummary, safetyText } from "../analysis/fea/safety.js";
 
@@ -33,33 +32,32 @@ export function resultPanel(body, o) {
   if (last.stale) body.append(el("p", { class: "atelier-hint warn" }, icon("warning"), " Ce résultat est celui d'avant : le cas de charge ou le maillage a changé depuis. Relancez la simulation pour le mettre à jour."));
   body.append(el("div", { class: "kpis" }, ...(thermal
     ? [el("div", { class: "kpi" }, el("b", null, `${show(r.maxT.value, 1)} °C`), el("span", null, "Température maximale")), el("div", { class: "kpi" }, el("b", null, `${show(r.minT.value, 1)} °C`), el("span", null, "Température minimale")), el("div", { class: "kpi" }, el("b", null, `${show(r.balance.out, 2)} W`), el("span", null, `évacués sur ${show(r.balance.in, 2)} W`))]
-    : [el("div", { class: "kpi" }, el("b", null, inUnits(`${show(r.maxVm.value, 1)} MPa`)), el("span", null, inUnits(`Contrainte de pointe${r.nominalVm ? ` · nominale ${show(r.nominalVm.value, 1)} MPa` : ""}`))), el("div", { class: "kpi" }, el("b", null, inUnits(`${show(r.maxU.value)} mm`)), el("span", null, "Déplacement maximal")),
+    : [el("div", { class: "kpi" }, el("b", null, `${show(r.maxVm.value, 1)} MPa`), el("span", null, `Contrainte de pointe${r.nominalVm ? ` · nominale ${show(r.nominalVm.value, 1)}` : ""}`)), el("div", { class: "kpi" }, el("b", null, `${show(r.maxU.value)} mm`), el("span", null, "Déplacement maximal")),
       el("div", { class: "kpi" + (S && S.min !== null ? ` fs-${S.band}` : "") }, el("b", null, sf === null ? "—" : Number.isFinite(sf) ? show(sf, 2) : "∞"), el("span", null, `Facteur de sécurité minimal · ${n(st.fsTarget)} visé`)),
       ...(last.kind === "thermo" ? [el("div", { class: "kpi" }, el("b", null, `${show(r.maxT.value, 1)} °C`), el("span", null, r.minT.value === r.maxT.value ? "Température uniforme" : `Température, de ${show(r.minT.value, 1)} °C`))] : [])])));
   /* what the colours of the view mean : a stress on a scale, or the safety factor against the one aimed at */
   const sec = el("div", { class: "side-section" }, el("h3", null, "Ce que les couleurs montrent"));
-  if (!thermal) sec.append(seg([["stress", "Contrainte", `Contrainte de von Mises, en ${shownUnit("MPa", getUnits())}`], ["fs", "Facteur de sécurité", "Limite élastique du matériau sur la contrainte, en chaque point"]], st.quantity === "fs" ? "fs" : "stress", (k) => { st.quantity = k; o.repaint(); }, "Grandeur affichée"));
+  if (!thermal) sec.append(seg([["stress", "Contrainte", "Contrainte de von Mises, en MPa"], ["fs", "Facteur de sécurité", "Limite élastique du matériau sur la contrainte, en chaque point"]], st.quantity === "fs" ? "fs" : "stress", (k) => { st.quantity = k; o.repaint(); }, "Grandeur affichée"));
   if (!thermal && st.quantity === "fs") {
     const input = el("input", { type: "number", min: 1, max: 20, step: 0.05, value: st.fsTarget, "aria-label": "Facteur de sécurité visé", onChange: (e) => { const v = parseFloat(e.target.value); if (v >= 1 && v <= 20) { st.fsTarget = v; o.repaint(); } } });
     sec.append(el("div", { class: "bc-row" }, el("small", null, "Facteur visé"), input, ...FS_TARGETS.map((t) => el("button", { class: "chip-btn" + (t === st.fsTarget ? " on" : ""), type: "button", "aria-pressed": t === st.fsTarget ? "true" : "false", onClick: () => { st.fsTarget = t; o.repaint(); } }, n(t)))),
       fsLegend(st.fsTarget), el("p", { class: "small" }, S ? safetyText(S) : ""),
-      el("p", { class: "muted small" }, `Limite élastique : ${o.mat.Re ? `${inUnits(`${fmt(o.mat.Re, 0)} MPa`)} pour ${o.mat.name}` : "inconnue pour ce matériau"} — valeur typique, la fiche de la nuance fait foi. Sur ce maillage grossier, le facteur est indicatif : les concentrations locales ne sont pas résolues.`));
+      el("p", { class: "muted small" }, `Limite élastique : ${o.mat.Re ? `${fmt(o.mat.Re, 0)} MPa pour ${o.mat.name}` : "inconnue pour ce matériau"} — valeur typique, la fiche de la nuance fait foi. Sur ce maillage grossier, le facteur est indicatif : les concentrations locales ne sont pas résolues.`));
   } else {
     const [d0, d1] = last.data, span = (d1 - d0) || 1, clampV = (x) => Math.min(d1, Math.max(d0, x));
-    const U = getUnits(), su = shownUnit(unit, U), to = (v) => +toShown(v, unit, U).toPrecision(4), back = (v) => fromShown(v, unit, U);      // the scale is kept in the unit of the result ; it reads and takes the unit chosen
-    const lo = el("input", { type: "number", step: "any", value: to(last.range[0]), "aria-label": "Bas de l'échelle" }), hi = el("input", { type: "number", step: "any", value: to(last.range[1]), "aria-label": "Haut de l'échelle" });
+    const lo = el("input", { type: "number", step: "any", value: +last.range[0].toPrecision(4), "aria-label": "Bas de l'échelle" }), hi = el("input", { type: "number", step: "any", value: +last.range[1].toPrecision(4), "aria-label": "Haut de l'échelle" });
     const sLo = el("input", { type: "range", min: 0, max: 1000, value: Math.round(1000 * (last.range[0] - d0) / span), "aria-label": "Bas de l'échelle (curseur)" }), sHi = el("input", { type: "range", min: 0, max: 1000, value: Math.round(1000 * (last.range[1] - d0) / span), "aria-label": "Haut de l'échelle (curseur)" });
-    const out = el("p", { class: "muted small" }), tell = () => { out.textContent = last.range[0] > d0 || last.range[1] < d1 ? `Résultat de ${show(to(d0), 1)} à ${show(to(d1), 1)} ${su}. Hors échelle : au-dessus en magenta, en dessous en gris.` : `Échelle automatique : tout le résultat, de ${show(to(d0), 1)} à ${show(to(d1), 1)} ${su}.`; };
-    const setRange = (a, b, from) => { if (!(b > a)) return; last.range = [a, b]; if (from !== "n") { lo.value = to(a); hi.value = to(b); } if (from !== "s") { sLo.value = Math.round(1000 * (clampV(a) - d0) / span); sHi.value = Math.round(1000 * (clampV(b) - d0) / span); } o.repaint(true); tell(); };
-    lo.addEventListener("input", () => setRange(back(parseFloat(lo.value)), last.range[1], "n")); hi.addEventListener("input", () => setRange(last.range[0], back(parseFloat(hi.value)), "n"));
+    const out = el("p", { class: "muted small" }), tell = () => { out.textContent = last.range[0] > d0 || last.range[1] < d1 ? `Résultat de ${show(d0, 1)} à ${show(d1, 1)} ${unit}. Hors échelle : au-dessus en magenta, en dessous en gris.` : `Échelle automatique : tout le résultat, de ${show(d0, 1)} à ${show(d1, 1)} ${unit}.`; };
+    const setRange = (a, b, from) => { if (!(b > a)) return; last.range = [a, b]; if (from !== "n") { lo.value = +a.toPrecision(4); hi.value = +b.toPrecision(4); } if (from !== "s") { sLo.value = Math.round(1000 * (clampV(a) - d0) / span); sHi.value = Math.round(1000 * (clampV(b) - d0) / span); } o.repaint(true); tell(); };
+    lo.addEventListener("input", () => setRange(parseFloat(lo.value), last.range[1], "n")); hi.addEventListener("input", () => setRange(last.range[0], parseFloat(hi.value), "n"));
     sLo.addEventListener("input", () => setRange(d0 + span * Math.min(+sLo.value, +sHi.value - 5) / 1000, last.range[1], "s")); sHi.addEventListener("input", () => setRange(last.range[0], d0 + span * Math.max(+sHi.value, +sLo.value + 5) / 1000, "s"));
     tell();
-    sec.append(el("div", { class: "bc-row" }, el("small", { class: "grow" }, `Échelle (${su})`), btn("Auto", () => setRange(d0, d1), { small: true, icon: "refresh", tip: "Revenir à l'échelle qui couvre tout le résultat" })), el("div", { class: "fea-legend" }, lo, el("i"), hi), el("div", { class: "fea-scale" }, sLo, sHi), out);
+    sec.append(el("div", { class: "bc-row" }, el("small", { class: "grow" }, `Échelle (${unit})`), btn("Auto", () => setRange(d0, d1), { small: true, icon: "refresh", tip: "Revenir à l'échelle qui couvre tout le résultat" })), el("div", { class: "fea-legend" }, lo, el("i"), hi), el("div", { class: "fea-scale" }, sLo, sHi), out);
   }
   if (!thermal) sec.append(el("p", { class: "muted small" }, `Déformée amplifiée ${fmt(r.scale, 0)} fois.`));
   body.append(sec);
   body.append(el("div", { class: "side-section" }, el("h3", null, "3. Le recoupement ", badge(VERDICT[c.verdict][0], VERDICT[c.verdict][1])),
-    c.rows.length ? table(["", "À la main", "Simulation", "Écart"], c.rows.map((x) => [x.label, inUnits(x.low !== undefined ? `${show(x.low, 2)} à ${show(x.analytic, 2)} ${x.unit}` : `${x.bound ? "au plus " : ""}${show(x.analytic, 2)} ${x.unit}`), inUnits(`${show(x.fea, 2)} ${x.unit}`), x.deviation === null ? "—" : x.low !== undefined && x.deviation === 0 ? "dans la fourchette" : x.bound && x.deviation === 0 ? `sous la borne${x.note ? ` (${x.note})` : ""}` : `${x.deviation > 0 ? "+" : ""}${Math.round(x.deviation * 100)} %`])) : null,
+    c.rows.length ? table(["", "À la main", "Simulation", "Écart"], c.rows.map((x) => [x.label, x.low !== undefined ? `${show(x.low, 2)} à ${show(x.analytic, 2)} ${x.unit}` : `${x.bound ? "au plus " : ""}${show(x.analytic, 2)} ${x.unit}`, `${show(x.fea, 2)} ${x.unit}`, x.deviation === null ? "—" : x.low !== undefined && x.deviation === 0 ? "dans la fourchette" : x.bound && x.deviation === 0 ? `sous la borne${x.note ? ` (${x.note})` : ""}` : `${x.deviation > 0 ? "+" : ""}${Math.round(x.deviation * 100)} %`])) : null,
     el("p", { class: "small" }, c.text), ...(c.notes || []).map((t) => el("p", { class: "atelier-hint warn" }, icon("warning"), " ", t)),
     last.info.dropped && last.info.dropped.length ? el("p", { class: "atelier-hint" }, icon("info"), ` ${last.info.dropped.length} corps laissé(s) de côté, car le maillage grossier ne les relie à aucune pièce tenue : ${last.info.dropped.slice(0, 6).join(", ")}${last.info.dropped.length > 6 ? "…" : ""}.`) : null,
     el("p", { class: "muted small" }, `${last.info.cells.toLocaleString("fr-CA")} cubes, ${r.dofs.toLocaleString("fr-CA")} inconnues, ${r.iterations} itérations, ${fmt(r.ms / 1000, 2)} s. La contrainte de pointe d'un maillage grossier est indicative : les concentrations locales (trous, congés, bord de l'encastrement) ne sont pas résolues.`),

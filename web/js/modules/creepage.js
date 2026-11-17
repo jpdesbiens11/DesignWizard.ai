@@ -3,7 +3,7 @@
    distances come from IEC 60664-1 (cc_rules) and the measured ones from the shortest paths on the model (cc_paths).
    Paths are drawn in red: full line = clearance [clr] through air, dashed = creepage [crp] along the surfaces. */
 
-import { el, clear, icon, btn, badge, field, toast, fmt, modal, table, inUnits } from "../core/dom.js";
+import { el, clear, icon, btn, badge, field, toast, fmt, modal, table } from "../core/dom.js";
 import { registerModule, go, setStatus } from "../core/app.js";
 import { store } from "../core/store.js";
 import { createViewport } from "../core/viewport.js";
@@ -140,8 +140,8 @@ function render(main, args) {
     const shown = st.sel ? st.results.filter((r) => pairKey(r.a, r.b) === st.sel) : st.results.filter((r) => treeShown(st.show, pairState(r)));      // the selected pair, or every state whose eye is open — what fails, by default
     for (const r of shown) {
       const c = r.clearance, k = r.creepage, state = pairState(r), tone = state === "fail" ? "#ff3b30" : STATE_COLORS[state];      // a path takes the colour of the state of its pair
-      if (c && c.path && c.path.length > 1) { v.addPath(c.path, tone, "path", 1.2); v.addLabel(mid(c.path), inUnits(`clearance [clr] ${fmt(c.d, 2)} mm`), "path", "path"); }
-      if (k && k.path && k.path.length > 1) { v.addPath(k.path, tone, "path", 1.0, true); v.addLabel(mid(k.path, 0.35), inUnits(`creepage [crp] ${fmt(k.d, 2)} mm`), "path", "path"); }
+      if (c && c.path && c.path.length > 1) { v.addPath(c.path, tone, "path", 1.2); v.addLabel(mid(c.path), `clearance [clr] ${fmt(c.d, 2)} mm`, "path", "path"); }
+      if (k && k.path && k.path.length > 1) { v.addPath(k.path, tone, "path", 1.0, true); v.addLabel(mid(k.path, 0.35), `creepage [crp] ${fmt(k.d, 2)} mm`, "path", "path"); }
     }
   }
   const mid = (path, t = 0.5) => { let L = 0; const seg = []; for (let i = 0; i + 1 < path.length; i++) { const d = Math.hypot(path[i + 1][0] - path[i][0], path[i + 1][1] - path[i][1], path[i + 1][2] - path[i][2]); seg.push(d); L += d; } let s = L * t; for (let i = 0; i < seg.length; i++) { if (s <= seg[i]) { const q = seg[i] ? s / seg[i] : 0; return [0, 1, 2].map((k) => path[i][k] + (path[i + 1][k] - path[i][k]) * q); } s -= seg[i]; } return path[path.length - 1]; };
@@ -252,9 +252,9 @@ function render(main, args) {
     if (!ps.length) { body.append(el("div", { class: "card" }, el("p", null, "Aucune paire de nets."), el("p", { class: "muted" }, "Donnez un net aux conducteurs (colonne « Rôle des corps », ou « Rôle électrique » dans la fiche de chaque pièce, ou les zones d'un PCB)."))); return; }
     const res = new Map((st.results || []).map((r) => [pairKey(r.a, r.b), r]));
     /* the pairs as a tree, by verdict : what fails first ; the eye of a state draws the paths of its pairs in the view */
-    body.append(stateTree({ label: "Paires de nets, par état", tree: pairTree(ps, st.results, { key: pairKey, fmt, levels: LEVEL_LABEL }).map((g) => ({ ...g, items: (g.items || []).map((it) => ({ ...it, sub: inUnits(it.sub) })) })),      // the distances of the standard are millimetres : they read in the unit chosen sel: st.sel, attr: "data-pair-row", keep: st.results ? ["fail"] : [], eye: "Chemins tracés dans la vue",
+    body.append(stateTree({ label: "Paires de nets, par état", tree: pairTree(ps, st.results, { key: pairKey, fmt, levels: LEVEL_LABEL }), sel: st.sel, attr: "data-pair-row", keep: st.results ? ["fail"] : [], eye: "Chemins tracés dans la vue",
       shown: st.results ? (k) => (k === "todo" ? null : treeShown(st.show, k)) : null, toggle: (k, on) => { st.show = { ...st.show, [k]: on }; drawPaths(); renderRight(); }, select: (key) => { st.sel = key; drawPaths(); renderRight(); } }),
-      el("p", { class: "muted", style: { fontSize: ".76rem", margin: ".4rem 0" } }, inUnits("Distances : mesurée / requise, comme dans « 16,56 / 6,27 mm ». Le creepage requis est celui du pire groupe de matière touché par le chemin. Cliquez une paire pour voir ses chemins et son calcul ; l'œil d'un état trace les chemins de toutes ses paires.")));
+      el("p", { class: "muted", style: { fontSize: ".76rem", margin: ".4rem 0" } }, "Distances en mm : mesurée / requise. Le creepage requis est celui du pire groupe de matière touché par le chemin. Cliquez une paire pour voir ses chemins et son calcul ; l'œil d'un état trace les chemins de toutes ses paires."));
     const selP = ps.find((p) => pairKey(p.a, p.b) === st.sel);
     if (selP) {
       const r = res.get(st.sel), lvl = el("select", { onChange: (e) => save((x) => { x.levels = { ...(x.levels || {}), [st.sel]: e.target.value }; }, `Niveau ${selP.a} ↔ ${selP.b}`) }, ["functional", "basic", "reinforced"].map((k) => el("option", { value: k, selected: selP.level === k }, LEVEL_LABEL[k])));

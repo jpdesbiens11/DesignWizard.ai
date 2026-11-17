@@ -2,7 +2,7 @@
    metre per second and the kilogram — and a choice of its own for a pressure : kPa, bar, psi, atm. */
 import test from "node:test";
 import assert from "node:assert/strict";
-import { UNIT_SYSTEMS, PRESSURE_UNITS, SI_UNITS, tidyUnits, pressureUnit, shownUnit, toShown, fromShown, converts, dualOf, pressureEquivalents, quantity, fieldValue, getUnits, setUnits, shownNumber, measure, measures, massText, proseUnits, docUnits } from "../../web/js/core/units.js";
+import { UNIT_SYSTEMS, PRESSURE_UNITS, SI_UNITS, CALC_UNITS, tidyUnits, pressureUnit, shownUnit, toShown, fromShown, converts, dualOf, pressureEquivalents, quantity, fieldValue, getUnits, setUnits, shownNumber, measure, measures, massText, proseUnits, docUnits } from "../../web/js/core/units.js";
 import { MODELS, model, defaults, run } from "../../web/js/analysis/physics/index.js";
 import { sceneOf } from "../../web/js/analysis/physics/scene3d.js";
 import { physicsSummary, qty } from "../../web/js/modules/physics_panels.js";
@@ -15,6 +15,19 @@ test("the preferences are tidy : two systems, four pressure units, SI by default
   assert.deepEqual(tidyUnits({ pressure: "toString" }), { system: "si", pressure: "auto" }, "a name of the language is not a unit");
   assert.equal(pressureUnit(SI_UNITS), "kPa"); assert.equal(pressureUnit(IMP), "psi"); assert.equal(pressureUnit({ system: "imperial", pressure: "atm" }), "atm"); assert.equal(pressureUnit({ pressure: "bar" }), "bar");
   assert.deepEqual(getUnits(), { system: "si", pressure: "auto" }, "without a browser : SI"); assert.deepEqual(setUnits({ system: "imperial" }), { system: "imperial", pressure: "auto" }); assert.equal(getUnits().system, "imperial"); setUnits({ system: "si" });
+  assert.deepEqual(setUnits({ system: "imperial", pressure: "bar" }), { system: "imperial", pressure: "auto" }, "the choice is the system : a pressure follows it"); assert.deepEqual(setUnits({ pressure: "atm" }), { system: "imperial", pressure: "auto" }); setUnits({ system: "si" });
+  assert.deepEqual(CALC_UNITS, { system: "si", pressure: "auto" }, "a calculation is written in SI, whatever the design is read in"); assert.equal(shownUnit("MPa", CALC_UNITS), "MPa"); assert.equal(fieldValue(12.5, "mm", CALC_UNITS), 12.5);
+});
+
+test("in a document, the sections that report calculations stay as written", () => {
+  const doc = { title: "Revue", blocks: [{ type: "h1", text: "Pièces" }, { type: "p", text: "Paroi de 2 mm." }, { type: "h1", text: "Physique — modèles analytiques" }, { type: "p", text: "Contrainte : 120 MPa sous 500 N." },
+    { type: "table", head: ["Question", "Résultat"], rows: [["Flèche", "0,8 mm"]] }, { type: "h2", text: "Détail" }, { type: "p", text: "Portée de 80 mm." }, { type: "h1", text: "Assemblage" }, { type: "p", text: "Jeu de 0,5 mm." },
+    { type: "h2", text: "Isolation — creepage et clearance (IEC 60664-1)" }, { type: "p", text: "Clearance de 5,5 mm." }, { type: "h2", text: "DFA — montage" }, { type: "p", text: "Vis à 4 mm du bord." }] };
+  const B = docUnits(doc, IMP, { si: /^(?:Physique — modèles analytiques|Isolation — creepage)/ }).blocks;
+  assert.equal(B[1].text, "Paroi de 0,0787 in."); assert.equal(B[3].text, "Contrainte : 120 MPa sous 500 N.", "the calculation keeps its megapascals and its newtons"); assert.deepEqual(B[4].rows, [["Flèche", "0,8 mm"]]);
+  assert.equal(B[6].text, "Portée de 80 mm.", "a sub-section belongs to its section"); assert.equal(B[8].text, "Jeu de 0,0197 in.", "the next section of the same level is converted again");
+  assert.equal(B[10].text, "Clearance de 5,5 mm.", "a section may be kept at any level"); assert.equal(B[12].text, "Vis à 0,157 in du bord.");
+  assert.equal(docUnits(doc, IMP).blocks[3].text, "Contrainte : 17,4 ksi sous 112 lbf.", "without the pattern, everything is converted");
 });
 
 test("the factors are the defined ones, and they agree with one another", () => {
