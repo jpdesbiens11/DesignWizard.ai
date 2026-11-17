@@ -251,7 +251,7 @@ button.dw-view-label { pointer-events: auto; cursor: pointer; min-height: 24px; 
 .view-busy { position: absolute; inset: 0; display: grid; place-items: center; background: color-mix(in srgb, var(--paper) 55%, transparent); font-family: var(--hand); font-size: 1.05rem; color: var(--graphite); pointer-events: none; }
 
 /* ---------- parameters ---------- */
-.param { display: grid; grid-template-columns: minmax(0, 1fr) 98px; gap: .15rem .5rem; align-items: center; padding: .28rem 0; border-bottom: 1px dashed color-mix(in srgb, var(--graphite) 14%, transparent); }
+.param { display: grid; grid-template-columns: minmax(0, 1fr) 112px; gap: .15rem .5rem; align-items: center; padding: .28rem 0; border-bottom: 1px dashed color-mix(in srgb, var(--graphite) 14%, transparent); }
 .param label { font-size: .86rem; line-height: 1.2; overflow-wrap: anywhere; }
 .param label small { color: var(--muted); font-family: var(--mono); font-size: .74rem; margin-left: .3rem; }
 .param input[type="number"], .param input[type="text"] { padding: .2rem .4rem; text-align: right; font-variant-numeric: tabular-nums; }
@@ -374,3 +374,22 @@ details.term-group > summary { cursor: pointer; list-style: none; } details.term
 .fs-pic { flex: none; display: grid; place-items: center; width: 2.2rem; height: 2.2rem; border-radius: 50%; background: color-mix(in srgb, var(--dom) 14%, var(--surface)); color: var(--dom); }
 .fs-text { flex: 1; min-width: 0; display: grid; gap: .1rem; line-height: 1.3; } .fs-text small { color: var(--muted); font-size: .84rem; }
 .fs-how { padding: 0 .75rem .6rem 3.4rem; font-size: .88rem; } .fs-how ul { margin: 0 0 .5rem; padding-left: 1.1rem; } .fs-how li { margin: .15rem 0; }
+
+/* ---------- number fields : one pair of arrows for the whole application (core/stepper.js). The browser's own arrows are put away and
+   their room is kept, so that a digit is never hidden under ours. Beside the field, a gauge says the speed in force. ---------- */
+input[type="number"] { appearance: textfield; -moz-appearance: textfield; }
+input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type="number"]:not([data-no-stepper]) { padding-right: 19px !important; }
+.num-stepper { position: fixed; z-index: 1100; width: 16px; display: grid; grid-template-rows: 1fr 1fr; overflow: hidden; border-left: 1px solid var(--line); border-radius: 0 6px 6px 0; }
+.num-stepper[hidden], .num-speed[hidden] { display: none; }
+.num-stepper button { display: grid; place-items: center; min-height: 0; padding: 0; border: 0; background: color-mix(in srgb, var(--graphite) 7%, var(--surface)); color: var(--muted); font-size: 7px; line-height: 1; cursor: pointer; touch-action: none; user-select: none; }
+.num-stepper .ns-down { border-top: 1px solid var(--line); }
+.num-stepper button:hover { background: color-mix(in srgb, var(--acc) 45%, var(--surface)); color: var(--ink-strong); }
+.num-stepper button:active { background: var(--acc); color: var(--on-acc); }
+.num-speed { position: fixed; z-index: 1100; display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-width: 52px; height: 22px; padding: 0 7px; border-radius: 11px; pointer-events: none;
+  background: var(--graphite); color: #fff; font: 700 .74rem/1 var(--mono, ui-monospace, monospace); font-variant-numeric: tabular-nums; box-shadow: 0 2px 8px rgba(11, 27, 51, .25); }
+.num-speed .ns-pips { display: inline-flex; align-items: flex-end; gap: 2px; height: 13px; }
+.num-speed .ns-pips i { width: 3px; border-radius: 1px; background: currentColor; opacity: .3; }
+.num-speed .ns-pips i:nth-child(1) { height: 4px; } .num-speed .ns-pips i:nth-child(2) { height: 7px; } .num-speed .ns-pips i:nth-child(3) { height: 10px; } .num-speed .ns-pips i:nth-child(4) { height: 13px; }
+.num-speed .ns-pips i.on { opacity: 1; }
+.num-speed[data-speed="2"] { background: var(--primary); } .num-speed[data-speed="5"] { background: #b45309; } .num-speed[data-speed="10"] { background: var(--danger); }

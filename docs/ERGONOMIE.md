@@ -136,6 +136,33 @@ dessin, et elle ne touche ni à la revue ni à une révision libérée (la signa
 corps principal de la pièce ; un corps qui a sa propre couleur (l'isolant d'un busbar, le cuivre d'une carte) la garde.
 Code : `web/js/core/part_look.js` (pur, testé), `web/js/modules/part_look.js` (la pastille et le sélecteur).
 
+## Les flèches d'un champ numérique : 1 à la fois, puis plus vite
+
+Demande de JP. Dans **tous** les champs numériques de l'application, les flèches font la même chose, comme l'avance
+rapide d'un lecteur vidéo :
+
+- une flèche — à la souris (▲ ▼, au bord droit du champ survolé ou actif) ou au clavier (↑ ↓) — ajoute ou retire **1** ;
+- **maintenue**, elle se répète et accélère : ×2 après une seconde, ×5 après 2,2 s, ×10 après 3,6 s ;
+- **cliquée vite** (moins de 0,35 s entre deux clics), elle accélère de même : deux clics à chaque vitesse ;
+- un **témoin**, juste à côté du champ, dit la vitesse en cours — quatre barres et « ×1 », « ×2 », « ×5 », « ×10 » — et
+  s'efface une seconde après le dernier pas ;
+- une pause, l'autre flèche ou un autre champ ramènent à ×1 ;
+- on **tape** ce que l'on veut : n'importe quelle décimale est acceptée dans n'importe quel champ, et une flèche garde
+  les décimales tapées (12,5 devient 13,5) ;
+- la valeur reste dans les bornes du champ quand il en a.
+
+Une exception, pour qu'une flèche ne traverse pas le champ d'un coup : un champ dont toute la plage vaut 2 ou moins
+(une émissivité de 0 à 1) avance par **dixièmes**. Dans le système impérial, le pas est 1 dans l'unité affichée (un
+pouce, un mil).
+
+Comme les flèches d'un navigateur, chaque pas prévient l'écran (`input`) et le relâchement valide (`change`) : aucun
+écran n'a rien à déclarer, et un nouveau champ en hérite sans une ligne. Les flèches du navigateur sont masquées ; une
+seule paire, posée sur le champ sous le pointeur, sert toute l'application, et suit le champ si l'écran le déplace
+pendant le maintien. Code : `web/js/core/stepper.js` (vitesses et valeur d'un pas : purs, testés ; le reste est
+vérifié dans un navigateur), styles dans `web/css/app.css`. Un champ peut s'en exclure par `data-no-stepper`.
+
+Pas encore essayé sur un écran tactile ; la molette de la souris ne change pas une valeur.
+
 ## Ce que l'audit ne voit pas
 
 Il mesure des boîtes, pas le sens : un libellé obscur, un ordre d'actions illogique, une couleur mal choisie, une
