@@ -4,7 +4,7 @@
    two-second hold, or from its card. Here too : the card of a through hole, and the position of the chosen connection,
    to type in the left pane once it is laid. */
 
-import { el, btn, field } from "../core/dom.js";
+import { el, btn, field, unitField } from "../core/dom.js";
 import { locate, legFace, legsOf, connections, addHole, addTerminal, addContact, fit, fitHole } from "../core/busbar.js";
 import { createPlacer } from "../core/view_place.js";
 import { snapPoint } from "../core/snap.js";
@@ -50,13 +50,13 @@ export function busbarPlacer(ctx) {
 
 /** The fields of a through hole, in its card. set(label, fn) edits it. */
 export function holeFields(x, set) {
-  const num = (key, label, step, min, tip) => field(label, el("input", { type: "number", value: x[key] ?? 0, step, min, "data-tip": tip || null, onChange: (e) => { const v = parseFloat(e.target.value); if (v >= min) set(label, (q) => { if (key === "l" && !(v > q.d)) delete q.l; else q[key] = v; }); } }));
+  const num = (key, label, step, min, tip) => unitField(label, { value: x[key] ?? 0, step, min, "data-tip": tip || null }, (v) => { if (v >= min) set(label, (q) => { if (key === "l" && !(v > q.d)) delete q.l; else q[key] = v; }); }, { event: "onChange" });
   return [el("div", { class: "form-row tight" }, num("d", "Diamètre (mm)", 0.1, 0.5, "Le diamètre du trou — ou la largeur d'un trou oblong"), num("l", "Longueur si oblong", 0.5, 0, "Plus grande que le diamètre : le trou devient oblong. 0 : un trou rond")),
     ...(x.l > x.d ? [el("label", { class: "check small" }, el("input", { type: "checkbox", checked: !!x.turn, onChange: (e) => set("sens de l'oblong", (q) => { if (e.target.checked) q.turn = 1; else delete q.turn; }) }), "Oblong en travers de la branche")] : [])];
 }
 /** The position of the chosen connection, typed : for the left pane, once it is laid with the mouse. */
 export function positionSection(def, x, set, pickUp) {
-  const g = legsOf(def)[x.leg], num = (key, label, max) => field(label, el("input", { type: "number", value: key === "y" ? (x.y ?? def.W / 2) : x.s, step: 0.5, min: 0, max, "data-pos": key, onChange: (e) => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) set(`${x.id} : ${label}`, (q) => { q[key] = v; }); } }));
+  const g = legsOf(def)[x.leg], num = (key, label, max) => unitField(label, { value: key === "y" ? (x.y ?? def.W / 2) : x.s, step: 0.5, min: 0, max, "data-pos": key }, (v) => { if (Number.isFinite(v)) set(`${x.id} : ${label}`, (q) => { q[key] = v; }); }, { event: "onChange" });
   return el("div", { class: "side-section", "data-position": x.id }, el("h3", null, el("span", { class: "grow" }, `Position de ${x.id}`), btn("", pickUp, { small: true, icon: "mate", tip: "Le reprendre à la souris : il suit le pointeur, un clic le pose (ou maintenez deux secondes dessus, dans la vue)" })),
     el("div", { class: "form-row" }, num("s", "Le long de la branche (mm)", g ? g.L : undefined), num("y", "En travers (mm)", def.W)),
     el("p", { class: "muted small" }, `Branche ${x.leg + 1}${g ? `, longue de ${fr(g.L)} mm` : ""} ; largeur ${fr(def.W)} mm — l'axe est à ${fr(def.W / 2)}.`));

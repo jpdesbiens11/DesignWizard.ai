@@ -4,7 +4,7 @@
    nudge it, V sends it to the other face, Delete removes it. Right, the sensors and every track with what it can carry.
    The definition goes to an AI and comes back with a preview of what changed. Route : #/flex/<part>. */
 
-import { el, clear, icon, btn, badge, field, toast, fmt, fmtMass, inUnits, debounce, modal, copyText, table } from "../core/dom.js";
+import { el, clear, icon, btn, badge, field, toast, fmt, fmtMass, inUnits, unitField, unitInput, unitLabel as unitLabelOf, debounce, modal, copyText, table } from "../core/dom.js";
 import { registerModule, go, setStatus, setContext, setGuide } from "../core/app.js";
 import { store } from "../core/store.js";
 import { kernel } from "../cad/client.js";
@@ -93,7 +93,7 @@ function render(main, args) {
   }
   function renderLeft() {
     clear(left); const d = def(), slow = debounce((label, fn) => change(label, fn), 350);
-    const num = (key, label, step = 0.5, min = 0.01) => field(label, el("input", { type: "number", value: d[key], step, min, onInput: (e) => { const v = parseFloat(e.target.value); if (v >= min) slow(`Circuit : ${label}`, (x) => { x[key] = v; }); } }));
+    const num = (key, label, step = 0.5, min = 0.01) => unitField(label, { value: d[key], step, min }, (v) => { if (v >= min) slow(`Circuit : ${label}`, (x) => { x[key] = v; }); });
     left.append(head());
     const scroll = el("div", { class: "side-scroll" }); left.append(scroll);
     scroll.append(listed());
@@ -105,14 +105,14 @@ function render(main, args) {
         (d.tail || {}).mate === "zif" ? field("Connecteur", el("select", { onChange: (e) => change("Circuit : connecteur", (x) => { x.tail.ref = e.target.value; }) }, CONNECTORS.filter((c) => c.kind === "ffc" || c.kind === "board-to-board").map((c) => el("option", { value: c.id, selected: c.id === d.tail.ref }, `${c.maker} ${c.series}`)))) : null)));
     scroll.append(el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, `Branches (${d.legs.length})`), btn("", () => change("Branche ajoutée", (x) => { x.legs.push({ L: 30, bend: 90 }); }), { small: true, icon: "plus", tip: "Ajouter une branche après un pli à 90°" })),
       d.legs.map((g, i) => el("div", { class: "param", style: { gridTemplateColumns: "22px minmax(0,1fr) 108px auto", alignItems: "center" } }, badge(String(i + 1), "neutral"),
-        el("input", { type: "number", value: g.L, step: 1, min: 3, "aria-label": `Longueur de la branche ${i + 1}`, onInput: (e) => { const v = parseFloat(e.target.value); if (v >= 3) slow(`Branche ${i + 1}`, (x) => { x.legs[i].L = v; }); } }),
+        unitInput("Longueur", { value: g.L, step: 1, min: 3, "aria-label": `Longueur de la branche ${i + 1}` }, (v) => { if (v >= 3) slow(`Branche ${i + 1}`, (x) => { x.legs[i].L = v; }); }).input,
         i ? el("select", { "aria-label": `Pli avant la branche ${i + 1}`, onChange: (e) => change(`Pli ${i}`, (x) => { x.legs[i].bend = +e.target.value; }) }, [[90, "pli vers le haut"], [-90, "pli vers le bas"]].map(([v, l]) => el("option", { value: v, selected: v === (g.bend || 90) }, l))) : el("small", { class: "muted" }, "la queue, à plat"),
         d.legs.length > 1 ? el("button", { class: "icon-btn", type: "button", "aria-label": `Retirer la branche ${i + 1}`, onClick: () => change(`Branche ${i + 1} retirée`, (x) => { x.legs.splice(i, 1); if (x.legs[0]) delete x.legs[0].bend; x.sensors = x.sensors.filter((q) => q.leg !== i).map((q) => ({ ...q, leg: q.leg > i ? q.leg - 1 : q.leg })); }) }, "×") : el("span")))));
     scroll.append(el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, `Fonctions à relier (${d.tracks.length})`), btn("", () => change("Fonction ajoutée", (x) => { x.tracks.push({ net: `NET${x.tracks.length + 1}`, fn: "", w: 0.3, i: 0.1 }); }), { small: true, icon: "plus", tip: "Une piste de plus, pour une fonction de plus" })),
       d.tracks.map((t, k) => el("div", { class: "param", style: { gridTemplateColumns: "76px minmax(0,1fr) 58px 58px auto", alignItems: "center", gap: ".25rem" } },
         el("input", { type: "text", value: t.net, "aria-label": "Potentiel ou signal", "data-tip": "Le signal ou le potentiel : 5V, GND, CAN-H, RS485-A…", onChange: (e) => change("Piste : signal", (x) => { x.tracks[k].net = e.target.value.trim() || `NET${k + 1}`; }) }),
         el("input", { type: "text", value: t.fn || "", placeholder: "À quoi elle sert", "aria-label": "Fonction", onChange: (e) => change("Piste : fonction", (x) => { x.tracks[k].fn = e.target.value; }) }),
-        el("input", { type: "number", value: t.w, step: 0.05, min: 0.1, "aria-label": "Largeur de piste", "data-tip": "Largeur de la piste (mm)", onChange: (e) => { const v = parseFloat(e.target.value); if (v > 0) change("Piste : largeur", (x) => { x.tracks[k].w = v; }); } }),
+        unitInput("Largeur", { value: t.w, step: 0.05, min: 0.1, "aria-label": "Largeur de piste", "data-tip": unitLabelOf("Largeur de la piste (mm)") }, (v) => { if (v > 0) change("Piste : largeur", (x) => { x.tracks[k].w = v; }); }, { event: "onChange" }).input,
         el("input", { type: "number", value: t.i, step: 0.05, min: 0, "aria-label": "Courant", "data-tip": "Courant à porter (A)", onChange: (e) => { const v = parseFloat(e.target.value); if (v >= 0) change("Piste : courant", (x) => { x.tracks[k].i = v; }); } }),
         el("button", { class: "icon-btn", type: "button", "aria-label": `Retirer la piste ${t.net}`, onClick: () => change("Fonction retirée", (x) => { x.tracks.splice(k, 1); }) }, "×"))),
       el("p", { class: "muted", style: { fontSize: ".78rem" } }, "Signal · fonction · largeur (mm) · courant (A). Les pistes des capteurs s'ajoutent seules.")));

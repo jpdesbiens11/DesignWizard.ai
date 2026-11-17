@@ -2,7 +2,7 @@
    never innerHTML on data. el() ignores null / undefined / false children. */
 
 import { stampText } from "./brand.js";
-import { getUnits, massText, measure, measures, proseUnits } from "./units.js";
+import { getUnits, massText, measure, measures, proseUnits, shownUnit, fieldValue, fromShown, converts } from "./units.js";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -154,3 +154,27 @@ export const fmtLen = (v, d = 2, unit = "mm") => measure(v, unit, d, getUnits(),
 export const fmtDims = (list, d = 1, unit = "mm") => measures(list, unit, d, getUnits(), local);
 /** A sentence written in millimetres, read in the units chosen. */
 export const inUnits = (text) => proseUnits(text, getUnits());
+/* a number FIELD whose value the project keeps in a unit of the tools (millimetres unless said) : what it shows, what it reads back, its label, its step */
+/** Is the number behind this label a length ? Not when the label names another unit — (A), (N), (V), (°), (%) — or counts things. */
+export const lengthLabel = (label) => !/\((?:A|N|V|°|%|kg|g|s|W|K|m)(?=[ )])[^)]*\)|^(?:Points|Pistes|Nombre|Quantité|Cordons)(?![A-Za-zÀ-ÿ])/.test(String(label || ""));
+/** The value to put in the field : as kept when nothing converts, in the unit chosen otherwise. */
+export const unitShown = (v, unit = "mm") => (v === undefined || v === null || v === "" ? "" : fieldValue(v, unit, getUnits()));
+/** What was typed, back in the unit of the tools. */
+export const unitBack = (v, unit = "mm") => fromShown(v, unit, getUnits());
+/** The label of the field : « Largeur (mm) » reads « Largeur (in) », « Largeur » reads « Largeur (in) » — and stays as it is in SI. */
+export const unitLabel = (label, unit = "mm") => (converts(unit, getUnits()) ? `${String(label).replace(new RegExp(` ?\\(${unit}\\)$`), "")} (${shownUnit(unit, getUnits())})` : label);
+/** The step of the field : the tool's own in its unit, free when the value is converted. */
+export const unitStep = (step, unit = "mm") => (converts(unit, getUnits()) ? "any" : step);
+/** True when the fields of this unit show another one. */
+export const unitOn = (unit = "mm") => converts(unit, getUnits());
+/** A number input for a value the project keeps in a unit of the tools (millimetres unless said), shown and typed in the unit chosen when its label reads as a
+    length. attrs : the attributes of the input, its value / min / max in the unit of the tools ; take(v, e) gets what was typed, back in that unit.
+    o : { unit, length (true / false : do not read the label), event ("onInput" by default) }. → { input, label } */
+export function unitInput(label, attrs, take, o = {}) {
+  const unit = o.unit || "mm", len = o.length ?? lengthLabel(label), on = len && unitOn(unit), tip = attrs["data-tip"];
+  const input = el("input", { type: "number", ...attrs, value: len ? unitShown(attrs.value, unit) : attrs.value, step: on ? "any" : attrs.step, min: on && attrs.min !== undefined ? 0 : attrs.min, max: on && typeof attrs.max === "number" ? unitShown(attrs.max, unit) : attrs.max,
+    "data-tip": typeof tip === "string" ? inUnits(tip) : tip, [o.event || "onInput"]: (e) => { const raw = parseFloat(e.target.value); take(len ? unitBack(raw, unit) : raw, e); } });
+  return { input, label: len ? unitLabel(label, unit) : label };
+}
+/** The same, as a labelled field. */
+export const unitField = (label, attrs, take, o = {}) => { const u = unitInput(label, attrs, take, o); return field(u.label, u.input, o.hint); };

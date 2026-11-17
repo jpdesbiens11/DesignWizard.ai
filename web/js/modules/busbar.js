@@ -4,7 +4,7 @@
    nudge it, R turns it, V sends it to the other face, + and − change its points, Delete removes it. Right, each connection
    with its number (T1, CT1…), its drop-down choices and what it is worth. Route : #/busbar/<part>. */
 
-import { el, clear, icon, btn, badge, field, toast, fmt, fmtMass, inUnits, debounce } from "../core/dom.js";
+import { el, clear, icon, btn, badge, field, toast, fmt, fmtMass, fmtLen, fmtDims, inUnits, unitField, unitInput, debounce } from "../core/dom.js";
 import { registerModule, go, setStatus, setContext } from "../core/app.js";
 import { store } from "../core/store.js";
 import { kernel } from "../cad/client.js";
@@ -28,7 +28,7 @@ function newLaminate() {
     where.replaceChildren(el("option", { value: "", selected: !d.flex }, "Sans"), ...d.layers.slice(0, -1).map((l, i) => el("option", { value: i + 1, selected: !!d.flex && fx.after === i + 1 }, `Entre ${l.net} et ${d.layers[i + 1].net}`))); };
   const check = () => { d.layers = nets.value.split(",").map((x) => x.trim()).filter(Boolean).map((net) => ({ net, t: d.layers[0] ? d.layers[0].t : 1.5 })); places(); const c = laminateChecks(d);
     out.replaceChildren(el("p", { class: "muted small" }, c.rows.map((r) => `${r.net} : ${fmt(r.S, 1)} mm², ${fmt(r.J)} A/mm²`).join(" · "), ` · pattes de ${fmt(c.tabW, 1)} mm · papier ≈ ${fmt(c.withstand / 1000, 1)} kV pour un essai de ${fmt(c.test / 1000, 1)} kV`, c.flex ? ` · circuit de mesure : ${c.flex.pins} pistes (${c.flex.tracks.map((t) => t.net).join(", ")}), couverture ≈ ${fmt(c.flex.hold / 1000, 1)} kV` : ""), ...c.notes.map((n) => el("p", { class: n.level === "bad" ? "form-error" : "atelier-hint", style: { fontSize: ".82rem" } }, n.text))); ok.disabled = !c.ok; };
-  const num = (obj, key, label, step = 1) => field(label, el("input", { type: "number", value: obj[key], step, min: 0, onInput: (e) => { const v = parseFloat(e.target.value); if (v > 0) { if (key === "t" && obj === d.layers[0]) d.layers.forEach((l) => { l.t = v; }); else obj[key] = v; check(); } } }));
+  const num = (obj, key, label, step = 1) => unitField(label, { value: obj[key], step, min: 0 }, (v) => { if (v > 0) { if (key === "t" && obj === d.layers[0]) d.layers.forEach((l) => { l.t = v; }); else obj[key] = v; check(); } });      // a length reads in the unit chosen, a current or a voltage as it is
   const ok = btn("Créer le busbar laminé", () => { const r = importPart(laminatePart(d, store.nextPartId()), { replace: false }); if (r.errors && r.errors.length) { toast(r.errors.join(" "), "error"); return; } m.close(); toast(`${r.id} créé : une couche par corps, à voir dans le studio de pièce et dans l'écran Isolation.`, "success", 6000); go(`#/parts/${encodeURIComponent(r.id)}`); }, { primary: true, icon: "plus" });
   nets.addEventListener("input", check);
   const m = modal("Busbar laminé", [el("p", { class: "muted" }, "Des conducteurs de potentiels opposés posés l'un sur l'autre, un papier aramide entre eux sur toute l'épaisseur, un film polymère autour. L'isolant déborde les conducteurs : c'est la ligne de fuite. Il peut porter son propre circuit de mesure, pris entre deux plaques."),
@@ -110,7 +110,7 @@ function render(main, args) {
   }
   function renderLeft() {
     clear(left); const d = def(), slow = debounce((label, fn) => change(label, fn), 350);
-    const num = (key, label, step = 0.5, min = 0.1) => field(label, el("input", { type: "number", value: d[key], step, min, onInput: (e) => { const v = parseFloat(e.target.value); if (v >= min) slow(`Busbar : ${label}`, (x) => { x[key] = v; }); } }));
+    const num = (key, label, step = 0.5, min = 0.1) => unitField(label, { value: d[key], step, min }, (v) => { if (v >= min) slow(`Busbar : ${label}`, (x) => { x[key] = v; }); });
     left.append(el("div", { class: "side-head" }, el("h2", null, "Busbars"), btn("", newLaminate, { small: true, icon: "layers", tip: "Busbar laminé : conducteurs empilés, papier aramide, film" }), btn("", create, { small: true, icon: "plus", tip: "Nouveau busbar plié" })));
     const scroll = el("div", { class: "side-scroll" }); left.append(scroll);
     scroll.append(el("div", { class: "side-section" }, bars.map((p) => el("a", { class: "nav-item" + (p.id === id ? " active" : ""), href: `#/busbar/${encodeURIComponent(p.id)}` }, icon("power"), el("span", { class: "grow" }, p.name || p.id), el("small", null, `${p.id} · ${(p.elec || {}).net || ""}`)))));
@@ -120,11 +120,11 @@ function render(main, args) {
       el("div", { class: "form-row" }, field("Potentiel", el("input", { type: "text", value: d.net, onChange: (e) => change("Busbar : potentiel", (x) => { x.net = e.target.value.trim() || "HV+"; }) }), "HV+, HV−, 48V, RS485-A…"), num("I", "Courant (A)", 1, 0)),
       el("div", { class: "form-row" }, num("W", "Largeur"), num("t", "Épaisseur", 0.1), d.legs.length > 1 ? num("r", "Rayon de pli", 0.5) : null),
       field("Isolant", el("select", { "data-tip": "Une gaine autour de la barre, ouverte par une fenêtre à chaque borne et à chaque contact", onChange: (e) => change("Busbar : isolant", (x) => { if (e.target.value) x.insulation = { material: e.target.value, t: INSULATIONS[e.target.value].t }; else delete x.insulation; }) },
-        [["", "Aucun : barre nue"], ...Object.entries(INSULATIONS).map(([k, v]) => [k, `${v.label} — ${String(v.t).replace(".", ",")} mm, fenêtres aux raccordements`])].map(([k, l]) => el("option", { value: k, selected: k === ((d.insulation || {}).material || "") }, l))))));
+        [["", "Aucun : barre nue"], ...Object.entries(INSULATIONS).map(([k, v]) => [k, inUnits(`${v.label} — ${String(v.t).replace(".", ",")} mm, fenêtres aux raccordements`)])].map(([k, l]) => el("option", { value: k, selected: k === ((d.insulation || {}).material || "") }, l))))));
     if (item(d)) scroll.append(positionSection(d, item(d), (label, fn) => edit(label, fn), () => P.placer.arm(P.moveTool(item()))));
     scroll.append(el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, `Branches (${d.legs.length})`), btn("", () => change("Branche ajoutée", (x) => { x.legs.push({ L: 40, bend: 90 }); }), { small: true, icon: "plus", tip: "Ajouter une branche après un pli à 90°" })),
       d.legs.map((g, i) => el("div", { class: "param", style: { gridTemplateColumns: "22px minmax(0,1fr) 108px auto", alignItems: "center" } }, badge(String(i + 1), "neutral"),
-        el("input", { type: "number", value: g.L, step: 1, min: 5, "aria-label": `Longueur de la branche ${i + 1}`, onInput: (e) => { const v = parseFloat(e.target.value); if (v >= 5) slow(`Branche ${i + 1}`, (x) => { x.legs[i].L = v; }); } }),
+        unitInput("Longueur", { value: g.L, step: 1, min: 5, "aria-label": `Longueur de la branche ${i + 1}` }, (v) => { if (v >= 5) slow(`Branche ${i + 1}`, (x) => { x.legs[i].L = v; }); }).input,
         i ? el("select", { "aria-label": `Pli avant la branche ${i + 1}`, onChange: (e) => change(`Pli ${i}`, (x) => { x.legs[i].bend = +e.target.value; }) }, [[90, "pli vers le haut"], [-90, "pli vers le bas"]].map(([v, l]) => el("option", { value: v, selected: v === (g.bend || 90) }, l))) : el("small", { class: "muted" }, "départ, à plat"),
         d.legs.length > 1 ? el("button", { class: "icon-btn", type: "button", "aria-label": `Retirer la branche ${i + 1}`, onClick: () => change(`Branche ${i + 1} retirée`, (x) => { x.legs.splice(i, 1); if (x.legs[0]) delete x.legs[0].bend; x.terminals = x.terminals.filter((q) => q.leg !== i).map((q) => ({ ...q, leg: q.leg > i ? q.leg - 1 : q.leg })); x.contacts = x.contacts.filter((q) => q.leg !== i).map((q) => ({ ...q, leg: q.leg > i ? q.leg - 1 : q.leg })); }) }, "×") : el("span"))),
       el("p", { class: "muted", style: { fontSize: ".78rem" } }, "Longueurs prises sur la fibre du milieu, d'un sommet de pli au suivant. La bande se découpe à plat, se poinçonne, puis se plie.")));
@@ -140,9 +140,9 @@ function render(main, args) {
     for (const x of all) {
       const on = x.id === st.sel, ct = isContact(x), set = (label, fn) => { st.sel = x.id; edit(`${x.id} : ${label}`, fn); };
       const pick = (key, label, opts, tip) => field(label, el("select", { "data-tip": tip || null, onChange: (e) => set(label, (q) => { q[key] = e.target.value; }) }, opts.map(([k, l]) => el("option", { value: k, selected: k === x[key] }, l))));
-      const num = (key, label, step = 0.5, min = 0) => field(label, el("input", { type: "number", value: x[key], step, min, onChange: (e) => { const v = parseFloat(e.target.value); if (v >= min) set(label, (q) => { q[key] = v; }); } }));
+      const num = (key, label, step = 0.5, min = 0) => unitField(label, { value: x[key], step, min }, (v) => { if (v >= min) set(label, (q) => { q[key] = v; }); }, { event: "onChange" });
       const card = el("div", { class: "card" + (on ? " taped" : ""), style: { padding: ".55rem .7rem", marginBottom: ".5rem", cursor: "pointer" }, "data-conn": x.id, onClick: (e) => { if (e.target.closest("input, select, button, label, .cf-box")) return; st.sel = on ? null : x.id; mark(); renderLeft(); renderRight(); } },
-        el("div", { style: { display: "flex", gap: ".4rem", alignItems: "center", flexWrap: "wrap" } }, el("b", null, x.id), badge(ct ? CONTACT_FORMS[contactForm(x, { band: x.band })].name : isHole(x) ? (x.l > x.d ? `Trou oblong ${fr(x.d)} × ${fr(x.l)}` : `Trou de passage Ø ${fr(x.d)}`) : `Borne ${x.screw}`, ct ? "info" : "neutral"), el("small", { class: "muted" }, `branche ${x.leg + 1} · à ${fr(x.s, 1)} mm${ct ? ` · ${x.side > 0 ? "face du dessus" : "face du dessous"}` : ""}`)));
+        el("div", { style: { display: "flex", gap: ".4rem", alignItems: "center", flexWrap: "wrap" } }, el("b", null, x.id), badge(ct ? CONTACT_FORMS[contactForm(x, { band: x.band })].name : isHole(x) ? (x.l > x.d ? `Trou oblong ${fmtDims([x.d, x.l], 2)}` : `Trou de passage Ø ${fmtLen(x.d, 2)}`) : `Borne ${x.screw}`, ct ? "info" : "neutral"), el("small", { class: "muted" }, inUnits(`branche ${x.leg + 1} · à ${fr(x.s, 1)} mm${ct ? ` · ${x.side > 0 ? "face du dessus" : "face du dessous"}` : ""}`))));
       if (ct) { const e = contactEstimate(x), P = PLATINGS[x.plating], Q = contactParams(d, x), more = contactFormNotes(Q, { band: x.band });
         card.append(el("p", { class: "small", style: { margin: ".25rem 0" } }, `${x.n} points · ${P.label.toLowerCase()} · ≈ ${fr(e.rTotal, 3)} mΩ · ≈ ${fr(e.iMax, 0)} A `, badge(e.ok && !more.length ? "estimation" : "à vérifier", e.ok && !more.length ? "ok" : "warn")));
         if (on) { const form = contactForm(x, { band: x.band });

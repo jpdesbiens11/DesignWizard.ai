@@ -46,7 +46,12 @@ Un changement d'unités redessine l'écran en cours.
 | **DFx** | Les constats, ce qui a été mesuré, la limite et le pourquoi de chaque règle, le libellé des correctifs, le livre des règles |
 | **Guide** | Toutes ses lignes, sur tous les écrans |
 | **Gammes** | Opérations, prises de pièce, outillage, contrôles, caractéristiques à tenir, remarques |
-| **Busbar, circuit flexible** | La ligne d'état (section, longueurs, masse) |
+| **Busbar, circuit flexible, étiquettes** | Les **champs** : largeur, épaisseur, longueurs des branches, rayon de pli, positions des raccordements, largeur des pistes, taille d'une étiquette — un courant, une tension, un nombre restent ce qu'ils sont. La ligne d'état, les épaisseurs d'isolant du menu, la liste des raccordements |
+| **Simulation** | Un effort se tape en lbf, une pression en ksi, la position d'un plan de coupe en pouces ; l'arbre du cas de charge, les étiquettes de la vue, la contrainte de pointe, le déplacement, **l'échelle des couleurs** (bornes tapées et curseurs), le recoupement à la main, le matériau |
+| **Isolation** | Les distances mesurées et requises des paires de nets (« 0,652 / 0,247 in »), les étiquettes des chemins dans la vue |
+| **Assemblage** | La position manuelle d'une occurrence (X, Y, Z) |
+| **Dessins** | La position du plan de la coupe A-A |
+| **Documents** | Le **dossier de revue** (Word, PDF) et les **gammes** (Word, PDF, texte) : phrases, listes et cellules de tableau sont converties à l'enregistrement (`docUnits`) |
 | **Dessins** | Les **cotes** — en pouces, trois décimales, sans zéro avant le point (`.472`, `6.299`), comme ASME Y14.5 écrit une cote en pouces —, les tolérances géométriques, le tableau des trous, la note 1 (« dimensions in inches, converted from the millimetre model »), la case Units et la masse du cartouche (« 111.1 g (3.92 oz) »), l'arbre des cotes de l'écran |
 
 **Comment.** Trois outils, tous dans `core/units.js` (purs, testés) et repris par `core/dom.js` :
@@ -54,8 +59,14 @@ Un changement d'unités redessine l'écran en cours.
 - `measure`, `measures`, `massText` (`fmtLen`, `fmtDims`, `fmtMass` côté écran) pour une valeur que le code écrit lui-même :
   les décimales de l'outil en SI, **quatre chiffres significatifs** quand la valeur est convertie ;
 - `fieldValue` / `fromShown` pour un champ : ce qui est tapé revient en millimètres, sans poussière de virgule flottante ;
+- `unitField` / `unitInput` (`core/dom.js`) pour un champ dont le libellé se lit comme une longueur : « Largeur » devient
+  « Largeur (in) », la valeur s'affiche et se tape en pouces, le projet la reçoit en millimètres ; un libellé qui nomme une
+  autre unité — (A), (V), (N), (°) — ou qui compte des choses n'est pas touché ;
+- `docUnits` pour un **document à lire** (le modèle que `core/docx.js` et `core/pdfdoc.js` impriment) : ses phrases, ses
+  listes et ses cellules, bloc par bloc ; une valeur et son unité rangées dans deux cellules restent ensemble, telles quelles ;
 - `proseUnits` (`inUnits`) pour une **phrase** écrite en millimètres par un outil : chaque quantité est convertie là où
-  elle se trouve, à trois chiffres significatifs — « de 0,2 à 0,4 mm », « 160 × 110 × 42 mm », « 1 250 N » —, une masse
+  elle se trouve, à trois chiffres significatifs — « de 0,2 à 0,4 mm », « 160 × 110 × 42 mm », « 16,56 / 6,27 mm »
+  (mesuré / requis : les deux dans l'unité qui suit), « 1 250 N » —, une masse
   reçoit sa lecture impériale entre parenthèses, et ce qui n'est pas une quantité ne bouge pas (« M3 × 0,5 », « 1,5 d »,
   « ISO 2768-mK », « 3 A/mm² »).
 
@@ -64,17 +75,19 @@ quel que soit le système. Le modèle, lui, ne change jamais d'unité.
 
 ## Ce qui reste en millimètres et en SI
 
-- **Les champs des autres écrans** : busbar, circuit flexible, étiquettes, isolation, simulation (efforts, pressions),
-  carte électronique, éditeur d'une interface dans la pièce, panneaux du mold et de l'extrusion. On y tape encore des
-  millimètres, et leurs libellés le disent.
-- **Leurs phrases** : isolation (les distances des normes sont en millimètres), simulation, carte, plan du mold,
-  bibliothèque, infobulles, écran du rapport de revue.
-- **Les documents exportés** : rapports PDF et Word, gammes, CSV, classeur et note de calcul (unités du modèle). Les
-  fichiers d'échange — STEP, STL, DXF, Gerber, perçage, `.dwiz` — sont en millimètres par nature, et le restent.
+- **Les formules de la pièce** : une cote d'interface ou d'opération s'écrit comme une expression du langage de pièce
+  (« wall + so », « L - 2*wall - 7 »), en millimètres ; l'éditeur d'une interface et l'onglet du code le restent donc.
+- **La carte électronique** (PCBA) : grille, pistes, perçages, règles et fichiers de fabrication sont en millimètres.
+- **Les panneaux du mold, de l'impression et de l'ancienne entrevue d'extrusion**, la bibliothèque électrique, les
+  infobulles, les raccourcis clavier des étiquettes (un pas de 1 mm est un pas de 1 mm).
+- **Le calcul détaillé** : les étapes d'un modèle analytique, la « lecture du cas » de la simulation et le calcul des
+  distances d'isolation s'écrivent en SI, comme dans leur source — seuls leurs résultats sont convertis.
+- **Les documents** qui ne sont pas des phrases : la note de calcul et le classeur Excel (unités du modèle), le rapport
+  de la carte, les CSV. Les fichiers d'échange — STEP, STL, DXF, Gerber, perçage, `.dwiz` — sont en millimètres par nature.
 - **Sur un dessin en pouces** : la tolérance générale reste « ISO 2768-mK » (des classes définies en millimètres) ; le
   DXF du développé d'une tôle reste en millimètres ; les notes tapées dans la pièce restent telles qu'écrites.
-- Le **calcul détaillé** d'un modèle analytique (il s'écrit en SI, comme dans sa source — l'écran le dit) et la fiche
-  texte d'un calcul rangée dans Drive.
+- **La taille d'un outil métrique** : « Clé six pans de 3 mm » reste telle quelle dans une gamme — c'est le nom de l'outil
+  d'une vis M4, pas une mesure ; de même une désignation de filetage (« M4 », « M3 × 0,5 »).
 - Une valeur convertie est **arrondie pour être lue** (quatre chiffres significatifs, trois dans une phrase, trois
   décimales sur un dessin) : la valeur exacte est celle du projet, en millimètres.
 

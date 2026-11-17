@@ -87,21 +87,34 @@ export const measures = (list, unit, d = 1, prefs, num = comma) => `${list.map((
 export const massText = (g, prefs, num = comma) => (typeof g !== "number" || !Number.isFinite(g) ? "—" : g >= 1000 ? measure(g / 1000, "kg", 2, prefs, num) : measure(g, "g", 1, prefs, num));
 
 /* the quantities a sentence may carry : one number or several (« 160 × 110 × 42 mm », « de 0,2 à 0,4 mm », « 0.2 to 0.5 mm »), then a unit that converts */
-const NUMBER = "(?:\\d{1,3}(?:[ \\u00a0\\u202f]\\d{3})+(?!\\d)|\\d+)(?:[.,]\\d+)?", JOIN = "(?:\\s*[×–-]\\s*|\\s+(?:x|à|et|ou|to|and|or)\\s+)";
+const NUMBER = "(?:\\d{1,3}(?:[ \\u00a0\\u202f]\\d{3})+(?!\\d)|\\d+)(?:[.,]\\d+)?", JOIN = "(?:\\s*[×–/-]\\s*|\\s+(?:x|à|et|ou|to|and|or)\\s+)";      // « 16,56 / 6,27 mm » : measured / required, both in the unit that follows
 const PROSE_UNITS = [...Object.keys(IMPERIAL), "kPa", ...Object.keys(DUAL)].filter((u, i, a) => a.indexOf(u) === i).sort((a, b) => b.length - a.length);
 const PROSE = new RegExp(`(?<![\\d.,])(${NUMBER}(?:${JOIN}${NUMBER})*)(\\s?)(${PROSE_UNITS.map((u) => u.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&")).join("|")})(?![A-Za-zÀ-ÿ0-9²³⁴·/])`, "g");
 /** A sentence written in the units of the tools, read in the units chosen : every quantity it carries is converted where it stands, to three
     significant digits, written the way the sentence writes its numbers (comma or point) ; a mass gets its imperial reading in brackets.
-    Nothing changes in SI, nor in what is not a quantity (« M3 × 0,5 », « 1,5 d », « ISO 2768 »). */
+    Nothing changes in SI, nor in what is not a quantity (« M3 × 0,5 », « 1,5 d », « ISO 2768 »), nor in the size of a metric tool, which is
+    its name and not a measure (« Clé six pans de 3 mm » : the key of an M4 screw is a 3 mm key in any workshop). */
+const TOOL = /(?<![A-Za-zÀ-ÿ])(?:clé|clef|douille|embout|tournevis|taraud|hex key|wrench|socket|driver)(?![A-Za-zÀ-ÿ])[^.;:,(]{0,24}$/i;
 export function proseUnits(text, prefs) {
   if (typeof text !== "string" || !text) return text;
   const u = tidyUnits(prefs); if (u.system === "si" && u.pressure === "auto") return text;
-  return text.replace(PROSE, (all, nums, gap, unit) => {
+  return text.replace(PROSE, (all, nums, gap, unit, at, whole) => {
+    if (TOOL.test(whole.slice(Math.max(0, at - 40), at))) return all;
     const dual = DUAL[unit] && u.system === "imperial", k = dual ? DUAL[unit][1] : rule(unit, u)[1]; if (k === 1 && !dual) return all;
     const point = /\d\.\d/.test(nums) && !/,/.test(nums), read = (t) => Number(t.replace(/[ \u00a0\u202f]/g, "").replace(",", ".")), write = (v) => { const t = String(Number(v.toPrecision(3))); return point ? t : t.replace(".", ","); };
     if (dual) return new RegExp(`^${NUMBER}$`).test(nums) ? `${all} (${write(read(nums) / k)} ${DUAL[unit][0]})` : all;
     return `${nums.replace(new RegExp(NUMBER, "g"), (t) => write(read(t) / k))}${gap || " "}${rule(unit, u)[0]}`;
   });
+}
+
+/* a document to read (the neutral model core/docx.js and core/pdfdoc.js print) : its sentences, its lists, the cells of its tables, read in the units chosen.
+   What a block IS — its type, its style, a colour, a picture — is left alone ; a value and its unit kept in two cells of a table stay as they are, together. */
+const DOC_KEEP = new Set(["type", "style", "fill", "align", "kind", "id", "png", "pngSize", "widths", "reference", "revision", "date"]);
+/** A document model in the units chosen. Nothing changes in SI. */
+export function docUnits(doc, prefs) {
+  const u = tidyUnits(prefs); if (!doc || (u.system === "si" && u.pressure === "auto")) return doc;
+  const walk = (v, key) => (typeof v === "string" ? (DOC_KEEP.has(key) ? v : proseUnits(v, u)) : Array.isArray(v) ? v.map((x) => walk(x, key)) : v && typeof v === "object" && !(v instanceof Uint8Array) && !(v instanceof Date) ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, DOC_KEEP.has(k) ? x : walk(x, k)])) : v);
+  return { ...doc, blocks: walk(doc.blocks || [], "blocks") };
 }
 
 /* ---------- the choice, kept in this browser ---------- */

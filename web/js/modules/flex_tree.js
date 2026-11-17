@@ -5,7 +5,7 @@
    Right, what is chosen and obtained : the branches grouped by the edge they leave, each with the picture of its end —
    probe, voltage tap, clipped tongue, bare pads — and the table of tracks and widths. The rules : core/flex_tree.js. */
 
-import { el, clear, icon, svg, btn, badge, field, toast, fmt, fmtMass, debounce, modal, copyText, table } from "../core/dom.js";
+import { el, clear, icon, svg, btn, badge, field, toast, fmt, fmtMass, unitField, unitInput, debounce, modal, copyText, table } from "../core/dom.js";
 import { go, setStatus, setContext, setGuide } from "../core/app.js";
 import { store } from "../core/store.js";
 import { kernel } from "../cad/client.js";
@@ -126,7 +126,7 @@ export function renderTree(ctx) {
   }
   function renderLeft() {
     clear(left); const d = def(), slow = debounce((label, fn) => change(label, fn), 350);
-    const num = (get, set, label, step = 0.5, min = 0.01, attr = null) => field(label, el("input", { type: "number", value: get(d), step, min, "data-core": attr, onInput: (e) => { const v = parseFloat(e.target.value); if (v >= min) slow(`Circuit : ${label}`, (x) => set(x, v)); } }));
+    const num = (get, set, label, step = 0.5, min = 0.01, attr = null) => unitField(label, { value: get(d), step, min, "data-core": attr }, (v) => { if (v >= min) slow(`Circuit : ${label}`, (x) => set(x, v)); });
     left.append(ctx.head()); const scroll = el("div", { class: "side-scroll" }); left.append(scroll); scroll.append(ctx.list());
     scroll.append(el("div", { class: "side-section" }, el("h3", null, "Le cœur"), field("Nom", el("input", { type: "text", value: d.name, onChange: (e) => change("Circuit : nom", (x) => { x.name = e.target.value; }) })),
       el("div", { class: "form-row tight" }, num((x) => x.core.L, (x, v) => { x.core.L = v; }, "Longueur X (mm)", 1, 5), num((x) => x.core.W, (x, v) => { x.core.W = v; }, "Largeur Y (mm)", 1, 5)),
@@ -145,14 +145,14 @@ export function renderTree(ctx) {
   }
   function card(b, d) {
     const set = (label, fn) => { st.sel = b.id; edit(`${b.id} : ${label}`, fn); }, E = EDGES[b.edge], span = E.along === "W" ? d.core.W : d.core.L, need = widthNeeded(d, b);
-    const num = (key, label, step, min, tip) => field(label, el("input", { type: "number", value: key === "tracks" ? tracksOf(b) : b[key], step, min, "data-f": key, "data-tip": tip || null, onChange: (e) => { const v = parseFloat(e.target.value); if (v >= min) set(label, (q) => { q[key] = v; }); } }));
+    const num = (key, label, step, min, tip) => unitField(label, { value: key === "tracks" ? tracksOf(b) : b[key], step, min, "data-f": key, "data-tip": tip || null }, (v) => { if (v >= min) set(label, (q) => { q[key] = v; }); }, { event: "onChange" });
     const net = el("input", { type: "text", value: b.net || "", placeholder: "S1+, HV−…", "data-f": "net", onChange: (e) => set("potentiel", (q) => { q.net = e.target.value.trim(); }) }); if (b.end === "volt" && !b.net) needField(net, { hint: "Le potentiel que cette prise ramène" });
     return el("div", { class: "card taped ft-card", "data-branch-card": b.id },
       el("p", { class: "ft-label" }, "Le bord qu'elle quitte"), tiles("ft-four", Object.keys(EDGES).map((k) => tile({ sel: k === b.edge, color: EDGE_COLOR[k], label: EDGES[k].fr, pic: edgeIcon(k, 40), data: { "data-edge": k }, run: () => set(`bord ${k}`, (q) => { q.edge = k; }) }))),
       el("div", { class: "form-row tight" }, num("at", "Place sur le bord (mm)", 0.5, 0, `Le milieu de la branche, le long du bord — de 0 à ${fr(span)} mm`), num("w", "Largeur (mm)", 0.5, 0.5, `Au moins ${fr(need)} mm pour ses pistes`), num("tracks", "Pistes", 1, 1, "Le nombre de pistes que la branche porte")),
       el("p", { class: "ft-label" }, "Ses parties et ses plis"),
       b.legs.map((g, i) => el("div", { class: "param", style: { gridTemplateColumns: "22px minmax(0,1fr) 132px auto", alignItems: "center" } }, badge(String(i + 1), "neutral"),
-        el("input", { type: "number", value: g.L, step: 1, min: 3, "data-f": `leg${i}`, "aria-label": `Longueur de la partie ${i + 1}`, onChange: (e) => { const v = parseFloat(e.target.value); if (v >= 3) set(`partie ${i + 1}`, (q) => { q.legs[i].L = v; }); } }),
+        unitInput("Longueur", { value: g.L, step: 1, min: 3, "data-f": `leg${i}`, "aria-label": `Longueur de la partie ${i + 1}` }, (v) => { if (v >= 3) set(`partie ${i + 1}`, (q) => { q.legs[i].L = v; }); }, { event: "onChange" }).input,
         i ? el("select", { "aria-label": `Pli avant la partie ${i + 1}`, onChange: (e) => set(`pli ${i}`, (q) => { q.legs[i].bend = +e.target.value; }) }, FOLDS.map(([v, l]) => el("option", { value: v, selected: v === (g.bend || 90) }, l))) : el("small", { class: "muted" }, "à plat, depuis le cœur"),
         b.legs.length > 1 && i ? el("button", { class: "icon-btn", type: "button", "aria-label": `Retirer la partie ${i + 1}`, onClick: () => set(`partie ${i + 1} retirée`, (q) => { q.legs.splice(i, 1); }) }, "×") : el("span"))),
       el("div", { class: "form-actions", style: { justifyContent: "flex-start" } }, FOLDS.map(([v]) => btn(v > 0 ? "Pli vers Z+" : "Pli vers Z−", () => fold(v), { small: true, icon: "plus", tip: `Une partie de plus, après un pli à 90° vers ${v > 0 ? "le haut" : "le bas"}` }))),

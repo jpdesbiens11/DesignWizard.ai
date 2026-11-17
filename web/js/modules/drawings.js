@@ -3,7 +3,7 @@
    left, title block bottom right — with the parts list above it for an assembly. Every dimension has its balloon ; the
    left pane lists them all and gives each its class (normal, reference, SC, CSC). Shown as SVG, exported as a vector PDF. */
 
-import { el, clear, icon, btn, badge, field, toast, download, fmt, fmtLen } from "../core/dom.js";
+import { el, clear, icon, btn, badge, field, toast, download, fmt, fmtLen, unitField, inUnits } from "../core/dom.js";
 import { registerModule, go, setStatus, setGuide, app } from "../core/app.js";
 import { store } from "../core/store.js";
 import { kernel } from "../cad/client.js";
@@ -121,7 +121,7 @@ function render(main, args) {
       const lo = bb ? bb[i] : 0, hi = bb ? bb[i + 3] : 100, at = own && Number.isFinite(own.at) ? own.at : (lo + hi) / 2;
       return el("div", { class: "form-row" }, field("Coupe A-A", el("select", { "aria-label": "Coupe A-A", onChange: (e) => { const m = e.target.value; setSec(m === "auto" ? null : m === "none" ? { axis: "none" } : { axis: m }, e.target.selectedOptions[0].textContent); } },
           [["auto", "Automatique"], ["x", "En travers de la longueur (plan YZ)"], ["y", "En travers de la largeur (plan XZ)"], ["none", "Aucune"]].map(([v, l]) => el("option", { value: v, selected: v === mode }, l))), "Le plan est montré sur la vue de dessus ; la face coupée est hachurée"),
-        mode === "x" || mode === "y" ? field(`Position du plan (${mode.toUpperCase()}, mm)`, el("input", { type: "number", "aria-label": "Position du plan de coupe", value: Math.round(at * 100) / 100, min: lo, max: hi, step: 1, onChange: (e) => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) setSec({ axis: mode, at: Math.max(lo + 0.1, Math.min(hi - 0.1, v)) }, `plan ${mode.toUpperCase()} = ${v} mm`); } }), `Entre ${Math.round(lo)} et ${Math.round(hi)} mm`) : null); };
+        mode === "x" || mode === "y" ? unitField(`Position du plan ${mode.toUpperCase()} (mm)`, { "aria-label": "Position du plan de coupe", value: Math.round(at * 100) / 100, min: lo, max: hi, step: 1 }, (v) => { if (Number.isFinite(v)) setSec({ axis: mode, at: Math.max(lo + 0.1, Math.min(hi - 0.1, v)) }, inUnits(`plan ${mode.toUpperCase()} = ${Math.round(v * 100) / 100} mm`)); }, { event: "onChange", hint: inUnits(`Entre ${Math.round(lo)} et ${Math.round(hi)} mm`) }) : null); };
     const text = (key, label, hint) => field(label, el("input", { type: "text", value: d()[key] || "", onChange: (e) => setD(key, e.target.value, label) }), hint);
     const setRev = (v) => (isAsm ? store.updateAssembly(id, (x) => { x.revision = v || undefined; }, `${id} : révision`) : store.updatePart(id, (x) => { x.revision = v || undefined; }, `${id} : révision`));
     body.append(el("div", { class: "side-section" }, el("h3", null, "Cartouche"), el("div", { class: "form-row" }, text("drawnBy", "Dessiné"), text("checkedBy", "Vérifié")), el("div", { class: "form-row" }, text("approvedBy", "Approuvé"), text("status", "Statut", "Préliminaire, Pour revue, Émis…")),

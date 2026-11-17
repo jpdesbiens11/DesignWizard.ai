@@ -3,7 +3,8 @@
    quarter or an eighth instead of the whole. A cut can also be put anywhere, to isolate a zone : its plane then carries
    the condition the analyst chooses. The physics is in analysis/fea/symmetry.js ; this is only its screen. */
 
-import { el, btn } from "../core/dom.js";
+import { el, btn, unitInput, inUnits } from "../core/dom.js";
+import { getUnits, shownUnit } from "../core/units.js";
 import { CUT_BC } from "../analysis/fea/symmetry.js";
 
 const AX = "XYZ", fr = (x) => String(Math.round(x * 100) / 100).replace(".", ",");
@@ -21,7 +22,7 @@ export function cutsSection(o) {
   for (const s of o.syms.filter((x) => !st.cuts.some((c) => c.axis === x.axis))) {
     if (!s.ok) { rows.push(el("p", { class: "muted small", style: { margin: ".1rem 0" } }, `Plan ${s.name} : pas de symétrie (${fr(s.mismatch * 100)} % des cubes sans vis-à-vis).`)); continue; }
     const chk = o.symmetric({ axis: s.axis, at: s.at });
-    rows.push(el("div", { class: "bc-row" }, el("span", { class: "grow small" }, `Plan ${s.name} = ${fr(s.at)} mm : le produit est symétrique${chk.ok ? ", son chargement aussi." : "."}`),
+    rows.push(el("div", { class: "bc-row" }, el("span", { class: "grow small" }, inUnits(`Plan ${s.name} = ${fr(s.at)} mm : le produit est symétrique${chk.ok ? ", son chargement aussi." : "."}`)),
       btn(chk.ok ? "Utiliser" : "Forcer", () => add({ axis: s.axis, at: s.at, keep: 1, bc: "sym" }), { small: true, primary: chk.ok && !hasSym, disabled: hasSym, tip: hasSym ? `Une seule symétrie à la fois pour l'instant : le plan ${AX[st.cuts[symAt].axis]} l'est déjà. Retirez-la pour utiliser celle-ci.` : chk.ok ? "Ne résoudre qu'un côté du plan : même réponse, deux fois moins de cubes — ou des cubes plus fins pour le même temps" : "Le chargement n'est pas le même des deux côtés : le résultat ne vaudra que pour un chargement symétrique" })));
     for (const n of chk.notes.slice(0, 3)) rows.push(el("p", { class: "form-error small", style: { margin: "0 0 .2rem" } }, n));
   }
@@ -29,7 +30,7 @@ export function cutsSection(o) {
   st.cuts.forEach((c, i) => rows.push(el("div", { class: "card", style: { padding: ".35rem .45rem", margin: ".3rem 0" }, "data-cut": AX[c.axis] },
     el("div", { style: { display: "flex", gap: ".3rem", alignItems: "center" } },
       el("select", { "aria-label": "Axe du plan", style: { flex: "0 0 5.2rem" }, onChange: (e) => { const a = +e.target.value; set(i, { axis: a, at: (o.bbox[a] + o.bbox[a + 3]) / 2 }); } }, [0, 1, 2].map((a) => el("option", { value: a, selected: a === c.axis, disabled: a !== c.axis && st.cuts.some((x) => x.axis === a) }, `Plan ${AX[a]}`))),
-      el("span", { class: "small" }, "à"), el("input", { type: "number", "aria-label": "Position du plan (mm)", value: Math.round(c.at * 100) / 100, step: "any", style: { flex: "1 1 auto", minWidth: 0 }, onChange: (e) => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) set(i, { at: v }); } }), el("span", { class: "small" }, "mm"),
+      el("span", { class: "small" }, "à"), unitInput("Position", { "aria-label": `Position du plan (${shownUnit("mm", getUnits())})`, value: Math.round(c.at * 100) / 100, step: "any", style: { flex: "1 1 auto", minWidth: 0 } }, (v) => { if (Number.isFinite(v)) set(i, { at: v }); }, { event: "onChange" }).input, el("span", { class: "small" }, shownUnit("mm", getUnits())),
       el("button", { class: "icon-btn", type: "button", "aria-label": "Retirer ce plan", onClick: () => { st.cuts.splice(i, 1); o.apply(); } }, "×")),
     el("div", { style: { display: "flex", gap: ".3rem", alignItems: "center", marginTop: ".3rem" } },
       el("select", { "aria-label": "Côté gardé", "data-tip": "Le côté du plan que l'on résout", style: { flex: "0 0 5.2rem" }, onChange: (e) => set(i, { keep: +e.target.value }) }, [[1, `côté +${AX[c.axis]}`], [-1, `côté −${AX[c.axis]}`]].map(([v, l]) => el("option", { value: v, selected: v === (c.keep < 0 ? -1 : 1) }, l))),
@@ -45,6 +46,6 @@ export function cutsSection(o) {
 export function cutMenu(hit, st, apply) {
   if (!hit || !hit.point || !hit.normal) return [];
   const n = hit.normal.map(Math.abs), face = n.indexOf(Math.max(...n)), out = [{ title: "Couper le modèle ici" }];
-  for (const a of [0, 1, 2]) if (a !== face) out.push({ label: `Plan ${AX[a]} = ${fr(hit.point[a])} mm`, icon: "section", run: () => { st.cuts = [...st.cuts.filter((c) => c.axis !== a), { axis: a, at: Math.round(hit.point[a] * 100) / 100, keep: 1, bc: "free" }]; apply(); } });
+  for (const a of [0, 1, 2]) if (a !== face) out.push({ label: inUnits(`Plan ${AX[a]} = ${fr(hit.point[a])} mm`), icon: "section", run: () => { st.cuts = [...st.cuts.filter((c) => c.axis !== a), { axis: a, at: Math.round(hit.point[a] * 100) / 100, keep: 1, bc: "free" }]; apply(); } });
   return out;
 }

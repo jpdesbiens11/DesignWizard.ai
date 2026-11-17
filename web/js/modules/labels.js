@@ -5,7 +5,7 @@
    artwork at scale, the list for the printer, the files (SVG per label, CSV list). The rules : core/labels.js.
    Route : #/labels/<assembly>. */
 
-import { el, clear, icon, svg, btn, badge, field, toast, fmt, debounce, modal, copyText, table, download } from "../core/dom.js";
+import { el, clear, icon, svg, btn, badge, field, toast, fmt, unitField, debounce, modal, copyText, table, download } from "../core/dom.js";
 import { registerModule, go, setStatus, setGuide } from "../core/app.js";
 import { store } from "../core/store.js";
 import { createViewport } from "../core/viewport.js";
@@ -99,7 +99,7 @@ function render(main, args) {
   }
   function card(l) {
     const a = l.art || {}, slow = debounce((label, fn) => edit(label, fn), 350), set = (label, fn) => edit(`${l.id} : ${label}`, fn);
-    const num = (key, label, step, min, tip) => field(label, el("input", { type: "number", value: l[key] ?? 0, step, min, "data-f": key, "data-tip": tip || null, onInput: (e) => { const v = parseFloat(e.target.value); if (v >= min) slow(`${l.id} : ${label}`, (q) => { q[key] = v; }); } }));
+    const num = (key, label, step, min, tip) => unitField(label, { value: l[key] ?? 0, step, min, "data-f": key, "data-tip": tip || null }, (v) => { if (v >= min) slow(`${l.id} : ${label}`, (q) => { q[key] = v; }); });
     const txt = el("input", { type: "text", value: a.text || "", placeholder: a.type === "logo" ? "DesignWizard.ai" : "Ce que dit l'étiquette", "data-f": "text", onChange: (e) => set("texte", (q) => { q.art.text = e.target.value; }) }); if (a.type === "text" && !String(a.text || "").trim()) needField(txt, { hint: "Le texte de l'étiquette" });
     const file = el("input", { type: "file", accept: "image/png,image/jpeg,image/svg+xml", hidden: true, onChange: (e) => { const f = e.target.files[0]; if (!f) return; const rd = new FileReader(); rd.onload = () => { if (String(rd.result).length > 4 * IMAGE_LIMIT) { toast("Image trop lourde pour le projet : réduisez-la sous 1 Mo environ.", "error", 6000); return; } set("image", (q) => { q.art.src = String(rd.result); }); }; rd.readAsDataURL(f); } });
     const bring = btn(a.src ? "Changer l'image…" : "Apporter l'image…", () => file.click(), { small: true, icon: "upload", tip: "PNG, JPEG ou SVG ; elle est gardée dans le projet" }); bring.dataset.f = "src";

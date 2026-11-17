@@ -4,6 +4,7 @@
    AI round trip on the artefact, the computed sheet given for reference. */
 
 import { el, icon, btn, badge, toast, download, copyText, inUnits } from "../core/dom.js";
+import { getUnits, docUnits } from "../core/units.js";
 import { app, docMeta } from "../core/app.js";
 import { store } from "../core/store.js";
 import { planText, planDoc, planKeys, PLAN_KINDS } from "../core/plan_doc.js";
@@ -26,12 +27,12 @@ export const planAiHelp = (plan) => ({ context: `${planText(plan)}\n\n${planKeys
 
 /** The buttons of a routing sheet. o : { figures() → figures for the documents (may be async), aiKey }. */
 export function planBar(plan, o = {}) {
-  const name = `${plan.id}_gamme`, doc = async () => ({ ...planDoc(plan, { date: new Date(), project: store.project ? store.project.name || store.project.id : "", author: (store.project && store.project.author) || "", figures: o.figures ? await o.figures() : [] }), kind: "Gamme", ...docMeta() });
+  const name = `${plan.id}_gamme`, doc = async () => docUnits({ ...planDoc(plan, { date: new Date(), project: store.project ? store.project.name || store.project.id : "", author: (store.project && store.project.author) || "", figures: o.figures ? await o.figures() : [] }), kind: "Gamme", ...docMeta() }, getUnits());      // Word and PDF read in the units chosen
   const make = async (b, fn) => { b.disabled = true; try { await fn(); } catch (e) { console.error(e); toast(`Gamme : ${e.message}`, "error", 7000); } b.disabled = false; };
   return el("div", { class: "form-actions plan-bar" },
     btn("Word", (e, b) => make(b, async () => download(`${name}.docx`, docx(await doc()), DOCX)), { small: true, primary: true, icon: "download", tip: "La gamme en document Word : phases, images, questions avec une colonne pour les réponses, signatures" }),
     btn("PDF", (e, b) => make(b, async () => download(`${name}.pdf`, pdfDoc(await doc()), "application/pdf")), { small: true, primary: true, icon: "pdf", tip: "Le même document en PDF" }),
-    btn("Texte", () => download(`${name}.txt`, planText(plan), "text/plain;charset=utf-8"), { small: true, icon: "download", tip: "La gamme en texte brut : pour un courriel ou une demande de prix" }),
+    btn("Texte", () => download(`${name}.txt`, inUnits(planText(plan)), "text/plain;charset=utf-8"), { small: true, icon: "download", tip: "La gamme en texte brut : pour un courriel ou une demande de prix" }),
     btn("", async () => toast((await copyText(planText(plan))) ? "Gamme copiée : collez-la dans votre courriel." : "Copie impossible.", "success"), { small: true, icon: "copy", tip: "Copier la gamme (texte)" }),
     o.aiKey ? btn("IA", () => app.aiLoop && app.aiLoop(o.aiKey, planAiHelp(plan)), { small: true, icon: "sparkle", tip: "Confier à l'IA : la gamme part avec l'artéfact ; ses notes et ses points reviennent, vous validez les changements" }) : null);
 }

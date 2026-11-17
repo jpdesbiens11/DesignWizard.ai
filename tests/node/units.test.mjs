@@ -2,7 +2,7 @@
    metre per second and the kilogram — and a choice of its own for a pressure : kPa, bar, psi, atm. */
 import test from "node:test";
 import assert from "node:assert/strict";
-import { UNIT_SYSTEMS, PRESSURE_UNITS, SI_UNITS, tidyUnits, pressureUnit, shownUnit, toShown, fromShown, converts, dualOf, pressureEquivalents, quantity, fieldValue, getUnits, setUnits, shownNumber, measure, measures, massText, proseUnits } from "../../web/js/core/units.js";
+import { UNIT_SYSTEMS, PRESSURE_UNITS, SI_UNITS, tidyUnits, pressureUnit, shownUnit, toShown, fromShown, converts, dualOf, pressureEquivalents, quantity, fieldValue, getUnits, setUnits, shownNumber, measure, measures, massText, proseUnits, docUnits } from "../../web/js/core/units.js";
 import { MODELS, model, defaults, run } from "../../web/js/analysis/physics/index.js";
 import { sceneOf } from "../../web/js/analysis/physics/scene3d.js";
 import { physicsSummary, qty } from "../../web/js/modules/physics_panels.js";
@@ -87,4 +87,20 @@ test("a sentence written in millimetres is read in the unit chosen : every quant
   assert.equal(proseUnits("les 4 trous de 3,4 mm", IMP), "les 4 trous de 0,134 in", "a count is not a thousand"); assert.equal(proseUnits("", IMP), ""); assert.equal(proseUnits(null, IMP), null); assert.equal(proseUnits(12, IMP), 12);
   // what comes back in millimetres is what was typed : a field converts both ways
   for (const mm of [3, 6.35, 12.7, 160, 0.2]) near(fromShown(fieldValue(mm, "mm", IMP), "mm", IMP), mm, 1e-4);
+});
+
+test("« a / b mm » is two quantities in the unit that follows ; a document to read is converted block by block, what it is made of left alone", () => {
+  assert.equal(proseUnits("clr 16,56 / 6,27 mm · crp 26 / 6,27 mm", IMP), "clr 0,652 / 0,247 in · crp 1,02 / 0,247 in", "measured / required : never one in inches and the other in millimetres");
+  assert.equal(proseUnits("Clé six pans de 3 mm ; serrer à 2,5 N·m, cordon de 6 mm", IMP), "Clé six pans de 3 mm ; serrer à 22,1 lbf·in, cordon de 0,236 in", "the size of a metric tool is its name, not a measure");
+  assert.equal(proseUnits("Poser la clé. Fente de 3 mm", IMP), "Poser la clé. Fente de 0,118 in", "the tool of another sentence protects nothing");
+  assert.equal(proseUnits("3 A/mm² ; 1,27 g/cm³ ; 1/4 de tour ; 100 mm/s", IMP), "3 A/mm² ; 1,27 g/cm³ ; 1/4 de tour ; 100 mm/s", "a rate and a fraction are not a pair of lengths");
+  const png = new Uint8Array([1, 2, 3]), when = new Date("2026-11-17T12:00:00Z");
+  const doc = { title: "Gamme — plaque de 3 mm", reference: "P-1-GAMME", date: when, blocks: [{ type: "h1", text: "Perçage de 4,5 mm" }, { type: "p", text: "Serrer à 1,2 N·m.", style: "warn" }, { type: "list", ordered: true, items: ["Foret de 2,5 mm", "Tarauder M3 × 0,5"] },
+    { type: "table", head: ["Cote", "Valeur", "Unité"], widths: [40, 30, 30], rows: [["Entraxe", { text: "50 mm", align: "right", fill: "ok" }, ""], ["Paroi", "2,5", "mm"]] }, { type: "kv", rows: [["Masse", "111,1 g"], ["Matière", "PC/ABS"]] }, { type: "figure", png, pngSize: [4, 3], caption: "Vue de 160 × 110 mm" }, { type: "pagebreak" }] };
+  assert.equal(docUnits(doc, SI_UNITS), doc, "nothing to do in SI"); assert.equal(docUnits(null, IMP), null);
+  const out = docUnits(doc, IMP), B = out.blocks;
+  assert.deepEqual([B[0].text, B[1].text, B[1].style, B[2].items, B[2].ordered], ["Perçage de 0,177 in", "Serrer à 10,6 lbf·in.", "warn", ["Foret de 0,0984 in", "Tarauder M3 × 0,5"], true]);
+  assert.deepEqual(B[3].rows, [["Entraxe", { text: "1,97 in", align: "right", fill: "ok" }, ""], ["Paroi", "2,5", "mm"]], "a value and its unit in two cells stay together, in millimetres"); assert.deepEqual(B[3].widths, [40, 30, 30]); assert.deepEqual(B[3].head, ["Cote", "Valeur", "Unité"]);
+  assert.deepEqual(B[4].rows, [["Masse", "111,1 g (3,92 oz)"], ["Matière", "PC/ABS"]]); assert.equal(B[5].png, png); assert.deepEqual(B[5].pngSize, [4, 3]); assert.equal(B[5].caption, "Vue de 6,3 × 4,33 in"); assert.deepEqual(B[6], { type: "pagebreak" });
+  assert.equal(out.title, doc.title, "the title and the reference of the file are its own"); assert.equal(out.date, when); assert.equal(doc.blocks[0].text, "Perçage de 4,5 mm", "the model given is not touched");
 });

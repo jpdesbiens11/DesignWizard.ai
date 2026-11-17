@@ -2,7 +2,7 @@
    dependency: change one side, the other part adapts. Exploded view, BOM with the implied hardware, interference
    check, complementary-part generator, STEP of the assembly, and the assembly routing step by step (asm_gamme.js). */
 
-import { el, clear, icon, btn, badge, toast, modal, fmt, fmtMass, fmtDims, inUnits, download, promptBox, confirmBox, table } from "../core/dom.js";
+import { el, clear, icon, btn, badge, toast, modal, fmt, fmtMass, fmtDims, inUnits, unitInput, download, promptBox, confirmBox, table } from "../core/dom.js";
 import { registerModule, go, setStatus, app } from "../core/app.js";
 import { store } from "../core/store.js";
 import { lookSwatch } from "./part_look.js";
@@ -287,8 +287,8 @@ function render(main, args) {
     }), !b.interfaces.length && el("p", { class: "muted" }, "Cette pièce n'a pas d'interface : elle ne peut pas se mater. Ajoutez-en dans le Part Studio.")));
     if (!st.ctx.sol.placedBy[inst.id] && !inst.fixed) {
       const t = (inst.placement && inst.placement.t) || [0, 0, 0];
-      body.append(el("div", { class: "side-section" }, el("h3", null, "Position manuelle"), el("div", { class: "form-row" }, ["X", "Y", "Z"].map((ax, k) => el("label", { class: "field", style: { minWidth: "70px" } }, el("span", { class: "field-label" }, ax),
-        el("input", { type: "number", value: t[k], step: "1", onChange: (e) => store.updateAssembly(id, (x) => { const i = x.instances.find((q) => q.id === inst.id); i.placement = i.placement || { t: [0, 0, 0], r: [0, 0, 0] }; i.placement.t[k] = parseFloat(e.target.value) || 0; }, `${inst.part} déplacée`) }))))));
+      body.append(el("div", { class: "side-section" }, el("h3", null, "Position manuelle"), el("div", { class: "form-row" }, ["X", "Y", "Z"].map((ax, k) => { const u = unitInput(ax, { value: t[k], step: "1" }, (v) => store.updateAssembly(id, (x) => { const i = x.instances.find((q) => q.id === inst.id); i.placement = i.placement || { t: [0, 0, 0], r: [0, 0, 0] }; i.placement.t[k] = v || 0; }, `${inst.part} déplacée`), { event: "onChange", length: true });
+        return el("label", { class: "field", style: { minWidth: "70px" } }, el("span", { class: "field-label" }, u.label), u.input); }))));
     }
   }
   function bomTab(body) {
