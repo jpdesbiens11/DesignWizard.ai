@@ -39,7 +39,7 @@ Chaque plan porte la marque en haut à gauche ; la dernière carte porte la note
 
 ## Sans son, pour l'instant
 
-La session qui a produit le film n'avait aucun moteur de synthèse vocale : **la narration est écrite à l'écran**, en
+Le film en ligne est muet : **la narration est écrite à l'écran**, en
 sous-titres incrustés dans l'image, et les pages le disent (« Sans son : la narration se lit à l'écran »). Le texte
 complet de la narration est aussi donné sous chaque lecteur de la vitrine, pour qui ne voit pas l'image.
 
@@ -55,15 +55,53 @@ Poser une voix plus tard ne demande pas de refaire le film. **Voix de synthèse*
    réplique à raccourcir et s'arrête. `--dry` essaie toute la chaîne sans appeler personne (des tonalités).
 4. La clé d'API ne s'écrit nulle part dans le dépôt : variable `ELEVENLABS_API_KEY`, envoyée dans l'en-tête
    `xi-api-key` ; dans une session en nuage, c'est le réseau de la session qui la pose. Seul le texte de la narration
-   part vers ElevenLabs.
+   part vers ElevenLabs. La clé a besoin de la permission « Text to Speech » ; lister les voix (`voices`) demande en
+   plus « Voices » en lecture (sans elle, les voix d'origine du service se lisent sans clé).
 
 **Voix enregistrée** (une personne) : d'après `docs/film/narration_<langue>.md`, une ligne, un souffle, chaque ligne
 entre ses deux temps (le débit le plus rapide est de 2,6 mots par seconde) ; un seul fichier par langue, posé par
 `ffmpeg -i designwizard_fr_sans-sous-titres.mp4 -i voix_fr.wav -c:v copy -c:a aac -b:a 160k -shortest designwizard_fr.mp4`.
 
-Dans les deux cas, ensuite : remplacer les fichiers de `web/video`, ajouter aux lecteurs une piste `<track kind="captions" src="video/designwizard_fr.vtt">`
-   (les sous-titres deviennent alors facultatifs), retirer la mention « Sans son » (`FILM.silent`, `web/js/core/film.js`,
-   et les deux phrases de `web/vitrine.html`).
+## Le jour où le film parle
+
+**Règle de JP : avec la voix, pas de sous-titres — sauf quand le son est coupé.** Le film parlé n'a donc plus de
+sous-titres dessinés dans l'image ; ils deviennent une piste (`designwizard_<langue>.vtt`) que le lecteur ne montre que
+s'il est muet ou si son volume est à zéro (`web/js/core/captions.js` : `wantCaptions`, `followSound`). Dans
+l'application, c'est `showFilm` qui pose la piste ; sur la vitrine, c'est le seul script de la page, `web/js/vitrine.js`
+(six lignes, aucune requête, rien de gardé).
+
+Limite à connaître : **une page ne lit pas le volume de l'ordinateur**, seulement celui du lecteur — son bouton muet et
+sa glissière. Qui a coupé le son du poste, ou débranché ses haut-parleurs, allume les sous-titres par le bouton du
+lecteur ; ce choix est laissé tel quel jusqu'au prochain changement de son du lecteur.
+
+Le site a donc deux états, dits par `FILM.voice` (`web/js/core/film.js`) et tenus cohérents par les tests :
+
+| | Muet (aujourd'hui) | Parlé |
+|---|---|---|
+| `web/video/designwizard_<langue>.mp4` | narration incrustée dans l'image, pas de son | une voix, image sans sous-titres |
+| Sous-titres | dans l'image | piste `.vtt`, montrée quand le son du lecteur est coupé |
+| Vitrine | aucun script | un script maison (`js/vitrine.js`), `script-src 'self'` |
+| Ce que la page dit | « Sans son : la narration se lit à l'écran. » | « Son coupé : les sous-titres apparaissent. » |
+
+Passer de l'un à l'autre est une commande, une fois les deux films parlés faits :
+
+`node tools/film_speak.mjs <film parlé fr.mp4> <film parlé en.mp4>`
+
+Elle copie les films, met `FILM.voice` à vrai, donne à chaque lecteur de la vitrine sa piste de sous-titres, à la page
+son script et le droit de le lancer, et change les phrases qui parlaient d'un film muet. Chaque changement doit être
+trouvé une seule fois, sinon rien n'est écrit. Ensuite : `node --test tests/node/film.test.mjs`, puis les textes qui
+disent encore « sans son » (ce document, le README).
+
+**Avant de publier une voix de synthèse, vérifier le forfait sous lequel elle a été faite.** Chez ElevenLabs, le forfait
+gratuit ne permet pas l'usage commercial (et demande une mention) ; une vidéo de vitrine en est un. Le premier forfait
+payant donne la licence commerciale, pour l'audio produit **pendant** l'abonnement : des répliques faites sous le
+forfait gratuit sont à redire une fois abonné (un dossier de travail neuf, `--work`, pour que l'outil les redemande).
+Relevé le 17 novembre 2026 d'une recherche qui cite l'aide d'ElevenLabs et plusieurs comparatifs (pages non lues en
+entier) ; les conditions du service font foi.
+
+État au 17 novembre 2026 : les deux films parlés existent (voix « Jessica », modèle multilingue, les 24 répliques
+tiennent dans leur temps sans être accélérées), **faits sous le forfait gratuit, pour écoute seulement** : ils ne sont
+ni dans le dépôt ni en ligne. Le site reste dans l'état muet.
 
 ## Refaire le film
 

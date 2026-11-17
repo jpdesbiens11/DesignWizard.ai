@@ -2,7 +2,8 @@
 import test from "node:test"; import assert from "node:assert/strict";
 import { readFileSync, existsSync, statSync } from "node:fs"; import { fileURLToPath } from "node:url";
 import { SCENES, CUES, DURATION, FPS, LANGS, SLOGANS, sceneAt, cueAt, pace, toVtt, toScript, roomOf, fitLine, MAX_TEMPO } from "../../tools/film/script.mjs";
-import { FILM, filmFiles, filmLength, filmLang } from "../../web/js/core/film.js";
+import { FILM, filmFiles, filmLength, filmLang, filmNote } from "../../web/js/core/film.js";
+import { wantCaptions, captionMode } from "../../web/js/core/captions.js";
 
 const at = (p) => fileURLToPath(new URL(`../../${p}`, import.meta.url)), read = (p) => readFileSync(at(p), "utf8");
 const both = (o, what) => { for (const l of LANGS) assert.ok(typeof o[l] === "string" && o[l].trim().length > 1, `${what} : no ${l}`); };
@@ -83,7 +84,7 @@ test("film — the files the site publishes : an MP4 of the length of the timeli
 
 test("film — where it is shown : the showcase page without a script, the home screen in a dialog", () => {
   const page = read("web/vitrine.html"), home = read("web/js/modules/home.js"), css = read("web/css/vitrine.css");
-  assert.match(page, /Content-Security-Policy" content="default-src 'none';[^"]*media-src 'self'/); assert.ok(!/<script/i.test(page), "the showcase page stays without a script");
+  assert.match(page, /Content-Security-Policy" content="default-src 'none';[^"]*media-src 'self'/);
   const players = page.match(/<video [^>]*>/g) || []; assert.equal(players.length, LANGS.length);
   for (const v of players) { assert.match(v, /controls/); assert.match(v, /preload="none"/); assert.match(v, /poster="video\/designwizard_(fr|en)\.jpg"/); }      // nothing of a film is loaded before someone asks for it
   for (const l of LANGS) {
@@ -92,6 +93,32 @@ test("film — where it is shown : the showcase page without a script, the home 
   }
   assert.ok(page.includes('href="#film"') && page.includes('id="film"')); assert.match(css, /\bvideo \{[^}]*aspect-ratio: 16 \/ 9/);
   assert.match(home, /import \{ showFilm, filmLength \} from "\.\.\/core\/film\.js"/); assert.match(home, /showFilm\(\)/);
+  assert.match(css, /video::cue \{/); assert.match(read("web/css/app.css"), /\.film-video::cue \{/);
   const stage = read("tools/film/film.js"), style = read("tools/film/film.css"), app = read("web/css/app.css");
   for (const cls of stage.match(/"fm-[a-z]+"/g).map((x) => x.slice(1, -1))) { assert.ok(style.includes(`.${cls}`), cls); assert.ok(!app.includes(`.${cls}`), `${cls} is the film's alone`); }
+});
+
+test("film — a film that speaks : no subtitles while it is heard, subtitles as soon as the sound of the player is off", () => {
+  assert.equal(wantCaptions({ muted: false, volume: 1 }), false, "heard : no subtitles"); assert.equal(wantCaptions({ muted: false, volume: 0.05 }), false);
+  assert.equal(wantCaptions({ muted: true, volume: 1 }), true, "muted"); assert.equal(wantCaptions({ muted: false, volume: 0 }), true, "volume at zero");
+  assert.equal(wantCaptions(null), false); assert.equal(wantCaptions({ muted: false }), true, "a player that does not say its volume is taken as silent");
+  assert.equal(captionMode({ muted: true, volume: 1 }), "showing"); assert.equal(captionMode({ muted: false, volume: 0.6 }), "hidden", "loaded, not drawn : the viewer's own button still turns them on");
+  for (const l of LANGS) { assert.equal(filmNote(l, false), FILM.silent[l]); assert.equal(filmNote(l, true), FILM.spoken[l]); assert.notEqual(FILM.spoken[l], FILM.silent[l]); }
+  assert.equal(filmNote("de", true), FILM.spoken.fr); assert.equal(filmNote("fr"), FILM.voice ? FILM.spoken.fr : FILM.silent.fr);
+  assert.ok(!/^import /m.test(read("web/js/core/captions.js")), "the rule stands alone : the showcase page loads nothing else of the application");
+  assert.deepEqual(read("web/js/vitrine.js").match(/^import .*$/gm), ['import { followSound } from "./core/captions.js";']);
+  assert.match(read("web/js/core/film.js"), /FILM\.voice \? el\("track", \{ kind: "subtitles" \}\) : null/);
+});
+
+test("film — one state at a time : silent with its narration drawn and a page without a script, or speaking with a subtitle track on every player", () => {
+  const page = read("web/vitrine.html"), tracks = page.match(/<track [^>]*>/g) || [], csp = page.match(/Content-Security-Policy" content="([^"]*)"/)[1];
+  if (!FILM.voice) {
+    assert.ok(!/<script/i.test(page), "silent : the showcase page stays without a script"); assert.equal(tracks.length, 0, "silent : the narration is in the picture, a track would write it twice");
+    assert.ok(!/script-src/.test(csp)); assert.ok(page.includes("Sans son") && page.includes("No sound yet"), "the page says the film is silent");
+  } else {
+    for (const l of LANGS) assert.ok(page.includes(`<track kind="subtitles" srclang="${l}" label="${FILM.names[l]}" src="video/designwizard_${l}.vtt">`), `the ${l} player has its subtitle track`);
+    assert.equal(tracks.length, LANGS.length); assert.ok(tracks.every((t) => !/\bdefault\b/.test(t)), "no track is on by itself : the sound decides");
+    assert.deepEqual(page.match(/<script[^>]*>/gi), ['<script type="module" src="js/vitrine.js">'], "one script, the house's own"); assert.match(csp, /script-src 'self'/); assert.ok(!/unsafe|https?:/.test(csp));
+    assert.ok(!page.includes("Sans son") && !page.includes("No sound yet") && !page.includes("sans script"), "the page no longer says the film is silent, nor that it has no script");
+  }
 });
