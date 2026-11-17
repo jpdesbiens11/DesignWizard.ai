@@ -27,6 +27,10 @@ if (want("piece")) { await open("#/parts/DRV-BASE", 11000); await shot("piece");
 if (want("commande")) { await open("#/parts/DRV-BASE", 9000); await tab("Artéfacts"); await shot("commande"); }
 if (want("gamme")) { await open("#/parts/DRV-HEATSINK", 9000); await tab("Gamme"); await shot("gamme"); }
 if (want("pcba")) { await open("#/pcba", 6000); await shot("pcba"); }
+if (want("unites")) {      // the same board read in the imperial system : mil and inches — the choice is kept by the browser, so the page is loaded again around it
+  await page.evaluate(() => localStorage.setItem("dw.units", JSON.stringify({ system: "imperial" }))); await page.reload(); await open("#/pcba", 4000);
+  await page.locator(".pf-node", { hasText: "Implantation" }).first().click(); await wait(3000); await page.mouse.move(820, 620); await shot("unites");
+  await page.evaluate(() => localStorage.removeItem("dw.units")); await page.reload(); await wait(1500); }
 if (want("assemblage")) { await open("#/assembly/DRV-ASM", 14000); await shot("assemblage"); }
 if (want("simulation")) { await open("#/fea", 9000); await shot("simulation"); }
 if (want("calcul")) { await open("#/physics/heatsink_natural", 2500); const all = page.getByRole("button", { name: /Tout confirmer/ }); if (await all.count()) { await all.first().click(); await wait(600); } await page.locator(".phys-tabs [data-tab='result']").click().catch(() => {}); await wait(1500); await shot("calcul"); }

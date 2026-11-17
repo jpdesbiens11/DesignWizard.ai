@@ -25,7 +25,7 @@ en bas de chaque page, des notes pour le présentateur, une annexe de questions 
 - L'adresse garde la page : `presentation.html#9` ouvre la page 9.
 - **PDF** : Ctrl + P → « Enregistrer au format PDF » ; chaque page de la présentation est une page du PDF.
 
-Vingt-six pages et une annexe, pour une vingtaine de minutes, puis l'outil en direct : charger la démonstration, ouvrir l'Atelier,
+Vingt-sept pages et une annexe, pour une vingtaine de minutes, puis l'outil en direct : charger la démonstration, ouvrir l'Atelier,
 ajouter une interface, suivre la pièce jusqu'à son dossier de commande.
 
 ## Ce qu'elle montre depuis la v0.70
@@ -46,6 +46,13 @@ une note sur le dialogue et l'aller-retour IA) ; le choix d'unités suit dans le
 (Électrique) ; le calcul reste en SI et le verdict du classeur lit le domaine de validité (Physique). Seule la capture
 du dessin a été refaite (v0.71) : les autres écrans n'ont pas changé d'aspect en SI. Le pied de chaque page a été
 desserré : la ligne de la plateforme et la note de la marque ne se touchent plus à l'impression.
+
+## Depuis la v0.75
+
+Une page de plus à la station Électrique — « La conception dans vos unités, les calculs en SI » — avec la capture de la
+carte lue en mil et en pouces (`unites`, prise par `tools/tour_shots.mjs` dans le système impérial). Elle dit le
+choix de JP : SI ou impérial pour la conception, SI toujours pour les calculs. **Toutes les captures ont été refaites
+sur la v0.75** ; huit sont restées identiques à l'octet près, les écrans n'ayant pas changé.
 
 ## Le fil conducteur
 
