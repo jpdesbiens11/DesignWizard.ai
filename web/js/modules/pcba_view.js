@@ -3,6 +3,7 @@
    designer zoom, pan, pick a net, drag a zone or a part. Board millimetres, Y up. */
 
 import { el, svg } from "../core/dom.js";
+import { boardProse } from "../pcba/board_units.js";
 
 export const LAYER_STYLE = { bottom: ["#2f6fc8", 0.8], in2: ["#3fa36b", 0.55], in1: ["#c89b2f", 0.55], top: ["#c8402f", 0.85], mask_bottom: ["#1f7a4d", 0.35], mask_top: ["#1f7a4d", 0.35], paste_bottom: ["#8a8f98", 0.8], paste_top: ["#8a8f98", 0.8],
   silk_bottom: ["#7c6fb0", 0.9], silk_top: ["#3b3f46", 0.95], coat_bottom: ["#27a7c9", 0.22], coat_top: ["#27a7c9", 0.22], fab_bottom: ["#7c6fb0", 0.9], fab_top: ["#5a6472", 0.95], outline: ["#20242a", 1] };
@@ -91,7 +92,7 @@ export function boardView(host) {
     }
     if (s.corners) s.corners.pts.forEach((q, k) => world.append(svg("circle", { class: "pv-corner", cx: q[0], cy: q[1], r: Math.max(0.3, s.corners.w * 0.8), "data-drag": "corner", "data-id": k }, svg("title", null, "Glissez ce sommet"))));
     for (const l of s.ratsnest || []) world.append(svg("line", { class: "pv-rat", x1: l.a[0], y1: l.a[1], x2: l.b[0], y2: l.b[1] }));
-    for (const f of s.findings || []) if (f.at) world.append(svg("circle", { class: `pv-mark ${f.severity}${f === s.focus ? " focus" : ""}`, cx: f.at[0], cy: f.at[1], r: f === s.focus ? 2.2 : 1.3 }, svg("title", null, `${f.title} — ${f.message}`)));
+    for (const f of s.findings || []) if (f.at) world.append(svg("circle", { class: `pv-mark ${f.severity}${f === s.focus ? " focus" : ""}`, cx: f.at[0], cy: f.at[1], r: f === s.focus ? 2.2 : 1.3 }, svg("title", null, boardProse(`${f.title} — ${f.message}`))));
     world.append(pen);
     if (first || !vb) fit();
   }

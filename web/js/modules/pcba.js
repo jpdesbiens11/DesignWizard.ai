@@ -17,6 +17,7 @@ import { flowStatus } from "../pcba/status.js";
 import { inheritFromPart } from "../pcba/twin.js";
 import { demoBoard } from "../demo/demo_pcba.js";
 import { DESIGN_STEPS } from "./pcba_steps.js";
+import { boardProse } from "../pcba/board_units.js";
 import { OUTPUT_STEPS, CLASSIC } from "./pcba_out.js";
 
 const STEPS = { ...DESIGN_STEPS, ...OUTPUT_STEPS };
@@ -35,10 +36,10 @@ function flowDiagram(ctx, onGo) {
   const steps = ctx.flow.steps, W = 1180, bw = 142, gw = 104, gap = (W - steps.reduce((s, x) => s + (x.gate ? gw : bw), 0)) / (steps.length - 1), g = svg("svg", { class: "pcba-flow", viewBox: `0 0 ${W} 78`, role: "img", "aria-label": "Parcours de conception de la carte" });
   let x = 0;
   steps.forEach((s, i) => {
-    const w = s.gate ? gw : bw, key = s.gate ? "revue" : s.key, on = ui.step === key && (!s.gate || ui.kind === (s.key === "pdr" ? "PDR" : "CDR")), cx = x + w / 2;
-    const node = svg("g", { class: `pf-node ${s.state}${on ? " on" : ""}${s.gate ? " gate" : ""}${ctx.flow.current === s.key ? " here" : ""}`, tabindex: 0, role: "button" }, svg("title", null, `${s.label} — ${s.text}`));
+    const w = s.gate ? gw : bw, key = s.gate ? "revue" : s.key, on = ui.step === key && (!s.gate || ui.kind === (s.key === "pdr" ? "PDR" : "CDR")), cx = x + w / 2, detail = boardProse(s.detail || "");
+    const node = svg("g", { class: `pf-node ${s.state}${on ? " on" : ""}${s.gate ? " gate" : ""}${ctx.flow.current === s.key ? " here" : ""}`, tabindex: 0, role: "button" }, svg("title", null, boardProse(`${s.label} — ${s.text}`)));
     node.append(s.gate ? svg("polygon", { points: `${cx},4 ${x + w},36 ${cx},68 ${x},36` }) : svg("rect", { x, y: 8, width: w, height: 56, rx: 8 }));
-    node.append(svg("text", { x: cx, y: s.gate ? 34 : 31, class: "pf-label" }, s.gate ? "Revue" : `${i + 1 - steps.slice(0, i).filter((q) => q.gate).length}. ${s.label}`), svg("text", { x: cx, y: s.gate ? 46 : 48, class: "pf-detail" }, s.gate ? (s.key === "pdr" ? "préliminaire" : "détaillée") : s.detail.length > 27 ? `${s.detail.slice(0, 26)}…` : s.detail));
+    node.append(svg("text", { x: cx, y: s.gate ? 34 : 31, class: "pf-label" }, s.gate ? "Revue" : `${i + 1 - steps.slice(0, i).filter((q) => q.gate).length}. ${s.label}`), svg("text", { x: cx, y: s.gate ? 46 : 48, class: "pf-detail" }, s.gate ? (s.key === "pdr" ? "préliminaire" : "détaillée") : detail.length > 27 ? `${detail.slice(0, 26)}…` : detail));
     const act = () => { if (s.gate) ui.kind = s.key === "pdr" ? "PDR" : "CDR"; onGo(key); };
     node.addEventListener("click", act); node.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); act(); } });
     g.append(node);

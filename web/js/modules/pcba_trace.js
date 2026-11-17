@@ -7,6 +7,7 @@
 
 import { el, btn, badge, field, toast, fmt } from "../core/dom.js";
 import { copperLayers } from "../pcba/model.js";
+import { boardField, boardBack, boardLabel, boardProse, boardUnit } from "../pcba/board_units.js";
 import { copperFaults, pickCopper, snapPoint, angle45, penOf, addTrack, addVia, removeCopper, keepCopper, moveCorner } from "../pcba/manual.js";
 
 const OK = "#2a9d4a", BAD = "#e5484d", INK = "#f5b301";
@@ -15,7 +16,7 @@ const OK = "#2a9d4a", BAD = "#e5484d", INK = "#f5b301";
     → { scene: handlers for the view, panel: node, keys(event), stop() } */
 export function penTool(ctx, v, names) {
   const { board, lib, R, ui } = ctx, layers = copperLayers(board.board.layers || 2), free = (net) => layers.filter((l) => !R.planes.some((p) => p.layer === l && p.net !== net));
-  const status = el("div", { class: "pen-card" }), say = (t, kind = "warn") => toast(t, kind, 4500);
+  const status = el("div", { class: "pen-card" }), say = (t, kind = "warn") => toast(boardProse(t), kind, 4500);
   let hover = null;
   const draw = () => {
     const p = ui.pen, items = [];
@@ -26,9 +27,9 @@ export function penTool(ctx, v, names) {
   const paint = () => {
     const p = ui.pen; status.replaceChildren();
     if (!p) { status.append(el("p", { class: "muted small", style: { margin: 0 } }, "Cliquez une pastille ou du cuivre : la piste prend son net. Puis un clic par angle ; V pose un via et change de couche ; un clic sur du cuivre du même net termine. Échap annule, Retour arrière retire le dernier point.")); return; }
-    status.append(el("p", { style: { margin: "0 0 .4rem" } }, "Net ", el("b", null, p.net), " · ", names[p.layer] || p.layer, " · ", `${p.pts.length - 1 + p.runs.reduce((s, r) => s + r.pts.length - 1, 0)} tronçon(s)`, hover && hover.faults.length ? el("span", { class: "form-error", style: { display: "block" } }, hover.faults[0].text) : null),
+    status.append(el("p", { style: { margin: "0 0 .4rem" } }, "Net ", el("b", null, p.net), " · ", names[p.layer] || p.layer, " · ", `${p.pts.length - 1 + p.runs.reduce((s, r) => s + r.pts.length - 1, 0)} tronçon(s)`, hover && hover.faults.length ? el("span", { class: "form-error", style: { display: "block" } }, boardProse(hover.faults[0].text)) : null),
       el("div", { class: "form-row tight" }, field("Couche", el("select", { onChange: (e) => { swap(e.target.value); } }, free(p.net).map((l) => el("option", { value: l, selected: l === p.layer }, names[l] || l)))),
-        field("Largeur (mm)", el("input", { type: "number", step: "0.05", min: p.min, value: p.w, style: { width: "5rem" }, onChange: (e) => { const w = parseFloat(e.target.value); if (w >= p.min) { p.w = Math.round(w * 100) / 100; draw(); } } }))),
+        field(boardLabel("Largeur (mm)"), el("input", { type: "number", step: boardUnit() === "mm" ? "0.05" : "any", min: boardField(p.min), value: boardField(p.w), style: { width: "5.6rem" }, onChange: (e) => { const w = boardBack(parseFloat(e.target.value)); if (w >= p.min - 1e-4) { p.w = Math.max(p.min, Math.round(w * 1e4) / 1e4); draw(); } } }))),
       el("div", { class: "form-actions", style: { justifyContent: "flex-start", flexWrap: "wrap" } }, btn("Via (V)", () => via(), { small: true, icon: "bolt" }), btn("Terminer", () => finish(), { small: true, primary: true, icon: "check", disabled: p.pts.length < 2 && !p.runs.length }), btn("Annuler", () => cancel(), { small: true, icon: "cross" })));
   };
   const target = (at) => { const p = ui.pen, last = p.pts[p.pts.length - 1], s = snapPoint(board, lib, at, { net: p.net, layer: p.layer }, R), to = s.on === "grid" ? angle45(last, s.at) : s.at;
@@ -86,7 +87,7 @@ export function copperCard(ctx, pick, names, section) {
   const { board, ui } = ctx, t = pick.track !== undefined ? board.tracks[pick.track] : null, vv = pick.via !== undefined ? board.vias[pick.via] : null, x = t || vv;
   if (!x) return null;
   const len = t ? t.pts.reduce((s, p, i) => (i ? s + Math.hypot(p[0] - t.pts[i - 1][0], p[1] - t.pts[i - 1][1]) : 0), 0) : 0, mine = !x.auto, drop = () => { ui.pick = null; };
-  return section(t ? "Piste sélectionnée" : "Via sélectionné", el("p", { class: "small" }, "Net ", el("b", null, x.net), " · ", t ? `${names[t.layer] || t.layer}, ${fmt(t.w)} mm de large, ${fmt(len, 1)} mm de long` : `Ø ${fmt(vv.d)} mm, perçage ${fmt(vv.drill)} mm`, " ", badge(mine ? "tracé à la main" : "posé par le routeur", mine ? "ok" : "neutral")),
+  return section(t ? "Piste sélectionnée" : "Via sélectionné", el("p", { class: "small" }, "Net ", el("b", null, x.net), " · ", boardProse(t ? `${names[t.layer] || t.layer}, ${fmt(t.w)} mm de large, ${fmt(len, 1)} mm de long` : `Ø ${fmt(vv.d)} mm, perçage ${fmt(vv.drill)} mm`), " ", badge(mine ? "tracé à la main" : "posé par le routeur", mine ? "ok" : "neutral")),
     t && t.pts.length ? el("p", { class: "muted small" }, "Glissez un sommet (rond blanc) pour déplacer un angle : le déplacement est refusé s'il enfreint une règle.") : null,
     el("div", { class: "form-actions", style: { justifyContent: "flex-start", flexWrap: "wrap" } },
       btn("Supprimer", () => { drop(); ctx.update((b) => removeCopper(b, pick), `${t ? "Piste" : "Via"} ${x.net} supprimé${t ? "e" : ""}`); }, { small: true, icon: "trash", danger: true }),

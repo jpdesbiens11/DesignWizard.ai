@@ -51,6 +51,7 @@ Un changement d'unités redessine l'écran en cours.
 | **Isolation** | Les distances mesurées et requises des paires de nets (« 0,652 / 0,247 in »), les étiquettes des chemins dans la vue |
 | **Assemblage** | La position manuelle d'une occurrence (X, Y, Z) |
 | **Dessins** | La position du plan de la coupe A-A |
+| **Carte électronique (PCBA)** | Lue comme le métier la lit : en **mil** (un millième de pouce) pour les pistes, les isolements, les perçages, les vias, l'empilage et le vernis ; en **pouces** dès un pouce — le contour de la carte, la longueur de cuivre posée. Les champs se tapent de même : contour en pouces, largeur de piste, isolement, position d'un composant et vernis en mil. Une feuille de cuivre porte son nom d'usage : « 1 oz (1,38 mil) ». Constats, livre de règles, classes de nets, gamme de la carte et **rapport de revue** (aperçu, Word, PDF) suivent |
 | **Documents** | Le **dossier de revue** (Word, PDF) et les **gammes** (Word, PDF, texte) : phrases, listes et cellules de tableau sont converties à l'enregistrement (`docUnits`) |
 | **Dessins** | Les **cotes** — en pouces, trois décimales, sans zéro avant le point (`.472`, `6.299`), comme ASME Y14.5 écrit une cote en pouces —, les tolérances géométriques, le tableau des trous, la note 1 (« dimensions in inches, converted from the millimetre model »), la case Units et la masse du cartouche (« 111.1 g (3.92 oz) »), l'arbre des cotes de l'écran |
 
@@ -64,6 +65,9 @@ Un changement d'unités redessine l'écran en cours.
   autre unité — (A), (V), (N), (°) — ou qui compte des choses n'est pas touché ;
 - `docUnits` pour un **document à lire** (le modèle que `core/docx.js` et `core/pdfdoc.js` impriment) : ses phrases, ses
   listes et ses cellules, bloc par bloc ; une valeur et son unité rangées dans deux cellules restent ensemble, telles quelles ;
+- `boardLen` / `boardDims` / `boardField` / `boardBack` / `boardProse` / `boardDoc` (`web/js/pcba/board_units.js`) pour
+  **une carte** : la même chose, lue en mil sous un pouce et en pouces au-delà ; un métier qui lit une unité à sa façon
+  donne sa règle à `proseUnits` et à `docUnits` (`o.rule`) ;
 - `proseUnits` (`inUnits`) pour une **phrase** écrite en millimètres par un outil : chaque quantité est convertie là où
   elle se trouve, à trois chiffres significatifs — « de 0,2 à 0,4 mm », « 160 × 110 × 42 mm », « 16,56 / 6,27 mm »
   (mesuré / requis : les deux dans l'unité qui suit), « 1 250 N » —, une masse
@@ -77,13 +81,16 @@ quel que soit le système. Le modèle, lui, ne change jamais d'unité.
 
 - **Les formules de la pièce** : une cote d'interface ou d'opération s'écrit comme une expression du langage de pièce
   (« wall + so », « L - 2*wall - 7 »), en millimètres ; l'éditeur d'une interface et l'onglet du code le restent donc.
-- **La carte électronique** (PCBA) : grille, pistes, perçages, règles et fichiers de fabrication sont en millimètres.
+- **Les fichiers de fabrication de la carte** : Gerber, perçage, placement, netlist d'essai, notes de fabrication et la
+  gamme rangée dans le dossier sont en millimètres — c'est ce que l'atelier reçoit. **La grille de la carte** reste
+  métrique aussi : un composant se cale sur 0,25 mm (9,84 mil), une zone sur 0,5 mm ; taper 500 mil pose à 502 mil.
+  Les empreintes de la bibliothèque sont décrites en millimètres.
 - **Les panneaux du mold, de l'impression et de l'ancienne entrevue d'extrusion**, la bibliothèque électrique, les
   infobulles, les raccourcis clavier des étiquettes (un pas de 1 mm est un pas de 1 mm).
 - **Le calcul détaillé** : les étapes d'un modèle analytique, la « lecture du cas » de la simulation et le calcul des
-  distances d'isolation s'écrivent en SI, comme dans leur source — seuls leurs résultats sont convertis.
-- **Les documents** qui ne sont pas des phrases : la note de calcul et le classeur Excel (unités du modèle), le rapport
-  de la carte, les CSV. Les fichiers d'échange — STEP, STL, DXF, Gerber, perçage, `.dwiz` — sont en millimètres par nature.
+  distances d'isolation s'écrivent en SI, comme dans leur source — seuls leurs résultats sont convertis. JP le
+  confirme (17 novembre 2026) : « les calculs d'ingénierie sont toujours en SI en ingénierie au Québec ».
+- **Les documents** qui ne sont pas des phrases : la note de calcul et le classeur Excel (unités du modèle), les CSV. Les fichiers d'échange — STEP, STL, DXF, Gerber, perçage, `.dwiz` — sont en millimètres par nature.
 - **Sur un dessin en pouces** : la tolérance générale reste « ISO 2768-mK » (des classes définies en millimètres) ; le
   DXF du développé d'une tôle reste en millimètres ; les notes tapées dans la pièce restent telles qu'écrites.
 - **La taille d'un outil métrique** : « Clé six pans de 3 mm » reste telle quelle dans une gamme — c'est le nom de l'outil
@@ -96,6 +103,7 @@ quel que soit le système. Le modèle, lui, ne change jamais d'unité.
 | Unité | Vaut | |
 |---|---|---|
 | pouce (in) | 25,4 mm | exact |
+| mil | 0,0254 mm | un millième de pouce, exact — l'unité d'une carte électronique |
 | livre (lb) | 0,453 592 37 kg | exact |
 | livre-force (lbf) | 4,448 221 615 260 5 N | livre × 9,806 65 m/s² |
 | psi | 6,894 757 kPa | livre-force par pouce carré |

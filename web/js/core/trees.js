@@ -58,9 +58,9 @@ export const FINDING_GROUPS = [
   { key: "warn", fr: "À vérifier", color: STATE_COLORS.check, tip: "À regarder avant de lancer : un risque, pas un blocage" },
   { key: "info", fr: "Remarques", color: STATE_COLORS.info, tip: "Un conseil, pour la prochaine révision" },
 ];
-/** The tree of the findings. findings : [{ rule, title, message, severity, at }] ; hint(f) → what to do about it.
+/** The tree of the findings. findings : [{ rule, title, message, severity, at }] ; hint(f) → what to do about it ; say(text) → the sentence in the units shown.
     → groups with items [{ id (its rank in the list), state, text, sub, at, hint, finding }] */
-export function findingTree(findings, hint = () => "") {
-  const items = (findings || []).map((f, i) => ({ id: i, state: FINDING_GROUPS.some((g) => g.key === f.severity) ? f.severity : "info", text: `${f.rule || f.id || ""} · ${f.title || ""}`.replace(/^ · /, ""), sub: f.message || "", at: f.at || null, hint: hint(f) || "", finding: f }));
+export function findingTree(findings, hint = () => "", say = (t) => t) {
+  const items = (findings || []).map((f, i) => ({ id: i, state: FINDING_GROUPS.some((g) => g.key === f.severity) ? f.severity : "info", text: `${f.rule || f.id || ""} · ${f.title || ""}`.replace(/^ · /, ""), sub: say(f.message || ""), at: f.at || null, hint: say(hint(f) || ""), finding: f }));
   return file(FINDING_GROUPS, items);
 }

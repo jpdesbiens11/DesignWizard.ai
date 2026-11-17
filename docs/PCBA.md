@@ -198,6 +198,20 @@ cherche est à un clic, dans la barre « Vues classiques » :
 
 Les fichiers sortent aux extensions que ces outils et les ateliers reconnaissent, et s'y rouvrent pour contrôle.
 
+### Unités : le mil et le pouce
+
+Avec le système impérial (bouton des préférences), la carte se lit comme le métier la lit en Amérique du Nord :
+en **mil** — un millième de pouce, 0,0254 mm — pour les pistes, les isolements, les perçages, les vias, l'empilage et le
+vernis, et en **pouces** dès un pouce (le contour, la longueur de cuivre posée). Une piste de 0,15 mm se lit 5,91 mil,
+une carte de 60 × 90 mm 2,36 × 3,54 in, une feuille de 35 µm « 1 oz (1,38 mil) ». Les champs suivent : le contour se
+tape en pouces ; la largeur d'une piste, l'isolement d'une classe, la position d'un composant et l'épaisseur du vernis
+en mil. Constats, livre de règles, gamme de la carte et rapport de revue (aperçu, Word, PDF) disent la même chose.
+
+Ce qui ne change pas : la carte elle-même, gardée en millimètres ; sa **grille** (un composant se cale sur 0,25 mm,
+soit 9,84 mil — taper 500 mil pose à 502 mil) ; et tout le **dossier de fabrication** — Gerber, perçage, placement,
+netlist, notes — qui part à l'atelier en millimètres. Fonctions : `web/js/pcba/board_units.js` ; voir
+[UNITES.md](UNITES.md).
+
 ## 8. Aller-retour avec une IA
 
 Le bouton « Confier à l'IA » (étape Revue, et barre du haut sur tout écran) exporte la carte en `.dwiz` avec votre

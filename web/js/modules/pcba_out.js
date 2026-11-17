@@ -21,6 +21,7 @@ import { NET_CONVENTION } from "../pcba/netnames.js";
 import { toDwiz } from "../core/dwiz.js";
 import { dwizFileName } from "../core/dwiz_names.js";
 import { boardView, layerList, LAYER_STYLE, DRAW_ORDER } from "./pcba_view.js";
+import { boardLen, boardDims, boardField, boardBack, boardLabel, boardProse, boardDoc, boardUnit } from "../pcba/board_units.js";
 import { ui$ } from "./pcba_steps.js";
 import { openAiLoopFor } from "./ai_loop.js";
 import { boardAssemblyPlan } from "../pcba/assembly_plan.js";
@@ -76,15 +77,15 @@ function verifs(ctx, { left, view, right }) {
   const scene = () => ({ R, art: ctx.art, board, layers: ui.layers, findings: drc.findings, focus: ui.focus, onPick: (h) => { ui.net = h.net || null; v.show(scene()); } });
   v.show(scene()); if (ui.focus && ui.focus.at) v.focus(ui.focus.at);
   const l = scroll(left, el("div", { class: "side-head" }, el("h2", null, "Vérifications"), badge(drc.summary.error + erc.summary.error ? `${drc.summary.error + erc.summary.error} erreur(s)` : "aucune erreur", drc.summary.error + erc.summary.error ? "danger" : "ok")));
-  l.append(el("div", { class: "kpis" }, el("div", { class: "kpi" }, el("b", null, st.minTrack === null ? "—" : `${fmt(st.minTrack)} mm`), el("span", null, "plus petite piste")), el("div", { class: "kpi" }, el("b", null, st.minSpace === null ? "—" : `${fmt(Math.min(st.minSpace, 9.99))} mm`), el("span", null, "plus petit isolement")),
-    el("div", { class: "kpi" }, el("b", null, st.minDrill === null ? "—" : `${fmt(st.minDrill)} mm`), el("span", null, "plus petit perçage")), el("div", { class: "kpi" }, el("b", null, `${Math.round(100 * st.probe)} %`), el("span", null, "nets accessibles au test"))));
+  l.append(el("div", { class: "kpis" }, el("div", { class: "kpi" }, el("b", null, st.minTrack === null ? "—" : boardLen(st.minTrack)), el("span", null, "plus petite piste")), el("div", { class: "kpi" }, el("b", null, st.minSpace === null ? "—" : boardLen(Math.min(st.minSpace, 9.99))), el("span", null, "plus petit isolement")),
+    el("div", { class: "kpi" }, el("b", null, st.minDrill === null ? "—" : boardLen(st.minDrill)), el("span", null, "plus petit perçage")), el("div", { class: "kpi" }, el("b", null, `${Math.round(100 * st.probe)} %`), el("span", null, "nets accessibles au test"))));
   l.append(el("p", { class: "muted small" }, `Classe de fabrication : ${(FAB[(board.rules || {}).fab || "standard"] || FAB.standard).label}. ${st.checked} couples de cuivres mesurés.`),
-    el("div", { class: "form-actions", style: { justifyContent: "flex-start" } }, btn("Livre de règles", () => modal("Règles de conception d'une carte assemblée", el("div", null, ...PCBA_BOOK.map((g) => el("div", null, el("h3", null, g.category), el("ul", { class: "small" }, g.steps.map((s) => el("li", null, s))), table(["Règle", "Limite", "Pourquoi"], g.rules.map((r) => [`${r.id} ${r.title}`, r.limit, r.why])))),
-      el("h3", null, "Contrôle électrique"), table(["Règle", "Pourquoi"], ERC_RULES.map((r) => [`${r.id} ${r.title}`, r.why]))), { xl: true }), { icon: "library", small: true })),
+    el("div", { class: "form-actions", style: { justifyContent: "flex-start" } }, btn("Livre de règles", () => modal("Règles de conception d'une carte assemblée", el("div", null, ...PCBA_BOOK.map((g) => el("div", null, el("h3", null, g.category), el("ul", { class: "small" }, g.steps.map((s) => el("li", null, boardProse(s)))), table(["Règle", "Limite", "Pourquoi"], g.rules.map((r) => [`${r.id} ${r.title}`, boardProse(r.limit), boardProse(r.why)])))),
+      el("h3", null, "Contrôle électrique"), table(["Règle", "Pourquoi"], ERC_RULES.map((r) => [`${r.id} ${r.title}`, boardProse(r.why)]))), { xl: true }), { icon: "library", small: true })),
     section("Couches", layerList(ctx.art, ui.layers, () => v.show(scene()))));
   const r = scroll(right, el("div", { class: "side-head" }, el("h2", null, `Constats (${all.length})`)));
   /* the findings as a tree, by severity : a click on one shows where it is on the board and what to do about it */
-  const tree = findingTree(all, fixHints), box = el("div"); let sel = all.indexOf(ui.focus) >= 0 ? all.indexOf(ui.focus) : null; r.append(box);
+  const tree = findingTree(all, fixHints, boardProse), box = el("div"); let sel = all.indexOf(ui.focus) >= 0 ? all.indexOf(ui.focus) : null; r.append(box);
   const paint = () => box.replaceChildren(stateTree({ label: "Constats de la carte, par état", tree, sel, attr: "data-finding-row", none: "Rien à signaler.", keep: ["error"],
     select: (i) => { sel = i; const it = i === null ? null : treeFind(tree, i); ui.focus = it ? it.finding : null; v.show(scene()); if (it && it.at) v.focus(it.at); paint(); },
     editor: (it) => el("div", { class: "bc-edit", "data-finding-edit": String(it.id) }, it.hint ? el("p", { class: "small", style: { margin: ".2rem 0" } }, `→ ${it.hint}`) : null, el("p", { class: "muted small", style: { margin: ".2rem 0" } }, it.at ? "Marqué sur la carte, au centre de la vue." : "Constat sans position sur la carte : il vient du schéma ou de la carte entière.")) }));
@@ -146,14 +147,14 @@ async function pngOf(fig) {
 function revue(ctx, { left, view, right }) {
   const { board, ui } = ctx, kind = ui.kind, K = REVIEW_KINDS[kind], rv = board.review || {};
   const figures = { floorplan: figureOf(ctx, ["outline", "fab_top"], "Implantation conceptuelle : une zone par bloc", true), top: figureOf(ctx, ["top", "silk_top", "outline"], "Cuivre et sérigraphie, dessus"), bottom: figureOf(ctx, ["bottom", "outline"], "Cuivre, dessous") };
-  const data = () => reviewData(board, ctx.lib, { kind, date: new Date(), project: { id: store.project.id, name: store.project.name }, figures }), d = data(), V = reviewVerdict(d), doc = reviewDoc(d), name = `${board.id}-rev${board.revision || "A"}-${K.short}`;
+  const data = () => reviewData(board, ctx.lib, { kind, date: new Date(), project: { id: store.project.id, name: store.project.name }, figures }), d = data(), V = reviewVerdict(d), doc = boardDoc(reviewDoc(d)), name = `${board.id}-rev${board.revision || "A"}-${K.short}`;
   const setR = (fn, label) => ctx.update((b) => { b.review = b.review || {}; fn(b.review); }, label || "Revue modifiée");
   const l = scroll(left, el("div", { class: "side-head" }, el("h2", null, "Revue de conception")));
   l.append(el("div", { class: "subtabs" }, ...Object.entries(REVIEW_KINDS).map(([k, x]) => el("button", { type: "button", class: `subtab${k === kind ? " active" : ""}`, onClick: () => { ui.kind = k; ctx.redraw(); } }, k === "PDR" ? "Préliminaire" : "Détaillée"))), el("p", { class: "muted small" }, K.text),
     field("Rédacteur", txt(rv.author, (v) => setR((r) => { r.author = v; }))), field("Points ouverts (un par ligne)", el("textarea", { rows: 3, style: { width: "100%" }, onChange: (e) => setR((r) => { r.open = e.target.value.split("\n").map((s) => s.trim()).filter(Boolean); }) }, (rv.open || []).join("\n"))),
     field("Décisions (une par ligne)", el("textarea", { rows: 3, style: { width: "100%" }, onChange: (e) => setR((r) => { r.decisions = e.target.value.split("\n").map((s) => s.trim()).filter(Boolean); }) }, (rv.decisions || []).join("\n"))));
   l.append(section("Rapport à partager", el("div", { class: "form-actions", style: { justifyContent: "flex-start", flexWrap: "wrap" } },
-    btn("Word (.docx)", async () => { try { const f = {}; for (const [k, x] of Object.entries(figures)) f[k] = await pngOf(x); download(`${name}.docx`, docx({ ...reviewDoc({ ...data(), figures: f }), kind: "Rapport de revue de conception", ...docMeta() }), "application/vnd.openxmlformats-officedocument.wordprocessingml.document"); } catch (e) { toast(`Rapport Word : ${e.message}`, "error"); } }, { primary: true, icon: "download" }),
+    btn("Word (.docx)", async () => { try { const f = {}; for (const [k, x] of Object.entries(figures)) f[k] = await pngOf(x); download(`${name}.docx`, docx({ ...boardDoc(reviewDoc({ ...data(), figures: f })), kind: "Rapport de revue de conception", ...docMeta() }), "application/vnd.openxmlformats-officedocument.wordprocessingml.document"); } catch (e) { toast(`Rapport Word : ${e.message}`, "error"); } }, { primary: true, icon: "download" }),
     btn("PDF", () => { try { download(`${name}.pdf`, pdfDoc({ ...doc, kind: "Rapport de revue de conception", ...docMeta() }), "application/pdf"); } catch (e) { toast(`Rapport PDF : ${e.message}`, "error"); } }, { primary: true, icon: "pdf" }))));
   const structure = () => functionalStructure(board, ctx.lib), drafts = new Set(draftsOf(board).filter((w) => w.list === "functions").map((w) => w.key));
   l.append(section("Structure fonctionnelle", el("p", { class: "muted small" }, "L'arbre des fonctions (critères, bloc, composants, nets) et la structure fonctionnelle : ce qui entre, ce qui sort, les flux d'énergie et d'information entre les blocs. Le fichier draw.io reste modifiable."), el("div", { class: "form-actions", style: { justifyContent: "flex-start", flexWrap: "wrap" } },
@@ -177,9 +178,9 @@ function revue(ctx, { left, view, right }) {
   }
   pane(view, K.label, "Aperçu du rapport ; les fichiers Word et PDF portent la même chose, figures comprises.", page);
   const r = scroll(right, el("div", { class: "side-head" }, el("h2", null, "Verdict"), badge(V.ready ? "prête pour la revue" : `${V.blockers.length} point(s) bloquant(s)`, V.ready ? "ok" : "danger")));
-  for (const t of V.blockers) r.append(hint(t, "warn"));
-  if (V.cautions.length) r.append(section("À examiner en revue", el("ul", { class: "small" }, V.cautions.map((t) => el("li", null, t)))));
-  r.append(section("Liste de vérification", el("ul", { class: "pcba-checks" }, V.checklist.map((i) => el("li", { class: i.state }, icon(i.state === "ok" ? "check" : "warning"), " ", i.text)))));
+  for (const t of V.blockers) r.append(hint(boardProse(t), "warn"));
+  if (V.cautions.length) r.append(section("À examiner en revue", el("ul", { class: "small" }, V.cautions.map((t) => el("li", null, boardProse(t))))));
+  r.append(section("Liste de vérification", el("ul", { class: "pcba-checks" }, V.checklist.map((i) => el("li", { class: i.state }, icon(i.state === "ok" ? "check" : "warning"), " ", boardProse(i.text))))));
 }
 
 /* ---------- classic ECAD views ---------- */
@@ -197,24 +198,25 @@ function empilage(ctx, { left, view, right }) {
   const { board } = ctx, rows = stackup(board), total = rows.reduce((s, r) => s + r.thickness, 0);
   scroll(left, el("div", { class: "side-head" }, el("h2", null, "Empilage")), el("p", { class: "muted small" }, "L'empilage se règle à l'étape Implantation : nombre de couches, épaisseur, cuivre, finition."), btn("Aller à l'implantation", () => ctx.nav("implantation"), { icon: "chevron-right" }));
   const g = svg("svg", { class: "pcba-stack", viewBox: "0 0 420 260" }); let y = 14;
-  for (const r of rows) { const h = Math.max(9, r.thickness / total * 200), cu = /Cuivre/.test(r.material); g.append(svg("rect", { x: 20, y, width: 190, height: h, class: cu ? "st-cu" : /Vernis/.test(r.material) ? "st-mask" : "st-fr4" }), svg("text", { x: 222, y: y + h / 2 + 4, class: "st-label" }, `${r.layer} — ${r.material}, ${fmt(r.thickness, 3)} mm`)); y += h + 2; }
-  pane(view, "Empilage de la carte nue", `${fmt(total, 2)} mm au total`, g, table(["Couche", "Matière", "Épaisseur"], rows.map((r) => [r.layer, r.material, `${fmt(r.thickness, 3)} mm`])));
+  for (const r of rows) { const h = Math.max(9, r.thickness / total * 200), cu = /Cuivre/.test(r.material); g.append(svg("rect", { x: 20, y, width: 190, height: h, class: cu ? "st-cu" : /Vernis/.test(r.material) ? "st-mask" : "st-fr4" }), svg("text", { x: 222, y: y + h / 2 + 4, class: "st-label" }, `${r.layer} — ${boardProse(r.material)}, ${boardLen(r.thickness, 3)}`)); y += h + 2; }
+  pane(view, "Empilage de la carte nue", `${boardLen(total)} au total`, g, table(["Couche", "Matière", "Épaisseur"], rows.map((r) => [r.layer, boardProse(r.material), boardLen(r.thickness, 3)])));
   scroll(right, el("div", { class: "side-head" }, el("h2", null, "Plans")), el("p", { class: "small" }, (board.planes || []).length ? (board.planes || []).map((p) => `${p.net} sur ${ctx.art.names[p.layer] || p.layer}`).join(" ; ") : "Aucun plan de cuivre déclaré."));
 }
 function regles(ctx, { left, view, right }) {
   const { board } = ctx, fab = FAB[(board.rules || {}).fab || "standard"] || FAB.standard;
   scroll(left, el("div", { class: "side-head" }, el("h2", null, "Règles")), el("p", { class: "muted small" }, "Les règles viennent de trois endroits : la classe de fabrication (ce que l'atelier tient), les classes de nets (ce que le circuit demande) et le livre de règles (ce que l'assemblage et l'essai demandent)."), btn("Lancer les vérifications", () => ctx.nav("verifs"), { primary: true, icon: "play" }));
-  pane(view, "Règles de conception", fab.label, el("h3", null, "Capacités de fabrication"), table(["Règle", "Valeur"], [["Piste minimale", `${fmt(fab.track)} mm`], ["Isolement minimal", `${fmt(fab.space)} mm`], ["Perçage minimal", `${fmt(fab.drill)} mm`], ["Couronne minimale", `${fmt(fab.ring, 3)} mm`], ["Cuivre au bord", `${fmt(fab.edge)} mm`], ["Paroi entre deux trous", `${fmt(fab.holeGap)} mm`], ["Pont de vernis épargne", `${fmt(fab.maskDam)} mm`], ["Trait de sérigraphie", `${fmt(fab.silk)} mm`]]),
-    ...PCBA_BOOK.map((g) => el("div", null, el("h3", null, g.category), table(["Règle", "Limite", "Gravité"], g.rules.map((r) => [`${r.id} ${r.title}`, r.limit, { error: "erreur", warn: "avertissement", info: "remarque" }[r.severity]])))));
+  pane(view, "Règles de conception", fab.label, el("h3", null, "Capacités de fabrication"), table(["Règle", "Valeur"], [["Piste minimale", boardLen(fab.track)], ["Isolement minimal", boardLen(fab.space)], ["Perçage minimal", boardLen(fab.drill)], ["Couronne minimale", boardLen(fab.ring, 3)], ["Cuivre au bord", boardLen(fab.edge)], ["Paroi entre deux trous", boardLen(fab.holeGap)], ["Pont de vernis épargne", boardLen(fab.maskDam)], ["Trait de sérigraphie", boardLen(fab.silk)]]),
+    ...PCBA_BOOK.map((g) => el("div", null, el("h3", null, g.category), table(["Règle", "Limite", "Gravité"], g.rules.map((r) => [`${r.id} ${r.title}`, boardProse(r.limit), { error: "erreur", warn: "avertissement", info: "remarque" }[r.severity]])))));
   scroll(right, el("div", { class: "side-head" }, el("h2", null, "Constats en cours")), el("p", { class: "small" }, `${ctx.drc.summary.error} erreur(s), ${ctx.drc.summary.warn} avertissement(s), ${ctx.drc.summary.info} remarque(s).`));
 }
 function classes(ctx, { left, view, right }) {
   const { board, R } = ctx, own = (board.rules || {}).classes || {}, setC = (k, key, v) => ctx.update((b) => { b.rules = b.rules || {}; b.rules.classes = b.rules.classes || {}; b.rules.classes[k] = { ...(b.rules.classes[k] || {}), [key]: v }; }, `Classe ${CLASSES[k].label}`);
   const n = (v, on) => el("input", { type: "number", step: "0.05", value: v, style: { width: "4.6rem" }, onChange: (e) => { const x = parseFloat(e.target.value); if (x > 0) on(x); } });
+  const len = (v, on) => el("input", { type: "number", step: boardUnit() === "mm" ? "0.05" : "any", value: boardField(v), style: { width: "5.6rem" }, onChange: (e) => { const x = boardBack(parseFloat(e.target.value)); if (x > 0) on(x); } });      // a width, a gap : typed in mil when the units are imperial
   scroll(left, el("div", { class: "side-head" }, el("h2", null, "Classes de nets")), el("p", { class: "muted small" }, "Une classe fixe la largeur préférée des pistes, l'isolement minimal et le via. La tension et le courant de chaque net les font grandir d'après IPC-2221."));
-  pane(view, "Classes de nets", null, table(["Classe", "Piste (mm)", "Isolement (mm)", "Via Ø / perçage", "Nets"], Object.entries(CLASSES).map(([k, c]) => { const o = own[k] || {}; return [c.label, n(o.track ?? c.track, (v) => setC(k, "track", v)), n(o.clearance ?? c.clearance, (v) => setC(k, "clearance", v)), `${fmt((o.via || c.via)[0])} / ${fmt((o.via || c.via)[1])}`, String(R.nets.filter((x) => x.class === k).length)]; })),
+  pane(view, "Classes de nets", null, table(["Classe", boardLabel("Piste (mm)"), boardLabel("Isolement (mm)"), "Via Ø / perçage", "Nets"], Object.entries(CLASSES).map(([k, c]) => { const o = own[k] || {}; return [c.label, len(o.track ?? c.track, (v) => setC(k, "track", v)), len(o.clearance ?? c.clearance, (v) => setC(k, "clearance", v)), boardDims((o.via || c.via).slice(0, 2), 2, undefined, " / "), String(R.nets.filter((x) => x.class === k).length)]; })),
     el("h3", null, "Nets"), table(["Net", "Classe", "Tension", "Courant", "Piste", "Isolement", "Broches"], R.nets.map((x) => [x.name, sel(x.class, Object.entries(CLASSES).map(([k, c]) => [k, c.label]), (v) => ctx.update((b) => { b.nets.find((q) => q.name === x.name).class = v; }, `${x.name} : classe`)),
-      n(x.voltage, (v) => ctx.update((b) => { b.nets.find((q) => q.name === x.name).voltage = v; }, `${x.name} : tension`)), n(x.current, (v) => ctx.update((b) => { b.nets.find((q) => q.name === x.name).current = v; }, `${x.name} : courant`)), `${fmt(x.rules.track)} mm`, `${fmt(x.rules.clearance)} mm`, String(x.pads.length)])));
+      n(x.voltage, (v) => ctx.update((b) => { b.nets.find((q) => q.name === x.name).voltage = v; }, `${x.name} : tension`)), n(x.current, (v) => ctx.update((b) => { b.nets.find((q) => q.name === x.name).current = v; }, `${x.name} : courant`)), boardLen(x.rules.track), boardLen(x.rules.clearance), String(x.pads.length)])));
   scroll(right, el("div", { class: "side-head" }, el("h2", null, "D'où viennent les valeurs")), el("p", { class: "small" }, "Piste : la plus grande entre la classe, la largeur IPC-2221 pour le courant (cuivre de la carte, +10 K) et la capacité de l'atelier."), el("p", { class: "small" }, "Isolement : le plus grand entre la classe, IPC-2221B à la tension du net (colonne B2 carte nue, A5 carte vernie) et la capacité de l'atelier."));
 }
 function nomenclature(ctx, { left, view, right }) {

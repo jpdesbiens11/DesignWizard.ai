@@ -93,17 +93,18 @@ const PROSE = new RegExp(`(?<![\\d.,])(${NUMBER}(?:${JOIN}${NUMBER})*)(\\s?)(${P
 /** A sentence written in the units of the tools, read in the units chosen : every quantity it carries is converted where it stands, to three
     significant digits, written the way the sentence writes its numbers (comma or point) ; a mass gets its imperial reading in brackets.
     Nothing changes in SI, nor in what is not a quantity (« M3 × 0,5 », « 1,5 d », « ISO 2768 »), nor in the size of a metric tool, which is
-    its name and not a measure (« Clé six pans de 3 mm » : the key of an M4 screw is a 3 mm key in any workshop). */
+    its name and not a measure (« Clé six pans de 3 mm » : the key of an M4 screw is a 3 mm key in any workshop).
+    o.rule(unit, largest value, prefs) → [unit shown, SI units per unit shown] or null : a trade that reads a unit its own way (a board in mil). */
 const TOOL = /(?<![A-Za-zÀ-ÿ])(?:clé|clef|douille|embout|tournevis|taraud|hex key|wrench|socket|driver)(?![A-Za-zÀ-ÿ])[^.;:,(]{0,24}$/i;
-export function proseUnits(text, prefs) {
+export function proseUnits(text, prefs, o = {}) {
   if (typeof text !== "string" || !text) return text;
   const u = tidyUnits(prefs); if (u.system === "si" && u.pressure === "auto") return text;
   return text.replace(PROSE, (all, nums, gap, unit, at, whole) => {
     if (TOOL.test(whole.slice(Math.max(0, at - 40), at))) return all;
-    const dual = DUAL[unit] && u.system === "imperial", k = dual ? DUAL[unit][1] : rule(unit, u)[1]; if (k === 1 && !dual) return all;
     const point = /\d\.\d/.test(nums) && !/,/.test(nums), read = (t) => Number(t.replace(/[ \u00a0\u202f]/g, "").replace(",", ".")), write = (v) => { const t = String(Number(v.toPrecision(3))); return point ? t : t.replace(".", ","); };
-    if (dual) return new RegExp(`^${NUMBER}$`).test(nums) ? `${all} (${write(read(nums) / k)} ${DUAL[unit][0]})` : all;
-    return `${nums.replace(new RegExp(NUMBER, "g"), (t) => write(read(t) / k))}${gap || " "}${rule(unit, u)[0]}`;
+    const own = o.rule ? o.rule(unit, Math.max(...nums.match(new RegExp(NUMBER, "g")).map(read)), u) : null, dual = !own && DUAL[unit] && u.system === "imperial", [shown, k] = dual ? DUAL[unit] : own || rule(unit, u); if (k === 1 && !dual) return all;
+    if (dual) return new RegExp(`^${NUMBER}$`).test(nums) ? `${all} (${write(read(nums) / k)} ${shown})` : all;
+    return `${nums.replace(new RegExp(NUMBER, "g"), (t) => write(read(t) / k))}${gap || " "}${shown}`;
   });
 }
 
@@ -111,9 +112,9 @@ export function proseUnits(text, prefs) {
    What a block IS — its type, its style, a colour, a picture — is left alone ; a value and its unit kept in two cells of a table stay as they are, together. */
 const DOC_KEEP = new Set(["type", "style", "fill", "align", "kind", "id", "png", "pngSize", "widths", "reference", "revision", "date"]);
 /** A document model in the units chosen. Nothing changes in SI. */
-export function docUnits(doc, prefs) {
+export function docUnits(doc, prefs, o = {}) {
   const u = tidyUnits(prefs); if (!doc || (u.system === "si" && u.pressure === "auto")) return doc;
-  const walk = (v, key) => (typeof v === "string" ? (DOC_KEEP.has(key) ? v : proseUnits(v, u)) : Array.isArray(v) ? v.map((x) => walk(x, key)) : v && typeof v === "object" && !(v instanceof Uint8Array) && !(v instanceof Date) ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, DOC_KEEP.has(k) ? x : walk(x, k)])) : v);
+  const walk = (v, key) => (typeof v === "string" ? (DOC_KEEP.has(key) ? v : proseUnits(v, u, o)) : Array.isArray(v) ? v.map((x) => walk(x, key)) : v && typeof v === "object" && !(v instanceof Uint8Array) && !(v instanceof Date) ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, DOC_KEEP.has(k) ? x : walk(x, k)])) : v);
   return { ...doc, blocks: walk(doc.blocks || [], "blocks") };
 }
 
