@@ -78,6 +78,13 @@ export const CUES = [
   { t0: 149.4, t1: 152.4, ...L("DesignWizard.ai. Ouvrez la démo.", "DesignWizard.ai. Open the demo.") },
 ];
 
+/** How long the voice may speak for cue i : from its start to a breath before the next cue, or to the end of the film. */
+export const roomOf = (i) => (i + 1 < CUES.length ? CUES[i + 1].t0 - 0.15 : DURATION - 0.3) - CUES[i].t0;
+/** A recorded line may be sped up by this much before it sounds hurried ; beyond, the line is rewritten or the timeline moved. */
+export const MAX_TEMPO = 1.12;
+/** How a recorded line of `seconds` fits a room : { tempo (1 : as recorded), ok, over (seconds it still runs past its room) }. */
+export function fitLine(seconds, room) { const need = seconds > room ? seconds / room : 1, tempo = Math.min(need, MAX_TEMPO); return { tempo: Math.round(tempo * 1000) / 1000, ok: need <= MAX_TEMPO + 1e-9, over: Math.max(0, Math.round((seconds / tempo - room) * 100) / 100) }; }
+
 /** The scene on screen at t. */
 export const sceneAt = (t) => SCENES.find((s) => t >= s.t0 && t < s.t1) || (t >= DURATION ? SCENES[SCENES.length - 1] : SCENES[0]);
 /** The cue said at t, or null. */

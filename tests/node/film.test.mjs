@@ -1,7 +1,7 @@
 /* The film of the platform : its timeline (tools/film/script.mjs), the files the site publishes (web/video), the pages that show them. */
 import test from "node:test"; import assert from "node:assert/strict";
 import { readFileSync, existsSync, statSync } from "node:fs"; import { fileURLToPath } from "node:url";
-import { SCENES, CUES, DURATION, FPS, LANGS, SLOGANS, sceneAt, cueAt, pace, toVtt, toScript } from "../../tools/film/script.mjs";
+import { SCENES, CUES, DURATION, FPS, LANGS, SLOGANS, sceneAt, cueAt, pace, toVtt, toScript, roomOf, fitLine, MAX_TEMPO } from "../../tools/film/script.mjs";
 import { FILM, filmFiles, filmLength, filmLang } from "../../web/js/core/film.js";
 
 const at = (p) => fileURLToPath(new URL(`../../${p}`, import.meta.url)), read = (p) => readFileSync(at(p), "utf8");
@@ -47,6 +47,14 @@ test("film — the narration : one breath after another, sayable, and it says th
   assert.equal(cueAt(1).fr, CUES[0].fr); assert.equal(cueAt(CUES[0].t1 + 0.05), null); assert.equal(cueAt(DURATION + 1), null);
   const words = (l) => CUES.reduce((n, c) => n + c[l].trim().split(/\s+/).length, 0);
   assert.ok(words("fr") > 150 && words("fr") < 330 && words("en") > 150 && words("en") < 330, "a narration of two and a half minutes");
+});
+
+test("film — a voice : the room each line has, and how a recorded line is made to fit", () => {
+  CUES.forEach((c, i) => { const room = roomOf(i); assert.ok(room >= c.t1 - c.t0 - 1e-9, `line ${i + 1} : the voice has at least the time of its subtitle`); assert.ok(c.t0 + room <= (i + 1 < CUES.length ? CUES[i + 1].t0 : DURATION) - 0.1, `line ${i + 1} ends a breath before the next`); });
+  assert.ok(Math.abs(roomOf(0) - (CUES[1].t0 - 0.15 - CUES[0].t0)) < 1e-9); assert.ok(Math.abs(roomOf(CUES.length - 1) - (DURATION - 0.3 - CUES[CUES.length - 1].t0)) < 1e-9);
+  assert.deepEqual(fitLine(4, 5), { tempo: 1, ok: true, over: 0 }, "a line that fits is left as it was said"); assert.deepEqual(fitLine(5.5, 5), { tempo: 1.1, ok: true, over: 0 });
+  assert.equal(fitLine(5 * MAX_TEMPO, 5).ok, true, "at the limit"); const long = fitLine(6, 5); assert.equal(long.ok, false); assert.equal(long.tempo, MAX_TEMPO); assert.ok(long.over > 0.3 && long.over < 0.4, "a line too long says by how much");
+  assert.ok(MAX_TEMPO > 1 && MAX_TEMPO <= 1.15, "a voice is not hurried");
 });
 
 test("film — subtitles and script : written from the timeline, and the files of the site and of the docs are those", () => {

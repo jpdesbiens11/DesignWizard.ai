@@ -43,14 +43,25 @@ La session qui a produit le film n'avait aucun moteur de synthèse vocale : **la
 sous-titres incrustés dans l'image, et les pages le disent (« Sans son : la narration se lit à l'écran »). Le texte
 complet de la narration est aussi donné sous chaque lecteur de la vitrine, pour qui ne voit pas l'image.
 
-Poser une voix plus tard ne demande pas de refaire le film :
+Poser une voix plus tard ne demande pas de refaire le film. **Voix de synthèse** (choix de JP : ElevenLabs) :
 
-1. Enregistrer la voix d'après `docs/film/narration_<langue>.md` : une ligne, un souffle, chaque ligne entre ses deux
-   temps (le débit le plus rapide est de 2,6 mots par seconde). Un seul fichier par langue, de 2 min 33.
-2. Rendre l'image sans sous-titres incrustés : `node tools/film_render.mjs <plans> <sortie> fr --no-captions`.
-3. Poser la voix sur l'image, sans la redessiner :
-   `ffmpeg -i designwizard_fr_sans-sous-titres.mp4 -i voix_fr.wav -c:v copy -c:a aac -b:a 160k -shortest designwizard_fr.mp4`
-4. Remplacer les fichiers de `web/video`, ajouter aux lecteurs une piste `<track kind="captions" src="video/designwizard_fr.vtt">`
+1. Rendre l'image sans sous-titres incrustés : `node tools/film_render.mjs <plans> <sortie> fr en --no-captions`.
+2. Choisir la voix : `node tools/film_voice.mjs voices fr` (les voix de femme du compte ; `--library` pour la
+   bibliothèque partagée), puis `node tools/film_voice.mjs sample <voix> fr <dossier>` pour entendre trois répliques.
+3. Faire le film parlé : `node tools/film_voice.mjs make <voix> fr <film sans sous-titres> web/video/designwizard_fr.mp4`.
+   Chaque réplique est demandée une fois (gardée dans le dossier de travail), posée à son temps, et l'ensemble est
+   mis au niveau sonore du web (−16 LUFS) puis posé sur l'image, qui n'est pas redessinée. Une réplique plus longue
+   que sa place — jusqu'à un souffle avant la suivante — est accélérée de 12 % au plus ; au-delà l'outil nomme la
+   réplique à raccourcir et s'arrête. `--dry` essaie toute la chaîne sans appeler personne (des tonalités).
+4. La clé d'API ne s'écrit nulle part dans le dépôt : variable `ELEVENLABS_API_KEY`, envoyée dans l'en-tête
+   `xi-api-key` ; dans une session en nuage, c'est le réseau de la session qui la pose. Seul le texte de la narration
+   part vers ElevenLabs.
+
+**Voix enregistrée** (une personne) : d'après `docs/film/narration_<langue>.md`, une ligne, un souffle, chaque ligne
+entre ses deux temps (le débit le plus rapide est de 2,6 mots par seconde) ; un seul fichier par langue, posé par
+`ffmpeg -i designwizard_fr_sans-sous-titres.mp4 -i voix_fr.wav -c:v copy -c:a aac -b:a 160k -shortest designwizard_fr.mp4`.
+
+Dans les deux cas, ensuite : remplacer les fichiers de `web/video`, ajouter aux lecteurs une piste `<track kind="captions" src="video/designwizard_fr.vtt">`
    (les sous-titres deviennent alors facultatifs), retirer la mention « Sans son » (`FILM.silent`, `web/js/core/film.js`,
    et les deux phrases de `web/vitrine.html`).
 
