@@ -2,6 +2,7 @@
    and — for the administrator — the list of accounts approved for the hosted demo (hashes only, see core/access.js). */
 
 import { el, clear, icon, btn, badge, field, toast, modal, copyText, download, fmt, debounce } from "../core/dom.js";
+import { pageVeil } from "../core/busy.js";
 import { registerModule, refresh, setStatus, rebuildShell } from "../core/app.js";
 import { store } from "../core/store.js";
 import { session, signIn, signOut, accessHash, approve, revoke, accessFileText, isHash, shortHash, loadAccess } from "../core/access.js";
@@ -44,7 +45,9 @@ export async function openFromDrive() {
     if (!list.length) { toast("Aucun projet DesignWizard.ai dans ce Drive pour l'instant.", "info"); return; }
     const m = modal("Ouvrir depuis Google Drive", el("div", { class: "grid" }, list.map((p) => el("button", { class: "card lift", type: "button", onClick: async () => {
       m.close();
-      try { const obj = await session.fs.loadProject(p.folder); await store.create(obj.name || p.name, obj); toast(`Projet « ${obj.name || p.name} » ouvert depuis Drive.`, "success"); refresh(); } catch (e) { sayError(e); }
+      const veil = pageVeil(); let off = false;      // reading can be called off ; once the project is being written here, it is left to finish
+      veil.set(`Lecture de « ${p.name} » dans Google Drive…`, { kind: "drive", cancel: () => { off = true; veil.set(""); toast("Ouverture annulée : rien n'a été ajouté à vos projets.", "info"); } });
+      try { const obj = await session.fs.loadProject(p.folder); if (off) return; veil.set(`Ouverture de « ${obj.name || p.name} »…`, { kind: "drive" }); await store.create(obj.name || p.name, obj); veil.set(""); toast(`Projet « ${obj.name || p.name} » ouvert depuis Drive.`, "success"); refresh(); } catch (e) { veil.set(""); if (!off) sayError(e); }
     } }, el("h3", null, icon("folder"), " ", p.name), el("p", { class: "muted small" }, p.updated ? new Date(p.updated).toLocaleString("fr-CA") : "")))), { wide: true });
   } catch (e) { sayError(e); }
 }

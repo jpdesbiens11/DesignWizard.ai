@@ -262,6 +262,7 @@ button.dw-view-label { pointer-events: auto; cursor: pointer; min-height: 24px; 
 .busy-actions { display: flex; gap: .4rem; justify-content: flex-end; } .busy-card [hidden] { display: none; }
 .busy-card.stopped { border-style: dashed; }
 .sheet-busy { display: grid; place-items: center; min-height: 46vh; }
+.app-busy { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; background: color-mix(in srgb, var(--paper) 62%, transparent); }
 @media (prefers-reduced-motion: reduce) { .busy-spin, .busy-bar.unknown i { animation-duration: 3s; } }
 
 /* ---------- parameters ---------- */

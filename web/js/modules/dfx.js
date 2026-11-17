@@ -5,6 +5,7 @@
    or assembly), #/dfx/regles (the rule book), #/dfx/regles/<rule> (one rule in the book). */
 
 import { el, clear, icon, btn, badge, table, fmt, inUnits, toast, debounce } from "../core/dom.js";
+import { busyVeil } from "../core/busy.js";
 import { registerModule, setStatus } from "../core/app.js";
 import { store } from "../core/store.js";
 import { kernel } from "../cad/client.js";
@@ -16,19 +17,19 @@ import { DFX_FILTERS, DFX_STATES, PROCESS_ICON, dfxItems, dfxCounts, dfxView, df
 
 /** DFM findings of every part and DFA findings of every assembly (used by this page and by the report). */
 export async function projectDfx(onProgress) {
-  const parts = [], asms = [];
+  const parts = [], asms = [], total = store.parts.length + store.assemblies.length; let n = 0;      // onProgress(text, done, total) ; an operation the user cancelled ends the analysis at once
   for (const spec of store.parts) {
-    if (onProgress) onProgress(`DFM : ${spec.id}`);
+    if (onProgress) onProgress(`DFM ${n + 1} / ${total} : ${spec.id}`, n, total); n++;
     try { const built = await kernel.build(spec); parts.push({ spec, built, res: await runDfx(spec, built) }); }
-    catch (e) { parts.push({ spec, built: null, res: { findings: [{ id: "KRN-01", severity: "error", title: "Construction impossible", message: e.message }], summary: { errors: 1, warnings: 0, infos: 0, score: 0 } } }); }
+    catch (e) { if (e && e.cancelled) throw e; parts.push({ spec, built: null, res: { findings: [{ id: "KRN-01", severity: "error", title: "Construction impossible", message: e.message }], summary: { errors: 1, warnings: 0, infos: 0, score: 0 } } }); }
   }
   for (const a of store.assemblies) {
-    if (onProgress) onProgress(`DFA : ${a.id}`);
+    if (onProgress) onProgress(`DFA ${n + 1} / ${total} : ${a.id}`, n, total); n++;
     try {
       const ctx = await buildAssembly(a);
       const res = await runDfa(ctx.asm, { parts: Object.fromEntries(Object.keys(ctx.built).map((k) => [k, { spec: store.part(k), built: ctx.built[k] }])), hardware: ctx.hardware, interference: null, placements: ctx.sol.placements });
       asms.push({ asm: a, ctx, res });
-    } catch (e) { asms.push({ asm: a, ctx: null, res: { findings: [], summary: null, metrics: {} }, error: e.message }); }
+    } catch (e) { if (e && e.cancelled) throw e; asms.push({ asm: a, ctx: null, res: { findings: [], summary: null, metrics: {} }, error: e.message }); }
   }
   return { parts, asms };
 }
@@ -55,6 +56,7 @@ function render(main, args) {
     });
     return () => { alive = false; };
   }
+  const veil = busyVeil(page, "sheet-busy");      // what the analysis of the whole project is doing, and a button to cancel it
   if (only) ui.filter = "todo";
   const top = el("div", { class: "dfx-top" }), list = el("div", { class: "dfx-list" });
   box.append(top, list);
@@ -111,16 +113,21 @@ function render(main, args) {
     for (const it of view) list.append(el("section", { class: `dfx-item ${it.state}`, "data-item": it.key }, head(it), it.points.length ? it.points.map((f) => point(it, f)) : el("p", { class: "muted small" }, "Aucune remarque : les règles évaluées sont respectées.")));
   }
   async function refresh() {
-    const mine = ++token, y = window.scrollY;
-    const [run, rules] = await Promise.all([projectDfx((t) => setStatus(t, "busy")), rulebook()]);
+    const mine = ++token, y = window.scrollY, first = !items.length;      // the first analysis of a project is the long one : it shows its veil ; the next ones update the page quietly
+    const stop = () => { token++; kernel.cancel(); setStatus("Bilan DFx annulé", ""); veil.set("Bilan annulé : les points du projet ne sont pas affichés.", { stopped: true, retry: refresh }); };
+    if (first) veil.set("Analyse du projet…", { cancel: stop });
+    let run, rules;
+    try { [run, rules] = await Promise.all([projectDfx((t, done, total) => { setStatus(t, "busy"); if (first && mine === token) veil.set(t, { done, total, cancel: stop }); }), rulebook()]); }
+    catch (e) { if (e && e.cancelled) return; if (mine === token) veil.set(""); throw e; }
     if (!alive || mine !== token) return;
+    veil.set("");
     items = dfxItems(run); book = rules; setStatus("Points DFx à jour", "done");
     drawTop(); drawList(); window.scrollTo(0, y);
     if (only) setTimeout(() => { if (alive) nudge(list.querySelector(".dfx-item")); }, 60);
   }
   const off = store.on("change", debounce(() => { if (alive) refresh(); }, 350));
   refresh();
-  return () => { alive = false; off(); };
+  return () => { alive = false; off(); veil.dispose(); };
 }
 
 registerModule({ key: "dfx", label: "DFx", icon: "dfx", tip: "Les points DFM / DFA à régler dans le projet, et le livre des règles", render });

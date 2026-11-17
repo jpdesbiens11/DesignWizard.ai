@@ -59,15 +59,19 @@ class Store {
     })();
     try { return await this.creating; } finally { this.creating = null; }
   }
+  /** Opens a project. cancelOpen() while it is being read calls it off : the project in hand stays, and the call is refused with an error whose `cancelled` is true. */
   async open(id) {
+    const mine = this.openSeq = this.openSeq || 0;
     let p;
     if (this.mode === "server") p = (await this.api("GET", `api/projects/${encodeURIComponent(id)}`)).project;
     else if (this.mode === "drive") p = await this.drive.openProject(id);
     else p = JSON.parse(localStorage.getItem(LS_PREFIX + id) || "null");
     if (!p) throw new Error(`Projet « ${id} » introuvable.`);
+    if (mine !== this.openSeq) { const e = new Error("Ouverture annulée."); e.cancelled = true; throw e; }
     this.adopt(p);
     return p;
   }
+  cancelOpen() { this.openSeq = (this.openSeq || 0) + 1; }
   adopt(p) {
     p.parts = p.parts || []; p.assemblies = p.assemblies || []; p.boards = p.boards || []; p.log = p.log || [];
     this.project = p; this.undoStack = []; this.redoStack = []; this.saveState = "saved";

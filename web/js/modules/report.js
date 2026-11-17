@@ -11,6 +11,8 @@ import { Viewer } from "../core/viewer.js";
 import { showBuilt } from "../core/viewport.js";
 import { buildAssembly, showAssembly } from "../core/asm_scene.js";
 import { projectDfx } from "./dfx.js";
+import { busyVeil } from "../core/busy.js";
+import { kernel } from "../cad/client.js";
 import { physicsSummary } from "./physics.js";
 import { simulationSummary } from "../analysis/fea/summary.js";
 import { routing } from "../cad/shop.js";
@@ -44,15 +46,16 @@ async function pictures(dfx, onProgress) {
   document.body.append(host);
   const v = new Viewer(host, {}), out = { parts: {}, asms: {} };
   try {
+    const todo = dfx.parts.filter((p) => p.built && p.built.bodies.length).length + dfx.asms.filter((a) => a.ctx).length; let n = 0;
     for (const p of dfx.parts) {
       if (!p.built || !p.built.bodies.length) continue;
-      onProgress(`Image : ${p.spec.id}`);
+      onProgress(`Image ${n + 1} / ${todo} : ${p.spec.id}`, n, todo); n++; await new Promise((r) => setTimeout(r));      // a breath between two pictures : the veil is drawn, a click on « Annuler » is heard
       v.clear(); showBuilt(v, p.built, { prefix: "p" }); v.view("iso");
       out.parts[p.spec.id] = v.snapshotJpeg(0.86);
     }
     for (const a of dfx.asms) {
       if (!a.ctx) continue;
-      onProgress(`Images : ${a.asm.id}`);
+      onProgress(`Image ${n + 1} / ${todo} : ${a.asm.id}`, n, todo); n++; await new Promise((r) => setTimeout(r));
       v.clear(); showAssembly(v, a.ctx, { skipHidden: false }); v.setExplode(0); v.view("iso");
       const assembled = v.snapshotJpeg(0.88);
       const k = Math.max(25, (a.ctx.bbox[5] - a.ctx.bbox[2] + a.ctx.bbox[3] - a.ctx.bbox[0]) * 0.22);
@@ -75,20 +78,23 @@ function render(main) {
     btn("Imprimer", () => window.print(), { icon: "pdf", tip: "L'impression du navigateur : la page telle qu'elle est à l'écran" }), btn("Fichier HTML autonome", () => saveHtml(), { icon: "download", tip: "Un seul fichier avec les images, à joindre à un courriel ou à un ticket" }));
   const doc = el("article", { id: "report" });
   page.append(head, doc);
-  doc.append(el("p", { class: "muted" }, "Construction des pièces, des images et des analyses…"));
-  let alive = true;
-
-  (async () => {
+  let alive = true, turn = 0;
+  const veil = busyVeil(doc, "sheet-busy");      // the three steps of the report — analyses, pictures, drawings — each with its count, and a button to cancel
+  async function run() {
+    const mine = ++turn, live = () => alive && mine === turn;
+    const stop = () => { turn++; kernel.cancel(); setStatus("Rapport annulé", ""); veil.set("Rapport annulé : rien n'est affiché.", { stopped: true, retry: run }); };
+    const say = (t, done, total) => { setStatus(t, "busy"); if (live()) veil.set(t, { done, total, cancel: stop }); };
+    clear(doc); doc.append(veil.node); say("Construction des pièces, des images et des analyses…");
     try {
-      const dfx = await projectDfx((t) => setStatus(t, "busy"));
-      const pics = await pictures(dfx, (t) => setStatus(t, "busy"));
-      const drawings = {};
-      for (const x of dfx.parts) { if (!x.built || !x.built.bodies.length || x.spec.step) continue; setStatus(`Dessin : ${x.spec.id}`, "busy"); try { drawings[x.spec.id] = (await makeDrawing(x.spec.id)).svg; } catch (e) { drawings[x.spec.id] = null; } }
-      if (!alive) return;
-      setStatus("Rapport à jour", "done");
+      const dfx = await projectDfx((t, done, total) => say(`Analyses — ${t}`, done, total)); if (!live()) return;
+      const pics = await pictures(dfx, (t, done, total) => { if (!live()) throw Object.assign(new Error("Rapport annulé."), { cancelled: true }); say(`Images — ${t}`, done, total); }); if (!live()) return;
+      const drawings = {}, sheets = dfx.parts.filter((x) => x.built && x.built.bodies.length && !x.spec.step); let n = 0;
+      for (const x of sheets) { say(`Dessins — ${n + 1} / ${sheets.length} : ${x.spec.id}`, n, sheets.length); n++; try { drawings[x.spec.id] = (await makeDrawing(x.spec.id)).svg; } catch (e) { if (e && e.cancelled) throw e; drawings[x.spec.id] = null; } if (!live()) return; }
+      setStatus("Rapport à jour", "done"); veil.set("");
       build(dfx, pics, drawings);
-    } catch (e) { if (alive) { clear(doc); doc.append(el("div", { class: "card" }, el("h2", null, "Le rapport n'a pas pu être construit"), el("p", { class: "form-error" }, e.message))); } }
-  })();
+    } catch (e) { if ((e && e.cancelled) || !live()) return; veil.set(""); clear(doc); doc.append(el("div", { class: "card" }, el("h2", null, "Le rapport n'a pas pu être construit"), el("p", { class: "form-error" }, e.message))); }
+  }
+  run();
 
   function build(dfx, pics, drawings) {
     clear(doc);
@@ -234,7 +240,7 @@ function render(main) {
       toast("Rapport enregistré en un seul fichier HTML.", "success");
     } catch (e) { toast(`Enregistrement impossible : ${e.message}`, "error"); }
   }
-  return () => { alive = false; off(); };
+  return () => { alive = false; off(); veil.dispose(); };
 }
 
 registerModule({ key: "report", label: "Rapport", icon: "report", tip: "Dossier de design review : images, BOM, interfaces, isolation, DFx, dessins, décisions", render });

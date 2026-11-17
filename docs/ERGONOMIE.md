@@ -181,16 +181,23 @@ géométrique — 23 Mo, téléchargés une fois par session — qui arrivait le
 
 Où : la construction d'une pièce et d'un assemblage, la recherche d'interférences, la construction et l'analyse de
 l'isolation, la géométrie et la résolution d'une simulation, la projection d'un dessin, le placement et le routage
-d'une carte. Annuler une opération du noyau l'arrête pour de bon (le noyau repart à la demande suivante, depuis le
-cache du navigateur) ; annuler un routage ou une analyse laisse le projet tel qu'il était.
+d'une carte, le **bilan DFx de tout le projet** (« DFM 7 / 25 »), le **dossier de revue** (ses trois temps : analyses,
+images, dessins, chacun avec son compte) et le **chargement d'un projet** — depuis l'accueil ou depuis Google Drive.
+Annuler une opération du noyau l'arrête pour de bon (le noyau repart à la demande suivante, depuis le cache du
+navigateur) ; annuler un routage ou une analyse laisse le projet tel qu'il était ; annuler une ouverture laisse en
+main le projet en cours.
+
+Une exception voulue : **l'écriture d'un projet dans Drive ne s'annule pas** — un projet à moitié écrit serait pire
+qu'une attente. Le voile dit alors ce qui se passe et depuis quand, et, si Drive tarde, de laisser finir.
 
 La barre du haut ne dit plus « Prêt » en changeant d'écran tant que le noyau arrive.
 
 Code : `web/js/core/progress.js` (ce que le voile montre : pur, testé), `web/js/core/busy.js` (le voile),
 `vp.setBusy(texte, { done, total, cancel, retry, stopped })` dans une vue 3D, `busyVeil(hôte)` ailleurs ;
 `kernel.cancel()` et `kernel.stage()` dans `web/js/cad/client.js` ; le noyau compte ses octets dans
-`web/js/cad/occ.js` (`loadKernel`). Pas encore de voile sur le chargement d'un projet depuis Drive, ni sur le bilan
-DFx de tout un projet.
+`web/js/cad/occ.js` (`loadKernel`) ; `pageVeil()` pour ce qu'aucun écran ne porte (un projet qui se charge) ;
+`store.cancelOpen()` pour renoncer à une ouverture. Sans voile encore : les exports d'un clic (STEP d'un assemblage,
+dossier de commande) et l'envoi vers Onshape.
 
 ## Ce que l'audit ne voit pas
 

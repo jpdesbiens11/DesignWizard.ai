@@ -23,19 +23,21 @@ export function elapsedText(ms) {
 }
 /** After this long without any progress, the veil says so. */
 export const STALL_MS = 15000;
-/** What to say when nothing has moved for `ms`. kind : "download" (the kernel is on its way) or anything else. "" while all is well. */
-export function stallHint(ms, kind) {
+/** What to say when nothing has moved for `ms`. kind : "download" (the kernel is on its way), "drive" (Google Drive is read or written) or
+    anything else ; canCancel : false for what must not be stopped half-way (a project being written). "" while all is well. */
+export function stallHint(ms, kind, canCancel = true) {
   if (!(ms >= STALL_MS)) return "";
-  return kind === "download" ? "Le téléchargement n'avance plus : vérifiez la connexion — un VPN le ralentit beaucoup. Vous pouvez annuler, puis réessayer."
-    : "C'est plus long que prévu : l'opération tourne encore. Vous pouvez l'annuler.";
+  const what = kind === "download" ? "Le téléchargement n'avance plus : vérifiez la connexion — un VPN le ralentit beaucoup." : kind === "drive" ? "Google Drive tarde à répondre : vérifiez la connexion." : "C'est plus long que prévu : l'opération tourne encore.";
+  return `${what} ${canCancel ? "Vous pouvez annuler, puis réessayer." : "Laissez-la finir : l'arrêter maintenant laisserait un travail à moitié écrit."}`;
 }
-/** What a veil shows. o : { text, done, total (of the operation), stage : { text, done, total } (of the kernel, bytes), startedAt, changedAt, now }.
+/** What a veil shows. o : { text, done, total (of the operation), stage : { text, done, total } (of the kernel, bytes), kind ("drive" for what
+    waits for Google Drive), canCancel, startedAt, changedAt, now }.
     → { title, sub, ratio (0…1 or null : unknown), elapsed, hint, kind } */
 export function busyView(o = {}) {
   const st = o.stage && o.stage.text ? o.stage : null, bytes = st && st.total > 0, own = Number.isFinite(o.done) && o.total > 0 ? { done: o.done, total: o.total } : countIn(o.text);
-  const kind = st && (!bytes || st.done < st.total) ? "download" : "work", now = o.now || 0;      // a kernel announced but not yet counted is a download that has not started coming
+  const kind = st && (!bytes || st.done < st.total) ? "download" : o.kind || "work", now = o.now || 0;      // a kernel announced but not yet counted is a download that has not started coming
   return { title: o.text || (st ? st.text : "En cours…"), kind,
     sub: st ? (bytes ? `${st.text} — ${bytesText(Math.min(st.done, st.total), st.total)}, une seule fois` : st.text) : "",
     ratio: kind === "download" ? (bytes ? ratioOf(st.done, st.total) : null) : own ? ratioOf(own.done, own.total) : null,
-    elapsed: elapsedText(now - (o.startedAt || now)), hint: stallHint(now - (o.changedAt || o.startedAt || now), kind) };
+    elapsed: elapsedText(now - (o.startedAt || now)), hint: stallHint(now - (o.changedAt || o.startedAt || now), kind, o.canCancel !== false) };
 }

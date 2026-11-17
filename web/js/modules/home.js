@@ -1,6 +1,7 @@
 /* DesignWizard.ai — Accueil: projects, the two demonstration projects, and the journey from the design intent to the report. */
 
 import { el, icon, btn, toast, modal, promptBox, confirmBox, fmt } from "../core/dom.js";
+import { pageVeil } from "../core/busy.js";
 import { registerModule, go, app, refresh, setStatus } from "../core/app.js";
 import { store, freshName } from "../core/store.js";
 import { DEMO_DRIVE } from "../demo/demo_drive.js";
@@ -47,17 +48,22 @@ let loading = false;
 async function loadDemo(seed, target) {
   if (loading) return;
   loading = true; setStatus("Chargement de la démonstration…", "busy");
+  const veil = pageVeil(), drive = store.mode === "drive" ? "drive" : ""; let off = false;
+  const stop = () => { off = true; store.cancelOpen(); veil.set(""); setStatus("Chargement annulé", ""); toast("Chargement annulé : votre projet en cours n'a pas changé.", "info"); };
   try {
-    const list = await store.list(), mine = list.filter((x) => x.name === seed.name || String(x.name).startsWith(`${seed.name} (`));
+    veil.set(drive ? "Lecture de vos projets dans Google Drive…" : "Lecture de vos projets…", { cancel: stop, kind: drive });
+    const list = await store.list(), mine = list.filter((x) => x.name === seed.name || String(x.name).startsWith(`${seed.name} (`)); if (off) return;
+    veil.set("");
     const choice = mine.length ? await askDemo(seed.name) : "new";
     if (!choice) { setStatus("Prêt", ""); return; }
-    if (choice === "open") { await store.open(mine[0].id); toast(`« ${mine[0].name} » ouvert, tel que vous l'avez laissé.`, "info"); go(target); return; }
+    if (choice === "open") { veil.set(`Ouverture de « ${mine[0].name} »…`, { cancel: stop, kind: drive }); await store.open(mine[0].id); veil.set(""); toast(`« ${mine[0].name} » ouvert, tel que vous l'avez laissé.`, "info"); go(target); return; }
+    veil.set(drive ? "Écriture du projet dans votre Google Drive…" : "Création du projet…", { kind: drive });      // no cancel here : a project half written would be worse than a wait
     const name = freshName(seed.name, list.map((x) => x.name)), words = seed.drawing && seed.drawing.words, tail = name.startsWith(seed.name) ? name.slice(seed.name.length) : "";
     const named = words && words[seed.name] && tail ? { ...seed, drawing: { ...seed.drawing, words: Object.fromEntries(Object.entries(words).map(([k, v]) => (k === seed.name ? [name, v + tail] : [k, v]))) } } : seed;      // a second copy is « … (2) » : its drawings say its name in English too
     const p = await store.create(name, seed === DEMO_DRIVE ? { ...named, boards: [demoBoard()] } : named);       // the drive comes with its control board, designed from its functions
-    toast(`Projet « ${p.name} » chargé.`, "success");
+    veil.set(""); toast(`Projet « ${p.name} » chargé.`, "success");
     go(target);
-  } catch (e) { toast(e.message || String(e), "error", 7000); setStatus("Prêt", ""); } finally { loading = false; }
+  } catch (e) { veil.set(""); if (!(e && e.cancelled) && !off) { toast(e.message || String(e), "error", 7000); setStatus("Prêt", ""); } } finally { loading = false; }
 }
 const HVB_PROJECT = { dw: "project/1", id: "demo-hvb", name: "DEMO-HVB — busbars 800 V (référence creepage)", author: "DesignWizard.ai",
   description: "Le produit d'exemple de la formation Creepage & Clearance : distances connues par construction (16,56 / 26 mm entre HV+ et HV-).", parts: DEMO_HVB_PARTS, assemblies: [DEMO_HVB_ASSEMBLY], drawing: { words: WORDS_HVB }, log: [] };
@@ -98,7 +104,9 @@ function render(main) {
   store.list().then((list) => {
     for (const it of list) {
       const open = p && p.id === it.id;
-      grid.append(el("div", { class: "card taped" + (open ? "" : " lift"), onClick: async () => { if (!open) { await store.open(it.id); refresh(); } } },
+      grid.append(el("div", { class: "card taped" + (open ? "" : " lift"), onClick: async () => { if (open) return; const veil = pageVeil(), kind = store.mode === "drive" ? "drive" : "";      // a project of one's own, opened : said, timed, and called off while it is still being read
+          veil.set(`Ouverture de « ${it.name || it.id} »…`, { kind, cancel: () => { store.cancelOpen(); veil.set(""); toast("Ouverture annulée : votre projet en cours n'a pas changé.", "info"); } });
+          try { await store.open(it.id); veil.set(""); refresh(); } catch (e) { veil.set(""); if (!(e && e.cancelled)) toast(e.message || String(e), "error", 7000); } } },
         el("h3", null, it.name || it.id), el("p", { class: "muted", style: { fontSize: ".82rem" } }, `${it.updated ? new Date(it.updated).toLocaleString("fr-CA") : ""}${it.parts !== undefined ? ` · ${it.parts} pièce(s)` : ""}`),
         el("div", { class: "form-actions", style: { justifyContent: "flex-start" } }, open ? el("a", { class: "btn btn-small btn-primary", href: "#/parts" }, "Projet ouvert → Pièces") : btn("Ouvrir", null, { small: true }),
           btn("", async (e) => { e.stopPropagation(); if (await confirmBox("Supprimer le projet", `Supprimer « ${it.name || it.id} » ?${store.mode === "server" ? " Il est déplacé dans la corbeille du dossier data." : store.mode === "drive" ? " Son dossier va dans la corbeille de Google Drive (récupérable 30 jours)." : ""}`, "Supprimer", true)) { await store.remove(it.id); refresh(); } }, { small: true, icon: "trash", danger: true, tip: "Supprimer ce projet" }))));
