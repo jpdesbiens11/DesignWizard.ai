@@ -55,7 +55,7 @@ function beam(c) {
 }
 
 /* ---------- column buckling: Euler above the transition slenderness, Johnson parabola below ---------- */
-const ENDS = { pp: 1, ff: 2, fp: 0.7, fx: 0.5 };
+export const ENDS = { pp: 1, ff: 2, fp: 0.7, fx: 0.5 };
 const buckling = { id: "column_buckling", domain: "structure", sketch: "column", title: "Column buckling (Euler / Johnson)", fr: "Flambement d'une colonne (Euler / Johnson)", question: "La pièce comprimée flambe-t-elle avant de s'écraser ?",
   inputs: [num("L", "Longueur L", "mm", 300, 1, 50000, 1, GEO),
     opt("ends", "Liaisons aux extrémités", "pp", [{ value: "pp", label: "Articulée – articulée (K = 1)" }, { value: "ff", label: "Encastrée – libre (K = 2)" },

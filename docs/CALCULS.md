@@ -20,30 +20,54 @@ tableau de synthèse d'abord, puis une page par calcul.
 ## Le classeur — Excel (.xlsx)
 
 Pour itérer hors ligne. `physicsBook()` écrit un classeur à l'image de l'outil, que `core/xlsx.js` — un écrivain
-`.xlsx` maison, sans dépendance — met en fichier. Cinq feuilles :
+`.xlsx` maison, sans dépendance — met en fichier. Cinq feuilles, six quand le modèle cherche une valeur pas à pas :
 
 | Feuille | Ce qu'elle contient |
 |---|---|
 | **Calcul** | La question, le verdict ; les **médias** à choisir dans une liste et leurs propriétés en cases pâles (lues dans la feuille Medias) ; les **cases jaunes** à remplir, bornées à la plage du modèle ; les résultats ; les vérifications avec marge et verdict coloré ; le domaine de validité |
 | **Iterations** | Un tableau par donnée, calculé par la plateforme : la donnée varie de la moitié à une fois et demie sa valeur, les autres sont gardées. Une **case jaune pour essayer une valeur** (résultat interpolé entre deux points) et la **courbe** du premier résultat. Un journal des itérations à remplir |
 | **Medias** | La base des médias que le modèle lit, avec toutes leurs propriétés |
+| **Solveur** | Seulement pour trois modèles (voir plus bas) : le tableau des pas d'une résolution — une ligne par pas, en formules |
 | **Methode** | Le calcul étape par étape (valeurs de l'export), les hypothèses, le domaine de validité, la référence |
 | **Notice** | Ce qu'est le classeur, ce qui est vivant et ce qui est figé, les unités, les limites, la confidentialité, la marque |
 
-**Classeur vivant.** Pour six modèles — le tube (perte de charge), l'orifice et les quatre poutres — les résultats, les
-marges et le verdict sont des **formules** (`xl_formulas.js`) : on change une case jaune, ou le média, tout suit ; une
-pression en kPa se lit aussi en psi, bar et atm. Les quinze autres modèles partent avec leurs résultats en valeurs, leurs
-balayages et la case d'essai ; la Notice le dit.
+**Classeur vivant : les 21 modèles.** Les résultats, les marges et le verdict sont des **formules**
+(`xl_formulas.js` et ses quatre familles : `xl_structure.js`, `xl_joints.js`, `xl_thermal.js`, `xl_electrical.js`) :
+on change une case jaune, ou le média, tout suit ; une pression en kPa se lit aussi en psi, bar et atm.
+
+- **Les choix** (vis M6, classe 8.8, bords encastrés, couche interne…) se lisent dans les tables du modèle par des `IF`
+  imbriqués ; les coefficients de Roark de la plaque sont lus **entre les points de la table**, par les mêmes droites
+  que la plateforme.
+- **Toutes les vérifications du modèle sont là.** Celle qui n'a de sens qu'avec une charge — décollement d'un
+  assemblage vissé, glissement, arrachement du taraudage, couple à transmettre d'un frettage, jeu d'une dilatation —
+  affiche « — » et **se réveille quand sa case jaune est remplie**. Une température se juge sur son échauffement
+  au-dessus de la référence ; une règle de pouce ne dit jamais « NON », au pire « JUSTE ».
+- **Domaine de validité** : chaque limite que le modèle signale à l'écran a sa ligne, en mots, recalculée.
+- **Feuille Solveur.** Trois modèles cherchent une valeur qui n'a pas de formule directe. Un tableur n'a pas de
+  solveur dans ses formules : le classeur refait donc les pas de la plateforme, un par ligne. Dissipateur à l'air libre
+  (bilan convection + rayonnement) : dichotomie de 36 pas ; busbar (Joule contre convection et rayonnement) : dichotomie
+  de 40 pas ; dissipateur ventilé : les six passes du modèle. L'air y est calculé comme dans la plateforme (gaz parfait,
+  loi de Sutherland). Ni macro, ni référence circulaire, ni complément.
+- **Seul cas figé** : un calcul gardé d'avant la base des médias, dont le fluide a été saisi à la main. Ses formules
+  n'auraient rien à lire ; le classeur part avec ses valeurs et la Notice le dit.
+
+Une formule qui nommerait une case absente du classeur fait échouer l'export, au lieu d'y écrire un zéro.
 
 ## Ce qui est vérifié, et comment
 
-- Les formules des six modèles vivants sont évaluées par les tests (un petit lecteur de formules de tableur) pour
-  plusieurs jeux de données — régime laminaire et turbulent, autres fluides, sections ronde, tube et quelconque, autres
-  matériaux — et redonnent les résultats de la plateforme à 0,01 % près (les propriétés des médias de la feuille sont
-  écrites avec cinq chiffres).
-- Le même contrôle a été fait une fois **dans LibreOffice** : cases jaunes et média changés, classeur recalculé,
-  résultats et verdicts comparés à ceux de la plateforme — tous égaux. Le fichier s'ouvre aussi avec `openpyxl`.
-- **Non vérifié : Microsoft Excel lui-même** (non disponible ici), et l'allure des graphiques dans Excel.
+- **Par les tests, à chaque publication.** `xl_eval.js` lit une formule comme un tableur la lit — le signe moins avant
+  la puissance, les puissances de gauche à droite, une division par zéro qui est une **erreur** et non un infini, `IF`
+  qui ne calcule que sa branche. Le classeur de chaque modèle est recalculé ainsi pour 115 jeux de cases jaunes (les
+  valeurs proposées, puis ce qui réveille chaque branche : autre choix, charge nulle, cote hors plage, autre média) :
+  chaque résultat redonne celui de la plateforme à 0,01 % près, chaque marge au millième, chaque verdict, et chaque
+  vérification s'est réveillée dans un cas au moins.
+- **Dans LibreOffice, une fois** (17 novembre 2026) : 100 jeux tapés dans les cases jaunes des 21 classeurs, recalculés
+  par LibreOffice — 791 résultats et 234 vérifications, **tous égaux à la plateforme**, aucune cellule en erreur, y
+  compris une classe de vis relue comme un nombre (8.8) après un choix dans la liste. Le fichier s'ouvre aussi avec
+  `openpyxl`.
+- **Non vérifié : Microsoft Excel lui-même** (non disponible ici), et l'allure des graphiques dans Excel. Les fonctions
+  employées (`IF`, `AND`, `OR`, `MIN`, `MAX`, `ROUND`, `ABS`, `SQRT`, `LN`, `LOG10`, `EXP`, `TANH`, `PI`, `INDEX`,
+  `MATCH`, `COUNTIF`, `TEXT`, `FORECAST`, `OFFSET`) sont communes aux deux tableurs.
 
 ## Limites
 
@@ -52,5 +76,8 @@ balayages et la case d'essai ; la Notice le dit.
 - La case d'essai de la feuille Iterations interpole, une seule donnée à la fois : exacte aux points du tableau,
   approchée entre eux.
 - Le classeur reste en unités du modèle (mm, N, MPa, kPa, °C), quel que soit le choix d'unités de l'écran.
-- Les limites de validité relevées à l'export sont du texte : hors du domaine, un classeur vivant recalcule mais seules
-  les lignes « Domaine de validité » le disent.
+- Le verdict du haut de la feuille compte les vérifications ; il ne lit pas les lignes « Domaine de validité » : hors
+  du domaine, le classeur recalcule et ces lignes le disent, mais le verdict ne passe pas seul à « JUSTE » comme à
+  l'écran.
+- La feuille Solveur alourdit le fichier (environ 200 Ko pour un dissipateur, contre 100 Ko) : c'est le prix d'un
+  bilan résolu sans macro.

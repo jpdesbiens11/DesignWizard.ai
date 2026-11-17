@@ -2,12 +2,14 @@
    template prints (core/docx.js, core/pdfdoc.js — cartridge on every page, title page, approval, revision log), and a
    WORKBOOK for a spreadsheet (core/xlsx.js) laid out like the tool : the media to choose and what they give, the yellow
    cells to fill, the results, the checks and their verdict, then one sweep per input with its curve and a cell to try a
-   value, the base of media the model reads, the method. A model listed in xl_formulas.js leaves ALIVE : its results are
-   formulas ; the others leave with their values, their sweeps and the interpolation between them. Pure. */
+   value, the base of media the model reads, the method. Every model leaves ALIVE (xl_formulas.js) : its results, its
+   margins and its verdict are formulas ; a root the model finds step by step has its own sheet, « Solveur ». Only a fluid
+   typed by hand, from before the base of media, leaves with values. Pure. */
 
 import { model, run, defaults, inputActive, shortTitle } from "./index.js";
 import { MEDIA, MEDIA_PROPS, MEDIA_STATES, medium, mediumProps } from "./media.js";
 import { XL } from "./xl_formulas.js";
+import { xlBook } from "./xl_eval.js";
 import { cellRef, colName } from "../../core/xlsx.js";
 import { MARK, FOOT_NOTE } from "../../core/brand.js";
 
@@ -66,13 +68,13 @@ export function physicsBook(modelId, inputs, meta = {}) {
   const lookup = (slot, prop, cell) => { const rg = rangeOf(slot), c = colName(2 + pk.indexOf(prop)); return `INDEX(Medias!$${c}$${rg[0]}:$${c}$${rg[1]},MATCH(${cell},Medias!$A$${rg[0]}:$A$${rg[1]},0))`; };
   /* ---------- the sheet of the calculation ---------- */
   const rows = [], limits = [], verdicts = [], merges = [], S = "Calcul", at = () => rows.length, put = (cellsOfRow, h) => { rows.push(h ? { h, cells: cellsOfRow } : cellsOfRow); return rows.length - 1; };
-  const named = (name, col, row) => { names.push({ name, ref: `${S}!${cellRef(col, row, true)}` }); cells[name] = cellRef(col, row); return name; };
+  const named = (name, col, row, sheet = S) => { names.push({ name, ref: `${sheet}!${cellRef(col, row, true)}` }); cells[name] = sheet === S ? cellRef(col, row) : `${sheet}!${cellRef(col, row)}`; return name; };
   put([null, { v: MARK, s: "brand" }], 34); merges.push("B1:F1");
   put([{ v: m.question, s: "title" }], 26); merges.push("A2:F2");
   put([{ v: `${m.title} · ${meta.name || shortTitle(m)}${meta.part ? ` · pièce ${meta.part}` : ""} · ${date.toISOString().slice(0, 10)}`, s: "sub" }]); merges.push("A3:F3");
   const vRow = put([{ v: "Verdict", s: "head" }, { v: VERDICT[r.verdict] === "À vérifier" ? "JUSTE" : VERDICT[r.verdict], s: "verdict" }, null, { v: live ? "Ce classeur est vivant : changez une case jaune, les résultats suivent." : "Résultats figés à l'export ; la feuille Iterations permet d'essayer une valeur à la fois.", s: "note" }]); merges.push(`D${vRow + 1}:F${vRow + 1}`);
   put([]); put([{ v: "DONNÉES — les cases jaunes se modifient", s: "head" }, { v: "Valeur", s: "head" }, { v: "Unité", s: "head" }, { v: "Plage du modèle, origine", s: "head" }]);
-  const inName = {}, propName = {}, slotCell = {}, before = new Map(m.media.map((s) => [s.own ? s.key : (m.inputs.find((d) => s.gives[d.key]) || {}).key, s]));
+  const inName = {}, propName = {}, slotName = {}, slotCell = {}, before = new Map(m.media.map((s) => [s.own ? s.key : (m.inputs.find((d) => s.gives[d.key]) || {}).key, s]));
   let group = null;
   for (const d of m.inputs) {
     const idle = !inputActive(d, I), old = idle && Object.keys(d.when || {}).some((k) => m.media.some((s) => s.own && s.key === k));      // a value typed for a fluid, from before the base of media
@@ -80,7 +82,7 @@ export function physicsBook(modelId, inputs, meta = {}) {
     if (d.group !== group) { group = d.group; put([{ v: group || "Données", s: "group" }, { v: "", s: "group" }, { v: "", s: "group" }, { v: "", s: "group" }]); }
     const slot = before.get(d.key), chosen = slot && medium(I[slot.key]);
     if (slot && chosen && rangeOf(slot)) { const row = put([{ v: slot.label, s: "label" }, { v: chosen.name, s: "choice" }, { v: "média", s: "unit" }, { v: "Choisir dans la liste : la feuille Medias donne ses propriétés", s: "note" }]), rg = rangeOf(slot);
-      slotCell[slot.key] = cellRef(1, row, true); named(nm("m", slot.key), 1, row); limits.push({ ref: cellRef(1, row), listRef: `Medias!$A$${rg[0]}:$A$${rg[1]}`, text: "Choisir un média de la feuille Medias." });
+      slotCell[slot.key] = cellRef(1, row, true); slotName[slot.key] = named(nm("m", slot.key), 1, row); limits.push({ ref: cellRef(1, row), listRef: `Medias!$A$${rg[0]}:$A$${rg[1]}`, text: "Choisir un média de la feuille Medias." });
       for (const prop of slot.shows || []) { const P = mediumProps(chosen.id, chosen.at ? T : undefined), pr = put([{ v: MEDIA_PROPS[prop].label, s: "label" }, { v: P[prop], f: lookup(slot, prop, slotCell[slot.key]), s: "prop" }, { v: MEDIA_PROPS[prop].unit, s: "unit" }, { v: `donné par le média${chosen.at ? `, à ${fr(T)} °C` : ""}`, s: "note" }]); propName[prop] = named(nm("p", prop), 1, pr); } }
     if (slot && slot.own) continue;
     const from = r.media.from[d.key], fluidT = d.key === "T" && m.media.some((s) => s.own);
@@ -90,25 +92,29 @@ export function physicsBook(modelId, inputs, meta = {}) {
     if (!from && !fluidT) limits.push(d.options ? { ref: cellRef(1, row), list: d.options.filter((o) => !o.legacy).map((o) => o.value), text: "Choisir une des valeurs de la liste." } : { ref: cellRef(1, row), min: d.min, max: d.max, text: `${d.label} : le modèle accepte de ${d.min} à ${d.max} ${d.unit || ""}.` });
   }
   /* ---------- the results : formulas for a model that is alive, values otherwise ---------- */
-  const outName = {}, helpName = {}, hv = {}, tok = (f) => f.replace(/\{(p:|h:|o:)?([A-Za-z0-9_]+)\}/g, (all, kind, key) => (kind === "p:" ? propName[key] : kind === "h:" ? helpName[key] : kind === "o:" ? outName[key] : inName[key]) || "0");
+  const outName = Object.fromEntries(m.outputs.map((o) => [o.key, nm("o", o.key)])), helpName = {}, gridName = {}, checkRows = [], solver = [], gridCells = live && X.grid ? X.grid.rows.flat().filter((c) => c && typeof c === "object") : [];
+  if (live) { for (const h of X.helpers) helpName[h.key] = nm("h", h.key); for (const c of gridCells) gridName[c.key] = nm("s", c.key); }
+  const tok = (f) => f.replace(/\{(p:|h:|o:|s:)?([A-Za-z0-9_]+)\}/g, (all, kind, key) => { const n = (kind === "p:" ? propName : kind === "h:" ? helpName : kind === "o:" ? outName : kind === "s:" ? gridName : inName)[key]; if (!n) throw new Error(`${modelId} : ${all} is not a cell of the workbook`); return n; });
   put([]); put([{ v: "RÉSULTATS", s: "head" }, { v: "Valeur", s: "head" }, { v: "Unité", s: "head" }, { v: live ? "Formule vivante" : "Valeur à l'export", s: "head" }]);
-  const props = Object.fromEntries(m.media.flatMap((s) => { const c = medium(I[s.key]); return c ? Object.entries(mediumProps(c.id, c.at ? T : undefined)) : []; }));
-  if (live) for (const h of X.helpers) { hv[h.key] = h.js(I, props, hv); const row = put([{ v: h.label, s: "label" }, { v: hv[h.key], f: tok(h.f), s: "helper" }, { v: h.unit, s: "unit" }, { v: "valeur intermédiaire", s: "note" }]); helpName[h.key] = named(nm("h", h.key), 1, row); }
-  const outRow = {};
-  for (const o of m.outputs) { outRow[o.key] = at(); outName[o.key] = nm("o", o.key); put([{ v: o.label, s: "label" }, null, { v: o.unit || "", s: "unit" }, null]); named(outName[o.key], 1, outRow[o.key]); }
-  for (const o of m.outputs) { const row = outRow[o.key], f = live && X.outputs[o.key] ? tok(X.outputs[o.key]) : null, cellsOfRow = Array.isArray(rows[row]) ? rows[row] : rows[row].cells, ref = cellRef(1, row);
-    cellsOfRow[1] = f ? { v: r.values[o.key], f, s: "output" } : { v: r.values[o.key], s: "output" };
-    cellsOfRow[3] = o.unit === "kPa" ? { v: `${fr(r.values[o.key] / 6.894757293168361)} psi · ${fr(r.values[o.key] / 100)} bar · ${fr(r.values[o.key] / 101.325)} atm`, f: `TEXT(${ref}/6.894757293168361,"0.0000")&" psi · "&TEXT(${ref}/100,"0.00000")&" bar · "&TEXT(${ref}/101.325,"0.00000")&" atm"`, s: "note" } : { v: f ? `= ${X.outputs[o.key].replace(/\{(?:p:|h:|o:)?([A-Za-z0-9_]+)\}/g, "$1")}`.slice(0, 140) : "", s: "note" }; }
-  /* ---------- the checks, and the verdict they give ---------- */
-  if (r.checks.length) { put([]); put(["VÉRIFICATIONS", "Valeur", "Limite", "Unité", "Marge", "Verdict"].map((v) => ({ v, s: "head" })));
-    r.checks.forEach((c, k) => { const row = at(), x = live && X.checks[k], R = row + 1, word = c.ok ? (c.tight ? "JUSTE" : "OK") : "NON";
-      const val = x ? { v: c.value, f: outName[x.value], s: "value" } : { v: c.value, s: "value" }, lim = x ? { v: c.limit, f: inName[x.limit], s: "value" } : { v: c.limit, s: "value" }, sf = x && x.sf ? tok(x.sf) : "1";
-      put([{ v: c.label, s: "label" }, val, lim, { v: c.unit, s: "unit" }, x ? { v: c.margin, f: x.min ? `IF(C${R}>0,MIN(999,B${R}/C${R}),0)` : `IF(B${R}>0,MIN(999,C${R}/B${R}),999)`, s: "value" } : { v: c.margin, s: "value" },
-        x ? { v: word, f: `IF(E${R}<1,"NON",IF(E${R}<${sf},"JUSTE","OK"))`, s: "verdict" } : { v: word, s: "verdict" }]); verdicts.push({ ref: `F${R}` }); });
-    const first = verdicts[0].ref, last = verdicts[verdicts.length - 1].ref, vc = Array.isArray(rows[vRow]) ? rows[vRow] : rows[vRow].cells;
-    if (live) vc[1] = { v: vc[1].v, f: `IF(COUNTIF(${first}:${last},"NON")>0,"NON",IF(COUNTIF(${first}:${last},"JUSTE")>0,"JUSTE","OK"))`, s: "verdict" }; }
+  if (live) for (const h of X.helpers) { const row = put([{ v: h.label, s: "label" }, { f: tok(h.f), s: "helper" }, { v: h.unit, s: "unit" }, { v: "valeur intermédiaire", s: "note" }]); named(helpName[h.key], 1, row); }
+  if (gridCells.length) { solver.push({ h: 34, cells: [null, { v: MARK, s: "brand" }] }, [{ v: X.grid.title, s: "title" }], { h: 44, cells: [{ v: X.grid.note, s: "note" }] }, [], X.grid.head.map((v) => ({ v, s: "th" })));
+    for (const line of X.grid.rows) { const y = solver.length; solver.push(line.map((c, x) => (c && typeof c === "object" ? (named(gridName[c.key], x, y, "Solveur"), { f: tok(c.f), s: "td" }) : { v: c, s: "td" }))); } }
+  for (const o of m.outputs) { const row = put([{ v: o.label, s: "label" }, null, { v: o.unit || "", s: "unit" }, null]), f = live && X.outputs[o.key] ? tok(X.outputs[o.key]) : null, ref = cellRef(1, row), v = r.values[o.key]; named(outName[o.key], 1, row);
+    rows[row][1] = f ? { v, f, s: "output" } : { v, s: "output" };
+    rows[row][3] = o.unit === "kPa" ? { v: `${fr(v / 6.894757293168361)} psi · ${fr(v / 100)} bar · ${fr(v / 101.325)} atm`, f: `TEXT(${ref}/6.894757293168361,"0.0000")&" psi · "&TEXT(${ref}/100,"0.00000")&" bar · "&TEXT(${ref}/101.325,"0.00000")&" atm"`, s: "note" } : { v: f ? `= ${X.outputs[o.key].replace(/\{(?:p:|h:|o:|s:)?([A-Za-z0-9_]+)\}/g, "$1")}`.slice(0, 140) : "", s: "note" }; }
+  /* ---------- the checks, and the verdict they give : every check of a model that is alive is there, and wakes up when what it needs is filled ---------- */
+  const wordOf = (c) => (c.ok ? (c.tight ? "JUSTE" : "OK") : c.soft ? "JUSTE" : "NON");
+  if (live ? X.checks.length : r.checks.length) { put([]); put(["VÉRIFICATIONS", "Valeur", "Limite", "Unité", "Marge", "Verdict"].map((v) => ({ v, s: "head" })));
+    if (live) for (const x of X.checks) { const c = r.checks.find((q) => q.label === x.label), R = at() + 1, on = x.when ? tok(x.when) : "", gate = (f) => (on ? `IF(${on},${f},"—")` : f), ref = x.ref ? tok(x.ref) : "";
+      const top = ref ? `(C${R}-${ref})` : x.min ? `B${R}` : `C${R}`, bottom = ref ? `(B${R}-${ref})` : x.min ? `C${R}` : `B${R}`;      // a temperature : the rises above the reference are compared
+      put([{ v: x.label, s: "label" }, { v: c ? c.value : undefined, f: tok(x.value), s: "value" }, { v: c ? c.limit : undefined, f: tok(x.limit), s: "value" }, { v: x.unit, s: "unit" },
+        { v: c ? c.margin : "—", f: gate(`IF(${bottom}=0,IF(${top}>0,999,0),ROUND(MIN(999,MAX(0,${top}/${bottom})),3))`), s: "value" }, { v: c ? wordOf(c) : "—", f: gate(`IF(E${R}<1,"${x.soft ? "JUSTE" : "NON"}",IF(E${R}<${x.sf ? tok(x.sf) : "1"},"JUSTE","OK"))`), s: "verdict" }]);
+      verdicts.push({ ref: `F${R}` }); checkRows.push({ label: x.label, row: R }); }
+    else for (const c of r.checks) { put([{ v: c.label, s: "label" }, { v: c.value, s: "value" }, { v: c.limit, s: "value" }, { v: c.unit, s: "unit" }, { v: c.margin, s: "value" }, { v: wordOf(c), s: "verdict" }]); verdicts.push({ ref: `F${at()}` }); }
+    const first = verdicts[0].ref, last = verdicts[verdicts.length - 1].ref;
+    if (live) rows[vRow][1] = { v: rows[vRow][1].v, f: `IF(COUNTIF(${first}:${last},"NON")>0,"NON",IF(COUNTIF(${first}:${last},"JUSTE")>0,"JUSTE","OK"))`, s: "verdict" }; }
   verdicts.push({ ref: `B${vRow + 1}` });
-  if (live && X.flags.length) { put([]); put([{ v: "DOMAINE DE VALIDITÉ", s: "head" }, { v: "", s: "head" }, { v: "", s: "head" }, { v: "", s: "head" }]); for (const f of X.flags) { const row = put([{ v: f.label, s: "label" }, { v: "", f: tok(f.f), s: "text" }]); merges.push(`B${row + 1}:F${row + 1}`); } }
+  if (live && X.flags.length) { put([]); put([{ v: "DOMAINE DE VALIDITÉ", s: "head" }, { v: "", s: "head" }, { v: "", s: "head" }, { v: "", s: "head" }]); for (const f of X.flags) { const row = put([{ v: f.label, s: "label" }, { f: tok(f.f), s: "text" }]); merges.push(`B${row + 1}:F${row + 1}`); } }
   if (r.warnings.length) { put([]); put([{ v: "LIMITES DE VALIDITÉ RELEVÉES À L'EXPORT", s: "head" }]); for (const w of r.warnings) { const row = put([{ v: w, s: "warn" }], 30); merges.push(`A${row + 1}:F${row + 1}`); } }
   put([]); { const row = put([{ v: FOOT_NOTE, s: "note" }], 28); merges.push(`A${row + 1}:F${row + 1}`); }
   /* ---------- the sweeps : one input at a time, a curve, and a cell to try a value ---------- */
@@ -129,16 +135,21 @@ export function physicsBook(modelId, inputs, meta = {}) {
     [{ v: "DOMAINE DE VALIDITÉ", s: "head" }], { h: 30, cells: [{ v: m.validity, s: "text" }] }, [], [{ v: "RÉFÉRENCE", s: "head" }], [{ v: m.reference, s: "text" }]];
   const notice = [{ h: 34, cells: [null, { v: MARK, s: "brand" }] }, [{ v: "Ce classeur", s: "title" }], [],
     ...[["Ce que c'est", `Le calcul « ${meta.name || shortTitle(m)} » de la plateforme, à emporter : mêmes données, mêmes résultats, mêmes vérifications que l'écran des modèles analytiques.`],
-      ["Feuille Calcul", live ? "Vivante : les résultats, les marges et le verdict sont des formules. Changez une case jaune, tout suit. Les cases pâles viennent du média choisi : changez le média, pas la valeur." : "Les résultats sont les valeurs calculées par la plateforme à l'export : ce modèle n'a pas encore ses formules dans le classeur. Pour un autre jeu de données, utilisez la feuille Iterations, ou relancez le calcul dans la plateforme."],
+      ["Feuille Calcul", live ? "Vivante : les résultats, les marges et le verdict sont des formules. Changez une case jaune, tout suit. Les cases pâles viennent du média choisi : changez le média, pas la valeur." : "Les résultats sont les valeurs calculées par la plateforme à l'export : le fluide de ce calcul a été saisi à la main, avant la base des médias, et les formules n'ont rien à lire. Choisissez un fluide de la base dans la plateforme : le classeur sera vivant."],
       ["Feuille Iterations", "Un tableau par donnée, calculé par la plateforme : la donnée varie de la moitié à une fois et demie sa valeur, les autres sont gardées. La case jaune essaie une valeur ; le résultat est interpolé entre deux points — exact aux points, approché entre eux, et une seule donnée à la fois."],
+      ...(solver.length ? [["Feuille Solveur", "Le modèle cherche une valeur qui n'a pas de formule directe (un bilan thermique à équilibrer). La plateforme la trouve pas à pas ; le classeur refait les mêmes pas, un par ligne, avec des formules : il suit donc les cases jaunes, sans macro ni solveur. Ne rien y modifier."]] : []),
       ["Feuille Medias", `La base des médias que ce modèle lit, avec leurs propriétés${m.media.some((s) => s.own) ? ` — pour les fluides, à ${fr(T)} °C, la température de l'export` : ""}. Valeurs typiques : la fiche de la nuance ou du fluide acheté fait foi.`],
       ["Feuille Methode", "Le calcul écrit étape par étape avec les valeurs de l'export, ses hypothèses, son domaine de validité et sa référence."],
       ["Unités", "Celles du modèle : mm, N, MPa, GPa, kPa, °C, L/min. Une pression en kPa est aussi donnée en psi, bar et atm."],
       ["Limites", "Un calcul analytique répond à l'essentiel de la question ; il ne remplace ni une simulation, ni un essai. Hors du domaine de validité, le résultat n'est qu'un ordre de grandeur."],
       ["Projet", `${meta.project || "—"}${meta.part ? ` · pièce ${meta.part}` : ""} · ${date.toISOString().slice(0, 10)}${meta.version ? ` · DesignWizard.ai ${meta.version}` : ""}`], ...(meta.confidential ? [["Confidentialité", meta.confidential]] : []), ["Marque", FOOT_NOTE]].map(([a, b]) => ({ h: 44, cells: [{ v: a, s: "head" }, { v: b, s: "text" }] }))];
   const pic = meta.logo ? [{ png: meta.logo, col: 0, row: 0, w: 10, h: 10 }] : [];
-  return { title: `${meta.name || shortTitle(m)} — ${m.title}`, subject: "Calcul analytique", author: meta.author || "", date, live, cells, swept,
-    names, sheets: [{ name: S, cols: [46, 26, 12, 56, 12, 12], rows, merges, limits, verdicts, pictures: pic, freeze: 4 },
-      { name: "Iterations", cols: [34, 16, 22, 22, 22, 4, 12, 12, 12, 12, 12, 12, 12, 12], rows: it, merges: itMerges, limits: itLimits, pictures: pic, charts },
-      { name: "Medias", cols: [38, 12, ...pk.map(() => 17)], rows: mRows, freeze: 1 }, { name: "Methode", cols: [10, 124], rows: me.map((x, k) => (k < 1 ? x : Array.isArray(x) ? [null, ...x] : { ...x, cells: [null, ...x.cells] })), pictures: pic }, { name: "Notice", cols: [24, 110], rows: notice, pictures: pic }] };
+  const sheets = [{ name: S, cols: [46, 26, 12, 56, 12, 12], rows, merges, limits, verdicts, pictures: pic, freeze: 4 },
+    { name: "Iterations", cols: [34, 16, 22, 22, 22, 4, 12, 12, 12, 12, 12, 12, 12, 12], rows: it, merges: itMerges, limits: itLimits, pictures: pic, charts },
+    { name: "Medias", cols: [38, 12, ...pk.map(() => 17)], rows: mRows, freeze: 1 }, ...(solver.length ? [{ name: "Solveur", cols: [10, ...X.grid.head.slice(1).map(() => 24)], rows: solver, merges: ["B1:H1", "A2:H2", "A3:H3"], pictures: pic, freeze: 5 }] : []),
+    { name: "Methode", cols: [10, 124], rows: me.map((x, k) => (k < 1 ? x : Array.isArray(x) ? [null, ...x] : { ...x, cells: [null, ...x.cells] })), pictures: pic }, { name: "Notice", cols: [24, 110], rows: notice, pictures: pic }];
+  const book = { title: `${meta.name || shortTitle(m)} — ${m.title}`, subject: "Calcul analytique", author: meta.author || "", date, live, cells, swept, names, sheets, inputs: inName, props: propName, slots: slotName, outputs: outName, checks: checkRows };
+  /* a formula written without its value opens with the one the platform reads from it : the file is right before any recalculation */
+  if (live) { const get = xlBook(book); for (const sh of sheets) if (sh.name === S || sh.name === "Solveur") sh.rows.forEach((line, y) => (Array.isArray(line) ? line : line.cells || []).forEach((c, x) => { if (c && typeof c === "object" && c.f && c.v === undefined) { try { c.v = get(`${sh.name}!${cellRef(x, y)}`); } catch (e) { c.v = ""; } } })); }
+  return book;
 }

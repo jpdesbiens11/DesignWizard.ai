@@ -188,10 +188,10 @@ function render(main, args) {
   const meta = () => ({ date: new Date(), project: store.project ? store.project.name || store.project.id : "", author: (store.project && store.project.author) || "" }), slug = (t) => String(t).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9]+/g, "_").replace(/^_|_$/g, "").slice(0, 60) || "calcul";
   const nowRun = () => ({ id: "now", name: (ui.name || runName(store.project, cur.id, partId)).trim(), model: cur.id, part: partId || "", inputs: r.inputs, when: new Date().toISOString() });
   const noteOf = (runs, figures) => ({ ...physicsDoc(runs, store.project, { ...meta(), figures }), ...docMeta() });
-  const outNow = () => { const one = nowRun(), file = slug(one.name), fig = () => ({ now: shot(vp.viewer, "Le modèle du calcul, aux dimensions entrées", null, 110) }), live = XL_LIVE.includes(cur.id);
+  const outNow = () => { const one = nowRun(), file = slug(one.name), fig = () => ({ now: shot(vp.viewer, "Le modèle du calcul, aux dimensions entrées", null, 110) }), live = XL_LIVE.includes(cur.id) && r.inputs.fluid !== "custom";
     return { word: () => download(`${file}_note_de_calcul.docx`, docx(noteOf([one], fig())), DOCX), pdf: () => download(`${file}_note_de_calcul.pdf`, pdfDoc(noteOf([one], fig())), "application/pdf"),
       excel: () => download(`${file}_calcul.xlsx`, xlsx(physicsBook(cur.id, r.inputs, { ...meta(), name: one.name, part: partId, version: app.version, logo: logoPng(), confidential: docMeta().confidential })), XLSX),
-      note: live ? "Le classeur de ce modèle est vivant : ses résultats sont des formules." : "Classeur : résultats à l'export, et un balayage par donnée pour essayer une valeur — ce modèle n'a pas encore ses formules." }; };
+      note: live ? "Le classeur est vivant : résultats, marges et verdict sont des formules — changez une case jaune, tout suit." : "Classeur : résultats à l'export, et un balayage par donnée — le fluide de ce calcul a été saisi à la main ; choisissez un fluide de la base pour un classeur vivant." }; };
   const outAll = () => { const runs = store.project.physics || [], file = slug(store.project.name || store.project.id || "projet"); return { word: () => download(`${file}_notes_de_calcul.docx`, docx(noteOf(runs)), DOCX), pdf: () => download(`${file}_notes_de_calcul.pdf`, pdfDoc(noteOf(runs)), "application/pdf") }; };
   /* ---------- right : the choice of the model, then what it answers ---------- */
   function drawRight(keep) {

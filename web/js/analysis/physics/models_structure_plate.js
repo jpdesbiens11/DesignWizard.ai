@@ -6,7 +6,7 @@ import { n, sheet, num, opt, out, interp, MAT, GEO, LOAD, CRIT } from "./models_
 /* Roark, table 11.4 (nu = 0.3): sigma_max = beta q b2 / t2, y_max = alpha q b4 / (E t3), b = short side, ratio = a / b.
    Case 1a: four edges simply supported (stress at the centre). Case 8a: four edges fixed (stress at the middle of the
    long edges). The last column is the infinitely long plate. */
-const PLATE = {
+export const PLATE = {
   ss: { r: [1, 1.2, 1.4, 1.6, 1.8, 2, 3, 4, 5, 8], beta: [0.2874, 0.3762, 0.4530, 0.5172, 0.5688, 0.6102, 0.7134, 0.7410, 0.7476, 0.7500],
     alpha: [0.0444, 0.0616, 0.0770, 0.0906, 0.1017, 0.1110, 0.1335, 0.1400, 0.1417, 0.1421], cas: "1a", where: "au centre", name: "bords simplement appuyés" },
   fixed: { r: [1, 1.2, 1.4, 1.6, 1.8, 2, 4], beta: [0.3078, 0.3834, 0.4356, 0.4680, 0.4872, 0.4974, 0.5000],
