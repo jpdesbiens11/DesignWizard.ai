@@ -48,6 +48,8 @@ descriptions de trous (through, depth, counterbore, countersink, tapped, heat-se
 notes du DXF du développé (BEND 90 UP R…, FLAT PATTERN, K FACTOR). Les nombres s'écrivent avec un **point décimal**
 (2.5, échelle 1:1.5).
 
-Restent tels qu'écrits : ce que le projet a tapé (nom de la pièce, noms d'interface, notes de la pièce, finition), la
-note de confidentialité du projet et la note de la marque (phrases fixes, `core/brand.js`). À l'écran, le sélecteur de
+Ce que le projet a tapé (nom de la pièce, noms d'interface, libellés de paramètres, notes, finition, nom du projet)
+s'écrit dans **son anglais quand le projet l'a donné** — écran Dessins, « Anglais du dessin », `project.drawing.words` ;
+voir `docs/DESSINS.md` — et tel quel sinon. Les projets de démonstration arrivent avec le leur. Restent tels
+qu'écrits : la note de confidentialité du projet et la note de la marque (phrases fixes, `core/brand.js`). À l'écran, le sélecteur de
 classe d'une cote et les messages restent en français : c'est l'interface, pas le dessin.

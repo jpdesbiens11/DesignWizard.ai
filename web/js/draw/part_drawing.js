@@ -13,7 +13,7 @@ import { hatch } from "./hatch.js";
 import { interfaceType, patternPoints } from "../cad/interfaces.js";
 import { materialOrDefault, PROCESSES, processName } from "../cad/materials.js";
 import { FACES } from "../cad/vec.js";
-import { dimensionList, holeRows, dimText, classNotes, len, massOf, drawingUnit, inDrawingUnits } from "./dim_model.js";
+import { dimensionList, holeRows, dimText, classNotes, len, massOf, drawingUnit, inDrawingUnits, inDrawingWords, say } from "./dim_model.js";
 
 export const VIEW_DEFS = {
   front: { dir: [0, 1, 0], xdir: [1, 0, 0], ax: [0, 2], label: "FRONT" },
@@ -95,16 +95,17 @@ export function drawingNotes(spec, sem, dims) {
   for (const g of sem.gdt) if (g.rule) rules.set(g.rule, [...(rules.get(g.rule) || []), g.name]);
   const inch = drawingUnit() === "in";
   return [`Dimensioning and tolerancing per ASME Y14.5-2018; dimensions in ${inch ? "inches, converted from the millimetre model (1 in = 25.4 mm)" : "millimetres"}; general tolerances for untoleranced dimensions: ISO 2768-mK.`,
-    `Material: ${mat.name}.${spec.finish ? ` Finish: ${spec.finish}.` : ""} Process: ${processName(spec.process) || "to be defined"}. Break sharp edges ${len(0.2)} to ${len(0.5)} ${drawingUnit()}; deburr.`,
+    `Material: ${mat.name}.${spec.finish ? ` Finish: ${say(spec.finish)}.` : ""} Process: ${processName(spec.process) || "to be defined"}. Break sharp edges ${len(0.2)} to ${len(0.5)} ${drawingUnit()}; deburr.`,
     "Each dimension carries a numbered round balloon, on the view that shows it or in the table (sheet 2 when there is one). Each geometric tolerance carries a hexagonal flag (T1, T2… — a mark of this drawing, not a symbol of the standard): on the feature it controls, and in the tolerance table. Boxed dimensions (in brackets in the table) are basic dimensions: they locate a pattern toleranced in position relative to datums A, B and C.",
-    ...classNotes(dims), ...[...rules].map(([rule, names]) => `Position tolerances calculated (${rule}): ${names.join("; ")}.`), ...(spec.notes || [])];
+    ...classNotes(dims), ...[...rules].map(([rule, names]) => `Position tolerances calculated (${rule}): ${names.map(say).join("; ")}.`), ...(spec.notes || []).map(say)];
 }
 /** The height a block of notes takes. */
 export function notesHeight(sheet, notes, width, size = 2.3) { const indent = sheet.textWidth(`${notes.length}.`, { size }) + size * 0.6; return (size + 1) * 0.718 + 0.9 + size * 0.9 + notes.reduce((h, n) => h + sheet.wrapText(String(n), width - indent, { size }).length * size * 1.5 + size * 0.35, 0); }
 
 /** Draw the whole sheet. data = {spec, built, views, project, opts:{projection, hidden, drawnBy, checkedBy, approvedBy, status, date, revisions, units}}. Returns what was drawn.
-    opts.units : the units the sheet is written in (core/units.js) — millimetres, or inches in the imperial system. */
-export function composeDrawing(sheet, data) { return inDrawingUnits((data.opts || {}).units, () => composeSheet(sheet, data)); }
+    opts.units : the units the sheet is written in (core/units.js) — millimetres, or inches in the imperial system.
+    opts.say : how a text of the project is said (core/drawing_words.js : its English when the project gave one). */
+export function composeDrawing(sheet, data) { const o = data.opts || {}; return inDrawingUnits(o.units, () => inDrawingWords(o.say, () => composeSheet(sheet, data))); }
 function composeSheet(sheet, data) {
   const { spec, built, views, project } = data, o = data.opts || {};
   const frame = drawBorder(sheet, { confidential: o.confidential }), mat = materialOrDefault(spec.material), sem = drawingSemantics(spec, built), dims = dimensionList(spec, built), holes = holeRows(built);
@@ -226,7 +227,7 @@ function composeSheet(sheet, data) {
     sheet.rect(stackX, gy, STACK_W - 2, 5 + flags.length * GDT_ROW, { w: LW.medium }); sheet.line(stackX, gy + 5, stackX + STACK_W - 2, gy + 5, { w: LW.fine }); sheet.text(stackX + (STACK_W - 2) / 2, gy + 3.6, "GEOMETRIC TOLERANCES", { size: 2.4, font: "bold", align: "center" });
     flags.forEach((g, i) => { const ry = gy + 5 + i * GDT_ROW; if (i) sheet.line(stackX, ry, stackX + STACK_W - 2, ry, { w: LW.fine }); gdtFlag(sheet, [stackX + 5, ry + GDT_ROW / 2], g.flag, null, 2.6);
       const fr = featureControlFrame(sheet, stackX + 10.5, ry + (GDT_ROW - 4.8) / 2, { symbol: g.symbol, tolerance: len(g.tolerance), diameter: g.diameter, modifier: g.modifier, datums: g.datums }, { h: 4.8 }), tx = stackX + 10.5 + (fr.width || 40) + 2.5;
-      const words = fitText(sheet, [g.count > 1 ? `${g.count}×` : "", g.tags, g.name, g.fit].filter(Boolean).join(" · "), stackX + STACK_W - 3.5 - tx, 2.4, "sans", 0.72); sheet.text(tx, ry + GDT_ROW / 2 + 0.9, words.str, { size: words.size }); });
+      const words = fitText(sheet, [g.count > 1 ? `${g.count}×` : "", g.tags, say(g.name), g.fit].filter(Boolean).join(" · "), stackX + STACK_W - 3.5 - tx, 2.4, "sans", 0.72); sheet.text(tx, ry + GDT_ROW / 2 + 0.9, words.str, { size: words.size }); });
     gy += 5 + flags.length * GDT_ROW + 3;
   }
   const tableOf = (title, list, cols, cells, x, y, room) => {
@@ -241,13 +242,13 @@ function composeSheet(sheet, data) {
   drawNotes(sheet, frame.x + 4, notesY, notesW, notes, { title: "NOTES", size: 2.3 });
   viewLabel(sheet, fx + B.front.w * s / 2, frontY + B.front.h * s + 10 + 8 * (used["front:h"] || 1) + 5, "", `SCALE ${scale[1]}`);
   drawRevisionTable(sheet, frame.x + frame.w, frame.y, revs.slice(-4), { align: "right" });
-  const block = (n) => drawTitleBlock(sheet, frame, { title: spec.name || spec.id, partNumber: spec.id, revision: spec.revision || "A", material: mat.name, finish: spec.finish || "—", mass: massOf(built.mass),
-    scale: n === 1 ? scale[1] : "—", sheet: `${n}/${sheets}`, size: "B (11 × 17)", drawnBy: o.drawnBy || "", checkedBy: o.checkedBy || "", approvedBy: o.approvedBy || "", date: o.date || "", company: o.organisation || "DesignWizard.ai", project: (project && project.name) || "",
+  const block = (n) => drawTitleBlock(sheet, frame, { title: say(spec.name) || spec.id, partNumber: spec.id, revision: spec.revision || "A", material: mat.name, finish: say(spec.finish) || "—", mass: massOf(built.mass),
+    scale: n === 1 ? scale[1] : "—", sheet: `${n}/${sheets}`, size: "B (11 × 17)", drawnBy: o.drawnBy || "", checkedBy: o.checkedBy || "", approvedBy: o.approvedBy || "", date: o.date || "", company: o.organisation || "DesignWizard.ai", project: say((project && project.name) || ""),
     generalTolerance: "ISO 2768-mK", projection: third ? "third" : "first", units: drawingUnit(), status: o.status || "Preliminary" });
   block(1);
   if (sheets === 2) {                                           // sheet 2 : the table of the definition dimensions, in columns, with the same frame and title block
     sheet.newPage(); drawBorder(sheet, { confidential: o.confidential }); drawRevisionTable(sheet, frame.x + frame.w, frame.y, revs.slice(-4), { align: "right" });
-    sheet.text(frame.x + 6, frame.y + 9, `DEFINITION DIMENSIONS — ${spec.id} ${spec.name || ""}`.trim(), { size: 4.2, font: "bold" }); sheet.text(frame.x + 6, frame.y + 14.5, "Dimensions that sheet 1 does not show on a view, each with its balloon. A dimension in brackets is a basic dimension: it locates a pattern toleranced in position relative to the datums.", { size: 2.4 });
+    sheet.text(frame.x + 6, frame.y + 9, `DEFINITION DIMENSIONS — ${spec.id} ${say(spec.name) || ""}`.trim(), { size: 4.2, font: "bold" }); sheet.text(frame.x + 6, frame.y + 14.5, "Dimensions that sheet 1 does not show on a view, each with its balloon. A dimension in brackets is a basic dimension: it locates a pattern toleranced in position relative to the datums.", { size: 2.4 });
     const cols = [{ title: "Dimension", width: 104 }, { title: "Value", width: 26, align: "right" }], colW = 150, top = frame.y + 20, per = (k) => Math.floor((frame.y + frame.h - (frame.x + 6 + (k + 1) * colW > frame.x + frame.w - TITLE_BLOCK_W ? TITLE_BLOCK_H + 6 : 4) - top) / 4.4) - 2;
     let at = 0; for (let k = 0; at < defs.length && frame.x + 6 + (k + 1) * colW <= frame.x + frame.w - 2; k++) at += tableOf(k ? "DEFINITION DIMENSIONS (continued)" : "DEFINITION DIMENSIONS", defs.slice(at), cols, (d) => [d.label, `${d.basic && d.cls !== "ref" ? "[" : ""}${dimText(d)}${d.basic && d.cls !== "ref" ? "]" : ""}`], frame.x + 6 + k * colW, top, per(k));
     if (at < defs.length) sheet.text(frame.x + 6, frame.y + frame.h - 4, `… and ${defs.length - at} more dimension(s): see the dimension list of the model.`, { size: 2.3, font: "italic" });

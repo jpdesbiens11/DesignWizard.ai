@@ -3,6 +3,8 @@
    the assembly mates itself from them. The HV+ / HV- gap on the power board is deliberately a little short, so the
    isolation analysis has something to find (parameter "gapHV" of DRV-PWR-PCB). */
 
+import { WORDS_DRIVE } from "./demo_words.js";
+
 const P = (value, min, max, label, group = "Enveloppe", step = 1) => ({ value, min, max, step, unit: "mm", label, group });
 
 const BASE = {
@@ -139,5 +141,6 @@ export const DEMO_DRIVE = {
     isolation: { nets: [{ name: "HV+", kind: "dc", voltage: 400, floating: true }, { name: "HV-", kind: "dc", voltage: 0, floating: true }, { name: "LV", kind: "dc", voltage: 12 }, { name: "Chassis", kind: "dc", voltage: 0 }],
       params: { pollution_degree: 2, altitude_m: 2000, ovc: "II", field: "A", level: "basic" }, levels: { "HV+|LV": "reinforced", "HV-|LV": "reinforced" } } ,
     plan: { order: ["i1", "i5", "i6", "i2", "i3", "i4"] } }],      // the heat sink, then the insulator in its window, before the power board covers it
+  drawing: { words: WORDS_DRIVE },      // the English of what its drawings write (demo_words.js)
   log: [],
 };

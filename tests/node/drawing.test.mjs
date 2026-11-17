@@ -14,6 +14,7 @@ import { dimensionList, locateParams, setDimClass, dimText, classNotes, DIM_CLAS
 import { solve, bom } from "../../web/js/core/assembly_logic.js";
 import { matPoint } from "../../web/js/cad/vec.js";
 import { toDwiz, fromDwiz } from "../../web/js/core/dwiz.js";
+import { sayWith, partTexts } from "../../web/js/core/drawing_words.js";
 
 const hlr = (K, shape) => Object.fromEntries(viewRequest().map((v) => [v.name, K.hlr(shape, v.dir, v.xdir, v.hidden)]));
 const clear = (a, b) => a.x + a.w <= b.x + 0.01 || b.x + b.w <= a.x + 0.01 || a.y + a.h <= b.y + 0.01 || b.y + b.h <= a.y + 0.01;
@@ -81,6 +82,19 @@ test("a drawing follows the units chosen : inches with three decimals and no zer
   K.flush();
 });
 
+test("a drawing says in English what the project typed, when the project gave its English — the sheet of the demonstration is English throughout", async () => {
+  const K = await kernel(), spec = JSON.parse(JSON.stringify(DEMO_DRIVE.parts[0])), built = buildPart(K, spec), views = hlr(K, built.bodies[0].shape), sheet = () => new SvgSheet({ width: PAPER.TABLOID[0], height: PAPER.TABLOID[1], title: spec.id });
+  const a = sheet(), typed = composeDrawing(a, { spec, built, views, project: DEMO_DRIVE, opts: { date: "2026-01-01" } }), b = sheet(), en = composeDrawing(b, { spec, built, views, project: DEMO_DRIVE, opts: { date: "2026-01-01", say: sayWith(DEMO_DRIVE.drawing.words) } }), ta = a.toStrings().join("\n"), tb = b.toStrings().join("\n");
+  for (const t of ["Base du boîtier", "Grain fin VDI 27, noir", "Fixation carte de puissance", "Hauteur des colonnettes", "Variateur compact 400 V"]) { assert.ok(ta.includes(t), `as typed : ${t}`); assert.ok(!tb.includes(t), `in English : ${t} is gone`); }
+  for (const t of ["Housing base", "Fine texture VDI 27, black", "Power board mounting", "Standoff height", "Compact 400 V motor drive (demonstration)", "M3 heat-set inserts installed after molding.", "DEFINITION DIMENSIONS — DRV-BASE Housing base"]) assert.ok(tb.includes(t), t);
+  assert.deepEqual(en.dims.map((d) => d.key), typed.dims.map((d) => d.key), "the keys of the dimensions do not read the words"); assert.deepEqual(en.dims.map((d) => d.text), typed.dims.map((d) => d.text)); assert.equal(en.dims[0].label, "Length — overall length"); assert.equal(typed.dims[0].label, "Longueur — overall length");
+  assert.ok(en.dims.some((d) => d.label === "Power board mounting — pitch X")); assert.ok(en.notes.includes("1° draft on the walls, to be added in the tooling.")); assert.equal(en.gdt[0].name, typed.gdt[0].name, "what the screen lists keeps the text as typed");
+  // what is left in French on the English sheet : the two fixed notes of the margin, nothing of the project
+  const words = [...tb.matchAll(/>([^<>]*[àâçéèêëîïôûù][^<>]*)</gi)].map((m) => m[1]); assert.ok(words.length >= 2 && words.every((w) => /CONFIDENTIEL|document généré par DesignWizard\.ai/.test(w)), words.join(" | "));
+  assert.deepEqual(partTexts(spec, DEMO_DRIVE).filter((t) => !DEMO_DRIVE.drawing.words[t]), []);
+  K.flush();
+});
+
 test("a design parameter is dimensioned where its operation shows it : the wall, a window, its centre, a corner radius — a formula stays in the table", async () => {
   const K = await kernel(), spec = DEMO_DRIVE.parts.find((p) => p.id === "DRV-BASE"), built = buildPart(K, spec), where = locateParams(spec, built), dims = dimensionList(spec, built), by = (k) => dims.find((d) => d.key === `param:${k}`);
   assert.deepEqual([...where.keys()].sort(), ["L", "W", "pwrX", "rc", "wall", "winL", "winW"], "L and W are found too : they are the overall sizes, dimensioned as such");
@@ -139,6 +153,10 @@ test("an assembly drawing numbers its parts with balloons and carries the parts 
   assert.ok(Math.abs(L.bom.y + L.bom.h - (L.frame.y + L.frame.h - 48)) < 0.01 && Math.abs(L.bom.x + L.bom.w - (L.frame.x + L.frame.w)) < 0.01, "the parts list sits on the title block, bottom right");
   assert.ok(L.notes.x < L.frame.x + 6 && clear(L.views, L.notes) && clear(L.views, L.bom) && clear(L.views, L.iso));
   for (const re of [/BILL OF MATERIALS/, /DRV-BASE/, /ASME Y14\.5-2018/, /assembly routing/]) assert.match(text, re);
+  // the same sheet in English : the names of the bill of materials, the title, the project — a purchased item keeps its own name
+  const svgEn = new SvgSheet({ width: PAPER.TABLOID[0], height: PAPER.TABLOID[1], title: asm.id }); composeAssemblyDrawing(svgEn, { asm, project: DEMO_DRIVE, views, bbox, rows, centers, mass: 464, opts: { date: "2026-01-01", say: sayWith(DEMO_DRIVE.drawing.words) } }); const textEn = svgEn.toString(0);
+  for (const t of ["Base du boîtier", "Carte de puissance", "Variateur compact — assemblage général"]) { assert.ok(text.includes(t)); assert.ok(!textEn.includes(t), `${t} is said in English`); } for (const t of ["Housing base", "Power board", "Extruded heat sink", "Compact drive — general assembly", "Compact 400 V motor drive (demonstration)"]) assert.ok(textEn.includes(t), t);
+  assert.ok(text.includes("Socket head cap screw") && textEn.includes("Socket head cap screw"));
   const spread = placeBalloons([{ item: 1, p: [50, 50] }, { item: 2, p: [50.2, 50.1] }, { item: 3, p: [80, 50] }], { x: 20, y: 30, w: 60, h: 40 });
   for (let i = 0; i < spread.length; i++) for (let j = i + 1; j < spread.length; j++) assert.ok(Math.hypot(spread[i].b[0] - spread[j].b[0], spread[i].b[1] - spread[j].b[1]) >= 9, "two balloons never touch");
   assert.ok(spread.every((x) => x.b[0] < 20 - 5 || x.b[0] > 80 + 5 || x.b[1] < 30 - 5 || x.b[1] > 70 + 5), "balloons stand outside the view");

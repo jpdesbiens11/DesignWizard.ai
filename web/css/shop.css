@@ -326,3 +326,12 @@ button.dfx-kpi:hover, button.dfx-kpi:focus-visible { transform: translateY(-2px)
 .mate-def { margin: .4rem 0 .2rem; padding-top: .4rem; border-top: 1px dashed var(--line); } .mate-sec { display: block; width: 100%; height: auto; background: #fff; border: 1.3px solid var(--line); border-radius: var(--r-small); color: var(--ink); }
 table.mate-facts { width: 100%; font-size: .8rem; } table.mate-facts thead { display: none; } table.mate-facts td { padding: .16rem .3rem; vertical-align: top; } table.mate-facts td:first-child { white-space: nowrap; color: var(--ink-soft); }
 .ft-card { padding: .5rem .6rem .6rem; margin: .3rem 0 .5rem; } .ft-label { margin: .45rem 0 .2rem; font: 650 .68rem var(--label-font); text-transform: uppercase; letter-spacing: var(--label-track); color: var(--muted); } .ft-card .ft-label:first-child { margin-top: 0; }
+
+/* Dessins : the English of what the project writes on a sheet — a line per text, the text as typed on the left, its English on the right */
+.dw-words { display: grid; gap: .3rem; max-height: 46vh; overflow: auto; margin: .4rem 0; padding-right: .3rem; }
+.dw-word { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: .5rem; align-items: center; }
+.dw-word-fr { font-size: .86rem; overflow-wrap: anywhere; }
+.dw-word input { width: 100%; }
+.dw-words-ai { margin: .7rem 0; }
+.dw-words-ai summary { cursor: pointer; font-weight: 600; font-size: .9rem; }
+.dw-words-ai textarea { width: 100%; font-family: var(--mono, monospace); font-size: .8rem; }

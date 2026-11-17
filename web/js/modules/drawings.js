@@ -3,8 +3,8 @@
    left, title block bottom right — with the parts list above it for an assembly. Every dimension has its balloon ; the
    left pane lists them all and gives each its class (normal, reference, SC, CSC). Shown as SVG, exported as a vector PDF. */
 
-import { el, clear, icon, btn, badge, field, toast, download, fmt } from "../core/dom.js";
-import { registerModule, go, setStatus, app } from "../core/app.js";
+import { el, clear, icon, btn, badge, field, toast, download, fmt, fmtLen } from "../core/dom.js";
+import { registerModule, go, setStatus, setGuide, app } from "../core/app.js";
 import { store } from "../core/store.js";
 import { kernel } from "../cad/client.js";
 import { SvgSheet } from "../draw/svg.js";
@@ -13,6 +13,8 @@ import { sectionOf } from "../cad/section_view.js";
 import { composeDrawing, viewRequest, PAPER, drawingSemantics } from "../draw/part_drawing.js";
 import { composeAssemblyDrawing } from "../draw/asm_drawing.js";
 import { getUnits } from "../core/units.js";
+import { sayWith, drawingTexts, wordsIssues } from "../core/drawing_words.js";
+import { wordsSection } from "./drawing_words.js";
 import { DIM_CLASSES, setDimClass, dimText } from "../draw/dim_model.js";
 import { buildAssembly } from "../core/asm_scene.js";
 import { matPoint } from "../cad/vec.js";
@@ -27,7 +29,7 @@ function sheetOpts(key, rev, extra) {
   const d = (store.project.drawing || {}), led = ((store.project.review || {}).items || {})[key] || {}, now = (reviewItems(store.project).find((x) => x.key === key) || {}).state;      // the state as it is today : a reviewed artefact that changed — or whose parts moved on — is no longer « reviewed »
   const revisions = (led.history || []).filter((h) => h.rev).map((h) => ({ rev: h.rev, description: h.note || "", date: String(h.when || "").slice(0, 10), by: led.by || d.checkedBy || "" }));
   return { projection: d.projection || "third", hidden: d.hidden !== false, drawnBy: d.drawnBy || store.project.author || "", checkedBy: d.checkedBy || "", approvedBy: d.approvedBy || "",
-    status: d.status || (now === "ok" ? "Reviewed" : now === "changed" ? "To revalidate" : "Preliminary"), date: new Date().toISOString().slice(0, 10), revisions, organisation: d.organisation || "", confidential: confidentialNote(d.organisation, d.confidentiality), units: getUnits(), ...extra };
+    status: d.status || (now === "ok" ? "Reviewed" : now === "changed" ? "To revalidate" : "Preliminary"), date: new Date().toISOString().slice(0, 10), revisions, organisation: d.organisation || "", confidential: confidentialNote(d.organisation, d.confidentiality), units: getUnits(), say: sayWith(d.words), ...extra };
 }
 const render2 = (compose, data, title) => { const svg = new SvgSheet({ width: PW, height: PH, title }), info = compose(svg, data);
   return { svg: svg.toString(0), svgs: svg.toStrings(), info, pdfBytes: () => { const pdf = new PdfSheet({ width: PW, height: PH, title }); compose(pdf, data); return pdf.toBytes(); } }; };
@@ -39,7 +41,7 @@ export async function makeDrawing(partId, extra = {}) {
   const built = await kernel.build(spec);
   if (!built.bodies.length) throw new Error(`${partId} n'a pas de volume à dessiner.`);
   const views = await kernel.hlr(partId, viewRequest(sectionOf(spec, built)), true);
-  return { ...render2(composeDrawing, { spec, built, views, project: store.project, opts: sheetOpts(`part:${partId}`, spec.revision, extra) }, `${spec.id} ${spec.name || ""}`), built, spec };
+  return { ...render2(composeDrawing, { spec, built, views, project: store.project, opts: sheetOpts(`part:${partId}`, spec.revision, extra) }, `${spec.id} ${sayWith((store.project.drawing || {}).words)(spec.name) || ""}`), built, spec };
 }
 /** Build the drawing of an assembly : placed parts projected together, item balloons, parts list. Returns {svg, pdfBytes(), info, spec}. */
 export async function makeAssemblyDrawing(asmId, extra = {}) {
@@ -50,7 +52,7 @@ export async function makeAssemblyDrawing(asmId, extra = {}) {
   const views = await kernel.hlrAsm(shown.map((i) => ({ key: i.part, matrix: ctx.sol.placements[i.id] })), viewRequest(), false), centers = {};
   for (const i of shown) if (!centers[i.part]) { const b = ctx.built[i.part].bbox; centers[i.part] = matPoint(ctx.sol.placements[i.id], [(b[0] + b[3]) / 2, (b[1] + b[4]) / 2, (b[2] + b[5]) / 2]); }
   const rows = ctx.bom.map((r) => ({ ...r, rev: r.kind === "part" ? (store.part(r.id) || {}).revision || "A" : "" }));
-  return { ...render2(composeAssemblyDrawing, { asm, project: store.project, views, bbox: ctx.bbox, rows, centers, mass: ctx.mass.mass, opts: sheetOpts(`assembly:${asmId}`, asm.revision, extra) }, `${asm.id} ${asm.name || ""}`), spec: asm };
+  return { ...render2(composeAssemblyDrawing, { asm, project: store.project, views, bbox: ctx.bbox, rows, centers, mass: ctx.mass.mass, opts: sheetOpts(`assembly:${asmId}`, asm.revision, extra) }, `${asm.id} ${sayWith((store.project.drawing || {}).words)(asm.name) || ""}`), spec: asm };
 }
 export function svgNode(markup) {
   const doc = new DOMParser().parseFromString(markup, "image/svg+xml"), node = document.importNode(doc.documentElement, true);
@@ -95,7 +97,7 @@ function render(main, args) {
     const dims = st.doc.info.dims || [];
     /* an assembly : its balloons and its overall dimensions, as a tree to read */
     if (isAsm) { const tree = [{ key: "items", fr: "Repères", color: "#0ea5e9", tip: "Les pièces de la nomenclature, au numéro de leur bulle", items: st.doc.info.items.map((x) => ({ id: `item:${x.item}`, n: x.item, text: x.id, sub: x.view ? "" : "masquée sur les vues" })) },
-      { key: "dims", fr: "Cotes hors tout", color: "#2563eb", tip: "L'encombrement de l'assemblage", items: dims.map((x) => ({ id: `dim:${x.n}`, n: x.n, text: `${fmt(x.value, 2)} mm`, sub: x.label })) }];
+      { key: "dims", fr: "Cotes hors tout", color: "#2563eb", tip: "L'encombrement de l'assemblage", items: dims.map((x) => ({ id: `dim:${x.n}`, n: x.n, text: fmtLen(x.value, 2), sub: x.label })) }];
       dimBox.append(el("div", { class: "side-section" }, el("h3", null, `Repères (${st.doc.info.items.length}) et cotes (${dims.length})`), stateTree({ label: "Repères et cotes du dessin d'assemblage", tree, sel: null, attr: "data-dim-row", select: () => {} }))); return; }
     /* a part : its dimensions by nature ; a click on one opens ITS class — normal, reference, special characteristic — instead of a menu per dimension */
     const c = dimClasses(dims), tree = dimTree(dims, st.doc.info.onView, dimText);
@@ -111,6 +113,8 @@ function render(main, args) {
     right.append(el("div", { class: "side-head" }, el("h2", null, spec.name || id), btn("PDF", pdf, { primary: true, small: true, icon: "pdf", tip: "Télécharger le dessin en PDF vectoriel (tabloïd, 11 × 17 po)" })));
     const body = el("div", { class: "side-scroll" });
     right.append(body);
+    /* the English of what the project writes on this sheet : the guide says how many texts have none */
+    const texts = drawingTexts(store.project, `${isAsm ? "assembly" : "part"}:${id}`, isAsm && st.doc ? st.doc.info.rows : null); setGuide(wordsIssues(d().words, texts));
     /* the section A-A of a part : where the plane passes. « Automatique » : across the length, through the middle, when the part has something inside. */
     const sectionRow = () => { const own = spec.section || null, bb = st.doc && st.doc.built ? st.doc.built.bbox : null, mode = !own ? "auto" : own.axis === "none" ? "none" : own.axis === "y" ? "y" : "x", i = mode === "y" ? 1 : 0;
       const setSec = (v, label) => store.updatePart(id, (p) => { if (v) p.section = v; else delete p.section; }, `${id} : coupe A-A — ${label}`);
@@ -138,11 +142,12 @@ function render(main, args) {
     const saveNotes = () => { const list = notes.value.split("\n").map((s) => s.trim()).filter(Boolean); if (isAsm) store.updateAssembly(id, (x) => { x.notes = list; }, `${id} : notes du dessin`); else store.updatePart(id, (x) => { x.notes = list; }, `${id} : notes du dessin`); };
     body.append(el("div", { class: "side-section" }, el("h3", null, isAsm ? "Notes propres à l'assemblage" : "Notes propres à la pièce"), notes, el("div", { class: "form-actions" }, btn("Appliquer les notes", saveNotes, { small: true })),
       el("p", { class: "muted", style: { fontSize: ".8rem" } }, "Les notes générales (ASME Y14.5, matériau, tolérances, classes de cotes) sont ajoutées seules, toujours en bas à gauche de la feuille.", " ", el("a", { href: "#/help/sources/drawing" }, "Sources de la méthode →"))));
+    body.append(wordsSection(texts, `${id}${spec.name ? ` — ${spec.name}` : ""}`));
     if (st.doc && !isAsm) body.append(el("div", { class: "side-section" }, el("h3", null, "Envoi"), el("p", { class: "muted", style: { fontSize: ".84rem" } }, "Le PDF et le dessin natif Onshape partent avec l'assemblage."), el("a", { class: "btn btn-small", href: "#/onshape" }, icon("onshape"), "Envoyer vers Onshape")));
   }
   app.commands = [{ label: "Dessin : télécharger le PDF", hint: "dessin", icon: "pdf", keys: "pdf dessin drawing", run: pdf }];
   renderRight(); build();
-  return () => { off(); st.token++; };
+  return () => { off(); st.token++; setGuide([]); };
 }
 
 registerModule({ key: "drawings", label: "Dessins", icon: "drawing", tip: "Dessin 2D de chaque pièce et de chaque assemblage, au format tabloïd : vues, cotes à bulles, classes SC / CSC, GD&T selon ASME Y14.5, nomenclature, cartouche — PDF vectoriel", render });

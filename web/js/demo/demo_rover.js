@@ -6,6 +6,8 @@
    the ground of the assembly. Shapes and sizes are indicative — the purchased parts are envelopes, not supplier models.
    What the library of materials lacks is said in the notes of the part (PETG → ABS, EPDM → silicone, NdFeB → steel). */
 
+import { WORDS_ROVER } from "./demo_words.js";
+
 const box = (size, at, extra = {}) => ({ op: "box", size, at, ...extra });
 const cyl = (d, h, at, axis = "Z", extra = {}) => ({ op: "cylinder", d, h, at, axis, ...extra });
 const part = (id, name, fn, material, o = {}) => ({ dw: "part/1", id, name, function: fn, family: "purchased", process: "purchased", material, ...o });
@@ -198,5 +200,6 @@ export const DEMO_ROVER = {
     instances: BUILD.map(([id, p], k) => ({ id, part: p.id, ...(k ? {} : { fixed: true, placement: { t: [0, 0, 0], r: [0, 0, 0] } }) })),
     mates: BUILD.slice(1).map(([id, , mine, to, theirs, o], k) => ({ id: `M${k + 1}`, a: { inst: id, iface: mine }, b: { inst: to, iface: theirs }, linked: true, by: "key", ...(o || {}) })),
     plan: { order: BUILD.map(([id]) => id) } }],
+  drawing: { words: WORDS_ROVER },      // the English of what its drawings write (demo_words.js)
   log: [],
 };

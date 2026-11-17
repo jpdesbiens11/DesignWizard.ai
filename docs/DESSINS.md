@@ -9,8 +9,22 @@ main : ce qui doit y figurer se décide dans la conception, et dans le volet de 
 ISOMETRIC, SECTION A-A), SCALE, cartouche, REVISIONS, NOTES, BILL OF MATERIALS, GEOMETRIC TOLERANCES, HOLE TABLE,
 DEFINITION DIMENSIONS, libellés des cotes, descriptions des trous, notes SC / CSC, notes du DXF du développé — est en
 anglais, avec le point décimal (2.5 ; échelle 1:1.5). Ce que le projet a écrit (nom de la pièce, noms d'interface, notes
-de la pièce, finition) reste tel qu'il a été tapé ; la note de confidentialité et la note de la marque sont des phrases
-fixes (`docs/BRAND.md`). Voir `docs/TERMES.md`.
+de la pièce, finition) s'écrit **dans son anglais quand le projet l'a donné**, tel qu'il a été tapé sinon ; la note de
+confidentialité et la note de la marque sont des phrases fixes (`docs/BRAND.md`). Voir `docs/TERMES.md`.
+
+**L'anglais du dessin.** Le projet garde, une fois, l'anglais de ses propres textes : `project.drawing.words`
+`{ texte : anglais }` (`web/js/core/drawing_words.js`, pur et testé). Un texte traduit pour une pièce l'est sur tous les
+dessins du projet ; les écrans, eux, gardent le texte tel qu'il a été tapé.
+
+- Écran Dessins, volet de droite, **« Anglais du dessin »** : combien de textes de la feuille ont leur anglais, et un
+  dialogue qui les liste — nom, finition, interfaces, paramètres, notes, nom du projet — une ligne chacun. Le bouton
+  « = » garde un texte déjà en anglais. Un seul enregistrement, annulable.
+- **Aller-retour IA** : « Copier pour une IA » donne la consigne et la liste en JSON ; la réponse collée remplit les
+  lignes, que l'on relit avant d'enregistrer. Les clés hors de la liste sont ignorées.
+- **Guide** : un conseil dit combien de textes du projet sont encore écrits tels quels sur la feuille en vue.
+- Les **projets de démonstration** arrivent avec leur anglais (`web/js/demo/demo_words.js` : variateur, rover, fusée,
+  busbars) : leurs dessins sont en anglais d'un bout à l'autre ; un test le garantit.
+- Restent tels que tapés : les descriptions du journal des révisions, et le texte des clés du projet (numéros de pièce).
 
 **Unités.** Le dessin suit le choix d'unités (`docs/UNITES.md`) : en SI, des millimètres ; dans le système impérial, des
 **pouces** — trois décimales, sans zéro avant le point (`.472`), la note 1 dit que les cotes sont converties du modèle en

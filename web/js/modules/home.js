@@ -6,6 +6,7 @@ import { store, freshName } from "../core/store.js";
 import { DEMO_DRIVE } from "../demo/demo_drive.js";
 import { demoBoard } from "../demo/demo_pcba.js";
 import { DEMO_HVB_PARTS, DEMO_HVB_ASSEMBLY } from "../demo/demo_hvb.js";
+import { WORDS_HVB } from "../demo/demo_words.js";
 import { DEMO_ROVER } from "../demo/demo_rover.js";
 import { DEMO_ROCKET } from "../demo/demo_rocket.js";
 import { firstSteps, firstStepsLine } from "../core/first_steps.js";
@@ -51,13 +52,15 @@ async function loadDemo(seed, target) {
     const choice = mine.length ? await askDemo(seed.name) : "new";
     if (!choice) { setStatus("Prêt", ""); return; }
     if (choice === "open") { await store.open(mine[0].id); toast(`« ${mine[0].name} » ouvert, tel que vous l'avez laissé.`, "info"); go(target); return; }
-    const p = await store.create(freshName(seed.name, list.map((x) => x.name)), seed === DEMO_DRIVE ? { ...seed, boards: [demoBoard()] } : seed);       // the drive comes with its control board, designed from its functions
+    const name = freshName(seed.name, list.map((x) => x.name)), words = seed.drawing && seed.drawing.words, tail = name.startsWith(seed.name) ? name.slice(seed.name.length) : "";
+    const named = words && words[seed.name] && tail ? { ...seed, drawing: { ...seed.drawing, words: Object.fromEntries(Object.entries(words).map(([k, v]) => (k === seed.name ? [name, v + tail] : [k, v]))) } } : seed;      // a second copy is « … (2) » : its drawings say its name in English too
+    const p = await store.create(name, seed === DEMO_DRIVE ? { ...named, boards: [demoBoard()] } : named);       // the drive comes with its control board, designed from its functions
     toast(`Projet « ${p.name} » chargé.`, "success");
     go(target);
   } catch (e) { toast(e.message || String(e), "error", 7000); setStatus("Prêt", ""); } finally { loading = false; }
 }
 const HVB_PROJECT = { dw: "project/1", id: "demo-hvb", name: "DEMO-HVB — busbars 800 V (référence creepage)", author: "DesignWizard.ai",
-  description: "Le produit d'exemple de la formation Creepage & Clearance : distances connues par construction (16,56 / 26 mm entre HV+ et HV-).", parts: DEMO_HVB_PARTS, assemblies: [DEMO_HVB_ASSEMBLY], log: [] };
+  description: "Le produit d'exemple de la formation Creepage & Clearance : distances connues par construction (16,56 / 26 mm entre HV+ et HV-).", parts: DEMO_HVB_PARTS, assemblies: [DEMO_HVB_ASSEMBLY], drawing: { words: WORDS_HVB }, log: [] };
 
 function render(main) {
   const page = el("div", { class: "page" });

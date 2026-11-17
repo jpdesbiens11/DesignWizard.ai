@@ -7,6 +7,8 @@
    is held by a mate. Geometry of principle : nothing here is sized, checked or validated — neither the pressure vessel,
    nor the motor, nor the flight. Materials the library lacks are said in the notes of each part. */
 
+import { WORDS_ROCKET } from "./demo_words.js";
+
 const cyl = (d, h, at, axis = "Z", extra = {}) => ({ op: "cylinder", d, h, at, axis, ...extra });
 const box = (size, at, extra = {}) => ({ op: "box", size, at, ...extra });
 const rev = (poly, extra = {}) => ({ op: "revolve", profile: { poly }, plane: "XZ", axis: "Z", angle: 360, ...extra });
@@ -220,5 +222,6 @@ export const DEMO_ROCKET = {
       "FUS-4010": { finish: "paint-gloss", color: "#f4f4f2" }, "FUS-4030": { finish: "paint-gloss", color: "#f4f4f2" }, "FUS-4040": { finish: "paint-gloss", color: "#f4f4f2" }, "FUS-4060": { finish: "paint-gloss", color: "#d6453d" },
       "FUS-4020": { finish: "metal-anodized", color: "#1f4e79" }, "FUS-1010": { finish: "metal-blasted" }, "FUS-1020": { finish: "metal-polished" }, "FUS-1030": { finish: "clear-plastic" }, "FUS-3020": { finish: "metal-brushed" } } },
     plan: { order: BUILD.map(([id]) => id) } }],
+  drawing: { words: WORDS_ROCKET },      // the English of what its drawings write (demo_words.js)
   log: [],
 };

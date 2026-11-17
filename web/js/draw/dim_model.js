@@ -29,6 +29,11 @@ export const len = (v) => (INCH ? inchText(v) : f2(v));
 export const drawingUnit = () => (INCH ? "in" : "mm");
 /** A mass in grams as the title block writes it : « 111.1 g », and « 111.1 g (3.92 oz) » on a drawing in inches. */
 export const massOf = (g) => { const kg = g >= 1000, t = kg ? `${f2(g / 1000)} kg` : `${f2(g || 0)} g`; return INCH ? `${t} (${f2(kg ? g / 453.59237 : g / 28.349523125)} ${kg ? "lb" : "oz"})` : t; };
+/* what the project typed — a name, a label — is said in English when the project gave its English (core/drawing_words.js), for the time of one composition */
+let SAY = (t) => t;
+export const say = (t) => SAY(t);
+/** Runs fn with the texts of the project said through `how` (a function text → text). */
+export function inDrawingWords(how, fn) { const before = SAY; SAY = typeof how === "function" ? how : (t) => t; try { return fn(); } finally { SAY = before; } }
 /** Runs fn with the drawing written in the units given (the preferences of core/units.js ; millimetres without). */
 export function inDrawingUnits(prefs, fn) { const before = INCH; INCH = !!prefs && prefs.system === "imperial"; try { return fn(); } finally { INCH = before; } }
 const uniq = (list) => [...new Set(list.map((x) => Math.round(x * 1000) / 1000))].sort((a, b) => a - b);
@@ -72,7 +77,7 @@ export function dimensionList(spec, built) {
   /* overall sizes : a design parameter that IS an overall size gives it its name */
   for (let i = 0; i < 3; i++) {
     const hit = params.find(([k, p]) => p.unit === "mm" && !taken.has(k) && Math.abs(p.value - ext[i]) < 0.005); if (hit) taken.add(hit[0]);
-    add(`bbox:${AXIS[i]}`, { kind: "overall", axis: i, value: ext[i], text: len(ext[i]), label: hit ? `${hit[1].label || hit[0]} — ${OVERALL[i].toLowerCase()}` : OVERALL[i], on: i === 1 ? "top" : "front", dir: i === 2 ? "v" : i === 1 ? "v" : "h", param: hit ? hit[0] : undefined });
+    add(`bbox:${AXIS[i]}`, { kind: "overall", axis: i, value: ext[i], text: len(ext[i]), label: hit ? `${say(hit[1].label) || hit[0]} — ${OVERALL[i].toLowerCase()}` : OVERALL[i], on: i === 1 ? "top" : "front", dir: i === 2 ? "v" : i === 1 ? "v" : "h", param: hit ? hit[0] : undefined });
   }
   /* bolt patterns : the basic dimensions that locate the group — spacing, then the first hole from the datum edges */
   const holes = (built.facts && built.facts.holes) || [];
@@ -80,14 +85,14 @@ export function dimensionList(spec, built) {
     if (it.type !== "bolt_pattern") continue;
     const V = VIEW_OF_FACE[it.face], mine = holes.filter((h) => h.iface === it.id); if (!V || !mine.length) continue;
     const [view, a, b] = V, us = uniq(mine.map((h) => h.at[a])), vs = uniq(mine.map((h) => h.at[b])), circle = it.params && it.params.pattern && it.params.pattern.type === "circle";
-    if (circle) { add(`iface:${it.id}:pcd`, { kind: "iface", table: "def", value: it.params.pattern.pcd, text: `Ø ${len(it.params.pattern.pcd)}`, basic: true, label: `${it.name} — bolt circle Ø, ${mine.length} equally spaced holes` }); }
+    if (circle) { add(`iface:${it.id}:pcd`, { kind: "iface", table: "def", value: it.params.pattern.pcd, text: `Ø ${len(it.params.pattern.pcd)}`, basic: true, label: `${say(it.name)} — bolt circle Ø, ${mine.length} equally spaced holes` }); }
     else {
-      if (us.length > 1 && even(us)) add(`iface:${it.id}:du`, { kind: "pattern", on: view, dir: "h", p1: [us[0], vs.at(-1)], p2: [us[1], vs.at(-1)], value: us[1] - us[0], text: `${us.length > 2 ? `${us.length - 1}× ` : ""}${len(us[1] - us[0])}`, basic: true, label: `${it.name} — pitch ${AXIS[a]}` });
-      if (vs.length > 1 && even(vs)) add(`iface:${it.id}:dv`, { kind: "pattern", on: view, dir: "v", p1: [us.at(-1), vs[0]], p2: [us.at(-1), vs[1]], value: vs[1] - vs[0], text: `${vs.length > 2 ? `${vs.length - 1}× ` : ""}${len(vs[1] - vs[0])}`, basic: true, label: `${it.name} — pitch ${AXIS[b]}` });
+      if (us.length > 1 && even(us)) add(`iface:${it.id}:du`, { kind: "pattern", on: view, dir: "h", p1: [us[0], vs.at(-1)], p2: [us[1], vs.at(-1)], value: us[1] - us[0], text: `${us.length > 2 ? `${us.length - 1}× ` : ""}${len(us[1] - us[0])}`, basic: true, label: `${say(it.name)} — pitch ${AXIS[a]}` });
+      if (vs.length > 1 && even(vs)) add(`iface:${it.id}:dv`, { kind: "pattern", on: view, dir: "v", p1: [us.at(-1), vs[0]], p2: [us.at(-1), vs[1]], value: vs[1] - vs[0], text: `${vs.length > 2 ? `${vs.length - 1}× ` : ""}${len(vs[1] - vs[0])}`, basic: true, label: `${say(it.name)} — pitch ${AXIS[b]}` });
     }
     const u0 = circle && it.frame ? it.frame.o[a] : us[0], v0 = circle && it.frame ? it.frame.o[b] : vs[0], what = circle ? "centre" : "first hole";
-    add(`iface:${it.id}:u`, { kind: "pattern", on: view, dir: "h", p1: [bb[a], v0], p2: [u0, v0], value: u0 - bb[a], text: len(u0 - bb[a]), basic: true, label: `${it.name} — ${what} from edge ${AXIS[a]}` });
-    add(`iface:${it.id}:v`, { kind: "pattern", on: view, dir: "v", p1: [u0, bb[b]], p2: [u0, v0], value: v0 - bb[b], text: len(v0 - bb[b]), basic: true, label: `${it.name} — ${what} from edge ${AXIS[b]}` });
+    add(`iface:${it.id}:u`, { kind: "pattern", on: view, dir: "h", p1: [bb[a], v0], p2: [u0, v0], value: u0 - bb[a], text: len(u0 - bb[a]), basic: true, label: `${say(it.name)} — ${what} from edge ${AXIS[a]}` });
+    add(`iface:${it.id}:v`, { kind: "pattern", on: view, dir: "v", p1: [u0, bb[b]], p2: [u0, v0], value: v0 - bb[b], text: len(v0 - bb[b]), basic: true, label: `${say(it.name)} — ${what} from edge ${AXIS[b]}` });
   }
   /* holes, by group : same face, same diameter, same making */
   const groups = new Map();
@@ -96,10 +101,10 @@ export function dimensionList(spec, built) {
   /* the other design parameters, then what each interface defines */
   const where = locateParams(spec, built);                                                    // a parameter that shows on a view is a detail dimension, drawn there
   for (const [k, p] of params) if (!taken.has(k)) { const w = where.get(k);
-    add(`param:${k}`, w ? { kind: "detail", ...w, value: p.value, text: `${w.radius ? "R " : ""}${len(p.value)}`, label: p.label || k, param: k } : { kind: "param", table: "def", value: p.value, text: p.unit === "°" ? `${f2(p.value)}°` : p.unit && p.unit !== "mm" ? f2(p.value) : len(p.value), label: p.label || k, param: k }); }
+    add(`param:${k}`, w ? { kind: "detail", ...w, value: p.value, text: `${w.radius ? "R " : ""}${len(p.value)}`, label: say(p.label) || k, param: k } : { kind: "param", table: "def", value: p.value, text: p.unit === "°" ? `${f2(p.value)}°` : p.unit && p.unit !== "mm" ? f2(p.value) : len(p.value), label: say(p.label) || k, param: k }); }
   for (const it of built.interfaces || []) {
     if (it.type === "bolt_pattern") continue;
-    for (const [k, v] of Object.entries(it.params || {})) if (typeof v === "number" && k !== "n" && PARAM_FR[k]) add(`iface:${it.id}:${k}`, { kind: "iface", table: "def", value: v, text: `${k === "d" ? "Ø " : ""}${len(v)}${k === "d" && it.params.fit ? ` ${it.params.fit}` : ""}`, label: `${it.name || it.id} — ${PARAM_FR[k]}` });
+    for (const [k, v] of Object.entries(it.params || {})) if (typeof v === "number" && k !== "n" && PARAM_FR[k]) add(`iface:${it.id}:${k}`, { kind: "iface", table: "def", value: v, text: `${k === "d" ? "Ø " : ""}${len(v)}${k === "d" && it.params.fit ? ` ${it.params.fit}` : ""}`, label: `${say(it.name) || it.id} — ${PARAM_FR[k]}` });
   }
   out.forEach((d, i) => { d.n = i + 1; });
   return out;
