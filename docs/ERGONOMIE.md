@@ -283,20 +283,35 @@ elle allait tourner. La vue tournait autour de son centre, que rien ne montrait.
 - **Le pivot est le point saisi.** La vue tourne autour du point du modèle sous le pointeur au moment de l'appui (le
   centre de la vue si l'on appuie hors du modèle). Ce que l'on tient reste à sa place à l'écran ; le reste tourne
   autour.
-- **Trois axes, aucune butée** (retour de JP : « certaines rotations sont bloquées »). Gauche / droite tourne autour
-  de la verticale du modèle (Z) — vu de dessus, cela fait pivoter l'image dans son plan, là où rien ne se passait ;
-  haut / bas incline autour de l'horizontale de l'écran, **et continue par-dessus** : la vue passe la verticale et se
-  poursuit, à l'envers, sans s'arrêter ; **Alt + glisser roule** l'image autour de l'axe du regard. Le haut de l'écran
-  est gardé d'un geste au suivant (c'est ce qui manquait : en vue de dessus, la direction du regard ne suffit pas à
-  dire où est le haut). « Iso », « Face », « Dessus »… remettent la vue droite.
+- **Trois axes, aucune butée** (retour de JP : « certaines rotations sont bloquées »). La vue tourne autour des deux
+  axes de l'écran **et continue par-dessus** : elle passe la verticale et se poursuit, à l'envers, sans s'arrêter. Le
+  haut de l'écran est gardé d'un geste au suivant (c'est ce qui manquait : en vue de dessus, la direction du regard ne
+  suffit pas à dire où est le haut). « Iso », « Face », « Dessus »… remettent la vue droite.
+- **Tourner dans le plan de l'écran est un geste à part entière, et il se voit** (demande de JP, 19 novembre 2026 :
+  « je veux la possibilité de tourner dans le plan… ça me gosse »). Ce geste existait, caché derrière Alt + glisser :
+  personne ne le trouvait. Maintenant, **un glisser qui part du bord de la vue** tourne l'image autour du centre de la
+  vue, comme la main tourne autour de lui — la bande du bord s'allume sous le pointeur, avec son pointeur à elle et un
+  mot (« glisser le bord : tourner dans le plan de l'écran »). C'est la « boule virtuelle » des outils 3D : dedans, on
+  fait basculer ; dehors, on tourne autour de l'axe du regard. Sous le repère X Y Z, **deux flèches** font la même
+  chose par pas de 15° (Maj : 90°, Ctrl : 5°) ; **Alt + ← / →** au clavier ; Alt + glisser reste, de n'importe où.
+- **Rotation libre d'office, table tournante au choix.** *Libre* : la pièce suit la main sur les deux axes de
+  l'écran, quel que soit son Z — l'orbite usuelle des modeleurs mécaniques ; un cercle de la main fait donc aussi
+  rouler un peu l'image, c'est ce que « libre » veut dire. *Table* : le Z du modèle reste vertical, et gauche /
+  droite tourne la pièce autour de son Z — vu de dessus, l'image pivote dans son plan XY. L'interrupteur est sous le
+  repère X Y Z, à côté des deux flèches ; le choix est gardé d'une visite à l'autre et vaut pour toutes les vues.
+- **Les touches fléchées tournent la vue d'un pas** autour de son centre : 15°, 5° avec Ctrl, 90° avec Maj — les pas
+  que la page des raccourcis d'Onshape donne pour ses propres flèches (page lue ; ses pages sur la souris et le cube
+  de vue n'ont pas pu l'être). Un écran qui pousse un élément avec les flèches (Étiquettes, Circuit flexible) les
+  garde tant qu'un élément est choisi.
 - **La pièce suit la main, dans les deux sens.** Vers la droite, ce qui est près va à droite ; vers le bas, ce qui est
   près descend (l'œil monte, on voit davantage le dessus) — à l'envers aussi, où le sens de la rotation autour de Z
   est retourné pour que la pièce suive encore la main. La bascule verticale allait jusque-là à l'inverse de la main :
   elle a été remise dans le sens de l'orbite usuelle des outils 3D.
 - **Un repère pendant le geste**, posé sur le pivot : le point, l'axe Z en pointillé **tel qu'il se présente à
   l'écran** (penché si la vue a roulé, vers le bas si elle est à l'envers), un anneau avec un arc et une flèche pour
-  la rotation autour de Z, un second (orange) pour l'inclinaison, un cercle (vert) pour le roulis, et les angles
-  parcourus depuis l'appui (« Z 73° · incl. 34° · roulis 12° »). Il disparaît au relâchement.
+  la rotation autour de Z, un second (orange) pour l'inclinaison, un cercle (vert) pour le tour dans le plan, et les
+  angles parcourus depuis l'appui (« Z 73° · incl. 34° · plan 12° »). En rotation libre il n'y a pas d'axe Z à
+  montrer : l'anneau est celui de l'écran (« ↔ 73° · ↕ 34° »). Il disparaît au relâchement.
 - **Rotation automatique.** Le bouton tenu sans bouger : après un tiers de seconde le pivot se montre et un cercle se
   remplit ; à **deux secondes**, un petit panneau s'ouvre près du pivot — quatre flèches pour le sens (gauche, droite,
   haut, bas), deux pour le roulis, un carré pour arrêter, trois vitesses (lente 9°/s, moyenne 27°/s, rapide 72°/s, la
@@ -319,7 +334,11 @@ Code : `web/js/core/view_orbit.js` (la géométrie est pure et testée : `tests/
 `web/js/core/viewer.js` — toutes les vues 3D en héritent. Vérifié dans Chromium sur l'assemblage de la démonstration,
 dont la vue de dessus (rotation dans le plan, inclinaison dans les deux sens), le passage par-dessus et le roulis ;
 la rotation automatique à deux et trois sens, son passage par-dessus le haut sans retour en arrière, et l'arrêt.
-Pas essayé au toucher (l'appui tenu y est laissé au système), ni sur Firefox et Safari.
+Depuis la v0.95.0, vérifié dans Chromium sur le Part Studio, l'Assemblage, la Simulation, l'Isolation, l'Atelier et
+les Étiquettes : la bande du bord qui s'allume, l'image qui suit la main autour du centre (30° de main, 30° d'image),
+les deux flèches, l'orbite libre depuis une vue couchée, la table tournante et son maintien après rechargement, les
+touches (15°, 5°, 90°, Alt), un outil armé qui garde le bord pour lui, une étiquette choisie qui garde ses flèches.
+Pas essayé au toucher (l'appui tenu et le bord y sont laissés au système), ni sur Firefox et Safari.
 
 ## Sur quoi l'interface s'appuie
 

@@ -395,8 +395,11 @@ one chooses and what one gets**. Both panels resize and hide; their width is the
 
 - **The pivot is the point grabbed**: the view turns about the point under the pointer at the press; what one
   holds stays in place on the screen.
-- **Three axes, no stop**: left / right about the vertical of the model, up / down about the horizontal of the
-  screen (and over the top), a key for the roll. The part follows the hand, in every direction.
+- **Three axes, no stop**: the free orbit of modellers (the two axes of the screen) by default, the turntable (the
+  vertical of the model stays upright) by a switch that is kept. The part follows the hand, in every direction.
+- **No gesture hidden behind a key**: turning the picture in the plane of the screen is done by dragging from the
+  edge of the view, which lights up under the pointer — and by two arrows next to the triad. *A trap lived: that
+  gesture only existed as Alt + drag; the person asked for it again as if it were missing.*
   *A trap lived: a top view where left / right "does nothing" — the up of the screen must be kept from one gesture
   to the next, the line of sight is not enough.*
 - **A cue during the gesture**: the pivot, the axis, an arc and an arrow, the angles travelled.

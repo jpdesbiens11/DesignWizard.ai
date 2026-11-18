@@ -89,8 +89,11 @@ choisit et ce que l'on obtient**. Les deux volets se redimensionnent et se cache
 
 - **Le pivot est le point saisi** : la vue tourne autour du point sous le pointeur à l'appui ; ce que l'on tient
   reste en place à l'écran.
-- **Trois axes, aucune butée** : gauche / droite autour de la verticale du modèle, haut / bas autour de
-  l'horizontale de l'écran (et par-dessus), une touche pour le roulis. La pièce suit la main, dans tous les sens.
+- **Trois axes, aucune butée** : l'orbite libre des modeleurs (les deux axes de l'écran) d'office, la table
+  tournante (la verticale du modèle reste droite) par un interrupteur gardé. La pièce suit la main, dans tous les sens.
+- **Aucun geste caché derrière une touche** : tourner l'image dans le plan de l'écran se fait en glissant depuis le
+  bord de la vue, qui s'allume sous le pointeur — et par deux flèches à côté du repère. *Piège vécu : ce geste
+  n'existait que par Alt + glisser ; la personne l'a redemandé comme s'il manquait.*
   *Piège vécu : une vue de dessus où gauche / droite « ne fait rien » — il faut garder le haut de l'écran d'un geste
   au suivant, la direction du regard ne suffit pas.*
 - **Un repère pendant le geste** : le pivot, l'axe, un arc et une flèche, les angles parcourus.

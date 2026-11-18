@@ -5,7 +5,7 @@
 import * as THREE from "../../vendor/three/three.module.min.js";
 import { triadOf, gridOf, gridKey } from "./view_grid.js";
 import { snapDirection } from "./snap.js";
-import { mountOrbit } from "./view_orbit.js";
+import { mountOrbit, keyTurn } from "./view_orbit.js";
 import { getUnits, measure, measures } from "./units.js";
 
 const GRAPHITE = 0x26323f;
@@ -188,6 +188,7 @@ export class Viewer {
     this.renderer.setSize(w, h, false);
     this.canvas.style.width = w + "px"; this.canvas.style.height = h + "px";
     this.w = w; this.h = h; this.dirty = true;
+    if (this.orbit) this.orbit.sized(w, h);      // a view too small keeps its triad alone
   }
   /** Looks straight at a face : n = its outward normal. Asked again while already square on it, the view turns round and shows the other side. → true when it shows the back. */
   lookAlong(n) { const d = new THREE.Vector3(n[0], n[1], n[2]).normalize(), back = this.dir.dot(d) > 0.999; if (back) d.negate(); this.dir.copy(d); this.camera.up.set(0, Math.abs(d.z) > 0.9 ? 1 : 0, Math.abs(d.z) > 0.9 ? 0 : 1); this.fit(); return back; }
@@ -250,10 +251,11 @@ export class Viewer {
     c.addEventListener("pointerdown", (e) => {
       c.setPointerCapture(e.pointerId); c.focus();
       drag = { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, pan: e.button !== 0 || e.shiftKey, moved: false };
+      drag.roll = !drag.pan && this.orbit.edge(e);      // from the edge band of the view : the drag rolls the picture in the plane of the screen
       if (drag.pan) this.orbit.stop(); else this.orbit.press(e, drag);      // the pivot : what is under the pointer ; held still two seconds : the automatic rotation
     });
     c.addEventListener("pointermove", (e) => {
-      if (!drag) { this._hover(e); return; }
+      if (!drag) { this._hover(e); this.orbit.hover(e); return; }      // on the edge band, the band lights up : a drag from there rolls the picture
       const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
       drag.x = e.clientX; drag.y = e.clientY;
       if (Math.abs(e.clientX - drag.x0) + Math.abs(e.clientY - drag.y0) > 4) drag.moved = true;
@@ -264,11 +266,12 @@ export class Viewer {
         const k = this.span / this.h;
         this.target.addScaledVector(right, -dx * k).addScaledVector(up, dy * k);
       } else {
-        this.orbit.turn(dx, dy, e.altKey);      // about the pivot : left / right about the vertical of the model, up / down about the screen's horizontal axis, Alt : a roll about the line of sight — nothing is blocked ; and the cue
+        this.orbit.turn(dx, dy, e.altKey, e);      // about the pivot : free, or the turntable (left / right about the Z of the model) ; from the edge band, or with Alt : a roll in the plane of the screen — nothing is blocked ; and the cue
       }
       this.dirty = true;
     });
     c.addEventListener("pointerup", (e) => { const d = drag; drag = null; this.orbit.release(); if (!d || d.moved || d.auto) return; if (e.button === 2) { if (this.opts.onMenu) this.opts.onMenu(this._pick(e), e); } else this._click(e); });      // a right click that did not drag opens the screen's menu
+    c.addEventListener("pointerleave", () => { if (!drag) this.orbit.hover(null); });
     c.addEventListener("wheel", (e) => {
       e.preventDefault();
       const f = Math.exp(Math.sign(e.deltaY) * 0.14), r = c.getBoundingClientRect();
@@ -286,6 +289,8 @@ export class Viewer {
       if (map[k] && !e.ctrlKey && !e.metaKey) { map[k](); e.preventDefault(); }
       else if (this.opts.onKey) this.opts.onKey(e);
       else if (k === "n" && this.hoverHit && this.hoverHit.normal) this.lookAlong(this.hoverHit.normal);      // a bare view : N looks square at the face under the pointer
+      /* the arrow keys turn the view by a step, unless the screen took the key (an item it nudges) : 15°, Ctrl 5°, Shift 90° ; Alt + ← / → rolls in the plane of the screen */
+      const t = !e.defaultPrevented ? keyTurn(e.key, e) : null; if (t) { this.orbit.step(t); e.preventDefault(); }
     });
   }
   _pick(e) {
