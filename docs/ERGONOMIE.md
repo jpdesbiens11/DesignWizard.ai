@@ -302,13 +302,23 @@ elle allait tourner. La vue tournait autour de son centre, que rien ne montrait.
   haut, bas), deux pour le roulis, un carré pour arrêter, trois vitesses (lente 9°/s, moyenne 27°/s, rapide 72°/s, la
   dernière choisie est gardée). Rien ne tourne avant qu'un sens soit choisi. Échap, la croix ou un nouveau geste dans
   la vue y mettent fin. Le relâchement qui suit l'appui tenu n'est pas un clic.
+- **Les sens se combinent** (demande de JP : « une combinaison des 2 axes orthogonaux… les 2 flèches tournent en même
+  temps »). Chaque axe a son interrupteur — ◀ ▶ autour du Z du modèle, ▲ ▼ la bascule, ↺ ↻ le roulis : une flèche
+  choisie s'allume **sans éteindre celles des autres axes**, la même une seconde fois arrête son axe, la flèche
+  opposée la remplace, ■ arrête tout. Deux ou trois axes vont donc ensemble, chacun à la vitesse choisie : la pièce
+  tourne sur son Z pendant que l'œil passe par-dessus, et roule si on le demande. Dans le repère, **chaque axe qui
+  tourne a sa flèche qui fait le tour de son anneau** (bleu, orange, vert), et la note dit les sens et la vitesse
+  (« Z ▶ + ▲ · 9 °/s »). Seule, la rotation autour de Z garde le sens pris au départ : elle ne se retourne pas quand
+  la vue passe par-dessus le haut (à la main, c'est l'inverse qui est voulu : la pièce suit la main). Choix maison :
+  aucun usage établi n'a été trouvé pour une rotation automatique à plusieurs axes.
 - Un écran qui attend un clic dans la vue (outil armé du Part Studio, endroit à pointer dans la Simulation, mesure)
   garde l'appui tenu pour lui : pas de rotation automatique pendant ce temps. Le déplacement (clic droit ou Maj +
   glisser), le zoom à la molette, le clic et le menu du clic droit sont inchangés.
 
 Code : `web/js/core/view_orbit.js` (la géométrie est pure et testée : `tests/node/view_orbit.test.mjs`), branché dans
 `web/js/core/viewer.js` — toutes les vues 3D en héritent. Vérifié dans Chromium sur l'assemblage de la démonstration,
-dont la vue de dessus (rotation dans le plan, inclinaison dans les deux sens), le passage par-dessus et le roulis.
+dont la vue de dessus (rotation dans le plan, inclinaison dans les deux sens), le passage par-dessus et le roulis ;
+la rotation automatique à deux et trois sens, son passage par-dessus le haut sans retour en arrière, et l'arrêt.
 Pas essayé au toucher (l'appui tenu y est laissé au système), ni sur Firefox et Safari.
 
 ## Sur quoi l'interface s'appuie

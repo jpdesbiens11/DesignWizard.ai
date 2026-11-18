@@ -9,7 +9,9 @@
    - while it turns, a cue sits on the pivot : the point, the Z axis as it lies on the screen, a ring with an arc and an arrow for
      the turn about Z, a second one for the tilt, a circle for the roll, and the angles turned since the press ;
    - the button held still for two seconds starts the AUTOMATIC ROTATION : a small panel by the pivot gives the way (arrows) and
-     the speed (slow, medium, fast) ; Escape, the cross or a new gesture in the view ends it.
+     the speed (slow, medium, fast) ; Escape, the cross or a new gesture in the view ends it. THE WAYS COMBINE (demande de JP :
+     « une combinaison des 2 axes orthogonaux… les 2 flèches tournent en même temps ») : each axis — about Z, the tilt, the roll
+     — has its own switch, two or three go at once, and each has its arrow going round its ring in the cue.
    The convention is the turntable of mechanical CAD with a visible spin centre. The first half is pure — the geometry of the turn
    and of the cue ; mountOrbit() draws on the page and moves the camera of core/viewer.js. */
 
@@ -58,6 +60,15 @@ export function arcOf(point, sweep) {
   const [ex, ey] = pts[n], [bx, by] = point(a - Math.sign(a) * 0.12), t = norm([ex - bx, ey - by, 0]), w = [-t[1], t[0]], f = (x, y) => `${x.toFixed(1)},${y.toFixed(1)}`;
   return { d: "M" + pts.map(([x, y]) => `${x.toFixed(1)} ${y.toFixed(1)}`).join("L"), head: [f(ex + t[0] * 7, ey + t[1] * 7), f(ex + w[0] * 4.2, ey + w[1] * 4.2), f(ex - w[0] * 4.2, ey - w[1] * 4.2)].join(" ") };
 }
+/** An arrow that goes round a ring, for a turn that does not end : its head at `angle`, its tail `len` behind, the way it goes
+    (−1, 0, 1 ; 0 : nothing to draw). */
+export const cometOf = (point, angle, way, len = 0.9) => (way ? arcOf((p) => point(angle - way * len + p), way * len) : { d: "", head: "" });
+/** The ways of the automatic rotation, one switch per axis (x : about Z, y : the tilt, r : the roll ; −1, 0, 1). A way chosen
+    again goes off, the opposite way of the same axis replaces it, the other axes are left as they are : two or three combine.
+    No axis : everything stops. → a new { x, y, r } */
+export const autoToggled = (now, axis, val) => (axis ? { x: now.x || 0, y: now.y || 0, r: now.r || 0, [axis]: now[axis] === val ? 0 : val } : { x: 0, y: 0, r: 0 });
+/** « Z ▶ + ▲ · 27 °/s » : what the automatic rotation is doing, with the signs of its buttons ("" at rest) — short : the panel sits just beside it. */
+export function autoText(a, deg) { const w = [a.x ? `Z ${a.x > 0 ? "▶" : "◀"}` : "", a.y ? (a.y > 0 ? "▼" : "▲") : "", a.r ? (a.r > 0 ? "↻" : "↺") : ""].filter(Boolean); return w.length ? `${w.join(" + ")} · ${deg} °/s` : ""; }
 /** How far the hold has come toward the automatic rotation : 0 before the pivot shows, 1 at two seconds. */
 export const holdProgress = (ms) => Math.max(0, Math.min(1, (ms - ORBIT.show) / (ORBIT.hold - ORBIT.show)));
 /** « Z 34° · incl. 12° · roulis 8° » : what was turned since the press (rad). */
@@ -78,16 +89,18 @@ export function mountOrbit(viewer) {
   const hold = S("circle", { class: "hold", cx: 0, cy: 0, r: 15, pathLength: 100 }), dot = S("circle", { class: "pivot", cx: 0, cy: 0, r: 4.2 });
   zed.textContent = "Z"; level.append(axis, zed, ring, yawArc, yawHead); svg.append(level, tilt, tiltArc, tiltHead, rollArc, rollHead, hold, dot);      // level : what lies with the Z of the model, turned as Z lies on the screen
   const note = H("div", "dw-orbit-note"); svg.hidden = true; note.hidden = true; viewer.el.append(svg, note);
-  let pivot = null, yaw = 0, tip = 0, spun = 0, timers = [], t0 = 0, raf = 0, auto = null, panel = null;      // yaw : the turn of the camera about Z ; tip, spun : as the hand went ; auto : { x, y, r (−1, 0, 1), speed, last }
+  let pivot = null, yaw = 0, tip = 0, spun = 0, went = [0, 0, 0], timers = [], t0 = 0, raf = 0, auto = null, panel = null;      // yaw : the turn of the camera about Z ; tip, spun : as the hand went ; went : the way of the last step on each axis ; auto : { x, y, r (−1, 0, 1), sense, speed, last }
 
   /* the camera as it stands : its up is the real up of the screen, square to the line of sight, whatever a preset left in camera.up */
   const cam = () => { viewer._cam(); const m = viewer.camera.matrixWorld.elements; return { target: viewer.target.toArray(), dir: viewer.dir.toArray(), up: [m[4], m[5], m[6]], right: [m[0], m[1], m[2]] }; };
   /* angles as the hand goes : right and down are positive ; the model follows the hand — what is near goes right when the hand goes
      right, down when it goes down (the eye then rises : more of the top shows), as in the usual orbit of 3D tools */
-  function apply(dxAngle, dyAngle, rollAngle = 0) {
-    const c = cam(), turn = yawOf(dxAngle, c.up[2]), next = orbitAbout(c, pivot, turn, dyAngle, rollAngle);
+  /* sense : the automatic rotation keeps the turn about Z it started with (1, −1) — a turn that also tilts goes over the top, and
+     the spin must not turn back there ; by hand (0) the model follows the hand, upside down too */
+  function apply(dxAngle, dyAngle, rollAngle = 0, sense = 0) {
+    const c = cam(), turn = sense ? -dxAngle * sense : yawOf(dxAngle, c.up[2]), next = orbitAbout(c, pivot, turn, dyAngle, rollAngle);
     viewer.target.set(...next.target); viewer.dir.set(...next.dir); viewer.camera.up.set(...next.up); viewer.dirty = true;
-    yaw += turn; tip += dyAngle; spun += rollAngle;
+    yaw += turn; tip += dyAngle; spun += rollAngle; went = [Math.sign(turn), Math.sign(dyAngle), Math.sign(rollAngle)];
   }
   function place() {
     if (!pivot) return; const [sx, sy] = viewer.toScreen(pivot), r = viewer.el.getBoundingClientRect(), x = sx - r.left, y = sy - r.top;
@@ -99,10 +112,11 @@ export function mountOrbit(viewer) {
     const c = cam(), g = ringOf(c.dir[2], R); svg.hidden = false; svg.classList.toggle("full", full);
     level.setAttribute("transform", `rotate(${horizonOf(c.right, c.up).toFixed(1)})`);
     axis.setAttribute("y1", -g.axis - 8); axis.setAttribute("y2", g.axis + 8); zed.setAttribute("y", -g.axis - 15); ring.setAttribute("rx", g.rx); ring.setAttribute("ry", g.ry);
-    const a = arcOf((p) => ringPoint(g, p), -yaw), b = arcOf((p) => tiltPoint(R, p), tip), s = arcOf((p) => rollPoint(R + 12, p), spun);      // a point of the ring goes the other way round than the camera
+    const onRing = (p) => ringPoint(g, p), onTilt = (p) => tiltPoint(R, p), onRoll = (p) => rollPoint(R + 12, p);      // a point of the ring goes the other way round than the camera
+    const [a, b, s] = auto ? [cometOf(onRing, -yaw, -went[0]), cometOf(onTilt, tip, went[1]), cometOf(onRoll, spun, went[2])] : [arcOf(onRing, -yaw), arcOf(onTilt, tip), arcOf(onRoll, spun)];      // by hand : what was turned since the press ; alone : one arrow per axis that goes, round its ring
     yawArc.setAttribute("d", a.d); yawHead.setAttribute("points", a.head); tiltArc.setAttribute("d", b.d); tiltHead.setAttribute("points", b.head); rollArc.setAttribute("d", s.d); rollHead.setAttribute("points", s.head);
     hold.style.strokeDasharray = `${Math.round(progress * 100)} 100`; hold.style.display = progress > 0 && progress < 1 ? "" : "none";
-    const text = full ? orbitText(yaw, tip, spun) : progress > 0 ? "maintenez : rotation automatique" : ""; note.hidden = !text; note.textContent = text;
+    const text = auto ? autoText(auto, autoSpeed(auto.speed).deg) : full ? orbitText(yaw, tip, spun) : progress > 0 ? "maintenez : rotation automatique" : ""; note.hidden = !text; note.textContent = text;
     place();
   }
   const hide = () => { svg.hidden = true; note.hidden = true; }, clearTimers = () => { for (const t of timers) clearTimeout(t); timers = []; cancelAnimationFrame(raf); raf = 0; };
@@ -122,31 +136,32 @@ export function mountOrbit(viewer) {
   /* ---------- the automatic rotation ---------- */
   function startAuto() {
     let speed = "slow"; try { speed = autoSpeed(localStorage.getItem(STORE)).key; } catch (e) { /* a private window */ }
-    auto = { x: 0, y: 0, r: 0, speed, last: 0 }; yaw = 0; tip = 0; spun = 0;
+    auto = { x: 0, y: 0, r: 0, sense: 1, speed, last: 0 }; yaw = 0; tip = 0; spun = 0; went = [0, 0, 0];
     panel = H("div", "dw-auto"); panel.setAttribute("role", "group"); panel.setAttribute("aria-label", "Rotation automatique de la vue");
     const head = H("div", "dw-auto-head"), pad = H("div", "dw-auto-pad"), speeds = H("div", "seg text"); speeds.setAttribute("role", "group"); speeds.setAttribute("aria-label", "Vitesse de rotation");
     const close = H("button", "icon-btn", "×"); close.type = "button"; close.setAttribute("aria-label", "Arrêter la rotation automatique"); close.dataset.tip = "Arrêter et fermer (Échap)"; close.addEventListener("click", endAuto);
     head.append(H("b", "", "Rotation automatique"), close);
-    const way = (cls, label, glyph, x, y, r = 0) => { const b = H("button", `dw-auto-way ${cls}`, glyph); b.type = "button"; b.setAttribute("aria-label", label); b.dataset.tip = label; b.dataset.way = `${x},${y},${r}`;
-      b.addEventListener("click", () => { const same = auto.x === x && auto.y === y && auto.r === r; auto.x = same ? 0 : x; auto.y = same ? 0 : y; auto.r = same ? 0 : r; auto.last = 0; paint(); if (!raf && (auto.x || auto.y || auto.r)) raf = requestAnimationFrame(spin); }); return b; };
-    pad.append(way("rl", "Rouler vers la gauche", "↺", 0, 0, -1), way("up", "Basculer vers le haut", "▲", 0, -1), way("rr", "Rouler vers la droite", "↻", 0, 0, 1), way("left", "Tourner vers la gauche", "◀", -1, 0), way("stop", "Arrêter", "■", 0, 0), way("right", "Tourner vers la droite", "▶", 1, 0), way("down", "Basculer vers le bas", "▼", 0, 1));
+    /* one switch per axis : a way goes on or off without touching the other axes, so two or three combine ; ■ stops them all */
+    const way = (cls, label, glyph, axis = "", val = 0) => { const b = H("button", `dw-auto-way ${cls}`, glyph); b.type = "button"; b.setAttribute("aria-label", label); b.dataset.tip = axis ? `${label} — se combine avec un autre sens` : label; b.dataset.axis = axis; b.dataset.val = val;
+      b.addEventListener("click", () => { Object.assign(auto, autoToggled(auto, axis, val), { last: 0 }); if (axis === "x" && auto.x) auto.sense = cam().up[2] < 0 ? -1 : 1; went = [0, 0, 0]; paint(); draw(true); if (!raf && going()) raf = requestAnimationFrame(spin); }); return b; };
+    pad.append(way("rl", "Rouler vers la gauche", "↺", "r", -1), way("up", "Basculer vers le haut", "▲", "y", -1), way("rr", "Rouler vers la droite", "↻", "r", 1), way("left", "Tourner vers la gauche, autour du Z", "◀", "x", -1), way("stop", "Tout arrêter"), way("right", "Tourner vers la droite, autour du Z", "▶", "x", 1), way("down", "Basculer vers le bas", "▼", "y", 1));
     for (const s of AUTO_SPEEDS) { const b = H("button", "seg-btn", s.label); b.type = "button"; b.dataset.speed = s.key; b.dataset.tip = `${s.deg}° par seconde`; b.addEventListener("click", () => { auto.speed = s.key; try { localStorage.setItem(STORE, s.key); } catch (e) { /* kept for this visit */ } paint(); }); speeds.append(b); }
-    panel.append(head, pad, speeds, H("small", "dw-auto-hint", "Choisissez un sens. Échap arrête.")); viewer.el.append(panel);
+    panel.append(head, pad, speeds, H("small", "dw-auto-hint", "Un sens, ou deux à la fois : ils se combinent. Échap arrête.")); viewer.el.append(panel);
     window.addEventListener("keydown", onKey, true); paint(); draw(true);
   }
   const going = () => !!(auto && (auto.x || auto.y || auto.r));
   function paint() {
     if (!panel) return;
-    for (const b of panel.querySelectorAll(".dw-auto-way")) { const on = going() && b.dataset.way === `${auto.x},${auto.y},${auto.r}`; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on ? "true" : "false"); }
+    for (const b of panel.querySelectorAll(".dw-auto-way[data-axis]")) { if (!b.dataset.axis) continue; const on = auto[b.dataset.axis] === +b.dataset.val; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on ? "true" : "false"); }
     for (const b of panel.querySelectorAll("[data-speed]")) { const on = b.dataset.speed === auto.speed; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on ? "true" : "false"); }
   }
   function spin(t) {
-    raf = 0; if (!auto || !viewer.alive) return; if (!going()) { draw(true); return; }
+    raf = 0; if (!auto || !viewer.alive) return; if (!going()) { went = [0, 0, 0]; draw(true); return; }
     const dt = auto.last ? Math.min(0.05, (t - auto.last) / 1000) : 0, w = autoSpeed(auto.speed).deg * Math.PI / 180; auto.last = t;
-    apply(auto.x * w * dt, auto.y * w * dt, auto.r * w * dt); draw(true); raf = requestAnimationFrame(spin);
+    apply(auto.x * w * dt, auto.y * w * dt, auto.r * w * dt, auto.sense); draw(true); raf = requestAnimationFrame(spin);
   }
   function onKey(e) { if (e.key === "Escape" && auto) { e.stopPropagation(); endAuto(); } }
-  function endAuto() { if (!auto) return; auto = null; cancelAnimationFrame(raf); raf = 0; window.removeEventListener("keydown", onKey, true); if (panel) { panel.remove(); panel = null; } hide(); }
+  function endAuto() { if (!auto) return; auto = null; cancelAnimationFrame(raf); raf = 0; window.removeEventListener("keydown", onKey, true); if (panel) { const had = panel.contains(document.activeElement); panel.remove(); panel = null; if (had) viewer.canvas.focus({ preventScroll: true }); } hide(); }      // the keys of the view (F, 0 … 6) work again at once
 
   return { press, turn, release, stop: () => { clearTimers(); endAuto(); hide(); }, dispose: () => { clearTimers(); endAuto(); svg.remove(); note.remove(); }, auto: () => (auto ? { ...auto } : null), pivot: () => (pivot ? pivot.slice() : null) };
 }

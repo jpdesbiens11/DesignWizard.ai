@@ -400,7 +400,8 @@ choisit et ce que l'on obtient**. Les deux volets se redimensionnent et se cache
   *Piège vécu : une vue de dessus où gauche / droite « ne fait rien » — il faut garder le haut de l'écran d'un geste
   au suivant, la direction du regard ne suffit pas.*
 - **Un repère pendant le geste** : le pivot, l'axe, un arc et une flèche, les angles parcourus.
-- **Rotation automatique — choix maison** : le bouton tenu deux secondes ouvre un petit panneau (sens, vitesse).
+- **Rotation automatique — choix maison** : le bouton tenu deux secondes ouvre un petit panneau (sens, vitesse). Un
+  interrupteur par axe : deux ou trois sens vont ensemble, chacun avec sa flèche qui tourne dans le repère.
 - Un outil qui attend un clic dans la vue garde le geste pour lui, et le dit au mécanisme.
 
 ## 8. Le menu d'un élément — usage établi

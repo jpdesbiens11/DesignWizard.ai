@@ -3,7 +3,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { turned, orbitAbout, yawOf, horizonOf, ringOf, ringPoint, tiltPoint, rollPoint, arcOf, holdProgress, orbitText, autoSpeed, ORBIT, AUTO_SPEEDS } from "../../web/js/core/view_orbit.js";
+import { turned, orbitAbout, yawOf, horizonOf, ringOf, ringPoint, tiltPoint, rollPoint, arcOf, cometOf, autoToggled, autoText, holdProgress, orbitText, autoSpeed, ORBIT, AUTO_SPEEDS } from "../../web/js/core/view_orbit.js";
 
 const read = (p) => readFileSync(new URL(`../../${p}`, import.meta.url), "utf8");
 const near = (a, b, tol = 1e-9) => assert.ok(Math.abs(a - b) <= tol, `${a} ≠ ${b}`);
@@ -86,6 +86,33 @@ test("hold : nothing shows at once, then the hold fills until the automatic rota
   assert.equal(orbitText(0.6, 0), "Z 34°"); assert.equal(orbitText(-0.6, 0.21, 0.14), "Z 34° · incl. 12° · roulis 8°"); assert.equal(orbitText(0, 0), "");
 });
 
+test("automatic rotation : the ways combine — one switch per axis, two or three at once", () => {
+  const rest = { x: 0, y: 0, r: 0 };
+  assert.deepEqual(autoToggled(rest, "x", 1), { x: 1, y: 0, r: 0 });
+  assert.deepEqual(autoToggled({ x: 1, y: 0, r: 0 }, "y", -1), { x: 1, y: -1, r: 0 }, "a second way does not put the first one out : both go");
+  assert.deepEqual(autoToggled({ x: 1, y: -1, r: 0 }, "r", 1), { x: 1, y: -1, r: 1 }, "three at once");
+  assert.deepEqual(autoToggled({ x: 1, y: -1, r: 0 }, "x", 1), { x: 0, y: -1, r: 0 }, "the same way again : that axis stops, the other goes on");
+  assert.deepEqual(autoToggled({ x: 1, y: -1, r: 0 }, "x", -1), { x: -1, y: -1, r: 0 }, "the opposite way of an axis replaces it");
+  assert.deepEqual(autoToggled({ x: 1, y: -1, r: 1 }), rest, "no axis : everything stops");
+  assert.deepEqual(autoToggled({ x: 1, speed: "fast" }, "y", 1), { x: 1, y: 1, r: 0 }, "only the ways come back");
+  assert.equal(autoText({ x: 1, y: -1, r: 0 }, 27), "Z ▶ + ▲ · 27 °/s"); assert.equal(autoText({ x: 0, y: 1, r: -1 }, 9), "▼ + ↺ · 9 °/s"); assert.equal(autoText({ x: -1, y: 0, r: 0 }, 72), "Z ◀ · 72 °/s"); assert.equal(autoText(rest, 9), "");
+  /* two turns at once are one move : the eye goes round Z and rises in the same step, and the pivot keeps its place */
+  const cam = iso(), pivot = [5, 5, 5], both = orbitAbout(cam, pivot, -0.2, 0.2), a = onScreen(cam, pivot), b = onScreen(both, pivot); square(both);
+  near(a[0], b[0], 1e-9); near(a[1], b[1], 1e-9); assert.ok(both.dir[2] > cam.dir[2] + 0.05, "it rose"); assert.ok(Math.abs(Math.atan2(both.dir[1], both.dir[0]) - Math.atan2(cam.dir[1], cam.dir[0])) > 0.15, "and it went round Z");
+  /* kept in one sense, the turn about Z goes on over the top : the horizontal of the screen never turns back */
+  let c = level([0, 0, 0], [1, 0, 1]); const turns = [];
+  for (let i = 0; i < 40; i++) { const next = orbitAbout(c, [0, 0, 0], -0.1, 0.1), r0 = cross(c.up, c.dir), r1 = cross(next.up, next.dir); turns.push(r0[0] * r1[1] - r0[1] * r1[0]); c = next; }
+  assert.ok(turns.every((t) => t < -0.05), "the same way before, at and after the top"); assert.ok(c.up[2] !== undefined && turns.length === 40);
+});
+
+test("cue : an arrow that goes round its ring for a turn that does not end", () => {
+  const circle = (p) => rollPoint(40, p), c = cometOf(circle, 2, 1), back = cometOf(circle, 2, -1);
+  assert.ok(c.d.startsWith("M") && c.head.split(" ").length === 3); assert.notEqual(c.d, back.d, "the other way round, the arrow points the other way");
+  assert.deepEqual(cometOf(circle, 2, 0), { d: "", head: "" }, "an axis at rest draws nothing");
+  const end = (d) => d.split("L").pop().split(" ").map(Number), at = rollPoint(40, 2); near(end(c.d)[0], at[0], 0.06); near(end(c.d)[1], at[1], 0.06);      // the head is where the turn is
+  assert.notEqual(cometOf(circle, 2.5, 1).d, c.d, "it moves as the turn goes on"); assert.equal(cometOf(circle, 2 + 40 * Math.PI, 1).d, c.d, "and never stops at the end of a ring");
+});
+
 test("wiring : the viewer turns about the pivot on three axes, shows the cue, and a held button is not a click", () => {
   const v = read("web/js/core/viewer.js"), o = read("web/js/core/view_orbit.js");
   assert.match(v, /this\.orbit = mountOrbit\(this\);/); assert.match(v, /this\.orbit\.press\(e, drag\)/); assert.match(v, /this\.orbit\.turn\(dx, dy, e\.altKey\)/);
@@ -95,4 +122,7 @@ test("wiring : the viewer turns about the pivot on three axes, shows the cue, an
   assert.doesNotMatch(o, /pole/, "no stop before straight up or down");
   assert.match(read("web/js/core/view_place.js"), /viewer\.holdBusy = \(\) => !!tool;/);
   const css = read("web/css/app.css"); assert.match(css, /\.dw-orbit \{ position: absolute; pointer-events: none;/); assert.match(css, /"rl up rr"/);
+  assert.match(o, /Object\.assign\(auto, autoToggled\(auto, axis, val\), \{ last: 0 \}\)/, "a way is a switch of its axis : the others are left as they are");
+  assert.match(o, /turn = sense \? -dxAngle \* sense : yawOf\(dxAngle, c\.up\[2\]\)/, "alone, the turn about Z keeps its sense over the top");
+  assert.match(o, /auto \? \[cometOf\(onRing, -yaw, -went\[0\]\), cometOf\(onTilt, tip, went\[1\]\), cometOf\(onRoll, spun, went\[2\]\)\]/, "one arrow per axis that goes");
 });
