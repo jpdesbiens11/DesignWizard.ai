@@ -38,6 +38,7 @@ Functions: min max abs sqrt floor ceil round sin cos tan (degrees) hypot clamp(v
   "half": { "expr": "L/2" }                       // derived (read-only)
 }
 A parameter may keep other values beside the one that counts: "alts": [150, 200] in its definition — close cousins of the part; only "value" is used.
+A part may name its cousins: "variants": [{ "name": "Long, no window", "off": ["window"], "params": { "L": 200 } }] — "off" lists the ids of the features put aside ("suppressed"), "params" the values; applying one sets both.
 Give every dimension a human would want to tune as a parameter (5 to 15 of them), with a label and sensible min / max.
 Use the parameters everywhere else instead of raw numbers.
 

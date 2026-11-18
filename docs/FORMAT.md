@@ -157,7 +157,8 @@ d'atelier, opérations du noyau) est dans [PART_LANGUAGE.md](PART_LANGUAGE.md). 
 - **`intent`** — `loads`, `environment`, `quantity`, `priority` : pourquoi la pièce existe.
 - **On / Off** — `suppressed: true` sur une opération (elle n'est pas faite), `alts: [valeur, …]` dans un paramètre (les
   autres valeurs gardées à côté de `value`), `off: true` sur une instance d'assemblage (elle ne compte pour rien, ses
-  accouplements attendent). Voir [VARIANTES.md](VARIANTES.md).
+  accouplements attendent). **`variants`** (pièce) — les cousines gardées sous un nom : `name`, `off` (les opérations
+  mises de côté), `params` (la valeur de chaque paramètre). Voir [VARIANTES.md](VARIANTES.md).
 - **`order`** — `quantity`, `need_by`, `note` : la commande du prototype.
 - **`look`** — `color` (`"#rrggbb"`), `opacity` (0,2 à 1) : la couleur de la pièce **à l'écran**, choisie par son
   concepteur pour la reconnaître. Ce n'est pas une finition ; absente, la pièce a la couleur de sa matière. Elle

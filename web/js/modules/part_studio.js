@@ -4,6 +4,7 @@
 
 import { el, clear, icon, btn, badge, toast, modal, fmt, fmtMass, fmtLen, fmtDims, download, confirmBox, onOff } from "../core/dom.js";
 import { withFeatureOff, copyFeature } from "../core/variants.js";
+import { variantsSection } from "./part_variants.js";
 import { store } from "../core/store.js";
 import { app, go, setContext, setStatus, setGuide } from "../core/app.js";
 import { kernel } from "../cad/client.js";
@@ -173,6 +174,7 @@ export function partStudio(main, args, cfg) {
         iconBtn("trash", "Supprimer", () => store.updatePart(id, (x) => { x.features.splice(i, 1); }, `${fid} supprimée`))));
     });
     scroll.append(tree);
+    if (!s.step) scroll.append(variantsSection({ spec: s, id }));      // the cousins of the part, each under its name
     scroll.append(el("div", { class: "side-section" }, el("h3", null, "Pièce"),
       btn("Dupliquer", () => { const c = JSON.parse(JSON.stringify(s)); c.id = store.uniqueId(s.id); c.name = `${s.name || s.id} (copie)`; const nid = store.addPart(c, `Pièce dupliquée : ${s.id}`); go(`#/${cfg.key}/${encodeURIComponent(nid)}`); }, { small: true, icon: "copy" }), " ",
       btn("STEP", async () => { try { const bytes = await underVeil({ set: (t, o) => vp.setBusy(t, o) }, `Écriture du STEP de ${s.id}…`, async () => { await kernel.build(s); return kernel.step([{ key: s.id, name: `${s.id} ${s.name || ""}`.trim() }], s.id); }, { after: () => rebuild(), cancelled: "Export annulé : aucun fichier n'a été écrit." });

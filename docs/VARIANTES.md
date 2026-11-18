@@ -17,7 +17,7 @@ Le principe est le même partout :
 ## Simulation : des cas de charge à comparer
 
 Chaque appui, effort, source de chaleur et température imposée du cas de charge a son interrupteur et son bouton
-« Dupliquer » ; chaque zone de raffinement aussi.
+« Dupliquer » ; chaque zone de raffinement et chaque plan de coupe ou de symétrie aussi.
 
 - Une condition à Off n'est pas envoyée au solveur, n'entre pas dans l'estimation à la main ni dans la recherche de
   symétrie, n'a pas de symbole dans la vue (son endroit s'allume encore quand elle est sélectionnée) et ne demande rien
@@ -29,13 +29,17 @@ Chaque appui, effort, source de chaleur et température imposée du cas de charg
   Off », en tête du résultat, et une colonne « Cas » dans « Les essais de cette séance » : deux cas se comparent côte à
   côte (contrainte de pointe, déplacement, facteur de sécurité).
 - Une zone de raffinement à Off n'est ni maillée ni résolue ; ses cotes restent.
+- Un **plan de coupe ou de symétrie à Off ne coupe rien** : le modèle redevient entier (ou coupé par les seuls autres
+  plans), la symétrie quitte les appuis (S1). **Un seul plan par axe compte** : mettre à On la copie d'un plan met à
+  Off celui du même axe — on compare ainsi le même modèle coupé ici ou là, avec ou sans sa symétrie. Alt + clic : ce
+  plan seul à On. Un essai nomme les coupes libres avec lesquelles il a été résolu (« CY coupe Y = 75 mm »).
 
 Le cas de charge de la Simulation vit le temps de la séance (il n'est pas dans le fichier du projet) : les copies et
-ce qui est à Off aussi. Ne sont pas à On / Off : les plans de coupe et de symétrie (ils se retirent et se reposent), la
-convection, la température uniforme.
+ce qui est à Off aussi. Ne sont pas à On / Off : la convection et la température uniforme (une case à cocher chacune).
 
-Code : `web/js/analysis/fea/bc_tree.js` (`isOff`, `onOf`, `withOff`, `copyOf`, `soloOn`, `caseWords`),
-`case_check.js` ; écran `web/js/modules/fea.js`, `fea_tree.js`, `fea_zones.js`, `fea_result.js`.
+Code : `web/js/analysis/fea/bc_tree.js` (`isOff`, `onOf`, `withOff`, `copyOf`, `soloOn`, `liveCuts`, `cutOn`,
+`caseWords`), `case_check.js` ; écran `web/js/modules/fea.js`, `fea_tree.js`, `fea_zones.js`, `fea_cuts.js`,
+`fea_result.js`.
 
 ## Assemblage : des pièces à On / Off
 
@@ -64,9 +68,17 @@ outil qui lit un assemblage passe par là — `buildAssembly`, la gamme, le DFA,
   prend la place de la valeur du dessus, qui est gardée à son tour. La pièce se reconstruit ; les pièces liées par une
   interface suivent, comme pour tout changement de paramètre. Un paramètre calculé (`expr`) n'a pas de valeur à garder.
 
+- **Variantes nommées.** Le groupe « Variantes » du volet de gauche garde sous un nom l'état de la pièce en ce moment :
+  les opérations à On et à Off, et la valeur de chaque paramètre. Un clic sur un nom ramène **toute la cousine d'un
+  coup**, en une seule étape que Ctrl + Z annule ; la variante en cours est marquée, et chaque autre dit ce que le clic
+  changerait (« 1 opération bascule · Longueur 200 → 160 »). Une variante ne copie pas la pièce : une opération ou un
+  paramètre ajouté plus tard vaut pour toutes les variantes. « Mettre à jour » remplace une variante par l'état en
+  cours ; retirer un nom ne change pas la pièce.
+
 Dans le fichier : `suppressed: true` sur une opération ; `alts: [valeur, …]` dans la définition d'un paramètre (le
-langage de pièce ne lit que `value`). Code : `web/js/core/variants.js` ; écran `web/js/modules/part_studio.js`,
-`part_panels.js`.
+langage de pièce ne lit que `value`) ; `variants: [{ name, off: [identifiants d'opérations], params: { nom: valeur } }]`
+sur la pièce. Les règles DFM partent de ce que le noyau a construit : une opération à Off n'y entre pas. Code :
+`web/js/core/variants.js` ; écran `web/js/modules/part_studio.js`, `part_panels.js`, `part_variants.js`.
 
 ## Ce qui est vérifié, ce qui ne l'est pas
 
@@ -74,9 +86,10 @@ Vérifié dans Chromium, sur la démonstration : deux cas de charge calculés l'
 contrainte de pointe doublée, les deux lignes dans les essais) ; une zone à Off puis sa copie à On ; une pièce de
 l'assemblage à Off puis à On (compte, masse, vue, dessin d'ensemble, revue DFx sans erreur), la pièce fixe à Off ; une
 opération à Off, sa copie, une valeur gardée mise à On puis retirée (le paramètre revient exactement à ce qu'il
-était). Tests : `tests/node/fea_onoff.test.mjs`, `tests/node/onoff.test.mjs`.
+était) ; un plan de symétrie à Off puis à On, sa copie déplacée mise à On à sa place, un essai qui nomme sa coupe ;
+deux variantes d'une pièce gardées, la bascule de l'une à l'autre en un clic, Ctrl + Z, le rechargement de la page.
+Tests : `tests/node/fea_onoff.test.mjs`, `tests/node/onoff.test.mjs`.
 
-Pas encore fait : une « configuration » nommée qui retiendrait d'un coup tout ce qui est à On dans une pièce (on
-bascule opération par opération, valeur par valeur) ; des cas de charge gardés dans le projet ; les règles DFM d'une
-pièce lisent encore toutes les opérations, y compris celles à Off ; le premier design par entrevue IA ne relit pas
-`off` sur une instance.
+Pas encore fait : des cas de charge gardés dans le projet (ils vivent le temps de la séance) ; une variante ne retient
+pas les pièces à On / Off d'un assemblage ; le dessin et la gamme d'une pièce suivent la variante en cours, il n'y a
+pas un dessin par variante.

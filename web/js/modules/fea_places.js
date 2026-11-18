@@ -66,7 +66,7 @@ export function placeRegion(place, geo) {
 }
 /** After the geometry is built anew : does each place still name what it named ? A place whose item changed is `gone`. */
 export function checkPlaces(st, geo) {
-  for (const p of Object.values(st.places)) { delete p.region; p.gone = p.items.some((it) => (it.kind === "cut" ? !(st.cuts || []).some((c) => c.axis === it.axis) : signature(it, geo) !== it.sig)); if (!p.gone) p.label = placeLabel(p.items, geo); }
+  for (const p of Object.values(st.places)) { delete p.region; p.gone = p.items.some((it) => (it.kind === "cut" ? !(st.cuts || []).some((c) => !c.off && c.axis === it.axis) : signature(it, geo) !== it.sig)); if (!p.gone) p.label = placeLabel(p.items, geo); }
 }
 /** The outward direction of the first face of a place (the mean of its triangles), or null : where a new load points from. */
 export function placeNormal(place, geo) {

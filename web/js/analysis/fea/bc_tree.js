@@ -55,17 +55,26 @@ export function withOff(x, off, key) {
 export function copyOf(x) { const c = x && typeof x === "object" ? JSON.parse(JSON.stringify(x)) : { region: x }; c.off = true; return c; }
 /** One condition on, the others of its list off : the gesture that goes from one case to the next. */
 export const soloOn = (list, i, key) => (list || []).map((x, j) => withOff(x, j !== i, key));
-/** The case as it is solved, in a few words : « A1 · E2 Pression 0,004 MPa » — what a trial remembers of it. tree : bcTree(st) ; zones : the zones that count. */
-export function caseWords(tree, zones = []) {
-  const on = tree.flatMap((g) => g.items.filter((it) => !it.off)), off = tree.reduce((n, g) => n + g.items.filter((it) => it.off).length, 0);
-  return { ids: [...on.map((it) => it.id), ...zones.map((z) => z.id)].join(" "), text: [...on.map((it) => `${it.id} ${it.text}`), ...zones.map((z) => `${z.id} zone`)].join(" · "), off };
+/** The planes that count : a cut put aside (off) cuts nothing. */
+export const liveCuts = (cuts) => (cuts || []).filter((c) => c && !c.off);
+/** A plane turned on takes the place of the plane of the same axis that was on (one plane per axis) ; alone : every other plane goes off. → a new list */
+export function cutOn(cuts, i, on, alone = false) {
+  const me = (cuts || [])[i]; if (!me) return cuts || [];
+  return cuts.map((c, j) => { if (j === i) { const n = { ...c }; if (on) delete n.off; else n.off = true; return n; } return on && !c.off && (alone || c.axis === me.axis) ? { ...c, off: true } : c; });
+}
+/** The case as it is solved, in a few words : « A1 · E2 Pression 0,004 MPa » — what a trial remembers of it. tree : bcTree(st) ;
+    zones : the zones that count ; cuts : the planes that count (a plane of symmetry is already in the tree, as S1). */
+export function caseWords(tree, zones = [], cuts = []) {
+  const on = tree.flatMap((g) => g.items.filter((it) => !it.off)), off = tree.reduce((n, g) => n + g.items.filter((it) => it.off).length, 0), free = cuts.filter((c) => c && c.bc !== "sym");
+  const cutId = (c) => `C${"XYZ"[c.axis]}`, at = (c) => String(Math.round(c.at * 100) / 100).replace(".", ",");
+  return { ids: [...on.map((it) => it.id), ...free.map(cutId), ...zones.map((z) => z.id)].join(" "), text: [...on.map((it) => `${it.id} ${it.text}`), ...free.map((c) => `${cutId(c)} coupe ${"XYZ"[c.axis]} = ${at(c)} mm`), ...zones.map((z) => `${z.id} zone`)].join(" · "), off };
 }
 /** The tree : [{ ...group, items: [{ id, index, region, where, text, short, color, kind, off, ask (values still to enter) }] }].
     A plane of symmetry (st.cuts, bc « sym ») is a blocked boundary : it shows among the supports as S1, `locked` — it goes away
     with the symmetry only, never alone (item.kind « symmetry », item.index : its place in st.cuts).
     labelOf(regionKey) → the plain name of a region (a face, an interface). */
 export function bcTree(st, labelOf = (k) => k) {
-  const sym = (st.cuts || []).map((c, i) => ({ c, i })).filter(({ c }) => c && c.bc === "sym").map(({ c, i }, k) => { const ax = "XYZ"[c.axis], name = `${ax} = ${n(c.at, 2)} mm`;
+  const sym = (st.cuts || []).map((c, i) => ({ c, i })).filter(({ c }) => c && !c.off && c.bc === "sym").map(({ c, i }, k) => { const ax = "XYZ"[c.axis], name = `${ax} = ${n(c.at, 2)} mm`;
     return { id: `S${k + 1}`, index: i, region: null, plane: { axis: c.axis, at: c.at, keep: c.keep < 0 ? -1 : 1 }, where: `bloqué perpendiculairement au plan — il tient la place de la moitié retirée`, text: `Symétrie · plan ${name}`, short: `S${k + 1} · symétrie`, color: BC_COLORS.fixed, kind: "symmetry", locked: true, ask: [] }; });
   return bcGroups(st).map((g) => ({ ...g, items: [...(st[g.key] || []).map((x, i) => {
     const id = `${g.tag}${i + 1}`, region = g.key === "fixed" ? supportKey(x) : x.region, off = isOff(x), base = { id, index: i, region, where: labelOf(region), off, ask: off || g.key === "fixed" || !Array.isArray(x.ask) ? [] : x.ask };      // what is off asks for nothing

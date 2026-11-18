@@ -25,7 +25,7 @@ import { bakeMesh, clipMesh } from "../core/mesh_clip.js";
 import { bodyId, bodyOf, CUT_FIELD, placeItem, placeKey, placeLabel, placeRegion, placeNormal, placeSpots, placeHasFace, lightPlace, checkPlaces } from "./fea_places.js";
 import { caseIssues, blocking } from "../analysis/fea/case_check.js";
 import { guideBox, guideSummary, nudge } from "../core/guide.js";
-import { bcTree, bcFind, bcLabels, BC_COLORS, loadDir, pushInto, supportKey, supportDofs, isOff, onOf, withOff, copyOf, soloOn, caseWords } from "../analysis/fea/bc_tree.js";
+import { bcTree, bcFind, bcLabels, BC_COLORS, loadDir, pushInto, supportKey, supportDofs, isOff, onOf, withOff, copyOf, soloOn, caseWords, liveCuts } from "../analysis/fea/bc_tree.js";
 import { bcSection } from "./fea_tree.js";
 import { viewSwitch, resultPanel } from "./fea_result.js";
 import { safetyField, safetySummary, fsColour } from "../analysis/fea/safety.js";
@@ -81,14 +81,15 @@ function render(main, args) {
   const regionOf = (key) => regions.find((r) => r.key === key) || placeOf(key);
   const usedPlaces = () => [...new Set([...st.fixed.map(supportKey), ...st.loads.map((x) => x.region), ...st.power.map((x) => x.region), ...st.fixedT.map((x) => x.region)].filter((k) => String(k).startsWith("place:")))].map(placeOf).filter(Boolean);
   /* what the cuts keep of the box of the product ; a face of the product is still there when its side was not cut away */
-  const keptBox = () => { const b = Array.from(whole.bbox); for (const c of st.cuts) { if (c.keep < 0) b[c.axis + 3] = Math.min(b[c.axis + 3], c.at); else b[c.axis] = Math.max(b[c.axis], c.at); } return b; };
+  const cuts = () => liveCuts(st.cuts);      // the planes that count : one put aside (off) is kept in the panel and cuts nothing
+  const keptBox = () => { const b = Array.from(whole.bbox); for (const c of cuts()) { if (c.keep < 0) b[c.axis + 3] = Math.min(b[c.axis + 3], c.at); else b[c.axis] = Math.max(b[c.axis], c.at); } return b; };
   const stillThere = (face, kb) => { const i = "XYZ".indexOf(face[1]) + (face[0] === "+" ? 3 : 0); return Math.abs(kb[i] - whole.bbox[i]) < 1e-6; }, inside = (p, kb) => [0, 1, 2].every((i) => p[i] >= kb[i] - 1e-6 && p[i] <= kb[i + 3] + 1e-6);
   const bodies = () => geo.bodies.map((_, k) => bodyId(k));
   /** Where a region is, as points with their outward direction (for its symbols and its highlight). */
   function spots(key, n = 3) {
     const r = regionOf(key), out = []; if (!r || !model) return out;
     const kb = keptBox();      // a symbol is drawn only on what is solved : what the cuts removed is answered for by its twin
-    if (r.place) return placeSpots(r.place, geo, n, [0, 1, 2].map((i) => (whole.bbox[i] + whole.bbox[i + 3]) / 2), (axis) => { const c = st.cuts.find((x) => x.axis === axis); return c ? { at: c.at, keep: c.keep < 0 ? -1 : 1, box: kb } : null; }).filter((s) => inside(s.p, kb));
+    if (r.place) return placeSpots(r.place, geo, n, [0, 1, 2].map((i) => (whole.bbox[i] + whole.bbox[i + 3]) / 2), (axis) => { const c = cuts().find((x) => x.axis === axis); return c ? { at: c.at, keep: c.keep < 0 ? -1 : 1, box: kb } : null; }).filter((s) => inside(s.p, kb));
     for (const it of r.list) { if (it.face) { if (stillThere(it.face, kb)) out.push(...sidePoints(kb, it.face, n).map((p) => ({ p, out: SIDES[it.face] }))); } else { const p = it.near || (it.box ? [0, 1, 2].map((i) => (it.box[i] + it.box[3 + i]) / 2) : null); if (p && inside(p, kb)) out.push({ p, out: r.n || [0, 0, 1] }); } }
     return out;
   }
@@ -112,7 +113,7 @@ function render(main, args) {
     if (!model || !sel) return [];
     const items = sel.items().map((x) => placeItem(x, geo)).filter(Boolean); if (!items.length) return [];
     const name = placeLabel(items, geo), faces = placeHasFace({ items }), heat = st.kind === "thermal" || (st.kind === "thermo" && !st.thermo.uniform), sig = items.map((x) => x.sig).sort().join("|");
-    const found = (Object.entries(st.places).find(([, p]) => p.items.map((x) => x.sig).sort().join("|") === sig) || [])[0], out = placeNormal({ items }, geo), cutItem = items.find((x) => x.kind === "cut"), cut = cutItem ? st.cuts.find((c) => c.axis === cutItem.axis) : null;
+    const found = (Object.entries(st.places).find(([, p]) => p.items.map((x) => x.sig).sort().join("|") === sig) || [])[0], out = placeNormal({ items }, geo), cutItem = items.find((x) => x.kind === "cut"), cut = cutItem ? cuts().find((c) => c.axis === cutItem.axis) : null;
     const into = out ? pushInto(out) : cut ? { dir: `${cut.keep < 0 ? "-" : "+"}${"XYZ"[cut.axis]}` } : { dir: "-Z" };      // a new load pushes into the face it is put on
     const add = (list, fn, text, group) => () => { const k = placeKey(st, list, geo); fn(k); if (group) st.sel = `${group[0]}${st[group[1]].length}`; changed(); flash(k); toast(text, "success", 2500); toEnter(); };
     /* what is already there : set it or take it away from here, as in the Isolation */
@@ -157,7 +158,7 @@ function render(main, args) {
   /** The designer tries to remove the boundary a symmetry blocks : say why it cannot go alone, and offer to remove the symmetry. */
   async function unsym(it) {
     const ok = await confirmBox("Cette frontière vient de la symétrie", `${it.text} : ce plan est bloqué parce qu'il est un plan de symétrie — rien ne le traverse, et il tient la place de la moitié du produit qui n'est pas calculée. Il ne peut pas être retiré seul. Retirer la symétrie remet le produit entier dans le calcul : plus de cubes, le même résultat si le chargement est symétrique.`, "Retirer la symétrie", true);
-    if (!ok || !alive) return; st.cuts = st.cuts.filter((c) => c.bc !== "sym"); st.sel = null; outdate(); remesh(false); toast("Symétrie retirée : le produit entier est calculé.", "success", 3500);
+    if (!ok || !alive) return; st.cuts = st.cuts.filter((c) => c.bc !== "sym" || c.off); st.sel = null; outdate(); remesh(false); toast("Symétrie retirée : le produit entier est calculé.", "success", 3500);
   }
   /** Selects an item of the load case (null : none) : it lights up on the model and opens in the tree. */
   function select(id) { st.sel = id; drawLeft(); drawSymbols(); }
@@ -180,9 +181,9 @@ function render(main, args) {
     } catch (e) { if (e && e.cancelled) return; vp.setBusy(""); info.textContent = e.message; info.className = "chip bad"; }
   }
   function remesh(first) {
-    { const one = oneSymmetry(st.cuts); if (one.dropped.length) { st.cuts = one.cuts; toast(`Une seule symétrie à la fois pour l'instant : le plan ${one.dropped.join(", ")} devient une coupe libre.`, "warn", 6000); } }
-    try { whole = buildModel({ bodies: geo.bodies, target: st.cells, planes: st.cuts }); model = reduceModel(whole, st.cuts); syms = findSymmetries(whole); }
-    catch (e) { vp.setBusy(""); info.textContent = e.message; info.className = "chip bad"; if (st.cuts.length) { toast(`${e.message} Le dernier plan est retiré.`, "warn", 6000); st.cuts.pop(); return remesh(first); } model = null; whole = null; drawRight(); return; }
+    { const live = cuts(), one = oneSymmetry(live); if (one.dropped.length) { st.cuts = st.cuts.map((c) => (c.off ? c : one.cuts[live.indexOf(c)])); toast(`Une seule symétrie à la fois pour l'instant : le plan ${one.dropped.join(", ")} devient une coupe libre.`, "warn", 6000); } }
+    try { whole = buildModel({ bodies: geo.bodies, target: st.cells, planes: cuts() }); model = reduceModel(whole, cuts()); syms = findSymmetries(whole); }
+    catch (e) { vp.setBusy(""); info.textContent = e.message; info.className = "chip bad"; if (cuts().length) { const lastOn = cuts().pop(); toast(`${e.message} Le dernier plan est mis à Off.`, "warn", 6000); lastOn.off = true; return remesh(first); } model = null; whole = null; drawRight(); return; }
     const b = whole.bbox, h = model.grid.h; checkPlaces(st, geo); rezone();
     regions = FACES.map(([k, l]) => ({ key: `face:${k}`, label: `Face ${l}`, list: [{ face: k }] }));
     for (const it of geo.interfaces) {
@@ -212,7 +213,7 @@ function render(main, args) {
   function showMesh() {
     const v = vp.viewer, parts = zonePreps.filter((p) => p.prep).map((p) => ({ prep: p.prep, field: null, u: null })), s = parts.length ? compositeSkin(model, null, parts) : skin(model, null), fine = parts.reduce((n, p) => n + p.prep.local.nCells, 0);
     v.clear(); if (vp.sel) vp.sel.clear();
-    geo.bodies.forEach((b, k) => v.add({ id: bodyId(k), name: b.name, mesh: clipMesh(b.mesh, st.cuts) }));
+    geo.bodies.forEach((b, k) => v.add({ id: bodyId(k), name: b.name, mesh: clipMesh(b.mesh, cuts()) }));
     const flat = (c) => { const col = new Float32Array(s.pos.length); for (let i = 0; i < col.length; i += 3) col.set(c, i); return col; }, only = (keep) => { const idx = []; for (let f = 0; f < s.faces; f++) if (keep(f) && s.idx[6 * f] !== s.idx[6 * f + 1]) for (let i = 0; i < 6; i++) idx.push(s.idx[6 * f + i]); return Uint32Array.from(idx); };
     v.addField("fea", { pos: s.pos, idx: s.idx, col: flat([0.72, 0.72, 0.72]), epos: s.epos, faces: false, edgeOpacity: 0.13 });
     if (s.zone) { const idx = only((f) => s.zone[f] > 0); if (idx.length) v.addField("feazone", { pos: s.pos, idx, col: flat(ZONE_TINT), opacity: 0.55, lift: true }); }
@@ -355,7 +356,7 @@ function render(main, args) {
     if (wait.length) { const x = wait[0]; if (x.id && x.id[0] !== "Z") st.sel = x.id; drawLeft(); drawSymbols(); toast(`Avant de lancer : ${x.text}`, "warn", 8000); setTimeout(() => { if (alive) nudge(spot(x) || left.querySelector(".guide")); }, 90); return; }
     if (worker) worker.terminate();
     worker = new Worker(new URL("../analysis/fea/worker.js", import.meta.url), { type: "module" });
-    const id = ++seq, kind = st.kind, est = estimate, ran = caseWords(loadTree(), liveZones());      // the case as it is solved : what the trial remembers, to compare with the next
+    const id = ++seq, kind = st.kind, est = estimate, ran = caseWords(loadTree(), liveZones(), cuts());      // the case as it is solved : what the trial remembers, to compare with the next
     const halt = () => { if (worker) { worker.terminate(); worker = null; } vp.setBusy(""); setStatus("Simulation annulée", ""); toast("Simulation annulée : le dernier résultat gardé reste affichable.", "info"); };
     vp.setBusy("Résolution…", { cancel: halt }); setStatus("Simulation en cours…", "busy");
     worker.onmessage = (e) => {
@@ -372,7 +373,7 @@ function render(main, args) {
       setView("result");
     };
     worker.onerror = (e) => { vp.setBusy(""); setStatus("Simulation impossible", "bad"); toast(`Le solveur s'est arrêté : ${e.message || "erreur inconnue"}.`, "error", 9000); };
-    worker.postMessage({ id, kind, bodies: geo.bodies.map(({ name, pos, idx, material }) => ({ name, pos, idx, material })), mesh: { target: st.cells, planes: st.cuts }, cuts: st.cuts, zones: liveZones().map(normZone).filter(Boolean), load: loadCase() });
+    worker.postMessage({ id, kind, bodies: geo.bodies.map(({ name, pos, idx, material }) => ({ name, pos, idx, material })), mesh: { target: st.cells, planes: cuts() }, cuts: cuts(), zones: liveZones().map(normZone).filter(Boolean), load: loadCase() });
   }
   function keep() {
     if (!last) return;

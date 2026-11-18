@@ -70,3 +70,63 @@ test("wiring : every reader of an assembly goes through what counts ; the trees 
   assert.match(read("web/js/draw/dim_model.js"), /if \(!f \|\| f\.suppressed\) continue;/, "an operation put aside is not dimensioned");
   assert.doesNotMatch(read("web/js/core/asm_live.js"), /^import /m, "the helper every tool takes has no import of its own");
 });
+
+/* ---------- named variants of a part, and the planes of the Simulation ---------- */
+import { variantOf, isVariant, variantNow, applyVariant, keepVariant, dropVariant, variantDiff } from "../../web/js/core/variants.js";
+import { liveCuts, cutOn, caseWords as caseSaid, bcTree as treeOf } from "../../web/js/analysis/fea/bc_tree.js";
+import { toDwiz, fromDwiz } from "../../web/js/core/dwiz.js";
+import { DEMO_DRIVE } from "../../web/js/demo/demo_drive.js";
+
+const cousin = () => ({ id: "P", params: { L: { value: 160, min: 120, max: 260, label: "Longueur", alts: [140] }, W: 110, half: { expr: "L / 2" } },
+  features: [{ op: "box", id: "body" }, { op: "hole", id: "h1" }, { op: "pocket", id: "win", suppressed: true }, { op: "interfaces" }] });
+
+test("variant : what tells one cousin from the other is kept under a name, and found again", () => {
+  const p = cousin(); assert.deepEqual(variantOf(p), { off: ["win"], params: { L: 160, W: 110 } }, "a calculated parameter has nothing of its own to remember");
+  p.variants = keepVariant(p, "  Fermée "); assert.deepEqual(p.variants, [{ name: "Fermée", off: ["win"], params: { L: 160, W: 110 } }]);
+  assert.equal(variantNow(p), "Fermée"); assert.equal(isVariant(p, p.variants[0]), true);
+  p.params.L.value = 200; assert.equal(variantNow(p), null, "a value changed : a cousin without a name");
+  p.variants = keepVariant(p, "Longue"); p.variants = keepVariant(p, "Longue"); assert.equal(p.variants.length, 2, "the same name is replaced, not added twice");
+  assert.deepEqual(keepVariant(p, "   "), p.variants, "a name is needed");
+  assert.deepEqual(dropVariant(p, "Fermée").map((v) => v.name), ["Longue"]);
+});
+
+test("variant : a click brings the whole cousin back, and nothing else moves", () => {
+  const p = cousin(); p.variants = keepVariant(p, "Fermée");
+  p.features[2] = { op: "pocket", id: "win" }; p.features[1].suppressed = true; p.params.L.value = 200; p.params.W = 90;
+  assert.deepEqual(variantDiff(p, p.variants[0], { L: "Longueur" }), ["2 opérations basculent", "Longueur 200 → 160", "W 90 → 110"]);
+  const r = applyVariant(p, p.variants[0]);
+  assert.deepEqual(r.features.map((f) => !!f.suppressed), [false, false, true, false], "operations on and off as the variant says ; the interfaces are never put aside");
+  assert.equal(r.params.L.value, 160); assert.deepEqual(r.params.L.alts, [140], "the values kept beside a parameter stay"); assert.equal(r.params.L.min, 120); assert.equal(r.params.W, 110);
+  assert.deepEqual(r.params.half, { expr: "L / 2" }); assert.equal(p.params.L.value, 200, "the part given is not changed");
+  assert.equal(isVariant({ ...p, ...r }, p.variants[0]), true); assert.deepEqual(variantDiff({ ...p, ...r }, p.variants[0]), []);
+});
+
+test("variant : what was added to the part since belongs to every variant", () => {
+  const p = cousin(); p.variants = keepVariant(p, "Fermée");
+  p.features.push({ op: "fillet", id: "r1" }); p.params.T = 3;
+  assert.equal(isVariant(p, p.variants[0]), true, "a new operation that is on, a new parameter : still the same cousin");
+  const gone = { ...p, features: p.features.filter((f) => f.id !== "win") }; assert.equal(isVariant(gone, { name: "x", off: [], params: {} }), true, "an operation that no longer exists does not count");
+  const r = applyVariant(p, p.variants[0]); assert.equal(r.params.T, 3); assert.equal(r.features[4].suppressed, undefined);
+});
+
+test("variant : a part with its variants, its kept values and its operations put aside goes through .dwiz without loss", () => {
+  const base = JSON.parse(JSON.stringify(DEMO_DRIVE.parts.find((x) => Array.isArray(x.features) && x.features.length > 2 && x.params)));
+  const name = Object.keys(base.params).find((k) => base.params[k] && typeof base.params[k] === "object" && typeof base.params[k].value === "number");
+  base.params[name] = { ...base.params[name], alts: [base.params[name].value + 5] }; base.features[base.features.length - 1].suppressed = true; base.variants = keepVariant(base, "Sans la dernière opération");
+  assert.deepEqual(fromDwiz(toDwiz(base)), base);
+});
+
+test("simulation : a plane put aside cuts nothing ; one plane per axis counts", () => {
+  const cuts = [{ axis: 1, at: 55, keep: 1, bc: "sym" }, { axis: 1, at: 75, keep: 1, bc: "free", off: true }, { axis: 0, at: 80, keep: 1, bc: "free" }];
+  assert.deepEqual(liveCuts(cuts).map((c) => c.at), [55, 80]);
+  const next = cutOn(cuts, 1, true); assert.deepEqual(next.map((c) => !!c.off), [true, false, false], "turned on, it takes the place of the plane of its axis");
+  assert.equal(cuts[0].off, undefined, "the list given is not changed");
+  assert.deepEqual(cutOn(cuts, 1, true, true).map((c) => !!c.off), [true, false, true], "alone : every other plane goes off");
+  assert.deepEqual(cutOn(cuts, 2, false).map((c) => !!c.off), [false, true, true]);
+  assert.equal(cutOn(cuts, 9, true), cuts);
+  /* the tree shows a symmetry only while its plane is on ; a trial names its free cuts */
+  const st = { kind: "structure", fixed: ["face:-X"], loads: [{ region: "face:+X", mode: "force", F: 100, dir: "-Z" }], power: [], fixedT: [], cuts };
+  assert.ok(treeOf(st).find((g) => g.key === "fixed").items.some((it) => it.id === "S1"));
+  assert.ok(!treeOf({ ...st, cuts: next }).find((g) => g.key === "fixed").items.some((it) => it.kind === "symmetry"), "its plane off, the symmetry is no longer a boundary");
+  const said = caseSaid(treeOf({ ...st, cuts: next }), [], liveCuts(next)); assert.equal(said.ids, "A1 E1 CY CX"); assert.match(said.text, /CY coupe Y = 75 mm · CX coupe X = 80 mm/);
+});

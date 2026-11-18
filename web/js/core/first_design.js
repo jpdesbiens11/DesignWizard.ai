@@ -163,7 +163,7 @@ export function readFirstDesign(text, o = {}) {
     for (const [n, i] of list(a0.instances).entries()) {
       const pid = clean(i && i.part);
       if (!project.parts.some((p) => p.id === pid)) { it.problems.push(`pièce « ${i && i.part} » absente du fichier : retirée de l'assemblage`); continue; }
-      a.instances.push({ id: String((i && i.id) || `i${n + 1}`), part: pid, ...(i.fixed ? { fixed: true } : {}), placement: i.placement && Array.isArray(i.placement.t) ? i.placement : { t: [0, 0, 0], r: [0, 0, 0] } });
+      a.instances.push({ id: String((i && i.id) || `i${n + 1}`), part: pid, ...(i.fixed ? { fixed: true } : {}), ...(i.off ? { off: true } : {}), placement: i.placement && Array.isArray(i.placement.t) ? i.placement : { t: [0, 0, 0], r: [0, 0, 0] } });
     }
     if (a.instances.length && !a.instances.some((i) => i.fixed)) a.instances[0].fixed = true;
     if (a0.isolation && typeof a0.isolation === "object") a.isolation = a0.isolation;

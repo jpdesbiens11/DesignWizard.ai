@@ -36,3 +36,46 @@ export function dropAlt(raw, k) {
 export function keptAside(spec) {
   return { features: ((spec && spec.features) || []).filter(featureOff).length, values: Object.values((spec && spec.params) || {}).reduce((n, raw) => n + paramAlts(raw).length, 0) };
 }
+
+/* ---------- named variants : a whole cousin of the part, kept under a name and brought back in one step ----------
+   A variant remembers what tells one cousin from the other : the operations put aside and the values of the parameters. It does
+   not copy the part : an operation or a parameter added later belongs to every variant, as it is. */
+const fid = (f, i) => (f && f.id) || `f${i + 1}`;
+const own = (raw) => def(raw).expr === undefined;      // a calculated parameter follows the others : nothing of its own to remember
+/** What the part is now, as a variant would remember it : { off: [ids of the operations put aside], params: { name: value } }. */
+export function variantOf(spec) {
+  return { off: ((spec && spec.features) || []).map((f, i) => (featureOff(f) ? fid(f, i) : null)).filter(Boolean),
+    params: Object.fromEntries(Object.entries((spec && spec.params) || {}).filter(([, raw]) => own(raw)).map(([name, raw]) => [name, def(raw).value])) };
+}
+/** Is the part, now, the variant given ? Only what both know is compared : a parameter added since does not make another cousin. */
+export function isVariant(spec, v) {
+  const now = variantOf(spec), ids = new Set(((spec && spec.features) || []).map(fid)), off = new Set(now.off), want = new Set(((v && v.off) || []).filter((id) => ids.has(id)));
+  if (off.size !== want.size || [...off].some((id) => !want.has(id))) return false;
+  return Object.entries((v && v.params) || {}).every(([name, value]) => !(name in now.params) || now.params[name] === value);
+}
+/** The name of the variant the part is in now, or null : it is then a cousin that has no name yet. */
+export const variantNow = (spec) => { const v = ((spec && spec.variants) || []).find((x) => isVariant(spec, x)); return v ? v.name : null; };
+/** The part brought to a variant : its operations on or off as the variant says, its parameters at the values it says. What the
+    variant does not know stays as it is ; the other values a parameter keeps beside stay too. → { features, params } (new) */
+export function applyVariant(spec, v) {
+  const off = new Set((v && v.off) || []), vals = (v && v.params) || {};
+  const features = ((spec && spec.features) || []).map((f, i) => (f && f.op !== "interfaces" ? withFeatureOff(f, off.has(fid(f, i))) : f));
+  const params = Object.fromEntries(Object.entries((spec && spec.params) || {}).map(([name, raw]) => [name, name in vals && own(raw) ? (raw !== null && typeof raw === "object" ? { ...raw, value: vals[name] } : vals[name]) : raw]));
+  return { features, params };
+}
+/** The variants of the part with its present state kept under `name` (a name already there is replaced, at its place). → a new list */
+export function keepVariant(spec, name) {
+  const n = String(name || "").replace(/\s+/g, " ").trim(), list = ((spec && spec.variants) || []).slice(); if (!n) return list;
+  const v = { name: n, ...variantOf(spec) }, at = list.findIndex((x) => x.name === n);
+  if (at >= 0) list[at] = v; else list.push(v);
+  return list;
+}
+export const dropVariant = (spec, name) => ((spec && spec.variants) || []).filter((x) => x.name !== name);
+/** What a variant changes from the part as it is now, in a few words : « 2 opérations basculent · L 160 → 200 ». labels : name → its label. */
+export function variantDiff(spec, v, labels = {}) {
+  const now = variantOf(spec), ids = new Set(((spec && spec.features) || []).map(fid)), a = new Set(now.off), b = new Set(((v && v.off) || []).filter((id) => ids.has(id)));
+  const flips = [...ids].filter((id) => a.has(id) !== b.has(id)).length, out = [];
+  if (flips) out.push(`${flips} opération${flips > 1 ? "s basculent" : " bascule"}`);
+  for (const [name, value] of Object.entries((v && v.params) || {})) if (name in now.params && now.params[name] !== value) out.push(`${labels[name] || name} ${String(now.params[name]).replace(".", ",")} → ${String(value).replace(".", ",")}`);
+  return out;
+}
