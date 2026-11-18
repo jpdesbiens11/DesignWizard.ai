@@ -6,6 +6,7 @@
 import { elecProcess } from "../cad/interfaces_elec.js";
 import { frameMatrix, matMul, matInvRigid, matFromPlacement, matRotAxis, matTranslate, matDir, matPoint, v3, IDENTITY } from "../cad/vec.js";
 import { compatible, interfaceType, interfaceSignature, patternPoints } from "../cad/interfaces.js";
+import { flatAsm } from "./asm_levels.js";
 
 const FLIP = [1, 0, 0, 0, 0, -1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1];      // half turn about u: faces meet, normals opposed
 const clone = (o) => JSON.parse(JSON.stringify(o));
@@ -25,13 +26,21 @@ export function mateMatrix(Ta, Fa, Fb, mate = {}) {
   return matMul(G, matInvRigid(frameMatrix(Fb)));
 }
 
-/** Solve the placements: fixed instances keep theirs, the others follow their mates (breadth first). */
+/** Solve the placements: fixed instances keep theirs, the others follow their mates (breadth first).
+    A sub-assembly is one rigid whole (asm.groups, core/asm_levels.js) : each of its parts has its place in it (`local`), and
+    the first of them that is placed — by a joint of this assembly, or because the sub-assembly is the ground — takes the
+    others with it. The sub-assembly itself has its placement, under the id of its instance. */
 export function solve(asm, built) {
   const placements = {}, explode = {}, placedBy = {}, problems = [];
-  const queue = [];
-  let seeds = asm.instances.filter((i) => i.fixed);
+  const queue = [], groups = asm.groups || {}, inGroup = (g) => asm.instances.filter((i) => i.group === g);
+  /* a whole sub-assembly put where its frame G is : every part at G · its place inside */
+  const seat = (g, G, by, push) => { placements[g] = G; placedBy[g] = by; explode[g] = push; for (const j of inGroup(g)) { placements[j.id] = matMul(G, j.local || IDENTITY); placedBy[j.id] = by; explode[j.id] = push; queue.push(j.id); } };
+  /* one instance placed at T : alone, or with the whole sub-assembly it belongs to */
+  const put = (i, T, by, push) => { if (i.group && groups[i.group]) seat(i.group, matMul(T, matInvRigid(i.local || IDENTITY)), by, push); else { placements[i.id] = T; placedBy[i.id] = by; explode[i.id] = push; queue.push(i.id); } };
+  const home = (i) => { if (i.group && groups[i.group]) seat(i.group, matFromPlacement(groups[i.group].placement), null, [0, 0, 0]); else put(i, matFromPlacement(i.placement), null, [0, 0, 0]); };
+  let seeds = [...asm.instances.filter((i) => i.fixed), ...Object.keys(groups).filter((g) => groups[g].fixed).map((g) => inGroup(g)[0]).filter(Boolean)];
   if (!seeds.length && asm.instances.length) seeds = [asm.instances[0]];          // nothing fixed: the first instance is the ground
-  for (const i of seeds) { placements[i.id] = matFromPlacement(i.placement); explode[i.id] = [0, 0, 0]; placedBy[i.id] = null; queue.push(i.id); }
+  for (const i of seeds) if (!placements[i.id]) home(i);
   const mates = asm.mates || [];
   while (queue.length) {
     const cur = queue.shift();
@@ -52,15 +61,22 @@ export function solve(asm, built) {
         }
         continue;
       }
-      placements[to.inst] = T; placedBy[to.inst] = m.id;
-      const n = matDir(placements[cur], fa.frame.n);
-      explode[to.inst] = v3.add(explode[cur], n);
-      queue.push(to.inst);
+      put(iTo, T, m.id, v3.add(explode[cur], matDir(placements[cur], fa.frame.n)));
     }
   }
-  const floating = [];
-  for (const i of asm.instances) if (!placements[i.id]) { placements[i.id] = matFromPlacement(i.placement); explode[i.id] = [0, 0, 0]; placedBy[i.id] = null; floating.push(i.id); }
+  const floating = [];      // what no joint reaches stays where it was put by hand : a part, or a whole sub-assembly (counted once)
+  for (const i of asm.instances) if (!placements[i.id]) { floating.push(i.group && groups[i.group] ? i.group : i.id); home(i); queue.length = 0; }
   return { placements, explode, placedBy, floating, problems };
+}
+/** The assembly opened and solved through its levels : each sub-assembly is solved on its own first, and its parts keep in the
+    parent the places they have in it. Parts that could not be built are left out. find(id) → assembly.
+    → { asm (opened : core/asm_levels.js flatAsm, each part of a sub-assembly with its `local`), sol } */
+export function solveLevels(asm, built, find, memo = new Map()) {
+  const flat = flatAsm(asm, find), groups = flat.groups || {};
+  const inner = (id) => { if (!memo.has(id)) memo.set(id, solveLevels(find(id), built, find, memo)); return memo.get(id); };
+  const instances = flat.instances.filter((i) => built[i.part]).map((i) => (i.group && groups[i.group] ? { ...i, local: inner(groups[i.group].asm).sol.placements[i.id.slice(i.group.length + 1)] || IDENTITY } : i));
+  const opened = { ...flat, instances };
+  return { asm: opened, sol: solve(opened, built) };
 }
 function inverseMate(Tb, Fb, Fa, mate) {
   // Tb = G * inv(Mb) with G = Ta * Ma * X  =>  Ta = Tb * Mb * inv(X) * inv(Ma)
@@ -81,7 +97,7 @@ export function freeInterfaces(asm, built) {
   const used = new Set();
   for (const m of asm.mates || []) { used.add(`${m.a.inst}/${m.a.iface}`); used.add(`${m.b.inst}/${m.b.iface}`); }
   const out = [];
-  for (const inst of asm.instances) for (const it of (built[inst.part] && built[inst.part].interfaces) || []) if (!used.has(`${inst.id}/${it.id}`)) out.push({ inst: inst.id, part: inst.part, iface: it, external: !!it.external });
+  for (const inst of asm.instances) for (const it of (built[inst.part] && built[inst.part].interfaces) || []) if (!used.has(`${inst.id}/${it.id}`)) out.push({ inst: inst.id, part: inst.part, iface: it, external: !!it.external, ...(inst.group ? { group: inst.group } : {}) });
   return out;
 }
 
@@ -93,7 +109,7 @@ export function candidates(asm, built, withRejected = false) {
   const free = freeInterfaces(asm, built), out = [], rejected = new Set(asm.rejected || []);
   for (let i = 0; i < free.length; i++) for (let j = i + 1; j < free.length; j++) {
     const x = free[i], y = free[j];
-    if (x.inst === y.inst) continue;
+    if (x.inst === y.inst || (x.group && x.group === y.group)) continue;      // two parts of one sub-assembly are joined in the sub-assembly, not here
     const c = compatible(x.iface, y.iface);
     if (!c.ok) continue;
     const [a, b] = x.iface.side === "B" ? [y, x] : [x, y];              // side A first
@@ -105,12 +121,14 @@ export function candidates(asm, built, withRejected = false) {
   return out.sort((p, q) => q.score - p.score);
 }
 
-/** Add every unambiguous mate (each interface used once, best score first). Returns the mates added. */
-export function autoMate(asm, built) {
+/** Add every unambiguous mate (each interface used once, best score first). Returns the mates added.
+    opened : the assembly as flatAsm gives it, when it holds sub-assemblies — the joints are found between its parts through the
+    levels, and written in `asm` (a part inside a sub-assembly is named « S~i2 »). */
+export function autoMate(asm, built, opened) {
   const added = [], used = new Set();
   let n = nextJoint(asm) - 1;
   asm.mates = asm.mates || [];
-  for (const c of candidates(asm, built)) {
+  for (const c of candidates(opened || asm, built)) {
     const ka = `${c.a.inst}/${c.a.iface}`, kb = `${c.b.inst}/${c.b.iface}`;
     if (used.has(ka) || used.has(kb)) continue;
     used.add(ka); used.add(kb);

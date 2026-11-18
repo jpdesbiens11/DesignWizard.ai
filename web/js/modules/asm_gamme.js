@@ -5,11 +5,12 @@
 
 import { el, icon } from "../core/dom.js";
 import { store } from "../core/store.js";
+import { ownsKey } from "../core/asm_levels.js";
 import { assemblyPlan } from "../core/asm_plan.js";
 import { mateHardware } from "../core/assembly_logic.js";
 import { planPanel, shot, setPlanNote, setPlanPoints } from "./plan_view.js";
 
-const keysOf = (v, iid) => [...v.objects.keys()].filter((k) => k.startsWith(`${iid}/`));
+const keysOf = (v, iid) => [...v.objects.keys()].filter((k) => ownsKey(iid, k));      // a part, or every part of a sub-assembly : it is mounted as one block
 /** Every part visible again, nothing highlighted. */
 export function showWhole(vp) { const v = vp.viewer; for (const k of v.objects.keys()) v.setVisible(k, true); v.highlight([]); v.invalidate(); }
 

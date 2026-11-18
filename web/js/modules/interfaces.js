@@ -5,6 +5,7 @@
 import { el, clear, icon, btn, badge, field, toast, copyText, table, fmt } from "../core/dom.js";
 import { registerModule, go, setStatus } from "../core/app.js";
 import { store } from "../core/store.js";
+import { openInstances } from "../core/asm_levels.js";
 import { kernel } from "../cad/client.js";
 import { partPrompt, anticipatedInterfaces, revisionPrompt } from "../core/prompts.js";
 import { extractJson, kindOf, importPart } from "../core/importer.js";
@@ -160,7 +161,7 @@ function interview(page) {
 function register(page) {
   const p = store.project, rows = [], mated = new Map();
   for (const a of p.assemblies) for (const m of a.mates || []) for (const [me, other] of [[m.a, m.b], [m.b, m.a]]) {
-    const inst = a.instances.find((i) => i.id === me.inst), o = a.instances.find((i) => i.id === other.inst);
+    const open = openInstances(a, (x) => store.assembly(x)), inst = open.find((i) => i.id === me.inst), o = open.find((i) => i.id === other.inst);      // through the levels
     if (inst && o) mated.set(`${inst.part}/${me.iface}`, `${o.part} (${a.id}${m.linked === false ? ", non liée" : ""})`);
   }
   const byKey = new Map();

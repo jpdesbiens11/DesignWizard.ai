@@ -10,6 +10,7 @@ import { registerModule, go, setStatus, setGuide } from "../core/app.js";
 import { store } from "../core/store.js";
 import { createViewport } from "../core/viewport.js";
 import { buildAssembly, showAssembly } from "../core/asm_scene.js";
+import { openInstances } from "../core/asm_levels.js";
 import { showLabels } from "../core/label_raster.js";
 import { toDwiz } from "../core/dwiz.js";
 import { aiRead, aiDiff } from "../core/ai_loop.js";
@@ -49,7 +50,8 @@ function render(main, args) {
   const change = (label, fn) => store.updateAssembly(id, (a) => { a.labels = a.labels || []; fn(a.labels, a); }, label);
   const item = () => labels().find((l) => l.id === st.sel) || null;
   const edit = (label, fn) => change(label, (L) => { const l = L.find((q) => q.id === st.sel); if (l) fn(l); });
-  const names = () => Object.fromEntries(asm().instances.map((i) => [i.id, (store.part(i.part) || {}).name || i.part]));
+  const open = () => openInstances(asm(), (x) => store.assembly(x));      // every part through the sub-assemblies : a label sits on a part
+  const names = () => Object.fromEntries(open().map((i) => [i.id, (store.part(i.part) || {}).name || i.part]));
   const add = (make, where = null) => change("Étiquette ajoutée", (L) => { const l = make(nextLabelId(L)); if (where) Object.assign(l, where); L.push(l); st.sel = l.id; });
   const remove = (lid) => { if (st.sel === lid) st.sel = null; change(`${lid} retirée`, (L) => { const k = L.findIndex((q) => q.id === lid); if (k >= 0) L.splice(k, 1); }); };
   /* a point picked in the view → where a label sits : the instance, and the surface in the coordinates of its part */
@@ -75,7 +77,7 @@ function render(main, args) {
     onPick: (h) => { if (h && h.def && h.def.data && h.def.data.label) { choose(h.def.data.label); return true; }
       const w = whereOf(h); if (w && item()) edit(`${st.sel} posée`, (l) => Object.assign(l, w)); else if (w) toast("Choisissez une étiquette à gauche, ou clic droit : « La marque, ici ».", "info", 4000); return true; } });
   const info = el("span", { class: "chip" }, "—"), verdict = el("span", { class: "chip" }, ""); vp.setStatus(info, verdict);
-  const guide = () => labelGuide(labels(), asm().instances.map((i) => i.id)).map((x) => ({ ...x, go: () => goTo(x) }));
+  const guide = () => labelGuide(labels(), open().map((i) => i.id)).map((x) => ({ ...x, go: () => goTo(x) }));
   function goTo(x) { if (x.id && labels().some((l) => l.id === x.id)) { st.sel = x.id; renderLeft(); mark(); } const f = x.field === "add" ? left.querySelector("[data-add-box]") : left.querySelector(`[data-f="${x.field}"]`) || (x.field === "on" ? view : left.querySelector("[data-label-card]")); if (f) nudge(f); }
   function choose(lid) { st.sel = lid; renderLeft(); renderRight(); mark(); }
   function mark() { const v = vp.viewer; v.clearOverlays("lb"); if (!st.ctx) return;

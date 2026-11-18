@@ -61,7 +61,7 @@ test("part : a parameter keeps other values beside the one that counts, and one 
 });
 
 test("wiring : every reader of an assembly goes through what counts ; the trees carry the same switch", () => {
-  assert.match(read("web/js/core/asm_scene.js"), /asm = liveAsm\(asm\);/, "what is built, placed, weighed, listed and sent out");
+  assert.match(read("web/js/core/asm_scene.js"), /opened = flatAsm\(asm, find\);/, "what is built, placed, weighed, listed and sent out"); assert.match(read("web/js/core/asm_levels.js"), /const live = liveAsm\(asm\);/, "opened through its levels, and still without what is put aside");
   assert.match(read("web/js/core/asm_plan.js"), /asm = liveAsm\(asm\);/); assert.match(read("web/js/analysis/dfa_rules.js"), /asm = liveAsm\(asm \|\| \{\}\);/);
   assert.match(read("web/js/core/render_looks.js"), /asm = liveAsm\(asm\);/); assert.match(read("web/js/draw/asm_drawing.js"), /liveAsm\(asm\)\.instances\.length/);
   const screen = read("web/js/modules/assembly.js"); assert.match(screen, /onOff\(!inst\.off/); assert.match(screen, /Cette pièce est à Off/);

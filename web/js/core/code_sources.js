@@ -5,6 +5,7 @@
    take it in again. Pure : no DOM. */
 
 import { toDwiz } from "./dwiz.js";
+import { partCounts, finder } from "./asm_levels.js";
 import { toFeatureScript } from "../cad/featurescript.js";
 import { expandSpec } from "../cad/shop.js";
 
@@ -32,7 +33,7 @@ function fsOf(spec) {
 export function codeSources(project, e) {
   const dwiz = { key: "dwiz", label: ".dwiz", text: toDwiz(light(e.doc)), file: `${e.id || "projet"}.dwiz`, notes: ["La spécification de haut niveau : c'est elle que DesignWizard.ai relit, et qu'une IA doit rendre."] };
   if (e.kind === "part") { const f = fsOf(e.doc); return [{ key: "fs", label: "FeatureScript", text: f.text, file: `${e.id}.fs`, notes: ["La même définition qu'Onshape : collez-la dans un Feature Studio, puis insérez la fonction dans un Part Studio.", ...f.notes] }, dwiz]; }
-  if (e.kind === "assembly") { const ids = [...new Set((e.doc.instances || []).map((i) => i.part))], parts = ids.map((id) => (project.parts || []).find((p) => p.id === id)).filter(Boolean);
+  if (e.kind === "assembly") { const ids = [...partCounts(e.doc, finder(project)).keys()], parts = ids.map((id) => (project.parts || []).find((p) => p.id === id)).filter(Boolean);
     return [dwiz, { key: "fs", label: "FeatureScript des pièces", text: parts.map((p) => `// ===== ${p.id} — ${p.name || ""} =====\n${fsOf(p).text}`).join("\n"), file: `${e.id}_pieces.fs`, notes: [`Un assemblage se définit par ses liaisons, pas par du FeatureScript : voici celui de ses ${parts.length} pièce(s), l'une après l'autre.`] }]; }
   return [dwiz];
 }

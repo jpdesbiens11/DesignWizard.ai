@@ -6,7 +6,8 @@
    hash (where to go) }. Levels are those of core/guide.js. */
 
 import { material, PROCESSES, processName } from "../cad/materials.js";
-import { liveAsm, offOf } from "./asm_live.js";
+import { offOf } from "./asm_live.js";
+import { flatAsm, topOf, isSub } from "./asm_levels.js";
 import { moldPlan, moldGuide } from "./mold_plan.js";
 import { boardGuide } from "../pcba/guide.js";
 import { netsOf, isolationGuide } from "../analysis/cc_guide.js";
@@ -47,24 +48,27 @@ export function partIssues(part, others = new Set()) {
   return out;
 }
 
-/** The entries of one assembly. parts : Map(id → part) of the project. */
-export function assemblyIssues(asm, parts = new Map()) {
+/** The entries of one assembly. parts : Map(id → part) of the project ; find(id) → assembly : its sub-assemblies are opened — each
+    of their parts is checked where it is, and their own joints are left to their own entry. */
+export function assemblyIssues(asm, parts = new Map(), find = () => null) {
   const out = [], id = asm.id || "?", hash = `#/assembly/${encodeURIComponent(id)}`, add = (level, text) => out.push({ level, text: `${id} — ${text}`, screen: "assembly", ref: id, hash });
-  const put = offOf(asm), live = liveAsm(asm), inst = live.instances || [], mates = live.mates || [], byId = new Map(inst.map((i) => [i.id, i]));      // what is put aside (off) is not checked, and is said
+  const put = offOf(asm), live = flatAsm(asm, find), inst = live.instances || [], mates = (live.mates || []).filter((m) => !m.of), byId = new Map(inst.map((i) => [i.id, i])), groups = live.groups || {};      // what is put aside (off) is not checked, and is said
+  for (const l of live.lost || []) add("error", l.why === "cycle" ? `le sous-assemblage « ${l.asm} » (${l.inst}) contient déjà cet assemblage : il se contiendrait lui-même, et il est laissé de côté. Correctif : retirez-le.` : `l'instance ${l.inst} renvoie au sous-assemblage « ${l.asm} », qui n'existe plus. Correctif : retirez l'instance (Ctrl + Z s'il vient d'être supprimé).`);
   if (put.instances.length) add("tip", `${put.instances.length} pièce${put.instances.length > 1 ? "s" : ""} à Off${put.mates.length ? `, ${put.mates.length} accouplement${put.mates.length > 1 ? "s" : ""} en attente` : ""} : hors de la vue, de la nomenclature et de la masse jusqu'à leur retour à On.`);
-  if (!inst.length) { add("todo", put.instances.length ? "toutes les pièces sont à Off : remettez-en une à On." : "aucune pièce : ajoutez-en depuis la liste, les accouplements se posent seuls par les clés d'interface."); return out; }
+  if (!inst.length) { if (!(live.lost || []).length) add("todo", put.instances.length ? "toutes les pièces sont à Off : remettez-en une à On." : (asm.instances || []).some(isSub) ? "ses sous-assemblages sont vides : ajoutez-y des pièces." : "aucune pièce : ajoutez-en depuis la liste, les accouplements se posent seuls par les clés d'interface."); return out; }
   for (const i of inst) if (!parts.has(i.part)) add("error", `l'instance ${i.id} renvoie à la pièce « ${i.part} », qui n'existe plus. Correctif : retirez l'instance ou recréez la pièce.`);
-  if (!inst.some((i) => i.fixed)) add("warn", "aucune pièce fixe : l'assemblage flotte dans l'espace. Correctif : fixez la pièce qui porte les autres (clic droit → « Fixer »).");
+  if (!inst.some((i) => i.fixed) && !Object.values(groups).some((g) => g.fixed)) add("warn", "aucune pièce fixe : l'assemblage flotte dans l'espace. Correctif : fixez la pièce qui porte les autres (clic droit → « Fixer »).");
   const mated = new Set();
   for (const m of mates) {
     for (const end of [m.a, m.b]) {
       const i = end && byId.get(end.inst), p = i && parts.get(i.part);
       if (!i) { add("error", `l'accouplement ${m.id} vise l'instance « ${end && end.inst} », qui n'existe plus.`); continue; }
-      mated.add(i.id);
+      mated.add(i.id); if (i.group) mated.add(i.group);      // one part joined holds its whole sub-assembly
       if (p && !(p.interfaces || []).some((x) => x.id === end.iface)) add("error", `l'accouplement ${m.id} vise l'interface ${end.iface} de ${i.part}, qui n'existe plus : il est rompu. Correctif : « Mates automatiques », ou retirez-le.`);
     }
   }
-  for (const i of inst) if (!i.fixed && !mated.has(i.id) && parts.has(i.part)) add("warn", `${i.part} (${i.id}) n'est accouplée à rien : elle reste où elle a été posée. Correctif : « Mates automatiques », ou vérifiez les clés de ses interfaces.`);
+  for (const i of inst) if (!i.group && !i.fixed && !mated.has(i.id) && parts.has(i.part)) add("warn", `${i.part} (${i.id}) n'est accouplée à rien : elle reste où elle a été posée. Correctif : « Mates automatiques », ou vérifiez les clés de ses interfaces.`);
+  for (const [g, def] of Object.entries(groups)) if (!def.fixed && !mated.has(g)) add("warn", `le sous-assemblage ${def.name} (${g}) n'est accouplé à rien : il reste où il a été posé. Correctif : « Mates automatiques », ou laissez-lui une interface libre.`);
   return out;
 }
 
@@ -87,11 +91,11 @@ export function projectIssues(project) {
     const others = new Set(); for (const q of parts) if (q !== p) for (const it of q.interfaces || []) if (it && it.key) others.add(it.key);
     out.push(...partIssues(p, others));
   }
-  for (const a of asms) out.push(...assemblyIssues(a, byId));
-  for (const a of asms) out.push(...isolationGuide(a, netsOf(a, (id) => byId.get(id))).map((x) => ({ ...x, si: true, screen: "creepage", ref: a.id, hash: `#/creepage/${encodeURIComponent(a.id)}` })));      // a calculation : its lines stay in millimetres
+  for (const a of asms) out.push(...assemblyIssues(a, byId, (id) => asms.find((x) => x.id === id) || null));
+  for (const a of asms) out.push(...isolationGuide(a, netsOf(flatAsm(a, (id) => asms.find((x) => x.id === id) || null) || a, (id) => byId.get(id))).map((x) => ({ ...x, si: true, screen: "creepage", ref: a.id, hash: `#/creepage/${encodeURIComponent(a.id)}` })));      // a calculation : its lines stay in millimetres
   out.push(...teamIssues(project));
   for (const b of project.boards || []) out.push(...boardGuide(b).map((x) => ({ ...x, screen: "pcba", ref: b.id, hash: `#/pcba/${encodeURIComponent(b.id)}/${x.step}` })));      // what a board shows of itself ; its screen adds what its checks find
-  if (asms.length) { const placed = new Set(asms.flatMap((a) => (a.instances || []).map((i) => i.part)));
+  if (asms.length) { const placed = new Set(asms.flatMap((a) => (a.instances || []).map((i) => i.part)));      // in an assembly, at whatever level : a part of a sub-assembly is an instance of that sub-assembly
     for (const p of parts) if (!placed.has(p.id)) out.push({ level: "tip", text: `${p.id} — dans le projet, mais dans aucun assemblage.`, screen: "assembly", ref: p.id, hash: `#/assembly/${encodeURIComponent(asms[0].id)}` }); }
   return out;
 }

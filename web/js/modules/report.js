@@ -125,10 +125,10 @@ function render(main) {
       const gamme = assemblyPlan(a.asm, p, { hardwareOf: (m) => mateHardware(a.ctx.asm, a.ctx.built, m), mass: a.ctx.mass.mass });
       sec.append(el("h3", { style: { marginTop: ".8rem" } }, "Gamme d'assemblage"), el("p", { class: "muted", style: { fontSize: ".84rem" } }, planSummary(gamme)),
         table(["N°", "Étape", "Opérations", "Outillage", "Note de discussion"], gamme.phases.map((ph) => [String(ph.n), ph.title, ph.ops.map((o) => o.text).join(" ; ") || ph.checks.join(" ; "), ph.tools.join(" ; ") || "—", ph.note || "—"])));
-      const lab = labelRows(a.asm.labels, Object.fromEntries(a.asm.instances.map((i) => [i.id, (store.part(i.part) || {}).name || i.part]))), labAsk = labelGuide(a.asm.labels, a.asm.instances.map((i) => i.id)).filter((x) => x.level !== "tip");
+      const lab = labelRows(a.asm.labels, Object.fromEntries(a.ctx.asm.instances.map((i) => [i.id, (store.part(i.part) || {}).name || i.part]))), labAsk = labelGuide(a.asm.labels, a.ctx.asm.instances.map((i) => i.id)).filter((x) => x.level !== "tip");
       if (lab.length) sec.append(el("h3", { style: { marginTop: ".8rem" } }, "Étiquettes, autocollants et marquages"), table(["Repère", "Nom", "Genre", "Motif", "Sur", "Surface", "Taille (mm)", "Aire (cm²)"], lab.map((r) => [r.id, r.name, r.kind, r.art, r.on, r.surface, `${fmt(r.w, 0)} × ${fmt(r.h, 0)}`, fmt(r.area, 1)])),
         ...(labAsk.length ? [el("p", { class: "muted", style: { fontSize: ".84rem" } }, labAsk.map((x) => x.text).join(" "))] : []));
-      const fin = a.asm.render ? lookRows(a.asm, a.ctx.built, Object.fromEntries(a.asm.instances.map((i) => [i.part, (store.part(i.part) || {}).name || i.part]))).filter((r) => r.chosen) : [], rd = renderOf(a.asm);
+      const fin = a.asm.render ? lookRows({ ...a.asm, instances: a.ctx.asm.instances }, a.ctx.built, Object.fromEntries(a.ctx.asm.instances.map((i) => [i.part, (store.part(i.part) || {}).name || i.part]))).filter((r) => r.chosen) : [], rd = renderOf(a.asm);
       if (fin.length) sec.append(el("h3", { style: { marginTop: ".8rem" } }, "Rendu marketing — finitions choisies"), el("p", { class: "muted", style: { fontSize: ".84rem" } }, `Décor : ${(SCENES[rd.scene] || SCENES.studio).fr.toLowerCase()} ; point de vue : ${rd.view ? "réglé à la souris" : (SHOTS[rd.shot] || SHOTS.hero).fr.toLowerCase()}. Réglages d'image, pas des finitions d'atelier.`),
         table(["Référence", "Pièce", "Finition", "Couleur"], fin.map((r) => [r.part, r.name, r.label, r.color])));
       const isoA = (a.asm.isolation || {}).results;

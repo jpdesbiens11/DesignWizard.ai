@@ -8,6 +8,7 @@ import { el, clear, icon, svg, btn, badge, field, toast, modal, copyText, downlo
 import { registerModule, go, setStatus, setGuide } from "../core/app.js";
 import { store } from "../core/store.js";
 import { buildAssembly } from "../core/asm_scene.js";
+import { flatAsm } from "../core/asm_levels.js";
 import { RenderStage } from "../core/render_stage.js";
 import { rasterLabel } from "../core/label_raster.js";
 import { labelPatch } from "../core/labels.js";
@@ -47,12 +48,13 @@ function render(main, args) {
     view.append(el("div", { class: "page" }, el("div", { class: "empty" }, el("h2", null, "Une image du produit"), el("p", null, "Ouvrez un projet qui a un assemblage : le rendu en fait une image."), btn("Voir les exemples", () => go("#/home"), { primary: true, icon: "home" })))); return null; }
   const st = { sel: null, ctx: null, alive: true, token: 0, free: null }, asm = () => store.assembly(id), R = () => renderOf(asm());
   const change = (label, fn) => store.updateAssembly(id, (a) => { a.render = tidyRender({ ...renderOf(a) }); fn(a.render); }, label);
-  const names = () => Object.fromEntries(asm().instances.map((i) => [i.part, (store.part(i.part) || {}).name || i.part]));
+  const open = () => flatAsm(asm(), (x) => store.assembly(x));      // the assembly opened : every part through its sub-assemblies, with the settings of the render
+  const names = () => Object.fromEntries(open().instances.map((i) => [i.part, (store.part(i.part) || {}).name || i.part]));
   const status = el("div", { class: "view-status" }), info = el("span", { class: "chip" }, "—"), hint = el("span", { class: "chip" }, "Glisser : tourner · molette : approcher · Maj + glisser : déplacer · clic : choisir une pièce"); status.append(info, hint); view.append(status);
   const stage = new RenderStage(view, { onPick: (pid, data) => { st.sel = data && data.part ? data.part : null; renderRight(); glow(); }, onView: (v) => { st.free = v; renderLeft(); } });
   view._stage = stage;                                                 // for whoever inspects the page (tests, the console)
-  const glow = () => stage.highlight(st.sel && st.ctx ? asm().instances.filter((i) => i.part === st.sel).flatMap((i) => (st.ctx.built[i.part] ? st.ctx.built[i.part].bodies.map((b) => `${i.id}/${b.name}`) : [])) : []);
-  const guide = () => renderGuide(asm(), [...new Set(asm().instances.map((i) => i.part))]).map((x) => ({ ...x, go: () => { if (x.id && st.ctx && st.ctx.built[x.id]) { st.sel = x.id; renderRight(); glow(); } const f = x.field === "looks" ? right.querySelector("[data-part-card], [data-looks]") : left.querySelector(`[data-box="${x.field}"]`); if (f) nudge(f); } }));
+  const glow = () => stage.highlight(st.sel && st.ctx ? open().instances.filter((i) => i.part === st.sel).flatMap((i) => (st.ctx.built[i.part] ? st.ctx.built[i.part].bodies.map((b) => `${i.id}/${b.name}`) : [])) : []);
+  const guide = () => renderGuide(asm(), [...new Set(open().instances.map((i) => i.part))]).map((x) => ({ ...x, go: () => { if (x.id && st.ctx && st.ctx.built[x.id]) { st.sel = x.id; renderRight(); glow(); } const f = x.field === "looks" ? right.querySelector("[data-part-card], [data-looks]") : left.querySelector(`[data-box="${x.field}"]`); if (f) nudge(f); } }));
   /* everything that stands on the stage : each body of each instance in its finish, then the labels */
   async function dress(keepView = true) {
     const token = ++st.token, ctx = st.ctx, r = R(); if (!ctx) return;
@@ -62,7 +64,7 @@ function render(main, args) {
     const view0 = stage.viewNow(), target0 = stage.view.target.clone();
     stage.setScene(r.scene, r.ground); stage.setContent(items, ctx.bbox);
     if (keepView && st.free) { Object.assign(stage.view, view0); stage.view.target.copy(target0); } else if (r.view) { stage.setShot({ ...r.view, fill: 0.82 }); stage.view.dist = r.view.dist; } else stage.setShot(SHOTS[r.shot] || SHOTS.hero);
-    glow(); const rows = lookRows(asm(), ctx.built, names()); info.textContent = `${ctx.asm.instances.length} pièce(s) · ${rows.filter((x) => x.chosen).length} finition(s) choisie(s) · ${SCENES[r.scene].fr.toLowerCase()} · ${(asm().labels || []).filter((l) => l.on).length} étiquette(s)`;
+    glow(); const rows = lookRows(open(), ctx.built, names()); info.textContent = `${ctx.asm.instances.length} pièce(s) · ${rows.filter((x) => x.chosen).length} finition(s) choisie(s) · ${SCENES[r.scene].fr.toLowerCase()} · ${(asm().labels || []).filter((l) => l.on).length} étiquette(s)`;
   }
   async function build() { setStatus("Construction de l'assemblage…", "busy");
     try { const ctx = await buildAssembly(asm(), (t) => setStatus(t, "busy")); if (!st.alive) return; st.ctx = ctx; setStatus(`${id} prêt`, "done"); await dress(false); renderRight(); }
@@ -97,7 +99,7 @@ function render(main, args) {
       el("div", { class: "form-actions", style: { justifyContent: "flex-start", marginTop: ".5rem" } }, take)));
     const g = guideBox(guide(), { title: "Ce que le rendu demande", quiet: "Décor, point de vue et finitions : prêts." }); if (g) scroll.append(el("div", { class: "side-section" }, g));
     scroll.append(el("div", { class: "side-section" }, el("h3", null, "Avec une IA"), el("div", { class: "form-actions", style: { justifyContent: "flex-start", flexWrap: "wrap" } },
-      btn("Copier pour une IA", async () => toast((await copyText(request(asm(), st.ctx ? lookRows(asm(), st.ctx.built, names()) : []))) ? "Copié : le rendu et sa consigne." : "Copie impossible.", "success", 5000), { small: true, icon: "sparkle", tip: "Le rendu, précédé de la façon de mener l'entrevue et de la réponse attendue" }),
+      btn("Copier pour une IA", async () => toast((await copyText(request(asm(), st.ctx ? lookRows(open(), st.ctx.built, names()) : []))) ? "Copié : le rendu et sa consigne." : "Copie impossible.", "success", 5000), { small: true, icon: "sparkle", tip: "Le rendu, précédé de la façon de mener l'entrevue et de la réponse attendue" }),
       btn("Réimporter…", reimport, { small: true, icon: "wizard", tip: "Aperçu des changements, puis une seule étape annulable" }))));
   }
   function card(row) {
@@ -111,7 +113,7 @@ function render(main, args) {
     clear(right); right.append(el("div", { class: "side-head" }, el("h2", null, "Finitions"), el("a", { class: "btn btn-small", href: `#/assembly/${encodeURIComponent(id)}`, "data-tip": "Ouvrir l'assemblage" }, icon("assembly"))));
     const body = el("div", { class: "side-scroll", "data-looks": "" }); right.append(body);
     if (!st.ctx) { body.append(el("p", { class: "atelier-hint" }, icon("info"), " Construction de l'assemblage…")); return; }
-    const rows = lookRows(asm(), st.ctx.built, names());
+    const rows = lookRows(open(), st.ctx.built, names());
     for (const G of FINISH_GROUPS) { const mine = rows.filter((x) => x.group === G.id); if (!mine.length) continue;
       body.append(el("div", { class: "ft-group", style: `--dom:${G.color}`, "data-finish-group": G.id }, el("div", { class: "lib-group-head" }, el("b", null, G.label), el("small", null, ""), el("span", { class: "lib-count" }, String(mine.length))),
         mine.map((row) => { const on = row.part === st.sel; return [el("button", { class: `ft-row${on ? " sel" : ""}`, type: "button", "data-part": row.part, "aria-expanded": on ? "true" : "false", style: `--dom:${G.color}`, onClick: () => { st.sel = on ? null : row.part; renderRight(); glow(); } }, finishPic(row.finish, row.color),

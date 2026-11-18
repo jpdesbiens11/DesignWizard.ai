@@ -12,6 +12,7 @@ import { validateSpec } from "../cad/build.js";
 import { markAiDraft } from "../core/ai_draft.js";
 import { markDrafts, changedKeys } from "../core/review.js";
 import { adoptIteration } from "../core/first_design.js";
+import { isSub, holds } from "../core/asm_levels.js";
 
 /* What an answer changes goes back to « Brouillon IA » in the review ledger, inside the very step that applies it. */
 let applying = null;
@@ -34,7 +35,10 @@ function restoreSteps(doc, original) {
 }
 const replace = (target, doc) => { for (const k of Object.keys(target)) if (k !== "id") delete target[k]; Object.assign(target, doc, { id: target.id }); };
 const partCheck = (d) => { const v = validateSpec(d); return [...v.errors.map((t) => ({ severity: "block", text: `${d.id || "Pièce"} : ${t}` })), ...v.warnings.map((t) => ({ severity: "warn", text: `${d.id || "Pièce"} : ${t}` }))]; };
-const asmCheck = (d, parts) => (d.instances || []).filter((i) => !parts.has(i.part)).map((i) => ({ severity: "block", text: `${d.id} : la pièce « ${i.part} » n'existe pas dans le projet.` }));
+/* an instance names a part, or an assembly (a sub-assembly) : both must be in the project, and an assembly cannot contain itself */
+const asmCheck = (d, parts, asms = store.assemblies) => { const find = (id) => (id === d.id ? d : asms.find((x) => x.id === id) || null);
+  return [...(d.instances || []).filter((i) => !isSub(i) && !parts.has(i.part)).map((i) => ({ severity: "block", text: `${d.id} : la pièce « ${i.part} » n'existe pas dans le projet.` })),
+    ...(d.instances || []).filter(isSub).map((i) => (!find(i.asm) ? `le sous-assemblage « ${i.asm} » n'existe pas dans le projet.` : i.asm === d.id || holds(find(i.asm), d.id, find) ? `le sous-assemblage « ${i.asm} » contient ${d.id} : un assemblage ne peut pas se contenir lui-même.` : null)).filter(Boolean).map((t) => ({ severity: "block", text: `${d.id} : ${t}` }))]; };
 
 /** Every artefact of the open project that can make the round trip : [{ key, label, open() }]. */
 export function aiTargets() {
@@ -50,7 +54,7 @@ export function aiTargets() {
     check: async (d) => {
       const notes = [], ids = new Set((d.parts || []).map((x) => x.id));
       for (const x of d.parts || []) notes.push(...partCheck(x.step === STEP_MARK ? { ...x, step: undefined } : x));
-      for (const a of d.assemblies || []) notes.push(...asmCheck(a, ids));
+      for (const a of d.assemblies || []) notes.push(...asmCheck(a, ids, d.assemblies || []));
       if ((d.boards || []).length) { const { boardAiCheck } = await import("./pcba_out.js"); for (const b of d.boards) notes.push(...boardAiCheck((p.boards || []).find((q) => q.id === b.id) || { blocks: [] }, b).filter((n) => n.severity === "block").map((n) => ({ ...n, text: `${b.id} : ${n.text}` }))); }
       return notes;
     }, draft: (d) => { const all = { drafts: [], norms: [] }; for (const nb of d.boards || []) { const m = markAiDraft((p.boards || []).find((q) => q.id === nb.id) || {}, nb, "board"); all.drafts.push(...m.drafts.map((x) => ({ ...x, key: `${nb.id} ${x.key}` }))); all.norms.push(...m.norms); } return all; },

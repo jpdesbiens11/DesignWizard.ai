@@ -5,6 +5,7 @@
    Runs inside the same undoable step as the edit that caused it. Pure functions (no DOM, no kernel). */
 
 import { resolveParams, evalDeep } from "../cad/expr.js";
+import { openInstances, finder } from "./asm_levels.js";
 
 const isObj = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
 const same = (a, b) => (typeof a === "number" && typeof b === "number" ? Math.abs(a - b) < 1e-9 : JSON.stringify(a) === JSON.stringify(b));
@@ -45,10 +46,11 @@ export function propagate(project, partId, visited = new Set()) {
   const src = (project.parts || []).find((p) => p.id === partId);
   if (!src) return out;
   const touched = new Set();
-  for (const asm of project.assemblies || []) for (const m of asm.mates || []) {
+  for (const asm of project.assemblies || []) { const open = openInstances(asm, finder(project));      // a joint may hold to a part inside a sub-assembly
+   for (const m of asm.mates || []) {
     if (m.linked === false) continue;
     for (const [me, other] of [[m.a, m.b], [m.b, m.a]]) {
-      const inst = asm.instances.find((i) => i.id === me.inst), oinst = asm.instances.find((i) => i.id === other.inst);
+      const inst = open.find((i) => i.id === me.inst), oinst = open.find((i) => i.id === other.inst);
       if (!inst || !oinst || inst.part !== partId || oinst.part === partId) continue;
       const partner = project.parts.find((p) => p.id === oinst.part);
       const pi = partner && (partner.interfaces || []).find((i) => i.id === other.iface);
@@ -59,7 +61,7 @@ export function propagate(project, partId, visited = new Set()) {
       assign(values, pi.params, evaluatedParams(partner, pi.id), partner, "", changes);
       if (changes.length) { out.push({ part: partner.id, iface: pi.id, from: `${partId}/${me.iface}`, mate: m.id, changes }); touched.add(partner.id); }
     }
-  }
+   } }
   for (const id of touched) out.push(...propagate(project, id, visited));
   return out;
 }
@@ -67,8 +69,9 @@ export function propagate(project, partId, visited = new Set()) {
 /** Linked mates whose two sides do not hold the same evaluated values (should be empty after propagation). */
 export function outOfSync(project, asm) {
   const out = [];
+  const open = openInstances(asm, finder(project));
   for (const m of asm.mates || []) {
-    const ia = asm.instances.find((i) => i.id === m.a.inst), ib = asm.instances.find((i) => i.id === m.b.inst);
+    const ia = open.find((i) => i.id === m.a.inst), ib = open.find((i) => i.id === m.b.inst);
     const pa = ia && project.parts.find((p) => p.id === ia.part), pb = ib && project.parts.find((p) => p.id === ib.part);
     if (!pa || !pb) continue;
     const va = evaluatedParams(pa, m.a.iface), vb = evaluatedParams(pb, m.b.iface);

@@ -4,6 +4,7 @@
 import { el, clear, icon, btn, badge, field, toast, fmt, fmtMass, fmtLen, fmtDims, inUnits, copyText, download, onOff } from "../core/dom.js";
 import { paramAlts, canKeepAlts, addAlt, swapAlt, setAlt, dropAlt } from "../core/variants.js";
 import { store } from "../core/store.js";
+import { openInstances } from "../core/asm_levels.js";
 import { app } from "../core/app.js";
 import { interfaceDialog, nextIfaceId } from "../core/part_edit.js";
 import { INTERFACE_TYPES, interfaceType } from "../cad/interfaces.js";
@@ -72,7 +73,7 @@ export function interfacesPanel(body, { st, id, editIface }) {
     const b = st.built && st.built.interfaces.find((x) => x.id === it.id);
     const mates = [];
     for (const a of store.assemblies) for (const m of a.mates || []) for (const [me, other] of [[m.a, m.b], [m.b, m.a]]) {
-      const inst = a.instances.find((i) => i.id === me.inst), o = a.instances.find((i) => i.id === other.inst);
+      const open = openInstances(a, (x) => store.assembly(x)), inst = open.find((i) => i.id === me.inst), o = open.find((i) => i.id === other.inst);      // through the levels
       if (inst && o && inst.part === id && me.iface === it.id) mates.push(`${o.part} (${a.id})`);
     }
     body.append(el("div", { class: "card", style: { marginBottom: ".6rem", padding: ".6rem .7rem" } },

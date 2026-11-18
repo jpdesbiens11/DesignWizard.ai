@@ -179,4 +179,5 @@ porte le nom de la variante. Numéro de pièce, révision et classes de cotes re
   plusieurs corps est dessinée sans coupe si le noyau ne parvient pas à la couper. Une seule feuille par dessin. Quand les tableaux débordent, la feuille le dit et
   renvoie à la liste des cotes.
 - Le dessin natif envoyé à Onshape reste au format A3 ; seul le PDF est en tabloïd.
-- Un sous-assemblage dans un assemblage n'est pas encore géré : la structure a un seul niveau.
+- Un assemblage qui contient des sous-assemblages ([SOUS_ASSEMBLAGES.md](SOUS_ASSEMBLAGES.md)) est dessiné avec toutes ses
+  pièces, à plat : pas de ligne « sous-assemblage » dans son tableau, pas de bulle propre au bloc.

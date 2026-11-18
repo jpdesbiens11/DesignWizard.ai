@@ -2,17 +2,19 @@
    the result in a viewer. Shared by Assemblage, Isolation, DFx, Rapport and Onshape. */
 
 import { store } from "./store.js";
-import { liveAsm } from "./asm_live.js";
+import { flatAsm, bomLevels } from "./asm_levels.js";
 import { kernel } from "../cad/client.js";
-import { solve, hardware, bom, massProps } from "./assembly_logic.js";
+import { solveLevels, hardware, bom, massProps } from "./assembly_logic.js";
 import { showBuilt } from "./viewport.js";
 import { bboxTransform, bboxUnion } from "../cad/vec.js";
 
-/** Build the parts used by `asm`. Returns {built, sol, errors, hardware, bom, mass, bbox}. onProgress(text, done, total) before each part ;
-    an operation the user cancelled (kernel.cancel) ends the construction at once. */
+/** Build the parts used by `asm`. Returns {built, sol, errors, hardware, bom, mass, bbox, asm, levels}. onProgress(text, done, total) before
+    each part ; an operation the user cancelled (kernel.cancel) ends the construction at once.
+    asm (returned) : the assembly OPENED — every part through every level as an instance (« S~i2 » : inside the sub-assembly placed
+    as S), a sub-assembly carried as one rigid whole (core/asm_levels.js) ; levels : its bill of materials by level. */
 export async function buildAssembly(asm, onProgress) {
-  asm = liveAsm(asm);      // an instance put aside (off) is neither built nor placed : it counts for nothing downstream
-  const ids = [...new Set(asm.instances.map((i) => i.part))], built = {}, errors = [];
+  const find = (id) => store.assembly(id), opened = flatAsm(asm, find);      // an instance put aside (off) is neither built nor placed : it counts for nothing downstream
+  const ids = [...new Set(opened.instances.map((i) => i.part))], built = {}, errors = (opened.lost || []).map((l) => (l.why === "cycle" ? `Le sous-assemblage « ${l.asm} » se contiendrait lui-même : il est laissé de côté.` : `Sous-assemblage « ${l.asm} » absent du projet.`));
   let n = 0;
   for (const id of ids) {
     const spec = store.part(id);
@@ -20,11 +22,10 @@ export async function buildAssembly(asm, onProgress) {
     if (onProgress) onProgress(`Construction ${++n} / ${ids.length} : ${id}`, n - 1, ids.length);
     try { built[id] = await kernel.build(spec); } catch (e) { if (e && e.cancelled) throw e; errors.push(`${id} : ${e.message}`); }
   }
-  const usable = { ...asm, instances: asm.instances.filter((i) => built[i.part]) };
-  const sol = solve(usable, built);
+  const { asm: usable, sol } = solveLevels(asm, built, find);      // each sub-assembly solved on its own, then carried whole ; parts that could not be built are left out
   let bbox = null;
   for (const i of usable.instances) bbox = bboxUnion(bbox, bboxTransform(built[i.part].bbox, sol.placements[i.id]));
-  return { built, sol, errors, asm: usable, hardware: hardware(usable, built), bom: bom(store.project, usable, built), mass: massProps(usable, built, sol.placements), bbox: bbox || [0, 0, 0, 0, 0, 0] };
+  return { built, sol, errors, asm: usable, levels: bomLevels(asm, find), hardware: hardware(usable, built), bom: bom(store.project, usable, built), mass: massProps(usable, built, sol.placements), bbox: bbox || [0, 0, 0, 0, 0, 0] };
 }
 
 /** Show the solved assembly. opts: {colorOf(inst, body) -> css colour | null, opacityOf(inst, body), skipHidden} */

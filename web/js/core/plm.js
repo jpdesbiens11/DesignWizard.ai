@@ -15,6 +15,7 @@
 
 import { signature, nextRevision, artefactOf, partsOf } from "./review.js";
 import { resolveParams, evalDeep } from "../cad/expr.js";
+import { flatAsm, finder, partCounts } from "./asm_levels.js";
 
 export const REF_TYPES = { part: "PRT", assembly: "ASM", board: "PCB" };
 export const F3 = { form: "Forme", fit: "Ajustement", fn: "Fonction" };
@@ -43,8 +44,9 @@ function interfacesOf(part) {
 }
 /** The interfaces an assembly offers to what is around it : those of its parts that no mate uses. → Map("instance/interface" → { name, sig }) */
 export function outerInterfaces(project, asm) {
-  const used = new Set((asm.mates || []).flatMap((m) => [m.a, m.b].filter(Boolean).map((e) => `${e.inst}/${e.iface}`))), out = new Map();
-  for (const inst of asm.instances || []) { const p = (project.parts || []).find((x) => x.id === inst.part); if (!p) continue; for (const [id, v] of interfacesOf(p)) if (!used.has(`${inst.id}/${id}`)) out.set(`${inst.id}/${id}`, { name: `${p.name || p.id} — ${v.name}`, sig: v.sig }); }
+  const opened = flatAsm(asm, finder(project)) || asm;      // through its sub-assemblies : their parts, and the joints inside them
+  const used = new Set((opened.mates || []).flatMap((m) => [m.a, m.b].filter(Boolean).map((e) => `${e.inst}/${e.iface}`))), out = new Map();
+  for (const inst of opened.instances || []) { const p = (project.parts || []).find((x) => x.id === inst.part); if (!p) continue; for (const [id, v] of interfacesOf(p)) if (!used.has(`${inst.id}/${id}`)) out.set(`${inst.id}/${id}`, { name: `${p.name || p.id} — ${v.name}`, sig: v.sig }); }
   return out;
 }
 const sameText = (a, b) => String(a || "").replace(/\s+/g, " ").trim() === String(b || "").replace(/\s+/g, " ").trim();
@@ -77,7 +79,7 @@ export function lastRelease(project, key) { const d = artefactOf(project, key); 
 /** The parts of an assembly, each with the number and the revision it has now, and whether that is a released state. */
 export function usesOf(project, asm) {
   const out = {};
-  for (const id of new Set((asm.instances || []).map((i) => i.part))) { const p = (project.parts || []).find((x) => x.id === id); if (!p) continue;
+  for (const id of partCounts(asm, finder(project)).keys()) { const p = (project.parts || []).find((x) => x.id === id); if (!p) continue;      // every part, through the levels
     const rec = p.pn ? releases(project).find((r) => r.pn === p.pn && r.rev === (p.revision || "A")) : null;      // released : the part is, to the letter, one of the revisions of its number — the latest or an earlier one taken back
     out[id] = { pn: p.pn || null, rev: p.revision || "A", released: !!rec && rec.sig === signature(p) }; }
   return out;

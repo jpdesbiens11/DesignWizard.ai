@@ -11,6 +11,7 @@
 
 import { model } from "../analysis/physics/index.js";
 import { material, PROCESSES, processName } from "../cad/materials.js";
+import { partCounts, finder } from "./asm_levels.js";
 
 export const REVIEW_STATES = {
   draft: { fr: "Brouillon IA", tone: "warn", text: "écrit ou modifié par une IA, pas encore relu" },
@@ -46,22 +47,22 @@ const ledger = (project) => { project.review = project.review || { items: {} }; 
 
 function describe(project, kind, d) {
   if (kind === "part") { const m = material(d.material); return { name: d.name || "", facts: [PROCESSES[d.process] ? processName(d.process) : d.process, m ? m.name : d.material].filter(Boolean).join(" · ") }; }
-  if (kind === "assembly") return { name: d.name || "", facts: `${(d.instances || []).length} pièce(s), ${(d.mates || []).length} liaison(s)` };
+  if (kind === "assembly") { const subs = (d.instances || []).filter((i) => i.asm).length, parts = (d.instances || []).length - subs; return { name: d.name || "", facts: `${parts} pièce(s)${subs ? `, ${subs} sous-assemblage(s)` : ""}, ${(d.mates || []).length} liaison(s)` }; }
   if (kind === "board") return { name: d.name || "", facts: `${(d.functions || []).filter((f) => !f.parent).length} fonction(s), ${(d.parts || []).length} composant(s)` };
   if (kind === "physics") { const m = model(d.model); return { name: m ? m.title : d.model, facts: [d.part, d.why].filter(Boolean).join(" — ") }; }
   return { name: `${d.kind || "structure"} — ${d.target || ""}`, facts: d.cells ? `${d.cells} cellules` : "" };
 }
 /** The parts an assembly uses, each with its revision and its signature as they are now. */
 export function partsOf(project, asm) {
-  const out = {};
-  for (const id of new Set((asm.instances || []).map((i) => i.part))) { const p = (project.parts || []).find((x) => x.id === id); if (p) out[id] = { rev: p.revision || "A", sig: signature(p) }; }
+  const out = {};      // through every level : the parts of its sub-assemblies are its parts too
+  for (const id of partCounts(asm, finder(project)).keys()) { const p = (project.parts || []).find((x) => x.id === id); if (p) out[id] = { rev: p.revision || "A", sig: signature(p) }; }
   return out;
 }
 /** What moved under an assembly since it was reviewed : [{ part, from, to }] (from : the revision it was reviewed with ; to : the one of today ; gone : the part left the project). */
 export function staleParts(project, asm, entry) {
   const was = (entry && entry.parts) || null; if (!was) return [];
   const now = partsOf(project, asm), out = [];
-  for (const [id, w] of Object.entries(was)) { const n = now[id]; if (!n) { if (!(asm.instances || []).some((i) => i.part === id)) continue; out.push({ part: id, from: w.rev, to: null, gone: true }); } else if (n.sig !== w.sig) out.push({ part: id, from: w.rev, to: n.rev }); }
+  for (const [id, w] of Object.entries(was)) { const n = now[id]; if (!n) { if (!partCounts(asm, finder(project)).has(id)) continue; out.push({ part: id, from: w.rev, to: null, gone: true }); } else if (n.sig !== w.sig) out.push({ part: id, from: w.rev, to: n.rev }); }
   for (const id of Object.keys(now)) if (!was[id]) out.push({ part: id, from: null, to: now[id].rev });
   return out;
 }
@@ -80,8 +81,8 @@ export function reviewItems(project) {
 /** Where a part is used : each assembly, how many times, and whether that assembly was reviewed with the part as it is today. */
 export function whereUsed(project, partId) {
   const items = (project.review && project.review.items) || {}, p = (project.parts || []).find((x) => x.id === partId), now = p ? signature(p) : null;
-  return (project.assemblies || []).filter((a) => (a.instances || []).some((i) => i.part === partId)).map((a) => { const e = items[`assembly:${a.id}`] || {}, w = e.state === "ok" && e.parts ? e.parts[partId] : null;
-    return { id: a.id, name: a.name || "", qty: a.instances.filter((i) => i.part === partId).length, rev: a.revision || "A", reviewedWith: w ? w.rev : null, upToDate: !!w && w.sig === now }; });
+  return (project.assemblies || []).filter((a) => partCounts(a, finder(project)).has(partId)).map((a) => { const e = items[`assembly:${a.id}`] || {}, w = e.state === "ok" && e.parts ? e.parts[partId] : null;      // directly, or through a sub-assembly
+    return { id: a.id, name: a.name || "", qty: partCounts(a, finder(project)).get(partId), rev: a.revision || "A", reviewedWith: w ? w.rev : null, upToDate: !!w && w.sig === now }; });
 }
 /** The product structure with its revisions, for the report : one row per part. */
 export function revisionRows(project) {

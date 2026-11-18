@@ -8,13 +8,14 @@ import { INTERFACE_TYPES } from "../cad/interfaces.js";
 import { PROCESSES, processName } from "../cad/materials.js";
 import { processSheet } from "../cad/special_processes.js";
 import { FOLD_RULES } from "./shop_folded.js";
+import { openInstances, finder } from "./asm_levels.js";
 
 const j = (o) => JSON.stringify(o, null, 1);
 
 /** The interfaces a new part must implement to meet its neighbours: opposite side, same type / key / params. */
 export function anticipatedInterfaces(project, neighbourIds, onlyFree = true) {
   const used = new Set();
-  for (const a of project.assemblies || []) for (const m of a.mates || []) for (const s of [m.a, m.b]) { const inst = a.instances.find((i) => i.id === s.inst); if (inst) used.add(`${inst.part}/${s.iface}`); }
+  for (const a of project.assemblies || []) { const open = openInstances(a, finder(project)); for (const m of a.mates || []) for (const s of [m.a, m.b]) { const inst = open.find((i) => i.id === s.inst); if (inst) used.add(`${inst.part}/${s.iface}`); } }      // through the levels : a joint may hold to a part inside a sub-assembly
   const out = [];
   for (const id of neighbourIds) {
     const part = (project.parts || []).find((p) => p.id === id);

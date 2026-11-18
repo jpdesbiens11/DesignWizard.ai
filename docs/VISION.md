@@ -139,7 +139,8 @@ Les délais sont des ordres de grandeur ; le devis de l'atelier fait foi.
 
 ## 6. Ce que la plateforme n'est pas (encore)
 
-- Pas un remplaçant complet d'un modeleur généraliste : surfaces libres, tôlerie pliée, grands assemblages viendront
+- Pas un remplaçant complet d'un modeleur généraliste : surfaces libres, grands assemblages (les sous-assemblages sont là,
+  voir [SOUS_ASSEMBLAGES.md](SOUS_ASSEMBLAGES.md) ; les produits de centaines de pièces restent à éprouver) viendront
   par briques.
 - Pas un outil certifié : les tableaux de normes sont à confirmer contre les éditions officielles ; les propriétés de
   matériaux sont typiques.

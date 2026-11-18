@@ -7,6 +7,7 @@ import { el, clear, icon, btn, badge, field, toast, fmt, modal, table } from "..
 import { registerModule, go, setStatus, setGuide } from "../core/app.js";
 import { netsOf, isolationGuide } from "../analysis/cc_guide.js";
 import { store } from "../core/store.js";
+import { flatAsm } from "../core/asm_levels.js";
 import { createViewport } from "../core/viewport.js";
 import { buildAssembly, showAssembly } from "../core/asm_scene.js";
 import { kernel } from "../cad/client.js";
@@ -22,7 +23,7 @@ const pairKey = (a, b) => [a, b].sort().join("|");
 const GROUP_ORDER = ["I", "II", "IIIa", "IIIb"];
 
 /** Nets of an assembly: those saved in asm.isolation, completed with the nets declared by the parts (elec.net, pcb.nets). */
-export const collectNets = (asm) => netsOf(asm, (id) => store.part(id));
+export const collectNets = (asm) => netsOf(flatAsm(asm, (id) => store.assembly(id)) || asm, (id) => store.part(id));      // the nets of every part, through the sub-assemblies
 
 /** Scene bodies (world meshes with roles) of a built assembly, with the overrides saved in the analysis. */
 export function sceneOf(asm, ctx) {

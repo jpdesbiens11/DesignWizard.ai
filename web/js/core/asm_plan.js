@@ -6,6 +6,7 @@
 
 import { resolveParams, evalDeep } from "../cad/expr.js";
 import { liveAsm } from "./asm_live.js";
+import { flatAsm, finder, topOf, isSub } from "./asm_levels.js";
 import { patternPoints, interfaceType, ADHESIVES, BOND_PREPS } from "../cad/interfaces.js";
 import { finishPlan } from "./plan_doc.js";
 import { WELD_PROCESSES, PLATINGS, CONTACT_TESTS, CONTACT_FORMS, contactEstimate, contactForm } from "../cad/interfaces_elec.js";
@@ -31,7 +32,7 @@ export function assemblyOrder(asm, parts) {
   if (given.length) return [...new Set([...given, ...all])];
   const base = asm.instances.find((i) => i.fixed) || asm.instances[0]; if (!base) return [];
   const placed = [base.id], cover = (id) => { const i = asm.instances.find((x) => x.id === id), s = parts.get(i.part) || {}; return COVER.test(`${s.id} ${s.name || ""}`) ? 1 : 0; };
-  const links = (id) => (asm.mates || []).filter((m) => (m.a.inst === id && placed.includes(m.b.inst)) || (m.b.inst === id && placed.includes(m.a.inst))).length;
+  const links = (id) => (asm.mates || []).filter((m) => (topOf(m.a.inst) === id && placed.includes(topOf(m.b.inst))) || (topOf(m.b.inst) === id && placed.includes(topOf(m.a.inst)))).length;      // a joint to a part inside a sub-assembly holds the sub-assembly
   while (placed.length < all.length) {
     const rest = all.filter((id) => !placed.includes(id)), ready = rest.filter((id) => links(id) > 0), pool = ready.length ? ready : rest;
     placed.push(pool.sort((a, b) => cover(a) - cover(b) || links(b) - links(a) || all.indexOf(a) - all.indexOf(b))[0]);
@@ -41,21 +42,25 @@ export function assemblyOrder(asm, parts) {
 
 /** The assembly routing. ctx : { hardwareOf(mate) → [{ id, kind, size, length, qty, name }], mass, dfa (DFA result) } — all optional. */
 export function assemblyPlan(asm, project, ctx = {}) {
+  const find = finder(project), leaves = new Map(((flatAsm(asm, find) || {}).instances || []).map((i) => [i.id, i]));      // every part through the levels : a joint of this assembly may hold to a part inside a sub-assembly
   asm = liveAsm(asm);      // a part put aside is not in the routing
   const parts = new Map((project.parts || []).map((p) => [p.id, p])), inst = new Map(asm.instances.map((i) => [i.id, i])), order = assemblyOrder(asm, parts), notes = (asm.plan && asm.plan.notes) || {};
-  const nameOf = (id) => { const s = parts.get((inst.get(id) || {}).part) || {}; return s.name ? `${s.name} (${s.id})` : (inst.get(id) || {}).part || id; }, specOf = (id) => parts.get((inst.get(id) || {}).part) || {};
+  /* a step is an instance of THIS assembly — a part, or a sub-assembly put together apart and mounted as one block */
+  const subOf = (id) => { const i = inst.get(id); return isSub(i) ? find(i.asm) || { id: i.asm, name: "" } : null; }, partOf = (id) => (leaves.get(id) || inst.get(id) || {}).part;
+  const nameOf = (id) => { const sub = subOf(id); if (sub) return `le sous-assemblage ${sub.name ? `${sub.name} (${sub.id})` : sub.id}`; const s = parts.get(partOf(id)) || {}; return s.name ? `${s.name} (${s.id})` : partOf(id) || id; }, specOf = (id) => parts.get(partOf(id)) || {};
   const phases = [], totals = new Map(), sizes = new Set(), q = [], ask = (topic, text) => q.push({ topic, text }), loose = [];
   const hw = (m, A, B) => { let list = []; try { list = ctx.hardwareOf ? ctx.hardwareOf(m) : interfaceType(A.type).hardware(A.params, A.opts, B.opts, specOf(m.a.inst).pcb ? 1.6 : 3) || []; } catch (e) { list = []; } return list; };
   let thermal = false, boards = 0, bonded = 0, snapped = 0, welded = 0, pressed = 0;
   order.forEach((id, k) => {
     const spec = specOf(id), before = order.slice(0, k), ops = [], checks = [], tools = [], isBoard = spec.family === "pcb";
     if (isBoard) { boards++; checks.push("Protection contre les décharges : bracelet et tapis ; tenir la carte par ses bords"); }
+    if (subOf(id)) { ops.push({ text: `Monter ${nameOf(id)} à part, selon sa propre gamme`, tools: [] }); checks.push("Sous-assemblage complet et contrôlé avant de le monter"); }
     if (!k) { ops.push({ text: `Poser ${nameOf(id)} sur le plan de travail, interfaces accessibles`, tools: [] }); checks.push("Pièce propre ; filetages et inserts dégagés"); }
-    const joints = (asm.mates || []).filter((m) => (m.a.inst === id && before.includes(m.b.inst)) || (m.b.inst === id && before.includes(m.a.inst)));
+    const joints = (asm.mates || []).filter((m) => (topOf(m.a.inst) === id && before.includes(topOf(m.b.inst))) || (topOf(m.b.inst) === id && before.includes(topOf(m.a.inst))));
     if (k && !joints.length) { loose.push(id); ops.push({ text: `Positionner ${nameOf(id)} à la main : aucune interface accouplée ne la tient`, tools: [] }); }
     for (const m of joints) {
       const fa = ifaceOf(specOf(m.a.inst), m.a.iface), fb = ifaceOf(specOf(m.b.inst), m.b.iface); if (!fa || !fb) continue;
-      const [A, B, ia, ib] = fa.side === "B" ? [fb, fa, m.b.inst, m.a.inst] : [fa, fb, m.a.inst, m.b.inst], other = m.a.inst === id ? m.b.inst : m.a.inst, label = A.name || B.name || interfaceType(A.type).label;
+      const [A, B, ia, ib] = fa.side === "B" ? [fb, fa, m.b.inst, m.a.inst] : [fa, fb, m.a.inst, m.b.inst], other = topOf(m.a.inst) === id ? topOf(m.b.inst) : topOf(m.a.inst), label = A.name || B.name || interfaceType(A.type).label;
       if ((THERMAL.test(`${A.name} ${B.name}`) || SINK.test(`${spec.name || ""} ${spec.id} ${specOf(other).name || ""} ${specOf(other).id}`)) && (A.type === "planar" || A.type === "bolt_pattern")) { thermal = true; ops.push({ text: `Déposer l'interface thermique (pâte ou feuille) sur la plage d'appui — ${label}`, tools: ["Spatule ou pochoir"], control: "Couche régulière, sans manque" }); }
       if (A.type === "bolt_pattern") {
         const s = A.params.screw, n = patternPoints(A.params.pattern).length, list = hw(m, A, B), screw = list.find((h) => h.kind === "screw"), into = B.opts.thread === "insert" ? "les inserts" : B.opts.thread === "clearance" ? "les trous de passage, avec écrous" : B.opts.standoff ? "les colonnettes" : "les taraudages";
@@ -92,7 +97,7 @@ export function assemblyPlan(asm, project, ctx = {}) {
     }
     const conns = isBoard ? ((spec.pcb && spec.pcb.components) || []).filter((c) => c.kind === "connector" || c.kind === "terminal") : [];
     if (conns.length) checks.push(`Raccorder ${conns.map((c) => c.ref).join(", ")} (${conns.length} connecteur${conns.length > 1 ? "s" : ""}) ; faisceaux sans contrainte`);
-    phases.push({ key: id, title: k ? `Monter ${nameOf(id)}` : `Préparer ${nameOf(id)}`, station: "Établi de montage", ops, checks, note: notes[id] || "", inst: id, part: (inst.get(id) || {}).part });
+    phases.push({ key: id, title: k ? `Monter ${nameOf(id)}` : `Préparer ${nameOf(id)}`, station: "Établi de montage", ops, checks, note: notes[id] || "", inst: id, part: (inst.get(id) || {}).part, ...(subOf(id) ? { asm: subOf(id).id } : {}) });
   });
   phases.push({ key: "final", title: "Contrôle final", station: "Établi de montage", ops: [], checks: ["Toutes les vis serrées au couple et marquées", "Aucune pièce ni vis en trop sur l'établi", "Essai fonctionnel selon le plan d'essai", ...(boards ? ["Contrôle des distances d'isolement si le produit porte de la haute tension (voir Isolation)"] : [])], note: notes.final || "" });
   const hardware = [...totals.values()].sort((a, b) => a.name.localeCompare(b.name, "fr", { numeric: true })), nScrews = hardware.filter((h) => /^Vis/.test(h.name)).reduce((s, h) => s + h.qty, 0), covers = order.filter((id) => COVER.test(`${specOf(id).id} ${specOf(id).name || ""}`));
@@ -111,6 +116,6 @@ export function assemblyPlan(asm, project, ctx = {}) {
   ask("Couples", "Les couples indiqués sont des valeurs usuelles : lesquels faut-il confirmer par un essai de serrage, et faut-il un frein-filet ?");
   for (const f of ((ctx.dfa && ctx.dfa.findings) || []).filter((x) => x.severity !== "info").slice(0, 6)) ask("Montage", `${f.title} — ${f.message}`);
   return finishPlan({ kind: "assemblage", id: asm.id, name: asm.name || "", revision: asm.revision || "A",
-    facts: [["Pièces", String(asm.instances.length)], ["Étapes", String(order.length)], ["Vis", `${nScrews} en ${sizes.size} taille${sizes.size > 1 ? "s" : ""}`], ...(ctx.mass ? [["Masse", `${fr(ctx.mass, 0)} g`]] : [])],
+    facts: [["Pièces", String(leaves.size)], ...(asm.instances.some(isSub) ? [["Sous-assemblages", String(asm.instances.filter(isSub).length)]] : []), ["Étapes", String(order.length)], ["Vis", `${nScrews} en ${sizes.size} taille${sizes.size > 1 ? "s" : ""}`], ...(ctx.mass ? [["Masse", `${fr(ctx.mass, 0)} g`]] : [])],
     phases, hardware, questions: q, points: (asm.plan && asm.plan.points) || [], order });
 }

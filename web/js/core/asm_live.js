@@ -5,17 +5,20 @@
 
 /** Is an instance put aside ? */
 export const instOff = (i) => !!(i && i.off);
+/* a joint of the assembly may hold to a part INSIDE a sub-assembly (« S~i2 » : the instance i2 of the sub-assembly placed as S,
+   core/asm_levels.js) : what counts for On / Off is the instance of this assembly it goes through — S */
+const top = (id) => String(id).split("~")[0];
 /** The assembly as it counts : without the instances put aside and the joints that hold to one of them. The same object when
     nothing is off. */
 export function liveAsm(asm) {
   const inst = (asm && Array.isArray(asm.instances) ? asm.instances : null); if (!inst || !inst.some(instOff)) return asm;
   const off = new Set(inst.filter(instOff).map((i) => i.id));
-  return { ...asm, instances: inst.filter((i) => !instOff(i)), mates: (asm.mates || []).filter((m) => !(m.a && off.has(m.a.inst)) && !(m.b && off.has(m.b.inst))) };
+  return { ...asm, instances: inst.filter((i) => !instOff(i)), mates: (asm.mates || []).filter((m) => !(m.a && off.has(top(m.a.inst))) && !(m.b && off.has(top(m.b.inst)))) };
 }
 /** What is put aside, to say it : { instances: [ids], mates: [ids of the joints that wait for them] }. */
 export function offOf(asm) {
   const inst = (asm && asm.instances) || [], off = new Set(inst.filter(instOff).map((i) => i.id));
-  return { instances: [...off], mates: ((asm && asm.mates) || []).filter((m) => (m.a && off.has(m.a.inst)) || (m.b && off.has(m.b.inst))).map((m) => m.id) };
+  return { instances: [...off], mates: ((asm && asm.mates) || []).filter((m) => (m.a && off.has(top(m.a.inst))) || (m.b && off.has(top(m.b.inst)))).map((m) => m.id) };
 }
 /** An instance turned off, or on again — the assembly given is changed (inside store.updateAssembly). A part that was the fixed
     one and goes off leaves the others where the solver puts them : the first instance left is the ground. */
@@ -35,12 +38,12 @@ export function instanceMenu(asm, id, name = "") {
   const i = ((asm && asm.instances) || []).find((x) => x.id === id); if (!i) return [];
   const hidden = ((asm && asm.instances) || []).filter((x) => x.hidden && !instOff(x)).length, alone = isAlone(asm, id), many = ((asm && asm.instances) || []).filter((x) => !instOff(x)).length > 1;
   const all = hidden ? [{ act: "all", label: `Montrer toutes les pièces (${hidden} masquée${hidden > 1 ? "s" : ""})`, icon: "eye", keys: "Maj+H" }] : [];
-  const head = [{ title: `${name || i.part} · ${i.id}` }, { act: "open", label: "Ouvrir la pièce", icon: "edit", keys: "Entrée" }];
+  const head = [{ title: `${name || i.part || i.asm} · ${i.id}` }, { act: "open", label: i.asm ? "Ouvrir le sous-assemblage" : "Ouvrir la pièce", icon: "edit", keys: "Entrée" }];
   if (instOff(i)) return [...head, "—", { act: "on", label: "Remettre à On (elle compte de nouveau)", icon: "power" }, ...all, "—", { act: "remove", label: "Retirer de l'assemblage", icon: "trash", keys: "Suppr" }];
   return [...head, "—",
-    ...(many && !alone ? [{ act: "alone", label: "Montrer seulement cette pièce", icon: "eye", keys: "I" }] : []), ...all,
+    ...(many && !alone ? [{ act: "alone", label: i.asm ? "Montrer seulement ce sous-assemblage" : "Montrer seulement cette pièce", icon: "eye", keys: "I" }] : []), ...all,
     i.hidden ? { act: "show", label: "Afficher", icon: "eye", keys: "H" } : { act: "hide", label: "Masquer", icon: "eye-off", keys: "H" }, "—",
-    { act: "off", label: "Mettre à Off (de côté, sans la retirer)", icon: "power" }, { act: i.fixed ? "free" : "fix", label: i.fixed ? "Libérer" : "Fixer (elle porte les autres)", icon: "lock" }, "—",
+    { act: "off", label: i.asm ? "Mettre à Off (de côté, sans le retirer)" : "Mettre à Off (de côté, sans la retirer)", icon: "power" }, { act: i.fixed ? "free" : "fix", label: i.fixed ? "Libérer" : i.asm ? "Fixer (il porte les autres)" : "Fixer (elle porte les autres)", icon: "lock" }, "—",
     { act: "remove", label: "Retirer de l'assemblage", icon: "trash", keys: "Suppr" }];
 }
 

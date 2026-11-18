@@ -3,6 +3,8 @@
    Google Drive (the hosted application, once signed in: one folder per product, see google/drive_fs.js), or the
    browser alone (localStorage + export / import of the project file). */
 
+import { dropInstances } from "./asm_levels.js";
+
 const LS_INDEX = "dw.projects", LS_PREFIX = "dw.project.", LS_LAST = "dw.last";
 const HEADERS = { "Content-Type": "application/json", "X-DW-Request": "1" };
 const clone = (o) => JSON.parse(JSON.stringify(o));
@@ -173,12 +175,14 @@ class Store {
   removePart(id) {
     return this.commit(`Pièce retirée : ${id}`, (p) => {
       p.parts = p.parts.filter((x) => x.id !== id);
-      for (const a of p.assemblies) { const gone = new Set(a.instances.filter((i) => i.part === id).map((i) => i.id)); a.instances = a.instances.filter((i) => !gone.has(i.id)); a.mates = (a.mates || []).filter((m) => !gone.has(m.a.inst) && !gone.has(m.b.inst)); }
+      dropInstances(p.assemblies, (i) => i.part === id);      // its instances leave every assembly, with the joints that held to them — those of a parent through a sub-assembly too
     }, { part: id });
   }
 
   /* ---------- assemblies ---------- */
   get assemblies() { return this.project ? this.project.assemblies : []; }
+  /** Deletes an assembly : it leaves the assemblies that held it as a sub-assembly, with the joints that went through it. One undoable step. */
+  removeAssembly(id) { return this.commit(`Assemblage supprimé : ${id}`, (p) => { p.assemblies = p.assemblies.filter((x) => x.id !== id); dropInstances(p.assemblies, (i) => i.asm === id); }, { assembly: id }); }
   assembly(id) { return this.assemblies.find((x) => x.id === id) || null; }
   addAssembly(name) {
     const a = { dw: "assembly/1", id: this.uniqueId(`ASM-${String(this.assemblies.length + 1).padStart(3, "0")}`), name: name || "Assemblage", instances: [], mates: [] };
