@@ -9,6 +9,7 @@
 //   elemBody, elemCell, bodies [{ name, material, cells, volume }], bbox (of the kept cells), volume.
 // region = { face: "+X" | "-X" | "+Y" | "-Y" | "+Z" | "-Z", body?: name } | { box: [x0, y0, z0, x1, y1, z1] } | { near: [x, y, z], r }
 //        | { patch: { at: [x, y, z], dir: "+X"… } } : the face the designer pointed at, inner faces included (patch.js)
+//        | { nodes: [...] } | { faceList: [...] } : already resolved on this very mesh — the nodes, or the exposed faces (refine.js)
 // material = { name, E (MPa), nu, k (W/m.K), rho (kg/m3), Re (MPa or null), alpha (1/K, thermal expansion, optional) }
 
 import { cutFaces } from "./symmetry.js";
@@ -35,6 +36,7 @@ function regionLabel(region) {
 /** Sorted, unique ids of the nodes of a region. */
 export function selectNodes(model, region) {
   const { nodes, nNodes, elems, elemBody, nCells, grid } = model, tol = 0.51 * grid.h, picked = [];
+  if (region?.nodes) return Int32Array.from(region.nodes);
   if (region?.plane) {   // the nodes of a grid plane : where a cut passes
     const { axis, i } = region.plane, x = grid.origin[axis] + i * grid.h;
     for (let k = 0; k < nNodes; k++) if (Math.abs(nodes[3 * k + axis] - x) < 0.01 * grid.h) picked.push(k);
@@ -100,8 +102,16 @@ function facesOf(model, sel) {
   return out;
 }
 
+/** The exposed faces of a region that are surfaces of the product ("exterior": all of them) — an empty list when it holds none. */
+export function regionFaces(model, region) {
+  const faces = exposedFaces(model), cut = cutFaces(model, faces), real = (f) => !cut || !cut[f];
+  if (region === "exterior") return Array.from({ length: faces.count }, (_, f) => f).filter(real);
+  return facesOf(model, selectNodes(model, region)).filter(real);
+}
+
 /** Exposed faces of a region ("exterior": all of them), or a French error when the region holds no complete face. */
 function pickFaces(model, region) {
+  if (region?.faceList) return Array.from(region.faceList);
   const faces = exposedFaces(model), cut = cutFaces(model, faces), real = (f) => !cut || !cut[f];   // a cut face is inside the product : no pressure, no convection on it
   if (region === "exterior") return Array.from({ length: faces.count }, (_, f) => f).filter(real);
   const sel = pickNodes(model, region), list = facesOf(model, sel).filter(real);
@@ -167,13 +177,25 @@ function temperatureRise(model, thermal) {
  *   loads: [{ region, force: [Fx, Fy, Fz] }] (total N spread equally on the nodes) or [{ region, pressure }] (MPa on the
  *   exposed faces, pushing into the material); gravity: [gx, gy, gz] in m/s2;
  *   thermal: { T, Tref = 20 } — T in degrees C, one number or one value per node (the T of solveThermal); every body expands
- *   by its material.alpha (1/K) times (T - Tref), T being trilinear in each cell.
+ *   by its material.alpha (1/K) times (T - Tref), T being trilinear in each cell;
+ *   loads may also be [{ nodal: { nodes, f } }] — forces already shared out, 3 per node.
  * @returns u (mm), vm (von Mises at the nodes, MPa), vmElem, maxU, maxVm, reaction (N, sum on the held dofs), reactions (the
  *   same per entry of `fixed`), energy (elastic strain energy, N.mm), dofs, iterations, residual, ms, thermal (true when applied).
  */
-export function solveStructure(model, { fixed = [], loads = [], gravity, thermal, tol = 1e-6, maxIter = 20000 } = {}, onProgress) {
-  const t0 = clock(), { nNodes, nCells, elems, elemBody, grid: { h } } = model, n = 3 * nNodes;
-  if (!fixed.length) throw new Error("Aucun appui : fixez au moins une face ou une zone de la pièce, sinon elle part en mouvement libre.");
+export function solveStructure(model, setup = {}, onProgress) {
+  const t0 = clock(), { tol = 1e-6, maxIter = 20000 } = setup;
+  if (!(setup.fixed || []).length) throw new Error("Aucun appui : fixez au moins une face ou une zone de la pièce, sinon elle part en mouvement libre.");
+  const sys = structureSystem(model, setup), weak = looseMotion(model, sys.isFixed);
+  if (weak) throw new Error(supportError(weak));
+  const x = new Float64Array(sys.n), run = pcg({ apply: sys.op.apply, diag: sys.op.diag, b: sys.f, x, fixed: sys.isFixed, tol, maxIter, onProgress });
+  checkConverged(run, maxIter, "Vérifiez qu'aucune pièce ne tient que par une arête ou un coin (elle pivoterait), ou augmentez la taille de maille.");
+  return { ...structureResults(model, sys, x), iterations: run.iterations, residual: run.residual, ms: clock() - t0 };
+}
+
+/** The structural case of a model, assembled and not yet solved : forces `f`, held dofs `isFixed` (and the support that owns each),
+    the element of each body, the operator K (never assembled). A part of a larger mesh is assembled the same way (composite.js). */
+export function structureSystem(model, { fixed = [], loads = [], gravity, thermal } = {}) {
+  const { nNodes, nCells, elems, elemBody, grid: { h } } = model, n = 3 * nNodes;
   const isFixed = new Uint8Array(n), owner = new Int32Array(n).fill(-1), f = new Float64Array(n);
   fixed.forEach((entry, k) => {   // a dof held by several supports reports its reaction to the first one
     const split = entry?.region !== undefined, dofs = split && entry.dofs ? entry.dofs : [true, true, true];
@@ -184,7 +206,9 @@ export function solveStructure(model, { fixed = [], loads = [], gravity, thermal
   });
 
   for (const load of loads || []) {
-    if (load.force) {   // total force shared equally by the nodes of the region
+    if (load.nodal) {
+      load.nodal.nodes.forEach((i, k) => { for (let d = 0; d < 3; d++) f[3 * i + d] += load.nodal.f[3 * k + d]; });
+    } else if (load.force) {   // total force shared equally by the nodes of the region
       const sel = pickNodes(model, load.region), share = sel.whole || sel.length, w = model.cut ? model.cut.weight : null;   // on a reduced model : the share of the whole, halved on a cut plane
       for (const i of sel) for (let d = 0; d < 3; d++) f[3 * i + d] += (load.force[d] / share) * (w ? w[i] : 1);
     } else if (Number.isFinite(load.pressure)) {   // every exposed face pushes -p A n, a quarter on each corner
@@ -225,19 +249,19 @@ export function solveStructure(model, { fixed = [], loads = [], gravity, thermal
     for (let a = 0; a < 8; a++) for (let b = 0; b < 8; b++) energy += alpha * alpha * te[a] * el.W[8 * a + b] * te[b];
   }
   if (fth) for (let i = 0; i < n; i++) f[i] += fth[i];
+  return { n, isFixed, owner, f, fth, theta, te, expansion, elements, energy, supports: fixed.length, op: structureOperator(model, elements.map((el) => el.K)) };
+}
 
-  const weak = looseMotion(model, isFixed);
-  if (weak) throw new Error(supportError(weak));
-  const op = structureOperator(model, elements.map((el) => el.K)), x = new Float64Array(n);
-  const run = pcg({ apply: op.apply, diag: op.diag, b: f, x, fixed: isFixed, tol, maxIter, onProgress });
-  checkConverged(run, maxIter, "Vérifiez qu'aucune pièce ne tient que par une arête ou un coin (elle pivoterait), ou augmentez la taille de maille.");
-
+/** What a solved structural case says : displacements, stresses, reactions, energy. x : the 3 displacements of every node. */
+export function structureResults(model, sys, x) {
+  const { nNodes, nCells, elems, elemBody } = model, { n, isFixed, owner, f, fth, theta, te, expansion, elements, op } = sys;
+  let energy = sys.energy;
   // Reactions (K u - f on the held dofs) and elastic energy; stresses at the 8 corners of every element, averaged at the nodes.
-  const Ku = new Float64Array(n), reaction = [0, 0, 0], reactions = fixed.map(() => [0, 0, 0]);
+  const Ku = new Float64Array(n), reaction = [0, 0, 0], reactions = Array.from({ length: sys.supports }, () => [0, 0, 0]);
   op.apply(x, Ku);
   for (let i = 0; i < n; i++) {
     energy += 0.5 * x[i] * Ku[i] - (fth ? x[i] * fth[i] : 0);
-    if (isFixed[i]) { reaction[i % 3] += Ku[i] - f[i]; reactions[owner[i]][i % 3] += Ku[i] - f[i]; }
+    if (isFixed[i]) { reaction[i % 3] += Ku[i] - f[i]; if (owner[i] >= 0) reactions[owner[i]][i % 3] += Ku[i] - f[i]; }      // no owner : a node tied to another mesh, not a support
   }
   const u = Float32Array.from(x), vm = new Float32Array(nNodes), vmElem = new Float32Array(nCells);
   const sum = new Float64Array(nNodes), share = new Uint8Array(nNodes), ue = new Float64Array(24), stress = new Float64Array(6);
@@ -263,28 +287,36 @@ export function solveStructure(model, { fixed = [], loads = [], gravity, thermal
   }
   const mag = new Float32Array(nNodes);
   for (let i = 0; i < nNodes; i++) { vm[i] = sum[i] / share[i]; mag[i] = Math.hypot(x[3 * i], x[3 * i + 1], x[3 * i + 2]); }
-  return {
-    u, vm, vmElem, maxU: extreme(model, mag), maxVm: extreme(model, vm), reaction, reactions, energy,
-    dofs: n - isFixed.reduce((s, v) => s + v, 0), iterations: run.iterations, residual: run.residual, ms: clock() - t0,
-    ...(theta ? { thermal: true } : {}),
-  };
+  return { u, vm, vmElem, mag, maxU: extreme(model, mag), maxVm: extreme(model, vm), reaction, reactions, energy, dofs: n - isFixed.reduce((s, v) => s + v, 0), ...(theta ? { thermal: true } : {}) };
 }
 
 /**
  * Steady-state heat conduction.
  * @param setup fixedT: [{ region, T }] imposed temperatures; power: [{ region, P }] total W spread equally on the nodes;
  *   convection: [{ region, h, Tamb }] on the exposed faces of the region, region "exterior" meaning every exposed face
- *   (h in W/m2.K, Tamb in degrees C).
+ *   (h in W/m2.K, Tamb in degrees C) ; power may also be [{ nodal: { nodes, q } }] — watts already shared out, one per node.
  * @returns T (degrees C), maxT, minT, balance { in, out } (W), dofs, iterations, residual, ms.
  */
-export function solveThermal(model, { fixedT = [], power = [], convection = [], tol = 1e-6, maxIter = 20000 } = {}, onProgress) {
-  const t0 = clock(), { nNodes, grid: { h } } = model;
-  if (!fixedT.length && !convection.length) throw new Error("Température indéfinie : imposez une température sur une zone ou ajoutez une convection, sinon la chaleur n'a aucune sortie.");
+export function solveThermal(model, setup = {}, onProgress) {
+  const t0 = clock(), { tol = 1e-6, maxIter = 20000 } = setup;
+  if (!(setup.fixedT || []).length && !(setup.convection || []).length) throw new Error("Température indéfinie : imposez une température sur une zone ou ajoutez une convection, sinon la chaleur n'a aucune sortie.");
+  const sys = thermalSystem(model, setup), loose = unmarkedBody(model, sys.anchored);
+  if (loose !== null) throw new Error(`Le corps « ${loose} » n'a ni température imposée ni convection et ne touche aucune pièce qui en a : sa température est indéfinie.`);
+  const run = pcg({ apply: sys.op.apply, diag: sys.op.diag, b: sys.b, x: sys.x, fixed: sys.isFixed, tol, maxIter, onProgress });
+  checkConverged(run, maxIter, "Vérifiez les conductivités et les conditions aux limites, ou augmentez la taille de maille.");
+  return { ...thermalResults(model, sys, sys.x), iterations: run.iterations, residual: run.residual, ms: clock() - t0 };
+}
+
+/** The thermal case of a model, assembled and not yet solved : right-hand side `b`, imposed temperatures (`isFixed`, their values in
+    `x`, which starts from a plausible uniform temperature elsewhere), the convection of each node, the operator. */
+export function thermalSystem(model, { fixedT = [], power = [], convection = [] } = {}) {
+  const { nNodes, grid: { h } } = model;
   const isFixed = new Uint8Array(nNodes), x = new Float64Array(nNodes), b = new Float64Array(nNodes);
   const film = new Float64Array(nNodes), filmT = new Float64Array(nNodes);   // lumped h A and h A Tamb of each node
   let powerIn = 0, guess = 0, weight = 0;
 
   for (const item of power) {
+    if (item.nodal) { item.nodal.nodes.forEach((i, k) => { b[i] += item.nodal.q[k]; powerIn += item.nodal.q[k]; }); continue; }
     const sel = pickNodes(model, item.region), share = sel.whole || sel.length, w = model.cut ? model.cut.weight : null;
     let got = 0; for (const i of sel) { const q = (item.P / share) * (w ? w[i] : 1); b[i] += q; got += q; }
     powerIn += w ? got : item.P;   // on a reduced model : what its side receives
@@ -313,16 +345,16 @@ export function solveThermal(model, { fixedT = [], power = [], convection = [], 
   });
   const anchored = Uint8Array.from(isFixed);
   for (let i = 0; i < nNodes; i++) if (film[i] > 0) anchored[i] = 1;
-  const loose = unmarkedBody(model, anchored);
-  if (loose !== null) throw new Error(`Le corps « ${loose} » n'a ni température imposée ni convection et ne touche aucune pièce qui en a : sa température est indéfinie.`);
 
   // Start from a uniform, plausible temperature: it removes most of the slow "everything warms up together" mode.
-  const start = weight > 0 ? guess / weight : 0;
-  for (let i = 0; i < nNodes; i++) if (!isFixed[i]) x[i] = start;
-  const op = thermalOperator(model, conductionElement(h), cond, film);
-  const run = pcg({ apply: op.apply, diag: op.diag, b, x, fixed: isFixed, tol, maxIter, onProgress });
-  checkConverged(run, maxIter, "Vérifiez les conductivités et les conditions aux limites, ou augmentez la taille de maille.");
+  const start = weight > 0 ? guess / weight : null;
+  for (let i = 0; i < nNodes; i++) if (!isFixed[i]) x[i] = start ?? 0;
+  return { n: nNodes, isFixed, x, b, film, filmT, powerIn, anchored, start, op: thermalOperator(model, conductionElement(h), cond, film) };
+}
 
+/** What a solved thermal case says : temperatures and heat balance. x : the temperature of every node. */
+export function thermalResults(model, sys, x) {
+  const { nNodes } = model, { isFixed, b, film, filmT, powerIn, op } = sys;
   // Heat leaving: by convection, and through the imposed-temperature nodes (the residual there is the heat they supply).
   const AT = new Float64Array(nNodes);
   op.apply(x, AT);
@@ -332,8 +364,5 @@ export function solveThermal(model, { fixedT = [], power = [], convection = [], 
     if (isFixed[i]) out -= AT[i] - b[i];
   }
   const T = Float32Array.from(x);
-  return {
-    T, maxT: extreme(model, T), minT: extreme(model, T, -1), balance: { in: powerIn, out },
-    dofs: nNodes - isFixed.reduce((s, v) => s + v, 0), iterations: run.iterations, residual: run.residual, ms: clock() - t0,
-  };
+  return { T, maxT: extreme(model, T), minT: extreme(model, T, -1), balance: { in: powerIn, out }, dofs: nNodes - isFixed.reduce((s, v) => s + v, 0) };
 }

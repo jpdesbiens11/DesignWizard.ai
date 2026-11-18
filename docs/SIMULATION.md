@@ -207,7 +207,7 @@ cubes dont le centre est dans la matière. La finesse se règle par un seul curs
 - C'est robuste : aucun mailleur à régler, aucune géométrie qui « ne maille pas ».
 - C'est rapide : tous les éléments étant identiques, leur matrice se calcule **une fois** par matériau.
 - C'est grossier, et assumé : un détail plus petit qu'un cube (petit trou, congé, chanfrein) disparaît ; une surface
-  courbe devient un escalier.
+  courbe devient un escalier. Là où un détail compte, une **zone de raffinement** met des cubes plus petits (§ 5).
 
 Dans un assemblage, les corps qui se touchent partagent leurs nœuds : les contacts sont **collés** en structure et
 **parfaits** en thermique. Chaque corps garde son matériau. Un corps que le maillage grossier ne relie à aucune
@@ -281,7 +281,69 @@ bleus sur le plan et son étiquette sur le modèle.
 - Cette frontière **ne se retire pas seule** : elle porte un cadenas. Si l'on tente de l'effacer, une fenêtre explique
   qu'elle vient de la symétrie et propose de **retirer la symétrie** — le produit entier revient alors dans le calcul.
 
-## 5. Ce qui est vérifié
+## 5. Zones de raffinement : des cubes plus petits là où l'on regarde
+
+Un détail — un trou, un congé, le bord d'un appui — demande des cubes plus petits que le reste. Affiner tout le maillage
+coûte cher ; une **zone de raffinement** n'affine que là où l'on regarde.
+
+**Ce que l'on place.** Un volume, posé dans le modèle :
+
+| Forme | Ce que l'on donne |
+|---|---|
+| **Cylindre** | son axe (X, Y ou Z), son diamètre, sa longueur |
+| **Prisme à section carrée** | son axe (X, Y ou Z), le côté du carré, sa longueur |
+
+et son centre. Le plus direct : **clic droit sur la pièce → « Raffiner le maillage ici »** — la zone est centrée sur le point,
+son axe le long de la normale de la face. Ou le « + » de la section « Zones de raffinement », puis un clic sur la pièce.
+La carte de la zone règle sa forme (deux pictogrammes), son axe, ses cotes, son centre (trois champs, ou « Viser » puis
+un clic) et sa finesse : des cubes **2, 3 ou 4 fois plus petits**. Les cotes que l'outil propose sont des exemples : elles
+clignotent, et le calcul attend qu'elles soient entrées ou confirmées.
+
+**Ce que l'on voit.** Le contour de la zone et son nom (Z1, Z2…), et surtout **sa forme imprimée sur la pièce, en petits
+cubes** : ce que le volume partage avec le produit est remaillé, dans la couleur des zones. La ligne du bas compte les
+cubes fins à côté de ceux du modèle.
+
+**Comment c'est maillé.** Une zone prend des **cubes entiers du modèle** — sa forme, en cubes : tout cube qu'elle atteint.
+Chacun est recoupé en 8, 27 ou 64 cubes, sur les mêmes lignes de grille, et **la géométrie y est relue** : un détail plus
+petit qu'un cube du modèle, que le maillage grossier ignorait, réapparaît. Un fragment fin que rien ne relie au reste
+est laissé de côté, et l'écran le dit. Une zone compte au plus 40 000 cubes fins ; deux zones ne se touchent jamais (un
+cube du modèle reste toujours entre elles).
+
+**Comment c'est résolu : un seul maillage.** Le modèle sans les cubes pris et les cubes fins de chaque zone sont résolus
+**ensemble**. Sur le bord d'une zone, chaque nœud fin est **lié** au cube du modèle sur lequel il repose : il se déplace (ou
+s'échauffe) comme ce cube le dit à cet endroit. Ces nœuds ne sont pas des inconnues ; leur raideur et leurs efforts sont
+reportés sur les coins qui les mènent. La zone raidit ou assouplit donc le modèle autant qu'il faut, et le modèle charge
+la zone autant qu'il faut : rien n'est supposé sur le bord.
+
+- Les appuis, les efforts, les sources et la convection **qui tombent dans la zone** y sont repris : une face du produit
+  est reportée face par face sur les petits cubes, une interface est le même endroit de l'espace ; un effort réparti
+  sur des nœuds est partagé entre la zone et le reste, sans être compté deux fois.
+- Les trois physiques, et les symétries : une zone à cheval sur un plan de symétrie est coupée comme le reste.
+- Le calcul est fait **deux fois** : le modèle seul d'abord (il dit si le cas tient, et sert de comparaison), puis avec ses
+  zones. Compter le double du temps.
+
+**Ce que le résultat dit.** Les chiffres de tête et les couleurs sont ceux du maillage composé. Un tableau donne, par zone,
+son maillage, **sa pointe**, ce que **le modèle seul** donnait au même endroit, et l'écart. Une simulation gardée pour la
+revue emporte ses zones.
+
+**Ce qu'il faut savoir.**
+
+- Les cubes restent des cubes : une surface courbe est un escalier plus fin, pas une courbe. La pointe monte quand on
+  affine ; comparer 2, 3 et 4 fois dit si elle se stabilise. Au fond d'une **entaille vive**, elle ne se stabilise jamais.
+- Le lien du bord est un peu plus raide que la matière : laisser le bord de la zone à **deux cubes du modèle** au moins du
+  détail regardé. Le guide le signale quand la zone est plus petite que deux cubes.
+- Une face pointée, allumée dans la vue, ne l'est pas à l'intérieur d'une zone.
+
+Un premier essai, à sens unique — les déplacements du modèle seul imposés sur le bord de la zone — a été écarté : sur la
+plaque trouée du tableau ci-dessous, il donnait de −10 % à +35 % selon la taille de la zone, parce que le modèle grossier
+est trop souple ou trop raide là où la zone change la géométrie. Partir de la solution du modèle seul pour gagner du
+temps a aussi été essayé, et écarté : cela demande plus d'itérations, pas moins.
+
+Le code : `web/js/analysis/fea/refine.js` (ce qu'est une zone : sa forme, ses cubes, son maillage fin, ses liens, sa part
+du cas), `web/js/analysis/fea/composite.js` (le modèle sans ses zones, la résolution liée, la peau composée),
+`web/js/modules/fea_zones.js` (l'écran) ; tests : `tests/node/fea_refine.test.mjs`.
+
+## 6. Ce qui est vérifié
 
 Les tests (`tests/node/fea.test.mjs`, `tests/node/fea_precheck.test.mjs`) comparent le solveur à des solutions
 exactes :
@@ -307,6 +369,13 @@ exactes :
 | Plaque encastrée sous pression, **quart de modèle** — flèche au centre | celle du modèle entier | modèle entier, mêmes cubes | moins de 0,2 % |
 | Bloc chauffé, refroidi par convection, **demi-modèle** — températures et bilan | celles du modèle entier, 2,5 W sur 5 | modèle entier | moins de 0,2 % |
 | Poutre coupée à mi-longueur, plan **tenu** — flèche | — | F L³ / 3 E I avec L = 50 mm | moins de 5 % |
+| Barre en traction, **zones de raffinement** de finesse 2, 3 et 4 (jusqu'à deux à la fois) — contrainte dans tous les cubes | 10,000 MPa | 10 MPa | moins de 0,01 % |
+| Plaque 80 × 40 × 5 mm trouée ⌀ 8 mm en traction, **zone** ⌀ 12 puis ⌀ 24 autour du trou, cubes 2 fois plus petits — pointe | 25,2 à 25,4 MPa | maillage fin partout, mêmes petits cubes : 25,4 MPa | moins de 3 % (le modèle seul : 29,7 MPa, +17 %) |
+| Même plaque, trou ⌀ 2 mm, **plus petit qu'un cube** — pointe dans la zone | 20,0 MPa | maillage fin partout : 20,0 MPa | moins de 3 % (le modèle seul ne voit pas le trou : 10,1 MPa) |
+| Demi-plaque sur son plan de symétrie, avec sa **zone** — pointe et déplacement | ceux de la plaque entière | plaque entière, même zone | moins de 0,1 % |
+| Poutre poussée sur une face qu'une **zone** recouvre en partie — réaction d'appui | 120 N | 120 N | moins de 0,01 % |
+| Barre entre 100 °C et 20 °C, avec une **zone** — température de chaque nœud | sur la droite | la droite | moins de 0,001 °C |
+| Barre chauffée de 3 W et refroidie par convection, avec une **zone** — bilan | 3,000 W évacués | 3 W | moins de 0,01 % |
 
 Un cas de 3 400 cubes (13 400 inconnues) se résout en environ 0,6 s ; une plaque mince tenue par des vis demande
 plus d'itérations (quelques secondes).
@@ -319,10 +388,11 @@ Sur le projet de démonstration, en thermo-mécanique (navigateur, de 2 800 à 4
 | Dissipateur tenu par quatre vis, champ de température calculé | au cœur ≤ 37,9 MPa ; ≤ 0,039 mm | au cœur 21,0 MPa ; 0,031 mm | bridage 55 % |
 | Assemblage complet (cuivre, aluminium, FR-4, plastique) tenu par une face, à 80 °C | déplacement de 0,16 à 4,9 mm | 2,6 mm | dans la fourchette ; 13 petits composants laissés de côté |
 
-## 6. Ce que la brique ne fait pas
+## 7. Ce que la brique ne fait pas
 
 - **Concentrations de contrainte** : la contrainte de pointe d'un maillage grossier est indicative. Au bord d'un
   encastrement, autour d'un trou ou dans un congé, la valeur locale réelle peut être deux à trois fois plus élevée.
+  Une **zone de raffinement** (§ 5) la regarde de plus près, sans la garantir : des cubes, même petits, restent des cubes.
 - **Linéaire, statique, petits déplacements** : pas de plasticité, de flambage, de contact qui s'ouvre, de fatigue,
   de dynamique.
 - **Thermique en régime permanent** seulement ; pas de rayonnement. En thermo-mécanique, les propriétés ne varient

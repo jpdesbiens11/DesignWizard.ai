@@ -140,6 +140,14 @@ export function buildModel({ bodies, target = 4000, h, planes = [] } = {}) {
   return assemble(grid, cells, bodies);
 }
 
+/** The cells of a given grid that the bodies claim, the way buildModel fills its own : cells[g] is the body of the cell, -1 when
+    empty. A refinement zone fills a finer grid laid over a block of the model with it (refine.js). */
+export function fillGrid(bodies, grid) {
+  const cells = new Int16Array(grid.nx * grid.ny * grid.nz).fill(-1);
+  bodies.map(prepareBody).forEach((m, b) => voxelise(m, grid, cells, b));
+  return cells;
+}
+
 /** The model of a grid and of its kept cells (cells[g] : the body of the cell, -1 when empty) : nodes, elements, bodies. */
 export function assemble(grid, cells, bodies) {
   const { nx, ny, nz, h: size } = grid, counts = bodies.map(() => 0);
@@ -232,9 +240,11 @@ export function sectionAt(model, axis, coord) {
 /**
  * Outer skin of the mesh for display: the exposed cell faces as independent quads (4 vertices, 2 triangles, outward winding).
  * @param field Float32Array(nNodes) copied on the vertices (or null: zeros)
- * @param options u: nodal displacements (3 per node) added to the positions, multiplied by `scale`
+ * @param options u: nodal displacements (3 per node) added to the positions, multiplied by `scale` ; hide: one flag per exposed
+ *   face — a hidden face keeps its place in the arrays (what is aligned on the faces stays so) but is not drawn : its two
+ *   triangles are empty and its edges are left out
  */
-export function skin(model, field, { u, scale = 1 } = {}) {
+export function skin(model, field, { u, scale = 1, hide } = {}) {
   const faces = exposedFaces(model), { nodes, nNodes } = model, count = faces.count;
   const pos = new Float32Array(12 * count), idx = new Uint32Array(6 * count), val = new Float32Array(4 * count);
   const place = (node, d) => nodes[3 * node + d] + (u ? scale * u[3 * node + d] : 0);
@@ -244,10 +254,11 @@ export function skin(model, field, { u, scale = 1 } = {}) {
       const node = faces.nodes[4 * f + c], next = faces.nodes[4 * f + (c + 1) % 4];
       for (let d = 0; d < 3; d++) pos[12 * f + 3 * c + d] = place(node, d);
       if (field) val[4 * f + c] = field[node];
+      if (hide && hide[f]) continue;
       const key = Math.min(node, next) * nNodes + Math.max(node, next);   // an edge shared by two faces is drawn once
       if (!seen.has(key)) { seen.add(key); edges.push(place(node, 0), place(node, 1), place(node, 2), place(next, 0), place(next, 1), place(next, 2)); }
     }
-    idx.set([4 * f, 4 * f + 1, 4 * f + 2, 4 * f, 4 * f + 2, 4 * f + 3], 6 * f);
+    idx.set(hide && hide[f] ? [4 * f, 4 * f, 4 * f, 4 * f, 4 * f, 4 * f] : [4 * f, 4 * f + 1, 4 * f + 2, 4 * f, 4 * f + 2, 4 * f + 3], 6 * f);
   }
   return { pos, idx, val, epos: new Float32Array(edges), faces: count };
 }

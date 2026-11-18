@@ -47,7 +47,7 @@ export function reduceModel(full, cuts) {
 }
 /** Marks, among the exposed faces of a reduced model, those that lie on a cut : they are inside the product, not on its surface. */
 export function cutFaces(model, faces) {
-  const c = model.cut; if (!c) return null; if (c.onCut) return c.onCut;
+  const c = model.cut; if (!c) return model.inner || null; if (c.onCut) return c.onCut;      // a refinement zone marks its own (refine.js) : where it meets the rest of the product
   const { grid: { nx, ny }, elemCell } = model, on = new Uint8Array(faces.count);
   for (let f = 0; f < faces.count; f++) { const g = elemCell[faces.elem[f]], q = [g % nx, Math.floor(g / nx) % ny, Math.floor(g / (nx * ny))], d = faces.dir[f] >> 1, out = faces.dir[f] & 1;      // dir : −X, +X, −Y, +Y, −Z, +Z
     for (const pl of c.planes) if (pl.axis === d && (pl.keep > 0 ? !out && q[d] === pl.i : out && q[d] === pl.i - 1)) on[f] = 1; }

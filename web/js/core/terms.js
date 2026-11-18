@@ -63,6 +63,7 @@ export function glossary() {
   all("finish", FINISHES, "finition du rendu"); all("finish", LABEL_KINDS, "étiquette");
   for (const m of MATERIALS) if (m.fr) add("stock", m.name, m.fr, "matière");
   for (const m of Array.isArray(MODELS) ? MODELS : Object.values(MODELS)) add("analysis", m.title, m.fr, "modèle de calcul");
+  add("analysis", "Refinement zone", "zone de raffinement", "simulation : un volume où les cubes du maillage sont plus petits"); add("analysis", "Mesh refinement", "raffinement du maillage", "simulation"); add("analysis", "Tied node (hanging node)", "nœud lié (nœud suspendu)", "simulation : un nœud fin, au bord d'une zone, qui suit le cube sur lequel il repose");
   for (const [fr, en] of Object.entries(RULE_TITLES)) add("rules", en, fr, /^(Short|Net-to|Trace|Unrouted|Drill|Insufficient annular|Holes too|Via|Component|Under the|Unplaced|Solder|Through-hole|Fiducials|Polarized|Bill|Decoupling|Test access|Board thickness|Four|Heavy|Large|Mounting|High voltage|Conformal|Coating|Tests before|Power net|Block|Unconnected|IC |Two sources|Inconsistent|Function|Single-pin|Net name|Insufficient voltage|Missing)/.test(en) ? "règle de carte" : "règle DFx");
   const order = TERM_GROUPS.map((g) => g.id);
   return rows.sort((a, b) => order.indexOf(a.group) - order.indexOf(b.group) || a.en.localeCompare(b.en, "en"));

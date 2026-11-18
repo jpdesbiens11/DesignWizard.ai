@@ -7,6 +7,7 @@
 import { el, btn, badge, table, icon, fmt } from "../core/dom.js";
 import { VERDICT, show } from "../analysis/fea/summary.js";
 import { FS_TARGETS, FS_COLORS, fsBands, safetySummary, safetyText } from "../analysis/fea/safety.js";
+import { zonesResult } from "./fea_zones.js";
 
 const n = (v, d = 2) => String(Math.round(v * 10 ** d) / 10 ** d).replace(".", ",");
 const seg = (items, value, pick, label) => el("div", { class: "seg text", role: "group", "aria-label": label }, items.map(([k, text, tip, off]) => el("button", { class: "seg-btn" + (k === value ? " on" : ""), type: "button", "aria-pressed": k === value ? "true" : "false", disabled: !!off, "data-tip": tip || null, onClick: () => pick(k) }, text)));
@@ -35,6 +36,7 @@ export function resultPanel(body, o) {
     : [el("div", { class: "kpi" }, el("b", null, `${show(r.maxVm.value, 1)} MPa`), el("span", null, `Contrainte de pointe${r.nominalVm ? ` · nominale ${show(r.nominalVm.value, 1)}` : ""}`)), el("div", { class: "kpi" }, el("b", null, `${show(r.maxU.value)} mm`), el("span", null, "Déplacement maximal")),
       el("div", { class: "kpi" + (S && S.min !== null ? ` fs-${S.band}` : "") }, el("b", null, sf === null ? "—" : Number.isFinite(sf) ? show(sf, 2) : "∞"), el("span", null, `Facteur de sécurité minimal · ${n(st.fsTarget)} visé`)),
       ...(last.kind === "thermo" ? [el("div", { class: "kpi" }, el("b", null, `${show(r.maxT.value, 1)} °C`), el("span", null, r.minT.value === r.maxT.value ? "Température uniforme" : `Température, de ${show(r.minT.value, 1)} °C`))] : [])])));
+  { const zones = zonesResult(r.zones, thermal); if (zones) body.append(zones); }      // what each refinement zone found, against the model alone
   /* what the colours of the view mean : a stress on a scale, or the safety factor against the one aimed at */
   const sec = el("div", { class: "side-section" }, el("h3", null, "Ce que les couleurs montrent"));
   if (!thermal) sec.append(seg([["stress", "Contrainte", "Contrainte de von Mises, en MPa"], ["fs", "Facteur de sécurité", "Limite élastique du matériau sur la contrainte, en chaque point"]], st.quantity === "fs" ? "fs" : "stress", (k) => { st.quantity = k; o.repaint(); }, "Grandeur affichée"));
@@ -60,7 +62,7 @@ export function resultPanel(body, o) {
     c.rows.length ? table(["", "À la main", "Simulation", "Écart"], c.rows.map((x) => [x.label, x.low !== undefined ? `${show(x.low, 2)} à ${show(x.analytic, 2)} ${x.unit}` : `${x.bound ? "au plus " : ""}${show(x.analytic, 2)} ${x.unit}`, `${show(x.fea, 2)} ${x.unit}`, x.deviation === null ? "—" : x.low !== undefined && x.deviation === 0 ? "dans la fourchette" : x.bound && x.deviation === 0 ? `sous la borne${x.note ? ` (${x.note})` : ""}` : `${x.deviation > 0 ? "+" : ""}${Math.round(x.deviation * 100)} %`])) : null,
     el("p", { class: "small" }, c.text), ...(c.notes || []).map((t) => el("p", { class: "atelier-hint warn" }, icon("warning"), " ", t)),
     last.info.dropped && last.info.dropped.length ? el("p", { class: "atelier-hint" }, icon("info"), ` ${last.info.dropped.length} corps laissé(s) de côté, car le maillage grossier ne les relie à aucune pièce tenue : ${last.info.dropped.slice(0, 6).join(", ")}${last.info.dropped.length > 6 ? "…" : ""}.`) : null,
-    el("p", { class: "muted small" }, `${last.info.cells.toLocaleString("fr-CA")} cubes, ${r.dofs.toLocaleString("fr-CA")} inconnues, ${r.iterations} itérations, ${fmt(r.ms / 1000, 2)} s. La contrainte de pointe d'un maillage grossier est indicative : les concentrations locales (trous, congés, bord de l'encastrement) ne sont pas résolues.`),
+    el("p", { class: "muted small" }, `${last.info.cells.toLocaleString("fr-CA")} cubes${last.info.fine ? ` + ${last.info.fine.toLocaleString("fr-CA")} cubes fins` : ""}, ${r.dofs.toLocaleString("fr-CA")} inconnues, ${r.iterations} itérations, ${fmt(r.ms / 1000, 2)} s. La contrainte de pointe d'un maillage grossier est indicative : les concentrations locales (trous, congés, bord de l'encastrement) ne sont pas résolues${last.info.fine ? " hors des zones de raffinement" : " — une zone de raffinement les regarde de près"}.`),
     el("div", { class: "form-actions" }, btn("Ajouter au rapport", () => o.keep(), { small: true, icon: "plus" }))));
   /* the trials of this session : change the case or the mesh, run again, and see whether the answer settles */
   if (o.runs.length > 1) body.append(el("div", { class: "side-section" }, el("h3", null, "4. Les essais de cette séance"),
