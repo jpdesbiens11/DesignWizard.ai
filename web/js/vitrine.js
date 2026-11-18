@@ -1,10 +1,13 @@
-/* DesignWizard.ai — the only script of the showcase page (vitrine.html), loaded once the film speaks : the subtitles of each player
-   follow its sound — none while the film is heard, shown when the player is muted or its volume is at zero — and the « no sound » box
-   written under each player mutes it. Nothing else : no request, nothing stored, nothing measured. */
-import { followSound, muteBox } from "./core/captions.js";
+/* DesignWizard.ai — the only script of the showcase page (vitrine.html), loaded once the film speaks : under each player, the choice of
+   subtitles — the film's own language (shown from the start, with the voice), the other one, both, none. The choice is written in the
+   page, hidden : it shows only when this script is there to make it work ; without it, the subtitles of the film's language still show
+   (their track is the default one). Nothing else : no request, nothing stored, nothing measured. */
+import { subsBox } from "./core/captions.js";
 
 for (const video of document.querySelectorAll("video")) {
-  followSound(video);
-  const label = video.nextElementSibling;      // the box is in the page, hidden : it shows only when this script is there to make it work
-  if (label && label.matches("label.mute")) { muteBox(video, label.querySelector("input")); label.hidden = false; }
+  const box = video.nextElementSibling;
+  if (!box || !box.matches(".subs")) continue;
+  const radios = [...box.querySelectorAll("input[type=radio]")];
+  subsBox(video, radios, (radios.find((r) => r.checked) || { value: "off" }).value);
+  box.hidden = false;
 }

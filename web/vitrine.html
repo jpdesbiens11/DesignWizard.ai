@@ -41,41 +41,50 @@
 
 <section id="film" class="film">
   <h2>La plateforme en 2 min 33</h2>
-  <p class="intro"><mark>La conception, sans les détours.</mark> Du besoin au dossier de commande, sur les vrais écrans de l'outil. Avec la voix ; cochez « Sans son »
-    sous le film et les sous-titres apparaissent. <a href="#english">English version ↓</a></p>
+  <p class="intro"><mark>La conception, sans les détours.</mark> Du besoin au dossier de commande, sur les vrais écrans de l'outil. Une voix raconte l'histoire ;
+    les sous-titres restent à l'écran, en français, en anglais ou les deux. <a href="#english">English version ↓</a></p>
   <video controls playsinline preload="none" poster="video/designwizard_fr.jpg" width="1280" height="720">
     <source src="video/designwizard_fr.mp4" type="video/mp4">
-    <track kind="subtitles" srclang="fr" label="Français" src="video/designwizard_fr.vtt">
+    <track kind="subtitles" srclang="fr" label="Français" src="video/designwizard_fr.vtt" default>
+    <track kind="subtitles" srclang="en" label="English" src="video/designwizard_en.vtt">
     Votre navigateur ne lit pas cette vidéo : <a href="video/designwizard_fr.mp4">téléchargez-la</a>.
   </video>
-  <label class="mute" hidden><input type="checkbox"> Sans son <small>— les sous-titres apparaissent</small></label>
+  <div class="subs" role="radiogroup" aria-label="Sous-titres" hidden><span>Sous-titres</span>
+    <label><input type="radio" name="subs-fr" value="fr" checked> Français</label>
+    <label><input type="radio" name="subs-fr" value="en"> English</label>
+    <label><input type="radio" name="subs-fr" value="both"> Les deux</label>
+    <label><input type="radio" name="subs-fr" value="off"> Aucun</label>
+  </div>
   <details class="said">
     <summary>Le texte de la narration</summary>
     <ol>
-      <li>Concevoir un produit, aujourd'hui, c'est six logiciels autour d'une même pièce.</li>
-      <li>Et aucun ne sait pourquoi elle existe.</li>
-      <li>Exporter, réimporter, redessiner : chaque tour de boucle coûte des jours.</li>
-      <li>Voici DesignWizard.ai.</li>
-      <li>La conception, sans les détours.</li>
-      <li>Tout part de l'intention : ce que la pièce relie, sa matière, son procédé.</li>
-      <li>La pièce naît de ses interfaces, comme chez un artisan à son établi. Sans esquisse.</li>
-      <li>Un studio qui parle le langage de l'atelier. Un paramètre bouge, la pièce suit.</li>
-      <li>Les règles de fabrication tournent en direct, avec un correctif en un clic.</li>
-      <li>Dans l'assemblage, les pièces se matent d'elles-mêmes, par leurs interfaces.</li>
-      <li>Une pièce change : l'assemblage suit, et les interférences sont vérifiées.</li>
-      <li>La carte électronique vit dans le même projet, avec les mêmes interfaces.</li>
-      <li>Des fonctions jusqu'aux fichiers de fabrication.</li>
-      <li>La physique, d'abord par des modèles simples, que l'on peut refaire à la main.</li>
-      <li>Puis la simulation, recoupée par le calcul.</li>
-      <li>Et les distances d'isolement, mesurées sur tout l'assemblage.</li>
-      <li>Le dessin se fait seul, et reste à jour.</li>
-      <li>La revue de conception se tient dans l'outil.</li>
-      <li>Et la pièce part en commande, avec son dossier.</li>
-      <li>L'intelligence artificielle ? On lui confie une tâche, comme à un technicien.</li>
-      <li>Et l'on relit avant d'accepter.</li>
-      <li>Un logiciel libre, sous licence MIT. Vos fichiers restent les vôtres.</li>
-      <li>Moins de clics. Plus de conception.</li>
-      <li>DesignWizard.ai. Ouvrez la démo.</li>
+      <li>Avant le premier trait, il y a toujours une question.</li>
+      <li>À quoi cette pièce doit-elle servir ? Vous, vous le savez.</li>
+      <li>Mais il faut le redire. Au modeleur, au calcul, au dessin. Encore et encore.</li>
+      <li>Et si on ne le disait qu'une fois ?</li>
+      <li>DesignWizard.ai : l'outil qui retient le pourquoi.</li>
+      <li>Ici, on ne dessine pas d'abord. On laisse parler la pièce.</li>
+      <li>Je me visse ici. Je reçois un arbre. Je laisse passer un câble.</li>
+      <li>Et l'outil propose une forme, un brut, et les étapes pour la fabriquer.</li>
+      <li>Ensuite, on règle. Une cote grimpe, et le boîtier s'étire sous vos yeux.</li>
+      <li>Une paroi trop mince ? Un perçage hors des forets standard ?</li>
+      <li>L'outil le voit avant l'atelier, et propose la correction.</li>
+      <li>Aucune pièce ne vit seule. Chacune sait déjà où elle s'attache.</li>
+      <li>Mettez-les ensemble : elles trouvent leur place, sans qu'on la leur montre.</li>
+      <li>Changez-en une, les autres suivent. Et si deux se gênent, vous le savez.</li>
+      <li>L'électronique ne vit pas ailleurs. La carte se conçoit dans le même projet que son boîtier.</li>
+      <li>Et le jour où elle part en fabrication, ses fichiers sont prêts.</li>
+      <li>Chauffera-t-elle ? Tiendra-t-elle ? D'abord, un calcul qu'on refait au crayon.</li>
+      <li>Puis la simulation. Et quand les deux réponses divergent, l'outil vous le dit.</li>
+      <li>Entre deux conducteurs sous tension, il mesure le plus court chemin. Partout.</li>
+      <li>Pendant ce temps, le plan s'est tracé tout seul. La pièce change ? Lui aussi.</li>
+      <li>À la revue, tout le monde regarde la même pièce, au même endroit.</li>
+      <li>Et le jour de commander, tout tient dans un seul dossier.</li>
+      <li>Et l'intelligence artificielle ? Confiez-lui le dossier, comme à une recrue brillante.</li>
+      <li>Elle propose. Vous relisez. Et rien ne change sans votre accord.</li>
+      <li>Le code est ouvert à tous. Et votre travail ne reste prisonnier de personne.</li>
+      <li>Une pièce commence par une question.</li>
+      <li>Voici l'outil qui se souvient de la réponse : DesignWizard.ai.</li>
     </ol>
   </details>
 </section>
@@ -174,40 +183,49 @@
     <a href="https://github.com/jpdesbiens11/DesignWizard.ai" rel="noopener">GitHub</a></p>
   <h2 id="film-en">The platform in 2 min 33</h2>
   <p><mark>Design, without the detours.</mark> From the need to the order package, on the tool's real screens (the screens themselves are in French).
-    With a voice; tick “No sound” under the film and the subtitles appear.</p>
+    A voice tells the story; the subtitles stay on screen, in English, in French or both.</p>
   <video controls playsinline preload="none" poster="video/designwizard_en.jpg" width="1280" height="720">
     <source src="video/designwizard_en.mp4" type="video/mp4">
-    <track kind="subtitles" srclang="en" label="English" src="video/designwizard_en.vtt">
+    <track kind="subtitles" srclang="fr" label="Français" src="video/designwizard_fr.vtt">
+    <track kind="subtitles" srclang="en" label="English" src="video/designwizard_en.vtt" default>
     Your browser cannot play this video: <a href="video/designwizard_en.mp4">download it</a>.
   </video>
-  <label class="mute" hidden><input type="checkbox"> No sound <small>— the subtitles appear</small></label>
+  <div class="subs" role="radiogroup" aria-label="Subtitles" hidden><span>Subtitles</span>
+    <label><input type="radio" name="subs-en" value="fr"> Français</label>
+    <label><input type="radio" name="subs-en" value="en" checked> English</label>
+    <label><input type="radio" name="subs-en" value="both"> Both</label>
+    <label><input type="radio" name="subs-en" value="off"> None</label>
+  </div>
   <details class="said">
     <summary>The narration, as text</summary>
     <ol>
-      <li>Designing a product today means six tools around a single part.</li>
-      <li>And none of them knows why it exists.</li>
-      <li>Export, re-import, redraw: every loop costs days.</li>
-      <li>Meet DesignWizard.ai.</li>
-      <li>Design, without the detours.</li>
-      <li>It all starts from intent: what the part connects, its material, its process.</li>
-      <li>The part is born from its interfaces, like a craftsman at the bench. No sketch.</li>
-      <li>A studio that speaks the language of the shop floor. Move a parameter, the part follows.</li>
-      <li>Manufacturing rules run live, with a one-click fix.</li>
-      <li>In the assembly, parts mate themselves, through their interfaces.</li>
-      <li>Change a part: the assembly follows, and interferences are checked.</li>
-      <li>The circuit board lives in the same project, with the same interfaces.</li>
-      <li>From functions all the way to fabrication files.</li>
-      <li>Physics first, through simple models you can redo by hand.</li>
-      <li>Then simulation, cross-checked by the calculation.</li>
-      <li>And isolation distances, measured across the whole assembly.</li>
-      <li>The drawing makes itself, and stays up to date.</li>
-      <li>The design review happens in the tool.</li>
-      <li>And the part goes out to order, with its package.</li>
-      <li>Artificial intelligence? You hand it a task, as you would a technician.</li>
-      <li>And you review before you accept.</li>
-      <li>Open source, under the MIT licence. Your files stay yours.</li>
-      <li>Fewer clicks. More engineering.</li>
-      <li>DesignWizard.ai. Open the demo.</li>
+      <li>Before the first sketch, there is always a question.</li>
+      <li>What is this part for? You already know.</li>
+      <li>But you must repeat it. To the modeller, the solver, the drawing. Every time.</li>
+      <li>What if you only had to say it once?</li>
+      <li>DesignWizard.ai: the tool that remembers why.</li>
+      <li>Here, you do not start by drawing. You let the part speak.</li>
+      <li>I bolt on here. I take a shaft. I let a cable through.</li>
+      <li>And the tool proposes a shape, a stock size, and the steps to make it.</li>
+      <li>Then you tune it. A dimension climbs, and the housing stretches as you watch.</li>
+      <li>A wall too thin? A hole no standard drill can make?</li>
+      <li>The tool sees it before the shop does, and offers the fix.</li>
+      <li>No part lives alone. Each one already knows where it attaches.</li>
+      <li>Bring them together: they find their place, with no one showing them.</li>
+      <li>Change one, and the others follow. If two collide, you are told.</li>
+      <li>Electronics do not live elsewhere. The board is designed in the same project as its housing.</li>
+      <li>And the day it goes to fabrication, its files are ready.</li>
+      <li>Will it run hot? Will it hold? First, a calculation you can redo in pencil.</li>
+      <li>Then the simulation. When the two answers disagree, the tool says so.</li>
+      <li>Between two live conductors, it measures the shortest path. Everywhere.</li>
+      <li>Meanwhile, the drawing has drawn itself. The part changes? So does the drawing.</li>
+      <li>At the review, everyone looks at the same part, in the same place.</li>
+      <li>And on ordering day, everything fits in a single package.</li>
+      <li>And artificial intelligence? Hand it the file, as you would a brilliant new hire.</li>
+      <li>It proposes. You read. And nothing changes without your say-so.</li>
+      <li>The code is open to all. And your work is never locked in.</li>
+      <li>A part begins with a question.</li>
+      <li>Here is the tool that remembers the answer: DesignWizard.ai.</li>
     </ol>
   </details>
 </section>

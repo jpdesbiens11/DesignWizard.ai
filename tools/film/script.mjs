@@ -2,9 +2,12 @@
    film (film.js), the tool that renders it (tools/film_render.mjs) and the tests read the same timeline.
    Two and a half minutes, between a quick demonstration and a marketing film : the problem, the name, then the path of a design — intent,
    part, assembly, board, physics, drawings, AI — and the name again. The pictures are the real screens (web/img/tour) and two clips filmed
-   on the running application (tools/film_shots.mjs). The narration is written to be SPOKEN : each cue is one breath. Until a voice is
-   recorded, the cues are the subtitles.
-   Nothing here claims more than the guided presentation does : the film takes its sentences from it. */
+   on the running application (tools/film_shots.mjs).
+   The narration is a STORY told over the pictures (demande de JP, 18 novembre 2026) : the voice never reads out what the screen already
+   says — titles, chips and slogans are for the eye, the voice tells why (shownTexts and readsScreen, and a test, keep the two apart).
+   Its thread : a part begins with a question — what is it for ? — and the tool is the one that remembers the answer, from the first
+   need to the order. Each cue is one breath, and the cues are the subtitles. Nothing here claims more than the guided presentation
+   does, every sentence is something the tool does on the screen shown, and no time saved is given : nobody measured one. */
 
 export const FPS = 24, W = 1600, H = 900;
 export const LANGS = ["fr", "en"];
@@ -50,33 +53,43 @@ export const SCENES = [
 ];
 export const DURATION = SCENES[SCENES.length - 1].t1;
 
-/** The narration : what the voice says, and when. One cue, one breath ; a cue never crosses the end of its scene by much. */
+/** The narration : what the voice tells, and when. One cue, one breath ; a cue stays inside its scene. */
 export const CUES = [
-  { t0: 0.6, t1: 5.2, ...L("Concevoir un produit, aujourd'hui, c'est six logiciels autour d'une même pièce.", "Designing a product today means six tools around a single part.") },
-  { t0: 5.4, t1: 8.8, ...L("Et aucun ne sait pourquoi elle existe.", "And none of them knows why it exists.") },
-  { t0: 9.3, t1: 14.6, ...L("Exporter, réimporter, redessiner : chaque tour de boucle coûte des jours.", "Export, re-import, redraw: every loop costs days.") },
-  { t0: 15.6, t1: 18.4, ...L("Voici DesignWizard.ai.", "Meet DesignWizard.ai.") },
-  { t0: 18.8, t1: 22.6, ...L("La conception, sans les détours.", "Design, without the detours.") },
-  { t0: 23.6, t1: 29.6, ...L("Tout part de l'intention : ce que la pièce relie, sa matière, son procédé.", "It all starts from intent: what the part connects, its material, its process.") },
-  { t0: 30.2, t1: 38.4, ...L("La pièce naît de ses interfaces, comme chez un artisan à son établi. Sans esquisse.", "The part is born from its interfaces, like a craftsman at the bench. No sketch.") },
-  { t0: 39.6, t1: 46.2, ...L("Un studio qui parle le langage de l'atelier. Un paramètre bouge, la pièce suit.", "A studio that speaks the language of the shop floor. Move a parameter, the part follows.") },
-  { t0: 47, t1: 55.4, ...L("Les règles de fabrication tournent en direct, avec un correctif en un clic.", "Manufacturing rules run live, with a one-click fix.") },
-  { t0: 56.6, t1: 62.6, ...L("Dans l'assemblage, les pièces se matent d'elles-mêmes, par leurs interfaces.", "In the assembly, parts mate themselves, through their interfaces.") },
-  { t0: 63.4, t1: 72.2, ...L("Une pièce change : l'assemblage suit, et les interférences sont vérifiées.", "Change a part: the assembly follows, and interferences are checked.") },
-  { t0: 73.6, t1: 79.6, ...L("La carte électronique vit dans le même projet, avec les mêmes interfaces.", "The circuit board lives in the same project, with the same interfaces.") },
-  { t0: 80.2, t1: 86.4, ...L("Des fonctions jusqu'aux fichiers de fabrication.", "From functions all the way to fabrication files.") },
-  { t0: 87.6, t1: 93, ...L("La physique, d'abord par des modèles simples, que l'on peut refaire à la main.", "Physics first, through simple models you can redo by hand.") },
-  { t0: 93.6, t1: 99, ...L("Puis la simulation, recoupée par le calcul.", "Then simulation, cross-checked by the calculation.") },
-  { t0: 99.6, t1: 105.4, ...L("Et les distances d'isolement, mesurées sur tout l'assemblage.", "And isolation distances, measured across the whole assembly.") },
-  { t0: 106.6, t1: 112.4, ...L("Le dessin se fait seul, et reste à jour.", "The drawing makes itself, and stays up to date.") },
-  { t0: 113, t1: 118.2, ...L("La revue de conception se tient dans l'outil.", "The design review happens in the tool.") },
-  { t0: 118.6, t1: 123.4, ...L("Et la pièce part en commande, avec son dossier.", "And the part goes out to order, with its package.") },
-  { t0: 124.6, t1: 130.4, ...L("L'intelligence artificielle ? On lui confie une tâche, comme à un technicien.", "Artificial intelligence? You hand it a task, as you would a technician.") },
-  { t0: 131, t1: 136.4, ...L("Et l'on relit avant d'accepter.", "And you review before you accept.") },
-  { t0: 137.6, t1: 143.4, ...L("Un logiciel libre, sous licence MIT. Vos fichiers restent les vôtres.", "Open source, under the MIT licence. Your files stay yours.") },
-  { t0: 144.8, t1: 149, ...L("Moins de clics. Plus de conception.", "Fewer clicks. More engineering.") },
-  { t0: 149.4, t1: 152.4, ...L("DesignWizard.ai. Ouvrez la démo.", "DesignWizard.ai. Open the demo.") },
+  { t0: 0.5, t1: 3.9, ...L("Avant le premier trait, il y a toujours une question.", "Before the first sketch, there is always a question.") },
+  { t0: 4.1, t1: 8.8, ...L("À quoi cette pièce doit-elle servir ? Vous, vous le savez.", "What is this part for? You already know.") },
+  { t0: 9.2, t1: 14.8, ...L("Mais il faut le redire. Au modeleur, au calcul, au dessin. Encore et encore.", "But you must repeat it. To the modeller, the solver, the drawing. Every time.") },
+  { t0: 15.3, t1: 18.4, ...L("Et si on ne le disait qu'une fois ?", "What if you only had to say it once?") },
+  { t0: 18.6, t1: 22.9, ...L("DesignWizard.ai : l'outil qui retient le pourquoi.", "DesignWizard.ai: the tool that remembers why.") },
+  { t0: 23.4, t1: 27.7, ...L("Ici, on ne dessine pas d'abord. On laisse parler la pièce.", "Here, you do not start by drawing. You let the part speak.") },
+  { t0: 28.2, t1: 33, ...L("Je me visse ici. Je reçois un arbre. Je laisse passer un câble.", "I bolt on here. I take a shaft. I let a cable through.") },
+  { t0: 33.4, t1: 38.7, ...L("Et l'outil propose une forme, un brut, et les étapes pour la fabriquer.", "And the tool proposes a shape, a stock size, and the steps to make it.") },
+  { t0: 39.5, t1: 45.2, ...L("Ensuite, on règle. Une cote grimpe, et le boîtier s'étire sous vos yeux.", "Then you tune it. A dimension climbs, and the housing stretches as you watch.") },
+  { t0: 45.8, t1: 50.8, ...L("Une paroi trop mince ? Un perçage hors des forets standard ?", "A wall too thin? A hole no standard drill can make?") },
+  { t0: 51.2, t1: 55.7, ...L("L'outil le voit avant l'atelier, et propose la correction.", "The tool sees it before the shop does, and offers the fix.") },
+  { t0: 56.5, t1: 61.6, ...L("Aucune pièce ne vit seule. Chacune sait déjà où elle s'attache.", "No part lives alone. Each one already knows where it attaches.") },
+  { t0: 62, t1: 67.2, ...L("Mettez-les ensemble : elles trouvent leur place, sans qu'on la leur montre.", "Bring them together: they find their place, with no one showing them.") },
+  { t0: 67.6, t1: 72.7, ...L("Changez-en une, les autres suivent. Et si deux se gênent, vous le savez.", "Change one, and the others follow. If two collide, you are told.") },
+  { t0: 73.5, t1: 80.2, ...L("L'électronique ne vit pas ailleurs. La carte se conçoit dans le même projet que son boîtier.", "Electronics do not live elsewhere. The board is designed in the same project as its housing.") },
+  { t0: 80.8, t1: 86.2, ...L("Et le jour où elle part en fabrication, ses fichiers sont prêts.", "And the day it goes to fabrication, its files are ready.") },
+  { t0: 87.5, t1: 93.5, ...L("Chauffera-t-elle ? Tiendra-t-elle ? D'abord, un calcul qu'on refait au crayon.", "Will it run hot? Will it hold? First, a calculation you can redo in pencil.") },
+  { t0: 93.9, t1: 99.4, ...L("Puis la simulation. Et quand les deux réponses divergent, l'outil vous le dit.", "Then the simulation. When the two answers disagree, the tool says so.") },
+  { t0: 99.8, t1: 105.6, ...L("Entre deux conducteurs sous tension, il mesure le plus court chemin. Partout.", "Between two live conductors, it measures the shortest path. Everywhere.") },
+  { t0: 106.5, t1: 112.6, ...L("Pendant ce temps, le plan s'est tracé tout seul. La pièce change ? Lui aussi.", "Meanwhile, the drawing has drawn itself. The part changes? So does the drawing.") },
+  { t0: 113, t1: 118, ...L("À la revue, tout le monde regarde la même pièce, au même endroit.", "At the review, everyone looks at the same part, in the same place.") },
+  { t0: 118.5, t1: 123.6, ...L("Et le jour de commander, tout tient dans un seul dossier.", "And on ordering day, everything fits in a single package.") },
+  { t0: 124.5, t1: 130.6, ...L("Et l'intelligence artificielle ? Confiez-lui le dossier, comme à une recrue brillante.", "And artificial intelligence? Hand it the file, as you would a brilliant new hire.") },
+  { t0: 131, t1: 136.6, ...L("Elle propose. Vous relisez. Et rien ne change sans votre accord.", "It proposes. You read. And nothing changes without your say-so.") },
+  { t0: 137.5, t1: 143.4, ...L("Le code est ouvert à tous. Et votre travail ne reste prisonnier de personne.", "The code is open to all. And your work is never locked in.") },
+  { t0: 144.4, t1: 147.2, ...L("Une pièce commence par une question.", "A part begins with a question.") },
+  { t0: 147.5, t1: 152.7, ...L("Voici l'outil qui se souvient de la réponse : DesignWizard.ai.", "Here is the tool that remembers the answer: DesignWizard.ai.") },
 ];
+
+/** Everything the film writes on screen in a language : what the voice does not read out. */
+export const shownTexts = (lang) => SCENES.flatMap((s) => [s.big, s.small, s.slogan, s.station, s.title, ...(s.chips || [])].filter(Boolean).map((x) => x[lang]));
+/** A text as it is compared : lower case, punctuation gone. */
+export const plain = (text) => text.toLowerCase().replace(/[^\p{L}\p{N}']+/gu, " ").trim();
+/** The on-screen texts (two words or more) that a cue says word for word : none, in a narration that tells instead of reading. */
+export const readsScreen = (cue, lang) => shownTexts(lang).filter((x) => plain(x).includes(" ") && ` ${plain(cue[lang])} `.includes(` ${plain(x)} `));
 
 /** How long the voice may speak for cue i : from its start to a breath before the next cue, or to the end of the film. */
 export const roomOf = (i) => (i + 1 < CUES.length ? CUES[i + 1].t0 - 0.15 : DURATION - 0.3) - CUES[i].t0;
@@ -94,15 +107,34 @@ export const pace = (cue, lang) => cue[lang].trim().split(/\s+/).length / (cue.t
 const stamp = (t, sep = ".") => { const ms = Math.round(t * 1000), h = Math.floor(ms / 3600000), m = Math.floor(ms / 60000) % 60, s = Math.floor(ms / 1000) % 60; return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}${sep}${String(ms % 1000).padStart(3, "0")}`; };
 /** The narration as WebVTT subtitles. */
 export const toVtt = (lang) => `WEBVTT\n\n${CUES.map((c, i) => `${i + 1}\n${stamp(c.t0)} --> ${stamp(c.t1)}\n${c[lang]}`).join("\n\n")}\n`;
+/** The cues said during a scene, and the name a scene goes by in a script. */
+const cuesOf = (s) => CUES.filter((c) => c.t0 >= s.t0 - 0.01 && c.t0 < s.t1);
+const sceneName = (s, lang) => (s.station ? s.station[lang] : s.kind === "end" ? (lang === "fr" ? "Fin" : "End") : s.kind === "logo" ? "DesignWizard.ai" : s.id === "open" ? (lang === "fr" ? "Logiciel libre" : "Open source") : s.id === "loop" ? (lang === "fr" ? "Le détour" : "The detour") : lang === "fr" ? "Ouverture" : "Opening");
 /** The narration as a script to record : scene by scene, with the time of each line. */
 export function toScript(lang) {
   const out = [lang === "fr" ? "# DesignWizard.ai — narration de la vidéo" : "# DesignWizard.ai — video narration", "",
     lang === "fr" ? `Durée : ${Math.floor(DURATION / 60)} min ${String(DURATION % 60).padStart(2, "0")} s. Une ligne, un souffle : chaque ligne se dit entre ses deux temps. Ton : chaleureux, assuré, sans emphase.`
       : `Length: ${Math.floor(DURATION / 60)} min ${String(DURATION % 60).padStart(2, "0")} s. One line, one breath: each line is said between its two times. Tone: warm, confident, unforced.`, ""];
   for (const s of SCENES) {
-    const mine = CUES.filter((c) => c.t0 >= s.t0 - 0.01 && c.t0 < s.t1); if (!mine.length) continue;
-    out.push(`## ${stamp(s.t0).slice(3, 8)} — ${s.station ? s.station[lang] : s.kind === "end" ? (lang === "fr" ? "Fin" : "End") : s.kind === "logo" ? "DesignWizard.ai" : lang === "fr" ? "Ouverture" : "Opening"}`, "");
+    const mine = cuesOf(s); if (!mine.length) continue;
+    out.push(`## ${stamp(s.t0).slice(3, 8)} — ${sceneName(s, lang)}`, "");
     for (const c of mine) out.push(`- **${stamp(c.t0).slice(3, 10)} → ${stamp(c.t1).slice(3, 10)}** ${c[lang]}`);
+    out.push("");
+  }
+  return out.join("\n");
+}
+/** The storyline : scene by scene, what the screen shows and what the voice tells over it, French and English side by side. */
+export function toStoryline() {
+  const len = `${Math.floor(DURATION / 60)} min ${String(DURATION % 60).padStart(2, "0")} s`, shown = (s, l) => [s.big, s.slogan, s.title, s.small, ...(s.chips || [])].filter(Boolean).map((x) => x[l]).join(" · ");
+  const out = ["# DesignWizard.ai — storyline du film · film storyline", "",
+    `${len}. L'image montre, la voix raconte : elle ne lit jamais ce qui est écrit à l'écran. Fil de l'histoire : une pièce commence par une question — à quoi sert-elle ? — et l'outil est celui qui retient la réponse, du premier besoin à la commande.`, "",
+    `${len}. The picture shows, the voice tells: it never reads out what is written on screen. The thread: a part begins with a question — what is it for? — and the tool is the one that remembers the answer, from the first need to the order.`, ""];
+  for (const s of SCENES) {
+    out.push(`## ${stamp(s.t0).slice(3, 8)} → ${stamp(s.t1).slice(3, 8)} — ${[...new Set(LANGS.map((l) => sceneName(s, l)))].join(" · ")}`, "");
+    out.push(`- **À l'écran** : ${shown(s, "fr")}`, `- **On screen**: ${shown(s, "en")}`);
+    if (s.media) out.push(`- **Image** : ${s.media.map((m) => (m.img ? `écran « ${m.img} »` : `plan filmé « ${m.clip} »`)).join(", puis ")}`);
+    out.push("", "| Temps · time | La voix raconte | The voice tells |", "|---|---|---|");
+    for (const c of cuesOf(s)) out.push(`| ${stamp(c.t0).slice(3, 10)} | ${c.fr} | ${c.en} |`);
     out.push("");
   }
   return out.join("\n");

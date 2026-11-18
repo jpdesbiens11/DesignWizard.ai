@@ -1,26 +1,38 @@
-/* DesignWizard.ai — the subtitles of a film that speaks (demande de JP) : none while it is heard, shown as soon as its sound is off.
-   A page cannot read the volume of the computer : it only knows the player's own sound — its mute button and its volume slider. Whoever
-   has the speakers off turns the subtitles on with the player's own button ; that choice is left alone until the player's sound changes.
-   A « no sound » box next to the player says the same thing in words : checked, the player is muted and its subtitles show.
+/* DesignWizard.ai — the subtitles of a film that speaks (demande de JP, 18 novembre 2026) : they stay on while the voice is heard, and
+   every player carries both languages. One listens in a language and reads in it — what the film opens with —, in the other one, in
+   both at once, or reads nothing : a choice next to the player (ordinary radio buttons), kept in step with the player's own subtitle
+   menu. Before that day the subtitles showed only once the sound was off ; the voice now tells a story and the subtitles are its text.
+   Pure half first (what a choice means), then the half that touches a player.
    No import : the showcase page loads this file alone (web/js/vitrine.js), the application through core/film.js. */
 
-/** True when the subtitles should show : the player is muted, or its volume is at zero. */
-export const wantCaptions = (v) => !!v && (v.muted === true || !(Number(v.volume) > 0));
-
-/** The mode a subtitle track takes for a player : "showing" with the sound off, "hidden" (loaded, not drawn) with the sound on. */
-export const captionMode = (v) => (wantCaptions(v) ? "showing" : "hidden");
-
-/** Keeps the subtitle tracks of a player in step with its sound. Returns the function that sets them now. */
-export function followSound(video) {
-  const set = () => { const list = video.textTracks || []; for (let i = 0; i < list.length; i++) if (list[i].kind === "subtitles" || list[i].kind === "captions") list[i].mode = captionMode(video); };
-  video.addEventListener("volumechange", set); video.addEventListener("loadedmetadata", set); video.addEventListener("play", set);
-  if (video.textTracks && video.textTracks.addEventListener) video.textTracks.addEventListener("addtrack", set);
-  set(); return set;
+/** The choices a player with these subtitle languages offers : each language, both at once (when there are two), none. */
+export const subChoices = (langs) => [...langs, ...(langs.length > 1 ? ["both"] : []), "off"];
+/** The choice a film in a language opens with : its own language — what is said is what is read. */
+export const subDefault = (lang, langs) => (langs.includes(lang) ? lang : langs[0] || "off");
+/** The mode of each track for a choice : { fr: "showing", en: "disabled" }. A track that is not asked for is not loaded. */
+export const subModes = (choice, langs) => Object.fromEntries(langs.map((l) => [l, choice === "both" || choice === l ? "showing" : "disabled"]));
+/** The choice the tracks of a player show now, from their modes — the viewer may have used the player's own menu. */
+export function subChoice(modes, langs) {
+  const on = langs.filter((l) => modes[l] === "showing");
+  return !on.length ? "off" : on.length > 1 && on.length === langs.length ? "both" : on[0];
 }
 
-/** A « no sound » box for a player : checked, the player is muted (so its subtitles show) ; it follows the player's own mute button too. */
-export function muteBox(video, input) {
-  const sync = () => { input.checked = video.muted === true; };
-  input.addEventListener("change", () => { video.muted = input.checked; });
-  video.addEventListener("volumechange", sync); sync(); return input;
+/** The subtitle tracks of a player, by language. */
+export function subTracks(video) {
+  const out = {}, list = video.textTracks || [];
+  for (let i = 0; i < list.length; i++) if (list[i].kind === "subtitles" || list[i].kind === "captions") out[list[i].language] = list[i];
+  return out;
+}
+/** Ties a group of radio buttons (the value of each : a choice) to the subtitles of a player. The buttons set the tracks ; a change made
+    from the player's own menu comes back to the buttons. Returns { set(choice), now() }. */
+export function subsBox(video, radios, first) {
+  let want = first;
+  const show = () => { for (const r of radios) r.checked = r.value === want; };
+  const apply = () => { const t = subTracks(video), modes = subModes(want, Object.keys(t)); for (const l in t) if (t[l].mode !== modes[l]) t[l].mode = modes[l]; show(); };
+  const read = () => { const t = subTracks(video), langs = Object.keys(t); if (!langs.length) return; const now = subChoice(Object.fromEntries(langs.map((l) => [l, t[l].mode])), langs); if (now !== want) { want = now; show(); } };
+  for (const r of radios) r.addEventListener("change", () => { if (r.checked) { want = r.value; apply(); } });
+  video.addEventListener("loadedmetadata", apply);
+  if (video.textTracks && video.textTracks.addEventListener) { video.textTracks.addEventListener("addtrack", apply); video.textTracks.addEventListener("change", read); }
+  apply();
+  return { set: (choice) => { want = choice; apply(); }, now: () => want };
 }

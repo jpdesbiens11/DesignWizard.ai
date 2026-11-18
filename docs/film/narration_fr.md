@@ -4,60 +4,63 @@ Durée : 2 min 33 s. Une ligne, un souffle : chaque ligne se dit entre ses deux 
 
 ## 00:00 — Ouverture
 
-- **00:00.6 → 00:05.2** Concevoir un produit, aujourd'hui, c'est six logiciels autour d'une même pièce.
-- **00:05.4 → 00:08.8** Et aucun ne sait pourquoi elle existe.
+- **00:00.5 → 00:03.9** Avant le premier trait, il y a toujours une question.
+- **00:04.1 → 00:08.8** À quoi cette pièce doit-elle servir ? Vous, vous le savez.
 
-## 00:09 — Ouverture
+## 00:09 — Le détour
 
-- **00:09.3 → 00:14.6** Exporter, réimporter, redessiner : chaque tour de boucle coûte des jours.
+- **00:09.2 → 00:14.8** Mais il faut le redire. Au modeleur, au calcul, au dessin. Encore et encore.
 
 ## 00:15 — DesignWizard.ai
 
-- **00:15.6 → 00:18.4** Voici DesignWizard.ai.
-- **00:18.8 → 00:22.6** La conception, sans les détours.
+- **00:15.3 → 00:18.4** Et si on ne le disait qu'une fois ?
+- **00:18.6 → 00:22.9** DesignWizard.ai : l'outil qui retient le pourquoi.
 
 ## 00:23 — Atelier
 
-- **00:23.6 → 00:29.6** Tout part de l'intention : ce que la pièce relie, sa matière, son procédé.
-- **00:30.2 → 00:38.4** La pièce naît de ses interfaces, comme chez un artisan à son établi. Sans esquisse.
+- **00:23.4 → 00:27.7** Ici, on ne dessine pas d'abord. On laisse parler la pièce.
+- **00:28.2 → 00:33.0** Je me visse ici. Je reçois un arbre. Je laisse passer un câble.
+- **00:33.4 → 00:38.7** Et l'outil propose une forme, un brut, et les étapes pour la fabriquer.
 
 ## 00:39 — Pièce
 
-- **00:39.6 → 00:46.2** Un studio qui parle le langage de l'atelier. Un paramètre bouge, la pièce suit.
-- **00:47.0 → 00:55.4** Les règles de fabrication tournent en direct, avec un correctif en un clic.
+- **00:39.5 → 00:45.2** Ensuite, on règle. Une cote grimpe, et le boîtier s'étire sous vos yeux.
+- **00:45.8 → 00:50.8** Une paroi trop mince ? Un perçage hors des forets standard ?
+- **00:51.2 → 00:55.7** L'outil le voit avant l'atelier, et propose la correction.
 
 ## 00:56 — Assemblage
 
-- **00:56.6 → 01:02.6** Dans l'assemblage, les pièces se matent d'elles-mêmes, par leurs interfaces.
-- **01:03.4 → 01:12.2** Une pièce change : l'assemblage suit, et les interférences sont vérifiées.
+- **00:56.5 → 01:01.6** Aucune pièce ne vit seule. Chacune sait déjà où elle s'attache.
+- **01:02.0 → 01:07.2** Mettez-les ensemble : elles trouvent leur place, sans qu'on la leur montre.
+- **01:07.6 → 01:12.7** Changez-en une, les autres suivent. Et si deux se gênent, vous le savez.
 
 ## 01:13 — Carte électronique
 
-- **01:13.6 → 01:19.6** La carte électronique vit dans le même projet, avec les mêmes interfaces.
-- **01:20.2 → 01:26.4** Des fonctions jusqu'aux fichiers de fabrication.
+- **01:13.5 → 01:20.2** L'électronique ne vit pas ailleurs. La carte se conçoit dans le même projet que son boîtier.
+- **01:20.8 → 01:26.2** Et le jour où elle part en fabrication, ses fichiers sont prêts.
 
 ## 01:27 — Physique et isolation
 
-- **01:27.6 → 01:33.0** La physique, d'abord par des modèles simples, que l'on peut refaire à la main.
-- **01:33.6 → 01:39.0** Puis la simulation, recoupée par le calcul.
-- **01:39.6 → 01:45.4** Et les distances d'isolement, mesurées sur tout l'assemblage.
+- **01:27.5 → 01:33.5** Chauffera-t-elle ? Tiendra-t-elle ? D'abord, un calcul qu'on refait au crayon.
+- **01:33.9 → 01:39.4** Puis la simulation. Et quand les deux réponses divergent, l'outil vous le dit.
+- **01:39.8 → 01:45.6** Entre deux conducteurs sous tension, il mesure le plus court chemin. Partout.
 
 ## 01:46 — Dessins, revue, commande
 
-- **01:46.6 → 01:52.4** Le dessin se fait seul, et reste à jour.
-- **01:53.0 → 01:58.2** La revue de conception se tient dans l'outil.
-- **01:58.6 → 02:03.4** Et la pièce part en commande, avec son dossier.
+- **01:46.5 → 01:52.6** Pendant ce temps, le plan s'est tracé tout seul. La pièce change ? Lui aussi.
+- **01:53.0 → 01:58.0** À la revue, tout le monde regarde la même pièce, au même endroit.
+- **01:58.5 → 02:03.6** Et le jour de commander, tout tient dans un seul dossier.
 
 ## 02:04 — Avec l'IA
 
-- **02:04.6 → 02:10.4** L'intelligence artificielle ? On lui confie une tâche, comme à un technicien.
-- **02:11.0 → 02:16.4** Et l'on relit avant d'accepter.
+- **02:04.5 → 02:10.6** Et l'intelligence artificielle ? Confiez-lui le dossier, comme à une recrue brillante.
+- **02:11.0 → 02:16.6** Elle propose. Vous relisez. Et rien ne change sans votre accord.
 
-## 02:17 — Ouverture
+## 02:17 — Logiciel libre
 
-- **02:17.6 → 02:23.4** Un logiciel libre, sous licence MIT. Vos fichiers restent les vôtres.
+- **02:17.5 → 02:23.4** Le code est ouvert à tous. Et votre travail ne reste prisonnier de personne.
 
 ## 02:24 — Fin
 
-- **02:24.8 → 02:29.0** Moins de clics. Plus de conception.
-- **02:29.4 → 02:32.4** DesignWizard.ai. Ouvrez la démo.
+- **02:24.4 → 02:27.2** Une pièce commence par une question.
+- **02:27.5 → 02:32.7** Voici l'outil qui se souvient de la réponse : DesignWizard.ai.

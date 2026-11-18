@@ -4,60 +4,63 @@ Length: 2 min 33 s. One line, one breath: each line is said between its two time
 
 ## 00:00 — Opening
 
-- **00:00.6 → 00:05.2** Designing a product today means six tools around a single part.
-- **00:05.4 → 00:08.8** And none of them knows why it exists.
+- **00:00.5 → 00:03.9** Before the first sketch, there is always a question.
+- **00:04.1 → 00:08.8** What is this part for? You already know.
 
-## 00:09 — Opening
+## 00:09 — The detour
 
-- **00:09.3 → 00:14.6** Export, re-import, redraw: every loop costs days.
+- **00:09.2 → 00:14.8** But you must repeat it. To the modeller, the solver, the drawing. Every time.
 
 ## 00:15 — DesignWizard.ai
 
-- **00:15.6 → 00:18.4** Meet DesignWizard.ai.
-- **00:18.8 → 00:22.6** Design, without the detours.
+- **00:15.3 → 00:18.4** What if you only had to say it once?
+- **00:18.6 → 00:22.9** DesignWizard.ai: the tool that remembers why.
 
 ## 00:23 — Shop
 
-- **00:23.6 → 00:29.6** It all starts from intent: what the part connects, its material, its process.
-- **00:30.2 → 00:38.4** The part is born from its interfaces, like a craftsman at the bench. No sketch.
+- **00:23.4 → 00:27.7** Here, you do not start by drawing. You let the part speak.
+- **00:28.2 → 00:33.0** I bolt on here. I take a shaft. I let a cable through.
+- **00:33.4 → 00:38.7** And the tool proposes a shape, a stock size, and the steps to make it.
 
 ## 00:39 — Part
 
-- **00:39.6 → 00:46.2** A studio that speaks the language of the shop floor. Move a parameter, the part follows.
-- **00:47.0 → 00:55.4** Manufacturing rules run live, with a one-click fix.
+- **00:39.5 → 00:45.2** Then you tune it. A dimension climbs, and the housing stretches as you watch.
+- **00:45.8 → 00:50.8** A wall too thin? A hole no standard drill can make?
+- **00:51.2 → 00:55.7** The tool sees it before the shop does, and offers the fix.
 
 ## 00:56 — Assembly
 
-- **00:56.6 → 01:02.6** In the assembly, parts mate themselves, through their interfaces.
-- **01:03.4 → 01:12.2** Change a part: the assembly follows, and interferences are checked.
+- **00:56.5 → 01:01.6** No part lives alone. Each one already knows where it attaches.
+- **01:02.0 → 01:07.2** Bring them together: they find their place, with no one showing them.
+- **01:07.6 → 01:12.7** Change one, and the others follow. If two collide, you are told.
 
 ## 01:13 — Circuit board
 
-- **01:13.6 → 01:19.6** The circuit board lives in the same project, with the same interfaces.
-- **01:20.2 → 01:26.4** From functions all the way to fabrication files.
+- **01:13.5 → 01:20.2** Electronics do not live elsewhere. The board is designed in the same project as its housing.
+- **01:20.8 → 01:26.2** And the day it goes to fabrication, its files are ready.
 
 ## 01:27 — Physics and isolation
 
-- **01:27.6 → 01:33.0** Physics first, through simple models you can redo by hand.
-- **01:33.6 → 01:39.0** Then simulation, cross-checked by the calculation.
-- **01:39.6 → 01:45.4** And isolation distances, measured across the whole assembly.
+- **01:27.5 → 01:33.5** Will it run hot? Will it hold? First, a calculation you can redo in pencil.
+- **01:33.9 → 01:39.4** Then the simulation. When the two answers disagree, the tool says so.
+- **01:39.8 → 01:45.6** Between two live conductors, it measures the shortest path. Everywhere.
 
 ## 01:46 — Drawings, review, order
 
-- **01:46.6 → 01:52.4** The drawing makes itself, and stays up to date.
-- **01:53.0 → 01:58.2** The design review happens in the tool.
-- **01:58.6 → 02:03.4** And the part goes out to order, with its package.
+- **01:46.5 → 01:52.6** Meanwhile, the drawing has drawn itself. The part changes? So does the drawing.
+- **01:53.0 → 01:58.0** At the review, everyone looks at the same part, in the same place.
+- **01:58.5 → 02:03.6** And on ordering day, everything fits in a single package.
 
 ## 02:04 — With AI
 
-- **02:04.6 → 02:10.4** Artificial intelligence? You hand it a task, as you would a technician.
-- **02:11.0 → 02:16.4** And you review before you accept.
+- **02:04.5 → 02:10.6** And artificial intelligence? Hand it the file, as you would a brilliant new hire.
+- **02:11.0 → 02:16.6** It proposes. You read. And nothing changes without your say-so.
 
-## 02:17 — Opening
+## 02:17 — Open source
 
-- **02:17.6 → 02:23.4** Open source, under the MIT licence. Your files stay yours.
+- **02:17.5 → 02:23.4** The code is open to all. And your work is never locked in.
 
 ## 02:24 — End
 
-- **02:24.8 → 02:29.0** Fewer clicks. More engineering.
-- **02:29.4 → 02:32.4** DesignWizard.ai. Open the demo.
+- **02:24.4 → 02:27.2** A part begins with a question.
+- **02:27.5 → 02:32.7** Here is the tool that remembers the answer: DesignWizard.ai.
