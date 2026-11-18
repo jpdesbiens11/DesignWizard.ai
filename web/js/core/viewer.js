@@ -5,6 +5,7 @@
 import * as THREE from "../../vendor/three/three.module.min.js";
 import { triadOf, gridOf, gridKey } from "./view_grid.js";
 import { snapDirection } from "./snap.js";
+import { mountOrbit } from "./view_orbit.js";
 import { getUnits, measure, measures } from "./units.js";
 
 const GRAPHITE = 0x26323f;
@@ -49,6 +50,7 @@ export class Viewer {
     this._theme = () => { this.edgeColor.set(token(container, "--view-edge", "#26323f")); for (const o of this.objects.values()) if (o.edges) o.edges.material.color.copy(this.edgeColor); this.dirty = true; };
     window.addEventListener("dw:theme", this._theme);
     this.dirty = true; this.alive = true;
+    this.orbit = mountOrbit(this);      // where the view pivots and which way it turns ; the automatic rotation (core/view_orbit.js)
     this._bind();
     this.resizeObs = new ResizeObserver(() => this.resize());
     this.resizeObs.observe(container);
@@ -58,7 +60,7 @@ export class Viewer {
   }
 
   dispose() {
-    this.alive = false;
+    this.alive = false; this.orbit.dispose();
     window.removeEventListener("dw:theme", this._theme);
     this.resizeObs.disconnect();
     this.clear();
@@ -248,6 +250,7 @@ export class Viewer {
     c.addEventListener("pointerdown", (e) => {
       c.setPointerCapture(e.pointerId); c.focus();
       drag = { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, pan: e.button !== 0 || e.shiftKey, moved: false };
+      if (drag.pan) this.orbit.stop(); else this.orbit.press(e, drag);      // the pivot : what is under the pointer ; held still two seconds : the automatic rotation
     });
     c.addEventListener("pointermove", (e) => {
       if (!drag) { this._hover(e); return; }
@@ -261,18 +264,11 @@ export class Viewer {
         const k = this.span / this.h;
         this.target.addScaledVector(right, -dx * k).addScaledVector(up, dy * k);
       } else {
-        // turntable: yaw about world Z, pitch about the screen's horizontal axis
-        this.camera.up.set(0, 0, 1);
-        const yaw = -dx * 0.0085, pitch = -dy * 0.0085;
-        this.dir.applyAxisAngle(new THREE.Vector3(0, 0, 1), yaw);
-        const axis = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 0, 1), this.dir).normalize();
-        const next = this.dir.clone().applyAxisAngle(axis, -pitch);
-        if (Math.abs(next.z) < 0.995) this.dir.copy(next);
-        this.dir.normalize();
+        this.orbit.turn(dx, dy);      // turntable about the pivot : yaw about the vertical through it, pitch about the screen's horizontal axis — and its cue
       }
       this.dirty = true;
     });
-    c.addEventListener("pointerup", (e) => { const d = drag; drag = null; if (!d || d.moved) return; if (e.button === 2) { if (this.opts.onMenu) this.opts.onMenu(this._pick(e), e); } else this._click(e); });      // a right click that did not drag opens the screen's menu
+    c.addEventListener("pointerup", (e) => { const d = drag; drag = null; this.orbit.release(); if (!d || d.moved || d.auto) return; if (e.button === 2) { if (this.opts.onMenu) this.opts.onMenu(this._pick(e), e); } else this._click(e); });      // a right click that did not drag opens the screen's menu
     c.addEventListener("wheel", (e) => {
       e.preventDefault();
       const f = Math.exp(Math.sign(e.deltaY) * 0.14), r = c.getBoundingClientRect();

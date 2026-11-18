@@ -275,6 +275,51 @@ Code : `web/js/core/loupe.js` ; moitiés pures testées (`tests/node/zoom.test.m
 un dessin, la vue d'une carte, le rendu marketing et les vues 3D de la Simulation et de l'Assemblage. Pas essayé sur
 Firefox, Safari ni un écran tactile.
 
+## Tourner une vue : le pivot se voit, et la vue peut tourner seule
+
+Demande de JP (19 novembre 2026) : en tournant une vue 3D, on ne savait ni autour de quoi elle tournait, ni comment
+elle allait tourner. La vue tournait autour de son centre, que rien ne montrait.
+
+- **Le pivot est le point saisi.** La vue tourne autour du point du modèle sous le pointeur au moment de l'appui (le
+  centre de la vue si l'on appuie hors du modèle). Ce que l'on tient reste à sa place à l'écran ; le reste tourne
+  autour. La table tournante est gardée : Z reste vertical.
+- **La pièce suit la main, dans les deux sens.** Vers la droite, ce qui est près va à droite ; vers le bas, ce qui est
+  près descend (l'œil monte, on voit davantage le dessus). La bascule verticale allait jusque-là à l'inverse de la
+  main : elle a été remise dans le sens de l'orbite usuelle des outils 3D.
+- **Un repère pendant le geste**, posé sur le pivot : le point, l'axe vertical en pointillé (« Z »), un anneau avec un
+  arc et une flèche qui suivent la main pour la rotation autour de Z, un second (orange) pour l'inclinaison, et les
+  angles parcourus depuis l'appui (« Z 73° · incl. 34° »). Il disparaît au relâchement.
+- **Rotation automatique.** Le bouton tenu sans bouger : après un tiers de seconde le pivot se montre et un cercle se
+  remplit ; à **deux secondes**, un petit panneau s'ouvre près du pivot — quatre flèches pour le sens (gauche, droite,
+  haut, bas), un carré pour arrêter, trois vitesses (lente 9°/s, moyenne 27°/s, rapide 72°/s, la dernière choisie est
+  gardée). Rien ne tourne avant qu'un sens soit choisi. Échap, la croix ou un nouveau geste dans la vue y mettent fin ;
+  l'inclinaison s'arrête d'elle-même avant la verticale. Le relâchement qui suit l'appui tenu n'est pas un clic.
+- Un écran qui attend un clic dans la vue (outil armé du Part Studio, endroit à pointer dans la Simulation, mesure)
+  garde l'appui tenu pour lui : pas de rotation automatique pendant ce temps. Le déplacement (clic droit ou Maj +
+  glisser), le zoom à la molette, le clic et le menu du clic droit sont inchangés.
+
+Code : `web/js/core/view_orbit.js` (la géométrie est pure et testée : `tests/node/view_orbit.test.mjs`), branché dans
+`web/js/core/viewer.js` — toutes les vues 3D en héritent. Vérifié dans Chromium sur l'assemblage de la démonstration.
+Pas essayé au toucher (l'appui tenu y est laissé au système), ni sur Firefox et Safari.
+
+## Sur quoi l'interface s'appuie
+
+Question de JP (19 novembre 2026) : crée-t-on une interface nouvelle, ou s'appuie-t-on sur ce qui existe ?
+
+- L'application est **écrite à la main** : c'est la règle du projet (modules ES, aucun outil de construction, aucune
+  dépendance npm, aucune ressource externe). Il n'y a ni bibliothèque de composants ni système de design extérieur.
+  Le seul moteur repris est three.js, pour le rendu 3D ; la navigation dans une vue est écrite ici, pas reprise de ses
+  contrôles d'orbite.
+- Jusqu'ici, l'ergonomie s'est faite **demande par demande** : replier un groupe, garder un volet en place, zoomer une
+  feuille, montrer un pivot sont des usages établis, redécouverts un à un. Le robot `tools/ergo_audit.mjs` mesure des
+  boîtes ; il ne dit pas si un geste suit l'usage.
+- Désormais (règle « Conventions établies d'abord » de `CLAUDE.md`) : avant d'écrire une interaction, on nomme l'usage
+  établi qu'elle suit — les modeleurs mécaniques pour une vue 3D, les modèles d'interaction du web (rôles, clavier,
+  focus) pour un contrôle — et on s'y tient ; on n'invente que là où il n'y en a pas, en le disant.
+- Deux plugins officiels d'Anthropic existent pour cela et ne sont pas liés aux séances : « frontend-design » (mise en
+  œuvre d'interfaces) et « Design » (critique de design, revue d'accessibilité, textes d'interface). Une fois ajoutés
+  par JP, une passe de critique précède chaque livraison d'écran.
+
 ## Une page ouverte annonce la nouvelle version
 
 L'application est une seule page, gardée ouverte des heures : ce qui est publié entre-temps ne l'atteint pas tant

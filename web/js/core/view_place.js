@@ -27,6 +27,7 @@ export function snapMenu(after = () => {}) {
     local(hit, face) → [u, v] ; drop(tool, face, snapped) ; points() → [{ id, label, p: [x, y, z] }] (the features already there : the
     one nearest the pointer on the screen is the one a hold picks up — a hole has no face to point at) ; pickUp(found) → the tool that moves it }. → { arm(tool), cancel(), armed(), hover(hit, e), click(hit, e) → true when it used the click, dispose() } */
 export function createPlacer(viewer, host, o) {
+  viewer.holdBusy = () => !!tool;      // a tool armed keeps the held button for itself : no automatic rotation meanwhile (core/view_orbit.js)
   const box = el("div", { class: "place-box", hidden: true, role: "status", "aria-live": "polite" });
   host.append(box);
   let tool = null, cur = null, gridKey = null, timer = 0, down = null, lastHit = null, skipClick = false;

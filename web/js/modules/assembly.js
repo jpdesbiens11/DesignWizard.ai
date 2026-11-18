@@ -20,7 +20,8 @@ import { matPoint, matDir, bboxTransform } from "../cad/vec.js";
 import { INTERFACE_TYPES } from "../cad/interfaces.js";
 import { gammeTab, showWhole } from "./asm_gamme.js";
 import { mateTree, mateFind, mateLabels } from "../core/asm_tree.js";
-import { liveAsm, offOf, setInstOff } from "../core/asm_live.js";
+import { liveAsm, offOf, setInstOff, instanceMenu, showAlone, showEvery } from "../core/asm_live.js";
+import { popupMenu } from "../core/view_select.js";
 import { mateSection } from "./asm_tree.js";
 import { mateDefinition } from "../core/mate_view.js";
 import { showMate, clearMate, mateDetail } from "./asm_mate.js";
@@ -145,7 +146,13 @@ function render(main, args) {
     const sec = el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, `Pièces de l'assemblage (${a.instances.length - offOf(a).instances.length}${offOf(a).instances.length ? ` + ${offOf(a).instances.length} à Off` : ""})`), btn("", () => addDialog(), { small: true, icon: "plus", tip: "Ajouter une pièce du projet" })));
     for (const inst of a.instances) {
       const spec = store.part(inst.part), placed = st.ctx && st.ctx.sol.placedBy[inst.id];
-      sec.append(el("div", { class: "nav-item" + (st.sel === inst.id ? " active" : "") + (inst.hidden ? " off" : "") + (inst.off ? " is-off" : ""), role: "button", tabindex: "0", onClick: () => { st.sel = inst.id; st.tab = "inst"; vp.viewer.highlight([...vp.viewer.objects.keys()].filter((k) => k.startsWith(inst.id + "/"))); renderLeft(); renderRight(); } },
+      sec.append(el("div", { class: "nav-item" + (st.sel === inst.id ? " active" : "") + (inst.hidden ? " off" : "") + (inst.off ? " is-off" : ""), role: "button", tabindex: "0", "data-inst": inst.id, "aria-haspopup": "menu",
+        /* a right click on the line : the menu of the part — show it alone, bring the others back, on / off, fix, open, remove (the same menu as on the part in the view) */
+        "data-tip": "Clic : la sélectionner · clic droit : ses options (la montrer seule, tout afficher, On / Off, fixer, ouvrir, retirer)",
+        onContextmenu: (e) => { e.preventDefault(); const r = e.currentTarget.getBoundingClientRect(), at = e.clientX || e.clientY ? { clientX: e.clientX, clientY: e.clientY } : { clientX: r.left + 24, clientY: r.bottom };      // the menu key has no pointer : under the line
+          if (st.sel !== inst.id) { st.sel = inst.id; vp.viewer.highlight([...vp.viewer.objects.keys()].filter((k) => k.startsWith(inst.id + "/"))); renderLeft(); if (st.tab === "inst") renderRight(); }
+          popupMenu(at, instMenu(inst.id)); },
+        onClick: () => { st.sel = inst.id; st.tab = "inst"; vp.viewer.highlight([...vp.viewer.objects.keys()].filter((k) => k.startsWith(inst.id + "/"))); renderLeft(); renderRight(); } },
         icon(spec && spec.family === "pcb" ? "pcb" : spec && spec.family === "extrusion" ? "extrusion" : "part"), el("span", { class: "grow" }, spec ? spec.name || spec.id : `${inst.part} (absente)`), spec ? lookSwatch(spec) : null,
         inst.off ? el("span", { class: "off-chip" }, "Off") : inst.fixed ? badge("fixe", "neutral") : placed ? badge("matée", "ok") : badge("libre", "warn"),
         /* On / Off : put aside, the part stays in the list with its joints and counts for nothing — view, bill of materials, mass, drawing, exports */
@@ -259,21 +266,19 @@ function render(main, args) {
   }
   /* ---- what a right click offers on a part of the assembly, and the same by keys ---- */
   const hiddenOnes = () => asm().instances.filter((i) => i.hidden);
-  const showAll = () => store.updateAssembly(id, (x) => { for (const i of x.instances) delete i.hidden; }, `${id} : toutes les pièces affichées`);
+  const showAll = () => store.updateAssembly(id, (x) => { showEvery(x); }, `${id} : toutes les pièces affichées`);
   const hide = (iid) => store.updateAssembly(id, (x) => { x.instances.find((q) => q.id === iid).hidden = true; }, `${iid} masquée`);
-  const isolate = (iid) => store.updateAssembly(id, (x) => { for (const i of x.instances) { if (i.id === iid) delete i.hidden; else i.hidden = true; } }, `${iid} isolée`);
+  const isolate = (iid) => store.updateAssembly(id, (x) => { showAlone(x, iid); }, `${iid} montrée seule`);
   const openPart = (iid) => { const inst = asm().instances.find((i) => i.id === iid), spec = inst && store.part(inst.part); if (spec) go(`#/${spec.family === "pcb" ? "pcb" : spec.family === "extrusion" ? "extrusion" : "parts"}/${encodeURIComponent(spec.id)}`); };
   const dropInst = async (iid) => { const inst = asm().instances.find((i) => i.id === iid); if (!inst || !(await confirmBox("Retirer la pièce", `Retirer ${inst.part} de ${id} ? Ses liaisons partent avec elle. (Ctrl + Z pour revenir.)`, "Retirer", true))) return;
     store.updateAssembly(id, (x) => { x.instances = x.instances.filter((q) => q.id !== iid); x.mates = (x.mates || []).filter((k) => k.a.inst !== iid && k.b.inst !== iid); }, `${inst.part} retirée de ${id}`); st.sel = null; };
   function instMenu(iid) {
     const inst = iid ? asm().instances.find((i) => i.id === iid) : null, hid = hiddenOnes(), back = hid.length ? [{ label: `Tout afficher (${hid.length} masquée${hid.length > 1 ? "s" : ""})`, keys: "Maj+H", icon: "eye", run: showAll }] : [];
     if (!inst) return [...back, { label: "Ajouter une pièce…", icon: "plus", run: () => addDialog() }];
-    const spec = store.part(inst.part);
-    return [{ title: `${spec ? spec.name || spec.id : inst.part} · ${inst.id}` }, { label: "Ouvrir la pièce", keys: "Entrée", icon: "edit", run: () => openPart(iid) },
-      { label: inst.fixed ? "Libérer" : "Fixer", icon: "lock", run: () => store.updateAssembly(id, (x) => { const i = x.instances.find((q) => q.id === iid); if (i.fixed) delete i.fixed; else i.fixed = true; }, `${inst.part} ${inst.fixed ? "libérée" : "fixée"}`) },
-      { label: "Masquer", keys: "H", icon: "eye-off", run: () => hide(iid) }, { label: "Isoler", keys: "I", icon: "eye", run: () => isolate(iid) }, ...back,
-      { label: "Mettre à Off (de côté, sans la retirer)", icon: "power", run: () => store.updateAssembly(id, (x) => { setInstOff(x, iid, true); }, `${inst.part} mise à Off`) },
-      { label: "Retirer de l'assemblage", keys: "Suppr", icon: "trash", run: () => dropInst(iid) }];
+    const spec = store.part(inst.part), flag = (key, on, word) => store.updateAssembly(id, (x) => { const i = x.instances.find((q) => q.id === iid); if (on) i[key] = true; else delete i[key]; }, `${inst.part} ${word}`);
+    const RUN = { open: () => openPart(iid), alone: () => isolate(iid), all: showAll, hide: () => hide(iid), show: () => flag("hidden", false, "affichée"), off: () => flag("off", true, "mise à Off"), on: () => flag("off", false, "remise à On"),
+      fix: () => flag("fixed", true, "fixée"), free: () => flag("fixed", false, "libérée"), remove: () => dropInst(iid) };
+    return instanceMenu(asm(), iid, spec ? spec.name || spec.id : inst.part).map((it) => (it && it.act ? { ...it, run: RUN[it.act] } : it));      // one menu, on the line of the list and on the part in the view
   }
   function instKey(e) {
     const k = e.key.toLowerCase();

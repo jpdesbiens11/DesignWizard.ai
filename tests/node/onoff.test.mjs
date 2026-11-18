@@ -130,3 +130,30 @@ test("simulation : a plane put aside cuts nothing ; one plane per axis counts", 
   assert.ok(!treeOf({ ...st, cuts: next }).find((g) => g.key === "fixed").items.some((it) => it.kind === "symmetry"), "its plane off, the symmetry is no longer a boundary");
   const said = caseSaid(treeOf({ ...st, cuts: next }), [], liveCuts(next)); assert.equal(said.ids, "A1 E1 CY CX"); assert.match(said.text, /CY coupe Y = 75 mm · CX coupe X = 80 mm/);
 });
+
+/* ---------- the menu of a part of an assembly : one part shown alone, all of them back ---------- */
+import { shownOf, isAlone, showAlone, showEvery, instanceMenu } from "../../web/js/core/asm_live.js";
+
+test("assembly : one part shown alone, the others hidden — not off — and all of them back", () => {
+  const a = asm(); showAlone(a, "i2");
+  assert.deepEqual(a.instances.map((i) => !!i.hidden), [true, false, true]); assert.equal(isAlone(a, "i2"), true); assert.equal(isAlone(a, "i1"), false);
+  assert.equal(liveAsm(a), a, "hidden parts still count : nothing is off"); assert.deepEqual(shownOf(a).map((i) => i.id), ["i2"]);
+  showEvery(a); assert.ok(a.instances.every((i) => !("hidden" in i))); assert.equal(isAlone(a, "i2"), false);
+  a.instances[0].off = true; a.instances[2].off = true; assert.equal(isAlone(a, "i2"), true, "alone too when the others are off");
+});
+
+test("assembly : the menu of a part follows its state, the same on its line and in the view", () => {
+  const acts = (a, id) => instanceMenu(a, id, "Couvercle").filter((x) => x && x.act).map((x) => x.act), a = asm();
+  assert.deepEqual(acts(a, "i2"), ["open", "alone", "hide", "off", "fix", "remove"]);
+  assert.equal(instanceMenu(a, "i2", "Couvercle")[0].title, "Couvercle · i2");
+  assert.deepEqual(acts(a, "i1"), ["open", "alone", "hide", "off", "free", "remove"], "the fixed part is offered to be freed");
+  showAlone(a, "i2");
+  assert.deepEqual(acts(a, "i2"), ["open", "all", "hide", "off", "fix", "remove"], "shown alone : it offers to bring the others back, not to be shown alone again");
+  assert.match(instanceMenu(a, "i2").find((x) => x.act === "all").label, /Montrer toutes les pièces \(2 masquées\)/);
+  assert.deepEqual(acts(a, "i3"), ["open", "alone", "all", "show", "off", "fix", "remove"], "a hidden part : show it, alone or with the others");
+  showEvery(a); a.instances[1].off = true;
+  assert.deepEqual(acts(a, "i2"), ["open", "on", "remove"], "a part that is off : turn it on, open it, remove it");
+  assert.deepEqual(instanceMenu(a, "nope"), []);
+  const one = { instances: [{ id: "i1", part: "BASE" }] }; assert.ok(!acts(one, "i1").includes("alone"), "a single part has nothing to be alone among");
+  assert.match(read("web/js/modules/assembly.js"), /onContextmenu: \(e\) => \{ e\.preventDefault\(\);/); assert.match(read("web/js/modules/assembly.js"), /instanceMenu\(asm\(\), iid,/);
+});

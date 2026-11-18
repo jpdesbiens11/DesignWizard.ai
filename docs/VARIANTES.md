@@ -49,7 +49,11 @@ les dimensions hors tout, les accouplements (ils sont « en attente », pas « r
 gamme d'assemblage, le DFA, le dessin d'ensemble, l'isolation, la Simulation de l'assemblage, le rendu, le dossier de
 commande, le STEP et l'envoi vers Onshape. Remise à On, elle revient telle quelle.
 
-« Masquer » (l'œil) reste autre chose : la pièce n'est plus à l'écran, mais elle compte toujours.
+« Masquer » (l'œil) reste autre chose : la pièce n'est plus à l'écran, mais elle compte toujours. Un **clic droit sur
+une pièce de la liste** ouvre son menu — le même que sur la pièce dans la vue, et il suit son état : « Montrer
+seulement cette pièce » (les autres sont masquées, pas à Off), « Montrer toutes les pièces » quand certaines sont
+masquées, « Masquer » / « Afficher », « Mettre à Off » / « Remettre à On », « Fixer » / « Libérer », « Ouvrir la
+pièce », « Retirer ». L'interrupteur et l'œil restent sur la ligne (`instanceMenu` de `core/asm_live.js`).
 
 Si la pièce fixe passe à Off, la première pièce restante sert de référence ; les pièces qui n'étaient tenues que par
 elle deviennent « non matées » jusqu'à son retour.
