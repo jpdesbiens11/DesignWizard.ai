@@ -4,6 +4,8 @@
    Levels : "error" (the case cannot be solved or means nothing), "todo" (a value the tool invented and the designer
    has not entered or confirmed), "warn" (it will run, but probably not what is meant), "tip". The first two block. */
 
+import { loadDir, supportKey, supportDofs } from "./bc_tree.js";
+
 const n = (v, d = 3) => String(Math.round(v * 10 ** d) / 10 ** d).replace(".", ",");
 const ORDER = { error: 0, todo: 1, warn: 2, tip: 3 };
 /** What an item still asks : [field] — the values created by default and not yet entered or confirmed. */
@@ -21,15 +23,19 @@ export function caseIssues(st, o = {}) {
   const todo = (id, x) => { for (const f of asks(x)) { const w = ASK_WORDS[f] || [f, ""]; add("todo", id, `${id} : entrez ${w[0]} (${n(x[f])} ${w[1]} est un exemple).`, f); } };
   if (mech) {
     if (!st.fixed.length) add("error", null, "Le produit n'est tenu nulle part : le calcul n'a pas de réponse. Correctif : clic droit sur une face → « Appui ici ».");
-    st.fixed.forEach((k, i) => { const id = `A${i + 1}`; gone(id, k); if (st.fixed.indexOf(k) < i) add("tip", id, `${id} tient la même face que A${st.fixed.indexOf(k) + 1} : un seul suffit.`); });
+    const keys = st.fixed.map(supportKey);
+    st.fixed.forEach((x, i) => { const id = `A${i + 1}`, k = keys[i], d = supportDofs(x); gone(id, k);
+      if (!d.some(Boolean)) add("error", id, `${id} ne bloque aucune direction : il ne tient rien. Correctif : cochez X, Y ou Z.`, "dofs");
+      if (keys.indexOf(k) < i && d.every((v, j) => v === supportDofs(st.fixed[keys.indexOf(k)])[j])) add("tip", id, `${id} tient le même endroit que A${keys.indexOf(k) + 1} : un seul suffit.`); });
   }
   if (st.kind === "structure") {
     if (!st.loads.length) add("error", null, "Aucun effort : il n'y a rien à calculer. Correctif : clic droit sur une face → « Effort ici ».");
     st.loads.forEach((l, i) => {
-      const id = `E${i + 1}`, a = st.fixed.indexOf(l.region); gone(id, l.region); todo(id, l);
+      const id = `E${i + 1}`, a = st.fixed.findIndex((x) => supportKey(x) === l.region && supportDofs(x).every(Boolean)); gone(id, l.region); todo(id, l);
       if (a >= 0) add("warn", id, `${id} pousse sur ${name(l.region)}, qui est encastrée (A${a + 1}) : l'effort part droit dans l'appui, la pièce ne travaille pas. Correctif : déplacez l'effort ou l'appui.`);
+      if (l.mode !== "pressure" && !loadDir(l)) add("error", id, `${id} : la force n'a pas de direction — ses trois composantes sont nulles. Correctif : donnez-lui une direction.`, "vec");
       if (l.mode === "pressure") { if (l.p === 0) add("warn", id, `${id} : pression nulle, elle ne fait rien.`, "p"); else if (l.p < 0) add("tip", id, `${id} : pression négative — elle tire sur la face, comme une dépression.`, "p"); else if (l.p > 50) add("warn", id, `${id} : ${n(l.p)} MPa, soit ${n(l.p * 10, 0)} bar. Vérifiez l'unité : 1 bar = 0,1 MPa.`, "p"); }
-      else if (l.F === 0) add("warn", id, `${id} : force nulle, elle ne fait rien.`, "F"); else if (l.F < 0) add("tip", id, `${id} : force négative — elle agit à l'opposé de « vers ${l.dir} ». Plus clair : une valeur positive et l'autre sens.`, "F");
+      else if (l.F === 0) add("warn", id, `${id} : force nulle, elle ne fait rien.`, "F"); else if (l.F < 0) add("tip", id, `${id} : force négative — elle agit à l'opposé de la direction donnée. Plus clair : une valeur positive et l'autre sens.`, "F");
     });
   }
   if (st.kind === "thermo" && st.thermo && st.thermo.uniform && st.thermo.T === st.thermo.Tref) add("warn", null, "La température en service est celle du montage : rien ne se dilate, aucune contrainte.");

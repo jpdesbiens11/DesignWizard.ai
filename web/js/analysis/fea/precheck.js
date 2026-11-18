@@ -35,7 +35,7 @@ export function precheckStructure(model, load, material) {
   if (!load.fixed || !load.fixed.length) return none("Aucun appui défini : ajoutez un encastrement.");
   const R = resultant(model, load.loads);
   if (!R) return none("Aucun effort défini : ajoutez une force ou une pression.");
-  const sups = load.fixed.map((r) => regionInfo(model, r).centroid), mean = [0, 1, 2].map((i) => sups.reduce((t, c) => t + c[i], 0) / sups.length);
+  const sups = load.fixed.map((r) => regionInfo(model, r && r.region !== undefined ? r.region : r).centroid), mean = [0, 1, 2].map((i) => sups.reduce((t, c) => t + c[i], 0) / sups.length);
   const h = model.grid.h, E = material.E, steps = [], warnings = [];
   // several supports with the load between them along their longest spread: a beam on two supports
   const spread = [0, 1, 2].map((i) => Math.max(...sups.map((c) => c[i])) - Math.min(...sups.map((c) => c[i]))), sa = dominant(spread);

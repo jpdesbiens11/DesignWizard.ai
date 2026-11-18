@@ -17,7 +17,7 @@ import { docIdentity } from "./brand.js";
 import { unitPicker } from "./units_ui.js";
 import { installStepper } from "./stepper.js";
 
-export const APP_VERSION = "0.82.0";
+export const APP_VERSION = "0.83.0";
 /** What every document of the open project carries beside its content : approval names, organisation, confidentiality note, extraction stamp (core/brand.js). */
 export const docMeta = (when = new Date()) => docIdentity(store.project, when, APP_VERSION);
 const modules = new Map();

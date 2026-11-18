@@ -5,6 +5,7 @@
 
 import { el, btn, icon } from "../core/dom.js";
 import { needField } from "../core/guide.js";
+import { AXIS_DIRS, loadDir, supportKey, supportDofs } from "../analysis/fea/bc_tree.js";
 
 /** o : { st, tree, regions, dirs, select(id), hover(regionKey | null), changed(), aim(setRegion), add(groupKey), remove(groupKey, index), relabel(),
     unsym(item) (the designer tries to remove the boundary a symmetry blocks : the screen explains and offers to remove the symmetry) } → element
@@ -22,11 +23,24 @@ export function bcSection(o) {
   function editor(g, it) {
     if (it.kind === "symmetry") { const e = el("div", { class: "bc-edit" }, el("p", { class: "small", style: { margin: ".25rem 0" } }, "Cette frontière est bloquée parce que le plan est un plan de symétrie : rien ne le traverse, le produit n'est résolu que d'un côté. Elle ne se retire pas seule — elle part avec la symétrie."),
       el("div", { class: "bc-row" }, btn("Retirer la symétrie…", () => o.unsym(it), { small: true, icon: "trash", tip: "Remet le produit entier dans le calcul" }))); e.style.borderColor = it.color; return e; }
-    const x = st[g.key][it.index], setRegion = (k) => { if (g.key === "fixed") st.fixed[it.index] = k; else x.region = k; };
+    const x = st[g.key][it.index], setRegion = (k) => { if (g.key === "fixed") st.fixed[it.index] = typeof x === "object" ? { ...x, region: k } : k; else x.region = k; };
     const rows = [el("div", { class: "bc-row" }, btn("Choisir dans la vue", () => o.aim((k) => { setRegion(k); o.changed(); }), { small: true, icon: "fit", tip: "Cliquez la face (ou l'interface) sur le modèle : elle s'allume sous le curseur" }),
       pick(it.region, o.regions.map((r) => [r.key, r.label]), setRegion, "Endroit"))];
-    if (g.key === "loads") rows.push(el("div", { class: "bc-row" }, pick(x.mode, [["force", "Force"], ["pressure", "Pression"]], (v) => { if (Array.isArray(x.ask)) x.ask = x.ask.map((k) => (k === "F" || k === "p" ? (v === "force" ? "F" : "p") : k)); x.mode = v; }, "Genre d'effort"),
-      ...(x.mode === "force" ? [num(x, "F", "N"), pick(x.dir, Object.keys(o.dirs).map((d) => [d, `vers ${d}`]), (v) => { x.dir = v; }, "Sens")] : [num(x, "p", "MPa")])));
+    if (g.key === "fixed") {      // what the support blocks : everything (an encastrement), or only some directions — a face that slides, an edge that rests
+      const d = supportDofs(x), flip = (k) => { const next = d.slice(); next[k] = !next[k]; st.fixed[it.index] = next.every(Boolean) ? supportKey(x) : { region: supportKey(x), dofs: next }; o.changed(); };
+      rows.push(el("div", { class: "bc-row", "data-field": "dofs" }, el("small", { "data-tip": "Les directions que l'appui empêche. Les trois : un encastrement. Une seule : l'endroit glisse dans les deux autres." }, "bloque"),
+        ...["X", "Y", "Z"].map((a, k) => el("label", { class: "check", style: { margin: 0 } }, el("input", { type: "checkbox", checked: d[k], "aria-label": `Bloquer ${a}`, onChange: () => flip(k) }), a))));
+    }
+    if (g.key === "loads") {
+      rows.push(el("div", { class: "bc-row" }, pick(x.mode, [["force", "Force"], ["pressure", "Pression"]], (v) => { if (Array.isArray(x.ask)) x.ask = x.ask.map((k) => (k === "F" || k === "p" ? (v === "force" ? "F" : "p") : k)); x.mode = v; }, "Genre d'effort"),
+        ...(x.mode === "force" ? [num(x, "F", "N"), pick(x.dir, [...Object.keys(AXIS_DIRS).map((d) => [d, `vers ${d}`]), ["free", "autre direction…"]], (v) => { if (v === "free" && !loadDir({ dir: "free", vec: x.vec })) x.vec = (AXIS_DIRS[x.dir] || [0, 0, -1]).slice(); x.dir = v; }, "Direction de la force")] : [num(x, "p", "MPa")])));
+      /* any direction : its three components — only their proportions count, the force keeps its value */
+      if (x.mode === "force" && x.dir === "free") { const v = Array.isArray(x.vec) && x.vec.length === 3 ? x.vec : [0, 0, -1], u = loadDir({ dir: "free", vec: v });
+        rows.push(el("div", { class: "bc-row", "data-field": "vec" }, el("small", { "data-tip": "Les composantes de la direction selon X, Y et Z. Seules leurs proportions comptent : (1 ; 0 ; −1) pousse à 45° entre +X et −Z." }, "direction"),
+          ...["X", "Y", "Z"].map((a, k) => el("input", { type: "number", value: v[k], step: "any", "aria-label": `Direction de la force, composante ${a}`, style: { flex: "1 1 0", width: 0, minWidth: 0 }, onChange: (e) => { const c = parseFloat(e.target.value); if (Number.isFinite(c)) { const next = v.slice(); next[k] = c; x.vec = next; o.changed(); } } }))),
+          el("p", { class: u ? "muted small" : "form-error small", style: { margin: "0 0 .2rem" } }, u ? `Direction de longueur 1 : (${u.map((c) => String(Math.round(c * 1000) / 1000).replace(".", ",")).join(" ; ")}). La pression, elle, pousse toujours perpendiculairement à la face.` : "Donnez au moins une composante non nulle."));
+      }
+    }
     if (g.key === "power") rows.push(el("div", { class: "bc-row" }, num(x, "P", "W")));
     if (g.key === "fixedT") rows.push(el("div", { class: "bc-row" }, num(x, "T", "°C")));
     const e = el("div", { class: "bc-edit" }, rows); e.style.borderColor = it.color; return e;

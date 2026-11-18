@@ -7,6 +7,7 @@ import { el, btn, icon, svg } from "../core/dom.js";
 import { needField } from "../core/guide.js";
 import { show } from "../analysis/fea/summary.js";
 import { ZONE_SHAPES, ZONE_RATIOS, normZone, zoneOutline, zoneText } from "../analysis/fea/refine.js";
+import { zoneWalls, fitToWall } from "../analysis/fea/entity.js";
 
 export const ZONE_COLOR = "#8b5cf6", ZONE_TINT = [0.79, 0.73, 0.97];      // the colour of the zones : their outline, their label, their fine cubes on the grey model
 const AX = "XYZ", r2 = (x) => Math.round(x * 100) / 100, fr = (x, d = 2) => String(Math.round(x * 10 ** d) / 10 ** d).replace(".", ",");
@@ -18,21 +19,26 @@ function shapeMark(shape) {
     ? [svg("path", { ...a, d: "M4 8l8-4 8 4-8 4z" }), svg("path", { ...a, d: "M4 8v8.5l8 4 8-4V8M12 12v8.5" })]
     : [svg("ellipse", { ...a, cx: 12, cy: 6.5, rx: 7, ry: 3 }), svg("path", { ...a, d: "M5 6.5v11c0 1.7 3.1 3 7 3s7-1.3 7-3v-11" })]);
 }
-/** A new zone at a point : its cotes are examples, a few cubes of the model wide — the designer enters his own. */
-export function newZone(zones, shape, axis, at, h) {
-  const n = 1 + Math.max(0, ...zones.map((z) => parseInt(String(z.id || "").slice(1), 10) || 0)), size = Math.max(1, Math.round(4 * h));
-  return { id: `Z${n}`, shape, axis, size, length: size, at: at.map(r2), ratio: 2, ask: ["size", "length"] };
+/** A new zone at a point : a few cubes of the model wide — an example, the designer enters his own — and as long as the ONE wall
+    under the point is thick : a zone put on the lid of a box does not run through the box. Where no wall is met, its length is an
+    example too. */
+export function newZone(zones, shape, axis, at, model) {
+  const n = 1 + Math.max(0, ...zones.map((z) => parseInt(String(z.id || "").slice(1), 10) || 0)), size = Math.max(1, Math.round(4 * model.grid.h));
+  const z = { id: `Z${n}`, shape, axis, size, length: size, at: at.map(r2), ratio: 2, ask: ["size", "length"] }, fit = fitToWall(model, z);
+  return fit ? { ...z, at: fit.at.map(r2), length: r2(fit.length), ask: ["size"] } : z;
 }
 
 /** The section of the side panel. o : { st (st.zones), preps (the zones as the mesh took them : [{ id, prep } | { id, error }]), h (cube of
-    the model), bbox (of the product), apply() (a zone changed : mesh it again), aim(set) (the next click on the part gives set(point, normal)),
-    hover(zone | null) } */
+    the model), model (the mesh : the walls a zone crosses are read on it), apply() (a zone changed : mesh it again), aim(set) (the next click
+    on the part gives set(point, normal)), hover(zone | null) } */
 export function zonesSection(o) {
   const { st } = o, sec = el("div", { class: "side-section" }), along = (n) => { const a = (n || [0, 0, 1]).map(Math.abs); return a.indexOf(Math.max(...a)); };
-  const rows = [el("h3", null, el("span", { class: "grow" }, "Zones de raffinement"), btn("", () => o.aim((p, n) => { st.zones.push(newZone(st.zones, "cylinder", along(n), p, o.h)); o.apply(); }),
+  const rows = [el("h3", null, el("span", { class: "grow" }, "Zones de raffinement"), btn("", () => o.aim((p, n) => { st.zones.push(newZone(st.zones, "cylinder", along(n), p, o.model)); o.apply(); }),
     { small: true, icon: "plus", tip: "Ajouter une zone — puis cliquez sur la pièce le point où la centrer. Une zone : un volume où les cubes du maillage sont plus petits" }))];
   st.zones.forEach((z, i) => {
     const got = o.preps.find((p) => p.id === z.id), ok = got && got.prep, set = (patch) => { Object.assign(z, patch); o.apply(); };
+    /* the walls of the part the zone crosses : one is the usual wish — a zone on a hole of the lid, not through the whole box */
+    const nz = normZone(z), walls = nz ? zoneWalls(o.model, nz) : [], thick = walls.map((w) => fr(w.hi - w.lo)).join(" et "), one = nz && walls.length !== 1 ? fitToWall(o.model, nz) : null;
     /* a cote the tool invented blinks until the designer types his own or keeps it */
     const num = (f, label, unit) => { const ask = Array.isArray(z.ask) && z.ask.includes(f), done = () => { if (Array.isArray(z.ask)) { z.ask = z.ask.filter((k) => k !== f); if (!z.ask.length) delete z.ask; } };
       const input = el("input", { type: "number", min: 0, value: z[f], step: "any", "aria-label": `${label} (${unit})`, "data-field": f, style: { flex: "1 1 3rem", width: "3rem", minWidth: 0 }, onChange: (e) => { const v = parseFloat(e.target.value); if (v > 0) { z[f] = v; done(); o.apply(); } }, onKeydown: (e) => { if (e.key === "Enter" && ask) { done(); o.apply(); } } });
@@ -49,6 +55,8 @@ export function zonesSection(o) {
       el("div", { class: "bc-row" }, el("small", { class: "grow" }, "centre — X, Y, Z (mm)"), btn("Viser", () => o.aim((p) => set({ at: p.map(r2) })), { small: true, icon: "fit", tip: "Placer le centre : cliquez un point de la pièce" })),
       el("div", { class: "bc-row", style: { flexWrap: "nowrap" } }, coord(0), coord(1), coord(2)),
       el("div", { class: "bc-row" }, el("select", { "aria-label": "Finesse de la zone", style: { flex: "1 1 auto", minWidth: 0 }, onChange: (e) => set({ ratio: +e.target.value }) }, ZONE_RATIOS.map((r) => el("option", { value: r, selected: r === (z.ratio || 2) }, `cubes ${r} fois plus petits — ${fr(o.h / r)} mm`)))),
+      ...(ok && walls.length ? [el("div", { class: "bc-row" }, el("small", { class: "grow" }, walls.length === 1 ? `Traverse une paroi de ${thick} mm.` : `Traverse ${walls.length} parois (${thick} mm).`),
+        ...(walls.length > 1 && one ? [btn("Une seule paroi", () => set({ at: one.at.map(r2), length: r2(one.length), ask: (z.ask || []).filter((k) => k !== "length") }), { small: true, icon: "fit", tip: `Raccourcir la zone à la paroi la plus proche de son centre (${fr(one.wall.hi - one.wall.lo)} mm), et l'y centrer` })] : []))] : []),
       el("p", { class: ok ? "muted small" : "form-error small", style: { margin: ".2rem 0 0" } }, ok ? `${got.prep.local.nCells.toLocaleString("fr-CA")} cubes fins à la place de ${got.prep.block.kept.toLocaleString("fr-CA")} cube${got.prep.block.kept > 1 ? "s" : ""} du modèle${got.prep.dropped ? ` — ${got.prep.dropped} cube(s) fin(s) sans lien avec le reste, laissés de côté` : ""}.` : (got && got.error) || "Zone incomplète."));
     rows.push(card);
   });
@@ -58,10 +66,10 @@ export function zonesSection(o) {
   return sec;
 }
 
-/** What a right click offers for zones : a zone centred on the point shown, its axis along the normal of the face. */
-export function zoneMenu(hit, st, h, apply) {
+/** What a right click offers for zones : a zone at the point shown, its axis along the normal of the face, as long as the wall there is thick. */
+export function zoneMenu(hit, st, model, apply) {
   if (!hit || !hit.point) return [];
-  const n = (hit.normal || [0, 0, 1]).map(Math.abs), axis = n.indexOf(Math.max(...n)), make = (shape) => () => { st.zones.push(newZone(st.zones, shape, axis, hit.point, h)); apply(st.zones[st.zones.length - 1]); };
+  const n = (hit.normal || [0, 0, 1]).map(Math.abs), axis = n.indexOf(Math.max(...n)), make = (shape) => () => { st.zones.push(newZone(st.zones, shape, axis, hit.point, model)); apply(st.zones[st.zones.length - 1]); };
   return [{ title: "Raffiner le maillage ici" }, { label: `Zone cylindrique, axe ${AX[axis]}`, icon: "plus", run: make("cylinder") }, { label: `Zone prismatique (section carrée), axe ${AX[axis]}`, icon: "plus", run: make("prism") }];
 }
 

@@ -5,7 +5,7 @@
 /** One colour per type, the same in the tree, on the symbols and on the labels of the view. */
 export const BC_COLORS = { fixed: "#2563eb", force: "#e5484d", pressure: "#f59e0b", power: "#f97316", fixedT: "#0ea5e9" };
 export const BC_GROUPS = [
-  { key: "fixed", fr: "Appuis", one: "un appui", tag: "A", color: BC_COLORS.fixed, tip: "Là où le produit est tenu : encastrement (cônes bleus)" },
+  { key: "fixed", fr: "Appuis", one: "un appui", tag: "A", color: BC_COLORS.fixed, tip: "Là où le produit est tenu : encastrement, ou appui qui ne bloque que certaines directions (cônes bleus)" },
   { key: "loads", fr: "Efforts", one: "un effort", tag: "E", color: BC_COLORS.force, tip: "Forces (flèches rouges) et pressions (flèches orange)" },
   { key: "power", fr: "Sources de chaleur", one: "une source", tag: "Q", color: BC_COLORS.power, tip: "Puissance dissipée sur une face" },
   { key: "fixedT", fr: "Températures imposées", one: "une température", tag: "T", color: BC_COLORS.fixedT, tip: "Face tenue à une température" },
@@ -14,6 +14,30 @@ const heated = (st) => st.kind === "thermal" || (st.kind === "thermo" && !(st.th
 /** The groups a physics shows : a structure has supports and loads, a thermal case sources and temperatures. */
 export function bcGroups(st) { const heat = heated(st); return BC_GROUPS.filter((g) => (g.key === "fixed" ? st.kind !== "thermal" : g.key === "loads" ? st.kind === "structure" : heat)); }
 const n = (v, d = 3) => String(Math.round(v * 10 ** d) / 10 ** d).replace(".", ","), dirFr = (d) => `${d[0] === "-" ? "−" : "+"}${d[1]}`;
+
+/** The six directions a force can simply take ; any other is its own vector (load.dir « free », load.vec). */
+export const AXIS_DIRS = { "+X": [1, 0, 0], "-X": [-1, 0, 0], "+Y": [0, 1, 0], "-Y": [0, -1, 0], "+Z": [0, 0, 1], "-Z": [0, 0, -1] };
+/** The direction a force pushes along, of length 1 : one of the six, or its own vector brought to length 1. null : it has none. */
+export function loadDir(l) {
+  if (!l) return null; if (l.dir !== "free") return AXIS_DIRS[l.dir] || null;
+  const v = Array.isArray(l.vec) ? l.vec.map(Number) : [], len = Math.hypot(...v);
+  return v.length === 3 && v.every((c) => Number.isFinite(c)) && len > 1e-9 ? v.map((c) => c / len) : null;
+}
+/** The direction a load takes to push INTO a face whose outward direction is `out` : an axis when the face is square to one, else its own vector. */
+export function pushInto(out) {
+  const v = out.map((c) => -c), a = v.map(Math.abs), k = a.indexOf(Math.max(...a));
+  return a[k] >= 0.985 ? { dir: `${v[k] < 0 ? "-" : "+"}${"XYZ"[k]}` } : { dir: "free", vec: v.map((c) => Math.round(c * 1000) / 1000 || 0) };
+}
+/** « vers −Z », or « direction (0,5 ; 0 ; −0,866) ». */
+export function dirText(l, short = false) {
+  if (l.dir !== "free") return short ? dirFr(l.dir) : `vers ${dirFr(l.dir)}`;
+  const u = loadDir(l); return u ? `${short ? "" : "direction "}(${u.map((c) => n(c).replace("-", "−")).join(" ; ")})` : "sans direction";
+}
+/** A support : the place it holds (its key) and the directions it blocks. An entry of st.fixed is a key — everything blocked — or
+    { region, dofs: [x, y, z] }. */
+export const supportKey = (x) => (x && typeof x === "object" ? x.region : x);
+export const supportDofs = (x) => (x && typeof x === "object" && Array.isArray(x.dofs) && x.dofs.length === 3 ? x.dofs.map(Boolean) : [true, true, true]);
+export function supportText(x) { const d = supportDofs(x), held = "XYZ".split("").filter((_, i) => d[i]); return held.length === 3 ? "Encastrement" : held.length ? `Appui : bloque ${held.join(" et ")}` : "Appui : ne bloque rien"; }
 /** The tree : [{ ...group, items: [{ id, index, region, where, text, short, color, kind, ask (values still to enter) }] }].
     A plane of symmetry (st.cuts, bc « sym ») is a blocked boundary : it shows among the supports as S1, `locked` — it goes away
     with the symmetry only, never alone (item.kind « symmetry », item.index : its place in st.cuts).
@@ -22,10 +46,10 @@ export function bcTree(st, labelOf = (k) => k) {
   const sym = (st.cuts || []).map((c, i) => ({ c, i })).filter(({ c }) => c && c.bc === "sym").map(({ c, i }, k) => { const ax = "XYZ"[c.axis], name = `${ax} = ${n(c.at, 2)} mm`;
     return { id: `S${k + 1}`, index: i, region: null, plane: { axis: c.axis, at: c.at, keep: c.keep < 0 ? -1 : 1 }, where: `bloqué perpendiculairement au plan — il tient la place de la moitié retirée`, text: `Symétrie · plan ${name}`, short: `S${k + 1} · symétrie`, color: BC_COLORS.fixed, kind: "symmetry", locked: true, ask: [] }; });
   return bcGroups(st).map((g) => ({ ...g, items: [...(st[g.key] || []).map((x, i) => {
-    const id = `${g.tag}${i + 1}`, region = g.key === "fixed" ? x : x.region, base = { id, index: i, region, where: labelOf(region), ask: g.key === "fixed" || !Array.isArray(x.ask) ? [] : x.ask };
-    if (g.key === "fixed") return { ...base, text: "Encastrement", short: id, color: g.color, kind: "fixed" };
+    const id = `${g.tag}${i + 1}`, region = g.key === "fixed" ? supportKey(x) : x.region, base = { id, index: i, region, where: labelOf(region), ask: g.key === "fixed" || !Array.isArray(x.ask) ? [] : x.ask };
+    if (g.key === "fixed") return { ...base, text: supportText(x), short: supportDofs(x).every(Boolean) ? id : `${id} · ${"XYZ".split("").filter((_, k) => supportDofs(x)[k]).join("")}`, color: g.color, kind: "fixed" };
     if (g.key === "loads") return x.mode === "pressure" ? { ...base, text: `Pression ${n(x.p)} MPa`, short: `${id} · ${n(x.p)} MPa`, color: BC_COLORS.pressure, kind: "pressure" }
-      : { ...base, text: `Force ${n(x.F, 1)} N vers ${dirFr(x.dir)}`, short: `${id} · ${n(x.F, 1)} N ${dirFr(x.dir)}`, color: BC_COLORS.force, kind: "force" };
+      : { ...base, text: `Force ${n(x.F, 1)} N ${dirText(x)}`, short: `${id} · ${n(x.F, 1)} N ${dirText(x, true)}`, color: BC_COLORS.force, kind: "force" };
     if (g.key === "power") return { ...base, text: `Source ${n(x.P, 1)} W`, short: `${id} · ${n(x.P, 1)} W`, color: g.color, kind: "power" };
     return { ...base, text: `Température ${n(x.T, 1)} °C`, short: `${id} · ${n(x.T, 1)} °C`, color: g.color, kind: "fixedT" };
   }), ...(g.key === "fixed" ? sym : [])] }));

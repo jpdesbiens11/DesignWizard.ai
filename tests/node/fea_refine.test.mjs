@@ -163,7 +163,7 @@ test("zone — the guide : what is missing, what the tool invented, what will no
   assert.match(zoneIssues([{ ...z, shape: "prism", ask: ["size"] }], info)[0].text, /le côté/);
   const broken = zoneIssues([{ ...z, size: 0 }], info); assert.equal(broken[0].level, "error"); assert.equal(broken[0].field, "size");
   const off = zoneIssues([z], () => ({ error: "La zone Z1 est hors du maillage : placez son centre sur la pièce." })); assert.deepEqual([off[0].level, off[0].id], ["error", "Z1"]);
-  const small = zoneIssues([{ ...z, size: 4 }], info); assert.equal(small[0].level, "warn"); assert.match(small[0].text, /plus petite que deux cubes du modèle \(5 mm\)/); assert.equal(small[0].field, "size");
+  const small = zoneIssues([{ ...z, size: 4 }], info); assert.equal(small[0].level, "warn"); assert.match(small[0].text, /plus étroite que deux cubes du modèle \(5 mm\)/); assert.equal(small[0].field, "size"); assert.deepEqual(zoneIssues([{ ...z, length: 3 }], info), [], "a zone as long as a thin wall is thick is not too small : it ends on the surfaces of the part");
 });
 
 test("zone — a kept simulation carries its zones : in the project file, in the report, and the brick names its source and its words", () => {

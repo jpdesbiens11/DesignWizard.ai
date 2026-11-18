@@ -9,11 +9,14 @@
 //   elemBody, elemCell, bodies [{ name, material, cells, volume }], bbox (of the kept cells), volume.
 // region = { face: "+X" | "-X" | "+Y" | "-Y" | "+Z" | "-Z", body?: name } | { box: [x0, y0, z0, x1, y1, z1] } | { near: [x, y, z], r }
 //        | { patch: { at: [x, y, z], dir: "+X"… } } : the face the designer pointed at, inner faces included (patch.js)
+//        | { tris } : a face of the product itself, by its triangles | { path: [[x, y, z]…] } : one of its edges | { near, r: 0 } : a point (entity.js)
+//        | { cut: axis } : the face a cut leaves (a reduced model) | { any: [regions] } : several of the above, as one place
 //        | { nodes: [...] } | { faceList: [...] } : already resolved on this very mesh — the nodes, or the exposed faces (refine.js)
 // material = { name, E (MPa), nu, k (W/m.K), rho (kg/m3), Re (MPa or null), alpha (1/K, thermal expansion, optional) }
 
 import { cutFaces } from "./symmetry.js";
 import { patchNodes } from "./patch.js";
+import { trisRegion, pathNodes } from "./entity.js";
 import { buildModel, exposedFaces, sectionAt, skin, FACE_DIRS } from "./voxel.js";
 import { structureElement, conductionElement, vonMises } from "./hex8.js";
 import { pcg, structureOperator, thermalOperator, looseMotion, unmarkedBody } from "./solve.js";
@@ -30,6 +33,8 @@ function regionLabel(region) {
   if (region?.box) return `boîte [${Array.from(region.box, round3).join(", ")}]`;
   if (region?.near) return `voisinage du point [${Array.from(region.near, round3).join(", ")}]`;
   if (region?.patch) return `face pointée ${region.patch.dir} près de [${Array.from(region.patch.at || [], round3).join(", ")}]`;
+  if (region?.tris) return "face de la pièce"; if (region?.path) return "arête de la pièce"; if (region?.cut !== undefined) return `face de coupe ${"XYZ"[region.cut]}`;
+  if (region?.any) return region.any.length === 1 ? regionLabel(region.any[0]) : `${region.any.length} éléments de la pièce`;
   return `région ${JSON.stringify(region)}`;
 }
 
@@ -37,6 +42,15 @@ function regionLabel(region) {
 export function selectNodes(model, region) {
   const { nodes, nNodes, elems, elemBody, nCells, grid } = model, tol = 0.51 * grid.h, picked = [];
   if (region?.nodes) return Int32Array.from(region.nodes);
+  if (region?.any) {   // several places as one : their nodes together ; `whole` when one of them reads the product entire (a reduced model)
+    const set = new Set(); let whole = 0, mapped = false;
+    for (const r of region.any) { const s = selectNodes(model, r); for (const i of s) set.add(i); whole += s.whole ?? s.length; if (s.whole !== undefined) mapped = true; }
+    const sel = Int32Array.from([...set].sort((a, b) => a - b)); if (mapped) sel.whole = Math.max(whole, sel.length); return sel;
+  }
+  if (region?.cut !== undefined) {   // the face a cut leaves : the nodes of its plane, on the model as it is solved
+    const pl = model.cut ? model.cut.planes.find((p) => p.axis === region.cut) : null;
+    return pl ? selectNodes(model, { plane: { axis: pl.axis, i: pl.i } }) : new Int32Array(0);
+  }
   if (region?.plane) {   // the nodes of a grid plane : where a cut passes
     const { axis, i } = region.plane, x = grid.origin[axis] + i * grid.h;
     for (let k = 0; k < nNodes; k++) if (Math.abs(nodes[3 * k + axis] - x) < 0.01 * grid.h) picked.push(k);
@@ -77,8 +91,12 @@ export function selectNodes(model, region) {
     if (!picked.length && best >= 0) picked.push(best);   // at least the nearest node
   } else if (region?.patch) {
     return patchNodes(model, region.patch);
+  } else if (region?.tris) {
+    return trisRegion(model, region).nodes;
+  } else if (Array.isArray(region?.path)) {
+    return pathNodes(model, region.path);
   } else {
-    throw new Error(`Région invalide (${regionLabel(region)}) : attendu { face }, { box }, { near, r } ou { patch }.`);
+    throw new Error(`Région invalide (${regionLabel(region)}) : attendu { face }, { box }, { near, r }, { patch }, { tris }, { path }, { cut } ou { any }.`);
   }
   return Int32Array.from(picked);
 }
@@ -106,18 +124,20 @@ function facesOf(model, sel) {
 export function regionFaces(model, region) {
   const faces = exposedFaces(model), cut = cutFaces(model, faces), real = (f) => !cut || !cut[f];
   if (region === "exterior") return Array.from({ length: faces.count }, (_, f) => f).filter(real);
+  if (region?.any) return [...new Set(region.any.flatMap((r) => regionFaces(model, r)))].sort((a, b) => a - b);
+  if (region?.cut !== undefined) { const list = []; for (let f = 0; cut && f < faces.count; f++) if (cut[f] && (faces.dir[f] >> 1) === region.cut) list.push(f); return list; }      // the one place where a cut face is asked for
+  if (region?.tris) return trisRegion(model, region).faces;
   return facesOf(model, selectNodes(model, region)).filter(real);
 }
 
 /** Exposed faces of a region ("exterior": all of them), or a French error when the region holds no complete face. */
 function pickFaces(model, region) {
   if (region?.faceList) return Array.from(region.faceList);
-  const faces = exposedFaces(model), cut = cutFaces(model, faces), real = (f) => !cut || !cut[f];   // a cut face is inside the product : no pressure, no convection on it
-  if (region === "exterior") return Array.from({ length: faces.count }, (_, f) => f).filter(real);
-  const sel = pickNodes(model, region), list = facesOf(model, sel).filter(real);
-  if (!list.length && sel.whole) return list;
-  if (!list.length) throw new Error(`La région « ${regionLabel(region)} » ne couvre aucune face extérieure du maillage : agrandissez-la ou choisissez une face.`);
-  return list;
+  const list = regionFaces(model, region);   // a cut face is inside the product : no pressure, no convection on it — unless the region is the cut face itself
+  if (region === "exterior" || list.length) return list;
+  const sel = pickNodes(model, region);
+  if (sel.whole) return list;   // wholly on the side a cut removed : its twin answers for it
+  throw new Error(`La région « ${regionLabel(region)} » ne couvre aucune face extérieure du maillage : agrandissez-la ou choisissez une face.`);
 }
 
 /** Size of a region: node count, centroid of its nodes, the box that holds them (lo, hi), exposed area (mm2) and mean outward normal of its faces (or null). */
@@ -209,7 +229,7 @@ export function structureSystem(model, { fixed = [], loads = [], gravity, therma
     if (load.nodal) {
       load.nodal.nodes.forEach((i, k) => { for (let d = 0; d < 3; d++) f[3 * i + d] += load.nodal.f[3 * k + d]; });
     } else if (load.force) {   // total force shared equally by the nodes of the region
-      const sel = pickNodes(model, load.region), share = sel.whole || sel.length, w = model.cut ? model.cut.weight : null;   // on a reduced model : the share of the whole, halved on a cut plane
+      const sel = pickNodes(model, load.region), share = sel.whole || sel.length, w = model.cut && sel.whole ? model.cut.weight : null;   // on a reduced model : the share of the whole, halved on a cut plane — a load on the cut face itself is whole
       for (const i of sel) for (let d = 0; d < 3; d++) f[3 * i + d] += (load.force[d] / share) * (w ? w[i] : 1);
     } else if (Number.isFinite(load.pressure)) {   // every exposed face pushes -p A n, a quarter on each corner
       const faces = exposedFaces(model);
@@ -317,7 +337,7 @@ export function thermalSystem(model, { fixedT = [], power = [], convection = [] 
 
   for (const item of power) {
     if (item.nodal) { item.nodal.nodes.forEach((i, k) => { b[i] += item.nodal.q[k]; powerIn += item.nodal.q[k]; }); continue; }
-    const sel = pickNodes(model, item.region), share = sel.whole || sel.length, w = model.cut ? model.cut.weight : null;
+    const sel = pickNodes(model, item.region), share = sel.whole || sel.length, w = model.cut && sel.whole ? model.cut.weight : null;
     let got = 0; for (const i of sel) { const q = (item.P / share) * (w ? w[i] : 1); b[i] += q; got += q; }
     powerIn += w ? got : item.P;   // on a reduced model : what its side receives
   }

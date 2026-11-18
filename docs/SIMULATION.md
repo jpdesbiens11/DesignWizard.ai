@@ -54,10 +54,11 @@ Trois précisions qui comptent :
 
 ### À la souris, sur la pièce
 
-- **Choisir une face** : chaque appui et chaque effort se choisit dans la liste — la région s'allume quand on survole
-  sa ligne — ou **à la souris** : le bouton cible, puis un clic sur la face (ou l'interface) dans la vue. La face
-  s'allume en bleu sous le curseur, puis en vert quand elle est choisie. Toute face se pointe, intérieure comprise
-  (voir plus bas).
+- **La vue montre la pièce elle-même**, telle que le noyau l'a construite — ses faces, ses arêtes, ses points — avec le
+  maillage de cubes par-dessus, en traits fins. On pointe la pièce, pas les cubes.
+- **Choisir un endroit** : chaque appui et chaque effort se choisit **à la souris** — le bouton « Choisir dans la vue »,
+  puis un clic sur une face, une arête ou un point : il s'allume en bleu sous le curseur, puis en vert quand il est
+  choisi — ou dans la liste, pour une interface ou tout un côté du produit (voir plus bas).
 - **Symboles** : des cônes bleus là où la pièce est tenue ; des flèches rouges pour une force, dans son sens, avec sa
   valeur ; des flèches orange pour une pression ; des losanges pour la chaleur et les températures imposées.
 - **Échelle des couleurs** : son bas et son haut se règlent au curseur ou au clavier, la vue suit en direct. Ce qui
@@ -71,8 +72,8 @@ Dans le panneau de gauche, le cas de charge se lit comme l'arbre d'un outil de c
 
 | Type | Numéro | Couleur | Symbole sur le modèle |
 |---|---|---|---|
-| Appuis (encastrement) | A1, A2… | bleu | cônes |
-| Efforts — force | E1, E2… | rouge | flèches dans le sens de la force |
+| Appuis (encastrement, ou directions bloquées) | A1, A2… | bleu | cônes |
+| Efforts — force, dans la direction donnée | E1, E2… | rouge | flèches dans le sens de la force |
 | Efforts — pression | E… | orange | flèches normales à la face |
 | Sources de chaleur | Q1… | orange vif | losanges |
 | Températures imposées | T1… | cyan | losanges |
@@ -82,32 +83,50 @@ Dans le panneau de gauche, le cas de charge se lit comme l'arbre d'un outil de c
   une interface difficile à cliquer).
 - L'**œil d'un type** affiche ou masque ses étiquettes sur le modèle (`A1`, `E1 · 100 N −Z`…). L'élément sélectionné
   garde toujours la sienne. Un clic sur une étiquette du modèle sélectionne sa ligne.
-- **+** ajoute un élément du type et attend le clic d'une face ; un clic droit sur une face du modèle fait de même.
+- **+** ajoute un élément du type et attend le clic d'un endroit de la pièce ; un clic droit sur la pièce fait de même.
+- **La direction d'une force** se règle dans ses paramètres : l'un des six sens (+X, −X…), ou « autre direction… » et
+  ses trois composantes — seules leurs proportions comptent, (1 ; 0 ; −1) pousse à 45° entre +X et −Z, et la flèche de
+  la vue suit. Une force posée sur une face part d'office vers la matière, perpendiculairement à la face, même
+  inclinée. Une pression, elle, pousse toujours perpendiculairement.
+- **Ce qu'un appui bloque** se coche : X, Y, Z. Les trois, c'est un encastrement ; une seule, l'endroit glisse dans
+  les deux autres (une face qui repose, une arête en appui simple). Le solveur dit quel mouvement reste libre si le
+  produit n'est pas assez tenu.
 
-Le modèle de l'arbre est pur (`web/js/analysis/fea/bc_tree.js` : `bcTree`, `bcLabels`, `BC_COLORS`) ; le panneau le
-dessine (`web/js/modules/fea_tree.js`).
+Le modèle de l'arbre est pur (`web/js/analysis/fea/bc_tree.js` : `bcTree`, `bcLabels`, `BC_COLORS`, `loadDir`,
+`pushInto`, `supportDofs`) ; le panneau le dessine (`web/js/modules/fea_tree.js`).
 
-### Pointer une face — intérieure aussi
+### Toute face, toute arête, tout point de la pièce
 
-Une condition ne vise plus seulement les six côtés du produit et ses interfaces : **toute face du modèle** se pointe.
+Une condition se pose sur **la géométrie réelle** : n'importe quelle face — plane, cylindrique (un alésage), inclinée,
+au fond d'un boîtier —, n'importe quelle arête, n'importe quel point de la pièce.
 
-- Un clic (ou un clic droit) sur le **fond d'un boîtier**, une **paroi intérieure**, le **dessous d'un couvercle**, un
-  gradin ou le fond d'une poche désigne cette face : elle s'allume en entier, et la ligne de l'arbre dit où elle est —
-  « Face pointée, tournée vers le haut (+Z) — z = 3,2 mm, 132 cm² ».
-- **Face cachée ?** Tournez la vue, ou coupez-la (« Coupe » dans la barre de la vue, Maj + S pour changer de côté) : ce
-  qui est derrière la coupe se clique.
-- Un clic sur le plan le plus extérieur d'un côté désigne toujours ce côté entier, comme avant ; un clic près des vis
-  d'une interface, l'interface. Une paroi voisine d'un plan de joint se pointe pour elle-même.
-- Le **clic droit** sur une face, comme dans l'Isolation : « Appui ici », « Effort ici », « Pression ici », « Source de
-  chaleur ici » — et, pour ce qui s'y trouve déjà, « Régler E2 — Force 250 N vers −Z » (ouvre ses valeurs à gauche) et
-  « Retirer E2 ».
+- Un **clic** choisit ce qui est sous le curseur : une face ; une arête quand le curseur est dessus ; un point quand il
+  est au bout d'une arête. **Ctrl + clic** en ajoute d'autres : plusieurs faces, arêtes et points forment **un seul
+  endroit**, pour une seule condition.
+- Le **clic droit** agit sur ce qui est choisi : « Appui ici », « Effort ici », « Pression ici » (il faut une face),
+  « Source de chaleur ici », « Température imposée ici » — et, pour ce qui s'y trouve déjà, « Régler E2… » et
+  « Retirer E2 ». Sur une face ou une arête, « Effort en ce point précis » pose la force là où l'on a cliqué.
+- La ligne de l'arbre dit ce que c'est : « Face plane · 13 501 mm² », « Cylindre Ø 8 (alésage) », « Arête droite ·
+  148 mm », « Point (6 ; 107,5 ; 42) », « 2 faces · 1 arête ». Dans un assemblage, le nom de la pièce suit.
+- **Caché ?** Tournez la vue, ou coupez-la (« Coupe » dans la barre de la vue, Maj + S pour changer de côté).
+- **La face d'une coupe** : sur un modèle réduit par une symétrie ou une coupe (§ 4), la face que le plan laisse se
+  pointe comme une autre — « Face de coupe X » — pour y poser un appui, un effort ou une pression. Le plus souvent ce
+  plan porte déjà sa condition (une symétrie le bloque) ; un effort qu'on y met est compté en entier.
+- Un côté entier du produit (« Face dessus (+Z) ») et une interface (« Interface IF1 — 4 vis ») restent dans la liste
+  de chaque ligne : ce sont des endroits de fonction, pas des faces.
 
-Sur ce maillage de cubes, une face pointée est l'ensemble des faces de cubes exposées qui regardent du même côté et se
-touchent — dans leur plan, ou d'une couche à la suivante : une paroi en dépouille ou en pente douce, qui est un escalier
-ici, reste une seule face ; le fond d'un boîtier et le dessus de son rebord ne se confondent pas. La face est retrouvée
-par sa position à chaque maillage ; si la pièce a changé et qu'elle n'existe plus, l'arbre le dit.
-Code : `web/js/analysis/fea/patch.js` (pur) — `patchAt`, `patchFaces`, `patchInfo`, `patchSpots` ; le solveur lit la
-région `{ patch: { at, dir } }`.
+**Ce que le maillage en fait.** Les cubes ne suivent pas la pièce : une face est portée par les faces de cubes qui
+reposent sur elle — à moins de 0,8 cube, et tournées du même côté, pour ne pas prendre l'autre côté d'une paroi
+mince ; une arête, par les nœuds de surface les plus proches le long de sa ligne ; un point, par le nœud le plus
+proche. Autour d'un alésage, l'aire de l'escalier de cubes dépasse celle du cylindre d'environ un quart : la résultante
+d'une pression y reste juste (elle ne voit que les aires projetées), une puissance ou une force y est simplement
+partagée entre les nœuds. Si la pièce a changé et que l'endroit n'existe plus, l'arbre le dit et le calcul attend.
+
+Code : `web/js/analysis/fea/entity.js` (pur) — `trisRegion`, `pathNodes`, `nearestNode` ; le solveur lit les régions
+`{ tris }`, `{ path }`, `{ near, r: 0 }`, `{ cut }` et `{ any: […] }` ; `web/js/core/mesh_clip.js` — `bakeMesh`,
+`clipMesh`, `faceTris` (la pièce placée et coupée pour la vue) ; `web/js/modules/fea_places.js` (les endroits choisis,
+leurs mots, leurs symboles). L'ancienne « face pointée » du maillage (`patch.js`) reste une région du solveur ;
+l'écran ne s'en sert plus.
 
 ### Les valeurs à entrer clignotent
 
@@ -123,10 +142,10 @@ mène à l'endroit, qui clignote un instant.
 
 | Niveau | Exemples | Bloque le lancement |
 |---|---|---|
-| À corriger | Produit tenu nulle part ; aucun effort ; chaleur sans sortie (ni convection ni température imposée) ; face disparue du maillage ; température sous le zéro absolu | oui |
+| À corriger | Produit tenu nulle part ; aucun effort ; chaleur sans sortie (ni convection ni température imposée) ; endroit disparu de la pièce ; appui qui ne bloque aucune direction ; force sans direction ; température sous le zéro absolu | oui |
 | À entrer | Valeur d'exemple pas encore entrée ni confirmée | oui |
 | À vérifier | Effort sur une face encastrée ; valeur nulle ; pression de plus de 50 MPa (unité ?) ; source sur une face tenue en température ; dilatation nulle | non |
-| Conseil | Deux appuis sur la même face ; force négative ; pression négative | non |
+| Conseil | Deux appuis identiques au même endroit ; force négative ; pression négative ; zone de raffinement qui traverse plusieurs parois | non |
 
 Les règles sont pures et testées (`web/js/analysis/fea/case_check.js`, `caseIssues`) ; l'affichage est celui du guide
 commun à tous les écrans (`web/js/core/guide.js`).
@@ -220,15 +239,15 @@ pièce tenue (un petit composant, par exemple) est **laissé de côté**, et l'�
 | Élément | hexaèdre à 8 nœuds **à modes incompatibles** (Wilson, Taylor) | hexaèdre à 8 nœuds trilinéaire |
 | Inconnues | 3 déplacements par nœud | 1 température par nœud |
 | Pourquoi | l'hexaèdre ordinaire est beaucoup trop raide en flexion ; les modes incompatibles rendent la flexion juste **même avec un seul élément dans l'épaisseur** | suffisant pour la conduction |
-| Conditions aux frontières | encastrement, ou appui par direction ; force répartie sur une région ; pression sur une face ; **champ de température** (dilatation α (T − T de montage)) | température imposée ; puissance sur une région ; convection (h, T∞) sur les faces exposées |
+| Conditions aux frontières | encastrement, ou appui par direction ; force de direction quelconque répartie sur une région ; pression sur une face ; **champ de température** (dilatation α (T − T de montage)) | température imposée ; puissance sur une région ; convection (h, T∞) sur les faces exposées |
 | Résultat | déplacements, contrainte de von Mises aux nœuds, réaction d'appui | températures, bilan de puissance |
 
 Le système est résolu par un **gradient conjugué préconditionné** (diagonale), sans jamais assembler la matrice :
 le produit se fait élément par élément. Tout le code — maillage, éléments, solveur — est dans ce dépôt
 (`web/js/analysis/fea/`), sous licence MIT, sans bibliothèque externe.
 
-Les régions des conditions aux frontières sont des **faces de l'enveloppe** ou des **interfaces** de la pièce : on
-tient une pièce par là où elle se fixe, on la charge par là où elle reçoit l'effort.
+Les régions des conditions aux frontières sont les **faces, les arêtes et les points de la pièce**, ses **interfaces**
+et les côtés de son enveloppe : on tient une pièce par là où elle se fixe, on la charge par là où elle reçoit l'effort.
 
 ## 4. Symétries et coupes : résoudre une partie au lieu du tout
 
@@ -293,11 +312,18 @@ coûte cher ; une **zone de raffinement** n'affine que là où l'on regarde.
 | **Cylindre** | son axe (X, Y ou Z), son diamètre, sa longueur |
 | **Prisme à section carrée** | son axe (X, Y ou Z), le côté du carré, sa longueur |
 
-et son centre. Le plus direct : **clic droit sur la pièce → « Raffiner le maillage ici »** — la zone est centrée sur le point,
+et son centre. Le plus direct : **clic droit sur la pièce → « Raffiner le maillage ici »** — la zone est posée au point,
 son axe le long de la normale de la face. Ou le « + » de la section « Zones de raffinement », puis un clic sur la pièce.
+
+**Une seule paroi, par défaut.** La longueur de la zone se choisit — c'est elle qui décide de ce que la zone traverse.
+Posée sur le couvercle d'une boîte, une zone ne doit pas filer à travers toute la boîte : elle prend d'office
+**l'épaisseur de la paroi sous le point** (plus un demi-cube de chaque côté) et se centre dedans. Sa carte dit ce
+qu'elle traverse — « Traverse une paroi de 3,2 mm », « Traverse 2 parois » — et, dans le second cas, le bouton
+« Une seule paroi » la ramène à la plus proche de son centre ; le guide le rappelle, en conseil. Une zone posée sur
+un trou trouve la paroi dans laquelle le trou est percé.
 La carte de la zone règle sa forme (deux pictogrammes), son axe, ses cotes, son centre (trois champs, ou « Viser » puis
-un clic) et sa finesse : des cubes **2, 3 ou 4 fois plus petits**. Les cotes que l'outil propose sont des exemples : elles
-clignotent, et le calcul attend qu'elles soient entrées ou confirmées.
+un clic) et sa finesse : des cubes **2, 3 ou 4 fois plus petits**. Le diamètre (ou le côté) que l'outil propose est un
+exemple : il clignote, et le calcul attend qu'il soit entré ou confirmé.
 
 **Ce que l'on voit.** Le contour de la zone et son nom (Z1, Z2…), et surtout **sa forme imprimée sur la pièce, en petits
 cubes** : ce que le volume partage avec le produit est remaillé, dans la couleur des zones. La ligne du bas compte les
@@ -331,8 +357,8 @@ revue emporte ses zones.
 - Les cubes restent des cubes : une surface courbe est un escalier plus fin, pas une courbe. La pointe monte quand on
   affine ; comparer 2, 3 et 4 fois dit si elle se stabilise. Au fond d'une **entaille vive**, elle ne se stabilise jamais.
 - Le lien du bord est un peu plus raide que la matière : laisser le bord de la zone à **deux cubes du modèle** au moins du
-  détail regardé. Le guide le signale quand la zone est plus petite que deux cubes.
-- Une face pointée, allumée dans la vue, ne l'est pas à l'intérieur d'une zone.
+  détail regardé. Le guide le signale quand la zone est plus étroite que deux cubes.
+- Une face, une arête, un point de la pièce pris dans une zone y sont relus sur les petits cubes.
 
 Un premier essai, à sens unique — les déplacements du modèle seul imposés sur le bord de la zone — a été écarté : sur la
 plaque trouée du tableau ci-dessous, il donnait de −10 % à +35 % selon la taille de la zone, parce que le modèle grossier
@@ -341,7 +367,8 @@ temps a aussi été essayé, et écarté : cela demande plus d'itérations, pas 
 
 Le code : `web/js/analysis/fea/refine.js` (ce qu'est une zone : sa forme, ses cubes, son maillage fin, ses liens, sa part
 du cas), `web/js/analysis/fea/composite.js` (le modèle sans ses zones, la résolution liée, la peau composée),
-`web/js/modules/fea_zones.js` (l'écran) ; tests : `tests/node/fea_refine.test.mjs`.
+`web/js/analysis/fea/entity.js` (`zoneWalls`, `fitToWall` : les parois qu'une zone traverse), `web/js/modules/fea_zones.js`
+(l'écran) ; tests : `tests/node/fea_refine.test.mjs`, `tests/node/fea_entity.test.mjs`.
 
 ## 6. Ce qui est vérifié
 
@@ -369,6 +396,9 @@ exactes :
 | Plaque encastrée sous pression, **quart de modèle** — flèche au centre | celle du modèle entier | modèle entier, mêmes cubes | moins de 0,2 % |
 | Bloc chauffé, refroidi par convection, **demi-modèle** — températures et bilan | celles du modèle entier, 2,5 W sur 5 | modèle entier | moins de 0,2 % |
 | Poutre coupée à mi-longueur, plan **tenu** — flèche | — | F L³ / 3 E I avec L = 50 mm | moins de 5 % |
+| Plaque trouée, **pression dans l'alésage** (une face cylindrique de la pièce) — résultante sur l'appui | 0,000 N | 0 (elle s'équilibre) | moins de 0,001 N sur 1 250 N de pression |
+| Force de direction quelconque (3 ; −4 ; −12 N) en **un point** de la pièce — réaction d'appui | −3 ; 4 ; 12 N | l'opposé | 0 |
+| Demi-plaque **tirée par sa face de coupe** à 10 MPa — réaction | p × l'aire de la face | la même | 0 |
 | Barre en traction, **zones de raffinement** de finesse 2, 3 et 4 (jusqu'à deux à la fois) — contrainte dans tous les cubes | 10,000 MPa | 10 MPa | moins de 0,01 % |
 | Plaque 80 × 40 × 5 mm trouée ⌀ 8 mm en traction, **zone** ⌀ 12 puis ⌀ 24 autour du trou, cubes 2 fois plus petits — pointe | 25,2 à 25,4 MPa | maillage fin partout, mêmes petits cubes : 25,4 MPa | moins de 3 % (le modèle seul : 29,7 MPa, +17 %) |
 | Même plaque, trou ⌀ 2 mm, **plus petit qu'un cube** — pointe dans la zone | 20,0 MPa | maillage fin partout : 20,0 MPa | moins de 3 % (le modèle seul ne voit pas le trou : 10,1 MPa) |

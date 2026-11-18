@@ -10,6 +10,7 @@
 
 import { assemble, fillGrid, exposedFaces, FACE_DIRS, CORNER_OFFSETS } from "./voxel.js";
 import { selectNodes, regionFaces } from "./index.js";
+import { trisRegion, pathNodes, nearestNode } from "./entity.js";
 import { meshPieces } from "./solve.js";
 
 export const ZONE_SHAPES = { cylinder: { fr: "Cylindre", en: "Cylinder", size: "Diamètre", mark: "⌀" }, prism: { fr: "Prisme carré", en: "Square prism", size: "Côté", mark: "□" } };
@@ -124,13 +125,22 @@ export function prepareZone(model, bodies, zone, taken) {
     bound: { nodes: Int32Array.from(bound.nodes), elem: Int32Array.from(bound.elem), w: Float64Array.from(bound.w) } };
 }
 
-/** A region of the product, found again on the fine mesh of a zone. A face or a pointed face is carried over face by face (a fine
-    face belongs when it looks the same way, over a face of the region on the model, within half a cube of its plane) ; a box or a
-    neighbourhood is the same place in space. → { nodes, faces (exposed faces of the fine mesh that are surfaces of the product) } */
+/** A region of the product, found again on the fine mesh of a zone. A side of the product or a pointed face is carried over face by
+    face (a fine face belongs when it looks the same way, over a face of the region on the model, within half a cube of its plane) ;
+    a face, an edge or a point of the product itself, a box or a neighbourhood is the same place in space, read on the small cubes ;
+    the face of a cut is the part of its plane the zone holds. → { nodes, faces (exposed faces of the fine mesh that carry it) } */
 export function localRegion(prep, model, region) {
   const { local, inner, block: { lo }, zone: { ratio: r } } = prep, faces = exposedFaces(local), n = [local.grid.nx, local.grid.ny, local.grid.nz], real = (f) => !inner[f];
   const whole = (f) => { const o = 4 * f; return [faces.nodes[o], faces.nodes[o + 1], faces.nodes[o + 2], faces.nodes[o + 3]]; };
   if (region === "exterior") { const list = []; for (let f = 0; f < faces.count; f++) if (real(f)) list.push(f); return { nodes: Int32Array.from(new Set(list.flatMap(whole))), faces: list }; }
+  if (region && region.any) { const parts = region.any.map((x) => localRegion(prep, model, x)); return { nodes: Int32Array.from(new Set(parts.flatMap((p) => Array.from(p.nodes)))), faces: [...new Set(parts.flatMap((p) => p.faces))] }; }
+  if (region && region.tris) return trisRegion(local, region);
+  if (region && region.cut !== undefined) { const k = prep.planes.findIndex((p) => p.axis === region.cut), list = []; if (k < 0) return { nodes: new Int32Array(0), faces: [] };
+    for (let f = 0; f < faces.count; f++) if (inner[f] === 2 && (faces.dir[f] >> 1) === region.cut) list.push(f); return { nodes: prep.planes[k].nodes, faces: list }; }
+  /* an edge, a point : the fine nodes along it, as long as they are close — the rest of the line is outside the zone */
+  const close = (p, i) => i >= 0 && Math.hypot(local.nodes[3 * i] - p[0], local.nodes[3 * i + 1] - p[1], local.nodes[3 * i + 2] - p[2]) <= 0.9 * local.grid.h;
+  if (region && Array.isArray(region.path)) return { nodes: pathNodes(local, region.path).filter((i) => region.path.some((p, s) => s + 1 < region.path.length ? segClose(local, i, p, region.path[s + 1]) : close(p, i))), faces: [] };
+  if (region && region.near && !(region.r > 0)) { const i = nearestNode(local, region.near, null); return { nodes: close(region.near, i) ? Int32Array.of(i) : new Int32Array(0), faces: [] }; }
   if (region && (region.box || region.near)) {
     const { nodes, nNodes } = local, tol = 0.51 * local.grid.h, mark = new Uint8Array(nNodes), picked = [];
     for (let i = 0; i < nNodes; i++) {
@@ -155,6 +165,13 @@ export function localRegion(prep, model, region) {
     if (planes && planes.some((p) => Math.abs(p - level) <= 0.51)) list.push(f);
   }
   return { nodes: Int32Array.from(new Set(list.flatMap(whole))), faces: list };
+}
+
+/** Is a node of a mesh within 0.9 cube of the segment a b ? */
+function segClose(m, i, a, b) {
+  const p = [m.nodes[3 * i], m.nodes[3 * i + 1], m.nodes[3 * i + 2]], d = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], l2 = d[0] * d[0] + d[1] * d[1] + d[2] * d[2];
+  const t = l2 ? Math.max(0, Math.min(1, ((p[0] - a[0]) * d[0] + (p[1] - a[1]) * d[1] + (p[2] - a[2]) * d[2]) / l2)) : 0;
+  return Math.hypot(p[0] - a[0] - t * d[0], p[1] - a[1] - t * d[1], p[2] - a[2] - t * d[2]) <= 0.9 * m.grid.h;
 }
 
 const touchCache = new WeakMap();
@@ -220,7 +237,8 @@ export function prepareZones(model, bodies, zones) {
 }
 
 /** What is missing or odd in the zones, for the guide. zones : as the screen keeps them (with `ask` : the values it invented) ;
-    info(zone) → { error } | { cells, block (cubes of the model taken), h (cube of the model) } ; → [{ level, id, text, field }] */
+    info(zone) → { error } | { cells, block (cubes of the model taken), h (cube of the model), walls (how many walls of the product the zone
+    crosses) } ; → [{ level, id, text, field }] */
 export function zoneIssues(zones, info) {
   const out = [], WORDS = { size: (z) => (z.shape === "prism" ? "le côté" : "le diamètre"), length: () => "la longueur" };
   (zones || []).forEach((z, k) => {
@@ -229,7 +247,8 @@ export function zoneIssues(zones, info) {
     for (const f of Array.isArray(z.ask) ? z.ask : []) if (WORDS[f]) add("todo", `${id} : entrez ${WORDS[f](z)} de la zone (${fr(z[f])} mm est un exemple).`, f);
     const i = info ? info(z) : null; if (!i) return;
     if (i.error) { add("error", `${i.error}`); return; }
-    if (Math.min(z.size, z.length) < 2 * i.h) add("warn", `${id} : la zone est plus petite que deux cubes du modèle (${fr(2 * i.h)} mm). Son bord colle au détail qu'elle regarde ; prévoyez deux à trois cubes de marge autour.`, z.size < 2 * i.h ? "size" : "length");
+    if (z.size < 2 * i.h) add("warn", `${id} : la zone est plus étroite que deux cubes du modèle (${fr(2 * i.h)} mm). Son bord colle au détail qu'elle regarde ; prévoyez deux à trois cubes de marge autour.`, "size");      // across, not along : a zone as long as its wall is thick ends on the surfaces of the part
+    if (i.walls > 1) add("tip", `${id} traverse ${i.walls} parois de la pièce. Si une seule vous intéresse, raccourcissez la zone : « Une seule paroi », dans sa carte.`, "length");
   });
   return out;
 }
