@@ -248,6 +248,33 @@ le reste est vérifié dans Chromium), styles dans `web/css/app.css`. Essayé su
 replier, tout déplier, aucune erreur. Pas essayé sur Firefox, Safari ni un écran tactile ; les écrans sans volet à
 groupes (Atelier, Itérations, Équipe…) ne changent pas.
 
+## Zoomer ce que montre le centre, et la loupe
+
+Demande de JP (18 novembre 2026), devant une feuille de dessin dont les notes ne se lisaient pas à l'écran.
+
+**Zoom des feuilles.** Le centre de l'écran Dessins zoome : **Ctrl + molette** (ou un pincement) autour du pointeur —
+le point de la feuille sous le pointeur y reste —, les boutons **−** et **+** d'une petite barre en haut à droite du
+centre (50 % à 800 %, par paliers), un clic sur le pourcentage pour revenir à la largeur (100 %). Une feuille plus
+grande que le centre se **glisse** à la souris, ou se fait défiler ; la molette seule défile, comme avant. La barre
+reste en place pendant le défilement et revient quand la feuille est retracée ; le zoom tient le temps de la visite de
+l'écran. Les vues 3D et la vue d'une carte zoomaient déjà à la molette. Code : `web/js/core/zoom_pane.js`
+(`zoomPane(centre)` ; un écran qui montre des feuilles l'appelle une fois).
+
+**Loupe.** Un bouton de la barre du haut l'allume et l'éteint. Allumée, une lentille ronde suit le pointeur sur tout
+artéfact — dessin, carte, schéma, vue 3D — et montre ce qui est dessous plus gros, du facteur d'un **court curseur**
+qui apparaît à côté du bouton (× 1,5 à × 8, gardé d'une visite à l'autre). Le pointeur agit au travers : on clique,
+on tourne, on fait défiler comme avant. Échap la range.
+
+- Un artéfact **vectoriel** (SVG : dessin, carte, schéma) est retracé à l'échelle : il reste net.
+- Une vue **peinte en pixels** (les vues 3D) est agrandie telle quelle : pour voir plus, le zoom de la vue fait mieux.
+  Ce qu'un écran pose par-dessus une vue 3D (étiquettes, marqueurs) n'est pas dans la lentille.
+- Hors d'un artéfact (volets, texte, icônes de moins de 120 × 70 px), la lentille s'efface : la taille de l'affichage
+  (menu du compte) grossit le texte.
+
+Code : `web/js/core/loupe.js` ; moitiés pures testées (`tests/node/zoom.test.mjs`), le reste vérifié dans Chromium sur
+un dessin, la vue d'une carte, le rendu marketing et les vues 3D de la Simulation et de l'Assemblage. Pas essayé sur
+Firefox, Safari ni un écran tactile.
+
 ## Ce que l'audit ne voit pas
 
 Il mesure des boîtes, pas le sens : un libellé obscur, un ordre d'actions illogique, une couleur mal choisie, une

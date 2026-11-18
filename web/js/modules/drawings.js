@@ -4,6 +4,7 @@
    left pane lists them all and gives each its class (normal, reference, SC, CSC). Shown as SVG, exported as a vector PDF. */
 
 import { el, clear, icon, btn, badge, field, toast, download, fmt, fmtLen, unitField, inUnits } from "../core/dom.js";
+import { zoomPane } from "../core/zoom_pane.js";
 import { registerModule, go, setStatus, setGuide, app } from "../core/app.js";
 import { store } from "../core/store.js";
 import { kernel } from "../cad/client.js";
@@ -68,7 +69,7 @@ function render(main, args) {
   const left = el("aside", { class: "side" }), right = el("aside", { class: "side right" }), center = el("div", { style: { overflow: "auto", padding: "1rem" } });
   const root = el("div", { class: "studio" }, left, center, right);
   root.style.setProperty("--left-w", "340px");
-  main.append(root);
+  main.append(root); zoomPane(center);      // the sheets zoom : Ctrl + wheel, the small bar, dragging once larger than the centre
   left.append(el("img", { class: "side-mark", src: "img/marks/drawings.svg", alt: "" }), el("div", { class: "side-head" }, el("h2", null, "Dessins")));
   const scroll = el("div", { class: "side-scroll" }), dimBox = el("div");
   left.append(scroll);

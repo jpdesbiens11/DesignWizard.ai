@@ -309,6 +309,16 @@ button.dw-view-label { pointer-events: auto; cursor: pointer; min-height: 24px; 
 .palette { width: min(640px, 94vw); } .palette input { font-size: 1.05rem; padding: .6rem .8rem; }
 .palette-list { max-height: 50vh; overflow: auto; margin-top: .5rem; } .palette-item { display: flex; gap: .6rem; align-items: center; padding: .4rem .6rem; border-radius: var(--r-small); cursor: pointer; }
 .palette-item.sel { background: color-mix(in srgb, var(--hl-violet) 25%, var(--surface)); } .palette-item small { color: var(--muted); margin-left: auto; }
+/* the sheets at the centre of a page zoom (core/zoom_pane.js) : 1 is the width of the centre */
+.zoom-host .sheet-view { width: calc(var(--zoom, 1) * 100%); max-width: none; margin-inline: auto; } .zoom-host.zoomed .sheet-view { cursor: grab; } .zoom-host.panning, .zoom-host.panning .sheet-view { cursor: grabbing; user-select: none; -webkit-user-select: none; }
+.zoom-bar { position: sticky; top: .1rem; left: 0; z-index: 4; width: 100%; height: 0; display: flex; justify-content: flex-end; pointer-events: none; }
+.zoom-pill { pointer-events: auto; display: flex; align-items: center; height: 2.05rem; padding: 0 .25rem; border-radius: 99px; background: var(--surface); border: 1.4px solid color-mix(in srgb, var(--graphite) 30%, transparent); box-shadow: var(--shadow-sketch); } .zoom-pill .icon-btn { display: inline-flex; align-items: center; justify-content: center; color: var(--ink); }
+.zoom-pct { min-width: 3.5rem; padding: .2rem .3rem; border: 0; border-radius: var(--r-small); background: none; font: 650 .8rem var(--label-font); color: var(--ink); cursor: pointer; } .zoom-pct:hover, .zoom-pill .icon-btn:hover { background: var(--surface-2); }
+/* the magnifier (core/loupe.js) : a round lens that follows the pointer and lets it work through */
+.loupe { position: fixed; left: 0; top: 0; z-index: 90; display: none; overflow: hidden; border-radius: 50%; pointer-events: none; background: var(--surface); border: 2.5px solid var(--graphite); box-shadow: 0 8px 26px rgba(0, 0, 0, .34); }
+.loupe.on { display: block; } .loupe-paper { position: absolute; inset: 0; overflow: hidden; } .loupe-glass { position: absolute; inset: 0; width: 100%; height: 100%; }
+.loupe-cross { position: absolute; left: 50%; top: 50%; width: 16px; height: 16px; margin: -8px 0 0 -8px; opacity: .75; background: linear-gradient(var(--danger), var(--danger)) 50% 0 / 1.4px 100% no-repeat, linear-gradient(var(--danger), var(--danger)) 0 50% / 100% 1.4px no-repeat; }
+.loupe-ctl, .loupe-more { display: inline-flex; align-items: center; gap: .3rem; } .loupe-more[hidden] { display: none; } .loupe-btn.on { background: var(--acc); color: var(--on-acc); } .loupe-range { width: 5rem; margin: 0; } .loupe-k { min-width: 2.5rem; font: 650 .78rem var(--label-font); white-space: nowrap; }
 .sheet-view { background: var(--sheet); border: 1.4px solid color-mix(in srgb, var(--graphite) 30%, transparent); box-shadow: var(--shadow-pop); max-width: 100%; height: auto; display: block; }
 
 .wand-text { flex: 1; text-align: left; }
