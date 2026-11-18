@@ -8,7 +8,14 @@ décimale : assez pour décider de commander le prototype, pas pour signer une n
 Elle ne remplace pas le calcul à la main ; elle le suit. L'écran écrit d'abord **l'estimation analytique** du modèle
 simple équivalent, puis lance la simulation, puis compare les deux.
 
-## 1. La démarche, dans l'ordre de l'écran
+## 1. La démarche
+
+L'ordre de la démarche est celui ci-dessous. À l'écran, ce que l'on **fait** est épinglé en tête du volet de droite —
+« Lancer la simulation », puis « Voir le résultat » / « Revenir au modèle » — et ne défile pas. Avant un calcul, le
+volet montre l'estimation à la main, puis la méthode ; après, **le résultat d'abord** (chiffres, zones, couleurs,
+recoupement, essais), l'estimation et la méthode en dessous. Chaque groupe des deux volets se replie d'un clic sur son
+titre (`docs/ERGONOMIE.md`) : replier « Cas de charge » fait remonter « Symétries et coupes » et « Zones de
+raffinement » ; les types du cas de charge (Appuis, Efforts, Sources…) se replient aussi.
 
 1. **Avant de calculer — l'estimation à la main.** Dès que les appuis et les efforts sont posés, l'écran reconnaît le
    modèle simple équivalent et écrit le calcul pas à pas, comme un analyste le ferait dans un tableur :
@@ -152,7 +159,8 @@ commun à tous les écrans (`web/js/core/guide.js`).
 
 ### Aller et venir entre le modèle et le résultat
 
-Deux vues, un bouton à deux positions en bas de la vue 3D (et le même à côté de « Lancer la simulation ») :
+Deux vues, un bouton à deux positions en bas de la vue 3D (et le même à côté de « Lancer la simulation », en tête du
+volet de droite) :
 
 - **Modèle et conditions** — le modèle en gris, ses appuis, ses efforts, ses sources et leurs étiquettes. C'est ici que
   le cas se modifie : clic droit sur une face, valeurs à gauche.
@@ -369,6 +377,13 @@ Le code : `web/js/analysis/fea/refine.js` (ce qu'est une zone : sa forme, ses cu
 du cas), `web/js/analysis/fea/composite.js` (le modèle sans ses zones, la résolution liée, la peau composée),
 `web/js/analysis/fea/entity.js` (`zoneWalls`, `fitToWall` : les parois qu'une zone traverse), `web/js/modules/fea_zones.js`
 (l'écran) ; tests : `tests/node/fea_refine.test.mjs`, `tests/node/fea_entity.test.mjs`.
+
+### Ranger les volumes des zones
+
+Le volume d'une zone est un outil : on en a besoin pour la poser et la régler, moins pour lire le résultat. L'œil du
+groupe « Zones de raffinement » cache ou montre les contours et les étiquettes des zones dans la vue. Par défaut ils
+sont **montrés sur le modèle** et **rangés sur le résultat** ; l'œil bascule l'un ou l'autre, et chaque vue garde son
+choix. Cachés, le maillage fin reste visible, et le survol de la carte d'une zone la montre le temps du survol.
 
 ## 6. Ce qui est vérifié
 

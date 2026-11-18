@@ -66,7 +66,9 @@ function render(main, args) {
   /* ---------- refinement zones : meshed on the page to be seen, solved in the worker with the model ---------- */
   const rezone = () => { try { zonePreps = model ? prepareZones(model, geo.bodies, st.zones) : []; } catch (e) { zonePreps = st.zones.map((z) => ({ id: z.id, error: e.message })); } };
   const applyZones = () => { rezone(); changed(); };
-  const showZones = () => drawZones(vp.viewer, st.zones, litZone, (z) => nudge(left.querySelector(`[data-zone="${z.id}"]`)));
+  /* the volumes of the zones are tools : shown while the model is defined, put away on the result — and either way on demand (the eye of their group) ; the one under the pointer always shows */
+  const zonesOn = () => (st.view === "result" ? st.show.zonesResult === true : st.show.zones !== false);
+  const showZones = () => drawZones(vp.viewer, zonesOn() ? st.zones : st.zones.filter((z) => z === litZone), litZone, (z) => nudge(left.querySelector(`[data-zone="${z.id}"]`)));
   const zoneInfo = (z) => { const p = zonePreps.find((x) => x.id === z.id); return !p || !model ? null : p.prep ? { cells: p.prep.local.nCells, block: p.prep.block.count, h: model.grid.h, walls: normZone(z) ? zoneWalls(model, normZone(z)).length : 0 } : { error: p.error }; };
   /* where the guide sends the designer : a value of the load case, an item of its tree, or a zone and its cote */
   const spot = (x) => (x.id && x.id[0] === "Z" ? (x.field && left.querySelector(`[data-zone="${x.id}"] [data-field="${x.field}"]`)) || left.querySelector(`[data-zone="${x.id}"]`) : left.querySelector(x.field ? `.bc-edit [data-field="${x.field}"]` : x.id ? `[data-bc="${x.id}"]` : ".bc-tree"));
@@ -224,7 +226,7 @@ function render(main, args) {
     st.view = v === "result" && last && last.skin ? "result" : "model"; asking = null; askingPoint = null; view.style.cursor = "";
     const o = vp.viewer; o.clearOverlays("bc"); o.clearOverlays("bchover"); o.clearOverlays("bcsel");
     if (st.view === "result") { o.clear(); if (vp.sel) vp.sel.clear(); paint(); peak(); drawSymbols(); drawRight(); } else { showMesh(); refreshEstimate(); }      // the result is the mesh in colours ; the model is the part, to point at
-    drawSwitch();
+    drawSwitch(); if (st.zones.length) drawLeft();      // the eye of the zones says what this view shows
   }
   /* the worst point of the result shown, with its value : the peak stress or temperature, or the smallest safety factor */
   function peak() {
@@ -280,13 +282,13 @@ function render(main, args) {
     const scroll = el("div", { class: "side-scroll" });
     left.append(scroll);
     scroll.append(el("div", { class: "subtabs" }, el("a", { class: "subtab", href: "#/physics" }, "Modèles analytiques"), el("a", { class: "subtab active", href: "#/fea" }, "Simulation")),
-      el("div", { class: "side-section" }, field("Ce que l'on simule", sel(st.target.id, targets.map((t) => [t.id, `${t.type === "part" ? "Pièce" : "Assemblage"} — ${t.name}`]), (id) => { st.target = targets.find((t) => t.id === id); st.fixed = []; st.zones = []; st.places = {}; loadGeometry(); })),
+      el("div", { class: "side-section", "data-fold-note": `${st.target.name} · ${{ structure: "structure", thermal: "thermique", thermo: "thermo-mécanique" }[st.kind]}` }, el("h3", null, "Modèle"), field("Ce que l'on simule", sel(st.target.id, targets.map((t) => [t.id, `${t.type === "part" ? "Pièce" : "Assemblage"} — ${t.name}`]), (id) => { st.target = targets.find((t) => t.id === id); st.fixed = []; st.zones = []; st.places = {}; loadGeometry(); })),
         field("Physique", sel(st.kind, [["structure", "Structure — efforts et déformations"], ["thermal", "Thermique — régime permanent"], ["thermo", "Thermo-mécanique — dilatation et contraintes"]], (k) => { st.kind = k; changed(); })),
         field("Finesse du maillage", el("input", { type: "range", min: 500, max: 16000, step: 500, value: st.cells, onChange: (e) => { st.cells = +e.target.value; outdate(); remesh(false); } }), `Environ ${st.cells.toLocaleString("fr-CA")} cubes : grossier et rapide. Les détails plus petits qu'un cube sont ignorés.`)));
     const sec = el("div", { class: "side-section" });
     scroll.append(sec);
     if (whole) scroll.append(cutsSection({ st, kind: st.kind, syms, bbox: whole.bbox, symmetric, apply: () => { outdate(); remesh(false); } }),
-      zonesSection({ st, preps: zonePreps, h: model.grid.h, model, apply: applyZones, hover: (z) => { if (litZone !== z) { litZone = z; showZones(); } },
+      zonesSection({ st, preps: zonePreps, h: model.grid.h, model, apply: applyZones, shown: zonesOn(), result: st.view === "result", show: (on) => { st.show[st.view === "result" ? "zonesResult" : "zones"] = on; showZones(); drawLeft(); }, hover: (z) => { if (litZone !== z) { litZone = z; showZones(); } },
         aim: (set) => { if (st.view === "result") setView("model"); asking = null; askingPoint = set; view.style.cursor = "crosshair"; toast("Cliquez sur la pièce le point où centrer la zone.", "info", 4200); } }));
     const heat = st.kind === "thermal" || (st.kind === "thermo" && !st.thermo.uniform);
     if (st.sel && !bcFind(loadTree(), st.sel)) st.sel = null;
@@ -306,8 +308,9 @@ function render(main, args) {
     if (heat) sec.append(...[el("h3", { style: { marginTop: ".7rem" } }, "Convection sur l'extérieur"), el("label", { class: "check" }, el("input", { type: "checkbox", checked: st.conv.on, onChange: (e) => { st.conv.on = e.target.checked; changed(); } }), "Toutes les faces exposées"),
       st.conv.on ? el("div", { class: "bc-row" }, num(st.conv.h, (v) => { st.conv.h = v; changed(); }), el("small", null, "W/m²·K"), num(st.conv.Tamb, (v) => { st.conv.Tamb = v; changed(); }), el("small", null, "°C")) : null,
       el("p", { class: "muted small" }, "Air calme : 5 à 15 W/m²·K ; air soufflé : 25 à 100 ; plaque froide à eau : 500 et plus.")].filter(Boolean));
-    const m = geo.bodies[0].material;
-    scroll.append(el("div", { class: "side-section" }, el("h3", null, "Matériau"), el("p", { class: "small" }, geo.bodies.length > 1 ? `${geo.bodies.length} corps, chacun avec son matériau ; contacts collés, conduction parfaite.` : `${m.name} — E ${fmt(m.E / 1000, 1)} GPa, ν ${m.nu}, k ${fmt(m.k, 1)} W/m·K${m.alpha ? `, α ${fmt(m.alpha * 1e6, 1)} µm/m·K` : ""}${m.Re ? `, Re ${fmt(m.Re, 0)} MPa` : ""}.`),
+    const m = geo.bodies[0].material, nbc = loadTree().reduce((n, g) => n + g.items.length, 0);
+    sec.setAttribute("data-fold-note", nbc ? `${nbc} condition${nbc > 1 ? "s" : ""}` : "aucune condition");      // what the group holds, read beside its title while it is folded
+    scroll.append(el("div", { class: "side-section", "data-fold-note": geo.bodies.length > 1 ? `${geo.bodies.length} corps` : m.name }, el("h3", null, "Matériau"), el("p", { class: "small" }, geo.bodies.length > 1 ? `${geo.bodies.length} corps, chacun avec son matériau ; contacts collés, conduction parfaite.` : `${m.name} — E ${fmt(m.E / 1000, 1)} GPa, ν ${m.nu}, k ${fmt(m.k, 1)} W/m·K${m.alpha ? `, α ${fmt(m.alpha * 1e6, 1)} µm/m·K` : ""}${m.Re ? `, Re ${fmt(m.Re, 0)} MPa` : ""}.`),
       el("p", { class: "muted small" }, "Valeurs typiques : la fiche de la nuance fait foi.")));
   }
 
@@ -318,17 +321,20 @@ function render(main, args) {
     const body = el("div", { class: "side-scroll" });
     right.append(body);
     if (!model || !estimate) { body.append(el("p", { class: "muted" }, "Préparation…")); return; }
-    body.append(el("div", { class: "side-section" }, el("h3", null, "1. Avant de calculer — l'estimation à la main"), el("p", { class: "small" }, el("b", null, estimate.title)),
-      el("ol", { class: "calc-steps" }, estimate.steps.map((s) => el("li", null, s))), ...estimate.warnings.map((w) => el("p", { class: "atelier-hint warn" }, icon("warning"), " ", w))));
+    /* what one does stays at the top, in reach : launch, and go from the model to the result ; it does not scroll away */
     const go = btn(last ? "Relancer la simulation" : "Lancer la simulation", () => run(), { primary: true, icon: "play" }), wait = blocking(issues());
     const flip = last && last.skin ? btn(st.view === "result" ? "Revenir au modèle" : `Voir le résultat ${last.n}`, () => setView(st.view === "result" ? "model" : "result"), { icon: st.view === "result" ? "edit" : "eye", tip: st.view === "result" ? "Le modèle, ses appuis, ses efforts et leurs étiquettes : pour modifier le cas" : "Le dernier calcul, en couleurs" }) : null;
-    body.append(el("div", { class: "side-section" }, el("h3", null, "2. La simulation"), el("p", { class: "muted small" }, "Cubes identiques, hexaèdre à modes incompatibles (flexion juste même avec un élément dans l'épaisseur), gradient conjugué. Tout le code du solveur est dans ce dépôt, sous licence MIT."),
-      el("div", { class: "form-actions", style: { justifyContent: "flex-start", flexWrap: "wrap" } }, go, flip),
-      ...(wait.length ? [el("p", { class: "atelier-hint warn" }, icon("warning"), ` Avant de lancer — ${guideSummary(wait)}, dans le cas de charge à gauche.`)] : [])));
-    if (!last) return;
+    right.insertBefore(el("div", { class: "side-actions" }, el("div", { class: "side-actions-row" }, go, flip),
+      ...(wait.length ? [el("p", { class: "atelier-hint warn" }, icon("warning"), ` Avant de lancer — ${guideSummary(wait)}, dans le cas de charge à gauche.`)] : [])), body);
+    /* then what one reads : the result first once there is one, the hand estimate it is checked against, the method */
+    const hand = el("div", { class: "side-section", "data-fold-note": estimate.title }, el("h3", null, "Avant de calculer — l'estimation à la main"), el("p", { class: "small" }, el("b", null, estimate.title)),
+      el("ol", { class: "calc-steps" }, estimate.steps.map((s) => el("li", null, s))), ...estimate.warnings.map((w) => el("p", { class: "atelier-hint warn" }, icon("warning"), " ", w)));
+    const method = el("div", { class: "side-section" }, el("h3", null, "La méthode"), el("p", { class: "muted small" }, "Cubes identiques, hexaèdre à modes incompatibles (flexion juste même avec un élément dans l'épaisseur), gradient conjugué. Tout le code du solveur est dans ce dépôt, sous licence MIT."));
+    if (!last) { body.append(hand, method); return; }
     resultPanel(body, { last, st, runs, mat: geo.bodies[0].material, keep, setView,
       repaint: (only) => { if (st.view !== "result") { setView("result"); return; } paint(); peak(); if (!only) drawRight(); },
       pick: (x) => { last = x; setView("result"); } });
+    body.append(hand, method);
   }
   /** Paints the result : the stress (or the temperature) on the current scale — blue to red inside, magenta above, grey below — or the
       safety factor against the one aimed at — red below it, then orange, blue, green. */

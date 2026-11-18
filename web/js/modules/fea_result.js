@@ -26,17 +26,19 @@ export function fsLegend(target) {
     return el("div", { class: "fs-band" }, sw, el("b", null, b.to === Infinity ? `≥ ${n(b.from)}` : b.from === 0 ? `< ${n(b.to)}` : `${n(b.from)} à ${n(b.to)}`), el("small", null, b.fr)); }));
 }
 
-/** Everything under « the result » in the right panel. o : { last, st, runs, mat (first material), repaint(), setView(v), keep(), pick(run) } */
+/** Everything about « the result » in the right panel — at its top, since it is what one came for ; each part is a group that folds. o : { last, st, runs, mat (first material), repaint(), setView(v), keep(), pick(run) } */
 export function resultPanel(body, o) {
   const { last, st } = o, r = last.result, c = last.compare, thermal = last.kind === "thermal", unit = thermal ? "°C" : "MPa";
   const S = !thermal && last.fs ? safetySummary(last.fs, st.fsTarget) : null, sf = S && S.min !== null ? S.min : null;
-  if (last.stale) body.append(el("p", { class: "atelier-hint warn" }, icon("warning"), " Ce résultat est celui d'avant : le cas de charge ou le maillage a changé depuis. Relancez la simulation pour le mettre à jour."));
-  body.append(el("div", { class: "kpis" }, ...(thermal
+  const head = el("div", { class: "side-section", "data-fold-note": thermal ? `${show(r.maxT.value, 1)} °C` : `${show(r.maxVm.value, 1)} MPa` }, el("h3", null, `Résultat ${last.n}`, last.stale ? badge("d'avant", "warn") : null));
+  body.append(head);
+  if (last.stale) head.append(el("p", { class: "atelier-hint warn" }, icon("warning"), " Ce résultat est celui d'avant : le cas de charge ou le maillage a changé depuis. Relancez la simulation pour le mettre à jour."));
+  head.append(el("div", { class: "kpis" }, ...(thermal
     ? [el("div", { class: "kpi" }, el("b", null, `${show(r.maxT.value, 1)} °C`), el("span", null, "Température maximale")), el("div", { class: "kpi" }, el("b", null, `${show(r.minT.value, 1)} °C`), el("span", null, "Température minimale")), el("div", { class: "kpi" }, el("b", null, `${show(r.balance.out, 2)} W`), el("span", null, `évacués sur ${show(r.balance.in, 2)} W`))]
     : [el("div", { class: "kpi" }, el("b", null, `${show(r.maxVm.value, 1)} MPa`), el("span", null, `Contrainte de pointe${r.nominalVm ? ` · nominale ${show(r.nominalVm.value, 1)}` : ""}`)), el("div", { class: "kpi" }, el("b", null, `${show(r.maxU.value)} mm`), el("span", null, "Déplacement maximal")),
       el("div", { class: "kpi" + (S && S.min !== null ? ` fs-${S.band}` : "") }, el("b", null, sf === null ? "—" : Number.isFinite(sf) ? show(sf, 2) : "∞"), el("span", null, `Facteur de sécurité minimal · ${n(st.fsTarget)} visé`)),
       ...(last.kind === "thermo" ? [el("div", { class: "kpi" }, el("b", null, `${show(r.maxT.value, 1)} °C`), el("span", null, r.minT.value === r.maxT.value ? "Température uniforme" : `Température, de ${show(r.minT.value, 1)} °C`))] : [])])));
-  { const zones = zonesResult(r.zones, thermal); if (zones) body.append(zones); }      // what each refinement zone found, against the model alone
+  { const zones = zonesResult(r.zones, thermal); if (zones) body.append(zones); }      // a group of its own      // what each refinement zone found, against the model alone
   /* what the colours of the view mean : a stress on a scale, or the safety factor against the one aimed at */
   const sec = el("div", { class: "side-section" }, el("h3", null, "Ce que les couleurs montrent"));
   if (!thermal) sec.append(seg([["stress", "Contrainte", "Contrainte de von Mises, en MPa"], ["fs", "Facteur de sécurité", "Limite élastique du matériau sur la contrainte, en chaque point"]], st.quantity === "fs" ? "fs" : "stress", (k) => { st.quantity = k; o.repaint(); }, "Grandeur affichée"));
@@ -58,14 +60,14 @@ export function resultPanel(body, o) {
   }
   if (!thermal) sec.append(el("p", { class: "muted small" }, `Déformée amplifiée ${fmt(r.scale, 0)} fois.`));
   body.append(sec);
-  body.append(el("div", { class: "side-section" }, el("h3", null, "3. Le recoupement ", badge(VERDICT[c.verdict][0], VERDICT[c.verdict][1])),
+  body.append(el("div", { class: "side-section" }, el("h3", null, "Le recoupement ", badge(VERDICT[c.verdict][0], VERDICT[c.verdict][1])),
     c.rows.length ? table(["", "À la main", "Simulation", "Écart"], c.rows.map((x) => [x.label, x.low !== undefined ? `${show(x.low, 2)} à ${show(x.analytic, 2)} ${x.unit}` : `${x.bound ? "au plus " : ""}${show(x.analytic, 2)} ${x.unit}`, `${show(x.fea, 2)} ${x.unit}`, x.deviation === null ? "—" : x.low !== undefined && x.deviation === 0 ? "dans la fourchette" : x.bound && x.deviation === 0 ? `sous la borne${x.note ? ` (${x.note})` : ""}` : `${x.deviation > 0 ? "+" : ""}${Math.round(x.deviation * 100)} %`])) : null,
     el("p", { class: "small" }, c.text), ...(c.notes || []).map((t) => el("p", { class: "atelier-hint warn" }, icon("warning"), " ", t)),
     last.info.dropped && last.info.dropped.length ? el("p", { class: "atelier-hint" }, icon("info"), ` ${last.info.dropped.length} corps laissé(s) de côté, car le maillage grossier ne les relie à aucune pièce tenue : ${last.info.dropped.slice(0, 6).join(", ")}${last.info.dropped.length > 6 ? "…" : ""}.`) : null,
     el("p", { class: "muted small" }, `${last.info.cells.toLocaleString("fr-CA")} cubes${last.info.fine ? ` + ${last.info.fine.toLocaleString("fr-CA")} cubes fins` : ""}, ${r.dofs.toLocaleString("fr-CA")} inconnues, ${r.iterations} itérations, ${fmt(r.ms / 1000, 2)} s. La contrainte de pointe d'un maillage grossier est indicative : les concentrations locales (trous, congés, bord de l'encastrement) ne sont pas résolues${last.info.fine ? " hors des zones de raffinement" : " — une zone de raffinement les regarde de près"}.`),
     el("div", { class: "form-actions" }, btn("Ajouter au rapport", () => o.keep(), { small: true, icon: "plus" }))));
   /* the trials of this session : change the case or the mesh, run again, and see whether the answer settles */
-  if (o.runs.length > 1) body.append(el("div", { class: "side-section" }, el("h3", null, "4. Les essais de cette séance"),
+  if (o.runs.length > 1) body.append(el("div", { class: "side-section" }, el("h3", null, "Les essais de cette séance"),
     table(["", "Cubes", thermal ? "T max" : "σ de pointe", thermal ? "T min" : "Déplacement", thermal ? "" : "FS min", ""], o.runs.map((x) => { const t = x.kind === "thermal", s = !t && x.fs ? safetySummary(x.fs, st.fsTarget) : null;
       return [el("b", null, `${x.n}${x === last ? " ◂" : ""}`), x.info.cells.toLocaleString("fr-CA"), t ? `${show(x.result.maxT.value, 1)} °C` : `${show(x.result.maxVm.value, 1)} MPa`, t ? `${show(x.result.minT.value, 1)} °C` : `${show(x.result.maxU.value)} mm`, s && s.min !== null ? (Number.isFinite(s.min) ? show(s.min, 2) : "∞") : "—",
         x.skin && x !== last ? btn("Voir", () => o.pick(x), { small: true, icon: "eye", tip: `Afficher le résultat de l'essai ${x.n}` }) : ""]; })),

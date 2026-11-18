@@ -224,9 +224,23 @@ main h1 { font-family: var(--hand); display: inline; padding: 0 .2em; -webkit-bo
 .side-mark { width: 92px; height: auto; margin: .4rem auto 0; display: block; filter: var(--img-filter); transition: transform .45s var(--ease-pop); }
 .side:hover .side-mark { transform: rotate(-3deg) scale(1.05); }
 .side-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: .2rem .7rem .8rem; }
+/* what a panel does (launch, switch view) stays at its top and does not scroll away */
+.side-actions { flex: none; padding: .15rem .7rem .55rem; border-bottom: 1.4px solid var(--line); } .side-actions-row { display: flex; flex-wrap: wrap; gap: .45rem; } .side-actions > p { margin: .45rem 0 0; }
 .side-section { margin-top: .7rem; }
 .side-section > h3 { display: flex; align-items: center; gap: .4rem; font: 650 .74rem var(--label-font); text-transform: uppercase; letter-spacing: var(--label-track); color: var(--muted); margin: 0 0 .35rem; }
 .side-section > h3 .grow { flex: 1; }
+/* a group folds on a click on its title (core/fold.js) : the chevron points down while it is open, to the right once folded */
+.fold-head { cursor: pointer; user-select: none; -webkit-user-select: none; border-radius: var(--r-small); } .fold-head:hover { color: var(--ink); } .fold-head:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
+.fold-head::before { content: ""; flex: none; box-sizing: border-box; width: .44rem; height: .44rem; margin: -.2rem .22rem 0 .12rem; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); transition: transform .12s ease, margin .12s ease; }
+.folded > .fold-head::before { transform: rotate(-45deg); margin: 0 .34rem 0 0; }
+.side-section.folded > :not(.fold-head), [data-fold-key].folded > :not(.fold-head) { display: none !important; }
+.side-section.folded { margin-top: .4rem; } .side-section.folded > h3.fold-head { margin-bottom: 0; padding: .32rem .4rem; background: color-mix(in srgb, var(--graphite) 7%, transparent); }
+.fold-head > button, .fold-head > .icon-btn { order: 3; } .side-section > h3 > .icon-btn.eye { font-size: 1rem; opacity: .55; } .side-section > h3 > .icon-btn.eye.on { opacity: 1; } :not(.folded) > .fold-head > .fold-only { display: none; }
+.side-section.folded > h3.fold-head[data-note]::after { content: attr(data-note); order: 2; flex: 0 1 auto; min-width: 0; margin-left: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; letter-spacing: 0; text-transform: none; }
+.fold-alert > .fold-head, .fold-alert > .fold-head:hover { color: var(--warn-ink); } .side-section.fold-alert > h3.fold-head { background: var(--warn-soft); box-shadow: inset 3px 0 0 var(--warn); }
+.side-section.fold-alert > h3.fold-head:not([data-note])::after { content: "à voir"; order: 2; margin-left: auto; font-weight: 500; letter-spacing: 0; text-transform: none; }
+.side-head > .fold-all { flex: none; display: inline-flex; align-items: center; justify-content: center; opacity: .65; } .side-head > .fold-all:hover, .side-head > .fold-all[aria-pressed="true"] { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .fold-head::before { transition: none; } }
 .nav-item { position: relative; display: flex; align-items: center; gap: .45rem; width: 100%; padding: .32rem .55rem; margin: 1px 0; border: 0; border-radius: var(--r-hand); background: none; color: inherit; font: inherit;
   font-size: .9rem; text-align: left; text-decoration: none; cursor: pointer; background-image: linear-gradient(90deg, color-mix(in srgb, var(--acc) 38%, transparent), color-mix(in srgb, var(--acc) 38%, transparent));
   background-repeat: no-repeat; background-size: 0% 100%; transition: background-size .28s ease, transform .2s ease; }

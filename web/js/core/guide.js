@@ -5,6 +5,7 @@
    An entry : { level: "error" | "todo" | "warn" | "tip", text, id?, field?, go?: () => void, fix?: { label, run } }. */
 
 import { el, icon, btn, inUnits } from "./dom.js";
+import { unfoldAround } from "./fold.js";
 
 export const GUIDE_LEVELS = {
   error: { fr: "À corriger", icon: "warning", rank: 0, blocks: true },
@@ -40,6 +41,7 @@ export function needField(input, o = {}) {
 /** Brings an element into view and makes it blink for a moment : where the guide sends the designer. */
 export function nudge(node) {
   if (!node) return false;
+  unfoldAround(node);      // where the guide sends the designer must be seen : a folded group opens
   if (node.scrollIntoView) node.scrollIntoView({ block: "center", behavior: "smooth" });
   node.classList.remove("nudge"); void node.offsetWidth; node.classList.add("nudge"); setTimeout(() => node.classList.remove("nudge"), 2400);
   if (node.focus && /^(INPUT|SELECT|TEXTAREA|BUTTON)$/.test(node.tagName)) node.focus({ preventScroll: true });

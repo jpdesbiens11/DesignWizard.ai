@@ -214,6 +214,40 @@ Code : `web/js/core/progress.js` (ce que le voile montre : pur, testé), `web/js
 pour faire avancer le voile et un `signal` pour s'arrêter entre deux étapes ; `job.signal` arrête `pushToOnshape`.
 Sans voile encore : les sorties d'une carte (Gerber, perçage : écrites d'un trait) et la synchronisation d'équipe.
 
+## Les groupes d'un volet se replient, et le volet reste où il était
+
+Demande de JP (18 novembre 2026), dans la Simulation : les « Zones de raffinement » étaient tout en bas du volet de
+gauche, sous un long cas de charge ; et chaque valeur entrée ramenait le volet en haut.
+
+**Replier.** Un clic sur le titre d'un groupe le replie : son chevron, qui pointait vers le bas, **pointe à droite**,
+et les groupes suivants remontent. Un second clic le rouvre. Alt + clic ne garde que ce groupe ouvert ; le bouton à
+double chevron, en tête du volet, replie tout — on ouvre ensuite le seul groupe à modifier — puis déplie tout. Entrée
+ou Espace font de même au clavier. Ce qui est replié le reste d'une visite à l'autre (ce navigateur seulement,
+`localStorage["dw.fold"]`, par écran, volet et titre).
+
+- Un groupe replié garde son titre et, quand l'écran le sait, **ce qu'il contient** en quelques mots (« 2 conditions »,
+  « 1 zone », le nom du matériau) : `data-fold-note` sur la section.
+- Un groupe replié qui **attend encore une valeur** (champ qui clignote, ligne « à corriger » ou « à entrer ») le dit :
+  son titre passe en ambre. Le guide **rouvre** le groupe où il envoie (`nudge` → `unfoldAround`).
+- Un bouton du titre (« + ») fait son travail et rouvre le groupe ; une bascule (l'œil) ne le rouvre pas.
+- Aucun écran n'a rien à déclarer : un groupe est une `.side-section` dont le premier enfant est son `h3`. Un écran qui
+  dessine ses propres sous-groupes (Appuis, Efforts, Sources… du cas de charge) leur donne `data-fold-key` et la
+  classe `fold-head` à leur premier enfant.
+
+**Rester en place.** Un studio redessine tout un volet quand une valeur change. Le volet revient maintenant **où il
+était** (jamais plus loin que sa fin, s'il a raccourci), et le curseur **dans le champ** que l'on venait de valider ;
+après Tab, dans l'arrêt suivant, comme dans tout formulaire. Rien à déclarer là non plus : un volet est une `.side`, ce
+qui défile une `.side-scroll`. Un écran qui veut emmener ailleurs après un changement le fait comme avant (`nudge`).
+
+**Ce que l'on fait reste en haut.** Dans la Simulation, « Lancer la simulation » et la bascule modèle / résultat sont
+épinglés en tête du volet de droite (`.side-actions`) : ils ne défilent pas. Le résultat vient ensuite, puis
+l'estimation à la main et la méthode — chacun un groupe qui se replie.
+
+Code : `web/js/core/fold.js`, `web/js/core/panel_keep.js` (les moitiés pures sont testées : `tests/node/fold.test.mjs` ;
+le reste est vérifié dans Chromium), styles dans `web/css/app.css`. Essayé sur les 23 écrans de l'application : tout
+replier, tout déplier, aucune erreur. Pas essayé sur Firefox, Safari ni un écran tactile ; les écrans sans volet à
+groupes (Atelier, Itérations, Équipe…) ne changent pas.
+
 ## Ce que l'audit ne voit pas
 
 Il mesure des boîtes, pas le sens : un libellé obscur, un ordre d'actions illogique, une couleur mal choisie, une

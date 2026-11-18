@@ -1,10 +1,12 @@
 /* DesignWizard.ai — Simulation : the tree of the load case, in the left panel. Supports, loads, heat sources and imposed
    temperatures are listed by type, each with its number and the colour of its type ; a click on an item selects it — it
    lights up on the model and opens its values ; the eye of a type shows or hides its labels in the view. The model of the
-   tree is analysis/fea/bc_tree.js ; this module only draws it. */
+   tree is analysis/fea/bc_tree.js ; this module only draws it. Each type folds on a click on its title (core/fold.js) : what
+   is not being worked on steps aside ; the type of the selected item is always open. */
 
 import { el, btn, icon } from "../core/dom.js";
 import { needField } from "../core/guide.js";
+import { isFolded, fold } from "../core/fold.js";
 import { AXIS_DIRS, loadDir, supportKey, supportDofs } from "../analysis/fea/bc_tree.js";
 
 /** o : { st, tree, regions, dirs, select(id), hover(regionKey | null), changed(), aim(setRegion), add(groupKey), remove(groupKey, index), relabel(),
@@ -46,18 +48,20 @@ export function bcSection(o) {
     const e = el("div", { class: "bc-edit" }, rows); e.style.borderColor = it.color; return e;
   }
   for (const g of tree) {
-    const on = st.show[g.key] !== false;
-    box.append(el("div", { class: "bc-ghead" }, dot(g.color), el("b", { class: "grow", "data-tip": g.tip }, `${g.fr} (${g.items.length})`),
+    const on = st.show[g.key] !== false, key = `fea.bc:${g.key}`;
+    if (st.sel && g.items.some((it) => it.id === st.sel)) fold(key, false);      // what is selected is seen
+    const grp = el("div", { class: "bc-group" + (isFolded(key) ? " folded" : ""), role: "group", "data-fold-key": key }); box.append(grp);
+    grp.append(el("div", { class: "bc-ghead fold-head" }, dot(g.color), el("b", { class: "grow", "data-tip": g.tip }, `${g.fr} (${g.items.length})`), ...(g.items.some((it) => it.ask.length) ? [el("span", { class: "bc-ask fold-only" }, "à entrer")] : []),
       el("button", { class: "icon-btn" + (on ? " on" : ""), type: "button", "aria-pressed": on ? "true" : "false", "aria-label": `Étiquettes des ${g.fr.toLowerCase()} dans la vue`, "data-tip": on ? "Étiquettes affichées sur le modèle — cliquer pour les masquer" : "Étiquettes masquées — cliquer pour les afficher", onClick: () => { st.show[g.key] = !on; o.relabel(); } }, icon(on ? "eye" : "eye-off")),
       btn("", () => o.add(g.key), { small: true, icon: "plus", tip: `Ajouter ${g.one} — puis cliquez la face sur le modèle` })));
-    if (!g.items.length) box.append(el("p", { class: "bc-none muted small" }, g.key === "fixed" ? "Aucun appui : le produit n'est pas tenu." : "Aucun."));
+    if (!g.items.length) grp.append(el("p", { class: "bc-none muted small" }, g.key === "fixed" ? "Aucun appui : le produit n'est pas tenu." : "Aucun."));
     for (const it of g.items) {
       const sel = st.sel === it.id, row = el("div", { class: "bc-item" + (sel ? " sel" : "") + (it.ask.length ? " ask" : ""), role: "treeitem", "aria-selected": sel ? "true" : "false", tabindex: "0", "data-bc": it.id,
         onClick: () => o.select(sel ? null : it.id), onKeydown: (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); o.select(sel ? null : it.id); } }, onMouseenter: () => { if (it.region) o.hover(it.region, it.color); }, onMouseleave: () => o.hover(null) },
         dot(it.color), el("b", null, it.id), el("span", { class: "bc-text" }, el("span", null, it.text), el("small", null, it.where)), ...(it.ask.length ? [el("span", { class: "bc-ask", "data-tip": "Une valeur d'exemple attend la vôtre" }, "à entrer")] : []),
         el("button", { class: "icon-btn", type: "button", "aria-label": `Retirer ${it.id}`, "data-tip": it.locked ? "Frontière bloquée par la symétrie : elle part avec elle" : "Retirer", onClick: (e) => { e.stopPropagation(); if (it.locked) o.unsym(it); else o.remove(g.key, it.index); } }, it.locked ? icon("lock") : "×"));
       if (sel) row.style.borderColor = it.color;
-      box.append(row); if (sel) box.append(editor(g, it));
+      grp.append(row); if (sel) grp.append(editor(g, it));
     }
   }
   return box;

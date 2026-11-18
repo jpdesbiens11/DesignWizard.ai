@@ -16,8 +16,10 @@ import { firstStepHere } from "./first_steps.js";
 import { docIdentity } from "./brand.js";
 import { unitPicker } from "./units_ui.js";
 import { installStepper } from "./stepper.js";
+import { installFolds } from "./fold.js";
+import { installPanelKeep } from "./panel_keep.js";
 
-export const APP_VERSION = "0.83.0";
+export const APP_VERSION = "0.84.0";
 /** What every document of the open project carries beside its content : approval names, organisation, confidentiality note, extraction stamp (core/brand.js). */
 export const docMeta = (when = new Date()) => docIdentity(store.project, when, APP_VERSION);
 const modules = new Map();
@@ -192,6 +194,8 @@ export async function start() {
   installTips();
   document.body.append(topbar(), el("main", { id: "main" }));
   installStepper();      // the arrows of every number field : 1 at a time, faster when held or clicked quickly
+  installFolds();        // the groups of every side panel fold on a click on their title
+  installPanelKeep();    // a panel drawn anew keeps its place, and the cursor its field
   store.on("error", (e) => toast(e.message, "error", 8000));
   await store.init();
   const last = store.lastId();

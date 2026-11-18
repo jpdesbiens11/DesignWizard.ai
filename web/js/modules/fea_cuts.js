@@ -38,7 +38,7 @@ export function cutsSection(o) {
       c.bc === "temp" ? el("input", { type: "number", "aria-label": "Température du plan (°C)", value: c.T ?? 25, step: "any", style: { flex: "0 0 3.6rem" }, onChange: (e) => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) set(i, { T: v }); } }) : null))));
   rows.push(el("p", { class: "muted small" }, st.cuts.length ? "Symétrie : rien ne traverse le plan — ni déplacement, ni chaleur ; le plan est une frontière bloquée, listée avec les appuis (S1), et un seul plan peut l'être pour l'instant. Les efforts et les puissances que le plan partage sont comptés pour leur part ; la face de coupe n'échange rien avec l'air."
     : "Un produit identique des deux côtés d'un plan, tenu et chargé de même, se résout sur un seul côté. Clic droit sur la pièce : « Couper ici »."));
-  sec.append(...rows);
+  sec.append(...rows); sec.setAttribute("data-fold-note", st.cuts.length ? `${st.cuts.length} plan${st.cuts.length > 1 ? "s" : ""}` : "aucune");
   return sec;
 }
 /** What a right click offers for cuts : a plane through the point shown, square to one of the two axes the face does not look along. */

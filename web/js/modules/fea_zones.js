@@ -30,10 +30,12 @@ export function newZone(zones, shape, axis, at, model) {
 
 /** The section of the side panel. o : { st (st.zones), preps (the zones as the mesh took them : [{ id, prep } | { id, error }]), h (cube of
     the model), model (the mesh : the walls a zone crosses are read on it), apply() (a zone changed : mesh it again), aim(set) (the next click
-    on the part gives set(point, normal)), hover(zone | null) } */
+    on the part gives set(point, normal)), hover(zone | null), shown (the volumes are drawn in the view), result (the view is the result), show(on) } */
 export function zonesSection(o) {
   const { st } = o, sec = el("div", { class: "side-section" }), along = (n) => { const a = (n || [0, 0, 1]).map(Math.abs); return a.indexOf(Math.max(...a)); };
-  const rows = [el("h3", null, el("span", { class: "grow" }, "Zones de raffinement"), btn("", () => o.aim((p, n) => { st.zones.push(newZone(st.zones, "cylinder", along(n), p, o.model)); o.apply(); }),
+  const eye = st.zones.length && o.show ? el("button", { class: "icon-btn eye" + (o.shown ? " on" : ""), type: "button", "aria-pressed": o.shown ? "true" : "false", "aria-label": "Volumes de raffinement dans la vue",
+    "data-tip": o.shown ? `Volumes affichés${o.result ? " sur le résultat" : ""} — cliquer pour les cacher (le maillage fin reste)` : `Volumes cachés${o.result ? " sur le résultat" : ""} — cliquer pour les montrer. Le survol d'une zone la montre.`, onClick: () => o.show(!o.shown) }, icon(o.shown ? "eye" : "eye-off")) : null;
+  const rows = [el("h3", null, el("span", { class: "grow" }, "Zones de raffinement"), eye, btn("", () => o.aim((p, n) => { st.zones.push(newZone(st.zones, "cylinder", along(n), p, o.model)); o.apply(); }),
     { small: true, icon: "plus", tip: "Ajouter une zone — puis cliquez sur la pièce le point où la centrer. Une zone : un volume où les cubes du maillage sont plus petits" }))];
   st.zones.forEach((z, i) => {
     const got = o.preps.find((p) => p.id === z.id), ok = got && got.prep, set = (patch) => { Object.assign(z, patch); o.apply(); };
@@ -62,7 +64,7 @@ export function zonesSection(o) {
   });
   rows.push(el("p", { class: "muted small" }, st.zones.length ? "La zone se voit sur le modèle : son contour, et en petits cubes ce qu'elle partage avec la pièce. Elle est résolue avec le reste, comme un seul maillage ; un détail plus petit qu'un cube du modèle (petit trou, congé) y réapparaît."
     : "Un cylindre ou un prisme placé dans le modèle : là où il coupe la pièce, les cubes sont 2 à 4 fois plus petits. Pour regarder de près un trou, un congé, le bord d'un appui — sans affiner tout le maillage. Le « + », ou un clic droit sur la pièce : « Raffiner le maillage ici »."));
-  sec.append(...rows);
+  sec.append(...rows); sec.setAttribute("data-fold-note", st.zones.length ? `${st.zones.length} zone${st.zones.length > 1 ? "s" : ""}` : "aucune");
   return sec;
 }
 
