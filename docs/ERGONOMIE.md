@@ -277,7 +277,7 @@ Firefox, Safari ni un écran tactile.
 
 ## Tourner une vue : le pivot se voit, et la vue peut tourner seule
 
-Demande de JP (19 novembre 2026) : en tournant une vue 3D, on ne savait ni autour de quoi elle tournait, ni comment
+Demande de JP (18 novembre 2026) : en tournant une vue 3D, on ne savait ni autour de quoi elle tournait, ni comment
 elle allait tourner. La vue tournait autour de son centre, que rien ne montrait.
 
 - **Le pivot est le point saisi.** La vue tourne autour du point du modèle sous le pointeur au moment de l'appui (le
@@ -287,7 +287,7 @@ elle allait tourner. La vue tournait autour de son centre, que rien ne montrait.
   axes de l'écran **et continue par-dessus** : elle passe la verticale et se poursuit, à l'envers, sans s'arrêter. Le
   haut de l'écran est gardé d'un geste au suivant (c'est ce qui manquait : en vue de dessus, la direction du regard ne
   suffit pas à dire où est le haut). « Iso », « Face », « Dessus »… remettent la vue droite.
-- **Tourner dans le plan de l'écran est un geste à part entière, et il se voit** (demande de JP, 19 novembre 2026 :
+- **Tourner dans le plan de l'écran est un geste à part entière, et il se voit** (demande de JP, 18 novembre 2026 :
   « je veux la possibilité de tourner dans le plan… ça me gosse »). Ce geste existait, caché derrière Alt + glisser :
   personne ne le trouvait. Maintenant, **un glisser qui part du bord de la vue** tourne l'image autour du centre de la
   vue, comme la main tourne autour de lui — la bande du bord s'allume sous le pointeur, avec son pointeur à elle et un
@@ -342,7 +342,7 @@ Pas essayé au toucher (l'appui tenu et le bord y sont laissés au système), ni
 
 ## Tourner une pièce posée : une poignée dans la vue
 
-Demande de JP (19 novembre 2026), en même temps que la rotation de la vue : « tourner une pièce elle-même… avec une
+Demande de JP (18 novembre 2026), en même temps que la rotation de la vue : « tourner une pièce elle-même… avec une
 poignée dans la vue, au lieu de taper un angle ». Jusque-là une pièce d'assemblage n'avait pas d'angle du tout à
 régler, sauf le bouton « 90° » d'un accouplement.
 
@@ -372,7 +372,7 @@ dira, l'outil ne l'empêche pas) ; Firefox et Safari.
 
 ## Sur quoi l'interface s'appuie
 
-Question de JP (19 novembre 2026) : crée-t-on une interface nouvelle, ou s'appuie-t-on sur ce qui existe ?
+Question de JP (18 novembre 2026) : crée-t-on une interface nouvelle, ou s'appuie-t-on sur ce qui existe ?
 
 - L'application est **écrite à la main** : c'est la règle du projet (modules ES, aucun outil de construction, aucune
   dépendance npm, aucune ressource externe). Il n'y a ni bibliothèque de composants ni système de design extérieur.
@@ -387,7 +387,7 @@ Question de JP (19 novembre 2026) : crée-t-on une interface nouvelle, ou s'appu
 - Deux plugins officiels d'Anthropic existent pour cela et ne sont pas liés aux séances : « frontend-design » (mise en
   œuvre d'interfaces) et « Design » (critique de design, revue d'accessibilité, textes d'interface). Une fois ajoutés
   par JP, une passe de critique précède chaque livraison d'écran.
-- **Ce que le projet prête aux autres** (demande de JP, 19 novembre 2026) : le dossier `skills/ergonomie-ui/` réunit
+- **Ce que le projet prête aux autres** (demande de JP, 18 novembre 2026) : le dossier `skills/ergonomie-ui/` réunit
   ces règles en un skill qu'un autre agent Claude charge de lui-même, et `skills/ergonomie-ui.md` donne le même
   contenu en un seul fichier à joindre à une conversation. Quatre parties : le contrat de travail avec l'agent,
   l'interface honnête, les mécanismes dont tout écran hérite, l'aller-retour IA (recommandé, jamais supposé). Chaque

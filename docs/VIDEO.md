@@ -12,6 +12,9 @@ de nouveau. Deux versions, **française et anglaise**, aux couleurs et sur le pa
 | Narration à enregistrer | `docs/film/narration_fr.md`, `docs/film/narration_en.md` |
 | Storyline — l'image et la voix, deux langues côte à côte | `docs/film/storyline.md` |
 
+Une **bande-annonce de 30 s** est coupée de ce film — sept plans, sept répliques — pour le kit de lancement :
+[LANCEMENT.md](LANCEMENT.md).
+
 Les deux phrases du film : **« La conception, sans les détours. »** / *« Design, without the detours. »* à l'ouverture,
 **« Moins de clics. Plus de conception. »** / *« Fewer clicks. More engineering. »* à la fin.
 
