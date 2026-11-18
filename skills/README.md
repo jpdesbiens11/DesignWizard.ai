@@ -8,12 +8,13 @@ Les règles trouvées en construisant cette application, écrites pour qu'un aut
 travail humain–agent, l'interface honnête, les mécanismes dont tout écran hérite, l'aller-retour IA. Chaque règle dit
 si c'est un usage établi ou un choix maison, et pourquoi elle existe.
 
-Le même contenu, sous deux formes :
+Le même contenu, sous deux formes et en deux langues — le français est l'original, l'anglais (`ui-ergonomics`) le suit
+partie par partie :
 
-| Forme | Fichier | Pour qui |
-|---|---|---|
-| Fichier unique | [`ergonomie-ui.md`](ergonomie-ui.md) | À joindre à n'importe quelle conversation avec Claude : « applique ces règles à mon projet ». Rien à installer. |
-| Skill | [`ergonomie-ui/`](ergonomie-ui/) | L'agent le charge de lui-même quand la tâche s'y prête. Un `SKILL.md` court et quatre annexes lues au besoin. |
+| Forme | Français | English | Pour qui |
+|---|---|---|---|
+| Fichier unique | [`ergonomie-ui.md`](ergonomie-ui.md) | [`ui-ergonomics.md`](ui-ergonomics.md) | À joindre à n'importe quelle conversation avec Claude : « applique ces règles à mon projet ». Rien à installer. |
+| Skill | [`ergonomie-ui/`](ergonomie-ui/) | [`ui-ergonomics/`](ui-ergonomics/) | L'agent le charge de lui-même quand la tâche s'y prête. Un `SKILL.md` court et quatre annexes lues au besoin. |
 
 ### S'en servir
 
@@ -29,8 +30,13 @@ version.
 
 ### Le modifier
 
-La source est le dossier `ergonomie-ui/`. Le fichier unique est généré : `node tools/gen_skill_file.mjs` (un test
-vérifie qu'il est à jour). Le dossier `evals/` contient deux demandes d'essai, pour vérifier qu'un agent qui reçoit
-le skill sait quoi en faire.
+La source est le dossier `ergonomie-ui/`. Les fichiers uniques sont générés : `node tools/gen_skill_file.mjs` (un
+test vérifie qu'ils sont à jour). Le dossier `evals/` contient deux demandes d'essai, pour vérifier qu'un agent qui
+reçoit le skill sait quoi en faire.
+
+**Une règle changée en français se change aussi en anglais.** `tests/node/skill_en.test.mjs` compare le squelette des
+deux versions — titres, points, tableaux, fichier par fichier — et échoue tant que l'une a une règle que l'autre n'a
+pas. La version anglaise n'a pas ses propres demandes d'essai : elle n'a pas été éprouvée avec un agent, seulement
+relue et comparée à l'original.
 
 Licence MIT, comme le reste du dépôt.

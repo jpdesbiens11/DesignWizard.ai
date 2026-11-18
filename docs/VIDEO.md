@@ -147,6 +147,18 @@ portent les deux films, et chaque nouveau rendu s'ajoute à l'historique.
 **Le serveur local** sert maintenant un fichier par morceaux (`Range`), sans quoi un lecteur ne peut pas avancer dans le
 film ; la vitrine n'a toujours aucun script (sa règle `media-src 'self'` autorise ses deux lecteurs, rien d'autre).
 
+## Le film et la v0.91
+
+Le film publié est celui de la v0.81 : ses images sont les écrans de cette version, et il ne parle ni des variantes,
+ni des sous-assemblages, ni des cas de charge à comparer — la présentation guidée, elle, a été mise à jour (v0.91.1).
+Il n'a **pas été rendu de nouveau**, pour trois raisons : ce qu'il dit reste vrai ; montrer les nouveautés demande une
+narration nouvelle, donc une nouvelle voix de synthèse (le compte et le forfait de JP) ; et chaque rendu ajoute environ
+22 Mo à l'historique du dépôt. C'est une décision de JP.
+
+À savoir avant un prochain rendu : les captures de `web/img/tour` ont été refaites sur la v0.91, et celle de la pièce
+(`piece.jpg`) montre maintenant le panneau de rotation automatique. La scène « Pièce » du film cadre cette image : son
+cadrage (`tools/film/script.mjs`) est à revoir, comme celui des scènes dont les volets ont changé d'aspect.
+
 ## Ce qui est vérifié, ce qui ne l'est pas
 
 - Vérifié par les essais (`tests/node/film.test.mjs`, `tests/py`) : la ligne de temps (scènes bout à bout, deux langues

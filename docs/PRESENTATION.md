@@ -56,7 +56,7 @@ sur la v0.75** ; huit sont restées identiques à l'octet près, les écrans n'a
 
 ## Depuis la v0.91
 
-Deux pages de plus, et toutes les captures refaites sur la v0.91 (vingt images ; la barre du haut et les volets ont
+Deux pages de plus, et toutes les captures refaites sur la v0.91 (dix-neuf images ; la barre du haut et les volets ont
 changé d'aspect depuis la v0.75) :
 
 - station Assemblage — « Par modules, et en plusieurs versions » : un sous-assemblage porté d'un seul bloc, les pièces à
