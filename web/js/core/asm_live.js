@@ -43,3 +43,32 @@ export function instanceMenu(asm, id, name = "") {
     { act: "off", label: "Mettre à Off (de côté, sans la retirer)", icon: "power" }, { act: i.fixed ? "free" : "fix", label: i.fixed ? "Libérer" : "Fixer (elle porte les autres)", icon: "lock" }, "—",
     { act: "remove", label: "Retirer de l'assemblage", icon: "trash", keys: "Suppr" }];
 }
+
+/* ---------- named variants : which parts are on, kept under a name and brought back in one step (demande de JP) ----------
+   A variant of an assembly remembers the parts put aside, by the id of their instance. It does not copy the assembly : a part
+   added later belongs to every variant, as it is. In the file : variants: [{ name, off: [instance ids] }] on the assembly. */
+const offIds = (asm, v) => { const there = new Set(((asm && asm.instances) || []).map((i) => i.id)); return new Set(((v && v.off) || []).filter((id) => there.has(id))); };
+/** What the assembly is now, as a variant would remember it : { off: [ids of the instances put aside] }. */
+export const asmVariantOf = (asm) => ({ off: ((asm && asm.instances) || []).filter(instOff).map((i) => i.id) });
+/** Is the assembly, now, the variant given ? A part that is gone from the assembly does not make another variant. */
+export function isAsmVariant(asm, v) { const now = new Set(asmVariantOf(asm).off), want = offIds(asm, v); return now.size === want.size && [...now].every((id) => want.has(id)); }
+/** The name of the variant the assembly is in now, or null. */
+export const asmVariantNow = (asm) => { const v = ((asm && asm.variants) || []).find((x) => isAsmVariant(asm, x)); return v ? v.name : null; };
+/** The assembly brought to a variant : each part on or off as the variant says — the assembly given is changed (inside
+    store.updateAssembly). → how many parts changed */
+export function applyAsmVariant(asm, v) { const want = offIds(asm, v); let n = 0; for (const i of asm.instances || []) { if (instOff(i) !== want.has(i.id)) { n++; if (want.has(i.id)) i.off = true; else delete i.off; } } return n; }
+/** The assembly as a variant has it, without changing it : a copy to draw or to count (the same object when it is that variant already). */
+export function asVariant(asm, v) { if (!v || isAsmVariant(asm, v)) return asm; const want = offIds(asm, v); return { ...asm, instances: asm.instances.map((i) => { const c = { ...i }; if (want.has(i.id)) c.off = true; else delete c.off; return c; }) }; }
+/** The variants of the assembly with its present state kept under `name` (a name already there is replaced, at its place). → a new list */
+export function keepAsmVariant(asm, name) {
+  const n = String(name || "").replace(/\s+/g, " ").trim(), list = ((asm && asm.variants) || []).slice(); if (!n) return list;
+  const v = { name: n, ...asmVariantOf(asm) }, at = list.findIndex((x) => x.name === n);
+  if (at >= 0) list[at] = v; else list.push(v);
+  return list;
+}
+export const dropAsmVariant = (asm, name) => ((asm && asm.variants) || []).filter((x) => x.name !== name);
+/** What a variant changes from the assembly as it is now : « Couvercle à Off », « Isolant à On »… names : instance id → what to call it. */
+export function asmVariantDiff(asm, v, names = {}) {
+  const want = offIds(asm, v);
+  return ((asm && asm.instances) || []).filter((i) => instOff(i) !== want.has(i.id)).map((i) => `${names[i.id] || i.part || i.id} à ${want.has(i.id) ? "Off" : "On"}`);
+}

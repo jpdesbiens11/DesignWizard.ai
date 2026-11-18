@@ -23,6 +23,7 @@ import { mateTree, mateFind, mateLabels } from "../core/asm_tree.js";
 import { liveAsm, offOf, setInstOff, instanceMenu, showAlone, showEvery } from "../core/asm_live.js";
 import { popupMenu } from "../core/view_select.js";
 import { mateSection } from "./asm_tree.js";
+import { asmVariantsSection } from "./part_variants.js";
 import { mateDefinition } from "../core/mate_view.js";
 import { showMate, clearMate, mateDetail } from "./asm_mate.js";
 import { nudge } from "../core/guide.js";
@@ -161,7 +162,7 @@ function render(main, args) {
         iconBtn(inst.hidden ? "eye-off" : "eye", inst.hidden ? "Afficher" : "Masquer", () => store.updateAssembly(id, (x) => { const i = x.instances.find((q) => q.id === inst.id); if (i.hidden) delete i.hidden; else i.hidden = true; }, `${inst.part} ${inst.hidden ? "affichée" : "masquée"}`))));
     }
     if (!a.instances.length) sec.append(el("p", { class: "muted" }, "Ajoutez une première pièce : elle sera la pièce fixe."));
-    scroll.append(sec);
+    scroll.append(sec, asmVariantsSection({ asm: a, id, names: Object.fromEntries(a.instances.map((i) => { const s = store.part(i.part); return [i.id, s ? s.name || s.id : i.part]; })) }));      // the parts on and off, kept under a name
     if (st.ctx) scroll.append(el("div", { class: "side-section" }, el("h3", null, `Accouplements (${(liveAsm(a).mates || []).length}${offOf(a).mates.length ? ` + ${offOf(a).mates.length} en attente` : ""})`),
       mateSection({ tree: mateTree(liveAsm(a), (health() || { rows: [] }).rows, (i) => instName(a, i)), sel: st.mate, show: st.showMates, select: selectMate,
         hover: (it) => { if (!st.mate) vp.viewer.highlight(it ? [...vp.viewer.objects.keys()].filter((k) => k.startsWith(it.a.inst + "/") || k.startsWith(it.b.inst + "/")) : []); },

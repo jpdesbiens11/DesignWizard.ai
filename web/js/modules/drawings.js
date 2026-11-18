@@ -25,6 +25,8 @@ import { whereUsed, reviewItems } from "../core/review.js";
 import { confidentialNote } from "../core/brand.js";
 import { dimTree, dimClasses } from "../core/trees.js";
 import { stateTree } from "./state_tree.js";
+import { applyVariant, variantNow } from "../core/variants.js";
+import { asVariant, asmVariantNow } from "../core/asm_live.js";
 
 const [PW, PH] = PAPER.TABLOID;
 /** The title-block fields of the project, and the revisions the review ledger remembers for an artefact. */
@@ -37,25 +39,30 @@ function sheetOpts(key, rev, extra) {
 const render2 = (compose, data, title) => { const svg = new SvgSheet({ width: PW, height: PH, title }), info = compose(svg, data);
   return { svg: svg.toString(0), svgs: svg.toStrings(), info, pdfBytes: () => { const pdf = new PdfSheet({ width: PW, height: PH, title }); compose(pdf, data); return pdf.toBytes(); } }; };
 
-/** Build the drawing of a part. Returns {svg, pdfBytes(), info, built, spec}. Shared with Rapport and Onshape. */
+/** A named variant of a part or of an assembly, or null (no name, a name that is gone, or the variant the document is in). */
+const variantOf = (doc, name) => (name && (doc.variants || []).find((v) => v.name === name)) || null;
+/** Build the drawing of a part. Returns {svg, pdfBytes(), info, built, spec}. Shared with Rapport and Onshape.
+    extra.variant : the name of a variant of the part — it is drawn as that variant, and the part is not changed. */
 export async function makeDrawing(partId, extra = {}) {
-  const spec = store.part(partId);
-  if (!spec) throw new Error(`Pièce « ${partId} » introuvable.`);
-  const built = await kernel.build(spec);
+  const own = store.part(partId);
+  if (!own) throw new Error(`Pièce « ${partId} » introuvable.`);
+  const v = variantOf(own, extra.variant), spec = v ? { ...own, ...applyVariant(own, v) } : own;
+  const key = v ? "drawing:variant" : partId, built = await kernel.build(spec, undefined, key);      // a variant is built beside the part : the part the other screens show stays in the kernel as it is
   if (!built.bodies.length) throw new Error(`${partId} n'a pas de volume à dessiner.`);
-  const views = await kernel.hlr(partId, viewRequest(sectionOf(spec, built)), true);
-  return { ...render2(composeDrawing, { spec, built, views, project: store.project, opts: sheetOpts(`part:${partId}`, spec.revision, extra) }, `${spec.id} ${sayWith((store.project.drawing || {}).words)(spec.name) || ""}`), built, spec };
+  const views = await kernel.hlr(key, viewRequest(sectionOf(spec, built)), true);
+  return { ...render2(composeDrawing, { spec, built, views, project: store.project, opts: sheetOpts(`part:${partId}`, spec.revision, { ...extra, variant: v ? v.name : null }) }, `${spec.id} ${sayWith((store.project.drawing || {}).words)(spec.name) || ""}`), built, spec };
 }
 /** Build the drawing of an assembly : placed parts projected together, item balloons, parts list. Returns {svg, pdfBytes(), info, spec}. */
 export async function makeAssemblyDrawing(asmId, extra = {}) {
-  const asm = store.assembly(asmId);
-  if (!asm) throw new Error(`Assemblage « ${asmId} » introuvable.`);
+  const own = store.assembly(asmId);
+  if (!own) throw new Error(`Assemblage « ${asmId} » introuvable.`);
+  const v = variantOf(own, extra.variant), asm = asVariant(own, v);      // a variant : its parts on and off, the assembly itself is not changed
   const ctx = await buildAssembly(asm), shown = ctx.asm.instances.filter((i) => !i.hidden);
   if (!shown.length) throw new Error(`${asmId} n'a aucune pièce à dessiner.`);
   const views = await kernel.hlrAsm(shown.map((i) => ({ key: i.part, matrix: ctx.sol.placements[i.id] })), viewRequest(), false), centers = {};
   for (const i of shown) if (!centers[i.part]) { const b = ctx.built[i.part].bbox; centers[i.part] = matPoint(ctx.sol.placements[i.id], [(b[0] + b[3]) / 2, (b[1] + b[4]) / 2, (b[2] + b[5]) / 2]); }
   const rows = ctx.bom.map((r) => ({ ...r, rev: r.kind === "part" ? (store.part(r.id) || {}).revision || "A" : "" }));
-  return { ...render2(composeAssemblyDrawing, { asm, project: store.project, views, bbox: ctx.bbox, rows, centers, mass: ctx.mass.mass, opts: sheetOpts(`assembly:${asmId}`, asm.revision, extra) }, `${asm.id} ${sayWith((store.project.drawing || {}).words)(asm.name) || ""}`), spec: asm };
+  return { ...render2(composeAssemblyDrawing, { asm, project: store.project, views, bbox: ctx.bbox, rows, centers, mass: ctx.mass.mass, opts: sheetOpts(`assembly:${asmId}`, asm.revision, { ...extra, variant: v ? v.name : null }) }, `${asm.id} ${sayWith((store.project.drawing || {}).words)(asm.name) || ""}`), spec: asm };
 }
 export function svgNode(markup) {
   const doc = new DOMParser().parseFromString(markup, "image/svg+xml"), node = document.importNode(doc.documentElement, true);
@@ -66,6 +73,8 @@ export function svgNode(markup) {
 function render(main, args) {
   const parts = store.parts.filter((p) => !p.step), asms = store.assemblies, isAsm = args[0] === "asm";
   const id = isAsm ? (store.assembly(args[1]) ? args[1] : null) : args[0] && store.part(args[0]) ? args[0] : (parts[0] && parts[0].id) || null;
+  /* the variant drawn : a name of the route (#/drawings/<part>/<variant>, #/drawings/asm/<assembly>/<variant>) — else the document as it is */
+  const own0 = id ? (isAsm ? store.assembly(id) : store.part(id)) : null, asked = isAsm ? args[2] : args[1], variant = own0 && asked && (own0.variants || []).some((v) => v.name === asked) ? asked : null;
   const left = el("aside", { class: "side" }), right = el("aside", { class: "side right" }), center = el("div", { style: { overflow: "auto", padding: "1rem" } });
   const root = el("div", { class: "studio" }, left, center, right);
   root.style.setProperty("--left-w", "340px");
@@ -76,7 +85,11 @@ function render(main, args) {
   const pick = el("select", { "aria-label": "Dessin affiché", onChange: (e) => go(`#/drawings/${e.target.value}`) },
     el("optgroup", { label: `Pièces (${parts.length})` }, parts.map((p) => el("option", { value: encodeURIComponent(p.id), selected: !isAsm && p.id === id }, `${p.id} — ${p.name || ""}`))),
     asms.length ? el("optgroup", { label: `Assemblages (${asms.length})` }, asms.map((a) => el("option", { value: `asm/${encodeURIComponent(a.id)}`, selected: isAsm && a.id === id }, `${a.id} — ${a.name || ""}`))) : null);
-  scroll.append(el("div", { class: "side-section" }, field("Dessin de", pick)), dimBox);
+  const cousins = (own0 && own0.variants) || [], base = id ? `#/drawings/${isAsm ? "asm/" : ""}${encodeURIComponent(id)}` : "#/drawings", nowName = own0 ? (isAsm ? asmVariantNow(own0) : variantNow(own0)) : null;
+  const pickVariant = cousins.length ? field("Variante dessinée", el("select", { "aria-label": "Variante dessinée", onChange: (e) => go(e.target.value ? `${base}/${encodeURIComponent(e.target.value)}` : base) },
+    el("option", { value: "", selected: !variant }, `${isAsm ? "L'assemblage tel qu'il est" : "La pièce telle qu'elle est"}${nowName ? ` (${nowName})` : ""}`), cousins.map((v) => el("option", { value: v.name, selected: v.name === variant }, v.name))),
+    variant ? `La feuille montre la variante « ${variant} » ; ${isAsm ? "l'assemblage" : "la pièce"} n'est pas changé${isAsm ? "" : "e"}.` : "Chaque variante a son dessin, sans changer le document.") : null;
+  scroll.append(el("div", { class: "side-section" }, field("Dessin de", pick), pickVariant), dimBox);
   if (!id) { center.append(el("div", { class: "empty" }, el("h2", null, "Rien à dessiner"), el("p", null, "Créez une pièce : son dessin se génère tout seul."), el("a", { class: "btn btn-primary", href: "#/shop" }, "Démarrer par les interfaces"))); right.remove(); root.classList.add("no-right"); return null; }
   const st = { doc: null, token: 0, dim: null }, artefact = () => (isAsm ? store.assembly(id) : store.part(id));
   const d = () => store.project.drawing || {};
@@ -88,7 +101,7 @@ function render(main, args) {
     const stop = () => { st.token++; kernel.cancel(); setStatus("Dessin annulé", ""); veil.set("Dessin annulé : la feuille n'est pas tracée.", { stopped: true, retry: build }); };
     if (!st.doc) { clear(center); center.append(veil.node); veil.set("Projection des vues et mise en page…", { cancel: stop }); }
     try {
-      const doc = isAsm ? await makeAssemblyDrawing(id) : await makeDrawing(id);
+      const doc = isAsm ? await makeAssemblyDrawing(id, { variant }) : await makeDrawing(id, { variant });
       if (token !== st.token) return;
       st.doc = doc; veil.set("");
       clear(center); (doc.svgs || [doc.svg]).forEach((markup, i, all) => { if (all.length > 1) center.append(el("p", { class: "sheet-no" }, `Feuille ${i + 1} / ${all.length}`)); center.append(svgNode(markup)); });
@@ -111,7 +124,7 @@ function render(main, args) {
     dimBox.append(el("div", { class: "side-section" }, el("h3", null, `Cotes (${dims.length})`), el("p", { class: "muted", style: { fontSize: ".78rem", margin: "0 0 .4rem" } }, `Le numéro est celui de la bulle sur le dessin. ${c.sc} SC · ${c.csc} CSC · ${c.ref} référence(s). Cliquez une cote pour changer sa classe.`),
       stateTree({ label: "Cotes du dessin, par nature", tree, sel: st.dim, attr: "data-dim-row", select: (k) => { st.dim = k; renderDims(); }, editor })));
   }
-  function pdf() { if (!st.doc) return; download(`${id}_rev${st.doc.spec.revision || "A"}.pdf`, st.doc.pdfBytes(), "application/pdf"); toast("PDF vectoriel téléchargé (tabloïd, 11 × 17 po).", "success"); }
+  function pdf() { if (!st.doc) return; download(`${id}${variant ? `_${variant.replace(/[^\p{L}\p{N}_-]+/gu, "-")}` : ""}_rev${st.doc.spec.revision || "A"}.pdf`, st.doc.pdfBytes(), "application/pdf"); toast("PDF vectoriel téléchargé (tabloïd, 11 × 17 po).", "success"); }
   function renderRight() {
     clear(right);
     const spec = artefact(), sem = isAsm ? { datums: [], gdt: [] } : st.doc ? { datums: st.doc.info.datums, gdt: st.doc.info.gdt } : drawingSemantics(spec, { interfaces: [], bbox: [0, 0, 0, 0, 0, 0] });

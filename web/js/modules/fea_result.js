@@ -44,8 +44,8 @@ export function resultPanel(body, o) {
   const sec = el("div", { class: "side-section" }, el("h3", null, "Ce que les couleurs montrent"));
   if (!thermal) sec.append(seg([["stress", "Contrainte", "Contrainte de von Mises, en MPa"], ["fs", "Facteur de sécurité", "Limite élastique du matériau sur la contrainte, en chaque point"]], st.quantity === "fs" ? "fs" : "stress", (k) => { st.quantity = k; o.repaint(); }, "Grandeur affichée"));
   if (!thermal && st.quantity === "fs") {
-    const input = el("input", { type: "number", min: 1, max: 20, step: 0.05, value: st.fsTarget, "aria-label": "Facteur de sécurité visé", onChange: (e) => { const v = parseFloat(e.target.value); if (v >= 1 && v <= 20) { st.fsTarget = v; o.repaint(); } } });
-    sec.append(el("div", { class: "bc-row" }, el("small", null, "Facteur visé"), input, ...FS_TARGETS.map((t) => el("button", { class: "chip-btn" + (t === st.fsTarget ? " on" : ""), type: "button", "aria-pressed": t === st.fsTarget ? "true" : "false", onClick: () => { st.fsTarget = t; o.repaint(); } }, n(t)))),
+    const input = el("input", { type: "number", min: 1, max: 20, step: 0.05, value: st.fsTarget, "aria-label": "Facteur de sécurité visé", onChange: (e) => { const v = parseFloat(e.target.value); if (v >= 1 && v <= 20) { st.fsTarget = v; o.saveCase(); o.repaint(); } } });
+    sec.append(el("div", { class: "bc-row" }, el("small", null, "Facteur visé"), input, ...FS_TARGETS.map((t) => el("button", { class: "chip-btn" + (t === st.fsTarget ? " on" : ""), type: "button", "aria-pressed": t === st.fsTarget ? "true" : "false", onClick: () => { st.fsTarget = t; o.saveCase(); o.repaint(); } }, n(t)))),
       fsLegend(st.fsTarget), el("p", { class: "small" }, S ? safetyText(S) : ""),
       el("p", { class: "muted small" }, `Limite élastique : ${o.mat.Re ? `${fmt(o.mat.Re, 0)} MPa pour ${o.mat.name}` : "inconnue pour ce matériau"} — valeur typique, la fiche de la nuance fait foi. Sur ce maillage grossier, le facteur est indicatif : les concentrations locales ne sont pas résolues.`));
   } else {

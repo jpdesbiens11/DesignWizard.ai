@@ -73,7 +73,10 @@ choisit et ce que l'on obtient**. Les deux volets se redimensionnent et se cache
 - **Tout ce qui lit le modèle passe par « ce qui compte »** : une seule fonction rend le modèle sans ce qui est à
   Off, et chaque outil la prend. *C'est le point qui se rate : un seul lecteur oublié, et Off ment.*
 - **Variantes nommées** : l'état du modèle (ce qui est à On, la valeur de chaque paramètre) se garde sous un nom, et
-  un clic y revient, en une étape annulable. Chaque variante dit ce que le clic changerait.
+  un clic y revient, en une étape annulable. Chaque variante dit ce que le clic changerait, et se regarde (son
+  dessin) sans que le modèle change.
+- **Ce que l'on règle se retrouve.** Un réglage long à refaire (un cas de calcul) s'écrit dans le document à chaque
+  changement, comme une étape annulable ; une simple visite n'écrit rien.
 
 ## 6. Ce que montre le centre — usage établi
 

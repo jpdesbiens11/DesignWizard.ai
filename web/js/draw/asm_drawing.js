@@ -67,7 +67,7 @@ function composeSheet(sheet, data) {
   drawNotes(sheet, frame.x + 4, notesY, notesW, notes, { title: "NOTES", size: 2.3 });
   viewLabel(sheet, fx + B.front.w * s / 2, frontY + B.front.h * s + 34, "", `SCALE ${scale[1]}`);
   drawRevisionTable(sheet, frame.x + frame.w, frame.y, revs.slice(-4), { align: "right" });
-  drawTitleBlock(sheet, frame, { title: say(asm.name) || asm.id, partNumber: asm.id, revision: asm.revision || "A", material: "Assembly", finish: "—", mass: massOf(data.mass || 0),
+  drawTitleBlock(sheet, frame, { title: `${say(asm.name) || asm.id}${o.variant ? ` — VARIANT ${say(o.variant)}` : ""}`, partNumber: asm.id, revision: asm.revision || "A", material: "Assembly", finish: "—", mass: massOf(data.mass || 0),
     scale: scale[1], sheet: "1/1", size: "B (11 × 17)", drawnBy: o.drawnBy || "", checkedBy: o.checkedBy || "", approvedBy: o.approvedBy || "", date: o.date || "", company: o.organisation || "DesignWizard.ai", project: say((project && project.name) || ""),
     generalTolerance: "ISO 2768-mK", projection: third ? "third" : "first", units: drawingUnit(), status: o.status || "Preliminary" });
   return { scale: scale[1], notes, items: parts.map((r) => ({ item: r.item, id: r.id, view: where[r.id] || null })), dims: dims.map(([label, value, k]) => ({ n: k, label, value })), bom: shown.length,

@@ -242,7 +242,7 @@ function composeSheet(sheet, data) {
   drawNotes(sheet, frame.x + 4, notesY, notesW, notes, { title: "NOTES", size: 2.3 });
   viewLabel(sheet, fx + B.front.w * s / 2, frontY + B.front.h * s + 10 + 8 * (used["front:h"] || 1) + 5, "", `SCALE ${scale[1]}`);
   drawRevisionTable(sheet, frame.x + frame.w, frame.y, revs.slice(-4), { align: "right" });
-  const block = (n) => drawTitleBlock(sheet, frame, { title: say(spec.name) || spec.id, partNumber: spec.id, revision: spec.revision || "A", material: mat.name, finish: say(spec.finish) || "—", mass: massOf(built.mass),
+  const block = (n) => drawTitleBlock(sheet, frame, { title: `${say(spec.name) || spec.id}${o.variant ? ` — VARIANT ${say(o.variant)}` : ""}`, partNumber: spec.id, revision: spec.revision || "A", material: mat.name, finish: say(spec.finish) || "—", mass: massOf(built.mass),
     scale: n === 1 ? scale[1] : "—", sheet: `${n}/${sheets}`, size: "B (11 × 17)", drawnBy: o.drawnBy || "", checkedBy: o.checkedBy || "", approvedBy: o.approvedBy || "", date: o.date || "", company: o.organisation || "DesignWizard.ai", project: say((project && project.name) || ""),
     generalTolerance: "ISO 2768-mK", projection: third ? "third" : "first", units: drawingUnit(), status: o.status || "Preliminary" });
   block(1);

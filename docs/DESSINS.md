@@ -161,6 +161,13 @@ numérotées après les repères : aucun numéro ne sert deux fois sur la feuill
 C'est le socle d'une gestion de configuration : pas une base de données à part, mais des faits que le projet porte et
 vérifie lui-même.
 
+## Le dessin d'une variante
+
+Une pièce ou un assemblage qui garde des variantes ([VARIANTES.md](VARIANTES.md)) a **un dessin par variante** : le
+choix « Variante dessinée » du volet de gauche, ou le bouton de dessin sur la ligne de la variante. La feuille est
+tracée d'après une copie — le document n'est pas changé —, le cartouche ajoute « — VARIANT <nom> » au titre, le PDF
+porte le nom de la variante. Numéro de pièce, révision et classes de cotes restent ceux du document.
+
 ## Limites
 
 - Sont cotés sur vue : les cotes hors tout, les cotes de détail décrites plus haut et, s'il reste de la place, celles des

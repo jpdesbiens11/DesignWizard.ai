@@ -66,12 +66,13 @@ const project = {
   sections: [
     ["Le produit", ["description", "author", "drawing"]],
     ["La physique vérifiée — modèles analytiques et simulations gardés pour la revue", ["physics", "simulations"]],
+    ["Les cas de charge de la Simulation — par pièce ou assemblage : appuis, efforts, sources, zones et plans, avec ce qui est à Off", ["cases"]],
     ["La revue de conception — ce que l'IA a retenu de l'entrevue, l'état de chaque artéfact, les itérations MVP et leurs revues", ["brief", "review", "mvp"]],
     ["L'équipe — les miroirs de chaque membre, ce qui a été fusionné, les messages", ["team", "talk"]],
     ["Les révisions libérées — numéros, contenus figés, ce avec quoi chaque assemblage a été libéré", ["plm"]],
     ["Journal", ["log"]],
   ],
-  kids: { brief: { kids: { answers: { word: "answer" } } }, review: { kids: { items: {} } }, mvp: { kids: { iterations: { word: "iteration", head: ["n", "name"] } } }, team: {}, talk: { word: "message", head: ["id", "by"] }, plm: {}, drawing: {}, physics: { word: "physics", head: ["id", "model"] }, simulations: { word: "simulation", head: ["id", "kind"], first: ["target"], kids: { estimate: {}, result: {} } }, log: { word: "log" } },
+  kids: { brief: { kids: { answers: { word: "answer" } } }, review: { kids: { items: {} } }, mvp: { kids: { iterations: { word: "iteration", head: ["n", "name"] } } }, team: {}, talk: { word: "message", head: ["id", "by"] }, plm: {}, drawing: {}, physics: { word: "physics", head: ["id", "model"] }, simulations: { word: "simulation", head: ["id", "kind"], first: ["target"], kids: { estimate: {}, result: {} } }, cases: { word: "case", head: ["id", "kind"], first: ["cells", "fsTarget"] }, log: { word: "log" } },
   embed: { parts: "part", assemblies: "assembly", boards: "board" },   // documents carried inside a project file, one after the other
 };
 const board = {

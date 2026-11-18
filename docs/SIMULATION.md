@@ -107,7 +107,9 @@ Le modèle de l'arbre est pur (`web/js/analysis/fea/bc_tree.js` : `bcTree`, `bcL
 Chaque condition du cas de charge, chaque zone de raffinement et chaque plan de coupe ou de symétrie a un interrupteur
 On / Off et un bouton « Dupliquer » (la copie naît à Off). Ce qui est à Off reste dans l'arbre et ne compte pour rien ; Alt + clic met une
 condition seule à On parmi celles de son type. Chaque essai retient le cas qu'il a calculé, et « Les essais de cette
-séance » met les cas côte à côte. Voir [VARIANTES.md](VARIANTES.md).
+séance » met les cas côte à côte. **Le cas de charge est gardé dans le projet** (`project.cases`, un par pièce ou
+assemblage) : chaque changement est une étape annulable, et le cas revient à la visite suivante — après un rechargement
+ou chez un coéquipier. Les résultats, eux, sont ceux de la séance. Voir [VARIANTES.md](VARIANTES.md).
 
 ### Toute face, toute arête, tout point de la pièce
 

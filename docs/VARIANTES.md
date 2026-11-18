@@ -34,10 +34,26 @@ Chaque appui, effort, source de chaleur et température imposée du cas de charg
   Off celui du même axe — on compare ainsi le même modèle coupé ici ou là, avec ou sans sa symétrie. Alt + clic : ce
   plan seul à On. Un essai nomme les coupes libres avec lesquelles il a été résolu (« CY coupe Y = 75 mm »).
 
-Le cas de charge de la Simulation vit le temps de la séance (il n'est pas dans le fichier du projet) : les copies et
-ce qui est à Off aussi. Ne sont pas à On / Off : la convection et la température uniforme (une case à cocher chacune).
+**Le cas de charge est gardé dans le projet** (il vivait le temps d'une visite : fermer la page le perdait). Chaque
+pièce et chaque assemblage a le sien — appuis, efforts, sources, températures, zones, plans, finesse du maillage,
+physique, facteur de sécurité visé, avec les copies et ce qui est à Off :
 
-Code : `web/js/analysis/fea/bc_tree.js` (`isOff`, `onOf`, `withOff`, `copyOf`, `soloOn`, `liveCuts`, `cutOn`,
+- chaque changement s'écrit dans le projet **comme une étape annulable**, à son nom (« Cas de charge : DRV-BASE ») ;
+  Ctrl + Z et Ctrl + Y le ramènent à l'écran, la page recharge ou non ;
+- à la visite suivante — après une autre page, un rechargement, ou chez un coéquipier — le cas revient tel quel, les
+  valeurs d'exemple pas encore confirmées clignotent toujours ;
+- **une simple visite n'écrit rien** : le premier cas que l'outil propose reste une proposition tant que rien n'a été
+  changé ; un cas dont on a retiré les appuis garde ses efforts (le guide dit qu'il n'est pas tenu) ;
+- le cas voyage dans le texte `.dwiz` du projet (une ligne `case DRV-BASE structure …`) et dans la fusion d'équipe
+  (un artéfact « Cas de charge DRV-BASE ») ; retirer la pièce retire son cas.
+
+Ne sont pas gardés : les résultats (les essais de la séance — « Ajouter au rapport » garde un essai dans
+`project.simulations`), ce qui est sélectionné, la vue. Ne sont pas à On / Off : la convection et la température
+uniforme (une case à cocher chacune).
+
+Dans le fichier : `cases: [{ id (la pièce ou l'assemblage), kind, cells, fsTarget, fixed, loads, power, fixedT, conv,
+thermo, cuts, zones, places, placeSeq }]` sur le projet. Code : `web/js/analysis/fea/case_store.js` (`caseOf`,
+`takeCase`, `withCase`, sans import), `bc_tree.js` (`isOff`, `onOf`, `withOff`, `copyOf`, `soloOn`, `liveCuts`, `cutOn`,
 `caseWords`), `case_check.js` ; écran `web/js/modules/fea.js`, `fea_tree.js`, `fea_zones.js`, `fea_cuts.js`,
 `fea_result.js`.
 
@@ -58,8 +74,16 @@ pièce », « Retirer ». L'interrupteur et l'œil restent sur la ligne (`instan
 Si la pièce fixe passe à Off, la première pièce restante sert de référence ; les pièces qui n'étaient tenues que par
 elle deviennent « non matées » jusqu'à son retour.
 
-Dans le fichier : `off: true` sur l'instance. Code : `web/js/core/asm_live.js` (`liveAsm`, sans aucun import : tout
-outil qui lit un assemblage passe par là — `buildAssembly`, la gamme, le DFA, le guide, le rendu, le dessin).
+**Variantes d'un assemblage.** Le groupe « Variantes » du volet de gauche garde sous un nom les pièces à On et à Off
+en ce moment (« Complet », « Sans couvercle ni isolant »). Un clic sur un nom ramène **toute la version d'un coup**, en
+une étape que Ctrl + Z annule ; la variante en cours est marquée, chaque autre dit ce que le clic changerait
+(« Couvercle à Off · Isolant à Off »). Une pièce ajoutée plus tard vaut pour toutes les variantes. La variante de
+chaque pièce n'en fait pas partie : elle se choisit dans la pièce.
+
+Dans le fichier : `off: true` sur l'instance ; `variants: [{ name, off: [identifiants d'instances] }]` sur
+l'assemblage. Code : `web/js/core/asm_live.js` (`liveAsm`, `asmVariantNow`, `applyAsmVariant`, `asVariant` — sans aucun
+import : tout outil qui lit un assemblage passe par là — `buildAssembly`, la gamme, le DFA, le guide, le rendu, le
+dessin) ; le groupe est celui de la pièce (`variantPanel` de `web/js/modules/part_variants.js`).
 
 ## CAO : les cousines d'une pièce dans une seule pièce
 
@@ -79,6 +103,16 @@ outil qui lit un assemblage passe par là — `buildAssembly`, la gamme, le DFA,
   paramètre ajouté plus tard vaut pour toutes les variantes. « Mettre à jour » remplace une variante par l'état en
   cours ; retirer un nom ne change pas la pièce.
 
+## Un dessin par variante
+
+Chaque ligne du groupe « Variantes » — d'une pièce ou d'un assemblage — a un bouton qui ouvre **le dessin de cette
+variante**, et l'écran Dessins offre le choix « Variante dessinée ». La feuille est tracée d'après une copie : **le
+document n'est pas changé** (la pièce reste dans la variante où elle était, l'assemblage garde ses pièces à On), le
+cartouche dit laquelle il montre (« — VARIANT Longue »), le PDF porte son nom, et l'adresse se garde
+(`#/drawings/DRV-BASE/Longue`, `#/drawings/asm/DRV-ASM/Sans%20couvercle`). Le numéro de pièce et la révision sont ceux
+du document : une variante qui change la forme, l'ajustement ou la fonction mérite son propre numéro (règle 3F,
+[REVISIONS.md](REVISIONS.md)) — l'outil ne le décide pas à votre place.
+
 Dans le fichier : `suppressed: true` sur une opération ; `alts: [valeur, …]` dans la définition d'un paramètre (le
 langage de pièce ne lit que `value`) ; `variants: [{ name, off: [identifiants d'opérations], params: { nom: valeur } }]`
 sur la pièce. Les règles DFM partent de ce que le noyau a construit : une opération à Off n'y entre pas. Code :
@@ -91,9 +125,16 @@ contrainte de pointe doublée, les deux lignes dans les essais) ; une zone à Of
 l'assemblage à Off puis à On (compte, masse, vue, dessin d'ensemble, revue DFx sans erreur), la pièce fixe à Off ; une
 opération à Off, sa copie, une valeur gardée mise à On puis retirée (le paramètre revient exactement à ce qu'il
 était) ; un plan de symétrie à Off puis à On, sa copie déplacée mise à On à sa place, un essai qui nomme sa coupe ;
-deux variantes d'une pièce gardées, la bascule de l'une à l'autre en un clic, Ctrl + Z, le rechargement de la page.
-Tests : `tests/node/fea_onoff.test.mjs`, `tests/node/onoff.test.mjs`.
+deux variantes d'une pièce gardées, la bascule de l'une à l'autre en un clic, Ctrl + Z, le rechargement de la page ;
+un cas de charge modifié puis retrouvé après un rechargement de la page et après un autre écran, Ctrl + Z et Ctrl + Y
+suivis par l'écran, une visite sans changement qui n'écrit rien ; deux variantes d'un assemblage, la bascule en une
+étape, le compte et la masse qui suivent, Ctrl + Z ; le dessin d'une variante d'assemblage (deux pièces de moins dans
+sa liste) et d'une variante de pièce (200 mm sur la feuille, 160 mm dans la pièce), sans changer le document.
+Tests : `tests/node/fea_onoff.test.mjs`, `tests/node/onoff.test.mjs`, `tests/node/fea_case_store.test.mjs`,
+`tests/node/asm_variants.test.mjs`.
 
-Pas encore fait : des cas de charge gardés dans le projet (ils vivent le temps de la séance) ; une variante ne retient
-pas les pièces à On / Off d'un assemblage ; le dessin et la gamme d'une pièce suivent la variante en cours, il n'y a
-pas un dessin par variante.
+Pas encore fait : plusieurs cas de charge **nommés** par pièce (un seul cas par pièce, avec ses copies à On / Off) ;
+une variante d'assemblage ne retient pas la variante de chacune de ses pièces ; la gamme, le rapport de revue, le
+dossier de commande et l'envoi vers Onshape suivent le document tel qu'il est, pas une variante choisie ; les classes
+de cotes (référence, SC) sont celles du document, pas propres à une variante ; pas de dessin tabulé (une feuille, un
+tableau des variantes).

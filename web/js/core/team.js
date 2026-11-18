@@ -16,7 +16,8 @@
 
 import { signature, REVIEW_KINDS } from "./review.js";
 
-const LISTS = { part: "parts", assembly: "assemblies", board: "boards", physics: "physics", simulation: "simulations" };
+const LISTS = { part: "parts", assembly: "assemblies", board: "boards", physics: "physics", simulation: "simulations", case: "cases" };      // case : the load case of a part or an assembly, under its id (analysis/fea/case_store.js)
+const KIND_NAMES = { case: "Cas de charge" };
 const META = ["name", "description", "author", "drawing", "brief"], iso = (d) => (d || new Date()).toISOString();
 const clone = (x) => (x === undefined ? undefined : JSON.parse(JSON.stringify(x)));
 const KEEP = 16, GONE = "gone", cur = (s) => (s.gone ? GONE : s.sig), later = (x, y) => (x.at !== y.at ? x.at > y.at : x.by > y.by);
@@ -57,7 +58,7 @@ function put(project, key, doc) {
 /** A readable name for a key. */
 export function labelOf(project, key) {
   if (key === "project:meta") return "Le projet (nom, description, cartouche)"; if (key === "project:mvp") return "Les itérations MVP"; if (key === "project") return "Le projet";
-  const i = key.indexOf(":"), d = artefacts(project).get(key); return `${REVIEW_KINDS[key.slice(0, i)] || key.slice(0, i)} ${key.slice(i + 1)}${d && d.name ? ` — ${d.name}` : ""}`;
+  const i = key.indexOf(":"), d = artefacts(project).get(key); return `${REVIEW_KINDS[key.slice(0, i)] || KIND_NAMES[key.slice(0, i)] || key.slice(0, i)} ${key.slice(i + 1)}${d && d.name ? ` — ${d.name}` : ""}`;
 }
 
 /** A member joins, or updates what the team knows of them. → the member. */
