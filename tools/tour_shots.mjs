@@ -23,7 +23,10 @@ await demo("Charger la démonstration");
 if (want("idee")) { await open("#/home", 1200); await page.getByText("Premier design avec une IA").first().click(); await wait(1500); await shot("idee"); await page.keyboard.press("Escape"); }
 if (want("atelier")) { await open("#/shop", 2500); await page.getByRole("button", { name: /Je me visse sur/ }).click(); await wait(800); await page.getByRole("button", { name: /arbre/ }).first().click().catch(() => {}); await wait(9000); await shot("atelier"); }
 if (want("procedes")) { await open("#/process/impression", 1500); await shot("procedes"); }
-if (want("piece")) { await open("#/parts/DRV-BASE", 11000); await shot("piece"); }
+if (want("piece")) {      // the interface at work : groups folded in the panel, the pivot of the turn and its arcs, the automatic rotation with two ways at once
+  await open("#/parts/DRV-BASE", 11000); for (const t of ["Interfaces", "Variantes"]) await page.locator(".side:not(.right) .side-section > h3", { hasText: t }).first().click().catch(() => {}); await wait(400);
+  const c = await page.locator(".viewport canvas").first().boundingBox(), x = c.x + c.width * 0.5, y = c.y + c.height * 0.55; await page.mouse.move(x, y); await page.mouse.down(); await wait(2300); await page.mouse.up(); await wait(300);
+  for (const n of ["Tourner vers la droite", "Basculer vers le haut"]) await page.locator(".dw-auto").getByRole("button", { name: n }).click(); await wait(1600); await page.mouse.move(x - 260, y + 230); await shot("piece"); await page.keyboard.press("Escape"); }
 if (want("commande")) { await open("#/parts/DRV-BASE", 9000); await tab("Artéfacts"); await shot("commande"); }
 if (want("gamme")) { await open("#/parts/DRV-HEATSINK", 9000); await tab("Gamme"); await shot("gamme"); }
 if (want("pcba")) { await open("#/pcba", 6000); await shot("pcba"); }
@@ -33,6 +36,23 @@ if (want("unites")) {      // the same board read in the imperial system : mil a
   await page.evaluate(() => localStorage.removeItem("dw.units")); await page.reload(); await wait(1500); }
 if (want("assemblage")) { await open("#/assembly/DRV-ASM", 14000); await shot("assemblage"); }
 if (want("simulation")) { await open("#/fea", 9000); await shot("simulation"); }
+if (want("cas")) {      // two load cases in one model : a copy of the effort, twice its value, solved after the first — the runs side by side
+  await open("#/fea", 9000); const left = page.locator(".side:not(.right)").first(), right = page.locator(".side.right").first(), item = (id) => left.locator(`.bc-item[data-bc="${id}"]`);
+  const confirm = async () => { for (let i = 0; i < 6 && await left.locator("input.need:visible").count(); i++) { await left.locator("input.need:visible").first().focus(); await page.keyboard.press("Enter"); await wait(600); } };
+  const run = async (n) => { await right.locator(".side-actions").getByRole("button", { name: /Lancer la simulation|Relancer/ }).click(); await page.waitForFunction((k) => new RegExp(`R[ée]sultat ${k}`, "i").test(document.querySelector(".side.right .side-section h3")?.textContent || ""), n, { timeout: 180000 }); await wait(1500); };
+  await confirm(); await run(1); const back = right.locator(".side-actions").getByRole("button", { name: /Revenir au modèle/ }); if (await back.count()) { await back.click(); await wait(900); }
+  await item("E1").getByRole("button", { name: "Dupliquer E1" }).click(); await wait(900); const v = left.locator('.bc-edit input[type="number"]').first(), was = parseFloat(await v.inputValue()); await v.fill(String(was * 2)); await page.keyboard.press("Enter"); await wait(900);
+  await item("E2").locator(".switch").click({ modifiers: ["Alt"] }); await wait(900); await confirm(); await run(2); await page.mouse.move(820, 560); await shot("cas");
+  await page.evaluate(async () => { const { store } = await import("./js/core/store.js"); store.commit("capture : cas remis à zéro", (p) => { delete p.cases; }); }); }
+if (want("modules")) {      // a product put together by modules : the heat sink and its insulator as a sub-assembly of the drive, two variants kept
+  await page.evaluate(async () => { const { store } = await import("./js/core/store.js"); const a = store.assembly("DRV-ASM"), hs = a.instances.find((i) => i.part === "DRV-HEATSINK"), iso = a.instances.find((i) => i.part === "DRV-ISO"); if (!hs || !iso) return;
+    const inner = a.mates.find((m) => [m.a.inst, m.b.inst].includes(hs.id) && [m.a.inst, m.b.inst].includes(iso.id)), outer = a.mates.find((m) => [m.a.inst, m.b.inst].includes(hs.id) && m !== inner), sid = store.addAssembly("Module de refroidissement"), re = (k, m) => ({ ...m[k], inst: m[k].inst === hs.id ? "i1" : "i2" });
+    store.updateAssembly(sid, (s) => { s.instances = [{ id: "i1", part: "DRV-HEATSINK", fixed: true, placement: { t: [0, 0, 0], r: [0, 0, 0] } }, { id: "i2", part: "DRV-ISO", placement: { t: [0, 0, 0], r: [0, 0, 0] } }]; s.mates = [{ ...inner, id: "M1", a: re("a", inner), b: re("b", inner) }]; }, "capture : sous-assemblage");
+    store.updateAssembly("DRV-ASM", (x) => { x.instances = x.instances.filter((i) => i.id !== hs.id && i.id !== iso.id); x.instances.push({ id: "s1", asm: sid, placement: { t: [0, 0, 0], r: [0, 0, 0] } });
+      x.mates = x.mates.filter((m) => m.id !== inner.id).map((m) => (m.id === outer.id ? { ...m, a: m.a.inst === hs.id ? { ...m.a, inst: "s1~i1" } : m.a, b: m.b.inst === hs.id ? { ...m.b, inst: "s1~i1" } : m.b } : m));
+      x.variants = [{ name: "Complet", off: [] }, { name: "Sans couvercle", off: [x.instances.find((i) => i.part === "DRV-COVER").id] }]; }, "capture : modules et variantes"); });
+  await open("#/assembly/DRV-ASM", 14000); await page.locator('.side [data-inst][data-kind="sub"]').first().click(); await wait(1200); await page.mouse.move(820, 620); await shot("modules");
+  await page.evaluate(async () => { const { store } = await import("./js/core/store.js"); for (let i = 0; i < 3; i++) store.undo(); }); await wait(800); }      // the demonstration as it was, for the pictures that follow
 if (want("calcul")) { await open("#/physics/heatsink_natural", 2500); const all = page.getByRole("button", { name: /Tout confirmer/ }); if (await all.count()) { await all.first().click(); await wait(600); } await page.locator(".phys-tabs [data-tab='result']").click().catch(() => {}); await wait(1500); await shot("calcul"); }
 if (want("dfx")) { await open("#/dfx", 12000); await shot("dfx"); }
 if (want("dessin")) { await open("#/drawings/DRV-BASE", 14000); await shot("dessin"); }

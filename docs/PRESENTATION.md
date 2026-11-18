@@ -25,7 +25,7 @@ en bas de chaque page, des notes pour le présentateur, une annexe de questions 
 - L'adresse garde la page : `presentation.html#9` ouvre la page 9.
 - **PDF** : Ctrl + P → « Enregistrer au format PDF » ; chaque page de la présentation est une page du PDF.
 
-Vingt-sept pages et une annexe, pour une vingtaine de minutes, puis l'outil en direct : charger la démonstration, ouvrir l'Atelier,
+Vingt-neuf pages et une annexe, pour une vingtaine de minutes, puis l'outil en direct : charger la démonstration, ouvrir l'Atelier,
 ajouter une interface, suivre la pièce jusqu'à son dossier de commande.
 
 ## Ce qu'elle montre depuis la v0.70
@@ -53,6 +53,27 @@ Une page de plus à la station Électrique — « La conception dans vos unités
 carte lue en mil et en pouces (`unites`, prise par `tools/tour_shots.mjs` dans le système impérial). Elle dit le
 choix de JP : SI ou impérial pour la conception, SI toujours pour les calculs. **Toutes les captures ont été refaites
 sur la v0.75** ; huit sont restées identiques à l'octet près, les écrans n'ayant pas changé.
+
+## Depuis la v0.91
+
+Deux pages de plus, et toutes les captures refaites sur la v0.91 (vingt images ; la barre du haut et les volets ont
+changé d'aspect depuis la v0.75) :
+
+- station Assemblage — « Par modules, et en plusieurs versions » : un sous-assemblage porté d'un seul bloc, les pièces à
+  On / Off, les variantes gardées sous un nom et leur dessin (capture `modules` : le dissipateur et son isolant en
+  sous-assemblage du variateur, deux variantes) ;
+- station Physique — « Comparer des cas sans refaire le modèle » : conditions à On / Off et copies, le cas que chaque
+  résultat a calculé, les zones de raffinement, le cas gardé dans le projet (capture `cas` : la pression doublée à la
+  place de la première, mise à Off).
+
+Le confort de l'interface n'a pas de page à lui : la page de la pièce le porte. Sa capture (`piece`) montre maintenant
+la rotation automatique — le pivot, ses arcs, deux sens allumés ensemble — et un groupe replié ; son texte et ses notes
+disent la vue qui tourne autour du point saisi, les groupes repliables, le zoom, la loupe et l'annulation des opérations
+longues. La présentation tient ainsi dans ses deux garde-fous (trente pages au plus, annexe comprise ; moins de 500
+lignes), que `tests/node/presentation.test.mjs` vérifie.
+
+La capture `cas` montre le recoupement « discordant » de la démonstration : l'estimation à la main (une plaque) ne
+convient pas à ce boîtier, et l'outil le dit. Les notes de la page l'expliquent ; on ne l'a pas maquillé.
 
 ## Le fil conducteur
 

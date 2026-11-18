@@ -159,19 +159,19 @@
   <p class="kicker r">Brique 3 · La pièce</p>
   <h2 class="r">Un studio qui parle le langage de l'atelier</h2>
   <div class="cols">
-    <figure class="shot r"><img src="img/tour/piece.jpg" alt="Le studio de pièce : arbre de construction, modèle 3D avec ses interfaces, paramètres à curseurs" width="1600" height="1000"><figcaption>Pièces : l'arbre de construction, les interfaces sur le modèle, un curseur par paramètre.</figcaption></figure>
+    <figure class="shot r"><img src="img/tour/piece.jpg" alt="Le studio de pièce : arbre de construction, paramètres à curseurs, et la vue qui tourne seule autour du point saisi, deux sens à la fois" width="1600" height="1000"><figcaption>Pièces : l'arbre de construction, un curseur par paramètre — et la vue qui tourne seule autour du point saisi.</figcaption></figure>
     <div class="side">
       <h3 class="r">Avec les outils d'aujourd'hui</h3><p class="before r">Des fonctions génériques ; la fabricabilité se vérifie ailleurs, plus tard.</p>
       <h3 class="r">Ici</h3>
       <ul><li class="r">Les mots de l'atelier, en anglais comme le métier les nomme — drill, tap, counterbore — et leur glossaire.</li>
-        <li class="r">Tout se fait à la souris sur le modèle : un clic droit sur une face propose le trou, la poche, l'interface.</li>
+        <li class="r">Tout se fait à la souris sur le modèle : un clic droit sur une face propose le trou, la poche, l'interface ; la vue tourne autour du point saisi et, tenue deux secondes, tourne seule.</li>
         <li class="r">Les règles de fabrication tournent en direct, avec un correctif en un clic.</li>
         <li class="r">SI ou impérial : on lit et l'on tape en millimètres ou en pouces ; le projet reste en millimètres.</li></ul>
       <a class="go r" href="index.html#/parts" target="_blank" rel="noopener">Ouvrir dans la démo →</a>
     </div>
   </div>
   <p class="take r">La pièce est un fichier texte lisible : ses paramètres, ses interfaces, ses opérations dans l'ordre de l'atelier.</p>
-  <aside class="notes"><ul><li>Chaque paramètre a son curseur : la pièce se reconstruit en direct, les interfaces suivent.</li><li>L'onglet DFx du studio liste les règles enfreintes avec leur limite et le correctif proposé.</li><li>Le fichier « .dwiz » se relit à l'œil et se confie tel quel à une IA.</li><li>Le choix d'unités est celui de la conception : Atelier, assemblage, busbar, circuit flexible, étiquettes, carte, DFx, guide, dessins, gammes. Les calculs, eux, restent en SI.</li></ul></aside>
+  <aside class="notes"><ul><li>Chaque paramètre a son curseur : la pièce se reconstruit en direct, les interfaces suivent.</li><li>L'onglet DFx du studio liste les règles enfreintes avec leur limite et le correctif proposé.</li><li>Le fichier « .dwiz » se relit à l'œil et se confie tel quel à une IA.</li><li>L'interface travaille pour vous : chaque groupe d'un volet se replie et le volet reste en place ; les feuilles se zooment, une loupe grossit tout dessin ; une opération longue dit où elle en est et s'annule. En direct : tenir le bouton deux secondes sur la pièce, choisir ▶ puis ▲ — les deux flèches restent allumées.</li><li>Le choix d'unités est celui de la conception : Atelier, assemblage, busbar, circuit flexible, étiquettes, carte, DFx, guide, dessins, gammes. Les calculs, eux, restent en SI.</li></ul></aside>
 </section>
 
 <section class="slide" data-stage="procedes">
@@ -265,6 +265,10 @@
   <aside class="notes"><ul><li>Chaque joint garde un numéro permanent : on en parle en revue comme d'une pièce.</li><li>« Rompu » veut dire : les deux côtés ne sont plus d'accord — un entraxe, une vis, une longueur de prise.</li></ul></aside>
 </section>
 
+<section class="slide" data-stage="assemblage"><p class="kicker r">Brique 6 · L'assemblage</p><h2 class="r">Par modules, et en plusieurs versions</h2>
+  <div class="cols"><figure class="shot r"><img src="img/tour/modules.jpg" alt="Le variateur monté par modules : le dissipateur et son isolant forment un sous-assemblage, sélectionné ; deux variantes gardées dans le volet de gauche" width="1600" height="1000"><figcaption>Un sous-assemblage, porté d'un seul bloc, et deux variantes gardées sous un nom.</figcaption></figure><div class="side"><h3 class="r">Avec les outils d'aujourd'hui</h3><p class="before r">Un produit à plat, ou des configurations refaites à la main d'un fichier à l'autre.</p><h3 class="r">Ici</h3><ul><li class="r">Un assemblage entre dans un autre d'un seul bloc : il s'accouple seul, et la nomenclature se lit par niveaux ou à plat.</li><li class="r">Chaque pièce se met à Off : gardée, mais hors de la vue, de la masse, des dessins et des exports.</li><li class="r">Une variante garde cet état sous un nom ; un clic y revient, et chaque variante a son dessin.</li></ul><a class="go r" href="index.html#/assembly" target="_blank" rel="noopener">Ouvrir dans la démo →</a></div></div>
+  <p class="take r">Une famille de produits tient dans un seul projet, et rien ne se perd d'une version à l'autre.</p><aside class="notes"><ul><li>Le variateur refait avec un sous-assemblage garde sa masse et ses dimensions : vérifié sur la démonstration.</li><li>Un assemblage ne peut pas se contenir lui-même : le dialogue d'ajout le montre grisé, avec la raison.</li><li>Limites dites : le dessin d'ensemble liste les pièces à plat ; le STEP sort à plat.</li></ul></aside></section>
+
 <section class="slide" data-stage="physique">
   <p class="kicker r">Brique 7 · La physique</p>
   <h2 class="r">Le calcul à la main et la simulation, côte à côte</h2>
@@ -282,6 +286,10 @@
   <p class="take r">Un ordre de grandeur juste, tout de suite, vaut mieux qu'un calcul fin trop tard.</p>
   <aside class="notes"><ul><li>Chaque modèle montre ses formules, ses hypothèses et sa source.</li><li>La simulation est volontairement simple : elle recoupe le calcul à la main et montre où regarder. Ce n'est pas une note de calcul certifiée.</li></ul></aside>
 </section>
+
+<section class="slide" data-stage="physique"><p class="kicker r">Brique 7 · La physique</p><h2 class="r">Comparer des cas sans refaire le modèle</h2>
+  <div class="cols"><figure class="shot r"><img src="img/tour/cas.jpg" alt="La simulation du boîtier : le second cas de charge calculé, la pression doublée à la place de la première, mise à Off ; le résultat dit le cas qu'il a résolu" width="1600" height="1000"><figcaption>Deux cas dans un seul modèle : E2 à On, E1 à Off ; le résultat dit lequel il a calculé.</figcaption></figure><div class="side"><h3 class="r">Avec les outils d'aujourd'hui</h3><p class="before r">Un fichier par cas de charge, et l'on ne sait plus lequel a donné quel résultat.</p><h3 class="r">Ici</h3><ul><li class="r">Chaque appui, effort ou zone se met à Off ou se duplique : on change une valeur, on relance, on compare.</li><li class="r">Chaque résultat dit le cas qu'il a calculé ; les essais se lisent côte à côte.</li><li class="r">Des zones de raffinement là où ça compte ; le cas est gardé dans le projet, chaque changement s'annule.</li></ul><a class="go r" href="index.html#/fea" target="_blank" rel="noopener">Ouvrir dans la démo →</a></div></div>
+  <p class="take r">Un résultat ne se sépare pas du cas qui l'a produit.</p><aside class="notes"><ul><li>Sur la capture : la pression doublée (E2) remplace E1, mis à Off ; Alt + clic passe d'un cas à l'autre.</li><li>Le recoupement dit « discordant » quand le modèle à la main ne convient pas à la pièce : c'est une information, pas une panne.</li><li>Les résultats sont ceux de la séance ; « Ajouter au rapport » en garde un pour la revue.</li></ul></aside></section>
 
 <section class="slide" data-stage="physique">
   <p class="kicker r">Brique 7, suite · Le calcul à emporter</p>
