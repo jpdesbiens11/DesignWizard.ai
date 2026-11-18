@@ -9,4 +9,5 @@
   try { z = parseInt(localStorage.getItem("dw.scale") || "100", 10) || 100; } catch (e) { /* private window */ }
   if ([90, 100, 115, 130, 150].indexOf(z) < 0) z = 100;
   document.documentElement.style.setProperty("--ui-scale", String(z / 100));
+  try { performance.setResourceTimingBufferSize(3000); } catch (e) { /* an old browser */ }      // every file the page loads is remembered : an update fetches them anew (core/update_check.js)
 })();

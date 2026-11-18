@@ -22,6 +22,9 @@ Consignes permanentes de JP (propriétaire du dépôt). Elles s'appliquent à to
 
 1. `node --test tests/node/*.test.mjs` et `python -m unittest discover -s tests/py -t .` : tout doit passer.
 2. Commiter, pousser la branche de travail, puis pousser le même commit sur `main` (avance rapide seulement).
+   La version s'écrit à quatre endroits, toujours ensemble : `APP_VERSION` (`web/js/core/app.js`), `package.json`,
+   `web/version.json` (ce que la page ouverte lit pour annoncer une mise à jour — `web/js/core/update_check.js`) et l'en-tête
+   du README ; un test les compare.
 3. Le flux « Publier la démo » (`.github/workflows/pages.yml`) rejoue les tests et pousse `web/` sur `gh-pages` ;
    la démo est à https://jpdesbiens11.github.io/DesignWizard.ai/. Vérifier que le flux a réussi et que la page répond.
 4. Ne jamais forcer `main`. La branche `gh-pages` est réécrite par le flux : ne pas y travailler.

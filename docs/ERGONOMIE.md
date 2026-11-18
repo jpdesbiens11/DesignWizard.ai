@@ -275,6 +275,20 @@ Code : `web/js/core/loupe.js` ; moitiés pures testées (`tests/node/zoom.test.m
 un dessin, la vue d'une carte, le rendu marketing et les vues 3D de la Simulation et de l'Assemblage. Pas essayé sur
 Firefox, Safari ni un écran tactile.
 
+## Une page ouverte annonce la nouvelle version
+
+L'application est une seule page, gardée ouverte des heures : ce qui est publié entre-temps ne l'atteint pas tant
+qu'elle n'est pas rechargée. JP a cherché la loupe et le zoom sur une page ouverte avant leur publication. Désormais
+la page lit de temps en temps `version.json` (au démarrage, toutes les dix minutes, à chaque retour sur l'onglet) ;
+quand la version publiée est plus récente que celle qui tourne, un bouton **« Mettre à jour · v… »** paraît dans la
+barre du haut. Un clic : le projet est enregistré s'il ne l'était pas, les fichiers que la page avait chargés sont
+redemandés au serveur — pour qu'elle ne revienne pas moitié ancienne, moitié nouvelle —, puis la page se recharge. Sur
+le serveur local, la version publiée est celle qui tourne : le bouton ne paraît pas.
+
+Code : `web/js/core/update_check.js` ; `web/version.json` suit `APP_VERSION` (test `tests/node/update.test.mjs`).
+Vérifié dans Chromium avec une version publiée simulée ; pas vérifié sur le site publié lui-même (il faut deux
+publications successives pour le voir) ni sur Firefox et Safari.
+
 ## Ce que l'audit ne voit pas
 
 Il mesure des boîtes, pas le sens : un libellé obscur, un ordre d'actions illogique, une couleur mal choisie, une

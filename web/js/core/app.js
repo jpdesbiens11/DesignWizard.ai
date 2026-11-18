@@ -19,8 +19,9 @@ import { installStepper } from "./stepper.js";
 import { installFolds } from "./fold.js";
 import { installPanelKeep } from "./panel_keep.js";
 import { installLoupe, loupeButton } from "./loupe.js";
+import { installUpdateCheck, updateButton } from "./update_check.js";
 
-export const APP_VERSION = "0.86.0";
+export const APP_VERSION = "0.86.1";
 /** What every document of the open project carries beside its content : approval names, organisation, confidentiality note, extraction stamp (core/brand.js). */
 export const docMeta = (when = new Date()) => docIdentity(store.project, when, APP_VERSION);
 const modules = new Map();
@@ -96,7 +97,7 @@ function topbar() {
     btn("", () => store.redo() || toast("Rien à rétablir."), { icon: "redo", small: true, tip: "Rétablir (Ctrl+Y)" }),
     menuButton("Onshape", "onshape", onshapeMenu), menuButton("Projet", "folder", projectMenu),
     menuButton("", session.account && session.account.admin ? "admin" : "user", accountMenu, session.account ? `Compte : ${session.account.email}` : "Compte Google, Drive et thème"),
-    loupeButton(), guideButton(), el("a", { class: "btn btn-small", href: "#/help", "data-tip": "Aide, raccourcis et guide des collaborateurs" }, icon("help")));
+    updateButton(), loupeButton(), guideButton(), el("a", { class: "btn btn-small", href: "#/help", "data-tip": "Aide, raccourcis et guide des collaborateurs" }, icon("help")));
   return el("header", { class: "topbar" },
     el("a", { class: "brand", href: "#/home", "aria-label": "DesignWizard.ai, accueil" }, icon("logo", "brand-logo"),
       el("span", { class: "brand-name" }, el("b", null, "DesignWizard", el("i", null, ".ai")), el("small", null, "by DynamiteAgile™"))),
@@ -198,6 +199,7 @@ export async function start() {
   installFolds();        // the groups of every side panel fold on a click on their title
   installPanelKeep();    // a panel drawn anew keeps its place, and the cursor its field
   installLoupe();        // the magnifier of the top bar : a lens over drawings, boards, diagrams and 3D views
+  installUpdateCheck({ running: APP_VERSION, save: () => (store.saveState === "dirty" ? store.saveNow() : Promise.resolve()) });      // a page kept open says when a newer version is published, and offers to load it
   store.on("error", (e) => toast(e.message, "error", 8000));
   await store.init();
   const last = store.lastId();
