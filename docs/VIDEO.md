@@ -37,13 +37,14 @@ présentation guidée : le film n'annonce rien de plus qu'elle.
 Les écrans de l'outil sont en français dans les deux versions ; seuls les titres, les étiquettes et la narration changent.
 Chaque plan porte la marque en haut à gauche ; la dernière carte porte la note de marque (`core/brand.js`).
 
-## Sans son, pour l'instant
+## La voix
 
-Le film en ligne est muet : **la narration est écrite à l'écran**, en
-sous-titres incrustés dans l'image, et les pages le disent (« Sans son : la narration se lit à l'écran »). Le texte
-complet de la narration est aussi donné sous chaque lecteur de la vitrine, pour qui ne voit pas l'image.
+**Le film parle depuis la v0.81.0** (18 novembre 2026) : une voix de synthèse (choix de JP : ElevenLabs, voix
+« Jessica », modèle multilingue), la même en français et en anglais. Jusque-là le film était muet et sa narration
+incrustée dans l'image. Le texte complet de la narration reste donné sous chaque lecteur de la vitrine, pour qui ne
+voit pas l'image ou n'entend pas le son.
 
-Poser une voix plus tard ne demande pas de refaire le film. **Voix de synthèse** (choix de JP : ElevenLabs) :
+Refaire la voix ne demande pas de refaire le film. **Voix de synthèse** :
 
 1. Rendre l'image sans sous-titres incrustés : `node tools/film_render.mjs <plans> <sortie> fr en --no-captions`.
 2. Choisir la voix : `node tools/film_voice.mjs voices fr` (les voix de femme du compte ; `--library` pour la
@@ -64,11 +65,14 @@ entre ses deux temps (le débit le plus rapide est de 2,6 mots par seconde) ; un
 
 ## Le jour où le film parle
 
-**Règle de JP : avec la voix, pas de sous-titres — sauf quand le son est coupé.** Le film parlé n'a donc plus de
-sous-titres dessinés dans l'image ; ils deviennent une piste (`designwizard_<langue>.vtt`) que le lecteur ne montre que
-s'il est muet ou si son volume est à zéro (`web/js/core/captions.js` : `wantCaptions`, `followSound`). Dans
-l'application, c'est `showFilm` qui pose la piste ; sur la vitrine, c'est le seul script de la page, `web/js/vitrine.js`
-(six lignes, aucune requête, rien de gardé).
+**Règle de JP : la voix joue dans les haut-parleurs et les sous-titres sont éteints ; si l'usager coche « Sans son »,
+les sous-titres s'allument.** Le film parlé n'a donc plus de sous-titres dessinés dans l'image ; ils deviennent une
+piste (`designwizard_<langue>.vtt`) que le lecteur ne montre que s'il est muet ou si son volume est à zéro
+(`web/js/core/captions.js` : `wantCaptions`, `followSound`). Une case **« Sans son »**, sous le film, le dit en
+toutes lettres : cochée, elle coupe le son du lecteur et les sous-titres apparaissent ; décochée, la voix revient
+(`muteBox` ; elle suit aussi le bouton muet du lecteur). Dans l'application, c'est `showFilm` qui pose la piste et la
+case ; sur la vitrine, c'est le seul script de la page, `web/js/vitrine.js` (aucune requête, rien de gardé), et la case
+y est écrite cachée : elle ne se montre que si le script est là pour la faire marcher.
 
 Limite à connaître : **une page ne lit pas le volume de l'ordinateur**, seulement celui du lecteur — son bouton muet et
 sa glissière. Qui a coupé le son du poste, ou débranché ses haut-parleurs, allume les sous-titres par le bouton du
@@ -76,19 +80,21 @@ lecteur ; ce choix est laissé tel quel jusqu'au prochain changement de son du l
 
 Le site a donc deux états, dits par `FILM.voice` (`web/js/core/film.js`) et tenus cohérents par les tests :
 
-| | Muet (aujourd'hui) | Parlé |
+| | Muet (jusqu'à la v0.80.1) | Parlé (aujourd'hui) |
 |---|---|---|
 | `web/video/designwizard_<langue>.mp4` | narration incrustée dans l'image, pas de son | une voix, image sans sous-titres |
 | Sous-titres | dans l'image | piste `.vtt`, montrée quand le son du lecteur est coupé |
 | Vitrine | aucun script | un script maison (`js/vitrine.js`), `script-src 'self'` |
-| Ce que la page dit | « Sans son : la narration se lit à l'écran. » | « Son coupé : les sous-titres apparaissent. » |
+| Sous le film | rien | la case « Sans son » |
+| Ce que la page dit | « Sans son : la narration se lit à l'écran. » | « Cochée : le son se coupe et les sous-titres apparaissent. » |
 
 Passer de l'un à l'autre est une commande, une fois les deux films parlés faits :
 
 `node tools/film_speak.mjs <film parlé fr.mp4> <film parlé en.mp4>`
 
-Elle copie les films, met `FILM.voice` à vrai, donne à chaque lecteur de la vitrine sa piste de sous-titres, à la page
-son script et le droit de le lancer, et change les phrases qui parlaient d'un film muet. Chaque changement doit être
+Elle copie les films, met `FILM.voice` à vrai, donne à chaque lecteur de la vitrine sa piste de sous-titres et sa case
+« Sans son », à la page son script et le droit de le lancer, et change les phrases qui parlaient d'un film muet. Sur un
+site qui parle déjà, elle ne fait que remplacer les films. Chaque changement doit être
 trouvé une seule fois, sinon rien n'est écrit. Ensuite : `node --test tests/node/film.test.mjs`, puis les textes qui
 disent encore « sans son » (ce document, le README).
 
@@ -99,9 +105,12 @@ forfait gratuit sont à redire une fois abonné (un dossier de travail neuf, `--
 Relevé le 17 novembre 2026 d'une recherche qui cite l'aide d'ElevenLabs et plusieurs comparatifs (pages non lues en
 entier) ; les conditions du service font foi.
 
-État au 17 novembre 2026 : les deux films parlés existent (voix « Jessica », modèle multilingue, les 24 répliques
-tiennent dans leur temps sans être accélérées), **faits sous le forfait gratuit, pour écoute seulement** : ils ne sont
-ni dans le dépôt ni en ligne. Le site reste dans l'état muet.
+État au 18 novembre 2026 : **le film parle en ligne**. Un premier jeu de répliques, fait le 17 sous le forfait
+gratuit, n'a servi qu'à l'écoute et n'a pas été publié. JP a ensuite choisi de s'abonner ; les 48 répliques ont été
+redites le 18 dans un dossier de travail neuf, puis publiées — elles tiennent toutes dans leur temps sans être
+accélérées. Ce qui n'a pas pu être lu : le forfait lui-même (la clé n'a pas la permission de lire le compte). Le seul
+indice vu est que le service annonçait alors 3 requêtes simultanées permises, valeur que des sources tierces donnent
+pour le premier forfait payant (2 pour le gratuit) ; ce tableau n'a pas été trouvé dans la documentation du service.
 
 ## Refaire le film
 

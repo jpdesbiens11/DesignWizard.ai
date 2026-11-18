@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self'; media-src 'self'; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self'; media-src 'self'; script-src 'self'; base-uri 'none'; form-action 'none'">
   <title>DesignWizard.ai — de l'intention à la pièce, de la pièce au système</title>
   <meta name="description" content="DesignWizard.ai by DynamiteAgile™ : la conception mécatronique réinventée à partir de l'intention de design, brique par brique, en open source (MIT).">
   <meta property="og:title" content="DesignWizard.ai by DynamiteAgile™">
@@ -41,12 +41,14 @@
 
 <section id="film" class="film">
   <h2>La plateforme en 2 min 33</h2>
-  <p class="intro"><mark>La conception, sans les détours.</mark> Du besoin au dossier de commande, sur les vrais écrans de l'outil. Sans son pour l'instant :
-    la narration se lit à l'écran. <a href="#english">English version ↓</a></p>
+  <p class="intro"><mark>La conception, sans les détours.</mark> Du besoin au dossier de commande, sur les vrais écrans de l'outil. Avec la voix ; cochez « Sans son »
+    sous le film et les sous-titres apparaissent. <a href="#english">English version ↓</a></p>
   <video controls playsinline preload="none" poster="video/designwizard_fr.jpg" width="1280" height="720">
     <source src="video/designwizard_fr.mp4" type="video/mp4">
+    <track kind="subtitles" srclang="fr" label="Français" src="video/designwizard_fr.vtt">
     Votre navigateur ne lit pas cette vidéo : <a href="video/designwizard_fr.mp4">téléchargez-la</a>.
   </video>
+  <label class="mute" hidden><input type="checkbox"> Sans son <small>— les sous-titres apparaissent</small></label>
   <details class="said">
     <summary>Le texte de la narration</summary>
     <ol>
@@ -172,11 +174,13 @@
     <a href="https://github.com/jpdesbiens11/DesignWizard.ai" rel="noopener">GitHub</a></p>
   <h2 id="film-en">The platform in 2 min 33</h2>
   <p><mark>Design, without the detours.</mark> From the need to the order package, on the tool's real screens (the screens themselves are in French).
-    No sound yet: the narration reads on screen.</p>
+    With a voice; tick “No sound” under the film and the subtitles appear.</p>
   <video controls playsinline preload="none" poster="video/designwizard_en.jpg" width="1280" height="720">
     <source src="video/designwizard_en.mp4" type="video/mp4">
+    <track kind="subtitles" srclang="en" label="English" src="video/designwizard_en.vtt">
     Your browser cannot play this video: <a href="video/designwizard_en.mp4">download it</a>.
   </video>
+  <label class="mute" hidden><input type="checkbox"> No sound <small>— the subtitles appear</small></label>
   <details class="said">
     <summary>The narration, as text</summary>
     <ol>
@@ -211,7 +215,8 @@
 
 <footer>
   <img src="img/logo/mark.svg" alt="" width="36" height="36">
-  <p>DesignWizard.ai by DynamiteAgile™ — logiciel libre sous licence MIT. Page statique, sans script, sans ressource externe, sans traceur.</p>
+  <p>DesignWizard.ai by DynamiteAgile™ — logiciel libre sous licence MIT. Page statique, sans ressource externe, sans traceur ; un seul script, maison, pour les sous-titres de la vidéo.</p>
 </footer>
+<script type="module" src="js/vitrine.js"></script>
 </body>
 </html>
