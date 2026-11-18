@@ -95,7 +95,7 @@ Partout : **Ctrl + K** ouvre *la baguette* (« 4 trous M4 aux coins à 8 mm », 
 
 ## Ce qui est vérifié, et comment
 
-- **623 tests Node** (`node --test tests/node/*.test.mjs`) : noyau CAO réel, matière première et verbes d'atelier,
+- **629 tests Node** (`node --test tests/node/*.test.mjs`) : noyau CAO réel, matière première et verbes d'atelier,
   synthèse de pièce depuis l'intention, format `.dwiz` (aller-retour sans perte sur toutes les pièces), 21 modèles de
   physique contre des valeurs de manuel, exports STL / DXF / FeatureScript, commande et délais, règles IEC 60664-1,
   moteur de chemins, moteur DFx, dessins PDF, connexion Google et Drive (contre des doubles, sans réseau).
@@ -138,6 +138,7 @@ Le guide complet est dans [docs/GUIDE_COLLABORATEURS.md](docs/GUIDE_COLLABORATEU
 - [docs/BRAND.md](docs/BRAND.md) — logo, thèmes, icônes, voix.
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — comment c'est fait, où se trouve quoi, limites et suite prévue.
 - [docs/ONSHAPE.md](docs/ONSHAPE.md) — clés d'API, ce qui est envoyé, ce qui est confirmé ou non.
+- [skills/README.md](skills/README.md) — **ce que le projet prête aux autres** : le skill `ergonomie-ui` (ergonomie d'interface et façon de travailler avec un agent), en dossier et en un seul fichier à joindre à une conversation.
 
 ## Composants tiers
 

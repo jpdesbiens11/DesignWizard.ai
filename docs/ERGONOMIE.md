@@ -328,6 +328,11 @@ Question de JP (19 novembre 2026) : crée-t-on une interface nouvelle, ou s'appu
 - Deux plugins officiels d'Anthropic existent pour cela et ne sont pas liés aux séances : « frontend-design » (mise en
   œuvre d'interfaces) et « Design » (critique de design, revue d'accessibilité, textes d'interface). Une fois ajoutés
   par JP, une passe de critique précède chaque livraison d'écran.
+- **Ce que le projet prête aux autres** (demande de JP, 19 novembre 2026) : le dossier `skills/ergonomie-ui/` réunit
+  ces règles en un skill qu'un autre agent Claude charge de lui-même, et `skills/ergonomie-ui.md` donne le même
+  contenu en un seul fichier à joindre à une conversation. Quatre parties : le contrat de travail avec l'agent,
+  l'interface honnête, les mécanismes dont tout écran hérite, l'aller-retour IA (recommandé, jamais supposé). Chaque
+  règle y dit si c'est un usage établi ou un choix maison. Voir `skills/README.md`.
 
 ## Une page ouverte annonce la nouvelle version
 

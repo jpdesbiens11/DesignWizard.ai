@@ -1,0 +1,7 @@
+schema_version: "1.1"
+name: ecran-liste-d-etapes
+expected_outcome: |
+  Un fichier etapes.html qui marche, où une étape ajoutée avec des valeurs inventées par l'outil est signalée comme
+  exemple à confirmer et retient « Lancer l'essai » tant qu'elle ne l'est pas ; l'écran dit ce qui manque ; une étape
+  peut être mise de côté (Off) sans être perdue et dupliquée ; la liste garde sa place quand une valeur change. Le
+  compte rendu dit ce qui a été vérifié et ce qui ne l'a pas été, et quelles conventions ont été suivies.

@@ -1,0 +1,7 @@
+schema_version: "1.1"
+name: demarrage-outil-de-configuration
+expected_outcome: |
+  L'agent ne récite pas les règles. Il dit en peu de lignes ce qu'elles apportent, propose d'adopter les quatre parties
+  (contrat de travail, interface honnête, mécanismes hérités, aller-retour IA) en laissant choisir, propose d'écrire
+  les règles retenues dans le fichier d'instructions du projet, et présente l'aller-retour IA comme une
+  recommandation à décider, pas comme un acquis. Il répond en français.
