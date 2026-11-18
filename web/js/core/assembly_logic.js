@@ -35,7 +35,7 @@ export function solve(asm, built) {
   const placements = {}, explode = {}, placedBy = {}, problems = [];
   const queue = [], groups = asm.groups || {}, inGroup = (g) => asm.instances.filter((i) => i.group === g);
   /* a whole sub-assembly put where its frame G is : every part at G · its place inside */
-  const seat = (g, G, by, push) => { placements[g] = G; placedBy[g] = by; explode[g] = push; for (const j of inGroup(g)) { placements[j.id] = matMul(G, j.local || IDENTITY); placedBy[j.id] = by; explode[j.id] = push; queue.push(j.id); } };
+  const seat = (g, G, by, push) => { placements[g] = G; placedBy[g] = by; explode[g] = push; for (const j of inGroup(g)) { placements[j.id] = matMul(G, j.local || IDENTITY); placedBy[j.id] = by; explode[j.id] = j.burst ? v3.add(push, matDir(G, j.burst)) : push; queue.push(j.id); } };      // exploded, a block moves away AND opens : each part keeps the push it has inside (burst)
   /* one instance placed at T : alone, or with the whole sub-assembly it belongs to */
   const put = (i, T, by, push) => { if (i.group && groups[i.group]) seat(i.group, matMul(T, matInvRigid(i.local || IDENTITY)), by, push); else { placements[i.id] = T; placedBy[i.id] = by; explode[i.id] = push; queue.push(i.id); } };
   const home = (i) => { if (i.group && groups[i.group]) seat(i.group, matFromPlacement(groups[i.group].placement), null, [0, 0, 0]); else put(i, matFromPlacement(i.placement), null, [0, 0, 0]); };
@@ -71,11 +71,12 @@ export function solve(asm, built) {
 }
 /** The assembly opened and solved through its levels : each sub-assembly is solved on its own first, and its parts keep in the
     parent the places they have in it. Parts that could not be built are left out. find(id) → assembly.
-    → { asm (opened : core/asm_levels.js flatAsm, each part of a sub-assembly with its `local`), sol } */
+    → { asm (opened : core/asm_levels.js flatAsm, each part of a sub-assembly with its `local` and its `burst`), sol } */
 export function solveLevels(asm, built, find, memo = new Map()) {
   const flat = flatAsm(asm, find), groups = flat.groups || {};
   const inner = (id) => { if (!memo.has(id)) memo.set(id, solveLevels(find(id), built, find, memo)); return memo.get(id); };
-  const instances = flat.instances.filter((i) => built[i.part]).map((i) => (i.group && groups[i.group] ? { ...i, local: inner(groups[i.group].asm).sol.placements[i.id.slice(i.group.length + 1)] || IDENTITY } : i));
+  const instances = flat.instances.filter((i) => built[i.part]).map((i) => { if (!(i.group && groups[i.group])) return i;
+    const s = inner(groups[i.group].asm).sol, lid = i.id.slice(i.group.length + 1); return { ...i, local: s.placements[lid] || IDENTITY, burst: s.explode[lid] || [0, 0, 0] }; });      // its place in the sub-assembly, and the way it leaves it in an exploded view
   const opened = { ...flat, instances };
   return { asm: opened, sol: solve(opened, built) };
 }

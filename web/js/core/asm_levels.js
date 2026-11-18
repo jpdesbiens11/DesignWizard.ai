@@ -44,7 +44,7 @@ export function flatAsm(asm, find, trail = []) {
     for (const l of inner.lost || []) lost.push({ ...l, inst: `${i.id}${SEP}${l.inst}` });
     groups[i.id] = { asm: i.asm, name: sub.name || sub.id, placement: i.placement, fixed: !!i.fixed, hidden: !!i.hidden, parts: inner.instances.length };
     for (const leaf of inner.instances) {
-      const c = { ...leaf, id: `${i.id}${SEP}${leaf.id}`, group: i.id, sub: leaf.sub || i.asm }; delete c.fixed; delete c.local;      // one rigid whole : what was fixed inside is carried with the rest
+      const c = { ...leaf, id: `${i.id}${SEP}${leaf.id}`, group: i.id, sub: leaf.sub || i.asm }; delete c.fixed; delete c.local; delete c.burst;      // one rigid whole : what was fixed inside is carried with the rest
       if (i.hidden) c.hidden = true; else delete c.hidden;
       instances.push(c);
     }

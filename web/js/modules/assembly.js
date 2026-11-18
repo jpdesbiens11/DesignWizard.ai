@@ -11,7 +11,8 @@ import { underVeil } from "../core/busy.js";
 import { createViewport } from "../core/viewport.js";
 import { mountPins } from "./view_pins.js";
 import { buildAssembly, showAssembly, stepItems, stepCount } from "../core/asm_scene.js";
-import { autoMate, candidates, freeInterfaces, ifaceOf, pairKey, joints, jointsCsv, nextJoint } from "../core/assembly_logic.js";
+import { formSub, dissolveSub } from "../core/asm_form.js";
+import { autoMate, candidates, freeInterfaces, ifaceOf, pairKey, joints, jointsCsv, nextJoint, placedTree } from "../core/assembly_logic.js";
 import { assemblyHealth, HEALTH } from "../core/joint_health.js";
 import { announceLinks } from "../core/part_edit.js";
 import { companionSpec } from "../core/companion.js";
@@ -25,7 +26,7 @@ import { popupMenu } from "../core/view_select.js";
 import { mateSection } from "./asm_tree.js";
 import { asmVariantsSection } from "./part_variants.js";
 import { topOf, isSub, ownsKey, usedIn } from "../core/asm_levels.js";
-import { subTab, subChoices, levelRows, levelTable, levelCsv } from "./asm_sub.js";
+import { subTab, subChoices, levelRows, levelTable, levelCsv, formDialog } from "./asm_sub.js";
 import { mateDefinition } from "../core/mate_view.js";
 import { showMate, clearMate, mateDetail } from "./asm_mate.js";
 import { nudge } from "../core/guide.js";
@@ -152,7 +153,7 @@ function render(main, args) {
     const scroll = el("div", { class: "side-scroll" });
     left.append(scroll);
     scroll.append(el("div", { class: "side-section" }, store.assemblies.map((x) => el("a", { class: "nav-item" + (x.id === id ? " active" : ""), href: `#/assembly/${encodeURIComponent(x.id)}` }, icon("assembly"), el("span", { class: "grow" }, x.name || x.id), el("small", null, x.id)))));
-    const sec = el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, `Pièces de l'assemblage (${a.instances.length - offOf(a).instances.length}${offOf(a).instances.length ? ` + ${offOf(a).instances.length} à Off` : ""})`), btn("", () => addDialog(), { small: true, icon: "plus", tip: "Ajouter une pièce du projet" })));
+    const sec = el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, `Pièces de l'assemblage (${a.instances.length - offOf(a).instances.length}${offOf(a).instances.length ? ` + ${offOf(a).instances.length} à Off` : ""})`), btn("", () => formFrom(st.sel ? [st.sel] : []), { small: true, icon: "assembly", tip: "Former un sous-assemblage : des pièces d'ici partent ensemble et reviennent d'un seul bloc" }), btn("", () => addDialog(), { small: true, icon: "plus", tip: "Ajouter une pièce du projet" })));
     for (const inst of a.instances) {
       const { spec, sub, name, icon: mark } = what(inst), placed = st.ctx && st.ctx.sol.placedBy[inst.id], nIn = sub && st.ctx ? st.ctx.asm.instances.filter((i) => i.group === inst.id).length : 0;
       sec.append(el("div", { class: "nav-item" + (st.sel === inst.id ? " active" : "") + (inst.hidden ? " off" : "") + (inst.off ? " is-off" : ""), role: "button", tabindex: "0", "data-inst": inst.id, "aria-haspopup": "menu",
@@ -210,6 +211,18 @@ function render(main, args) {
       let n = a.instances.length + 1, iid; do { iid = `${sub ? "s" : "i"}${n++}`; } while (a.instances.some((i) => i.id === iid));
       a.instances.push({ id: iid, [sub ? "asm" : "part"]: what, fixed: a.instances.length === 0 || undefined, placement: { t: [0, 0, 0], r: [0, 0, 0] } });
     }, `${what} ajouté${sub ? "" : "e"} à ${id}`);
+  }
+  /* levels : parts of this assembly become a sub-assembly of their own, a sub-assembly gives back what it holds — one undoable step each, nothing moves (core/asm_form.js) */
+  function formFrom(pre = []) {
+    if (!st.ctx) return;
+    formDialog({ asm: asm(), pre, nameOf: (i) => what(i).name, done: (chosen, name) => { const nid = store.uniqueId(`ASM-${String(store.assemblies.length + 1).padStart(3, "0")}`); let r = null;
+      try { store.commit(`Sous-assemblage formé : ${name}`, (p) => { r = formSub(p, id, chosen, { id: nid, name, placements: st.ctx.sol.placements }); }, { assembly: id }); } catch (e) { toast(e.message, "error"); return; }
+      st.sel = r.inst; st.tab = "inst"; toast(`${name} (${nid}) : ${r.ids.length} élément(s) en un bloc, ${r.inner.length} accouplement(s) à l'intérieur, ${r.across.length} vers cet assemblage. Ctrl + Z pour revenir.`, "success", 7000); } });
+  }
+  function dissolve(iid) {
+    if (!st.ctx) return; const node = placedTree(asm(), st.ctx.built, (x) => store.assembly(x)).find((n) => n.inst === iid); let r = null;
+    try { store.commit(`Sous-assemblage dissous dans ${id}`, (p) => { r = dissolveSub(p, id, iid, { tree: node }); }, { assembly: id }); } catch (e) { toast(e.message, "error"); return; }
+    st.sel = null; toast(`${r.asm} dissous : ${r.added.length} élément(s) et ${r.mates} accouplement(s) remontent ici, à la même place. Il reste dans le projet. Ctrl + Z pour revenir.`, "success", 7000);
   }
   async function exportStep() {
     if (!st.ctx) return;
@@ -293,7 +306,7 @@ function render(main, args) {
     if (!inst) return [...back, { label: "Ajouter une pièce ou un sous-assemblage…", icon: "plus", run: () => addDialog() }];
     const name = what(inst).name, flag = (key, on, word) => store.updateAssembly(id, (x) => { const i = x.instances.find((q) => q.id === iid); if (on) i[key] = true; else delete i[key]; }, `${name} ${word}`);
     const RUN = { open: () => openPart(iid), alone: () => isolate(iid), all: showAll, hide: () => hide(iid), show: () => flag("hidden", false, "à l'écran"), off: () => flag("off", true, "à Off"), on: () => flag("off", false, "à On"),
-      fix: () => flag("fixed", true, "fixe"), free: () => flag("fixed", false, "libre"), remove: () => dropInst(iid) };
+      fix: () => flag("fixed", true, "fixe"), free: () => flag("fixed", false, "libre"), form: () => formFrom([iid]), dissolve: () => dissolve(iid), remove: () => dropInst(iid) };
     return instanceMenu(asm(), iid, name).map((it) => (it && it.act ? { ...it, run: RUN[it.act] } : it));      // one menu, on the line of the list and on the part in the view
   }
   function instKey(e) {
@@ -309,7 +322,7 @@ function render(main, args) {
       body.append(el("h3", null, what(inst).name), el("p", { class: "atelier-hint" }, icon("info"), ` Cette pièce est à Off : elle reste dans l'assemblage avec sa place${waits ? ` et ${waits > 1 ? `ses ${waits} accouplements` : "son accouplement"}` : ""}, mais elle n'est ni dans la vue, ni dans la nomenclature, ni dans la masse, ni dans les dessins et les exports.`),
         el("div", { class: "form-actions", style: { justifyContent: "flex-start" } }, btn("Remettre à On", () => store.updateAssembly(id, (x) => { setInstOff(x, inst.id, false); }, `${what(inst).name} à On`), { small: true, primary: true, icon: "power" }),
           btn("Retirer", () => store.updateAssembly(id, (x) => without(x, inst.id), `${what(inst).name} : retrait de ${id}`), { small: true, icon: "trash", danger: true }))); return; }
-    if (isSub(inst)) { subTab(body, { inst, ctx: st.ctx, remove: () => dropInst(inst.id), fix: () => store.updateAssembly(id, (x) => { const i = x.instances.find((q) => q.id === inst.id); if (i.fixed) delete i.fixed; else i.fixed = true; }, `${what(inst).name} ${inst.fixed ? "libre" : "fixe"}`),
+    if (isSub(inst)) { subTab(body, { inst, ctx: st.ctx, remove: () => dropInst(inst.id), dissolve: () => dissolve(inst.id), fix: () => store.updateAssembly(id, (x) => { const i = x.instances.find((q) => q.id === inst.id); if (i.fixed) delete i.fixed; else i.fixed = true; }, `${what(inst).name} ${inst.fixed ? "libre" : "fixe"}`),
       move: (k, v) => store.updateAssembly(id, (x) => { const i = x.instances.find((q) => q.id === inst.id); i.placement = i.placement || { t: [0, 0, 0], r: [0, 0, 0] }; i.placement.t[k] = v; }, `${what(inst).name} : position`) }); return; }
     const spec = store.part(inst.part), b = st.ctx.built[inst.part], m = st.ctx.sol.placements[inst.id];
     if (!spec || !b) { body.append(el("h3", null, inst.part), el("p", { class: "form-error" }, "Cette pièce n'est plus dans le projet, ou n'a pas pu être construite."), el("div", { class: "form-actions", style: { justifyContent: "flex-start" } }, btn("Retirer", () => dropInst(inst.id), { small: true, icon: "trash", danger: true }))); return; }
@@ -354,7 +367,7 @@ function render(main, args) {
   }
 
   app.commands = [{ label: "Assemblage : mater automatiquement", hint: "assemblage", icon: "sparkle", keys: "mate auto assembler", run: () => store.commit(`${id} : mates automatiques`, (p) => autoMate(p.assemblies.find((x) => x.id === id), st.ctx.built, st.ctx.asm), { assembly: id }) },
-    { label: "Assemblage : exporter le STEP", hint: "assemblage", icon: "step", keys: "step export", run: exportStep }, { label: "Assemblage : chercher les interférences", hint: "assemblage", icon: "warning", keys: "interference collision", run: checkInterference }];
+    { label: "Assemblage : exporter le STEP", hint: "assemblage", icon: "step", keys: "step export", run: exportStep }, { label: "Assemblage : former un sous-assemblage…", hint: "assemblage", icon: "assembly", keys: "sous-assemblage module bloc former grouper niveaux", run: () => formFrom(st.sel ? [st.sel] : []) }, { label: "Assemblage : chercher les interférences", hint: "assemblage", icon: "warning", keys: "interference collision", run: checkInterference }];
   return () => { off(); pins.dispose(); st.token++; vp.dispose(); };
 }
 

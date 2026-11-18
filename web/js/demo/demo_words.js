@@ -80,6 +80,7 @@ export const WORDS_DRIVE = {
 };
 
 export const WORDS_ROVER = {
+  "Plateau électronique": "Electronics tray", "Châssis roulant": "Rolling chassis",
   "Châssis 1:16 tout-terrain": "1:16 off-road chassis",
   "Colonnettes de la plaque porte-modules": "Module plate standoffs",
   "Appui de la batterie": "Battery seat",

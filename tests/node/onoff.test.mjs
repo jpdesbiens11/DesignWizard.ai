@@ -144,13 +144,13 @@ test("assembly : one part shown alone, the others hidden — not off — and all
 
 test("assembly : the menu of a part follows its state, the same on its line and in the view", () => {
   const acts = (a, id) => instanceMenu(a, id, "Couvercle").filter((x) => x && x.act).map((x) => x.act), a = asm();
-  assert.deepEqual(acts(a, "i2"), ["open", "alone", "hide", "off", "fix", "remove"]);
+  assert.deepEqual(acts(a, "i2"), ["open", "alone", "hide", "off", "fix", "form", "remove"]);
   assert.equal(instanceMenu(a, "i2", "Couvercle")[0].title, "Couvercle · i2");
-  assert.deepEqual(acts(a, "i1"), ["open", "alone", "hide", "off", "free", "remove"], "the fixed part is offered to be freed");
+  assert.deepEqual(acts(a, "i1"), ["open", "alone", "hide", "off", "free", "form", "remove"], "the fixed part is offered to be freed");
   showAlone(a, "i2");
-  assert.deepEqual(acts(a, "i2"), ["open", "all", "hide", "off", "fix", "remove"], "shown alone : it offers to bring the others back, not to be shown alone again");
+  assert.deepEqual(acts(a, "i2"), ["open", "all", "hide", "off", "fix", "form", "remove"], "shown alone : it offers to bring the others back, not to be shown alone again");
   assert.match(instanceMenu(a, "i2").find((x) => x.act === "all").label, /Montrer toutes les pièces \(2 masquées\)/);
-  assert.deepEqual(acts(a, "i3"), ["open", "alone", "all", "show", "off", "fix", "remove"], "a hidden part : show it, alone or with the others");
+  assert.deepEqual(acts(a, "i3"), ["open", "alone", "all", "show", "off", "fix", "form", "remove"], "a hidden part : show it, alone or with the others");
   showEvery(a); a.instances[1].off = true;
   assert.deepEqual(acts(a, "i2"), ["open", "on", "remove"], "a part that is off : turn it on, open it, remove it");
   assert.deepEqual(instanceMenu(a, "nope"), []);

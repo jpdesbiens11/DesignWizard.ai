@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { kernel } from "./kernel_helper.mjs";
 import { buildPart } from "../../web/js/cad/build.js";
 import { INTERFACE_TYPES } from "../../web/js/cad/interfaces.js";
-import { solve } from "../../web/js/core/assembly_logic.js";
+import { solve, solveLevels } from "../../web/js/core/assembly_logic.js";
 import { mateDefinition, mateSolids, mateSection, MATE_COLORS } from "../../web/js/core/mate_view.js";
 import { DEMO_ROVER } from "../../web/js/demo/demo_rover.js";
 
@@ -108,7 +108,8 @@ test("a mate whose side is gone has no definition, and nothing is drawn for it",
 
 test("on the Rover every one of the 29 mates has its definition, and the screws of the plate stand on its four posts", async () => {
   const K = await kernel(), built = {}; for (const s of DEMO_ROVER.parts) built[s.id] = buildPart(K, s);
-  const asm = JSON.parse(JSON.stringify(DEMO_ROVER.assemblies[0])), sol = solve(asm, built), kinds = new Set();
+  const find = (id) => DEMO_ROVER.assemblies.find((a) => a.id === id) || null, { asm, sol } = solveLevels(JSON.parse(JSON.stringify(DEMO_ROVER.assemblies[0])), built, find), kinds = new Set();      // the Rover opened through its two modules : the same 29 mates
+  assert.equal(asm.mates.length, 29);
   for (const m of asm.mates) { const d = mateDefinition(asm, built, sol.placements, m); assert.ok(d, m.id); kinds.add(d.type); assert.ok(d.facts.length >= 2, m.id); assert.ok(mateSolids(d).length >= 1, m.id); inside(mateSection(d)); assert.equal(d.pts.length, d.uv.length); }
   assert.deepEqual([...kinds].sort(), ["bolt_pattern", "cutout", "fit", "pins", "planar"]);
   const m1 = mateDefinition(asm, built, sol.placements, asm.mates.find((m) => m.id === "M1")), s1 = mateSolids(m1);

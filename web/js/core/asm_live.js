@@ -33,7 +33,7 @@ export const isAlone = (asm, id) => { const s = shownOf(asm); return s.length ==
 export function showAlone(asm, id) { for (const i of asm.instances || []) { if (i.id === id) delete i.hidden; else i.hidden = true; } }
 export function showEvery(asm) { for (const i of asm.instances || []) delete i.hidden; }
 /** The menu of a part, the same on its line of the list and on the part in the view : what it offers follows the state of the part.
-    → [{ title } | "—" | { act, label, icon, keys? }] — act : open, alone, all, hide, show, off, on, fix, free, remove ; [] for no part. */
+    → [{ title } | "—" | { act, label, icon, keys? }] — act : open, alone, all, hide, show, off, on, fix, free, form, dissolve, remove ; [] for no part. */
 export function instanceMenu(asm, id, name = "") {
   const i = ((asm && asm.instances) || []).find((x) => x.id === id); if (!i) return [];
   const hidden = ((asm && asm.instances) || []).filter((x) => x.hidden && !instOff(x)).length, alone = isAlone(asm, id), many = ((asm && asm.instances) || []).filter((x) => !instOff(x)).length > 1;
@@ -44,6 +44,8 @@ export function instanceMenu(asm, id, name = "") {
     ...(many && !alone ? [{ act: "alone", label: i.asm ? "Montrer seulement ce sous-assemblage" : "Montrer seulement cette pièce", icon: "eye", keys: "I" }] : []), ...all,
     i.hidden ? { act: "show", label: "Afficher", icon: "eye", keys: "H" } : { act: "hide", label: "Masquer", icon: "eye-off", keys: "H" }, "—",
     { act: "off", label: i.asm ? "Mettre à Off (de côté, sans le retirer)" : "Mettre à Off (de côté, sans la retirer)", icon: "power" }, { act: i.fixed ? "free" : "fix", label: i.fixed ? "Libérer" : i.asm ? "Fixer (il porte les autres)" : "Fixer (elle porte les autres)", icon: "lock" }, "—",
+    /* levels : this one with others becomes a block of its own ; a block gives back what it holds (core/asm_form.js) */
+    { act: "form", label: "Former un sous-assemblage avec…", icon: "assembly" }, ...(i.asm ? [{ act: "dissolve", label: "Dissoudre ici (ses pièces remontent)", icon: "explode" }] : []), "—",
     { act: "remove", label: "Retirer de l'assemblage", icon: "trash", keys: "Suppr" }];
 }
 

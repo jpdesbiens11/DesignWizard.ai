@@ -5,7 +5,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { DEMO_ROVER } from "../../web/js/demo/demo_rover.js";
 import { buildPart, validateSpec } from "../../web/js/cad/build.js";
-import { solve, candidates, bom, hardware } from "../../web/js/core/assembly_logic.js";
+import { solve, solveLevels, candidates, bom, hardware } from "../../web/js/core/assembly_logic.js";
+import { flatAsm } from "../../web/js/core/asm_levels.js";
+import { looseIn, dissolveSub } from "../../web/js/core/asm_form.js";
 import { jointHealth } from "../../web/js/core/joint_health.js";
 import { matPoint } from "../../web/js/cad/vec.js";
 import { toDwiz, fromDwiz } from "../../web/js/core/dwiz.js";
@@ -20,17 +22,22 @@ test("the Rover carries the part numbers of its bill of materials, each part wit
   assert.equal(ids.length, 24); assert.equal(new Set(ids).size, 24);
   for (const pn of ["RVR-1010-01", "RVR-1020-01", "RVR-1040-02", "RVR-2200-04", "RVR-2210-01", "RVR-2211-01", "RVR-3100-01", "RVR-3120-01", "RVR-3130-01", "RVR-3140-02", "RVR-3141-01", "RVR-3150-02", "RVR-3160-01", "RVR-5030-01", "RVR-5050-01", "RVR-5070-01", "RVR-5080-01", "RVR-5090-02", "RVR-5170-01", "RVR-5180-01", "RVR-5190-03", "RVR-5220-01"]) assert.ok(ids.includes(pn), pn);
   for (const p of DEMO_ROVER.parts) { assert.deepEqual(validateSpec(p).errors, [], p.id); assert.ok(p.function && p.interfaces.length, `${p.id} says what it does and how it is held`); for (const i of p.interfaces) assert.ok(i.key && i.partner, `${p.id} ${i.id}`); }
-  const asm = DEMO_ROVER.assemblies[0];
-  assert.equal(asm.instances.length, 30); assert.equal(asm.mates.length, 29); assert.equal(asm.instances.filter((i) => i.fixed).length, 1, "only the chassis is fixed : everything else is held by a mate");
+  /* by modules (v0.94) : the product is two sub-assemblies and the joint between them ; opened, it is the thirty parts and the twenty-nine joints it always was */
+  const [top, tray, roll] = DEMO_ROVER.assemblies, find = (id) => DEMO_ROVER.assemblies.find((a) => a.id === id) || null, asm = flatAsm(top, find);
+  assert.deepEqual(DEMO_ROVER.assemblies.map((a) => a.id), ["RVR-ASM", "RVR-ELEC-ASM", "RVR-ROLL-ASM"]); assert.deepEqual(top.instances.map((i) => [i.id, i.asm, !!i.fixed]), [["roulant", "RVR-ROLL-ASM", true], ["plateau", "RVR-ELEC-ASM", false]]);
+  assert.deepEqual(top.mates.map((m) => [m.id, m.a.inst, m.b.inst]), [["M1", "plateau~plaque", "roulant~chassis"]], "one joint at the top : the plate of the tray on the posts of the chassis");
+  assert.deepEqual([tray.instances.length, tray.mates.length, roll.instances.length, roll.mates.length], [16, 15, 14, 13]); assert.deepEqual([tray.instances.filter((i) => i.fixed).map((i) => i.id), roll.instances.filter((i) => i.fixed).map((i) => i.id)], [["plaque"], ["chassis"]], "each module has its ground");
+  assert.deepEqual(looseIn(tray, tray.instances.map((i) => i.id)), []); assert.deepEqual(looseIn(roll, roll.instances.map((i) => i.id)), [], "inside a module every part is held by a joint of the module");
+  assert.equal(asm.instances.length, 30); assert.equal(asm.mates.length, 29); assert.deepEqual(top.plan.order, ["roulant", "plateau"]); assert.equal(tray.plan.order.length + roll.plan.order.length, 30);
   assert.deepEqual(fromDwiz(toDwiz(DEMO_ROVER.parts[6])), JSON.parse(JSON.stringify(DEMO_ROVER.parts[6])), "the laser-cut plate travels in a .dwiz file");
 });
 
 test("the Rover builds, mates itself, and nothing collides", async () => {
   const K = await kernel(), built = {};
   for (const s of DEMO_ROVER.parts) { built[s.id] = buildPart(K, s); assert.deepEqual(built[s.id].log.filter((l) => l.level === "error"), [], s.id); }
-  const asm = JSON.parse(JSON.stringify(DEMO_ROVER.assemblies[0])), sol = solve(asm, built);
+  const find = (id) => DEMO_ROVER.assemblies.find((a) => a.id === id) || null, { asm, sol } = solveLevels(JSON.parse(JSON.stringify(DEMO_ROVER.assemblies[0])), built, find);      // through its two modules
   assert.deepEqual(sol.problems, []); assert.deepEqual(sol.floating, []); assert.equal(candidates(asm, built).length, 0, "every interface has found its twin");
-  const box = Object.fromEntries(asm.instances.map((i) => [i.id, placed(built[i.part].bbox, sol.placements[i.id])]));
+  const box = Object.fromEntries(asm.instances.map((i) => [i.id.split("~").pop(), placed(built[i.part].bbox, sol.placements[i.id])]));
   assert.deepEqual(box.plaque, [30, -10, 53, 240, 110, 57], "the plate sits on its 50 mm posts");
   assert.deepEqual(box.boitier, [36, 2, 57, 186, 98, 105], "the enclosure stands on the plate");
   assert.deepEqual([box.roue_av_g[1], box.roue_av_d[4]], [117, -17], "the wheels stand outside the axle beams, left and right");
@@ -40,7 +47,7 @@ test("the Rover builds, mates itself, and nothing collides", async () => {
   const all = Object.values(box).reduce((a, b) => [0, 1, 2].map((k) => Math.min(a[k], b[k])).concat([3, 4, 5].map((k) => Math.max(a[k], b[k]))));
   assert.deepEqual(all, [0, -49, -26, 296, 149, 121], "296 × 198 × 147 mm, wheels on the ground 26 mm under the floor");
   /* real interference : the common volume of every pair of instances whose boxes meet */
-  const ids = Object.keys(box), solids = (id) => built[asm.instances.find((x) => x.id === id).part].bodies.map((q) => K.transform(q.shape, sol.placements[id])), hits = [];
+  const leaf = (id) => asm.instances.find((x) => x.id.split("~").pop() === id), ids = Object.keys(box), solids = (id) => built[leaf(id).part].bodies.map((q) => K.transform(q.shape, sol.placements[leaf(id).id])), hits = [];
   for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) { const a = box[ids[i]], b = box[ids[j]]; if (![0, 1, 2].every((k) => Math.min(a[k + 3], b[k + 3]) - Math.max(a[k], b[k]) > -0.01)) continue;
     let v = 0; for (const sa of solids(ids[i])) for (const sb of solids(ids[j])) { try { v += K.props(K.common(sa, sb)).volume; } catch (e) { /* nothing in common */ } } if (v > 0.5) hits.push(`${ids[i]} × ${ids[j]} : ${r1(v)} mm³`); }
   assert.deepEqual(hits, []);
@@ -49,5 +56,9 @@ test("the Rover builds, mates itself, and nothing collides", async () => {
   const hw = hardware(asm, built), rows = bom(DEMO_ROVER, asm, built);
   assert.ok(hw.some((h) => /M3/.test(h.id)) && hw.some((h) => /M2\.5/.test(h.id)) && hw.some((h) => /INSERT-M3/.test(h.id)), "screws and inserts come from the joints");
   assert.equal(rows.find((r) => r.id === "RVR-1010-W").qty, 4); assert.equal(rows.find((r) => r.id === "RVR-3100-01").qty, 3); assert.equal(rows.find((r) => r.id === "RVR-3150-02").qty, 2);
+  /* by modules or flat, it is the same product : dissolve the two modules and every part is where it was */
+  const flatP = JSON.parse(JSON.stringify(DEMO_ROVER)); dissolveSub(flatP, "RVR-ASM", "roulant"); dissolveSub(flatP, "RVR-ASM", "plateau");
+  const flat = flatP.assemblies[0], fsol = solve(flat, built); assert.equal(flat.instances.length, 30); assert.equal(flat.mates.length, 29); assert.ok(flat.instances.every((i) => !i.asm)); assert.deepEqual(fsol.floating, []);
+  for (const i of flat.instances) assert.deepEqual(placed(built[i.part].bbox, fsol.placements[i.id]), box[i.id], `${i.id} : the same place flat and by modules`);
   K.flush();
 });

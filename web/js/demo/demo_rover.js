@@ -6,6 +6,7 @@
    the ground of the assembly. Shapes and sizes are indicative — the purchased parts are envelopes, not supplier models.
    What the library of materials lacks is said in the notes of the part (PETG → ABS, EPDM → silicone, NdFeB → steel). */
 
+import { formSub } from "../core/asm_form.js";
 import { WORDS_ROVER } from "./demo_words.js";
 
 const box = (size, at, extra = {}) => ({ op: "box", size, at, ...extra });
@@ -192,14 +193,23 @@ const BUILD = [
   ["us_centre", US, "IF1", "plaque", "IF10"], ["us_gauche", US, "IF1", "plaque", "IF11"], ["us_droite", US, "IF1", "plaque", "IF12"], ["tof", TOF, "IF1", "plaque", "IF13"],
   ["arret", ESTOP, "IF1", "boitier", "IF3"], ["del", LED, "IF1", "boitier", "IF4"]];
 
+/* The Rover BY MODULES (v0.94) : the list above says what holds what, flat ; the product is put together as two sub-assemblies —
+   the rolling chassis (the chassis and what it carries) and the electronics tray (the plate and what it carries) — formed from that
+   list by the same step as the button « Former un sous-assemblage » (core/asm_form.js). One joint is left at the top : the tray on
+   the four posts of the chassis, from a part of one module to a part of the other. */
+const TRAY = ["plaque", "boitier", "joint", "pi", "pwm", "imu", "diviseurs", "convertisseur", "moniteur", "coupure", "us_centre", "us_gauche", "us_droite", "tof", "arret", "del"];
+const MODULES = { parts: PARTS, assemblies: [{ dw: "assembly/1", id: "RVR-ASM", name: "Rover — assemblage général",
+  instances: BUILD.map(([id, p], k) => ({ id, part: p.id, ...(k ? {} : { fixed: true, placement: { t: [0, 0, 0], r: [0, 0, 0] } }) })),
+  mates: BUILD.slice(1).map(([id, , mine, to, theirs, o], k) => ({ id: `M${k + 1}`, a: { inst: id, iface: mine }, b: { inst: to, iface: theirs }, linked: true, by: "key", ...(o || {}) })),
+  plan: { order: BUILD.map(([id]) => id) } }] };
+formSub(MODULES, "RVR-ASM", TRAY, { id: "RVR-ELEC-ASM", name: "Plateau électronique", inst: "plateau" });
+formSub(MODULES, "RVR-ASM", BUILD.map(([id]) => id).filter((id) => !TRAY.includes(id)), { id: "RVR-ROLL-ASM", name: "Châssis roulant", inst: "roulant" });
+
 export const DEMO_ROVER = {
   dw: "project/1", id: "demo-rover", name: "Rover — véhicule autonome d'apprentissage (exemple)", author: "DesignWizard.ai",
   description: "Le Rover de la visite guidée de DynamiteAgile, en 3D : un robot autonome sur un châssis tout-terrain 1:16 — plaque porte-modules découpée au laser, boîtier et pare-chocs imprimés, Raspberry Pi, trois capteurs à ultrasons, un capteur à temps de vol, une centrale inertielle, un capteur à effet Hall, arrêt d'urgence. Mêmes références RVR que sa nomenclature ; les pièces achetées sont des enveloppes indicatives. Le logiciel RVR-SW-001, la boîte RVR-9010-01 et la notice RVR-9020-01 ne sont pas des pièces 3D.",
   parts: PARTS,
-  assemblies: [{ dw: "assembly/1", id: "RVR-ASM", name: "Rover — assemblage général",
-    instances: BUILD.map(([id, p], k) => ({ id, part: p.id, ...(k ? {} : { fixed: true, placement: { t: [0, 0, 0], r: [0, 0, 0] } }) })),
-    mates: BUILD.slice(1).map(([id, , mine, to, theirs, o], k) => ({ id: `M${k + 1}`, a: { inst: id, iface: mine }, b: { inst: to, iface: theirs }, linked: true, by: "key", ...(o || {}) })),
-    plan: { order: BUILD.map(([id]) => id) } }],
+  assemblies: MODULES.assemblies,      // RVR-ASM (the two modules and the joint between them), RVR-ELEC-ASM, RVR-ROLL-ASM
   drawing: { words: WORDS_ROVER },      // the English of what its drawings write (demo_words.js)
   log: [],
 };

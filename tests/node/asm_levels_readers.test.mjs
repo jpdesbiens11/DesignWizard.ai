@@ -62,6 +62,9 @@ test("menu and .dwiz : a sub-assembly says what it is", () => {
   const top = project().assemblies[1], menu = instanceMenu(top, "s1", "Module").map((x) => (x && x.label) || x);
   assert.ok(menu.includes("Ouvrir le sous-assemblage") && menu.includes("Mettre à Off (de côté, sans le retirer)") && menu.includes("Fixer (il porte les autres)"));
   assert.ok(instanceMenu(top, "i1", "Base").map((x) => (x && x.label) || x).includes("Ouvrir la pièce"));
+  /* levels : any instance can go into a new block with others ; a block can give back what it holds */
+  const acts = (id) => instanceMenu(top, id).filter((x) => x && x.act).map((x) => x.act); assert.ok(acts("s1").includes("form") && acts("s1").includes("dissolve")); assert.ok(acts("i1").includes("form") && !acts("i1").includes("dissolve"), "a part has nothing to dissolve");
+  assert.ok(menu.includes("Former un sous-assemblage avec…") && menu.includes("Dissoudre ici (ses pièces remontent)"));
   const doc = { dw: "assembly/1", ...top }, text = toDwiz(doc); assert.match(text, /^place s1 asm=SUB$/m); assert.match(text, /b=\{inst: s1~i1, iface: IF1\}/); assert.deepEqual(fromDwiz(text), doc);
 });
 

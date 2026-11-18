@@ -72,13 +72,42 @@ Tout ce qui **compte des pièces** lit l'assemblage **ouvert** — chaque pièce
   révision (`subs`), comme elle note ceux des pièces. Un sous-assemblage qui avance demande la révision suivante du
   parent. Voir [REVISIONS.md](REVISIONS.md).
 
+### Former un sous-assemblage, le dissoudre (v0.94)
+
+Un produit se découpe en modules **après coup** : on ne recommence pas l'assemblage.
+
+- **Former.** Le bouton à côté du « + » de la liste des pièces, le menu d'une pièce (« Former un sous-assemblage
+  avec… ») ou la palette ouvrent un dialogue : un nom, les pièces et les sous-assemblages à cocher, et — en direct —
+  **ce qui va se passer** : combien d'accouplements passent à l'intérieur, combien restent entre le bloc et
+  l'assemblage, et ce qui cloche (une pièce qu'aucun accouplement ne relie aux autres ne serait que posée dans le
+  bloc ; un bloc qu'aucun accouplement ne relierait au reste ; une variante qui ne retiendra plus ces pièces).
+  L'action attend un nom et au moins une pièce ; Entrée valide. Les pièces cochées quittent l'assemblage ensemble et y
+  reviennent d'un seul bloc ; le bloc prend la place de la première ; s'il contient la pièce fixe, il devient le bloc
+  fixe. **Rien ne bouge** : chaque pièce est écrite là où le solveur l'avait mise.
+- **Dissoudre.** Le bouton de la fiche du bloc, ou son menu : le bloc est remplacé par ce qu'il contient, ses
+  accouplements remontent, ceux qui passaient par lui nomment de nouveau les pièces directement. Le sous-assemblage
+  reste dans le projet. Posé deux fois, chaque exemplaire se dissout à part (ses pièces prennent un nom à elles).
+- Les deux sont **une étape annulable**, et l'inverse l'une de l'autre. Ce qui nomme une instance suit : l'ordre de la
+  gamme, les étiquettes, les messages épinglés. Une variante du parent **lâche** les pièces qui entrent dans un bloc
+  (elle ne règle pas l'intérieur d'un sous-assemblage) ; à la dissolution, une variante qui mettait le bloc de côté met
+  de côté ce qu'il contenait.
+- Code : `web/js/core/asm_form.js` (pur : `formPlan`, `formSub`, `dissolveSub`, `looseIn`, `placementOf`),
+  `formDialog` (`web/js/modules/asm_sub.js`).
+
+**La vue éclatée ouvre les blocs.** Un sous-assemblage s'écarte d'un bloc *et* s'ouvre : chaque pièce garde, en plus
+de la poussée du bloc, celle qu'elle a dans son propre sous-assemblage (`burst`, `solveLevels`).
+
+**Le Rover de la démonstration est par modules** : « Châssis roulant » (le châssis et ce qu'il porte, 14 pièces) et
+« Plateau électronique » (la plaque et ce qu'elle porte, 16 pièces), formés par la même opération que le bouton, et
+un seul accouplement au niveau du produit — la plaque du plateau sur les colonnettes du châssis, d'une pièce d'un
+module à une pièce de l'autre. Un essai dissout les deux modules et retrouve les trente pièces à la même place.
+
 Pas encore fait :
 
 - l'**envoi vers Onshape** reçoit le STEP à niveaux, mais ce qu'Onshape en fait n'a pas été vu (aucun envoi réel) ;
 - une **variante** du parent ne choisit pas la variante de ses sous-assemblages : un sous-assemblage entre tel qu'il est ;
 - ses pièces masquées dans son propre écran sont montrées dans le parent (masquer se fait au niveau du bloc) ;
-- on ne peut pas **dissoudre** un sous-assemblage dans son parent, ni en **former** un à partir de pièces choisies : il
-  faut le créer, puis l'ajouter.
+- former un bloc ne se fait pas encore en cochant les pièces **dans la vue** (Ctrl + clic) : le dialogue les liste.
 
 ## Dans le fichier
 
