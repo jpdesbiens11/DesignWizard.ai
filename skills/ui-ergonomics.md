@@ -381,6 +381,10 @@ one chooses and what one gets**. Both panels resize and hide; their width is the
 - **Named variants**: the state of the model (what is On, the value of each parameter) is kept under a name, and
   a click comes back to it, in one undoable step. Each variant says what the click would change, and can be looked
   at (its drawing) without the model changing.
+- **What leaves says which variant it comes from**: the name of the file and the heading of the document name it,
+  whether it was asked for or is simply the one on the screen. And what leaves is made for another variant from a
+  copy, by a single menu — the model does not change, and the screen says that what goes out is not what it
+  shows. *Without this, two files of the same name stand for two different parts.*
 - **What one sets is found again.** A setting that is long to redo (a calculation case) is written in the document
   at every change, as an undoable step; a mere visit writes nothing.
 

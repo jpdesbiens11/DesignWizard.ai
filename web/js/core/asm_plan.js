@@ -5,7 +5,8 @@
    screws, lowered for boards and for threads in light alloy or plastic : indicative, to confirm by a tightening test. */
 
 import { resolveParams, evalDeep } from "../cad/expr.js";
-import { liveAsm } from "./asm_live.js";
+import { liveAsm, asmVariantNow } from "./asm_live.js";
+import { variantFacts } from "./variant_out.js";
 import { flatAsm, finder, topOf, isSub } from "./asm_levels.js";
 import { patternPoints, interfaceType, ADHESIVES, BOND_PREPS } from "../cad/interfaces.js";
 import { finishPlan } from "./plan_doc.js";
@@ -43,6 +44,7 @@ export function assemblyOrder(asm, parts) {
 /** The assembly routing. ctx : { hardwareOf(mate) → [{ id, kind, size, length, qty, name }], mass, dfa (DFA result) } — all optional. */
 export function assemblyPlan(asm, project, ctx = {}) {
   const find = finder(project), leaves = new Map(((flatAsm(asm, find) || {}).instances || []).map((i) => [i.id, i]));      // every part through the levels : a joint of this assembly may hold to a part inside a sub-assembly
+  const variant = ctx.variant === undefined ? asmVariantNow(asm) : ctx.variant;      // the routing says which variant of the assembly it mounts
   asm = liveAsm(asm);      // a part put aside is not in the routing
   const parts = new Map((project.parts || []).map((p) => [p.id, p])), inst = new Map(asm.instances.map((i) => [i.id, i])), order = assemblyOrder(asm, parts), notes = (asm.plan && asm.plan.notes) || {};
   /* a step is an instance of THIS assembly — a part, or a sub-assembly put together apart and mounted as one block */
@@ -116,6 +118,6 @@ export function assemblyPlan(asm, project, ctx = {}) {
   ask("Couples", "Les couples indiqués sont des valeurs usuelles : lesquels faut-il confirmer par un essai de serrage, et faut-il un frein-filet ?");
   for (const f of ((ctx.dfa && ctx.dfa.findings) || []).filter((x) => x.severity !== "info").slice(0, 6)) ask("Montage", `${f.title} — ${f.message}`);
   return finishPlan({ kind: "assemblage", id: asm.id, name: asm.name || "", revision: asm.revision || "A",
-    facts: [["Pièces", String(leaves.size)], ...(asm.instances.some(isSub) ? [["Sous-assemblages", String(asm.instances.filter(isSub).length)]] : []), ["Étapes", String(order.length)], ["Vis", `${nScrews} en ${sizes.size} taille${sizes.size > 1 ? "s" : ""}`], ...(ctx.mass ? [["Masse", `${fr(ctx.mass, 0)} g`]] : [])],
+    facts: [...variantFacts(variant), ["Pièces", String(leaves.size)], ...(asm.instances.some(isSub) ? [["Sous-assemblages", String(asm.instances.filter(isSub).length)]] : []), ["Étapes", String(order.length)], ["Vis", `${nScrews} en ${sizes.size} taille${sizes.size > 1 ? "s" : ""}`], ...(ctx.mass ? [["Masse", `${fr(ctx.mass, 0)} g`]] : [])],
     phases, hardware, questions: q, points: (asm.plan && asm.plan.points) || [], order });
 }

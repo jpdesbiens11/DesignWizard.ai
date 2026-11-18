@@ -43,8 +43,9 @@ export function planBar(plan, o = {}) {
 /** The routing sheet in a panel. o : { selected (phase key), onSelect(phase, index), onNote(key, text), onPoints(list),
     phaseExtra(phase, index) → node, figures, aiKey }. */
 export function planPanel(body, plan, o = {}) {
-  const K = PLAN_KINDS[plan.kind], say = sayOf(plan);
+  const K = PLAN_KINDS[plan.kind], say = sayOf(plan), variant = (plan.facts.find(([k]) => k === "Variante") || [])[1];      // a routing is that of one variant of its document, and says which
   body.append(el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, K.title), badge(`${plan.phases.length} phases`, "neutral")),
+    variant ? el("p", { class: "plan-variant", "data-variant": variant }, badge(`Variante : ${variant}`, "info"), el("span", { class: "muted small" }, " La gamme et ses fiches sont celles de cette variante.")) : null,
     el("p", { class: "muted small" }, `Proposition tirée du modèle, à discuter avec ${K.audience}${o.onSelect ? " : cliquez une phase pour la voir dans la vue" : ""}. Vos notes restent dans l'artéfact.`), planBar(plan, o)));
   const list = el("ol", { class: "plan" });
   plan.phases.forEach((ph, i) => {

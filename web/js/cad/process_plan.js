@@ -9,6 +9,8 @@ import { evalDeep, resolveParams } from "./expr.js";
 import { patternPoints, interfaceType } from "./interfaces.js";
 import { thread, clearanceHole } from "./standards.js";
 import { finishPlan } from "../core/plan_doc.js";
+import { variantNow } from "../core/variants.js";
+import { variantFacts } from "../core/variant_out.js";
 
 const fr = (v, d = 2) => (typeof v === "number" && Number.isFinite(v) ? String(Math.round(v * 10 ** d) / 10 ** d).replace(".", ",") : String(v ?? "—"));
 const OPPOSITE = { "+X": "-X", "-X": "+X", "+Y": "-Y", "-Y": "+Y", "+Z": "-Z", "-Z": "+Z" };
@@ -101,7 +103,7 @@ export function processPlan(spec, built, opts = {}) {
   phase("pack", "Marquage et conditionnement", "Expédition", [], { force: true, checks: [`Identifier : ${spec.id}, révision ${spec.revision || "A"}`, "Protéger les faces d'appui et les filetages ; emballer pièce par pièce"] });
   const m = material(spec.material), st = r.stock, qty = (opts.order && opts.order.quantity) || (spec.order && spec.order.quantity) || (spec.intent && spec.intent.quantity) || null;
   return finishPlan({ kind: "fabrication", id: spec.id, name: spec.name || "", revision: spec.revision || "A",
-    facts: [["Matériau", m ? m.name : spec.material || "à définir"], ["Procédé", PROCESSES[proc] ? processName(proc) : proc || "à définir"], ["Matière première", st ? st.label : RAW[proc] || (spec.extrusion ? RAW.extrusion_al : spec.pcb ? RAW.pcb : "à définir")], ...(spec.finish ? [["Finition", spec.finish]] : []), ...(qty ? [["Quantité", String(qty)]] : []),
+    facts: [...variantFacts(opts.variant === undefined ? variantNow(spec) : opts.variant), ["Matériau", m ? m.name : spec.material || "à définir"], ["Procédé", PROCESSES[proc] ? processName(proc) : proc || "à définir"], ["Matière première", st ? st.label : RAW[proc] || (spec.extrusion ? RAW.extrusion_al : spec.pcb ? RAW.pcb : "à définir")], ...(spec.finish ? [["Finition", spec.finish]] : []), ...(qty ? [["Quantité", String(qty)]] : []),
       ["Posages", String(r.setups.length || 1)], ...(r.utilisation !== null ? [["Matière utile", `${Math.round(r.utilisation * 100)} % du brut`]] : [])],
     phases, characteristics: chars, questions: questions(spec, r, facts, opts), advice: r.advice, points: (spec.plan && spec.plan.points) || [], setups: r.setups, utilisation: r.utilisation });
 }

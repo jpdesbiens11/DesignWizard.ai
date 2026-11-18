@@ -151,8 +151,8 @@ export function createDriveFs(drive, { root = "DesignWizard.ai" } = {}) {
       return moved;
     },
     /** File an order package: 05_Commandes/<date> <number> ×<quantity>/ with the archive and the request for quotation. */
-    async saveOrder(project, pkg, { partId, quantity = 1 } = {}, when = new Date()) {
-      const pf = await projectFolder(project), orders = await folder(pf.id, TREE.orders), dir = await folder(orders.id, safeName(`${day(when)} ${partId} ×${quantity}`), "order", { pid: project.id, pn: partId });
+    async saveOrder(project, pkg, { partId, quantity = 1, variant = null } = {}, when = new Date()) {
+      const pf = await projectFolder(project), orders = await folder(pf.id, TREE.orders), dir = await folder(orders.id, safeName(`${day(when)} ${partId}${variant ? ` ${variant}` : ""} ×${quantity}`), "order", { pid: project.id, pn: partId });
       const zipFile = await put(dir.id, pkg.name, "application/zip", pkg.bytes, "order-package", { pid: project.id });
       await put(dir.id, "demande_de_prix.txt", "text/plain", pkg.rfq, "order-rfq", { pid: project.id });
       return { folder: dir, file: zipFile };

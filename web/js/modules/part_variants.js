@@ -4,10 +4,11 @@
    Each variant has its drawing, without changing the document (the sheet says which variant it shows).
    The models are core/variants.js and core/asm_live.js ; this module draws them — one group, the same for both. */
 
-import { el, btn, icon, toast, promptBox, confirmBox } from "../core/dom.js";
+import { el, btn, icon, field, toast, promptBox, confirmBox } from "../core/dom.js";
 import { store } from "../core/store.js";
 import { variantNow, isVariant, applyVariant, keepVariant, dropVariant, variantDiff, keptAside } from "../core/variants.js";
 import { asmVariantNow, isAsmVariant, applyAsmVariant, keepAsmVariant, dropAsmVariant, asmVariantDiff, offOf } from "../core/asm_live.js";
+import { namedVariant, partOut, asmOut, outChoices } from "../core/variant_out.js";
 
 const COLOR = "#0ea5a4";      // the colour of the variants, in the tree and on their mark
 
@@ -62,6 +63,18 @@ export function asmVariantsSection(o) {
     hint: list.length
       ? `${now ? "" : "L'assemblage est dans un état sans nom : le « + » le garde. "}Une variante retient les pièces à On et à Off ; une pièce ajoutée plus tard vaut pour toutes. La variante de chaque pièce n'en fait pas partie : elle se choisit dans la pièce.`
       : `Plusieurs versions d'un produit tiennent dans un seul assemblage : mettez des pièces à Off, puis gardez cet état sous un nom avec le « + »${off ? ` (${off} pièce${off > 1 ? "s" : ""} à Off en ce moment)` : ""}.` });
+}
+/** The menu « Variante qui sort » : which cousin a file, an order or a send is made for — from a copy, the document is not changed.
+    The same on every screen that lets something out. o : { doc, isAsm, value (the name chosen, or ""), onPick(name),
+    what (« La commande et les fichiers »), are (« sont ceux », « est celui ») } → a node, or null when the document keeps no variant */
+export function outPicker(o) {
+  const list = (o.doc && o.doc.variants) || []; if (!list.length) return null;
+  const out = (o.isAsm ? asmOut : partOut)(o.doc, o.value), the = o.isAsm ? "l'assemblage n'est pas changé" : "la pièce n'est pas changée", value = namedVariant(o.doc, o.value) ? o.value : "";
+  const sel = el("select", { "aria-label": "Variante qui sort", "data-field": "out", onChange: (e) => o.onPick(e.target.value) }, outChoices(o.doc, o.isAsm).map((c) => el("option", { value: c.value, selected: c.value === value }, c.label)));
+  const hint = out.copy ? `${o.what} ${o.are || "sont ceux"} de la variante « ${out.variant} » ; ${the}.`
+    : out.variant ? `${o.what} ${o.are || "sont ceux"} de la variante « ${out.variant} », et le disent dans leur nom.`
+      : `L'état en ce moment n'a pas de nom : rien de ce qui sort n'en portera. Choisissez une variante, ou gardez cet état sous un nom.`;
+  return el("div", { class: "out-variant" + (out.copy ? " other" : ""), "data-out": out.variant || "" }, mark(!out.copy), field("Variante qui sort", sel, hint));
 }
 /* the mark of a variant : the part and its cousin, the one in use filled */
 function mark(on) {

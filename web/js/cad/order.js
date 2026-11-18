@@ -70,9 +70,9 @@ export function orderGuide(spec, check, order = (spec && spec.order) || {}) {
 }
 
 /** Request for quotation, in French, ready to send to a shop with the order package. */
-export function rfqText(spec, built, route, check, order = spec.order || {}, files = []) {
+export function rfqText(spec, built, route, check, order = spec.order || {}, files = [], variant = null) {
   const mat = materialOrDefault(spec.material), bb = built.bbox, n = (x) => (Math.round(x * 10) / 10).toLocaleString("fr-CA");
-  const lines = [`DEMANDE DE PRIX — PROTOTYPE`, ``, `Pièce : ${spec.id} — ${spec.name || ""}${spec.revision ? ` (rév. ${spec.revision})` : ""}`, `Quantité : ${check.quantity}`,
+  const lines = [`DEMANDE DE PRIX — PROTOTYPE`, ``, `Pièce : ${spec.id} — ${spec.name || ""}${spec.revision ? ` (rév. ${spec.revision})` : ""}`, variant ? `Variante : ${variant} — les fichiers joints sont ceux de cette variante` : null, `Quantité : ${check.quantity}`,
     order.need_by ? `Livraison souhaitée : ${order.need_by}` : `Livraison souhaitée : au plus tôt (délai visé : ${check.days[0]} à ${check.days[1]} jours ouvrables)`,
     ``, `Matériau : ${mat.name}`, `Procédé : ${PROCESSES[spec.process] ? processName(spec.process) : "à convenir"}`, route && route.stock ? `Matière première : ${route.stock.label}` : null,
     `Enveloppe : ${n(bb[3] - bb[0])} × ${n(bb[4] - bb[1])} × ${n(bb[5] - bb[2])} mm — masse ${n(built.mass)} g`, `Finition : ${spec.finish || "brut d'usinage, ébavuré"}`,

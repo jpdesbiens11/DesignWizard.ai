@@ -33,6 +33,7 @@ import { processPlan } from "../cad/process_plan.js";
 import { assemblyPlan } from "../core/asm_plan.js";
 import { mateHardware, joints, freeInterfaces } from "../core/assembly_logic.js";
 import { planSummary } from "../core/plan_doc.js";
+import { variantRows, partOut } from "../core/variant_out.js";
 import { BRAND, BRAND_LINE, FOOT_NOTE, logoSvg } from "../core/brand.js";
 import { blocksOf } from "../core/dom_doc.js";
 import { pdfDoc } from "../core/pdfdoc.js";
@@ -164,7 +165,7 @@ function render(main) {
       const route = b ? routing(s, b) : null, oc = b ? orderCheck(s, b, x.res, route) : null, gamme = b && !s.step ? processPlan(s, b, { route, dfx: x.res }) : null;
       const sec = el("section", { class: "card", style: { marginBottom: "1rem", breakInside: "avoid" } }, el("h2", null, `${s.id} — ${s.name || ""} `, sum.errors ? badge(`${sum.errors} à corriger`, "danger") : sum.warnings ? badge(`${sum.warnings} à vérifier`, "warn") : badge("conforme", "ok")));
       const facts = el("table", { class: "data" }, el("tbody", null, [["Fonction", s.function || "—"], ["Matériau", materialOrDefault(s.material).name], ["Procédé", processName(s.process) || "—"], ["Masse", b ? fmtMass(b.mass) : "—"],
-        ["Enveloppe", b ? `${fmt(b.bbox[3] - b.bbox[0], 1)} × ${fmt(b.bbox[4] - b.bbox[1], 1)} × ${fmt(b.bbox[5] - b.bbox[2], 1)} mm` : "—"], ["Révision", s.revision || "—"], ["Score DFx", typeof sum.score === "number" ? `${sum.score} / 100` : "—"],
+        ["Enveloppe", b ? `${fmt(b.bbox[3] - b.bbox[0], 1)} × ${fmt(b.bbox[4] - b.bbox[1], 1)} × ${fmt(b.bbox[5] - b.bbox[2], 1)} mm` : "—"], ["Révision", s.revision || "—"], ...((s.variants || []).length ? [["Variante montrée", partOut(s).variant || "état sans nom"]] : []), ["Score DFx", typeof sum.score === "number" ? `${sum.score} / 100` : "—"],
         ["Interfaces", (b ? b.interfaces : []).map((i) => `${i.name} (${i.side})`).join(" · ") || "aucune"],
         ["Matière première", route && route.stock ? `${route.stock.label}${route.utilisation !== null ? ` — ${Math.round(route.utilisation * 100)} % utilisé` : ""}` : "non déclarée"],
         ["Fabrication", route ? `${route.steps.length} opération(s), ${route.setups.length || 1} posage(s), ${route.tools.length} outil(s)` : "—"],
@@ -185,6 +186,10 @@ function render(main) {
     if (revs.length && store.assemblies.length) doc.append(el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, "Révisions et cas d'emploi"),
       el("p", { class: "muted" }, "Chaque pièce avec sa révision, les assemblages qui l'emploient, et la révision de la pièce avec laquelle chacun a été revu. Un assemblage revu avec une révision dépassée est à revalider : il prendra alors sa propre révision suivante. Les dessins portent toujours la révision de ce qu'ils dessinent."),
       table(["Pièce", "Nom", "Rév.", "État", "Employée dans"], revs)));
+    const fam = variantRows(store.project);
+    if (fam.length) doc.append(el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, "Variantes"),
+      el("p", { class: "muted" }, "Une pièce ou un assemblage peut garder ses cousines sous un nom. Ce dossier montre chaque document dans la variante où il est en ce moment — images, analyses, masse, dessins et gammes sont ceux de cette variante ; les autres sont listées avec ce qu'elles changent. Pour revoir une autre variante : passez-y d'un clic dans le document, puis relancez le dossier. Le numéro et la révision sont ceux du document."),
+      table(["Genre", "Repère", "Nom", "Variante montrée", "Autres variantes gardées"], fam.map((r) => [r.kind === "part" ? "Pièce" : "Assemblage", el("code", null, r.id), r.name, r.now || "état sans nom", r.variants.filter((v) => !v.on).map((v) => `${v.name} (${v.diff.join(" · ") || "comme le document"})`).join(" ; ") || "—"]))));
     const spe = specialRows(store.parts);
     if (spe.length) doc.append(el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, "Procédés spéciaux"),
       el("p", { class: "muted" }, "Les pièces découpées au laser, pliées ou imprimées : le laser ou le procédé de leur matière, ce qu'il demande au dessin, et ce qui se contrôle — l'état du bord coupé, la suite après impression. Valeurs typiques de guides publiés : le fournisseur et la fiche de la matière font foi (Atelier → Procédés spéciaux)."),

@@ -10,6 +10,8 @@ import { underVeil, pageVeil } from "../core/busy.js";
 import * as api from "../onshape/api.js";
 import { planPush, pushToOnshape } from "../onshape/push.js";
 import { buildAssembly, stepItems, stepCount } from "../core/asm_scene.js";
+import { asmOut } from "../core/variant_out.js";
+import { outPicker } from "./part_variants.js";
 import { makeDrawing } from "./drawings.js";
 import { materialOrDefault } from "../cad/materials.js";
 
@@ -82,14 +84,16 @@ function render(main, args) {
     load();
 
     /* content and send */
-    const asmSel = el("select", null, store.assemblies.map((a) => el("option", { value: a.id, selected: a.id === args[0] }, `${a.id} — ${a.name || ""}`)));
+    const asmSel = el("select", { onChange: () => { state.out = ""; drawOut(); } }, store.assemblies.map((a) => el("option", { value: a.id, selected: a.id === args[0] }, `${a.id} — ${a.name || ""}`)));
+    /* the variant of the assembly that is sent : from a copy, the assembly is not changed */
+    const outBox = el("div"), drawOut = () => { const p = outPicker({ doc: store.assembly(asmSel.value), isAsm: true, value: state.out || "", what: "Le STEP envoyé", are: "est celui", onPick: (name) => { state.out = name; clear(out); drawOut(); } }); outBox.replaceChildren(...(p ? [p] : [])); };
     const oNative = el("input", { type: "checkbox", checked: true }), oPdf = el("input", { type: "checkbox", checked: true }), oMeta = el("input", { type: "checkbox", checked: true });
     const out = el("div");
-    const send = el("div", { class: "card taped" }, el("h2", null, "Contenu de l'envoi"), store.assemblies.length ? field("Assemblage", asmSel) : el("p", { class: "form-error" }, "Le projet n'a pas d'assemblage. Correctif : créez-en un dans l'onglet Assemblage."),
+    const send = el("div", { class: "card taped" }, el("h2", null, "Contenu de l'envoi"), store.assemblies.length ? field("Assemblage", asmSel) : el("p", { class: "form-error" }, "Le projet n'a pas d'assemblage. Correctif : créez-en un dans l'onglet Assemblage."), outBox,
       el("label", { class: "check", style: { display: "flex" } }, oNative, "Créer le dessin natif Onshape de chaque pièce (attaché à son 3D)"), el("label", { class: "check", style: { display: "flex" } }, oPdf, "Joindre le dessin PDF de chaque pièce (onglet PDF)"),
       el("label", { class: "check", style: { display: "flex" } }, oMeta, "Renseigner les propriétés des pièces (numéro, description, matériau, révision)"),
       el("div", { class: "form-actions" }, btn("Préparer et vérifier l'envoi", () => prepare(), { primary: true, icon: "play", disabled: !state.doc || !store.assemblies.length, tip: state.doc ? "Construit le STEP et les dessins, puis montre ce qui sera créé" : "Choisissez d'abord un document" })), out);
-    cols.append(send);
+    cols.append(send); if (store.assemblies.length) drawOut();
 
     /* Preparing builds the assembly, its STEP and every drawing ; sending talks to Onshape for a while. Both run under the veil of the page :
        what is being done, how far, for how long — and « Annuler », which stops the kernel, or stops the send between two requests. */
@@ -97,11 +101,12 @@ function render(main, args) {
       clear(out);
       try {
         const job = await underVeil(pageVeil(), "Préparation de l'envoi…", async (say) => {
-          const asm = store.assembly(asmSel.value), ctx = await buildAssembly(asm, (t, done, total) => { setStatus(t, "busy"); say(t, done, total); });
+          const leaving = asmOut(store.assembly(asmSel.value), state.out), asm = leaving.doc, title = `${asm.id} ${asm.name || ""}${leaving.variant ? ` — ${leaving.variant}` : ""}`.trim();      // the variant chosen : the parts it puts aside are not sent
+          const ctx = await buildAssembly(asm, (t, done, total) => { setStatus(t, "busy"); say(t, done, total); });
           if (ctx.errors.length) throw new Error(ctx.errors.join(" "));
           const items = stepItems(asm, ctx.built);      // with its levels : Onshape receives the sub-assemblies as such
           say(`Écriture du STEP de l'assemblage — ${stepCount(items)} pièce(s)…`);
-          const stepText = await kernel.step(items, `${asm.id} ${asm.name || ""}`.trim());
+          const stepText = await kernel.step(items, title);
           const parts = [], ids = [...new Set(ctx.asm.instances.map((i) => i.part))];
           for (const [k, pid] of ids.entries()) {
             const s = store.part(pid), entry = { id: pid, name: `${pid} ${s.name || ""}`.trim(), revision: s.revision || "A", material: materialOrDefault(s.material).name, description: s.function || s.name || "" };
@@ -112,7 +117,7 @@ function render(main, args) {
             }
             parts.push(entry);
           }
-          return { did: state.doc.id, wid: state.doc.defaultWorkspaceId, assemblyName: `${asm.id} ${asm.name || ""}`.trim(), stepText, parts, options: { nativeDrawings: oNative.checked, attachPdf: oPdf.checked, setMetadata: oMeta.checked } };
+          return { did: state.doc.id, wid: state.doc.defaultWorkspaceId, assemblyName: title, stepText, parts, options: { nativeDrawings: oNative.checked, attachPdf: oPdf.checked, setMetadata: oMeta.checked } };
         }, { cancelled: "Préparation annulée : rien n'a été envoyé." });
         if (!job) { setStatus("Préparation annulée", ""); out.append(el("p", { class: "muted" }, "Préparation annulée : rien n'a été envoyé.")); return; }
         const { stepText, parts } = job;

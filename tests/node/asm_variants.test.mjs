@@ -56,10 +56,10 @@ test("wiring : the assembly has its variants group, each variant its drawing, an
   assert.match(v, /export function variantPanel\(o\)/); assert.match(v, /export function variantsSection\(o\)/); assert.match(v, /export function asmVariantsSection\(o\)/, "one group, the same for a part and for an assembly");
   assert.match(v, /store\.updateAssembly\(o\.id, \(x\) => \{ applyAsmVariant\(x, v\); \}, `\$\{a\.id\} : variante « \$\{v\.name\} »`\)/, "one named step, undone by Ctrl + Z");
   assert.match(v, /drawing: \(v\) => `#\/drawings\/\$\{encodeURIComponent\(o\.id\)\}\/\$\{encodeURIComponent\(v\.name\)\}`/); assert.match(v, /drawing: \(v\) => `#\/drawings\/asm\/\$\{encodeURIComponent\(o\.id\)\}\/\$\{encodeURIComponent\(v\.name\)\}`/);
-  assert.match(d, /const v = variantOf\(own, extra\.variant\), spec = v \? \{ \.\.\.own, \.\.\.applyVariant\(own, v\) \} : own;/, "a part is drawn as a variant from a copy");
-  assert.match(d, /const key = v \? "drawing:variant" : partId, built = await kernel\.build\(spec, undefined, key\);/, "built beside the part : the kernel keeps the part as the other screens show it");
-  assert.match(d, /const v = variantOf\(own, extra\.variant\), asm = asVariant\(own, v\);/);
-  assert.equal((d.match(/variant: v \? v\.name : null/g) || []).length, 2, "the sheet names a variant only when it shows one");
+  assert.match(d, /const o = partOut\(own, extra\.variant\), spec = o\.doc;/, "a part is drawn as a variant from a copy (core/variant_out.js)");
+  assert.match(d, /const key = o\.copy \? "drawing:variant" : partId, built = await kernel\.build\(spec, undefined, key\);/, "built beside the part : the kernel keeps the part as the other screens show it");
+  assert.match(d, /const o = asmOut\(own, extra\.variant\), asm = o\.doc;/);
+  assert.equal((d.match(/variant: o\.variant \}\)/g) || []).length, 2, "the sheet names the variant it shows — the one asked for, or the one the document is in");
   assert.match(d, /aria-label": "Variante dessinée"/); assert.match(d, /makeAssemblyDrawing\(id, \{ variant \}\) : await makeDrawing\(id, \{ variant \}\)/);
   for (const f of ["web/js/draw/part_drawing.js", "web/js/draw/asm_drawing.js"]) assert.match(read(f), /\$\{o\.variant \? ` — VARIANT \$\{say\(o\.variant\)\}` : ""\}/, `${f} : the title block says the variant, in English`);
   assert.doesNotMatch(read("web/js/core/asm_live.js"), /^import /m, "what reads an assembly still imports nothing");

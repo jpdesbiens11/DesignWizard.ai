@@ -13,6 +13,8 @@ import { kernel } from "../cad/client.js";
 import { underVeil } from "../core/busy.js";
 import { processPlan, stateSpec } from "../cad/process_plan.js";
 import { planPanel, shot, setPlanNote, setPlanPoints } from "./plan_view.js";
+import { outPicker } from "./part_variants.js";
+import { namedVariant, partOut, variantTag, outGuide } from "../core/variant_out.js";
 
 const NO_STOCK = new Set(["die_casting", "lp_die_casting", "permanent_mold", "sand_casting", "injection_molding", "fdm", "mjf", "sla", "lpbf", "pcb", "extrusion_al", "extrusion_plastic", "purchased"]);      // processes that do not start from a bar or a plate
 
@@ -59,35 +61,40 @@ export function gammePanel(body, ctx) {
 }
 
 /* ---------- « Artéfacts » panel: every exchange file of the part, one click each ---------- */
-export function artifactsPanel(body, { st, id, vp, rebuild }) {
+export function artifactsPanel(body, ctx) {
+  const { st, id, vp, rebuild } = ctx;
+  /* which cousin leaves : the part as it is, or a variant it keeps — checked, ordered and written from a copy (core/variant_out.js) */
+  const asked = namedVariant(st.spec, st.out) ? st.out : "", leaving = partOut(st.spec, asked), opts = { variant: asked || undefined };
+  const picker = outPicker({ doc: st.spec, value: asked, what: "La commande et les fichiers", onPick: (name) => { st.out = name; body.replaceChildren(); artifactsPanel(body, ctx); } });
+  if (picker) body.append(picker);
   /* an export can last : it runs under the veil of the view, and « Annuler » stops the kernel — which then builds the part again, quietly */
   const veil = { set: (t, o) => vp.setBusy(t, o) }, under = (text, job, cancelled) => underVeil(veil, text, job, { after: () => rebuild(), cancelled });
   const orderBox = el("div", { class: "order-card" }, el("p", { class: "muted small" }, "Vérification de la commande…"));
   body.append(el("h3", null, "Commander le prototype"), orderBox, el("h3", { style: { marginTop: "1rem" } }, "Fichiers d'échange"),
-    el("p", { class: "muted small" }, "Ce que la pièce remet au reste de l'industrie. Chaque fichier est produit à la demande, à partir de la pièce telle qu'elle est maintenant."));
+    el("p", { class: "muted small" }, leaving.copy ? `Ce que la pièce remet au reste de l'industrie. Chaque fichier est produit à la demande, pour la variante « ${leaving.variant} » — la pièce à l'écran n'est pas changée.` : "Ce que la pièce remet au reste de l'industrie. Chaque fichier est produit à la demande, à partir de la pièce telle qu'elle est maintenant."));
   import("../core/artifacts.js").then(({ artifactsFor, makeArtifact, partArtifacts, orderStatus, orderPackage }) => {
     const order = { quantity: 1, ...(st.spec.intent && st.spec.intent.quantity ? { quantity: st.spec.intent.quantity } : {}), ...(st.spec.order || {}) };
     const keep = () => store.updatePart(id, (x) => { x.order = { ...order }; }, `${id} : commande modifiée`);
     const drawOrder = async () => {
       let s;
-      try { s = await orderStatus(id, order); } catch (e) { orderBox.replaceChildren(el("p", { class: "form-error" }, e.message)); return; }
-      const kept = store.part(id) || st.spec, guide = orderGuide(kept, s.check), asked = guide.some((x) => x.field === "quantity");      // a quantity nobody gave is the tool's own : its field blinks until it is entered or kept
-      if (st.tab === "files") { st.orderGuide = true; setGuide(guide.map((x) => ({ ...x, go: () => { const n = orderBox.querySelector(`[data-field="${x.field}"]`); if (n) { n.scrollIntoView({ block: "center" }); n.focus(); } } }))); }
-      const c = s.check, qty = el("input", { type: "number", min: 1, step: 1, value: order.quantity, "data-field": "quantity", class: asked ? "need" : null, onChange: (e) => { order.quantity = Math.max(1, parseInt(e.target.value, 10) || 1); keep(); }, onKeydown: (e) => { if (e.key === "Enter" && asked) keep(); } });
+      try { s = await orderStatus(id, order, opts); } catch (e) { orderBox.replaceChildren(el("p", { class: "form-error" }, e.message)); return; }
+      const kept = store.part(id) || st.spec, guide = [...outGuide(kept, asked), ...orderGuide(kept, s.check)], toEnter = guide.some((x) => x.field === "quantity");      // a quantity nobody gave is the tool's own : its field blinks until it is entered or kept
+      if (st.tab === "files") { st.orderGuide = true; setGuide(guide.map((x) => ({ ...x, go: () => { const n = body.querySelector(`[data-field="${x.field}"]`); if (n) { n.scrollIntoView({ block: "center" }); n.focus(); } } }))); }
+      const c = s.check, qty = el("input", { type: "number", min: 1, step: 1, value: order.quantity, "data-field": "quantity", class: toEnter ? "need" : null, onChange: (e) => { order.quantity = Math.max(1, parseInt(e.target.value, 10) || 1); keep(); }, onKeydown: (e) => { if (e.key === "Enter" && toEnter) keep(); } });
       const need = el("input", { type: "date", "data-field": "need_by", value: order.need_by || "", onChange: (e) => { if (e.target.value) order.need_by = e.target.value; else delete order.need_by; keep(); } });
-      orderBox.replaceChildren(...[el("p", null, badge(c.ready ? (c.express ? "Express" : "Prête") : "À corriger", c.ready ? (c.express ? "ok" : "info") : "danger"), " ", el("b", null, c.label)),
+      orderBox.replaceChildren(...[el("p", null, badge(c.ready ? (c.express ? "Express" : "Prête") : "À corriger", c.ready ? (c.express ? "ok" : "info") : "danger"), " ", el("b", null, c.label), s.variant ? [" ", badge(`variante ${s.variant}`, "neutral")] : null),
         ...c.blockers.map((t) => el("p", { class: "form-error" }, t)), ...c.cautions.map((t) => el("p", { class: "atelier-hint warn" }, icon("warning"), " ", t)),
         c.drivers.length ? el("ul", { class: "decisions" }, c.drivers.map((t) => el("li", null, t))) : null,
         el("div", { class: "form-row tight" }, field("Quantité", qty), field("Livraison souhaitée", need)),
         el("div", { class: "form-actions" },
-          btn("Copier la demande de prix", async () => { try { const p = await under("Demande de prix…", (say) => orderPackage(id, order, say), "Demande de prix annulée : rien n'a été copié."); if (p) toast((await copyText(p.rfq)) ? "Demande de prix copiée : collez-la dans votre courriel à l'atelier." : "Copie impossible.", "success", 6000); } catch (e) { toast(e.message, "error"); } }, { small: true, icon: "copy" }),
-          btn("Dossier de commande (.zip)", async (e, b) => { b.disabled = true; try { const p = await under("Dossier de commande…", (say) => orderPackage(id, order, say), "Dossier de commande annulé : aucun fichier n'a été écrit."); if (p) { download(p.name, p.bytes, "application/zip"); toast(`Dossier prêt : demande de prix + ${p.files.length} fichier(s).`, "success", 6000); } } catch (x) { toast(x.message, "error"); } b.disabled = false; },
+          btn("Copier la demande de prix", async () => { try { const p = await under("Demande de prix…", (say) => orderPackage(id, order, say, opts), "Demande de prix annulée : rien n'a été copié."); if (p) toast((await copyText(p.rfq)) ? "Demande de prix copiée : collez-la dans votre courriel à l'atelier." : "Copie impossible.", "success", 6000); } catch (e) { toast(e.message, "error"); } }, { small: true, icon: "copy" }),
+          btn("Dossier de commande (.zip)", async (e, b) => { b.disabled = true; try { const p = await under("Dossier de commande…", (say) => orderPackage(id, order, say, opts), "Dossier de commande annulé : aucun fichier n'a été écrit."); if (p) { download(p.name, p.bytes, "application/zip"); toast(`Dossier prêt : demande de prix + ${p.files.length} fichier(s).`, "success", 6000); } } catch (x) { toast(x.message, "error"); } b.disabled = false; },
             { primary: true, small: true, icon: "export", disabled: !c.ready, tip: c.ready ? "Demande de prix, STEP, dessin PDF, DXF, STL, gamme et fiche .dwiz dans une seule archive" : "Corrigez d'abord ce qui bloque" })),
         session.account ? el("div", { class: "form-actions" }, btn("Ranger la commande dans Drive", async (e, b) => {
           b.disabled = true;
           try {
-            const r = await under("Dossier de commande…", async (say, signal) => { const p = await orderPackage(id, order, say); if (signal.off) return undefined;
-              say("Écriture de la commande dans votre Google Drive…", undefined, undefined, { kind: "drive", hold: true }); return session.fs.saveOrder(store.project, p, { partId: id, quantity: c.quantity }); }, "Commande annulée : rien n'a été écrit dans Drive.");      // once Drive is being written, the order runs to its end : half a folder would be worse than a wait
+            const r = await under("Dossier de commande…", async (say, signal) => { const p = await orderPackage(id, order, say, opts); if (signal.off) return undefined;
+              say("Écriture de la commande dans votre Google Drive…", undefined, undefined, { kind: "drive", hold: true }); return session.fs.saveOrder(store.project, p, { partId: id, quantity: c.quantity, variant: p.variant }); }, "Commande annulée : rien n'a été écrit dans Drive.");      // once Drive is being written, the order runs to its end : half a folder would be worse than a wait
             if (r) { toast(`Commande rangée dans Drive : ${r.folder.name}. Partagez ce dossier avec l'atelier depuis Drive.`, "success", 8000); if (r.folder.webViewLink) window.open(r.folder.webViewLink, "_blank", "noopener"); }
           }
           catch (x) { toast(x.message, "error", 7000); }
@@ -96,19 +103,19 @@ export function artifactsPanel(body, { st, id, vp, rebuild }) {
         el("p", { class: "muted small" }, "Délais typiques d'ateliers de prototypage rapide, en jours ouvrables, hors transport : ils classent les options ; le devis de l'atelier fait foi.")].filter(Boolean));
     };
     drawOrder();
-    const list = artifactsFor(st.spec);
+    const list = artifactsFor(leaving.doc);
     const get = async (a, b) => {
       b.disabled = true;
-      try { const f = await under(`${a.label}…`, () => makeArtifact(id, a.key), `${a.label} : export annulé, aucun fichier n'a été écrit.`); if (f) { download(f.name, f.bytes, f.mime); for (const w of f.warnings.slice(0, 3)) toast(w, "warn", 7000); } }
+      try { const f = await under(`${a.label}…`, () => makeArtifact(id, a.key, opts), `${a.label} : export annulé, aucun fichier n'a été écrit.`); if (f) { download(f.name, f.bytes, f.mime); for (const w of f.warnings.slice(0, 3)) toast(w, "warn", 7000); } }
       catch (e) { toast(`${a.label} : ${e.message}`, "error", 7000); }
       b.disabled = false;
     };
     for (const a of list) body.append(el("div", { class: "artifact-row" }, icon(a.icon), el("div", { class: "grow" }, el("b", null, a.label), el("small", null, a.text)),
-      btn("", (e, b) => get(a, b), { small: true, icon: "download", tip: `Télécharger ${st.spec.id}${a.ext}` })));
+      btn("", (e, b) => get(a, b), { small: true, icon: "download", tip: `Télécharger ${st.spec.id}${variantTag(leaving.variant)}${a.ext}` })));
     body.append(el("div", { class: "form-actions" }, btn("Tout télécharger", async (e, b) => {
       b.disabled = true;
       try {
-        const r = await under("Fichiers d'échange…", (say) => partArtifacts(id, null, (label, i, n) => say(`Fichiers d'échange ${i + 1} / ${n} : ${label}`, i, n)), "Export annulé : aucun fichier n'a été téléchargé.");
+        const r = await under("Fichiers d'échange…", (say) => partArtifacts(id, null, (label, i, n) => say(`Fichiers d'échange ${i + 1} / ${n} : ${label}`, i, n), opts), "Export annulé : aucun fichier n'a été téléchargé.");
         if (r) { for (const f of r.files) download(f.name, f.bytes, f.mime); toast(`${r.files.length} fichier(s) téléchargés${r.errors.length ? ` ; non produits : ${r.errors.map((x) => x.label).join(", ")}` : ""}.`, r.errors.length ? "warn" : "success", 6000); }
       } catch (x) { toast(x.message, "error", 7000); }
       b.disabled = false;

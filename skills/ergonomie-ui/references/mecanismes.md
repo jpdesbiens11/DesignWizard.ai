@@ -75,6 +75,10 @@ choisit et ce que l'on obtient**. Les deux volets se redimensionnent et se cache
 - **Variantes nommées** : l'état du modèle (ce qui est à On, la valeur de chaque paramètre) se garde sous un nom, et
   un clic y revient, en une étape annulable. Chaque variante dit ce que le clic changerait, et se regarde (son
   dessin) sans que le modèle change.
+- **Ce qui sort dit de quelle variante il vient** : le nom du fichier et l'en-tête du document la nomment, qu'elle
+  ait été demandée ou qu'elle soit simplement celle de l'écran. Et ce qui sort se fait pour une autre variante
+  d'après une copie, par un seul menu — le modèle ne change pas, et l'écran dit que ce qui part n'est pas ce qu'il
+  montre. *Sans cela, deux fichiers du même nom désignent deux pièces différentes.*
 - **Ce que l'on règle se retrouve.** Un réglage long à refaire (un cas de calcul) s'écrit dans le document à chaque
   changement, comme une étape annulable ; une simple visite n'écrit rien.
 

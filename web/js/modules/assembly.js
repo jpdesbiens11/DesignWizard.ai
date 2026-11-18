@@ -26,6 +26,7 @@ import { liveAsm, offOf, setInstOff, instanceMenu, showAlone, showEvery } from "
 import { popupMenu } from "../core/view_select.js";
 import { mateSection } from "./asm_tree.js";
 import { asmVariantsSection } from "./part_variants.js";
+import { asmOut, variantTag } from "../core/variant_out.js";
 import { topOf, isSub, ownsKey, usedIn } from "../core/asm_levels.js";
 import { subTab, subChoices, levelRows, levelTable, levelCsv, formDialog } from "./asm_sub.js";
 import { mateDefinition } from "../core/mate_view.js";
@@ -227,13 +228,14 @@ function render(main, args) {
     try { store.commit(`Sous-assemblage dissous dans ${id}`, (p) => { r = dissolveSub(p, id, iid, { tree: node }); }, { assembly: id }); } catch (e) { toast(e.message, "error"); return; }
     st.sel = null; toast(`${r.asm} dissous : ${r.added.length} élément(s) et ${r.mates} accouplement(s) remontent ici, à la même place. Il reste dans le projet. Ctrl + Z pour revenir.`, "success", 7000);
   }
+  const tagNow = () => variantTag(asmOut(asm()).variant);
   async function exportStep() {
     if (!st.ctx) return;
     try {
       const items = stepItems(asm(), st.ctx.built), subs = items.filter((it) => it.children).length;      // the levels are kept : a sub-assembly is a product of its own in the file
-      const bytes = await underVeil({ set: (t, o) => vp.setBusy(t, o) }, `Écriture du STEP de l'assemblage — ${stepCount(items)} pièce(s)${subs ? `, ${subs} sous-assemblage(s)` : ""}…`, () => kernel.step(items, `${id} ${asm().name || ""}`.trim()),
+      const bytes = await underVeil({ set: (t, o) => vp.setBusy(t, o) }, `Écriture du STEP de l'assemblage — ${stepCount(items)} pièce(s)${subs ? `, ${subs} sous-assemblage(s)` : ""}…`, () => kernel.step(items, `${id} ${asm().name || ""}${asmOut(asm()).variant ? ` — ${asmOut(asm()).variant}` : ""}`.trim()),
         { after: () => rebuild(), cancelled: "Export annulé : aucun fichier n'a été écrit." });      // once stopped the kernel starts afresh : the parts are built again, quietly
-      if (bytes !== undefined) download(`${id}.step`, bytes, "application/step");
+      if (bytes !== undefined) download(`${id}${tagNow()}.step`, bytes, "application/step");      // the file says which variant of the assembly it is
     } catch (e) { toast(e.message, "error"); }
   }
 
@@ -264,7 +266,7 @@ function render(main, args) {
     const reg = joints(st.ctx.asm, built, Object.fromEntries(store.parts.map((x) => [x.id, x]))), byId = new Map(reg.map((r) => [r.id, r])), H = health(), hOf = new Map(H.rows.map((r) => [r.id, r]));
     for (const r of reg) { const h = hOf.get(r.id); if (h) { r.health = HEALTH[h.state].fr; r.notes = h.notes; } }
     body.append(el("p", { class: `atelier-hint${H.state === "ok" ? "" : " warn"}`, style: { fontSize: ".84rem" } }, icon(H.state === "ok" ? "check" : "warning"), ` Santé des accouplements — ${H.text}.`));
-    body.append(el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, `Joints (${(liveAsm(a).mates || []).length})`), reg.length ? btn("Registre (.csv)", () => download(`${id}-joints.csv`, jointsCsv(reg), "text/csv"), { small: true, icon: "download", tip: "Le registre des joints : numéro, genre, pièces, clé, visserie ou colle, procédé" }) : null)));
+    body.append(el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, `Joints (${(liveAsm(a).mates || []).length})`), reg.length ? btn("Registre (.csv)", () => download(`${id}${tagNow()}-joints.csv`, jointsCsv(reg), "text/csv"), { small: true, icon: "download", tip: "Le registre des joints : numéro, genre, pièces, clé, visserie ou colle, procédé" }) : null)));
     if (offOf(a).mates.length) body.append(el("p", { class: "muted small" }, `${offOf(a).mates.length} accouplement${offOf(a).mates.length > 1 ? "s" : ""} en attente (${offOf(a).mates.join(", ")}) : une de leurs pièces est à Off. Ils reviennent avec elle.`));
     for (const m of liveAsm(a).mates || []) {
       const ia = st.ctx.asm.instances.find((i) => i.id === m.a.inst), fa = ia && ifaceOf(built, ia.part, m.a.iface), pb = sol.problems.find((p) => p.mate === m.id);
@@ -351,11 +353,11 @@ function render(main, args) {
     /* an assembly that holds sub-assemblies reads two ways : by level (each sub-assembly one line, its content under it), or flat (every part through the levels, summed) */
     if (deep) body.append(el("div", { class: "seg text", role: "group", "aria-label": "Lecture de la nomenclature", style: { margin: "0 0 .5rem" } }, [["levels", "Par niveaux", "Chaque sous-assemblage est une ligne ; ce qu'UN exemplaire contient vient dessous"], ["flat", "À plat", "Toutes les pièces à travers les niveaux, quantités additionnées"]].map(([k, l, tip]) =>
       el("button", { class: "seg-btn" + ((k === "levels") === byLevel ? " on" : ""), type: "button", "aria-pressed": (k === "levels") === byLevel ? "true" : "false", "data-tip": tip, onClick: () => { st.bom = k; renderRight(); } }, l))));
-    if (byLevel) { body.append(levelTable(lv), el("div", { class: "form-actions" }, btn("BOM par niveaux en CSV", () => download(`${id}_BOM_niveaux.csv`, levelCsv(lv), "text/csv"), { small: true, icon: "download" })),
+    if (byLevel) { body.append(levelTable(lv), el("div", { class: "form-actions" }, btn("BOM par niveaux en CSV", () => download(`${id}${tagNow()}_BOM_niveaux.csv`, levelCsv(lv), "text/csv"), { small: true, icon: "download" })),
       el("div", { class: "kpis", style: { marginTop: ".8rem" } }, el("div", { class: "kpi" }, el("b", null, fmtMass(st.ctx.mass.mass)), el("span", null, "Masse des pièces")), el("div", { class: "kpi" }, el("b", null, st.ctx.mass.cog.map((x) => fmt(x, 0)).join(" ; ")), el("span", null, "Centre de gravité (mm)")))); return; }
     body.append(el("p", { class: "muted", style: { fontSize: ".84rem" } }, "Les vis, inserts, écrous et goupilles sont déduits des interfaces matées (taille, quantité, longueur selon l'épaisseur serrée)."),
       table(["#", "Référence", "Désignation", "Qté"], rows.map((r) => [String(r.item), el("code", null, r.id), r.name, String(r.qty)])),
-      el("div", { class: "form-actions" }, btn("BOM en CSV", () => download(`${id}_BOM.csv`, "﻿Item;Reference;Designation;Quantite;Materiau;Procede;Masse_g\n" + rows.map((r) => [r.item, r.id, `"${(r.name || "").replace(/"/g, '""')}"`, r.qty, r.material, r.process, r.mass === null ? "" : r.mass.toFixed(1)].join(";")).join("\n"), "text/csv"), { small: true, icon: "download" })),
+      el("div", { class: "form-actions" }, btn("BOM en CSV", () => download(`${id}${tagNow()}_BOM.csv`, "﻿Item;Reference;Designation;Quantite;Materiau;Procede;Masse_g\n" + rows.map((r) => [r.item, r.id, `"${(r.name || "").replace(/"/g, '""')}"`, r.qty, r.material, r.process, r.mass === null ? "" : r.mass.toFixed(1)].join(";")).join("\n"), "text/csv"), { small: true, icon: "download" })),
       el("div", { class: "kpis", style: { marginTop: ".8rem" } }, el("div", { class: "kpi" }, el("b", null, fmtMass(st.ctx.mass.mass)), el("span", null, "Masse des pièces")), el("div", { class: "kpi" }, el("b", null, st.ctx.mass.cog.map((x) => fmt(x, 0)).join(" ; ")), el("span", null, "Centre de gravité (mm)"))));
   }
   function dfaTab(body) {

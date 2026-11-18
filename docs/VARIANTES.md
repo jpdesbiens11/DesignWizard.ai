@@ -113,10 +113,45 @@ cartouche dit laquelle il montre (« — VARIANT Longue »), le PDF porte son no
 du document : une variante qui change la forme, l'ajustement ou la fonction mérite son propre numéro (règle 3F,
 [REVISIONS.md](REVISIONS.md)) — l'outil ne le décide pas à votre place.
 
+## Ce qui sort suit une variante
+
+Une pièce ou un assemblage qui garde des cousines ne sort jamais « tout court » : un fichier, une gamme, une commande ou
+un envoi est celui d'**une** variante. Deux règles, tenues à un seul endroit (`web/js/core/variant_out.js`) :
+
+1. **Ce qui sort dit de quelle variante il vient** — que la variante ait été demandée ou qu'elle soit simplement celle
+   où le document se trouve. Dans le **nom du fichier** (`DRV-BASE_Longue.step`, `DRV-ASM_Sans-couvercle_BOM.csv`,
+   `DRV-BASE_Longue_commande.zip`) et dans **l'en-tête** : « Variante : Longue » en première ligne d'une gamme (écran,
+   texte, Word, PDF), dans la demande de prix (« Variante : Longue — les fichiers joints sont ceux de cette variante »),
+   « — VARIANT Longue » au cartouche d'un dessin, le nom du produit dans un STEP d'assemblage. Un document sans
+   variante sort comme avant, sans rien de plus. Un document dans un **état sans nom** sort sans nom de variante, et le
+   guide le signale.
+2. **Ce qui sort se fait pour une variante choisie, sans changer le document.** Le menu « **Variante qui sort** » —
+   le même partout — propose d'abord le document tel qu'il est (avec le nom de sa variante), puis chaque cousine. Une
+   autre variante que celle de l'écran est produite **d'après une copie**, construite à côté de la pièce : la pièce ou
+   l'assemblage, la vue et l'historique ne bougent pas. Le menu devient ambre, et le guide le dit (« à vérifier » : ce
+   qui sort n'est pas la cousine à l'écran).
+
+| Ce qui sort | Comment il suit |
+|---|---|
+| Fichiers d'échange d'une pièce (`.dwiz`, STEP, STL, DXF, développé, PDF, FeatureScript, gamme texte) | menu « Variante qui sort » de l'onglet **Artéfacts** ; chaque fichier porte le nom de la variante |
+| Commande du prototype (vérification, demande de prix, dossier `.zip`, rangement dans Drive) | le même menu : la pièce est **vérifiée comme cette variante** (DFx, délai), l'archive, son dossier et le dossier Drive la nomment |
+| Gamme de fabrication, gamme d'assemblage | celle du document tel qu'il est, **nommée** (une pastille « Variante : … » en tête de l'onglet, une ligne sur les fiches) ; pour une autre variante : un clic sur son nom, ou la gamme texte par le menu |
+| Dessins | une feuille par variante (ci-dessus) ; le cartouche nomme aussi la variante où le document se trouve |
+| STEP, nomenclature (à plat et par niveaux) et registre des joints d'un assemblage | ceux de la variante où l'assemblage se trouve, nommée dans le fichier ; les pièces mises de côté n'y sont pas |
+| Envoi vers Onshape | menu « Variante qui sort » sous l'assemblage choisi : le STEP envoyé est celui de la variante, le produit porte son nom |
+| Rapport de revue | une section « **Variantes** » : chaque document qui en garde, la variante montrée, et ce que les autres changent ; la fiche de la pièce dit « Variante montrée » |
+| Miroir Drive du projet (`projectArtifacts`) | le document tel qu'il est ; ses fichiers portent le nom de sa variante — ceux d'une autre variante restent à côté |
+
+Le numéro et la révision restent ceux du document : nommer une variante sur un fichier ne remplace pas un numéro de
+pièce (règle 3F, [REVISIONS.md](REVISIONS.md)). L'usage suivi est celui des « configurations » des modeleurs
+mécaniques (un export, un dessin ou une nomenclature est celui d'une configuration, et le dit) — repris de mémoire,
+voir le registre des sources.
+
 Dans le fichier : `suppressed: true` sur une opération ; `alts: [valeur, …]` dans la définition d'un paramètre (le
 langage de pièce ne lit que `value`) ; `variants: [{ name, off: [identifiants d'opérations], params: { nom: valeur } }]`
 sur la pièce. Les règles DFM partent de ce que le noyau a construit : une opération à Off n'y entre pas. Code :
-`web/js/core/variants.js` ; écran `web/js/modules/part_studio.js`, `part_panels.js`, `part_variants.js`.
+`web/js/core/variants.js`, `web/js/core/variant_out.js` (ce qui sort) ; écran `web/js/modules/part_studio.js`,
+`part_panels.js`, `part_variants.js` (`outPicker`, le menu « Variante qui sort »), `part_gamme.js`.
 
 ## Ce qui est vérifié, ce qui ne l'est pas
 
@@ -129,12 +164,22 @@ deux variantes d'une pièce gardées, la bascule de l'une à l'autre en un clic,
 un cas de charge modifié puis retrouvé après un rechargement de la page et après un autre écran, Ctrl + Z et Ctrl + Y
 suivis par l'écran, une visite sans changement qui n'écrit rien ; deux variantes d'un assemblage, la bascule en une
 étape, le compte et la masse qui suivent, Ctrl + Z ; le dessin d'une variante d'assemblage (deux pièces de moins dans
-sa liste) et d'une variante de pièce (200 mm sur la feuille, 160 mm dans la pièce), sans changer le document.
+sa liste) et d'une variante de pièce (200 mm sur la feuille, 160 mm dans la pièce), sans changer le document ;
+**ce qui sort** (v0.97) : sur la pièce de la démonstration avec deux variantes, le STEP, la gamme et le PDF téléchargés
+pour chacune (noms, contenu, un autre solide), le dossier de commande d'une variante qui n'est pas celle de l'écran
+(archive, dossier, demande de prix), le guide qui le signale, la pièce inchangée et aucune étape écrite ; sur
+l'assemblage, le STEP et la nomenclature de sa variante sans la pièce mise de côté, la gamme nommée ; la section
+« Variantes » du rapport.
 Tests : `tests/node/fea_onoff.test.mjs`, `tests/node/onoff.test.mjs`, `tests/node/fea_case_store.test.mjs`,
-`tests/node/asm_variants.test.mjs`.
+`tests/node/asm_variants.test.mjs`, `tests/node/variant_out.test.mjs`.
+
+Pas vérifié : le menu « Variante qui sort » de l'envoi vers Onshape (il faut un compte Onshape connecté : seul le code
+est tenu par un essai de câblage) ; le rangement d'une commande dans Drive avec le nom de la variante (connexion
+Google) ; Firefox, Safari.
 
 Pas encore fait : plusieurs cas de charge **nommés** par pièce (un seul cas par pièce, avec ses copies à On / Off) ;
-une variante d'assemblage ne retient pas la variante de chacune de ses pièces ; la gamme, le rapport de revue, le
-dossier de commande et l'envoi vers Onshape suivent le document tel qu'il est, pas une variante choisie ; les classes
-de cotes (référence, SC) sont celles du document, pas propres à une variante ; pas de dessin tabulé (une feuille, un
-tableau des variantes).
+une variante d'assemblage ne retient pas la variante de chacune de ses pièces — un STEP ou un envoi d'assemblage
+prend donc chaque pièce telle qu'elle est ; le rapport de revue montre chaque document dans sa variante en cours (il
+les nomme et liste les autres, mais ne se construit pas pour une variante choisie sans y passer) ; le miroir Drive
+publie le document tel qu'il est, pas toutes ses variantes d'un coup ; les classes de cotes (référence, SC) sont
+celles du document, pas propres à une variante ; pas de dessin tabulé (une feuille, un tableau des variantes).
