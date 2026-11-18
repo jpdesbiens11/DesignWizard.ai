@@ -37,6 +37,7 @@ Functions: min max abs sqrt floor ceil round sin cos tan (degrees) hypot clamp(v
   "wall": 3,                                      // short form
   "half": { "expr": "L/2" }                       // derived (read-only)
 }
+A parameter may keep other values beside the one that counts: "alts": [150, 200] in its definition — close cousins of the part; only "value" is used.
 Give every dimension a human would want to tune as a parameter (5 to 15 of them), with a label and sensible min / max.
 Use the parameters everywhere else instead of raw numbers.
 
@@ -98,7 +99,7 @@ Shop verbs (entries of "features", same common fields and face / position conven
 Every verb becomes one line of the routing sheet. Kernel features of section 5 may be mixed in the same list.
 
 ## 5. Features — kernel operations, built in order
-Common fields: "op", optional "id", "name", "body" (default "main"), "mode": "add" | "cut", "suppressed": true.
+Common fields: "op", optional "id", "name", "body" (default "main"), "mode": "add" | "cut", "suppressed": true (the operation is kept in the tree but not made — its On / Off switch).
 - {"op":"box", "size":[sx,sy,sz], "at":[x,y,z]}                       // "at" = min corner (default 0,0,0); or "center":[x,y,z]
 - {"op":"cylinder", "d":10, "h":20, "at":[x,y,z], "axis":"Z"}         // "at" = centre of the base
 - {"op":"extrude", "profile":P, "plane":"XY|XZ|YZ", "at":0, "length":10, "symmetric":false, "mode":"add|cut"}

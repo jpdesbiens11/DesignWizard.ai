@@ -43,6 +43,7 @@ Functions: min max abs sqrt floor ceil round sin cos tan (degrees) hypot clamp(v
   "wall": 3,                                      // short form
   "half": { "expr": "L/2" }                       // derived (read-only)
 }
+A parameter may keep other values beside the one that counts: "alts": [150, 200] in its definition — close cousins of the part; only "value" is used.
 Give every dimension a human would want to tune as a parameter (5 to 15 of them), with a label and sensible min / max.
 Use the parameters everywhere else instead of raw numbers.
 
@@ -104,7 +105,7 @@ Shop verbs (entries of "features", same common fields and face / position conven
 Every verb becomes one line of the routing sheet. Kernel features of section 5 may be mixed in the same list.
 
 ## 5. Features — kernel operations, built in order
-Common fields: "op", optional "id", "name", "body" (default "main"), "mode": "add" | "cut", "suppressed": true.
+Common fields: "op", optional "id", "name", "body" (default "main"), "mode": "add" | "cut", "suppressed": true (the operation is kept in the tree but not made — its On / Off switch).
 - {"op":"box", "size":[sx,sy,sz], "at":[x,y,z]}                       // "at" = min corner (default 0,0,0); or "center":[x,y,z]
 - {"op":"cylinder", "d":10, "h":20, "at":[x,y,z], "axis":"Z"}         // "at" = centre of the base
 - {"op":"extrude", "profile":P, "plane":"XY|XZ|YZ", "at":0, "length":10, "symmetric":false, "mode":"add|cut"}
@@ -246,12 +247,12 @@ A .dwiz document is accepted as an answer in place of the JSON object; both are 
 | `BRASS-360` | Brass C360 | 8.5 | conducteur |
 | `SS-304` | Stainless steel 304 | 8 | conducteur |
 | `STEEL-1018` | Steel 1018 (zinc plated) | 7.87 | conducteur |
-| `SS-316L` | Inox 316L | 7.98 | conducteur |
-| `SS-17-4PH` | Inox 17-4 PH (durci par précipitation) | 7.8 | conducteur |
-| `ALSI10MG` | Aluminium AlSi10Mg (impression 3D métal) | 2.67 | conducteur |
-| `TI-6AL-4V` | Titane Ti-6Al-4V (grade 5 ; ELI : grade 23) | 4.43 | conducteur |
-| `IN718` | Alliage de nickel 718 (Inconel 718) | 8.19 | conducteur |
-| `IN625` | Alliage de nickel 625 (Inconel 625) | 8.44 | conducteur |
+| `SS-316L` | Stainless steel 316L | 7.98 | conducteur |
+| `SS-17-4PH` | Stainless steel 17-4 PH (precipitation hardened) | 7.8 | conducteur |
+| `ALSI10MG` | Aluminium AlSi10Mg (metal 3D printing) | 2.67 | conducteur |
+| `TI-6AL-4V` | Titanium Ti-6Al-4V (grade 5; ELI: grade 23) | 4.43 | conducteur |
+| `IN718` | Nickel alloy 718 (Inconel 718) | 8.19 | conducteur |
+| `IN625` | Nickel alloy 625 (Inconel 625) | 8.44 | conducteur |
 | `AL-A380` | Aluminium A380 (die casting) | 2.71 | conducteur |
 | `ZAMAK-3` | Zamak 3 (zinc, die casting) | 6.6 | conducteur |
 | `AL-A356-T6` | Aluminium A356-T6 (casting) | 2.68 | conducteur |
@@ -264,20 +265,20 @@ A .dwiz document is accepted as an answer in place of the JSON object; both are 
 | `POM` | POM (acetal) | 1.41 | 600 |
 | `PEEK` | PEEK | 1.3 | 150 |
 | `PEI-9085` | PEI ULTEM 9085 (FDM) | 1.34 | 150 |
-| `PEKK` | PEKK (FDM haute température) | 1.28 | 150 |
+| `PEKK` | PEKK (high-temperature FDM) | 1.28 | 150 |
 | `PA12` | PA12 (MJF / SLS) | 1.01 | 600 |
 | `PA11` | PA11 (MJF / SLS) | 1.04 | 600 |
-| `RESIN-SLA` | Résine photopolymère rigide (SLA) | 1.18 | 175 |
-| `PMMA` | Acrylique (PMMA) | 1.19 | 600 |
+| `RESIN-SLA` | Rigid photopolymer resin (SLA) | 1.18 | 175 |
+| `PMMA` | Acrylic (PMMA) | 1.19 | 600 |
 | `PVC-U` | PVC rigid (extrusion) | 1.4 | 600 |
 | `SILICONE` | Silicone rubber | 1.15 | 600 |
 | `FR4` | FR4 PCB (standard, CTI 175) | 1.85 | 175 |
 | `FR4-CTI600` | FR4 PCB (high CTI 600) | 1.85 | 600 |
 | `NOMEX-410` | Nomex 410 (aramid paper) | 0.96 | 175 |
-| `PET-FILM` | Film polyester (PET) isolant | 1.39 | 250 |
-| `PI-FILM` | Film polyimide (PI) isolant | 1.42 | 150 |
-| `THERMAL-PAD` | Pad thermique silicone chargé | 2.5 | 600 |
-| `GAP-FILLER` | Composé thermique de remplissage (deux composants) | 2.8 | 600 |
+| `PET-FILM` | Polyester (PET) insulating film | 1.39 | 250 |
+| `PI-FILM` | Polyimide (PI) insulating film | 1.42 | 150 |
+| `THERMAL-PAD` | Filled silicone thermal pad | 2.5 | 600 |
+| `GAP-FILLER` | Thermal gap filler (two-part) | 2.8 | 600 |
 | `EPOXY` | Epoxy potting / body | 1.8 | 200 |
-| `LI-ION-CELL` | Cellule Li-ion cylindrique (homogénéisée) | 2.65 | conducteur |
+| `LI-ION-CELL` | Cylindrical Li-ion cell (homogenized) | 2.65 | conducteur |
 | `GENERIC-COMPONENT` | Electronic component (plastic body) | 1.6 | 175 |

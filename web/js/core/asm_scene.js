@@ -2,6 +2,7 @@
    the result in a viewer. Shared by Assemblage, Isolation, DFx, Rapport and Onshape. */
 
 import { store } from "./store.js";
+import { liveAsm } from "./asm_live.js";
 import { kernel } from "../cad/client.js";
 import { solve, hardware, bom, massProps } from "./assembly_logic.js";
 import { showBuilt } from "./viewport.js";
@@ -10,6 +11,7 @@ import { bboxTransform, bboxUnion } from "../cad/vec.js";
 /** Build the parts used by `asm`. Returns {built, sol, errors, hardware, bom, mass, bbox}. onProgress(text, done, total) before each part ;
     an operation the user cancelled (kernel.cancel) ends the construction at once. */
 export async function buildAssembly(asm, onProgress) {
+  asm = liveAsm(asm);      // an instance put aside (off) is neither built nor placed : it counts for nothing downstream
   const ids = [...new Set(asm.instances.map((i) => i.part))], built = {}, errors = [];
   let n = 0;
   for (const id of ids) {

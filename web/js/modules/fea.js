@@ -25,7 +25,7 @@ import { bakeMesh, clipMesh } from "../core/mesh_clip.js";
 import { bodyId, bodyOf, CUT_FIELD, placeItem, placeKey, placeLabel, placeRegion, placeNormal, placeSpots, placeHasFace, lightPlace, checkPlaces } from "./fea_places.js";
 import { caseIssues, blocking } from "../analysis/fea/case_check.js";
 import { guideBox, guideSummary, nudge } from "../core/guide.js";
-import { bcTree, bcFind, bcLabels, BC_COLORS, loadDir, pushInto, supportKey, supportDofs } from "../analysis/fea/bc_tree.js";
+import { bcTree, bcFind, bcLabels, BC_COLORS, loadDir, pushInto, supportKey, supportDofs, isOff, onOf, withOff, copyOf, soloOn, caseWords } from "../analysis/fea/bc_tree.js";
 import { bcSection } from "./fea_tree.js";
 import { viewSwitch, resultPanel } from "./fea_result.js";
 import { safetyField, safetySummary, fsColour } from "../analysis/fea/safety.js";
@@ -64,11 +64,12 @@ function render(main, args) {
     onPick: (hit) => { if (askingPoint) { const set = askingPoint; askingPoint = null; view.style.cursor = ""; if (hit && hit.point) set(hit.point, hit.normal); return true; } if (!asking) return false; pickRegion(hit); return true; } }), info = el("span", { class: "chip" }, "—");
   let geo = null, model = null, whole = null, syms = [], regions = [], estimate = null, last = null, runs = [], worker = null, alive = true, asking = null, askingPoint = null, zonePreps = [], litZone = null;      // zonePreps : the refinement zones as the mesh took them ; askingPoint : the next click gives a point (the centre of a zone)
   /* ---------- refinement zones : meshed on the page to be seen, solved in the worker with the model ---------- */
-  const rezone = () => { try { zonePreps = model ? prepareZones(model, geo.bodies, st.zones) : []; } catch (e) { zonePreps = st.zones.map((z) => ({ id: z.id, error: e.message })); } };
+  const liveZones = () => st.zones.filter((z) => !z.off);      // a zone put aside (off) is kept, and neither meshed nor solved
+  const rezone = () => { try { zonePreps = model ? prepareZones(model, geo.bodies, liveZones()) : []; } catch (e) { zonePreps = liveZones().map((z) => ({ id: z.id, error: e.message })); } };
   const applyZones = () => { rezone(); changed(); };
   /* the volumes of the zones are tools : shown while the model is defined, put away on the result — and either way on demand (the eye of their group) ; the one under the pointer always shows */
   const zonesOn = () => (st.view === "result" ? st.show.zonesResult === true : st.show.zones !== false);
-  const showZones = () => drawZones(vp.viewer, zonesOn() ? st.zones : st.zones.filter((z) => z === litZone), litZone, (z) => nudge(left.querySelector(`[data-zone="${z.id}"]`)));
+  const showZones = () => drawZones(vp.viewer, st.zones.filter((z) => z === litZone || (zonesOn() && !z.off)), litZone, (z) => nudge(left.querySelector(`[data-zone="${z.id}"]`)));
   const zoneInfo = (z) => { const p = zonePreps.find((x) => x.id === z.id); return !p || !model ? null : p.prep ? { cells: p.prep.local.nCells, block: p.prep.block.count, h: model.grid.h, walls: normZone(z) ? zoneWalls(model, normZone(z)).length : 0 } : { error: p.error }; };
   /* where the guide sends the designer : a value of the load case, an item of its tree, or a zone and its cote */
   const spot = (x) => (x.id && x.id[0] === "Z" ? (x.field && left.querySelector(`[data-zone="${x.id}"] [data-field="${x.field}"]`)) || left.querySelector(`[data-zone="${x.id}"]`) : left.querySelector(x.field ? `.bc-edit [data-field="${x.field}"]` : x.id ? `[data-bc="${x.id}"]` : ".bc-tree"));
@@ -136,6 +137,7 @@ function render(main, args) {
     const v = vp.viewer; v.clearOverlays("sym"); v.clearOverlays("bcsel"); if (!model) return;
     const tag = "sym", tree = loadTree();
     for (const g of tree) for (const it of g.items) {
+      if (it.off) continue;      // put aside : no symbol — its place still lights up while it is selected
       if (it.kind === "symmetry") { for (const s of planeSpots(it.plane)) clamp(v, s.p, s.out, { tag, color: it.color }); continue; }
       if (it.kind === "fixed") for (const s of spots(it.region)) clamp(v, s.p, s.out, { tag, color: it.color });
       else if (it.kind === "pressure") for (const s of spots(it.region)) arrow(v, s.p, s.out.map((c) => -c), { tag, color: it.color, len: v._size() * 0.05 });
@@ -237,25 +239,25 @@ function render(main, args) {
   /** The simple regions of a choice: one for a face, one per screw for a bolted interface (the effort is shared between them). */
   const listOf = (key) => (regionOf(key) || regions[0]).list;
   /* a support : everything held, or only the directions it blocks */
-  const supports = () => st.fixed.flatMap((x) => { const d = supportDofs(x); return listOf(supportKey(x)).map((region) => (d.every(Boolean) ? region : { region, dofs: d })); });
+  const supports = () => onOf(st.fixed).flatMap(([x]) => { const d = supportDofs(x); return listOf(supportKey(x)).map((region) => (d.every(Boolean) ? region : { region, dofs: d })); });
   const pushOf = (l, share) => (loadDir(l) || [0, 0, 0]).map((c) => c * l.F / share);
   function loadCase() {
     if (st.kind === "thermo") return { fixed: supports(), loads: [], Tref: st.thermo.Tref, thermal: st.thermo.uniform ? { uniform: st.thermo.T } : { case: thermalCase() } };
     return st.kind === "thermal" ? thermalCase() : structureCase();
   }
   function thermalCase() {
-    return { power: st.power.flatMap((x) => listOf(x.region).map((region, i, all) => ({ region, P: x.P / all.length }))), fixedT: st.fixedT.flatMap((x) => listOf(x.region).map((region) => ({ region, T: x.T }))),
+    return { power: onOf(st.power).flatMap(([x]) => listOf(x.region).map((region, i, all) => ({ region, P: x.P / all.length }))), fixedT: onOf(st.fixedT).flatMap(([x]) => listOf(x.region).map((region) => ({ region, T: x.T }))),
       convection: st.conv.on ? [{ region: "exterior", h: st.conv.h, Tamb: st.conv.Tamb }] : [] };
   }
   function structureCase() {
-    return { fixed: supports(), loads: st.loads.flatMap((l) => listOf(l.region).map((region, i, all) => (l.mode === "pressure" ? { region, pressure: l.p } : { region, force: pushOf(l, all.length) }))) };
+    return { fixed: supports(), loads: onOf(st.loads).flatMap(([l]) => listOf(l.region).map((region, i, all) => (l.mode === "pressure" ? { region, pressure: l.p } : { region, force: pushOf(l, all.length) }))) };
   }
   /** Is the case the same on both sides of a plane ? */
   function symmetric(plane) {
     const heat = st.kind === "thermal" || (st.kind === "thermo" && !st.thermo.uniform), entries = [];
-    if (st.kind !== "thermal") { st.fixed.forEach((x, i) => listOf(supportKey(x)).forEach((region) => entries.push({ what: "appui", label: `Appui ${i + 1}`, region })));
-      if (st.kind === "structure") st.loads.forEach((l, i) => listOf(l.region).forEach((region, j, all) => entries.push({ what: `effort ${l.mode}`, label: `Effort ${i + 1}`, region, vector: l.mode === "pressure" ? null : pushOf(l, all.length) }))); }
-    if (heat) { st.power.forEach((x, i) => listOf(x.region).forEach((region) => entries.push({ what: "chaleur", label: `Source ${i + 1}`, region }))); st.fixedT.forEach((x, i) => listOf(x.region).forEach((region) => entries.push({ what: "température", label: `Température ${i + 1}`, region }))); }
+    if (st.kind !== "thermal") { onOf(st.fixed).forEach(([x, i]) => listOf(supportKey(x)).forEach((region) => entries.push({ what: "appui", label: `Appui ${i + 1}`, region })));
+      if (st.kind === "structure") onOf(st.loads).forEach(([l, i]) => listOf(l.region).forEach((region, j, all) => entries.push({ what: `effort ${l.mode}`, label: `Effort ${i + 1}`, region, vector: l.mode === "pressure" ? null : pushOf(l, all.length) }))); }
+    if (heat) { onOf(st.power).forEach(([x, i]) => listOf(x.region).forEach((region) => entries.push({ what: "chaleur", label: `Source ${i + 1}`, region }))); onOf(st.fixedT).forEach(([x, i]) => listOf(x.region).forEach((region) => entries.push({ what: "température", label: `Température ${i + 1}`, region }))); }
     try { return loadSymmetry(entries, plane, (r) => regionInfo(whole, r), whole.grid.h); } catch (e) { return { ok: false, notes: [e.message] }; }
   }
   function refreshEstimate() {
@@ -299,7 +301,9 @@ function render(main, args) {
     sec.append(el("h3", null, "Cas de charge"), ...[guideBox(found, { go, si: true })].filter(Boolean), bcSection({ st, tree: loadTree(), regions: [...regions, ...usedPlaces()], select, changed, aim, relabel: () => { drawLeft(); drawSymbols(); },
       hover: (k, color) => { vp.viewer.clearOverlays("bchover"); if (k && !asking) lightRegion(k, color || LIT.named, "bchover"); },
       add: (key) => { st[key].push(DEFAULT[key]()); const g = loadTree().find((x) => x.key === key), it = g.items[g.items.length - 1]; st.sel = it.id; changed(); aim((k) => { if (key === "fixed") st.fixed[it.index] = k; else st[key][it.index].region = k; changed(); toEnter(); }); },
-      remove: (key, i) => { st[key].splice(i, 1); st.sel = null; changed(); }, unsym }),
+      remove: (key, i) => { st[key].splice(i, 1); st.sel = null; changed(); }, unsym,
+      toggle: (key, i, alone) => { if (alone) st[key] = soloOn(st[key], i, key); else st[key][i] = withOff(st[key][i], !isOff(st[key][i]), key); changed(); },
+      copy: (key, i) => { st[key].splice(i + 1, 0, copyOf(st[key][i])); const it = loadTree().find((g) => g.key === key).items.find((x) => x.index === i + 1 && !x.locked); st.sel = it ? it.id : null; changed(); toast(`${it ? it.id : "La copie"} est une copie à Off : changez-y une valeur, puis mettez-la à On à la place de l'original.`, "info", 5200); } }),
       el("p", { class: "muted small" }, "La vue montre la pièce elle-même : un clic droit sur n'importe quelle face, arête ou point — intérieur aussi : tournez la vue, ou coupez-la — y pose un appui, un effort ou une source, et règle ou retire ce qui s'y trouve. Ctrl + clic en choisit plusieurs, pour une seule condition. Sur un modèle coupé, la face de coupe se pointe de même. Un effort prend la direction que vous lui donnez ; un appui bloque les directions cochées. Une valeur qui clignote est un exemple : entrez la vôtre."));
     if (st.kind === "thermo") sec.append(el("h3", { style: { marginTop: ".7rem" } }, "Température"),
       el("div", { class: "bc-row" }, el("small", null, "Montage sans contrainte à"), num(st.thermo.Tref, (v) => { st.thermo.Tref = v; changed(); }), el("small", null, "°C")),
@@ -308,8 +312,8 @@ function render(main, args) {
     if (heat) sec.append(...[el("h3", { style: { marginTop: ".7rem" } }, "Convection sur l'extérieur"), el("label", { class: "check" }, el("input", { type: "checkbox", checked: st.conv.on, onChange: (e) => { st.conv.on = e.target.checked; changed(); } }), "Toutes les faces exposées"),
       st.conv.on ? el("div", { class: "bc-row" }, num(st.conv.h, (v) => { st.conv.h = v; changed(); }), el("small", null, "W/m²·K"), num(st.conv.Tamb, (v) => { st.conv.Tamb = v; changed(); }), el("small", null, "°C")) : null,
       el("p", { class: "muted small" }, "Air calme : 5 à 15 W/m²·K ; air soufflé : 25 à 100 ; plaque froide à eau : 500 et plus.")].filter(Boolean));
-    const m = geo.bodies[0].material, nbc = loadTree().reduce((n, g) => n + g.items.length, 0);
-    sec.setAttribute("data-fold-note", nbc ? `${nbc} condition${nbc > 1 ? "s" : ""}` : "aucune condition");      // what the group holds, read beside its title while it is folded
+    const m = geo.bodies[0].material, nbc = loadTree().reduce((n, g) => n + g.items.filter((it) => !it.off).length, 0), nOff = loadTree().reduce((n, g) => n + g.items.filter((it) => it.off).length, 0);
+    sec.setAttribute("data-fold-note", `${nbc ? `${nbc} condition${nbc > 1 ? "s" : ""}` : "aucune condition"}${nOff ? ` · ${nOff} à Off` : ""}`);      // what the group holds, read beside its title while it is folded
     scroll.append(el("div", { class: "side-section", "data-fold-note": geo.bodies.length > 1 ? `${geo.bodies.length} corps` : m.name }, el("h3", null, "Matériau"), el("p", { class: "small" }, geo.bodies.length > 1 ? `${geo.bodies.length} corps, chacun avec son matériau ; contacts collés, conduction parfaite.` : `${m.name} — E ${fmt(m.E / 1000, 1)} GPa, ν ${m.nu}, k ${fmt(m.k, 1)} W/m·K${m.alpha ? `, α ${fmt(m.alpha * 1e6, 1)} µm/m·K` : ""}${m.Re ? `, Re ${fmt(m.Re, 0)} MPa` : ""}.`),
       el("p", { class: "muted small" }, "Valeurs typiques : la fiche de la nuance fait foi.")));
   }
@@ -351,7 +355,7 @@ function render(main, args) {
     if (wait.length) { const x = wait[0]; if (x.id && x.id[0] !== "Z") st.sel = x.id; drawLeft(); drawSymbols(); toast(`Avant de lancer : ${x.text}`, "warn", 8000); setTimeout(() => { if (alive) nudge(spot(x) || left.querySelector(".guide")); }, 90); return; }
     if (worker) worker.terminate();
     worker = new Worker(new URL("../analysis/fea/worker.js", import.meta.url), { type: "module" });
-    const id = ++seq, kind = st.kind, est = estimate;
+    const id = ++seq, kind = st.kind, est = estimate, ran = caseWords(loadTree(), liveZones());      // the case as it is solved : what the trial remembers, to compare with the next
     const halt = () => { if (worker) { worker.terminate(); worker = null; } vp.setBusy(""); setStatus("Simulation annulée", ""); toast("Simulation annulée : le dernier résultat gardé reste affichable.", "info"); };
     vp.setBusy("Résolution…", { cancel: halt }); setStatus("Simulation en cours…", "busy");
     worker.onmessage = (e) => {
@@ -362,13 +366,13 @@ function render(main, args) {
       if (!m.ok) { setStatus("Simulation impossible", "bad"); toast(m.error, "error", 9000); return; }
       const s = m.skin, lo = kind === "thermal" ? m.result.minT.value : 0, hi = kind === "thermal" ? m.result.maxT.value : m.result.maxVm.value;
       last = { n: (runs.length ? runs[runs.length - 1].n : 0) + 1, kind, stale: false, skin: s, data: [lo, hi > lo ? hi : lo + 1], range: [lo, hi > lo ? hi : lo + 1], result: m.result, info: m.info, compare: compare(kind, est, m.result), estimate: est,
-        fs: kind !== "thermal" && s.re ? safetyField(s.val, s.re) : null };
+        fs: kind !== "thermal" && s.re ? safetyField(s.val, s.re) : null, case: ran };
       runs.push(last); if (runs.length > 6) runs[runs.length - 7].skin = null;      // the six last trials can be shown again ; the older ones keep their figures
       setStatus(`Simulation : ${m.result.iterations} itérations, ${fmt(m.result.ms / 1000, 2)} s`, "done");
       setView("result");
     };
     worker.onerror = (e) => { vp.setBusy(""); setStatus("Simulation impossible", "bad"); toast(`Le solveur s'est arrêté : ${e.message || "erreur inconnue"}.`, "error", 9000); };
-    worker.postMessage({ id, kind, bodies: geo.bodies.map(({ name, pos, idx, material }) => ({ name, pos, idx, material })), mesh: { target: st.cells, planes: st.cuts }, cuts: st.cuts, zones: st.zones.map(normZone).filter(Boolean), load: loadCase() });
+    worker.postMessage({ id, kind, bodies: geo.bodies.map(({ name, pos, idx, material }) => ({ name, pos, idx, material })), mesh: { target: st.cells, planes: st.cuts }, cuts: st.cuts, zones: liveZones().map(normZone).filter(Boolean), load: loadCase() });
   }
   function keep() {
     if (!last) return;

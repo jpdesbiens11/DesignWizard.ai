@@ -6,6 +6,7 @@
    kept on the assembly. Pure : no DOM, no three.js — the stage that draws it is core/render_stage.js. */
 
 import { material } from "../cad/materials.js";
+import { liveAsm } from "./asm_live.js";
 import { validHex } from "./part_look.js";
 
 export const FINISH_GROUPS = [
@@ -61,6 +62,7 @@ export function bodyLook(body, choice = null, main = "main") {
 }
 /** One row per part of the assembly, for the screen and the report : { part, name, qty, finish, group, color, chosen }. built : part id → the kernel build. */
 export function lookRows(asm, built, names = {}) {
+  asm = liveAsm(asm);
   const R = renderOf(asm), count = new Map(); for (const i of asm.instances) count.set(i.part, (count.get(i.part) || 0) + 1);
   return [...count.keys()].filter((p) => built[p]).map((p) => { const b = built[p], main = b.bodies.find((x) => x.name === b.main) || b.bodies[0], L = bodyLook(main, R.looks[p], main.name);
     return { part: p, name: names[p] || p, qty: count.get(p), finish: L.finish, label: FINISHES[L.finish].label, group: FINISHES[L.finish].group, color: L.color, chosen: !!(R.looks[p] && FINISHES[R.looks[p].finish]) }; });

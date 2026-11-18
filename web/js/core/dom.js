@@ -57,6 +57,11 @@ export function badge(text, kind = "neutral") { return el("span", { class: `badg
 export function field(label, input, hint) {
   return el("label", { class: "field" }, el("span", { class: "field-label" }, label), input, hint && el("span", { class: "field-hint" }, hint));
 }
+/** An On / Off switch, the same in every tree. on : its state ; set(next, event) ; what : what it turns on and off (« E1 »). */
+export function onOff(on, set, what, tip) {
+  return el("button", { class: "switch" + (on ? " on" : ""), type: "button", role: "switch", "aria-checked": on ? "true" : "false", "aria-label": `${what} : ${on ? "On" : "Off"}`,
+    "data-tip": tip || (on ? `${what} compte (On) — cliquer pour le mettre de côté (Off)` : `${what} est de côté (Off) — cliquer pour le remettre (On)`), onClick: (e) => { e.stopPropagation(); set(!on, e); } });
+}
 export function table(headers, rows, cls = "") {
   return el("div", { class: "table-wrap " + cls }, el("table", { class: "data" },
     el("thead", null, el("tr", null, headers.map((h) => el("th", null, h)))),

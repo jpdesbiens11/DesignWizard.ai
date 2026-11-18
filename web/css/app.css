@@ -229,6 +229,11 @@ main h1 { font-family: var(--hand); display: inline; padding: 0 .2em; -webkit-bo
 .side-section { margin-top: .7rem; }
 .side-section > h3 { display: flex; align-items: center; gap: .4rem; font: 650 .74rem var(--label-font); text-transform: uppercase; letter-spacing: var(--label-track); color: var(--muted); margin: 0 0 .35rem; }
 .side-section > h3 .grow { flex: 1; }
+/* On / Off (core/dom.js, onOff) : what is off is kept, with its values, and counts for nothing */
+.switch { flex: none; position: relative; width: 1.8rem; height: 1.02rem; padding: 0; border: 1.4px solid color-mix(in srgb, var(--graphite) 45%, transparent); border-radius: 99px; background: var(--surface-2); cursor: pointer; }
+.switch::after { content: ""; position: absolute; top: 50%; left: .14rem; width: .62rem; height: .62rem; margin-top: -.31rem; border-radius: 50%; background: var(--muted); transition: transform .12s ease; }
+.switch.on { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 22%, var(--surface)); } .switch.on::after { background: var(--ok); transform: translateX(.74rem); } .switch:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
+.is-off { opacity: .6; } .is-off .bc-text > span:first-child, .is-off > .off-strike { text-decoration: line-through; text-decoration-thickness: 1px; } .off-chip { flex: none; font: 650 .68rem var(--label-font); color: var(--muted); border: 1.2px solid var(--line); border-radius: 99px; padding: 0 .35rem; }
 /* a group folds on a click on its title (core/fold.js) : the chevron points down while it is open, to the right once folded */
 .fold-head { cursor: pointer; user-select: none; -webkit-user-select: none; border-radius: var(--r-small); } .fold-head:hover { color: var(--ink); } .fold-head:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
 .fold-head::before { content: ""; flex: none; box-sizing: border-box; width: .44rem; height: .44rem; margin: -.2rem .22rem 0 .12rem; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); transition: transform .12s ease, margin .12s ease; }
@@ -290,6 +295,8 @@ button.dw-view-label { pointer-events: auto; cursor: pointer; min-height: 24px; 
 .param input[type="number"], .param input[type="text"] { padding: .2rem .4rem; text-align: right; font-variant-numeric: tabular-nums; }
 .param input[type="range"] { grid-column: 1 / -1; width: 100%; accent-color: var(--primary); margin: 0; }
 .param.derived input { background: var(--surface-2); color: var(--muted); }
+.param .param-copy { min-width: 20px; min-height: 20px; padding: 0 .2rem; margin-left: .25rem; font-size: .9rem; vertical-align: middle; opacity: .55; } .param .param-copy:hover { opacity: 1; }
+.param.param-alt { padding-left: .9rem; border-bottom-style: dotted; } .param.param-alt label { display: flex; align-items: center; gap: .3rem; color: var(--muted); } .param.param-alt label small { margin-left: 0; } .param.param-alt input { opacity: .75; }
 .finding { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .1rem .5rem; padding: .45rem .55rem; margin-bottom: .4rem; border-radius: var(--r-card); background: var(--surface); border: 1.3px solid color-mix(in srgb, var(--graphite) 18%, transparent); font-size: .86rem; cursor: pointer; }
 .finding:hover { border-color: var(--graphite); box-shadow: var(--shadow-sketch); }
 .finding .sev { width: .8rem; height: .8rem; border-radius: 50%; margin-top: .3rem; background: var(--hl-cyan); }

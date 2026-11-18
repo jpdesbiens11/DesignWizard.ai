@@ -38,7 +38,29 @@ export function dirText(l, short = false) {
 export const supportKey = (x) => (x && typeof x === "object" ? x.region : x);
 export const supportDofs = (x) => (x && typeof x === "object" && Array.isArray(x.dofs) && x.dofs.length === 3 ? x.dofs.map(Boolean) : [true, true, true]);
 export function supportText(x) { const d = supportDofs(x), held = "XYZ".split("").filter((_, i) => d[i]); return held.length === 3 ? "Encastrement" : held.length ? `Appui : bloque ${held.join(" et ")}` : "Appui : ne bloque rien"; }
-/** The tree : [{ ...group, items: [{ id, index, region, where, text, short, color, kind, ask (values still to enter) }] }].
+/* ---------- On / Off, and copies : several cases kept side by side, one solved at a time (demande de JP) ----------
+   A condition put aside (off) stays in the case with its values and counts for nothing : not for the solver, not for the hand
+   estimate, not for the guide. A copy is born off : one changes a value in it, turns it on in place of the first, and runs again. */
+/** Is a condition put aside ? */
+export const isOff = (x) => !!(x && typeof x === "object" && x.off);
+/** The conditions of a list that count, each with its place in the list — its number is place + 1 : [[x, i]]. */
+export const onOf = (list) => (list || []).map((x, i) => [x, i]).filter(([x]) => !isOff(x));
+/** A condition turned off, or on again. key : its type (« fixed » : a support, which is a plain key while it is on and holds everything). */
+export function withOff(x, off, key) {
+  const next = x && typeof x === "object" ? { ...x } : { region: x };
+  if (off) next.off = true; else delete next.off;
+  return key === "fixed" && !next.off && supportDofs(next).every(Boolean) ? next.region : next;
+}
+/** The copy of a condition : the same place and values, put aside until it is turned on. */
+export function copyOf(x) { const c = x && typeof x === "object" ? JSON.parse(JSON.stringify(x)) : { region: x }; c.off = true; return c; }
+/** One condition on, the others of its list off : the gesture that goes from one case to the next. */
+export const soloOn = (list, i, key) => (list || []).map((x, j) => withOff(x, j !== i, key));
+/** The case as it is solved, in a few words : « A1 · E2 Pression 0,004 MPa » — what a trial remembers of it. tree : bcTree(st) ; zones : the zones that count. */
+export function caseWords(tree, zones = []) {
+  const on = tree.flatMap((g) => g.items.filter((it) => !it.off)), off = tree.reduce((n, g) => n + g.items.filter((it) => it.off).length, 0);
+  return { ids: [...on.map((it) => it.id), ...zones.map((z) => z.id)].join(" "), text: [...on.map((it) => `${it.id} ${it.text}`), ...zones.map((z) => `${z.id} zone`)].join(" · "), off };
+}
+/** The tree : [{ ...group, items: [{ id, index, region, where, text, short, color, kind, off, ask (values still to enter) }] }].
     A plane of symmetry (st.cuts, bc « sym ») is a blocked boundary : it shows among the supports as S1, `locked` — it goes away
     with the symmetry only, never alone (item.kind « symmetry », item.index : its place in st.cuts).
     labelOf(regionKey) → the plain name of a region (a face, an interface). */
@@ -46,7 +68,7 @@ export function bcTree(st, labelOf = (k) => k) {
   const sym = (st.cuts || []).map((c, i) => ({ c, i })).filter(({ c }) => c && c.bc === "sym").map(({ c, i }, k) => { const ax = "XYZ"[c.axis], name = `${ax} = ${n(c.at, 2)} mm`;
     return { id: `S${k + 1}`, index: i, region: null, plane: { axis: c.axis, at: c.at, keep: c.keep < 0 ? -1 : 1 }, where: `bloqué perpendiculairement au plan — il tient la place de la moitié retirée`, text: `Symétrie · plan ${name}`, short: `S${k + 1} · symétrie`, color: BC_COLORS.fixed, kind: "symmetry", locked: true, ask: [] }; });
   return bcGroups(st).map((g) => ({ ...g, items: [...(st[g.key] || []).map((x, i) => {
-    const id = `${g.tag}${i + 1}`, region = g.key === "fixed" ? supportKey(x) : x.region, base = { id, index: i, region, where: labelOf(region), ask: g.key === "fixed" || !Array.isArray(x.ask) ? [] : x.ask };
+    const id = `${g.tag}${i + 1}`, region = g.key === "fixed" ? supportKey(x) : x.region, off = isOff(x), base = { id, index: i, region, where: labelOf(region), off, ask: off || g.key === "fixed" || !Array.isArray(x.ask) ? [] : x.ask };      // what is off asks for nothing
     if (g.key === "fixed") return { ...base, text: supportText(x), short: supportDofs(x).every(Boolean) ? id : `${id} · ${"XYZ".split("").filter((_, k) => supportDofs(x)[k]).join("")}`, color: g.color, kind: "fixed" };
     if (g.key === "loads") return x.mode === "pressure" ? { ...base, text: `Pression ${n(x.p)} MPa`, short: `${id} · ${n(x.p)} MPa`, color: BC_COLORS.pressure, kind: "pressure" }
       : { ...base, text: `Force ${n(x.F, 1)} N ${dirText(x)}`, short: `${id} · ${n(x.F, 1)} N ${dirText(x, true)}`, color: BC_COLORS.force, kind: "force" };
@@ -59,6 +81,6 @@ export function bcFind(tree, id) { for (const g of tree) { const it = g.items.fi
 /** The labels the view shows : a whole type when its switch is on, and always the selected item. */
 export function bcLabels(tree, show = {}, selected = null) {
   const out = [];
-  for (const g of tree) for (const it of g.items) if (show[g.key] !== false || it.id === selected) out.push({ ...it, group: g.key, selected: it.id === selected });
+  for (const g of tree) for (const it of g.items) if ((show[g.key] !== false && !it.off) || it.id === selected) out.push({ ...it, group: g.key, selected: it.id === selected });      // what is off shows only while it is selected
   return out;
 }

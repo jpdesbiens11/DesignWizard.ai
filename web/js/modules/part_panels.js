@@ -1,7 +1,8 @@
 /* DesignWizard.ai — inspector panels of the part studio: parameters (sliders with live rebuild), interfaces,
    DFx findings with one-click fixes, data sheet, raw JSON. */
 
-import { el, clear, icon, btn, badge, field, toast, fmt, fmtMass, fmtLen, fmtDims, inUnits, copyText, download } from "../core/dom.js";
+import { el, clear, icon, btn, badge, field, toast, fmt, fmtMass, fmtLen, fmtDims, inUnits, copyText, download, onOff } from "../core/dom.js";
+import { paramAlts, canKeepAlts, addAlt, swapAlt, setAlt, dropAlt } from "../core/variants.js";
 import { store } from "../core/store.js";
 import { app } from "../core/app.js";
 import { interfaceDialog, nextIfaceId } from "../core/part_edit.js";
@@ -21,7 +22,7 @@ import { getUnits, shownUnit, toShown, fromShown, fieldValue, converts } from ".
 export function paramsPanel(body, { st, id, live }) {
   const defs = Object.entries(st.spec.params || {});
   if (!defs.length) { body.append(el("p", { class: "muted" }, "Cette pièce n'a pas de paramètres. Ajoutez-en dans l'onglet JSON (« params »), ou demandez-les à l'entrevue.")); return; }
-  const scope = st.built ? st.built.params.scope : {}, pending = {}, U = getUnits();      // a parameter is kept in its own unit (mm) ; it is read and typed in the unit chosen
+  const raws = st.spec.params || {}, scope = st.built ? st.built.params.scope : {}, pending = {}, U = getUnits();      // a parameter is kept in its own unit (mm) ; it is read and typed in the unit chosen
   const groups = new Map();
   for (const [name, raw] of defs) { const d = raw !== null && typeof raw === "object" ? raw : { value: raw }; const g = d.group || "Paramètres"; if (!groups.has(g)) groups.set(g, []); groups.get(g).push([name, d]); }
   for (const [g, list] of groups) {
@@ -36,6 +37,9 @@ export function paramsPanel(body, { st, id, live }) {
         range.addEventListener("change", () => commit(name, back(+range.value), num));
         row.append(range);
       }
+      /* other values kept beside this one (off) : a copy to change, then to turn on in its place — the cousins of the part */
+      const keeps = !derived && typeof d.value === "number" && canKeepAlts(raws[name]);
+      if (keeps) row.querySelector("label").append(el("button", { class: "icon-btn param-copy", type: "button", "aria-label": `Dupliquer la valeur de ${d.label || name}`, "data-tip": "Garder une autre valeur à côté (Off) : changez-la, puis mettez-la à On à la place de celle-ci", onClick: () => store.updatePart(id, (s) => { s.params[name] = addAlt(s.params[name]); }, `${st.spec.id} : ${name}, une valeur gardée de côté`) }, icon("copy")));
       num.addEventListener("keydown", (e) => { if (e.key === "Enter") num.blur(); });
       num.addEventListener("change", () => {
         const v = num.type === "number" ? parseFloat(num.value) : (/^-?\d+([.,]\d+)?$/.test(num.value.trim()) ? parseFloat(num.value.replace(",", ".")) : num.value.trim());
@@ -43,6 +47,11 @@ export function paramsPanel(body, { st, id, live }) {
         commit(name, typeof v === "number" ? back(v) : v, num);
       });
       sec.append(row);
+      if (keeps) paramAlts(raws[name]).forEach((alt, k) => {
+        const input = el("input", { type: "number", value: fieldValue(alt, unit, U), step: conv ? "any" : d.step || "any", "aria-label": `${d.label || name}, valeur gardée ${k + 1}`, onChange: (e) => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) store.updatePart(id, (s) => { s.params[name] = setAlt(s.params[name], k, back(v)); }, `${st.spec.id} : ${name}, valeur gardée = ${v}`); } });
+        sec.append(el("div", { class: "param param-alt" }, el("label", null, onOff(false, () => store.updatePart(id, (s) => { s.params[name] = swapAlt(s.params[name], k); }, `${st.spec.id} : ${name} = ${alt} (valeur mise à On)`), `${d.label || name} = ${fieldValue(alt, unit, U)}`, "Valeur gardée de côté (Off) — cliquer pour la mettre à On : elle prend la place de la valeur du dessus, qui est gardée à son tour"),
+          el("small", null, "gardée, à Off"), el("button", { class: "icon-btn param-copy", type: "button", "aria-label": `Retirer la valeur gardée ${k + 1} de ${d.label || name}`, "data-tip": "Retirer cette valeur gardée", onClick: () => store.updatePart(id, (s) => { s.params[name] = dropAlt(s.params[name], k); }, `${st.spec.id} : ${name}, valeur gardée retirée`) }, "×")), input));
+      });
     }
     body.append(sec);
   }

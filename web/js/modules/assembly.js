@@ -2,7 +2,7 @@
    dependency: change one side, the other part adapts. Exploded view, BOM with the implied hardware, interference
    check, complementary-part generator, STEP of the assembly, and the assembly routing step by step (asm_gamme.js). */
 
-import { el, clear, icon, btn, badge, toast, modal, fmt, fmtMass, fmtDims, inUnits, unitInput, download, promptBox, confirmBox, table } from "../core/dom.js";
+import { el, clear, icon, btn, badge, toast, modal, fmt, fmtMass, fmtDims, inUnits, unitInput, download, promptBox, confirmBox, table, onOff } from "../core/dom.js";
 import { registerModule, go, setStatus, app } from "../core/app.js";
 import { store } from "../core/store.js";
 import { lookSwatch } from "./part_look.js";
@@ -20,6 +20,7 @@ import { matPoint, matDir, bboxTransform } from "../cad/vec.js";
 import { INTERFACE_TYPES } from "../cad/interfaces.js";
 import { gammeTab, showWhole } from "./asm_gamme.js";
 import { mateTree, mateFind, mateLabels } from "../core/asm_tree.js";
+import { liveAsm, offOf, setInstOff } from "../core/asm_live.js";
 import { mateSection } from "./asm_tree.js";
 import { mateDefinition } from "../core/mate_view.js";
 import { showMate, clearMate, mateDetail } from "./asm_mate.js";
@@ -78,7 +79,7 @@ function render(main, args) {
       if (!st.fitted) { st.fitted = true; vp.viewer.view("iso"); } else vp.viewer.invalidate();
       vp.setBusy("");
       const s = ctx.sol;
-      info.textContent = `${ctx.asm.instances.length} pièce(s) · ${(a.mates || []).length} mate(s) · ${fmtMass(ctx.mass.mass)} · ${fmtDims([ctx.bbox[3] - ctx.bbox[0], ctx.bbox[4] - ctx.bbox[1], ctx.bbox[5] - ctx.bbox[2]], 0)}`
+      info.textContent = `${ctx.asm.instances.length} pièce(s)${offOf(a).instances.length ? ` (+ ${offOf(a).instances.length} à Off)` : ""} · ${(ctx.asm.mates || []).length} mate(s) · ${fmtMass(ctx.mass.mass)} · ${fmtDims([ctx.bbox[3] - ctx.bbox[0], ctx.bbox[4] - ctx.bbox[1], ctx.bbox[5] - ctx.bbox[2]], 0)}`
         + (s.floating.length ? ` · ${s.floating.length} pièce(s) non matée(s)` : "") + (ctx.errors.length ? ` · ${ctx.errors.length} erreur(s)` : "");
       info.className = "chip" + (ctx.errors.length || s.problems.length ? " bad" : "");
       setStatus(`${id} assemblé`, "done");
@@ -98,7 +99,7 @@ function render(main, args) {
       v.addFrame(fr, it.side === "A" ? "#9b7bff" : "#2ec4b6", "frame");
     }
     /* the labels of the mates : a state whose eye is open, in the colour of its health ; the selected one always ; all of them with the frames */
-    const tree = mateTree(a, (health() || { rows: [] }).rows, (i) => instName(a, i)), labelled = st.frames ? tree.flatMap((g) => g.items.map((it) => ({ ...it, selected: it.id === st.mate }))) : mateLabels(tree, st.showMates, st.mate);
+    const tree = mateTree(liveAsm(a), (health() || { rows: [] }).rows, (i) => instName(a, i)), labelled = st.frames ? tree.flatMap((g) => g.items.map((it) => ({ ...it, selected: it.id === st.mate }))) : mateLabels(tree, st.showMates, st.mate);
     for (const it of labelled) {
       const ia = a.instances.find((i) => i.id === it.a.inst), fa = ia && ifaceOf(built, ia.part, it.a.iface); if (!fa || !sol.placements[ia.id]) continue;
       const b = v.addLabel(matPoint(sol.placements[ia.id], fa.frame.o), `${it.id}${it.linked ? " 🔗" : ""}`, "mate", `bc${it.selected ? " sel" : ""}`, () => selectMate(it.selected ? null : it.id));
@@ -141,18 +142,21 @@ function render(main, args) {
     const scroll = el("div", { class: "side-scroll" });
     left.append(scroll);
     scroll.append(el("div", { class: "side-section" }, store.assemblies.map((x) => el("a", { class: "nav-item" + (x.id === id ? " active" : ""), href: `#/assembly/${encodeURIComponent(x.id)}` }, icon("assembly"), el("span", { class: "grow" }, x.name || x.id), el("small", null, x.id)))));
-    const sec = el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, `Pièces de l'assemblage (${a.instances.length})`), btn("", () => addDialog(), { small: true, icon: "plus", tip: "Ajouter une pièce du projet" })));
+    const sec = el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, `Pièces de l'assemblage (${a.instances.length - offOf(a).instances.length}${offOf(a).instances.length ? ` + ${offOf(a).instances.length} à Off` : ""})`), btn("", () => addDialog(), { small: true, icon: "plus", tip: "Ajouter une pièce du projet" })));
     for (const inst of a.instances) {
       const spec = store.part(inst.part), placed = st.ctx && st.ctx.sol.placedBy[inst.id];
-      sec.append(el("div", { class: "nav-item" + (st.sel === inst.id ? " active" : "") + (inst.hidden ? " off" : ""), role: "button", tabindex: "0", onClick: () => { st.sel = inst.id; st.tab = "inst"; vp.viewer.highlight([...vp.viewer.objects.keys()].filter((k) => k.startsWith(inst.id + "/"))); renderLeft(); renderRight(); } },
+      sec.append(el("div", { class: "nav-item" + (st.sel === inst.id ? " active" : "") + (inst.hidden ? " off" : "") + (inst.off ? " is-off" : ""), role: "button", tabindex: "0", onClick: () => { st.sel = inst.id; st.tab = "inst"; vp.viewer.highlight([...vp.viewer.objects.keys()].filter((k) => k.startsWith(inst.id + "/"))); renderLeft(); renderRight(); } },
         icon(spec && spec.family === "pcb" ? "pcb" : spec && spec.family === "extrusion" ? "extrusion" : "part"), el("span", { class: "grow" }, spec ? spec.name || spec.id : `${inst.part} (absente)`), spec ? lookSwatch(spec) : null,
-        inst.fixed ? badge("fixe", "neutral") : placed ? badge("matée", "ok") : badge("libre", "warn"),
+        inst.off ? el("span", { class: "off-chip" }, "Off") : inst.fixed ? badge("fixe", "neutral") : placed ? badge("matée", "ok") : badge("libre", "warn"),
+        /* On / Off : put aside, the part stays in the list with its joints and counts for nothing — view, bill of materials, mass, drawing, exports */
+        onOff(!inst.off, (on) => store.updateAssembly(id, (x) => { setInstOff(x, inst.id, !on); }, `${inst.part} ${on ? "remise à On" : "mise à Off"}`), spec ? spec.name || spec.id : inst.part,
+          inst.off ? "À Off : hors de la vue, de la nomenclature, de la masse, des accouplements et des exports — cliquer pour la remettre (On)" : "À On — cliquer pour la mettre de côté (Off) sans la retirer : elle garde sa place et ses accouplements"),
         iconBtn(inst.hidden ? "eye-off" : "eye", inst.hidden ? "Afficher" : "Masquer", () => store.updateAssembly(id, (x) => { const i = x.instances.find((q) => q.id === inst.id); if (i.hidden) delete i.hidden; else i.hidden = true; }, `${inst.part} ${inst.hidden ? "affichée" : "masquée"}`))));
     }
     if (!a.instances.length) sec.append(el("p", { class: "muted" }, "Ajoutez une première pièce : elle sera la pièce fixe."));
     scroll.append(sec);
-    if (st.ctx) scroll.append(el("div", { class: "side-section" }, el("h3", null, `Accouplements (${(a.mates || []).length})`),
-      mateSection({ tree: mateTree(a, (health() || { rows: [] }).rows, (i) => instName(a, i)), sel: st.mate, show: st.showMates, select: selectMate,
+    if (st.ctx) scroll.append(el("div", { class: "side-section" }, el("h3", null, `Accouplements (${(liveAsm(a).mates || []).length}${offOf(a).mates.length ? ` + ${offOf(a).mates.length} en attente` : ""})`),
+      mateSection({ tree: mateTree(liveAsm(a), (health() || { rows: [] }).rows, (i) => instName(a, i)), sel: st.mate, show: st.showMates, select: selectMate,
         hover: (it) => { if (!st.mate) vp.viewer.highlight(it ? [...vp.viewer.objects.keys()].filter((k) => k.startsWith(it.a.inst + "/") || k.startsWith(it.b.inst + "/")) : []); },
         relabel: (k, on) => { st.showMates[k] = on; renderLeft(); overlays(); } }),
       el("p", { class: "muted small" }, "Un clic sur un accouplement allume ses deux pièces et ouvre sa fiche à droite ; l'œil d'un état affiche ou masque ses étiquettes sur le modèle.")));
@@ -221,8 +225,9 @@ function render(main, args) {
     const reg = joints(st.ctx.asm, built, Object.fromEntries(store.parts.map((x) => [x.id, x]))), byId = new Map(reg.map((r) => [r.id, r])), H = health(), hOf = new Map(H.rows.map((r) => [r.id, r]));
     for (const r of reg) { const h = hOf.get(r.id); if (h) { r.health = HEALTH[h.state].fr; r.notes = h.notes; } }
     body.append(el("p", { class: `atelier-hint${H.state === "ok" ? "" : " warn"}`, style: { fontSize: ".84rem" } }, icon(H.state === "ok" ? "check" : "warning"), ` Santé des accouplements — ${H.text}.`));
-    body.append(el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, `Joints (${(a.mates || []).length})`), reg.length ? btn("Registre (.csv)", () => download(`${id}-joints.csv`, jointsCsv(reg), "text/csv"), { small: true, icon: "download", tip: "Le registre des joints : numéro, genre, pièces, clé, visserie ou colle, procédé" }) : null)));
-    for (const m of a.mates || []) {
+    body.append(el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, `Joints (${(liveAsm(a).mates || []).length})`), reg.length ? btn("Registre (.csv)", () => download(`${id}-joints.csv`, jointsCsv(reg), "text/csv"), { small: true, icon: "download", tip: "Le registre des joints : numéro, genre, pièces, clé, visserie ou colle, procédé" }) : null)));
+    if (offOf(a).mates.length) body.append(el("p", { class: "muted small" }, `${offOf(a).mates.length} accouplement${offOf(a).mates.length > 1 ? "s" : ""} en attente (${offOf(a).mates.join(", ")}) : une de leurs pièces est à Off. Ils reviennent avec elle.`));
+    for (const m of liveAsm(a).mates || []) {
       const ia = a.instances.find((i) => i.id === m.a.inst), fa = ia && ifaceOf(built, ia.part, m.a.iface), pb = sol.problems.find((p) => p.mate === m.id);
       body.append(el("div", { class: "card", "data-mate": m.id, "data-tip": st.mate === m.id ? null : "Cliquer : voir ce joint — ses deux interfaces, sa visserie, sa coupe", style: { marginBottom: ".5rem", padding: ".5rem .65rem", cursor: "pointer", ...(st.mate === m.id ? { outline: "2px solid var(--acc)" } : {}) }, onClick: (e) => { if (e.target.closest("button, a, input, select")) return; selectMate(st.mate === m.id ? null : m.id); } },
         el("div", { style: { display: "flex", gap: ".35rem", alignItems: "center", flexWrap: "wrap" } }, el("b", null, m.id), badge(byId.get(m.id) ? byId.get(m.id).kind : fa ? INTERFACE_TYPES[fa.type].label : "?", byId.get(m.id) && byId.get(m.id).type === "bond" ? "info" : "neutral"), m.linked === false ? badge("non lié", "warn") : badge("lié 🔗", "ok"), hOf.get(m.id) ? badge(HEALTH[hOf.get(m.id).state].fr, HEALTH[hOf.get(m.id).state].tone) : null),
@@ -267,6 +272,7 @@ function render(main, args) {
     return [{ title: `${spec ? spec.name || spec.id : inst.part} · ${inst.id}` }, { label: "Ouvrir la pièce", keys: "Entrée", icon: "edit", run: () => openPart(iid) },
       { label: inst.fixed ? "Libérer" : "Fixer", icon: "lock", run: () => store.updateAssembly(id, (x) => { const i = x.instances.find((q) => q.id === iid); if (i.fixed) delete i.fixed; else i.fixed = true; }, `${inst.part} ${inst.fixed ? "libérée" : "fixée"}`) },
       { label: "Masquer", keys: "H", icon: "eye-off", run: () => hide(iid) }, { label: "Isoler", keys: "I", icon: "eye", run: () => isolate(iid) }, ...back,
+      { label: "Mettre à Off (de côté, sans la retirer)", icon: "power", run: () => store.updateAssembly(id, (x) => { setInstOff(x, iid, true); }, `${inst.part} mise à Off`) },
       { label: "Retirer de l'assemblage", keys: "Suppr", icon: "trash", run: () => dropInst(iid) }];
   }
   function instKey(e) {
@@ -278,6 +284,10 @@ function render(main, args) {
   function instTab(body, a) {
     const inst = a.instances.find((i) => i.id === st.sel);
     if (!inst) { body.append(el("p", { class: "muted" }, "Cliquez une pièce dans la vue 3D ou dans la liste.")); return; }
+    if (inst.off) { const s = store.part(inst.part), waits = (a.mates || []).filter((k) => k.a.inst === inst.id || k.b.inst === inst.id).length;      // put aside : nothing of it is built — what it is, and the way back
+      body.append(el("h3", null, s ? s.name || s.id : inst.part), el("p", { class: "atelier-hint" }, icon("info"), ` Cette pièce est à Off : elle reste dans l'assemblage avec sa place${waits ? ` et ${waits > 1 ? `ses ${waits} accouplements` : "son accouplement"}` : ""}, mais elle n'est ni dans la vue, ni dans la nomenclature, ni dans la masse, ni dans les dessins et les exports.`),
+        el("div", { class: "form-actions", style: { justifyContent: "flex-start" } }, btn("Remettre à On", () => store.updateAssembly(id, (x) => { setInstOff(x, inst.id, false); }, `${inst.part} remise à On`), { small: true, primary: true, icon: "power" }),
+          btn("Retirer", () => store.updateAssembly(id, (x) => { x.instances = x.instances.filter((q) => q.id !== inst.id); x.mates = (x.mates || []).filter((k) => k.a.inst !== inst.id && k.b.inst !== inst.id); }, `${inst.part} retirée de ${id}`), { small: true, icon: "trash", danger: true }))); return; }
     const spec = store.part(inst.part), b = st.ctx.built[inst.part], m = st.ctx.sol.placements[inst.id];
     body.append(el("h3", null, spec.name || spec.id), el("p", { class: "muted", style: { fontSize: ".84rem" } }, `${spec.id} · occurrence ${inst.id} · ${fmtMass(b.mass)} · position ${fmtDims([m[12], m[13], m[14]], 1).replace(/ × /g, " ; ")}`),
       el("div", { class: "form-actions", style: { justifyContent: "flex-start" } }, el("a", { class: "btn btn-small btn-primary", href: `#/${spec.family === "pcb" ? "pcb" : spec.family === "extrusion" ? "extrusion" : "parts"}/${encodeURIComponent(spec.id)}` }, icon("edit"), "Ouvrir la pièce"),

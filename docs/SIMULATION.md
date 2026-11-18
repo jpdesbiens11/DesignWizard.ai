@@ -102,6 +102,13 @@ Dans le panneau de gauche, le cas de charge se lit comme l'arbre d'un outil de c
 Le modèle de l'arbre est pur (`web/js/analysis/fea/bc_tree.js` : `bcTree`, `bcLabels`, `BC_COLORS`, `loadDir`,
 `pushInto`, `supportDofs`) ; le panneau le dessine (`web/js/modules/fea_tree.js`).
 
+### On / Off et copies : des cas à comparer
+
+Chaque condition du cas de charge, et chaque zone de raffinement, a un interrupteur On / Off et un bouton
+« Dupliquer » (la copie naît à Off). Ce qui est à Off reste dans l'arbre et ne compte pour rien ; Alt + clic met une
+condition seule à On parmi celles de son type. Chaque essai retient le cas qu'il a calculé, et « Les essais de cette
+séance » met les cas côte à côte. Voir [VARIANTES.md](VARIANTES.md).
+
 ### Toute face, toute arête, tout point de la pièce
 
 Une condition se pose sur **la géométrie réelle** : n'importe quelle face — plane, cylindrique (un alésage), inclinée,

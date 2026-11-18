@@ -4,12 +4,13 @@
    tree is analysis/fea/bc_tree.js ; this module only draws it. Each type folds on a click on its title (core/fold.js) : what
    is not being worked on steps aside ; the type of the selected item is always open. */
 
-import { el, btn, icon } from "../core/dom.js";
+import { el, btn, icon, onOff } from "../core/dom.js";
 import { needField } from "../core/guide.js";
 import { isFolded, fold } from "../core/fold.js";
-import { AXIS_DIRS, loadDir, supportKey, supportDofs } from "../analysis/fea/bc_tree.js";
+import { AXIS_DIRS, loadDir, supportKey, supportDofs, isOff } from "../analysis/fea/bc_tree.js";
 
 /** o : { st, tree, regions, dirs, select(id), hover(regionKey | null), changed(), aim(setRegion), add(groupKey), remove(groupKey, index), relabel(),
+    toggle(groupKey, index, alone) (On / Off ; alone : this one on, the others of its type off), copy(groupKey, index) (a copy, off, to change and compare),
     unsym(item) (the designer tries to remove the boundary a symmetry blocks : the screen explains and offers to remove the symmetry) } → element
     A value the tool invented (item.ask) blinks in the editor of its item until the designer types his own or confirms it. */
 export function bcSection(o) {
@@ -29,7 +30,7 @@ export function bcSection(o) {
     const rows = [el("div", { class: "bc-row" }, btn("Choisir dans la vue", () => o.aim((k) => { setRegion(k); o.changed(); }), { small: true, icon: "fit", tip: "Cliquez la face (ou l'interface) sur le modèle : elle s'allume sous le curseur" }),
       pick(it.region, o.regions.map((r) => [r.key, r.label]), setRegion, "Endroit"))];
     if (g.key === "fixed") {      // what the support blocks : everything (an encastrement), or only some directions — a face that slides, an edge that rests
-      const d = supportDofs(x), flip = (k) => { const next = d.slice(); next[k] = !next[k]; st.fixed[it.index] = next.every(Boolean) ? supportKey(x) : { region: supportKey(x), dofs: next }; o.changed(); };
+      const d = supportDofs(x), flip = (k) => { const next = d.slice(); next[k] = !next[k]; st.fixed[it.index] = next.every(Boolean) && !isOff(x) ? supportKey(x) : { region: supportKey(x), dofs: next, ...(isOff(x) ? { off: true } : {}) }; o.changed(); };
       rows.push(el("div", { class: "bc-row", "data-field": "dofs" }, el("small", { "data-tip": "Les directions que l'appui empêche. Les trois : un encastrement. Une seule : l'endroit glisse dans les deux autres." }, "bloque"),
         ...["X", "Y", "Z"].map((a, k) => el("label", { class: "check", style: { margin: 0 } }, el("input", { type: "checkbox", checked: d[k], "aria-label": `Bloquer ${a}`, onChange: () => flip(k) }), a))));
     }
@@ -51,14 +52,17 @@ export function bcSection(o) {
     const on = st.show[g.key] !== false, key = `fea.bc:${g.key}`;
     if (st.sel && g.items.some((it) => it.id === st.sel)) fold(key, false);      // what is selected is seen
     const grp = el("div", { class: "bc-group" + (isFolded(key) ? " folded" : ""), role: "group", "data-fold-key": key }); box.append(grp);
-    grp.append(el("div", { class: "bc-ghead fold-head" }, dot(g.color), el("b", { class: "grow", "data-tip": g.tip }, `${g.fr} (${g.items.length})`), ...(g.items.some((it) => it.ask.length) ? [el("span", { class: "bc-ask fold-only" }, "à entrer")] : []),
+    grp.append(el("div", { class: "bc-ghead fold-head" }, dot(g.color), el("b", { class: "grow", "data-tip": g.tip }, `${g.fr} (${g.items.filter((it) => !it.off).length}${g.items.some((it) => it.off) ? ` + ${g.items.filter((it) => it.off).length} à Off` : ""})`), ...(g.items.some((it) => it.ask.length) ? [el("span", { class: "bc-ask fold-only" }, "à entrer")] : []),
       el("button", { class: "icon-btn" + (on ? " on" : ""), type: "button", "aria-pressed": on ? "true" : "false", "aria-label": `Étiquettes des ${g.fr.toLowerCase()} dans la vue`, "data-tip": on ? "Étiquettes affichées sur le modèle — cliquer pour les masquer" : "Étiquettes masquées — cliquer pour les afficher", onClick: () => { st.show[g.key] = !on; o.relabel(); } }, icon(on ? "eye" : "eye-off")),
       btn("", () => o.add(g.key), { small: true, icon: "plus", tip: `Ajouter ${g.one} — puis cliquez la face sur le modèle` })));
     if (!g.items.length) grp.append(el("p", { class: "bc-none muted small" }, g.key === "fixed" ? "Aucun appui : le produit n'est pas tenu." : "Aucun."));
     for (const it of g.items) {
-      const sel = st.sel === it.id, row = el("div", { class: "bc-item" + (sel ? " sel" : "") + (it.ask.length ? " ask" : ""), role: "treeitem", "aria-selected": sel ? "true" : "false", tabindex: "0", "data-bc": it.id,
+      const sel = st.sel === it.id, row = el("div", { class: "bc-item" + (sel ? " sel" : "") + (it.ask.length ? " ask" : "") + (it.off ? " is-off" : ""), role: "treeitem", "aria-selected": sel ? "true" : "false", tabindex: "0", "data-bc": it.id,
         onClick: () => o.select(sel ? null : it.id), onKeydown: (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); o.select(sel ? null : it.id); } }, onMouseenter: () => { if (it.region) o.hover(it.region, it.color); }, onMouseleave: () => o.hover(null) },
-        dot(it.color), el("b", null, it.id), el("span", { class: "bc-text" }, el("span", null, it.text), el("small", null, it.where)), ...(it.ask.length ? [el("span", { class: "bc-ask", "data-tip": "Une valeur d'exemple attend la vôtre" }, "à entrer")] : []),
+        dot(it.color), el("b", null, it.id), el("span", { class: "bc-text" }, el("span", null, it.text), el("small", null, it.off ? `Off, hors du calcul · ${it.where}` : it.where)), ...(it.ask.length ? [el("span", { class: "bc-ask", "data-tip": "Une valeur d'exemple attend la vôtre" }, "à entrer")] : []),
+        /* On / Off, and a copy : several cases kept side by side, one solved at a time */
+        ...(it.locked ? [] : [onOff(!it.off, (on, e) => o.toggle(g.key, it.index, !!(e && e.altKey)), it.id, it.off ? `${it.id} est de côté (Off) : il ne compte pas dans le calcul — cliquer pour le remettre (On). Alt + clic : lui seul à On parmi les ${g.fr.toLowerCase()}` : `${it.id} compte (On) — cliquer pour le mettre de côté (Off) sans le perdre. Alt + clic : lui seul à On parmi les ${g.fr.toLowerCase()}`),
+          el("button", { class: "icon-btn bc-copy", type: "button", "aria-label": `Dupliquer ${it.id}`, "data-tip": `Dupliquer ${it.id} : la copie naît à Off — changez-y une valeur, mettez-la à On à la place de ${it.id}, relancez, comparez`, onClick: (e) => { e.stopPropagation(); o.copy(g.key, it.index); } }, icon("copy"))]),
         el("button", { class: "icon-btn", type: "button", "aria-label": `Retirer ${it.id}`, "data-tip": it.locked ? "Frontière bloquée par la symétrie : elle part avec elle" : "Retirer", onClick: (e) => { e.stopPropagation(); if (it.locked) o.unsym(it); else o.remove(g.key, it.index); } }, it.locked ? icon("lock") : "×"));
       if (sel) row.style.borderColor = it.color;
       grp.append(row); if (sel) grp.append(editor(g, it));

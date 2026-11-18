@@ -5,6 +5,7 @@
    screws, lowered for boards and for threads in light alloy or plastic : indicative, to confirm by a tightening test. */
 
 import { resolveParams, evalDeep } from "../cad/expr.js";
+import { liveAsm } from "./asm_live.js";
 import { patternPoints, interfaceType, ADHESIVES, BOND_PREPS } from "../cad/interfaces.js";
 import { finishPlan } from "./plan_doc.js";
 import { WELD_PROCESSES, PLATINGS, CONTACT_TESTS, CONTACT_FORMS, contactEstimate, contactForm } from "../cad/interfaces_elec.js";
@@ -25,6 +26,7 @@ function ifaceOf(spec, id) {
 
 /** The order in which the instances are assembled : [instance ids]. */
 export function assemblyOrder(asm, parts) {
+  asm = liveAsm(asm);
   const all = asm.instances.map((i) => i.id), given = ((asm.plan && asm.plan.order) || []).filter((id) => all.includes(id));
   if (given.length) return [...new Set([...given, ...all])];
   const base = asm.instances.find((i) => i.fixed) || asm.instances[0]; if (!base) return [];
@@ -39,6 +41,7 @@ export function assemblyOrder(asm, parts) {
 
 /** The assembly routing. ctx : { hardwareOf(mate) → [{ id, kind, size, length, qty, name }], mass, dfa (DFA result) } — all optional. */
 export function assemblyPlan(asm, project, ctx = {}) {
+  asm = liveAsm(asm);      // a part put aside is not in the routing
   const parts = new Map((project.parts || []).map((p) => [p.id, p])), inst = new Map(asm.instances.map((i) => [i.id, i])), order = assemblyOrder(asm, parts), notes = (asm.plan && asm.plan.notes) || {};
   const nameOf = (id) => { const s = parts.get((inst.get(id) || {}).part) || {}; return s.name ? `${s.name} (${s.id})` : (inst.get(id) || {}).part || id; }, specOf = (id) => parts.get((inst.get(id) || {}).part) || {};
   const phases = [], totals = new Map(), sizes = new Set(), q = [], ask = (topic, text) => q.push({ topic, text }), loose = [];

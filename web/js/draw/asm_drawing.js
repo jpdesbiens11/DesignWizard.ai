@@ -5,6 +5,7 @@
    Pure layout code (browser and Node). */
 
 import { LW, dimLinear, drawBorder, drawTitleBlock, drawNotes, drawTable, drawRevisionTable, viewLabel, TITLE_BLOCK_H } from "./drafting.js";
+import { liveAsm } from "../core/asm_live.js";
 import { bounds, drawView, balloon, notesHeight } from "./part_drawing.js";
 import { len, massOf, drawingUnit, inDrawingUnits, inDrawingWords, say } from "./dim_model.js";
 
@@ -29,7 +30,7 @@ function composeSheet(sheet, data) {
   const B = { front: bounds(views.front), top: bounds(views.top), right: bounds(views.right), iso: bounds(views.iso) }, third = (o.projection || "third") === "third";
   const parts = rows.filter((r) => r.kind === "part"), hw = rows.filter((r) => r.kind !== "part");
   const notes = [`Dimensioning per ASME Y14.5-2018; dimensions in ${drawingUnit() === "in" ? "inches, converted from the millimetre model (1 in = 25.4 mm)" : "millimetres"}; overall dimensions of the assembled product.`, "Balloons refer to the items of the bill of materials; each part is defined by its own drawing, at the revision shown.",
-    `${asm.instances.length} part(s) placed, ${(asm.mates || []).length} joint(s)${hw.length ? `, fasteners and consumables: ${hw.length} line(s) of the bill of materials` : ""}.`, "Assembly sequence, tooling and tightening torques: see the assembly routing.", ...(asm.notes || []).map(say)];
+    `${liveAsm(asm).instances.length} part(s) placed, ${(liveAsm(asm).mates || []).length} joint(s)${hw.length ? `, fasteners and consumables: ${hw.length} line(s) of the bill of materials` : ""}.`, "Assembly sequence, tooling and tightening torques: see the assembly routing.", ...(asm.notes || []).map(say)];
   const notesW = 150, nH = Math.min(notesHeight(sheet, notes, notesW), 80), notesY = frame.y + frame.h - nH - 3, colX = frame.x + frame.w - RIGHT_W;
   const revs = o.revisions && o.revisions.length ? o.revisions : [{ rev: asm.revision || "A", description: "Initial release", date: o.date || "", by: o.drawnBy || "" }];
   const revH = (Math.min(revs.length, 4) + 2) * 5, isoBox = { x: frame.x + frame.w - 66, y: frame.y + revH + 3, w: 62, h: 48 };

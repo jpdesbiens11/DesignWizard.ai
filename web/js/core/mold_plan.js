@@ -78,7 +78,7 @@ export function moldPlan(spec, built) {
   log.push(`Pull ${pull} : le mold s'ouvre dans ce sens. Parting line ${parting.text}${bb ? ` (niveau ${fr(level)} mm)` : ""} — ${K.tool}.`);
   /* what lies across the pull : each face that carries an opening, a hole or a fixing needs a slide (a core in a sand mold) */
   const sides = new Map(), note = (face, what) => { if (!FACES[face] || FACES[face].axis === ax) return; if (!sides.has(face)) sides.set(face, []); if (what && !sides.get(face).includes(what)) sides.get(face).push(what); };
-  for (const f of spec.features || []) if (f && SIDE_OPS.has(f.op) && typeof f.face === "string") note(f.face, f.name || f.id || f.op);
+  for (const f of spec.features || []) if (f && !f.suppressed && SIDE_OPS.has(f.op) && typeof f.face === "string") note(f.face, f.name || f.id || f.op);
   for (const i of spec.interfaces || []) if (i && SIDE_IFACES.has(i.type) && typeof i.face === "string") note(i.face, i.name || i.id);
   const lifters = m.lifters > 0 ? Math.round(m.lifters) : 0, kind = K.side;
   const slides = [...sides.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([dir, what]) => ({ dir, kind, n: what.length, what }));

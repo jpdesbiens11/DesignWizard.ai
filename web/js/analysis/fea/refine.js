@@ -242,6 +242,7 @@ export function prepareZones(model, bodies, zones) {
 export function zoneIssues(zones, info) {
   const out = [], WORDS = { size: (z) => (z.shape === "prism" ? "le côté" : "le diamètre"), length: () => "la longueur" };
   (zones || []).forEach((z, k) => {
+    if (z && z.off) return;      // put aside : it counts for nothing until it is turned on again
     const id = z.id || `Z${k + 1}`, add = (level, text, field) => out.push({ level, id, text, ...(field ? { field } : {}) });
     if (!normZone(z)) { add("error", `${id} : donnez une forme, un axe, des cotes positives et un centre.`, !(z.size > 0) ? "size" : !(z.length > 0) ? "length" : "at"); return; }
     for (const f of Array.isArray(z.ask) ? z.ask : []) if (WORDS[f]) add("todo", `${id} : entrez ${WORDS[f](z)} de la zone (${fr(z[f])} mm est un exemple).`, f);

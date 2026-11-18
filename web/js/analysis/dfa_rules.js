@@ -7,6 +7,7 @@
    Auto-fixes are patches of PART specs: every entry carries a `part` field naming the part to patch with applyPatch(). */
 
 import { INTERFACE_TYPES, patternPoints } from "../cad/interfaces.js";
+import { liveAsm } from "../core/asm_live.js";
 import { THREADS } from "../cad/standards.js";
 import { IDENTITY, matPoint, matDir, matFromPlacement } from "../cad/vec.js";
 import { rule, num, round, makeFinding, sortFindings, summarize } from "./dfx_core.js";
@@ -36,7 +37,7 @@ const SIZES = Object.keys(THREADS);
 /** Check an assembly. Returns { findings (errors first), summary, metrics: {parts, instances, uniqueParts, fasteners,
     fastenerTypes (size × length), screwSizes, mass_g, cog, directions, topDown, theoreticalMin, assemblyTime_s, dfaIndex}, rules, skipped }. */
 export function checkAssembly(asm, ctx = {}) {
-  asm = asm || {}; ctx = ctx || {};
+  asm = liveAsm(asm || {}); ctx = ctx || {};      // what is put aside (off) is not checked
   const instances = Array.isArray(asm.instances) ? asm.instances : [], mates = Array.isArray(asm.mates) ? asm.mates : [], parts = ctx.parts || {};
   const findings = [], ran = [], skipped = [];
   const add = (id, o) => { const r = BY_ID.get(id) || {}; findings.push(makeFinding({ ...o, id, severity: o.severity || r.severity, category: "DFA", process: "assembly", title: r.title, source: r.source })); };

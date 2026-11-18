@@ -20,7 +20,7 @@ import { installFolds } from "./fold.js";
 import { installPanelKeep } from "./panel_keep.js";
 import { installLoupe, loupeButton } from "./loupe.js";
 
-export const APP_VERSION = "0.85.0";
+export const APP_VERSION = "0.86.0";
 /** What every document of the open project carries beside its content : approval names, organisation, confidentiality note, extraction stamp (core/brand.js). */
 export const docMeta = (when = new Date()) => docIdentity(store.project, when, APP_VERSION);
 const modules = new Map();

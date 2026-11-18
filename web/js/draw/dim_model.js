@@ -55,6 +55,7 @@ export function locateParams(spec, built) {
     if (atEdge(b)) { put(centre(r[1], r[3]), { on: view, dir: "v", p1: [x + w / 2, bb[b]], p2: [x + w / 2, y + h / 2] }); put(bare(r[1]), { on: view, dir: "v", p1: [x, bb[b]], p2: [x, y] }); }
   };
   for (const f of spec.features || []) {
+    if (!f || f.suppressed) continue;      // an operation put aside (off) is not made : nothing of it is dimensioned
     const def = f.profile && Array.isArray(f.profile.rect) ? f.profile : Array.isArray(f.rect) ? { rect: f.rect, r: f.r } : null;
     if ((f.op === "pocket" || f.op === "pad") && def) { const V = VIEW_OF_FACE[faceKey(f.face || "+Z")]; if (V) rect(V[0], V[1], V[2], def.rect); }
     else if (f.op === "extrude" && def && (f.plane || "XY") === "XY") { rect("top", 0, 1, def.rect);

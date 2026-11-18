@@ -123,6 +123,8 @@ html[data-module="fea"] { --acc: var(--hl-teal); }
 .bc-item { display: flex; align-items: center; gap: .4rem; margin: .22rem 0 0 .35rem; padding: .22rem .35rem; border: 1.6px solid transparent; border-radius: var(--r-field); cursor: pointer; font-size: .86rem; }
 .bc-item:hover, .bc-item:focus-visible { background: var(--surface-2); } .bc-item.sel { background: var(--surface); box-shadow: var(--shadow-sketch); }
 .bc-item .bc-text { flex: 1; min-width: 0; display: grid; line-height: 1.25; } .bc-item .bc-text small { color: var(--muted); overflow-wrap: anywhere; }
+.zone-off > :not(:first-child) { opacity: .5; }
+.bc-item .icon-btn.bc-copy { min-width: 22px; padding: .1rem .2rem; font-size: .95rem; } .bc-item .switch { opacity: .9; }
 .bc-item .icon-btn { flex: none; opacity: .5; } .bc-item:hover .icon-btn, .bc-item.sel .icon-btn { opacity: 1; }
 .bc-edit { margin: 0 0 .3rem .95rem; padding: .1rem .45rem .2rem; border-left: 4px solid var(--acc); background: var(--surface-2); border-radius: 0 var(--r-field) var(--r-field) 0; }
 .bc-val { display: inline-flex; align-items: center; gap: .25rem; flex: 1 1 6.5rem; min-width: 0; } .bc-val input { min-width: 4.6rem; flex: 1; }
