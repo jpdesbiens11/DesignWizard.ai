@@ -264,7 +264,7 @@ export class Viewer {
         const k = this.span / this.h;
         this.target.addScaledVector(right, -dx * k).addScaledVector(up, dy * k);
       } else {
-        this.orbit.turn(dx, dy);      // turntable about the pivot : yaw about the vertical through it, pitch about the screen's horizontal axis — and its cue
+        this.orbit.turn(dx, dy, e.altKey);      // about the pivot : left / right about the vertical of the model, up / down about the screen's horizontal axis, Alt : a roll about the line of sight — nothing is blocked ; and the cue
       }
       this.dirty = true;
     });
