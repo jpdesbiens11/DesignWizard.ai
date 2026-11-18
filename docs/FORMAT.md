@@ -161,9 +161,11 @@ d'atelier, opérations du noyau) est dans [PART_LANGUAGE.md](PART_LANGUAGE.md). 
   mises de côté), `params` (la valeur de chaque paramètre). **`variants`** (assemblage) — `name`, `off` (les instances
   mises de côté). **Sous-assemblage** — une instance d'assemblage nomme une pièce (`part`) ou un assemblage (`asm`) ; un
   accouplement nomme une pièce d'un sous-assemblage par son chemin (`s5~i1`). Voir
-  [SOUS_ASSEMBLAGES.md](SOUS_ASSEMBLAGES.md). **`cases`** (projet) — le cas de charge de la Simulation de chaque pièce ou assemblage, sous son
-  `id` : `kind`, `cells`, `fsTarget`, `fixed`, `loads`, `power`, `fixedT`, `conv`, `thermo`, `cuts`, `zones`, `places`,
-  `placeSeq` ; ce qui y est à Off porte `off: true`. Voir [VARIANTES.md](VARIANTES.md).
+  [SOUS_ASSEMBLAGES.md](SOUS_ASSEMBLAGES.md). **`cases`** (projet) — les cas de charge de la Simulation de chaque pièce ou assemblage, une entrée sous son
+  `id`. L'entrée porte le cas **en cours** : `kind`, `cells`, `fsTarget`, `fixed`, `loads`, `power`, `fixedT`, `conv`,
+  `thermo`, `cuts`, `zones`, `places`, `placeSeq` (ce qui y est à Off porte `off: true`), et, quand la pièce en garde
+  plusieurs : `name` (le nom du cas en cours, « Cas 1 » par défaut), `others: [{ name, …les mêmes clés }]` (les cas rangés)
+  et `at` (la place du cas en cours dans la liste). Voir [VARIANTES.md](VARIANTES.md).
 - **`order`** — `quantity`, `need_by`, `note` : la commande du prototype.
 - **`look`** — `color` (`"#rrggbb"`), `opacity` (0,2 à 1) : la couleur de la pièce **à l'écran**, choisie par son
   concepteur pour la reconnaître. Ce n'est pas une finition ; absente, la pièce a la couleur de sa matière. Elle

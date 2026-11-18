@@ -5,7 +5,7 @@
    Route: #/fea or #/fea/<part|assembly id>. Runs kept for the review live in project.simulations ; the load case of each part
    or assembly lives in project.cases (analysis/fea/case_store.js) : every change is one undoable step, read back at the next visit. */
 
-import { el, clear, icon, btn, badge, field, table, fmt, toast, confirmBox } from "../core/dom.js";
+import { el, clear, icon, btn, badge, field, table, fmt, toast, confirmBox, promptBox } from "../core/dom.js";
 import { registerModule, setStatus, setGuide } from "../core/app.js";
 import { store } from "../core/store.js";
 import { kernel } from "../cad/client.js";
@@ -34,7 +34,8 @@ import { prepareZones, zoneIssues, normZone } from "../analysis/fea/refine.js";
 import { compositeSkin } from "../analysis/fea/composite.js";
 import { zoneWalls } from "../analysis/fea/entity.js";
 import { zonesSection, zoneMenu, drawZones, ZONE_TINT } from "./fea_zones.js";
-import { caseOf, takeCase, withCase, sameCase } from "../analysis/fea/case_store.js";
+import { caseOf, takeCase, withCase, sameCase, FIRST_CASE, caseList, freshCaseName, addCase, useCase, renameCase, dropCase } from "../analysis/fea/case_store.js";
+import { casesSection } from "./fea_cases.js";
 
 const FACES = [["-X", "gauche (−X)"], ["+X", "droite (+X)"], ["-Y", "avant (−Y)"], ["+Y", "arrière (+Y)"], ["-Z", "dessous (−Z)"], ["+Z", "dessus (+Z)"]];
 const st = { target: null, kind: "structure", cells: 3000, cuts: [], zones: [], places: {}, placeSeq: 0, fixed: [], loads: [], power: [], fixedT: [], conv: { on: true, h: 10, Tamb: 25 }, thermo: { uniform: true, T: 80, Tref: 20 }, sel: null, show: {}, view: "model", quantity: "stress", fsTarget: 1.5 };      // places : the faces, edges and points of the part that carry a condition (fea_places.js) ; sel : the item of the load case that is selected (A1, E2…) ; show : the labels of a type, on or off ; view : the model with its conditions, or the last result ; quantity : what the colours of a result show (stress or safety factor, against fsTarget)
@@ -231,6 +232,30 @@ function render(main, args) {
   /* the case is written in the project as it changes : one undoable step each time (nothing is written when nothing changed) */
   const saveCase = () => { if (alive && st.target) store.commit(`Cas de charge : ${st.target.id}`, (x) => { withCase(x, st.target.id, st); }); };
   const outdate = () => { if (last) last.stale = true; st.view = "model"; saveCase(); };
+  /* ---------- the cases of the model, under their names : one in use, the others kept as they were left ---------- */
+  const caseNow = () => (caseList(store.project, st.target.id).find((x) => x.on) || {}).name || FIRST_CASE, sig = () => JSON.stringify(caseList(store.project, st.target.id).map((x) => [x.name, x.on]));
+  const named = () => { const l = caseList(store.project, st.target.id); return l.length > 1 || l[0].name !== FIRST_CASE; };
+  let caseSig = "";
+  const enter = (c) => { takeCase(st, c); st.sel = null; if (last) last.stale = true; st.view = "model"; remesh(false); };      // another case on the screen : its planes and its mesh setting come with it
+  async function newCase() {
+    const from = caseNow(), name = await promptBox("Nouveau cas de charge", "Nom", freshCaseName(caseList(store.project, st.target.id)), `Une copie du cas « ${from} » : mêmes appuis, mêmes efforts, même maillage. Changez-y ce qui diffère ; « ${from} » est gardé tel qu'il est.`);
+    if (!name || !alive) return; let made = null;
+    store.commit(`Cas de charge : ${st.target.id} — nouveau cas « ${name.trim()} »`, (x) => { made = addCase(x, st.target.id, st, name); });
+    if (!made) { toast(`Le nom « ${name.trim()} » est déjà pris, ou vide.`, "warn"); return; }
+    drawLeft(); toast(`Cas « ${made} » en cours : une copie de « ${from} », qui est gardé tel qu'il est. Ctrl + Z pour revenir.`, "success", 5200);
+  }
+  function pickCase(name) { let took = null; store.commit(`Cas de charge : ${st.target.id} — cas « ${name} » en cours`, (x) => { took = useCase(x, st.target.id, st, name); }); if (took) { enter(took); toast(`Cas « ${name} » en cours. Ctrl + Z pour revenir.`, "success", 2800); } }
+  async function nameCase(from) {
+    const to = await promptBox("Renommer le cas de charge", "Nom", from); if (!to || !alive || to.trim() === from) return; let done = false;
+    store.commit(`Cas de charge : ${st.target.id} — « ${from} » renommé « ${to.trim()} »`, (x) => { done = renameCase(x, st.target.id, st, from, to); });
+    if (done) drawLeft(); else toast(`Le nom « ${to.trim()} » est déjà pris.`, "warn");
+  }
+  async function removeCase(name) {
+    const one = caseList(store.project, st.target.id).length === 1;
+    if (!(await confirmBox(one ? `Vider le cas « ${name} » ?` : `Retirer le cas « ${name} » ?`, one ? "Un modèle garde toujours un cas : ses appuis, ses efforts, ses zones et ses plans sont retirés, et il reprend le nom « Cas 1 ». Ctrl + Z les ramène." : "Ses appuis, ses efforts, ses zones et ses plans partent avec lui ; les autres cas ne changent pas. Ctrl + Z le ramène.", one ? "Vider" : "Retirer", true)) || !alive) return;
+    let gone = null; store.commit(`Cas de charge : ${st.target.id} — cas « ${name} » retiré`, (x) => { gone = dropCase(x, st.target.id, st, name); });
+    if (gone && gone.take) enter(gone.take); else drawLeft();
+  }
   const drawSwitch = () => vp.setStatus(viewSwitch({ view: st.view, last, onView: setView }), info);
   function setView(v) {
     st.view = v === "result" && last && last.skin ? "result" : "model"; asking = null; askingPoint = null; view.style.cursor = "";
@@ -295,8 +320,8 @@ function render(main, args) {
       el("div", { class: "side-section", "data-fold-note": `${st.target.name} · ${{ structure: "structure", thermal: "thermique", thermo: "thermo-mécanique" }[st.kind]}` }, el("h3", null, "Modèle"), field("Ce que l'on simule", sel(st.target.id, targets.map((t) => [t.id, `${t.type === "part" ? "Pièce" : "Assemblage"} — ${t.name}`]), (id) => { st.target = targets.find((t) => t.id === id); st.from = `${store.project.id}:${id}`; st.sel = null; takeCase(st, caseOf(store.project, id)); loadGeometry(); })),
         field("Physique", sel(st.kind, [["structure", "Structure — efforts et déformations"], ["thermal", "Thermique — régime permanent"], ["thermo", "Thermo-mécanique — dilatation et contraintes"]], (k) => { st.kind = k; changed(); })),
         field("Finesse du maillage", el("input", { type: "range", min: 500, max: 16000, step: 500, value: st.cells, onChange: (e) => { st.cells = +e.target.value; outdate(); remesh(false); } }), `Environ ${st.cells.toLocaleString("fr-CA")} cubes : grossier et rapide. Les détails plus petits qu'un cube sont ignorés.`)));
-    const sec = el("div", { class: "side-section" });
-    scroll.append(sec);
+    const sec = el("div", { class: "side-section" }); caseSig = sig();
+    scroll.append(casesSection({ list: caseList(store.project, st.target.id, st), use: pickCase, add: newCase, rename: nameCase, drop: removeCase }), sec);
     if (whole) scroll.append(cutsSection({ st, kind: st.kind, syms, bbox: whole.bbox, symmetric, apply: () => { outdate(); remesh(false); } }),
       zonesSection({ st, preps: zonePreps, h: model.grid.h, model, apply: applyZones, shown: zonesOn(), result: st.view === "result", show: (on) => { st.show[st.view === "result" ? "zonesResult" : "zones"] = on; showZones(); drawLeft(); }, hover: (z) => { if (litZone !== z) { litZone = z; showZones(); } },
         aim: (set) => { if (st.view === "result") setView("model"); asking = null; askingPoint = set; view.style.cursor = "crosshair"; toast("Cliquez sur la pièce le point où centrer la zone.", "info", 4200); } }));
@@ -306,7 +331,7 @@ function render(main, args) {
     const aim = (set) => { if (st.view === "result") setView("model"); asking = set; view.style.cursor = "crosshair"; toast("Cliquez une face, une arête ou un point de la pièce : il s'allume sous le curseur. Caché ? Tournez la vue ou coupez-la.", "info", 4200); };
     const go = (x) => { if (x.id && x.id[0] !== "Z" && st.sel !== x.id) select(x.id); setTimeout(() => { if (alive) nudge(spot(x)); }, 90); };
     const found = issues(); setGuide(found.map((x) => ({ ...x, si: true, go: () => go(x) })));      // the guide of the top bar says the same
-    sec.append(el("h3", null, "Cas de charge"), ...[guideBox(found, { go, si: true })].filter(Boolean), bcSection({ st, tree: loadTree(), regions: [...regions, ...usedPlaces()], select, changed, aim, relabel: () => { drawLeft(); drawSymbols(); },
+    sec.append(el("h3", null, "Conditions du cas"), ...[guideBox(found, { go, si: true })].filter(Boolean), bcSection({ st, tree: loadTree(), regions: [...regions, ...usedPlaces()], select, changed, aim, relabel: () => { drawLeft(); drawSymbols(); },
       hover: (k, color) => { vp.viewer.clearOverlays("bchover"); if (k && !asking) lightRegion(k, color || LIT.named, "bchover"); },
       add: (key) => { st[key].push(DEFAULT[key]()); const g = loadTree().find((x) => x.key === key), it = g.items[g.items.length - 1]; st.sel = it.id; changed(); aim((k) => { if (key === "fixed") st.fixed[it.index] = k; else st[key][it.index].region = k; changed(); toEnter(); }); },
       remove: (key, i) => { st[key].splice(i, 1); st.sel = null; changed(); }, unsym,
@@ -343,7 +368,7 @@ function render(main, args) {
       el("ol", { class: "calc-steps" }, estimate.steps.map((s) => el("li", null, s))), ...estimate.warnings.map((w) => el("p", { class: "atelier-hint warn" }, icon("warning"), " ", w)));
     const method = el("div", { class: "side-section" }, el("h3", null, "La méthode"), el("p", { class: "muted small" }, "Cubes identiques, hexaèdre à modes incompatibles (flexion juste même avec un élément dans l'épaisseur), gradient conjugué. Tout le code du solveur est dans ce dépôt, sous licence MIT."));
     if (!last) { body.append(hand, method); return; }
-    resultPanel(body, { last, st, runs, mat: geo.bodies[0].material, keep, setView, saveCase,
+    resultPanel(body, { last, st, runs, named: named(), mat: geo.bodies[0].material, keep, setView, saveCase,
       repaint: (only) => { if (st.view !== "result") { setView("result"); return; } paint(); peak(); if (!only) drawRight(); },
       pick: (x) => { last = x; setView("result"); } });
     body.append(hand, method);
@@ -374,7 +399,7 @@ function render(main, args) {
       if (!m.ok) { setStatus("Simulation impossible", "bad"); toast(m.error, "error", 9000); return; }
       const s = m.skin, lo = kind === "thermal" ? m.result.minT.value : 0, hi = kind === "thermal" ? m.result.maxT.value : m.result.maxVm.value;
       last = { n: (runs.length ? runs[runs.length - 1].n : 0) + 1, kind, stale: false, skin: s, data: [lo, hi > lo ? hi : lo + 1], range: [lo, hi > lo ? hi : lo + 1], result: m.result, info: m.info, compare: compare(kind, est, m.result), estimate: est,
-        fs: kind !== "thermal" && s.re ? safetyField(s.val, s.re) : null, case: ran };
+        fs: kind !== "thermal" && s.re ? safetyField(s.val, s.re) : null, case: { ...ran, name: caseNow() } };
       runs.push(last); if (runs.length > 6) runs[runs.length - 7].skin = null;      // the six last trials can be shown again ; the older ones keep their figures
       setStatus(`Simulation : ${m.result.iterations} itérations, ${fmt(m.result.ms / 1000, 2)} s`, "done");
       setView("result");
@@ -385,7 +410,7 @@ function render(main, args) {
   function keep() {
     if (!last) return;
     const r = last.result, mat = geo.bodies[0].material, thermal = last.kind === "thermal", nominal = r.nominalVm ? r.nominalVm.value : null;
-    store.commit(`Simulation gardée : ${st.target.id}`, (x) => { x.simulations = x.simulations || []; x.simulations.push({ id: `S${x.simulations.length + 1}`, kind: last.kind, target: st.target.id, cells: last.info.cells, h: last.info.h, ...(last.info.cuts ? { cuts: last.info.cuts, copies: last.info.copies } : {}),
+    store.commit(`Simulation gardée : ${st.target.id}`, (x) => { x.simulations = x.simulations || []; x.simulations.push({ id: `S${x.simulations.length + 1}`, kind: last.kind, target: st.target.id, ...(named() ? { case: last.case.name } : {}), cells: last.info.cells, h: last.info.h, ...(last.info.cuts ? { cuts: last.info.cuts, copies: last.info.copies } : {}),
       ...((r.zones || []).some((z) => !z.error) ? { zones: r.zones.filter((z) => !z.error).map((z) => ({ id: z.id, shape: z.shape, axis: z.axis, size: z.size, length: z.length, at: z.at, ratio: z.ratio, h: z.h, cells: z.cells, peak: z.peak.value, alone: z.alone ? z.alone.value : null })) } : {}),
       estimate: thermal ? { Tmax: last.estimate.values.Tmax } : { sigma: (last.kind === "thermo" && last.estimate.values.sigmaPlate) || last.estimate.values.sigma, delta: last.estimate.values.delta },
       result: thermal ? { Tmax: r.maxT.value, Tmin: r.minT.value } : { sigma: r.maxVm.value, nominal, delta: r.maxU.value, sf: mat.Re ? mat.Re / r.maxVm.value : null, ...(last.kind === "thermo" ? { Tmax: r.maxT.value, core: r.coreVm ? r.coreVm.value : null } : {}) },
@@ -397,7 +422,7 @@ function render(main, args) {
   loadGeometry();
   /* Ctrl + Z, Ctrl + Y : the case comes back as the project has it now ; anything else that was undone is built again */
   const unsee = store.on("change", (e) => { if (!alive || !e || !e.undo || !geo) return; const kept = takeCase({}, caseOf(store.project, st.target.id)), moved = !sameCase(kept, st), rebuilt = shape() !== built;
-    if (!moved && !rebuilt) return; if (moved) { takeCase(st, kept); st.sel = null; }
+    if (!moved && !rebuilt) { if (sig() !== caseSig) drawLeft(); return; } if (moved) { takeCase(st, kept); st.sel = null; }
     if (rebuilt) loadGeometry(); else { if (last) last.stale = true; st.view = "model"; remesh(false); } });
   return () => { alive = false; unsee(); if (worker) worker.terminate(); vp.dispose(); };
 }

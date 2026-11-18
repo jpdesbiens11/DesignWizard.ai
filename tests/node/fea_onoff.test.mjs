@@ -72,7 +72,7 @@ test("wiring : the solver, the hand estimate and the symbols take only what is o
   assert.match(fea, /const supports = \(\) => onOf\(st\.fixed\)/); assert.match(fea, /loads: onOf\(st\.loads\)/); assert.match(fea, /power: onOf\(st\.power\)/); assert.match(fea, /fixedT: onOf\(st\.fixedT\)/);
   assert.match(fea, /zones: liveZones\(\)\.map\(normZone\)/, "a zone that is off is not sent to the solver");
   assert.match(fea, /if \(it\.off\) continue;/, "no symbol for what is off");
-  assert.match(fea, /case: ran/); assert.match(result, /Cas calculé : /); assert.match(result, /"Cas", "Cubes"/);
+  assert.match(fea, /case: \{ \.\.\.ran, name: caseNow\(\) \}/); assert.match(result, /Cas calculé : /); assert.match(result, /"Cas", "Cubes"/);
   assert.match(tree, /onOff\(!it\.off/); assert.match(tree, /Dupliquer \$\{it\.id\}/); assert.match(zones, /Dupliquer la zone/);
   assert.match(read("web/js/core/dom.js"), /export function onOff\(/); assert.match(read("web/css/app.css"), /\.switch\.on \{/);
 });

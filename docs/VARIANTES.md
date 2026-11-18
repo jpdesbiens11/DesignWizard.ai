@@ -47,6 +47,37 @@ physique, facteur de sécurité visé, avec les copies et ce qui est à Off :
 - le cas voyage dans le texte `.dwiz` du projet (une ligne `case DRV-BASE structure …`) et dans la fusion d'équipe
   (un artéfact « Cas de charge DRV-BASE ») ; retirer la pièce retire son cas.
 
+### Plusieurs cas, chacun sous son nom
+
+Demande de JP (« plusieurs cas de charge nommés par pièce »). Une pièce ne vit pas un seul chargement : le service, le
+transport, une chute. Le groupe « **Cas de charge (n)** » du volet de gauche, au-dessus des conditions, les liste :
+
+- **un cas est toujours en cours**, marqué dans la liste. C'est un cas *vivant*, pas une photo : ce que l'on change —
+  un effort, un appui, une zone, un plan, la finesse du maillage, la physique — va dans ce cas, et dans lui seul ;
+- **le « + » fait un nouveau cas : une copie du cas en cours**, sous un autre nom (« Cas 2 » est proposé). Il devient le
+  cas en cours ; rien ne bouge à l'écran que le nom, et le cas d'origine est gardé tel qu'il est ;
+- **un clic sur un nom passe à ce cas** : il revient tel qu'on l'avait laissé, avec ses plans et son maillage ; celui
+  que l'on quitte attend à sa place. La liste garde son ordre ;
+- **renommer** (le crayon) et **retirer** (le ×) : retirer le cas en cours fait passer au voisin ; un modèle garde
+  toujours un cas — le dernier se vide au lieu de partir ;
+- chaque geste est **une étape annulable**, à son nom (« Cas de charge : DRV-BASE — cas « Transport » en cours ») ;
+- **chaque essai dit de quel cas il vient** : « Les essais de cette séance » met les cas côte à côte, le résultat écrit
+  « Cas calculé — Transport », et un essai gardé pour le rapport y porte le nom de son cas ;
+- le groupe du dessous s'appelle maintenant « **Conditions du cas** » : l'arbre des appuis et des efforts du cas en
+  cours. Le guide ne regarde que lui : un cas rangé ne demande rien.
+
+L'usage suivi est celui de la liste des cas de charge — ou des études — des outils de calcul : un cas actif, un nouveau
+cas qui part d'une copie, un résultat qui appartient au cas qui a tourné (repris de mémoire, voir le registre des
+sources). Dans le fichier : l'entrée d'une pièce garde le cas en cours comme avant, avec `name`, et range les autres
+dans `others: [{ name, … }]` ; `at` dit la place du cas en cours dans la liste. Un fichier d'avant se lit comme un
+seul cas, « Cas 1 », et une visite ne le réécrit pas. Un seul artéfact d'équipe par pièce : ses cas voyagent ensemble.
+Code : `web/js/analysis/fea/case_store.js` (`caseList`, `addCase`, `useCase`, `renameCase`, `dropCase`),
+`web/js/modules/fea_cases.js`. Vérifié dans Chromium sur l'étrier de la démonstration : un cas copié, 400 N tapés qui
+ne vont que dans le nouveau cas, la contrainte quadruplée, les deux essais nommés, l'essai gardé avec son nom, le retour
+au premier cas avec ses 100 N, Ctrl + Z et Ctrl + Y (y compris sur un simple renommage), un rechargement, le retrait du
+cas en cours. Pas vérifié : deux coéquipiers qui changent chacun un cas différent de la même pièce (la fusion prend
+l'entrée la plus récente de la pièce entière) ; Firefox, Safari.
+
 Ne sont pas gardés : les résultats (les essais de la séance — « Ajouter au rapport » garde un essai dans
 `project.simulations`), ce qui est sélectionné, la vue. Ne sont pas à On / Off : la convection et la température
 uniforme (une case à cocher chacune).
@@ -171,14 +202,14 @@ pour chacune (noms, contenu, un autre solide), le dossier de commande d'une vari
 l'assemblage, le STEP et la nomenclature de sa variante sans la pièce mise de côté, la gamme nommée ; la section
 « Variantes » du rapport.
 Tests : `tests/node/fea_onoff.test.mjs`, `tests/node/onoff.test.mjs`, `tests/node/fea_case_store.test.mjs`,
-`tests/node/asm_variants.test.mjs`, `tests/node/variant_out.test.mjs`.
+`tests/node/asm_variants.test.mjs`, `tests/node/variant_out.test.mjs`, `tests/node/fea_cases.test.mjs`.
 
 Pas vérifié : le menu « Variante qui sort » de l'envoi vers Onshape (il faut un compte Onshape connecté : seul le code
 est tenu par un essai de câblage) ; le rangement d'une commande dans Drive avec le nom de la variante (connexion
 Google) ; Firefox, Safari.
 
-Pas encore fait : plusieurs cas de charge **nommés** par pièce (un seul cas par pièce, avec ses copies à On / Off) ;
-une variante d'assemblage ne retient pas la variante de chacune de ses pièces — un STEP ou un envoi d'assemblage
+Pas encore fait : les cas de charge d'une pièce ne sont pas liés à ses variantes (un cas vaut pour la pièce telle
+qu'elle est) ; une variante d'assemblage ne retient pas la variante de chacune de ses pièces — un STEP ou un envoi d'assemblage
 prend donc chaque pièce telle qu'elle est ; le rapport de revue montre chaque document dans sa variante en cours (il
 les nomme et liste les autres, mais ne se construit pas pour une variante choisie sans y passer) ; le miroir Drive
 publie le document tel qu'il est, pas toutes ses variantes d'un coup ; les classes de cotes (référence, SC) sont
