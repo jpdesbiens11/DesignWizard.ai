@@ -270,6 +270,9 @@ main h1 { font-family: var(--hand); display: inline; padding: 0 .2em; -webkit-bo
 button.dw-view-label { pointer-events: auto; cursor: pointer; min-height: 24px; }      /* a label that is clicked is large enough to be hit */
 .dw-view-label.err { background: var(--danger-soft); border-color: var(--danger); color: var(--danger); } .dw-view-label.warn { background: var(--warn-soft); }
 .dw-view-label.pin { transform: translate(-50%, -50%); min-width: 1.45rem; height: 1.45rem; padding: 0 .3rem; border-radius: 999px; background: var(--primary); color: var(--on-primary); border: 1.6px solid var(--ink-strong); font-weight: 700; font-size: .78rem; line-height: 1; display: grid; place-items: center; }
+.dw-view-label.turn-grip { transform: translate(-50%, -50%); width: 1.5rem; height: 1.5rem; min-height: 0; padding: 0; border-radius: 50%; background: var(--surface); border: 3px solid #e2740c; box-shadow: var(--shadow-pop); cursor: grab; touch-action: none; }      /* the grip that turns the chosen part of an assembly (modules/asm_turn.js) */
+.dw-view-label.turn-grip:hover, .dw-view-label.turn-grip:focus-visible { background: #e2740c; outline: 2px solid #fff; outline-offset: -5px; } .dw-view-label.turn-grip.on { cursor: grabbing; background: #e2740c; }
+.dw-view-label.turn-note { transform: translate(-50%, -50%); background: var(--surface); border-color: #e2740c; font: 700 .8rem var(--label-font); }
 .dw-view-label.pin.done { background: var(--surface); color: var(--muted); border-color: var(--muted); }
 .dw-view-label.iface { background: color-mix(in srgb, var(--hl-violet) 28%, var(--surface)); } .dw-view-label.path { background: var(--surface); border-color: var(--path); color: var(--path-ink); font-weight: 650; }
 .view-tools { position: absolute; left: .6rem; top: .6rem; display: flex; flex-wrap: wrap; gap: .3rem; max-width: calc(100% - 7.6rem); align-items: center; }      /* the top right corner is the triad's */

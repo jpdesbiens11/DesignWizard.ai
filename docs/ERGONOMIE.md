@@ -340,6 +340,36 @@ les deux flèches, l'orbite libre depuis une vue couchée, la table tournante et
 touches (15°, 5°, 90°, Alt), un outil armé qui garde le bord pour lui, une étiquette choisie qui garde ses flèches.
 Pas essayé au toucher (l'appui tenu et le bord y sont laissés au système), ni sur Firefox et Safari.
 
+## Tourner une pièce posée : une poignée dans la vue
+
+Demande de JP (19 novembre 2026), en même temps que la rotation de la vue : « tourner une pièce elle-même… avec une
+poignée dans la vue, au lieu de taper un angle ». Jusque-là une pièce d'assemblage n'avait pas d'angle du tout à
+régler, sauf le bouton « 90° » d'un accouplement.
+
+- **La pièce choisie porte un anneau orange et une poignée ronde.** L'anneau est dans le plan où elle peut tourner ;
+  un trait pointillé montre l'axe. La poignée se pose sur la partie de l'anneau que la vue montre.
+- **Ce que « tourner » veut dire dépend de ce qui tient la pièce**, et la poignée le dit dans son info-bulle :
+  *posée à la main* (la pièce fixe, ou une pièce qu'aucun accouplement n'atteint) — elle tourne autour de la
+  verticale, par le milieu de sa boîte, et sa position est réécrite ; *tenue par un accouplement* — elle tourne
+  autour de la normale de cet accouplement, et c'est **l'angle de l'accouplement** qui change. Un sous-assemblage
+  tourne d'un seul bloc, de l'une ou l'autre façon.
+- **Glisser la poignée** fait tourner la pièce comme la main tourne autour de l'axe : **5° par cran**, 15° avec Maj,
+  libre avec Alt. L'arc parcouru et l'angle (« −45° ») se montrent. **Ce qui tient à la pièce suit, en direct** :
+  l'assemblage est résolu de nouveau à chaque cran, l'aperçu est donc exactement ce que le relâchement laissera.
+- **Relâcher** écrit le changement en **une étape annulable**, nommée (« Couvercle tournée de −45° sur
+  l'accouplement M3 »). **Échap** pendant le geste abandonne : rien n'est écrit.
+- **Au clavier**, la poignée est un curseur : ← → un cran, Maj : 15°, Alt : 1° ; elle garde le focus d'un cran au
+  suivant. **Dans la fiche** de la pièce, le groupe « Orientation » donne le même angle en nombre, pour une valeur
+  exacte (champ numérique ordinaire : flèches à vitesse progressive).
+- L'anneau quitte la vue quand la fiche montre autre chose (accouplements, nomenclature, gamme).
+
+Code : `web/js/core/asm_turn.js` (pur : `turnOf`, `withTurn`, `applyTurn`, la géométrie de l'anneau),
+`web/js/modules/asm_turn.js` (la poignée, la fiche). Vérifié dans Chromium sur le variateur : le couvercle tourné sur
+son accouplement (aperçu, écriture, masse inchangée), Échap, le clavier, le nombre tapé, Ctrl + Z ; une pièce posée à
+côté, tournée sur place autour de Z et ramenée à zéro au centième ; la poignée replacée quand la pièce est au bord de
+la vue. Pas vérifié : le toucher ; un motif de vis lié, que l'angle peut désaligner (la santé des accouplements le
+dira, l'outil ne l'empêche pas) ; Firefox et Safari.
+
 ## Sur quoi l'interface s'appuie
 
 Question de JP (19 novembre 2026) : crée-t-on une interface nouvelle, ou s'appuie-t-on sur ce qui existe ?

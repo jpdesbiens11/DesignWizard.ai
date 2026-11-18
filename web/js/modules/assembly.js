@@ -12,6 +12,7 @@ import { createViewport } from "../core/viewport.js";
 import { mountPins } from "./view_pins.js";
 import { buildAssembly, showAssembly, stepItems, stepCount } from "../core/asm_scene.js";
 import { formSub, dissolveSub } from "../core/asm_form.js";
+import { mountTurn } from "./asm_turn.js";
 import { autoMate, candidates, freeInterfaces, ifaceOf, pairKey, joints, jointsCsv, nextJoint, placedTree } from "../core/assembly_logic.js";
 import { assemblyHealth, HEALTH } from "../core/joint_health.js";
 import { announceLinks } from "../core/part_edit.js";
@@ -55,6 +56,8 @@ function render(main, args) {
     menuFor: (hit) => [...instMenu(hit && hit.def.data.inst ? topOf(hit.def.data.inst) : null), ...(hit && hit.def.data.inst ? ["—", ...pins.menu(hit)] : [])], onKey: (e) => instKey(e), keys: [["H · I · Maj + H", "Masquer la pièce choisie · l'isoler · tout afficher"], ["Entrée · Suppr", "Ouvrir la pièce choisie · la retirer de l'assemblage"]],
     onPick: (hit) => { st.sel = hit && hit.def.data.inst ? topOf(hit.def.data.inst) : null; vp.viewer.highlight(st.sel ? keysOf(st.sel) : []); renderLeft(); if (st.sel) { st.tab = "inst"; } renderRight(); } });
   const pins = mountPins(vp, { key: () => `assembly:${id}` });      // the messages pinned on this assembly, each on its instance
+  /* the part chosen can be turned by hand : a ring and a grip round it in the view, the same angle as a number in its card */
+  const turner = mountTurn(vp, { id, ctx: () => st.ctx, selected: () => (st.tab === "inst" && !st.mate ? st.sel : null), name: (iid) => { const i = asm().instances.find((q) => q.id === iid); return i ? what(i).name : iid; } });
   const info = el("span", { class: "chip" }, "—"), clash = el("span", { class: "chip", "data-tip": "Volumes communs entre pièces voisines, cherchés après chaque montage" }, "interférences : …");
   const healthChip = el("span", { class: "chip", style: { cursor: "pointer" }, onClick: () => { st.tab = "mates"; renderRight(); } }, "accouplements : …");
   vp.setStatus(info, clash, healthChip);
@@ -236,7 +239,7 @@ function render(main, args) {
 
   /* ---------- right ---------- */
   function renderRight() {
-    clear(right);
+    clear(right); turner.draw();      // the handle follows the part chosen, and what the card shows
     const a = asm(), tabs = [["mates", "Mates"], ["inst", "Pièce"], ["bom", "BOM"], ["dfa", "DFA"], ["gamme", "Gamme"]];
     if (st.tab !== "gamme" && st.step) { st.step = null; showWhole(vp); }      // leaving the routing sheet : the whole product again
     const nErr = st.dfa && st.dfa.summary ? st.dfa.summary.errors : 0;
@@ -323,7 +326,7 @@ function render(main, args) {
         el("div", { class: "form-actions", style: { justifyContent: "flex-start" } }, btn("Remettre à On", () => store.updateAssembly(id, (x) => { setInstOff(x, inst.id, false); }, `${what(inst).name} à On`), { small: true, primary: true, icon: "power" }),
           btn("Retirer", () => store.updateAssembly(id, (x) => without(x, inst.id), `${what(inst).name} : retrait de ${id}`), { small: true, icon: "trash", danger: true }))); return; }
     if (isSub(inst)) { subTab(body, { inst, ctx: st.ctx, remove: () => dropInst(inst.id), dissolve: () => dissolve(inst.id), fix: () => store.updateAssembly(id, (x) => { const i = x.instances.find((q) => q.id === inst.id); if (i.fixed) delete i.fixed; else i.fixed = true; }, `${what(inst).name} ${inst.fixed ? "libre" : "fixe"}`),
-      move: (k, v) => store.updateAssembly(id, (x) => { const i = x.instances.find((q) => q.id === inst.id); i.placement = i.placement || { t: [0, 0, 0], r: [0, 0, 0] }; i.placement.t[k] = v; }, `${what(inst).name} : position`) }); return; }
+      move: (k, v) => store.updateAssembly(id, (x) => { const i = x.instances.find((q) => q.id === inst.id); i.placement = i.placement || { t: [0, 0, 0], r: [0, 0, 0] }; i.placement.t[k] = v; }, `${what(inst).name} : position`) }); const turn = turner.section(); if (turn) body.append(turn); return; }
     const spec = store.part(inst.part), b = st.ctx.built[inst.part], m = st.ctx.sol.placements[inst.id];
     if (!spec || !b) { body.append(el("h3", null, inst.part), el("p", { class: "form-error" }, "Cette pièce n'est plus dans le projet, ou n'a pas pu être construite."), el("div", { class: "form-actions", style: { justifyContent: "flex-start" } }, btn("Retirer", () => dropInst(inst.id), { small: true, icon: "trash", danger: true }))); return; }
     body.append(el("h3", null, spec.name || spec.id), el("p", { class: "muted", style: { fontSize: ".84rem" } }, `${spec.id} · occurrence ${inst.id} · ${fmtMass(b.mass)} · position ${fmtDims([m[12], m[13], m[14]], 1).replace(/ × /g, " ; ")}`),
@@ -336,6 +339,7 @@ function render(main, args) {
       const mate = (a.mates || []).find((k) => (k.a.inst === inst.id && k.a.iface === it.id) || (k.b.inst === inst.id && k.b.iface === it.id));
       return el("p", { style: { fontSize: ".86rem", margin: "0 0 .3rem" } }, badge(it.side, it.side === "B" ? "b" : "a"), " ", el("b", null, it.name), mate ? ` — matée (${mate.id})` : " — libre");
     }), !b.interfaces.length && el("p", { class: "muted" }, "Cette pièce n'a pas d'interface : elle ne peut pas se mater. Ajoutez-en dans le Part Studio.")));
+    const turn = turner.section(); if (turn) body.append(turn);      // its orientation : the angle the handle of the view turns, as a number
     if (!st.ctx.sol.placedBy[inst.id] && !inst.fixed) {
       const t = (inst.placement && inst.placement.t) || [0, 0, 0];
       body.append(el("div", { class: "side-section" }, el("h3", null, "Position manuelle"), el("div", { class: "form-row" }, ["X", "Y", "Z"].map((ax, k) => { const u = unitInput(ax, { value: t[k], step: "1" }, (v) => store.updateAssembly(id, (x) => { const i = x.instances.find((q) => q.id === inst.id); i.placement = i.placement || { t: [0, 0, 0], r: [0, 0, 0] }; i.placement.t[k] = v || 0; }, `${inst.part} déplacée`), { event: "onChange", length: true });
