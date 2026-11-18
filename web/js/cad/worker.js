@@ -54,16 +54,23 @@ const COMMANDS = {
     return { result: { ...built, bodies, facts }, transfer };
   },
   forget({ key }) { drop(key); return { result: true }; },
-  /** STEP of one part or of an assembly. args: {items:[{key, name, matrix, body}], name} */
+  /** STEP of one part or of an assembly. args: {items:[{key, name, matrix, body} | {key, name, instanceName, matrix, children:[ … ]}], name}
+      An item with `children` is a sub-assembly : the file keeps it as a level (core/assembly_logic.js placedTree, core/asm_scene.js stepItems). */
   step({ items, name }) {
-    const list = [];
-    for (const it of items) {
-      const c = cache.get(it.key);
-      if (!c) throw new Error(`Pièce « ${it.key} » absente du noyau. Correctif : ouvrez-la une fois pour la construire.`);
-      const bodies = it.body ? c.bodies.filter((b) => b.name === it.body) : c.bodies;
-      bodies.forEach((b) => list.push({ key: `${it.key}/${b.name}`, name: bodies.length > 1 ? `${it.name} ${b.name}` : it.name, instanceName: it.instanceName || it.name,
-        shape: b.shape, color: (it.colors && it.colors[b.name]) || it.color, matrix: it.matrix && !matIsIdentity(it.matrix) ? it.matrix : (items.length > 1 || bodies.length > 1 ? [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1] : null) }));
-    }
+    const ID = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+    const expand = (level, deep) => {
+      const list = [];
+      for (const it of level) {
+        if (it.children) { list.push({ key: it.key, name: it.name, instanceName: it.instanceName || it.name, matrix: it.matrix || ID, children: expand(it.children, true) }); continue; }
+        const c = cache.get(it.key);
+        if (!c) throw new Error(`Pièce « ${it.key} » absente du noyau. Correctif : ouvrez-la une fois pour la construire.`);
+        const bodies = it.body ? c.bodies.filter((b) => b.name === it.body) : c.bodies;
+        bodies.forEach((b) => list.push({ key: `${it.key}/${b.name}`, name: bodies.length > 1 ? `${it.name} ${b.name}` : it.name, instanceName: it.instanceName || it.name,
+          shape: b.shape, color: (it.colors && it.colors[b.name]) || it.color, matrix: it.matrix && !matIsIdentity(it.matrix) ? it.matrix : (deep || level.length > 1 || bodies.length > 1 ? ID : null) }));
+      }
+      return list;
+    };
+    const list = expand(items, false);
     const text = K.stepWrite(list, name);
     K.flush();
     return { result: text };

@@ -4,7 +4,7 @@
    The drawing then writes the English where there is one, the text itself otherwise ; screens keep the text as typed.
    Pure : which texts a sheet writes, which have no English yet, the brief to hand to an AI and the reading of its reply. */
 
-import { partCounts, finder } from "./asm_levels.js";
+import { partCounts, finder, bomLevels } from "./asm_levels.js";
 
 const uniq = (list) => [...new Set(list.filter((t) => typeof t === "string" && t.trim()).map((t) => t.trim()))];
 const numbers = (v) => (v !== null && typeof v === "object" ? v : {});
@@ -16,12 +16,15 @@ export function partTexts(spec, project) {
 /** The texts of the project an ASSEMBLY drawing writes : title, the names of the bill of materials, notes, project. rows : the lines of the bill of materials. */
 export function asmTexts(asm, rows, project) {
   const a = asm || {};
-  return uniq([a.name, ...(rows || []).filter((r) => r.kind === "part").map((r) => r.name), ...(a.notes || []), project && project.name]);
+  return uniq([a.name, ...(rows || []).filter((r) => r.kind === "part" || r.kind === "assembly").map((r) => r.name), ...(a.notes || []), project && project.name]);      // a sub-assembly is a line of the list too
 }
 /** The texts of a drawing of the project : « part:ID » or « assembly:ID ». */
 export function drawingTexts(project, key, rows) {
   const [kind, id] = String(key || "").split(/:(.*)/), p = project || {};
-  if (kind === "assembly") { const a = (p.assemblies || []).find((x) => x.id === id); return a ? asmTexts(a, rows || [...partCounts(a, finder(p)).keys()].map((pid) => ({ kind: "part", name: ((p.parts || []).find((x) => x.id === pid) || {}).name })), p) : []; }
+  if (kind === "assembly") { const a = (p.assemblies || []).find((x) => x.id === id); if (!a) return [];
+    /* without the lines of a sheet : whatever it may list — every part through the levels, and each sub-assembly (one line when the sheet lists its level) */
+    const subs = [...new Set(bomLevels(a, finder(p)).filter((r) => r.kind === "assembly" && !r.lost).map((r) => r.id))].map((sid) => ({ kind: "assembly", name: ((p.assemblies || []).find((x) => x.id === sid) || {}).name }));
+    return asmTexts(a, rows || [...[...partCounts(a, finder(p)).keys()].map((pid) => ({ kind: "part", name: ((p.parts || []).find((x) => x.id === pid) || {}).name })), ...subs], p); }
   const s = (p.parts || []).find((x) => x.id === id); return s ? partTexts(s, p) : [];
 }
 /** Clean words from anything : { text : English }, texts and English trimmed, nothing empty. */

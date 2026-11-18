@@ -73,6 +73,20 @@ extérieure qui bouge, si.
 
 On ne cherche pas à ce que tout reste compatible avec tout : on **sait** ce qui l'est, et le reste porte un autre numéro.
 
+### Et avec ses sous-assemblages (v0.93)
+
+La même règle, un niveau plus haut. Un assemblage qui porte des sous-assemblages ne se libère que si **chacun d'eux est
+libéré** — à la lettre, avec tout ce qu'il contient : ses pièces, ses propres sous-assemblages. L'ordre est donc : les
+pièces, puis le sous-assemblage, puis le parent ; l'écran nomme ce qui manque (« À libérer d'abord : … »). La libération
+du parent note **le numéro et la révision de chaque sous-assemblage** (`subs`), à côté de ceux des pièces — toutes les
+pièces, à travers les niveaux. « Libérée avec » les montre, le sous-assemblage d'abord.
+
+Un sous-assemblage qui avance ensuite (une note, une pièce dedans, un accouplement) n'est plus un état libéré : le
+parent le dit (« sous-assemblage modifié, pas encore libéré »), puis, une fois le sous-assemblage libéré de nouveau,
+« révision plus récente du sous-assemblage : pas validée dans cette révision de l'assemblage » — et le parent, qui n'a
+pourtant pas changé lui-même, se voit proposer sa révision suivante. Un assemblage libéré **avant la v0.93** avec un
+sous-assemblage n'a pas ce relevé : il se voit proposer sa révision suivante, qui le prendra.
+
 ## Dans Google Drive
 
 « Ranger les révisions dans Drive » (et « Publier les artéfacts » de l'écran Compte) dépose **un dossier par révision
@@ -91,16 +105,19 @@ part DRV-BASE … pn=PRT-46341-77677 revision=A derivedFrom={pn: PRT-46341-77648
 plm
   releases
     - id=PRT-46341-77648_A key="part:DRV-BASE" pn=… rev=A at=… sig=… form={size: [160, 110, 42], mass: 111.1} doc={…}
-    - id=ASM-46341-77656_A key="assembly:DRV-ASM" … uses={DRV-BASE: {pn: …, rev: A}, …} ext=[…]
+    - id=ASM-46341-77656_A key="assembly:DRV-ASM" … uses={DRV-BASE: {pn: …, rev: A}, …} subs={ASM-002: {pn: …, rev: A}} ext=[…]
 ```
 
-Le module est pur : `web/js/core/plm.js` (`planRelease`, `release`, `formFitFunction`, `compatibility`, `restore`,
+`subs` n'est écrit que pour un assemblage qui porte des sous-assemblages.
+
+Le module est pur : `web/js/core/plm.js` (`planRelease`, `release`, `formFitFunction`, `compatibility`, `usesOf`, `subsOf`, `restore`,
 `releaseFiles`, `newReference`, `plmRows`) ; l'écran est `web/js/modules/plm.js` (`#/plm`).
 
 ## Limites
 
-- **Vérifié** : la règle et ses cas, par des tests (numérotation, 3F, pièces gelées, retour à une révision, voyage dans
-  le miroir) ; l'écran rejoué dans le navigateur sur la démonstration. **Pas vérifié** : le dépôt des dossiers sur un
+- **Vérifié** : la règle et ses cas, par des tests (numérotation, 3F, pièces gelées, sous-assemblages gelés, retour à
+  une révision, voyage dans le miroir) ; l'écran rejoué dans le navigateur sur la démonstration — y compris, en v0.93,
+  le variateur libéré avec un sous-assemblage. **Pas vérifié** : le dépôt des dossiers sur un
   vrai Drive (testé contre un Drive simulé seulement).
 - La forme se juge sur l'enveloppe et la masse : deux pièces de même enveloppe et de même masse mais de forme différente
   passent pour la même forme. La fonction se juge sur ce qui est écrit dans la pièce ; une performance qui change sans

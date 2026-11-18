@@ -19,7 +19,7 @@ import { viewRequest } from "../draw/part_drawing.js";
 import { makeDrawing } from "../modules/drawings.js";
 import { processPlan } from "../cad/process_plan.js";
 import { planText } from "./plan_doc.js";
-import { buildAssembly } from "./asm_scene.js";
+import { buildAssembly, stepItems } from "./asm_scene.js";
 import { TREE } from "../google/drive_fs.js";
 import { toDwiz } from "./dwiz.js";
 import { orderCheck, rfqText } from "../cad/order.js";
@@ -77,7 +77,7 @@ export async function assemblyArtifacts(asmId) {
   if (!asm) throw new Error(`Assemblage « ${asmId} » introuvable.`);
   const ctx = await buildAssembly(asm), files = [], errors = [...ctx.errors.map((m) => ({ key: "step", label: "STEP", message: m }))];
   try {
-    const items = ctx.asm.instances.map((i) => { const s = store.part(i.part); return { key: i.part, name: `${i.part} ${s.name || ""}`.trim(), instanceName: `${i.part} ${i.id}`, matrix: ctx.sol.placements[i.id] }; });
+    const items = stepItems(asm, ctx.built);      // with its levels : a sub-assembly is a product of its own in the file
     files.push({ key: "step", name: `${asm.id}.step`, mime: "application/step", bytes: await kernel.step(items, `${asm.id} ${asm.name || ""}`.trim()), warnings: [] });
   } catch (e) { if (e && e.cancelled) throw e; errors.push({ key: "step", label: "STEP", message: e.message }); }
   files.push({ key: "dwiz", name: `${asm.id}.assembly.dwiz`, mime: "text/plain", bytes: toDwiz(asm), warnings: [] });

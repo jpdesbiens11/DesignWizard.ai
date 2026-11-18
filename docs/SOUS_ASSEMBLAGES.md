@@ -43,21 +43,38 @@ Tout ce qui **compte des pièces** lit l'assemblage **ouvert** — chaque pièce
 | Nomenclature | à plat, et par niveaux |
 | Gamme d'assemblage | le sous-assemblage est **une étape** : « le monter à part, selon sa propre gamme », puis le poser |
 | DFA, bilan DFx, rapport de revue | sur le produit entier |
-| Dessin d'ensemble | toutes les pièces, repérées et listées |
+| Dessin d'ensemble | la liste de **son niveau** : un sous-assemblage est une ligne et une bulle, au milieu du bloc (v0.93) ; « à plat » au choix |
 | Isolation, Simulation, Rendu, Étiquettes | toutes les pièces |
-| STEP, envoi vers Onshape | toutes les pièces, à leur place |
+| STEP, envoi vers Onshape | toutes les pièces à leur place, **avec les niveaux** : un sous-assemblage est un produit du fichier (v0.93) |
 | Guide | sous-assemblage disparu, boucle, bloc non accouplé ; les joints d'un sous-assemblage restent l'affaire de son écran |
-| Revue et révisions | un assemblage est revu et libéré avec les pièces de ses sous-assemblages ; « Employée dans » remonte les niveaux |
+| Revue et révisions | un assemblage est revu et libéré avec les pièces de ses sous-assemblages, **et avec la révision de chaque sous-assemblage, gelée** (v0.93) ; « Employée dans » remonte les niveaux |
 | Interfaces liées | un accouplement lié entre le parent et une pièce d'un sous-assemblage adapte l'autre côté |
 | On / Off, variantes | un sous-assemblage à Off sort de tout, avec les joints qui passent par lui ; une variante le retient |
 | Aller-retour IA (`.dwiz`) | `place s1 asm=SUB` ; un assemblage qui se contiendrait est refusé à l'import |
 
+### Ce qui sort avec ses niveaux (v0.93)
+
+- **Le dessin d'ensemble liste son niveau.** C'est l'usage d'une liste de pièces : un sous-assemblage y est **une
+  ligne** — son numéro, son nom, sa révision, « Sub-assembly, n parts » — et **une bulle**, au milieu du bloc ; ses
+  pièces et la visserie de ses propres joints sont sur **son** dessin, qui a sa liste. Les notes de la feuille le
+  disent (« 6 part(s) placed, 2 of them inside 1 sub-assembly listed as one item each »). Dans l'écran Dessins, le
+  choix **« Nomenclature du dessin »** — *Ce niveau* ou *À plat : toutes les pièces* — n'apparaît que si l'assemblage
+  porte un sous-assemblage ; il vaut pour le projet (`project.drawing.asmBom`), une étape annulable.
+  Code : `bomTop` (`core/assembly_logic.js`), `makeAssemblyDrawing`, `centerKey` (`draw/asm_drawing.js`).
+- **Le STEP garde les niveaux.** Un sous-assemblage est un **produit** du fichier, entre l'assemblage et ses pièces ;
+  posé deux fois, il est écrit une fois et placé deux fois. Chaque pièce est à sa place : relu, le fichier donne les
+  mêmes solides aux mêmes endroits que le fichier à plat (essai sur le vrai noyau). Les trois sorties qui écrivent le
+  STEP d'un assemblage — le bouton de l'Assemblage, le dossier de commande, l'envoi Onshape — passent par la même
+  liste : `stepItems` (`core/asm_scene.js`), d'après `placedTree` (`core/assembly_logic.js` : l'assemblage en arbre
+  de nœuds posés, chaque matrice dans le repère du nœud au-dessus).
+- **La révision d'un sous-assemblage est gelée dans son parent.** Un assemblage ne se libère que si chacun de ses
+  sous-assemblages l'est — à la lettre, avec tout ce qu'il contient — ; sa libération note leur numéro et leur
+  révision (`subs`), comme elle note ceux des pièces. Un sous-assemblage qui avance demande la révision suivante du
+  parent. Voir [REVISIONS.md](REVISIONS.md).
+
 Pas encore fait :
 
-- le **dessin d'ensemble** liste les pièces à plat : pas de ligne « sous-assemblage » dans son tableau, pas de bulle
-  propre au bloc ;
-- le **STEP** et l'envoi **Onshape** sortent une structure à plat (les pièces, sans le niveau intermédiaire) ;
-- la **révision** d'un sous-assemblage n'est pas gelée dans celle de son parent : ce sont ses pièces qui le sont ;
+- l'**envoi vers Onshape** reçoit le STEP à niveaux, mais ce qu'Onshape en fait n'a pas été vu (aucun envoi réel) ;
 - une **variante** du parent ne choisit pas la variante de ses sous-assemblages : un sous-assemblage entre tel qu'il est ;
 - ses pièces masquées dans son propre écran sont montrées dans le parent (masquer se fait au niveau du bloc) ;
 - on ne peut pas **dissoudre** un sous-assemblage dans son parent, ni en **former** un à partir de pièces choisies : il

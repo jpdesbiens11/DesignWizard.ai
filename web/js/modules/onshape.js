@@ -9,7 +9,7 @@ import { kernel } from "../cad/client.js";
 import { underVeil, pageVeil } from "../core/busy.js";
 import * as api from "../onshape/api.js";
 import { planPush, pushToOnshape } from "../onshape/push.js";
-import { buildAssembly } from "../core/asm_scene.js";
+import { buildAssembly, stepItems, stepCount } from "../core/asm_scene.js";
 import { makeDrawing } from "./drawings.js";
 import { materialOrDefault } from "../cad/materials.js";
 
@@ -99,8 +99,8 @@ function render(main, args) {
         const job = await underVeil(pageVeil(), "Préparation de l'envoi…", async (say) => {
           const asm = store.assembly(asmSel.value), ctx = await buildAssembly(asm, (t, done, total) => { setStatus(t, "busy"); say(t, done, total); });
           if (ctx.errors.length) throw new Error(ctx.errors.join(" "));
-          const items = ctx.asm.instances.map((i) => { const s = store.part(i.part); return { key: i.part, name: `${i.part} ${s.name || ""}`.trim(), instanceName: `${i.part} ${i.id}`, matrix: ctx.sol.placements[i.id] }; });
-          say(`Écriture du STEP de l'assemblage — ${items.length} pièce(s)…`);
+          const items = stepItems(asm, ctx.built);      // with its levels : Onshape receives the sub-assemblies as such
+          say(`Écriture du STEP de l'assemblage — ${stepCount(items)} pièce(s)…`);
           const stepText = await kernel.step(items, `${asm.id} ${asm.name || ""}`.trim());
           const parts = [], ids = [...new Set(ctx.asm.instances.map((i) => i.part))];
           for (const [k, pid] of ids.entries()) {

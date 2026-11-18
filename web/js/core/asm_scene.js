@@ -4,7 +4,7 @@
 import { store } from "./store.js";
 import { flatAsm, bomLevels } from "./asm_levels.js";
 import { kernel } from "../cad/client.js";
-import { solveLevels, hardware, bom, massProps } from "./assembly_logic.js";
+import { solveLevels, hardware, bom, massProps, placedTree } from "./assembly_logic.js";
 import { showBuilt } from "./viewport.js";
 import { bboxTransform, bboxUnion } from "../cad/vec.js";
 
@@ -27,6 +27,17 @@ export async function buildAssembly(asm, onProgress) {
   for (const i of usable.instances) bbox = bboxUnion(bbox, bboxTransform(built[i.part].bbox, sol.placements[i.id]));
   return { built, sol, errors, asm: usable, levels: bomLevels(asm, find), hardware: hardware(usable, built), bom: bom(store.project, usable, built), mass: massProps(usable, built, sol.placements), bbox: bbox || [0, 0, 0, 0, 0, 0] };
 }
+
+/** What the STEP of an assembly is made of (kernel.step) : its parts where they are, and each sub-assembly as ONE node that holds
+    its own — the file keeps the levels, and a sub-assembly placed twice is written once. `built` : the parts built (buildAssembly). */
+export function stepItems(asm, built) {
+  const find = (id) => store.assembly(id), named = (id, doc) => `${id} ${(doc && doc.name) || ""}`.trim();
+  const node = (n) => (n.asm ? { key: `asm:${n.asm}`, name: named(n.asm, find(n.asm)), instanceName: `${n.asm} ${n.inst}`, matrix: n.matrix, children: n.children.map(node) }
+    : { key: n.part, name: named(n.part, store.part(n.part)), instanceName: `${n.part} ${n.inst}`, matrix: n.matrix });
+  return placedTree(asm, built, find).map(node);
+}
+/** How many parts a list of STEP items places, through its levels. */
+export const stepCount = (items) => items.reduce((n, it) => n + (it.children ? stepCount(it.children) : 1), 0);
 
 /** Show the solved assembly. opts: {colorOf(inst, body) -> css colour | null, opacityOf(inst, body), skipHidden} */
 export function showAssembly(viewer, ctx, opts = {}) {

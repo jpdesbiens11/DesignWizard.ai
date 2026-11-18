@@ -145,6 +145,12 @@ vue sans se toucher. La **nomenclature** est posée sur le cartouche : repère, 
 de chaque pièce**, matière ; la visserie et les consommables suivent. Les cotes hors tout portent leurs petites bulles,
 numérotées après les repères : aucun numéro ne sert deux fois sur la feuille.
 
+**Un assemblage qui porte des sous-assemblages liste son niveau** (v0.93) : chaque sous-assemblage est une ligne —
+numéro, nom, sa révision, « Sub-assembly, n parts » — et une bulle au milieu du bloc ; ses pièces sont sur son propre
+dessin. La visserie listée est celle des joints de ce niveau. Le choix « Nomenclature du dessin » de l'écran permet
+de lister plutôt toutes les pièces (« à plat ») ; les notes de la feuille disent ce qu'elle liste. Voir
+[SOUS_ASSEMBLAGES.md](SOUS_ASSEMBLAGES.md).
+
 ## Révisions : de la pièce à l'assemblage et aux dessins
 
 - Un **dessin porte toujours la révision de ce qu'il dessine**. Son tableau des révisions reprend l'historique de la

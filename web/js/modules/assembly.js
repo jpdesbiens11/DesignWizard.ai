@@ -10,7 +10,7 @@ import { kernel } from "../cad/client.js";
 import { underVeil } from "../core/busy.js";
 import { createViewport } from "../core/viewport.js";
 import { mountPins } from "./view_pins.js";
-import { buildAssembly, showAssembly } from "../core/asm_scene.js";
+import { buildAssembly, showAssembly, stepItems, stepCount } from "../core/asm_scene.js";
 import { autoMate, candidates, freeInterfaces, ifaceOf, pairKey, joints, jointsCsv, nextJoint } from "../core/assembly_logic.js";
 import { assemblyHealth, HEALTH } from "../core/joint_health.js";
 import { announceLinks } from "../core/part_edit.js";
@@ -214,8 +214,8 @@ function render(main, args) {
   async function exportStep() {
     if (!st.ctx) return;
     try {
-      const items = st.ctx.asm.instances.map((i) => { const s = store.part(i.part); return { key: i.part, name: `${i.part} ${s.name || ""}`.trim(), instanceName: `${i.part} ${i.id}`, matrix: st.ctx.sol.placements[i.id] }; });
-      const bytes = await underVeil({ set: (t, o) => vp.setBusy(t, o) }, `Écriture du STEP de l'assemblage — ${items.length} pièce(s)…`, () => kernel.step(items, `${id} ${asm().name || ""}`.trim()),
+      const items = stepItems(asm(), st.ctx.built), subs = items.filter((it) => it.children).length;      // the levels are kept : a sub-assembly is a product of its own in the file
+      const bytes = await underVeil({ set: (t, o) => vp.setBusy(t, o) }, `Écriture du STEP de l'assemblage — ${stepCount(items)} pièce(s)${subs ? `, ${subs} sous-assemblage(s)` : ""}…`, () => kernel.step(items, `${id} ${asm().name || ""}`.trim()),
         { after: () => rebuild(), cancelled: "Export annulé : aucun fichier n'a été écrit." });      // once stopped the kernel starts afresh : the parts are built again, quietly
       if (bytes !== undefined) download(`${id}.step`, bytes, "application/step");
     } catch (e) { toast(e.message, "error"); }

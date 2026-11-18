@@ -2,7 +2,7 @@
    an assembly released with the revision of each of its parts. */
 import test from "node:test";
 import assert from "node:assert/strict";
-import { serialParts, reference, newReference, releaseName, release, planRelease, lastRelease, releases, formFitFunction, f3Text, usesOf, outerInterfaces, compatibility, restore, releaseFiles, plmRows, REF_TYPES } from "../../web/js/core/plm.js";
+import { serialParts, reference, newReference, releaseName, release, planRelease, lastRelease, releases, formFitFunction, f3Text, usesOf, outerInterfaces, compatibility, restore, releaseFiles, plmRows, subsOf, REF_TYPES } from "../../web/js/core/plm.js";
 import { reviewItems, signature } from "../../web/js/core/review.js";
 import { toDwiz, fromDwiz } from "../../web/js/core/dwiz.js";
 import { joinTeam, forkMirror, stampLocal, mergeMirror } from "../../web/js/core/team.js";
@@ -87,4 +87,35 @@ test("released revisions travel in the mirror : the other member receives the re
   const r = mergeMirror(ami, fromDwiz(toDwiz(jp)), "ami", D(4)); assert.deepEqual([r.releases, r.taken, r.conflicts, r.nothing], [1, [], [], false], "the content did not change : only the release arrives");
   assert.deepEqual([ami.parts[0].pn, ami.parts[0].revision, releases(ami).map((x) => x.id)], ["PRT-46023-50139", "A", ["PRT-46023-50139_A"]]); assert.equal(planRelease(ami, "part:BASE").action, "none", "for her too it is released, up to date");
   assert.equal(mergeMirror(ami, fromDwiz(toDwiz(jp)), "ami", D(5)).releases, 0, "a release is never taken twice");
+});
+
+test("a sub-assembly is released first, and pinned in the release of its parent ; when it moves on, the parent asks for its next release", () => {
+  const p = project(); p.parts.push(part("SOCLE")); const sub = p.assemblies[0];      // ASM (BASE + CAPOT) goes into TOP, next to SOCLE
+  p.assemblies.push({ dw: "assembly/1", id: "TOP", name: "Produit", instances: [{ id: "i1", part: "SOCLE", fixed: true }, { id: "s1", asm: "ASM" }, { id: "s2", asm: "ASM" }], mates: [{ id: "J1", a: { inst: "i1", iface: "IF2" }, b: { inst: "s1~i1", iface: "IF2" } }] });
+  const key = "assembly:TOP";
+  assert.deepEqual(subsOf(p, p.assemblies[1]), { ASM: { pn: null, rev: "A", released: false } }, "each sub-assembly once, whatever the number of times it is placed");
+  assert.deepEqual(planRelease(p, key).blockers, ["SOCLE : jamais libérée — la libérer d'abord", "BASE : jamais libérée — la libérer d'abord", "CAPOT : jamais libérée — la libérer d'abord", "ASM : sous-assemblage jamais libéré — le libérer d'abord"], "the parts first — through the levels —, then the sub-assembly");
+  for (const [k, id] of ["BASE", "CAPOT", "SOCLE"].entries()) release(p, `part:${id}`, { date: D(k + 1) });
+  assert.deepEqual(planRelease(p, key).blockers, ["ASM : sous-assemblage jamais libéré — le libérer d'abord"], "its parts are released : the sub-assembly itself is not"); assert.throws(() => release(p, key, { date: D(4) }), /ASM : sous-assemblage jamais libéré/);
+  release(p, "assembly:ASM", { date: D(5) }); assert.equal(subsOf(p, p.assemblies[1]).ASM.released, true);
+  let r = release(p, key, { date: D(6) }); assert.equal(r.done, true); assert.deepEqual(r.release.subs, { ASM: { pn: sub.pn, rev: "A" } }, "pinned : its number and its revision"); assert.deepEqual(Object.keys(r.release.uses).sort(), ["BASE", "CAPOT", "SOCLE"], "and every part, through the levels");
+  assert.equal(planRelease(p, key).action, "none"); assert.ok(compatibility(p, key).every((x) => x.ok)); assert.deepEqual(compatibility(p, key).filter((x) => x.kind === "assembly").map((x) => [x.part, x.state]), [["ASM", "same"]]);
+  assert.ok(!("subs" in lastRelease(p, "assembly:ASM")), "an assembly without a sub-assembly keeps the record it always had");
+  /* the sub-assembly changes : it is no longer a released state, and the parent says so */
+  sub.notes = ["Serrer en croix"]; assert.equal(subsOf(p, p.assemblies[1]).ASM.released, false);
+  assert.deepEqual(compatibility(p, key).find((x) => x.part === "ASM").state, "working"); assert.equal(compatibility(p, key).find((x) => x.part === "ASM").text, "sous-assemblage modifié, pas encore libéré");
+  assert.deepEqual(planRelease(p, key).blockers, ["ASM : sous-assemblage modifié depuis sa dernière révision libérée — le libérer d'abord"]);
+  /* released again : revision B of the sub-assembly — not the one the parent was released with */
+  r = release(p, "assembly:ASM", { date: D(7) }); assert.deepEqual([r.action, r.rev], ["revision", "B"]);
+  const c = compatibility(p, key).find((x) => x.part === "ASM"); assert.deepEqual([c.state, c.pinned.rev, c.now.rev, c.ok], ["revision", "A", "B", false]); assert.match(c.text, /pas validée dans cette révision de l'assemblage/);
+  const plan = planRelease(p, key); assert.deepEqual([plan.action, plan.rev, plan.moved, plan.blockers], ["revision", "B", ["ASM"], []], "the parent itself did not change : its sub-assembly moved on");
+  r = release(p, key, { date: D(8) }); assert.deepEqual(r.release.subs, { ASM: { pn: sub.pn, rev: "B" } }); assert.equal(planRelease(p, key).action, "none");
+  /* a part inside moves on : the sub-assembly first, then the parent */
+  p.parts[0].notes = ["Ébavurer"]; assert.deepEqual(planRelease(p, key).blockers, ["BASE : modifiée depuis sa dernière révision libérée — la libérer d'abord", "ASM : sous-assemblage modifié depuis sa dernière révision libérée — le libérer d'abord"]);
+  release(p, "part:BASE", { date: D(9) }); assert.deepEqual(planRelease(p, key).blockers, ["ASM : sous-assemblage modifié depuis sa dernière révision libérée — le libérer d'abord"], "the sub-assembly was released with the earlier revision of the part");
+  release(p, "assembly:ASM", { date: D(10) }); assert.deepEqual([planRelease(p, key).action, planRelease(p, key).moved.sort()], ["revision", ["ASM", "BASE"]]);
+  /* taken out : the parent is no longer what was released */
+  release(p, key, { date: D(11) }); p.assemblies[1].instances = p.assemblies[1].instances.filter((i) => !i.asm); p.assemblies[1].mates = [];
+  assert.deepEqual(compatibility(p, key).find((x) => x.part === "ASM").state, "removed"); assert.notEqual(planRelease(p, key).action, "none");
+  assert.match(plmRows(p).find((row) => row[2] === "Produit")[6], /^ASM = ASM-\d{5}-\d{5} rév\. C · /, "the report names the sub-assembly first, then the parts");
 });

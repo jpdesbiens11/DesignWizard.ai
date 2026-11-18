@@ -290,7 +290,9 @@ export function makeKernel(oc) {
   /* ---------- STEP ---------- */
   const safeName = (s) => String(s || "part").replace(/[^A-Za-z0-9_\-. ]/g, "_").slice(0, 80) || "part";
   function readVfs(path) { const s = oc.FS.readFile(path, { encoding: "utf8" }); oc.FS.unlink(path); return s; }
-  /** STEP AP214 of named, coloured components: items [{name, shape, color:[r,g,b] 0..1, matrix?}] under one assembly. */
+  /** STEP AP214 of named, coloured components: items [{name, shape, color:[r,g,b] 0..1, matrix?}] under one assembly.
+      An item with `children` (and no shape) is a SUB-ASSEMBLY : a product of its own that holds them, each child placed in ITS
+      frame ; the same key met again is the same product placed once more. The file keeps the levels of the assembly. */
   function stepWrite(items, assemblyName) {
     oc.Interface_Static.SetCVal("write.step.schema", "AP214IS");
     oc.Interface_Static.SetCVal("write.step.unit", "MM");
@@ -302,25 +304,30 @@ export function makeKernel(oc) {
     const assembly = single ? null : T(shapes.NewShape());
     if (assembly) oc.TDataStd_Name.Set(assembly, ext(assemblyName || "Assembly"));
     const protos = new Map();
-    for (const it of items) {
+    const place = (parent, it) => {
+      let loc;
+      if (it.matrix) {
+        const m = it.matrix, tr = T(new oc.gp_Trsf());
+        tr.SetValues(m[0], m[4], m[8], m[12], m[1], m[5], m[9], m[13], m[2], m[6], m[10], m[14]);
+        loc = T(new oc.TopLoc_Location(tr));
+      } else loc = T(new oc.TopLoc_Location());
+      const comp = T(shapes.AddComponent(parent, proto(it), loc));
+      oc.TDataStd_Name.Set(comp, ext(it.instanceName || it.name));
+    };
+    /* the product an item stands for : a shape, or a sub-assembly filled with its own children before it is placed anywhere */
+    function proto(it) {
       let label = it.key && protos.get(it.key);
-      if (!label) {
+      if (label) return label;
+      if (it.children) { label = T(shapes.NewShape()); oc.TDataStd_Name.Set(label, ext(it.name)); for (const c of it.children) place(label, c); }
+      else {
         label = T(shapes.AddShape(it.shape, false, false));
         oc.TDataStd_Name.Set(label, ext(it.name));
         if (it.color) colors.SetColor(label, T(new oc.Quantity_ColorRGBA(it.color[0], it.color[1], it.color[2], 1)), oc.XCAFDoc_ColorType.XCAFDoc_ColorSurf);
-        if (it.key) protos.set(it.key, label);
       }
-      if (assembly) {
-        let loc;
-        if (it.matrix) {
-          const m = it.matrix, tr = T(new oc.gp_Trsf());
-          tr.SetValues(m[0], m[4], m[8], m[12], m[1], m[5], m[9], m[13], m[2], m[6], m[10], m[14]);
-          loc = T(new oc.TopLoc_Location(tr));
-        } else loc = T(new oc.TopLoc_Location());
-        const comp = T(shapes.AddComponent(assembly, label, loc));
-        oc.TDataStd_Name.Set(comp, ext(it.instanceName || it.name));
-      }
+      if (it.key) protos.set(it.key, label);
+      return label;
     }
+    for (const it of items) { if (assembly) place(assembly, it); else proto(it); }
     shapes.UpdateAssemblies();
     const w = T(new oc.STEPCAFControl_Writer());
     w.SetNameMode(true); w.SetColorMode(true);

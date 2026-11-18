@@ -7,6 +7,7 @@ import { elecProcess } from "../cad/interfaces_elec.js";
 import { frameMatrix, matMul, matInvRigid, matFromPlacement, matRotAxis, matTranslate, matDir, matPoint, v3, IDENTITY } from "../cad/vec.js";
 import { compatible, interfaceType, interfaceSignature, patternPoints } from "../cad/interfaces.js";
 import { flatAsm } from "./asm_levels.js";
+import { liveAsm } from "./asm_live.js";
 
 const FLIP = [1, 0, 0, 0, 0, -1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1];      // half turn about u: faces meet, normals opposed
 const clone = (o) => JSON.parse(JSON.stringify(o));
@@ -77,6 +78,19 @@ export function solveLevels(asm, built, find, memo = new Map()) {
   const instances = flat.instances.filter((i) => built[i.part]).map((i) => (i.group && groups[i.group] ? { ...i, local: inner(groups[i.group].asm).sol.placements[i.id.slice(i.group.length + 1)] || IDENTITY } : i));
   const opened = { ...flat, instances };
   return { asm: opened, sol: solve(opened, built) };
+}
+/** The assembly as a TREE of placed nodes, for what keeps its structure (STEP, Onshape) : the parts of this level, and each
+    sub-assembly as ONE node that holds its own — every matrix in the frame of the node above, so that the same sub-assembly
+    placed twice is the same content twice. What is put aside, gone from the project or not built is left out.
+    → [{ inst, part, matrix } | { inst, asm, matrix, children: [ … ] }] */
+export function placedTree(asm, built, find, memo = new Map()) {
+  const { asm: opened, sol } = solveLevels(asm, built, find, memo), groups = opened.groups || {}, out = [];
+  for (const i of (liveAsm(asm) || { instances: [] }).instances || []) {
+    if (!sol.placements[i.id]) continue;
+    if (i.asm) { if (groups[i.id]) out.push({ inst: i.id, asm: i.asm, matrix: sol.placements[i.id], children: placedTree(find(i.asm), built, find, memo) }); }
+    else if (built[i.part]) out.push({ inst: i.id, part: i.part, matrix: sol.placements[i.id] });
+  }
+  return out;
 }
 function inverseMate(Tb, Fb, Fa, mate) {
   // Tb = G * inv(Mb) with G = Ta * Ma * X  =>  Ta = Tb * Mb * inv(X) * inv(Ma)
@@ -221,17 +235,26 @@ export function hardware(asm, built) {
   return [...rows.values()].sort((a, b) => a.id.localeCompare(b.id));
 }
 
+const partRow = (project, built, pid, qty) => { const spec = project.parts.find((p) => p.id === pid) || {}, b = built[pid]; return { id: pid, name: spec.name || "", qty, material: spec.material || "", process: spec.process || "", mass: b ? b.mass : null, kind: "part" }; };
+const hardwareRow = (h) => ({ id: h.id, name: `${h.name}${h.unit ? ` (${h.unit})` : ""}`, qty: h.qty, material: "", process: "purchased", mass: null, kind: "hardware" });
+const numbered = (rows) => rows.map((r, k) => ({ item: k + 1, ...r }));
 /** Bill of materials: parts (grouped by part number) then hardware. */
 export function bom(project, asm, built) {
-  const rows = [], count = new Map();
+  const count = new Map();
   for (const i of asm.instances) count.set(i.part, (count.get(i.part) || 0) + 1);
-  let item = 1;
-  for (const [pid, qty] of count) {
-    const spec = project.parts.find((p) => p.id === pid) || {}, b = built[pid];
-    rows.push({ item: item++, id: pid, name: spec.name || "", qty, material: spec.material || "", process: spec.process || "", mass: b ? b.mass : null, kind: "part" });
-  }
-  for (const h of hardware(asm, built)) rows.push({ item: item++, id: h.id, name: `${h.name}${h.unit ? ` (${h.unit})` : ""}`, qty: h.qty, material: "", process: "purchased", mass: null, kind: "hardware" });
-  return rows;
+  return numbered([...[...count].map(([pid, qty]) => partRow(project, built, pid, qty)), ...hardware(asm, built).map(hardwareRow)]);
+}
+/** The bill of materials of ONE LEVEL, as the drawing of an assembly lists it : each sub-assembly placed here is one line (it has
+    its own drawing and its own list), then the parts placed at this level, then the hardware of the joints of this level — the
+    joints inside a sub-assembly belong to its own list. `opened` : the assembly opened (flatAsm, solveLevels).
+    A sub-assembly line : { kind: "assembly", id, name, qty, rev, parts (how many one of it holds), mass (of one), group (the first instance placed) }. */
+export function bomTop(project, opened, built) {
+  const subs = new Map(), parts = new Map();
+  for (const [g, x] of Object.entries(opened.groups || {})) { const r = subs.get(x.asm) || { qty: 0, group: g }; r.qty += 1; subs.set(x.asm, r); }
+  for (const i of opened.instances) if (!i.group) parts.set(i.part, (parts.get(i.part) || 0) + 1);
+  const subRow = ([aid, r]) => { const doc = (project.assemblies || []).find((a) => a.id === aid) || {}, leaves = opened.instances.filter((i) => i.group === r.group);
+    return { id: aid, name: doc.name || "", qty: r.qty, material: "", process: "assembly", mass: leaves.reduce((m, i) => m + (built[i.part] ? built[i.part].mass : 0), 0), kind: "assembly", rev: doc.revision || "A", parts: leaves.length, group: r.group }; };
+  return numbered([...[...subs].map(subRow), ...[...parts].map(([pid, qty]) => partRow(project, built, pid, qty)), ...hardware({ ...opened, mates: (opened.mates || []).filter((m) => !m.of) }, built).map(hardwareRow)]);
 }
 
 /** Mass and centre of gravity of the placed assembly (parts only). */

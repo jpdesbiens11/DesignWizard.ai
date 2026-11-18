@@ -6,16 +6,20 @@
      no  → a NEW number, revision A, which remembers the number and the revision it derives from (quality traceability).
    An assembly is released WITH the revision of each of its parts : those are pinned. A part that moves on afterwards is
    not taken as compatible with that assembly revision — it is in the next release of the assembly, or it is not.
+   The same holds for its SUB-ASSEMBLIES, through the levels : each must be released first — to the letter, with all it holds —
+   and its number and revision are pinned in the release of the parent (`subs`). A sub-assembly that moves on asks the parent
+   for its next release.
    Numbers follow the Reference Generator of DynamiteAgile : TYPE-DDDDD-TTTTT, the Excel serial of the moment (UTC) —
    days since 1899-12-30, then the time of day in 1/100 000 of a day. A number is never reused, a release never erased.
      artefact.pn, artefact.revision, artefact.derivedFrom = { pn, rev, why }
      project.plm = { releases: [{ id, key, pn, rev, name, at, by, sig, doc (the frozen artefact), form: { size, mass },
-                                  uses: { part id: { pn, rev } }, ext (assembly : its outer interfaces), from: { pn, rev }, f3 }] }
+                                  uses: { part id: { pn, rev } }, subs: { assembly id: { pn, rev } } (when it holds sub-assemblies),
+                                  ext (assembly : its outer interfaces), from: { pn, rev }, f3 }] }
    Pure functions : the caller applies them inside one undoable step. */
 
 import { signature, nextRevision, artefactOf, partsOf } from "./review.js";
 import { resolveParams, evalDeep } from "../cad/expr.js";
-import { flatAsm, finder, partCounts } from "./asm_levels.js";
+import { flatAsm, finder, partCounts, bomLevels } from "./asm_levels.js";
 
 export const REF_TYPES = { part: "PRT", assembly: "ASM", board: "PCB" };
 export const F3 = { form: "Forme", fit: "Ajustement", fn: "Fonction" };
@@ -84,14 +88,25 @@ export function usesOf(project, asm) {
     out[id] = { pn: p.pn || null, rev: p.revision || "A", released: !!rec && rec.sig === signature(p) }; }
   return out;
 }
-/** What releasing an artefact would do, without doing it. → { action : "first" | "none" | "revision" | "number", pn, rev, from, f3, blockers } */
+/** The sub-assemblies of an assembly, through the levels, each with the number and the revision it has now, and whether that is a
+    released state : the sub-assembly is, to the letter and with everything it holds, the last release of its number. */
+export function subsOf(project, asm) {
+  const out = {}, find = finder(project);
+  for (const r of bomLevels(asm, find)) { if (r.kind !== "assembly" || r.lost || out[r.id]) continue;
+    const d = find(r.id), plan = planRelease(project, `assembly:${r.id}`); out[r.id] = { pn: d.pn || null, rev: d.revision || "A", released: !!plan && plan.action === "none" }; }
+  return out;
+}
+const pinnedOf = (now) => Object.fromEntries(Object.entries(now).map(([id, u]) => [id, { pn: u.pn, rev: u.rev }]));
+const movedSince = (was, now) => Object.entries(now).filter(([id, u]) => !was || !was[id] || was[id].pn !== u.pn || was[id].rev !== u.rev).map(([id]) => id);
+/** What releasing an artefact would do, without doing it. → { action : "first" | "none" | "revision" | "number", pn, rev, from, f3, blockers, moved } */
 export function planRelease(project, key, o = {}) {
   const d = artefactOf(project, key), kind = key.split(":")[0]; if (!d || !REF_TYPES[kind]) return null;
-  const last = lastRelease(project, key), blockers = [], uses = kind === "assembly" ? usesOf(project, d) : null;
+  const last = lastRelease(project, key), blockers = [], uses = kind === "assembly" ? usesOf(project, d) : null, subs = kind === "assembly" ? subsOf(project, d) : null;
   if (uses) for (const [id, u] of Object.entries(uses)) if (!u.released) blockers.push(`${id} : ${u.pn ? "modifiée depuis sa dernière révision libérée" : "jamais libérée"} — la libérer d'abord`);
+  if (subs) for (const [id, u] of Object.entries(subs)) if (!u.released) blockers.push(`${id} : sous-assemblage ${u.pn ? "modifié depuis sa dernière révision libérée" : "jamais libéré"} — le libérer d'abord`);
   if (!last) return { action: "first", pn: d.pn || null, rev: d.revision || "A", blockers, f3: null };
-  const moved = uses ? Object.entries(uses).filter(([id, u]) => !last.uses || !last.uses[id] || last.uses[id].pn !== u.pn || last.uses[id].rev !== u.rev).map(([id]) => id) : [];
-  if (last.sig === signature(d) && !moved.length && !blockers.length && (!uses || Object.keys(last.uses || {}).every((id) => uses[id]))) return { action: "none", pn: d.pn, rev: last.rev, blockers: [], f3: null };
+  const moved = [...(uses ? movedSince(last.uses, uses) : []), ...(subs ? movedSince(last.subs, subs) : [])], gone = (was, now) => Object.keys(was || {}).some((id) => !now[id]);
+  if (last.sig === signature(d) && !moved.length && !blockers.length && (!uses || !gone(last.uses, uses)) && (!subs || !gone(last.subs, subs))) return { action: "none", pn: d.pn, rev: last.rev, blockers: [], f3: null };
   const f3 = formFitFunction(project, kind, last, d, o);
   return f3.ok ? { action: "revision", pn: d.pn, rev: nextRevision(last.rev), f3, blockers, moved } : { action: "number", pn: null, rev: "A", from: { pn: last.pn, rev: last.rev }, f3, blockers, moved };
 }
@@ -106,7 +121,7 @@ export function release(project, key, o = {}) {
   else if (plan.action === "revision") d.revision = plan.rev;
   else { d.derivedFrom = { pn: plan.from.pn, rev: plan.from.rev, why: f3Text(plan.f3) }; d.pn = newReference(project, kind, date); d.revision = "A"; }
   const rec = { id: `${d.pn}_${d.revision}`, key, pn: d.pn, rev: d.revision, name: d.name || "", at: when, ...(o.by ? { by: o.by } : {}), sig: signature(d), doc: clone(d), ...(o.form ? { form: { size: o.form.size.map(r2), mass: r2(o.form.mass) } } : {}),
-    ...(kind === "assembly" ? { uses: Object.fromEntries(Object.entries(usesOf(project, d)).map(([id, u]) => [id, { pn: u.pn, rev: u.rev }])), ext: [...outerInterfaces(project, d)] } : {}), ...(plan.action === "number" ? { from: plan.from } : {}), ...(plan.f3 ? { f3: { ok: plan.f3.ok, text: f3Text(plan.f3) } } : {}) };
+    ...(kind === "assembly" ? { uses: pinnedOf(usesOf(project, d)), ...(Object.keys(subsOf(project, d)).length ? { subs: pinnedOf(subsOf(project, d)) } : {}), ext: [...outerInterfaces(project, d)] } : {}), ...(plan.action === "number" ? { from: plan.from } : {}), ...(plan.f3 ? { f3: { ok: plan.f3.ok, text: f3Text(plan.f3) } } : {}) };
   plmOf(project).releases.push(rec);
   /* the review ledger follows : a released revision is a validated one */
   project.review = project.review || { items: {} }; project.review.items = project.review.items || {};
@@ -114,15 +129,18 @@ export function release(project, key, o = {}) {
   e.history = [...(e.history || []), { rev: d.revision, when, note }]; Object.assign(e, { state: "ok", sig: signature(d), when, note: "", rev: d.revision, ...(o.by ? { by: o.by } : {}), ...(kind === "assembly" ? { parts: partsOf(project, d) } : {}) });
   return { ...plan, pn: d.pn, rev: d.revision, done: true, release: rec };
 }
-/** Is the assembly of today the one that was released ? Each part : the revision pinned in the last release of the assembly, the one
-    it has now, and what that means. A part that moved on is NOT taken as compatible with the released assembly. */
+/** Is the assembly of today the one that was released ? Each part, then each sub-assembly (kind : "assembly") : the revision pinned in
+    the last release of the assembly, the one it has now, and what that means. What moved on is NOT taken as compatible with the released assembly. */
 export function compatibility(project, key) {
   const asm = artefactOf(project, key), last = lastRelease(project, key); if (!asm) return [];
-  const now = usesOf(project, asm), pinned = (last && last.uses) || {};
-  return [...new Set([...Object.keys(pinned), ...Object.keys(now)])].map((id) => { const w = pinned[id] || null, n = now[id] || null;
+  const TEXT = { part: { unreleased: "assemblage jamais libéré", removed: "retirée de l'assemblage", added: "ajoutée depuis la libération", working: "modifiée, pas encore libérée", number: "nouveau numéro : 3F rompu, à requalifier dans un nouvel assemblage",
+      revision: "révision plus récente : interchangeable par la règle 3F, mais pas validée dans cette révision de l'assemblage", same: "celle de l'assemblage libéré" },
+    assembly: { unreleased: "assemblage jamais libéré", removed: "sous-assemblage retiré", added: "sous-assemblage ajouté depuis la libération", working: "sous-assemblage modifié, pas encore libéré", number: "nouveau numéro : 3F rompu, à requalifier dans un nouvel assemblage",
+      revision: "révision plus récente du sous-assemblage : pas validée dans cette révision de l'assemblage", same: "celui de l'assemblage libéré" } };
+  const rows = (kind, now, pinned) => [...new Set([...Object.keys(pinned), ...Object.keys(now)])].map((id) => { const w = pinned[id] || null, n = now[id] || null;
     const state = !last ? "unreleased" : !n ? "removed" : !w ? "added" : !n.released ? "working" : w.pn !== n.pn ? "number" : w.rev !== n.rev ? "revision" : "same";
-    return { part: id, pinned: w, now: n, state, text: { unreleased: "assemblage jamais libéré", removed: "retirée de l'assemblage", added: "ajoutée depuis la libération", working: "modifiée, pas encore libérée", number: "nouveau numéro : 3F rompu, à requalifier dans un nouvel assemblage",
-      revision: "révision plus récente : interchangeable par la règle 3F, mais pas validée dans cette révision de l'assemblage", same: "celle de l'assemblage libéré" }[state], ok: state === "same" }; });
+    return { part: id, kind, pinned: w, now: n, state, text: TEXT[kind][state], ok: state === "same" }; });
+  return [...rows("part", usesOf(project, asm), (last && last.uses) || {}), ...rows("assembly", subsOf(project, asm), (last && last.subs) || {})];
 }
 /** The working artefact goes back to a released revision (the caller makes it one undoable step). → the artefact, or null. */
 export function restore(project, id) {
@@ -135,5 +153,5 @@ export const releaseFiles = (project, toText, root = "06_Revisions") => releases
 /** Rows for the report : every release, the latest of each number first. */
 export function plmRows(project) {
   return [...releases(project)].reverse().map((r) => [r.pn, r.rev, r.name, String(r.at).slice(0, 10), r.from ? `${r.from.pn} rév. ${r.from.rev}` : "—", r.f3 ? (r.f3.ok ? "3F conservé" : `3F rompu — ${r.f3.text}`) : "première libération",
-    r.uses ? Object.entries(r.uses).map(([id, u]) => `${id} = ${u.pn} rév. ${u.rev}`).join(" · ") : ""]);
+    [...Object.entries(r.subs || {}), ...Object.entries(r.uses || {})].map(([id, u]) => `${id} = ${u.pn} rév. ${u.rev}`).join(" · ")]);
 }

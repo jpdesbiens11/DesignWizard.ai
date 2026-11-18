@@ -12,7 +12,7 @@ import { SvgSheet } from "../draw/svg.js";
 import { PdfSheet } from "../draw/pdf.js";
 import { sectionOf } from "../cad/section_view.js";
 import { composeDrawing, viewRequest, PAPER, drawingSemantics } from "../draw/part_drawing.js";
-import { composeAssemblyDrawing } from "../draw/asm_drawing.js";
+import { composeAssemblyDrawing, centerKey } from "../draw/asm_drawing.js";
 import { getUnits } from "../core/units.js";
 import { sayWith, drawingTexts, wordsIssues } from "../core/drawing_words.js";
 import { drawingIssues } from "../core/drawing_guide.js";
@@ -20,7 +20,8 @@ import { busyVeil } from "../core/busy.js";
 import { wordsSection } from "./drawing_words.js";
 import { DIM_CLASSES, setDimClass, dimText } from "../draw/dim_model.js";
 import { buildAssembly } from "../core/asm_scene.js";
-import { matPoint } from "../cad/vec.js";
+import { matPoint, bboxTransform, bboxUnion } from "../cad/vec.js";
+import { bomTop } from "../core/assembly_logic.js";
 import { whereUsed, reviewItems } from "../core/review.js";
 import { confidentialNote } from "../core/brand.js";
 import { dimTree, dimClasses } from "../core/trees.js";
@@ -60,9 +61,15 @@ export async function makeAssemblyDrawing(asmId, extra = {}) {
   const ctx = await buildAssembly(asm), shown = ctx.asm.instances.filter((i) => !i.hidden);
   if (!shown.length) throw new Error(`${asmId} n'a aucune pièce à dessiner.`);
   const views = await kernel.hlrAsm(shown.map((i) => ({ key: i.part, matrix: ctx.sol.placements[i.id] })), viewRequest(), false), centers = {};
-  for (const i of shown) if (!centers[i.part]) { const b = ctx.built[i.part].bbox; centers[i.part] = matPoint(ctx.sol.placements[i.id], [(b[0] + b[3]) / 2, (b[1] + b[4]) / 2, (b[2] + b[5]) / 2]); }
-  const rows = ctx.bom.map((r) => ({ ...r, rev: r.kind === "part" ? (store.part(r.id) || {}).revision || "A" : "" }));
-  return { ...render2(composeAssemblyDrawing, { asm, project: store.project, views, bbox: ctx.bbox, rows, centers, mass: ctx.mass.mass, opts: sheetOpts(`assembly:${asmId}`, asm.revision, { ...extra, variant: v ? v.name : null }) }, `${asm.id} ${sayWith((store.project.drawing || {}).words)(asm.name) || ""}`), spec: asm };
+  /* the list of the sheet : the level of this assembly — a sub-assembly is one line, it has its own drawing — unless the project asks for every part (« à plat ») */
+  const groups = ctx.asm.groups || {}, byLevel = Object.keys(groups).length > 0 && (extra.bom || (store.project.drawing || {}).asmBom) !== "flat", list = byLevel ? bomTop(store.project, ctx.asm, ctx.built) : ctx.bom;
+  const middle = (i) => { const b = ctx.built[i.part].bbox; return matPoint(ctx.sol.placements[i.id], [(b[0] + b[3]) / 2, (b[1] + b[4]) / 2, (b[2] + b[5]) / 2]); };
+  for (const i of shown) if (!centers[i.part] && !(byLevel && i.group)) centers[i.part] = middle(i);      // by level, the balloon of a part goes to one placed at this level
+  for (const r of list) if (r.kind === "assembly") { let box = null; for (const i of shown) if (i.group === r.group) box = bboxUnion(box, bboxTransform(ctx.built[i.part].bbox, ctx.sol.placements[i.id]));
+    if (box) centers[centerKey(r)] = [(box[0] + box[3]) / 2, (box[1] + box[4]) / 2, (box[2] + box[5]) / 2]; }      // the balloon of a sub-assembly : the middle of the block
+  const rows = list.map((r) => ({ ...r, rev: r.kind === "part" ? (store.part(r.id) || {}).revision || "A" : r.kind === "assembly" ? r.rev : "" }));
+  const count = { parts: ctx.asm.instances.length, inSubs: ctx.asm.instances.filter((i) => i.group).length, subs: Object.keys(groups).length, joints: (ctx.asm.mates || []).length };
+  return { ...render2(composeAssemblyDrawing, { asm, project: store.project, views, bbox: ctx.bbox, rows, centers, count, mass: ctx.mass.mass, opts: sheetOpts(`assembly:${asmId}`, asm.revision, { ...extra, variant: v ? v.name : null }) }, `${asm.id} ${sayWith((store.project.drawing || {}).words)(asm.name) || ""}`), spec: asm };
 }
 export function svgNode(markup) {
   const doc = new DOMParser().parseFromString(markup, "image/svg+xml"), node = document.importNode(doc.documentElement, true);
@@ -114,7 +121,7 @@ function render(main, args) {
     clear(dimBox); if (!st.doc) return;
     const dims = st.doc.info.dims || [];
     /* an assembly : its balloons and its overall dimensions, as a tree to read */
-    if (isAsm) { const tree = [{ key: "items", fr: "Repères", color: "#0ea5e9", tip: "Les pièces de la nomenclature, au numéro de leur bulle", items: st.doc.info.items.map((x) => ({ id: `item:${x.item}`, n: x.item, text: x.id, sub: x.view ? "" : "masquée sur les vues" })) },
+    if (isAsm) { const tree = [{ key: "items", fr: "Repères", color: "#0ea5e9", tip: "Les pièces de la nomenclature, au numéro de leur bulle", items: st.doc.info.items.map((x) => ({ id: `item:${x.item}`, n: x.item, text: x.id, sub: x.view ? (x.kind === "assembly" ? "sous-assemblage" : "") : "masquée sur les vues" })) },
       { key: "dims", fr: "Cotes hors tout", color: "#2563eb", tip: "L'encombrement de l'assemblage", items: dims.map((x) => ({ id: `dim:${x.n}`, n: x.n, text: fmtLen(x.value, 2), sub: x.label })) }];
       dimBox.append(el("div", { class: "side-section" }, el("h3", null, `Repères (${st.doc.info.items.length}) et cotes (${dims.length})`), stateTree({ label: "Repères et cotes du dessin d'assemblage", tree, sel: null, attr: "data-dim-row", select: () => {} }))); return; }
     /* a part : its dimensions by nature ; a click on one opens ITS class — normal, reference, special characteristic — instead of a menu per dimension */
@@ -148,6 +155,9 @@ function render(main, args) {
       el("div", { class: "form-row" }, field("Projection", el("select", { onChange: (e) => setD("projection", e.target.value, "projection") }, [["third", "Troisième dièdre (Amérique du Nord)"], ["first", "Premier dièdre (ISO / Europe)"]].map(([v, l]) => el("option", { value: v, selected: (d().projection || "third") === v }, l)))),
         isAsm ? null : el("label", { class: "check" }, el("input", { type: "checkbox", checked: d().hidden !== false, onChange: (e) => setD("hidden", e.target.checked, "arêtes cachées") }), "Arêtes cachées")),
       isAsm ? null : sectionRow(),
+      /* an assembly that holds sub-assemblies : what its parts list shows */
+      isAsm && (spec.instances || []).some((i) => i.asm) ? field("Nomenclature du dessin", el("select", { "aria-label": "Nomenclature du dessin", onChange: (e) => setD("asmBom", e.target.value === "flat" ? "flat" : "", "nomenclature du dessin") },
+        [["level", "Ce niveau : un sous-assemblage = une ligne"], ["flat", "À plat : toutes les pièces"]].map(([v, l]) => el("option", { value: v, selected: (d().asmBom === "flat" ? "flat" : "level") === v }, l))), "L'usage : la liste d'un dessin d'ensemble est celle de son niveau ; chaque sous-assemblage a son propre dessin, avec sa liste.") : null,
       field(isAsm ? "Révision de l'assemblage" : "Révision de la pièce", el("input", { type: "text", value: spec.revision || "", onChange: (e) => setRev(e.target.value.trim()) }), "Le dessin porte toujours la révision de ce qu'il dessine ; la revue la fait avancer (A → B) quand un artéfact validé a changé.")));
     if (!isAsm) { const used = whereUsed(store.project, id);
       body.append(el("div", { class: "side-section" }, el("h3", null, "Employée dans"), used.length ? used.map((u) => el("p", { style: { fontSize: ".84rem", margin: "0 0 .25rem" } }, el("a", { href: `#/drawings/asm/${encodeURIComponent(u.id)}` }, el("code", null, u.id)), ` rév. ${u.rev}${u.qty > 1 ? ` (× ${u.qty})` : ""} — `,

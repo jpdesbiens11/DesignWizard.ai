@@ -177,7 +177,10 @@ d'atelier, opérations du noyau) est dans [PART_LANGUAGE.md](PART_LANGUAGE.md). 
   lignée de chaque artéfact, les conflits en attente ; puis les messages, chacun sur le projet ou sur un artéfact. Voir
   [EQUIPE.md](EQUIPE.md).
 - **`plm`** (projet), **`pn`** et **`derivedFrom`** (pièce, assemblage, carte) — les révisions libérées : le numéro de
-  l'article, celui dont il dérive, et chaque révision figée avec son contenu entier. Voir [REVISIONS.md](REVISIONS.md).
+  l'article, celui dont il dérive, et chaque révision figée avec son contenu entier ; celle d'un assemblage note ses
+  pièces (`uses`) et ses sous-assemblages (`subs`). Voir [REVISIONS.md](REVISIONS.md).
+- **`drawing.asmBom`** (projet) — `flat` : le dessin d'un assemblage qui porte des sous-assemblages liste toutes les
+  pièces ; absent : il liste son niveau, un sous-assemblage par ligne. Voir [DESSINS.md](DESSINS.md).
 - **`stock`** — `plate`, `sheet`, `block`, `bar_flat`, `bar_round`, `tube_round`, `tube_rect`, `angle`, `profile`,
   `print`, `molded` : ce que l'on prend sur l'étagère. Une pièce moulée porte aussi une ligne **`mold`** (procédé, sens de
   démoulage, plan de joint, paroi, dépouilles, tiroirs, surépaisseur d'usinage) : voir [MOULAGE.md](MOULAGE.md).
