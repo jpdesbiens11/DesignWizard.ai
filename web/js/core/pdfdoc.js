@@ -40,7 +40,7 @@ function layout(doc, pagesOf, total) {
   const table = (head, rows, widths, o = {}) => {
     const n = (head || rows[0] || []).length, sum = (widths || []).reduce((s, w) => s + w, 0) || n, cols = Array.from({ length: n }, (_, i) => CW * ((widths && widths[i]) || 1) / sum), size = 2.75, lh = size * 1.36, pad = 1.1;
     const row = (cells, isHead) => {
-      const wrapped = cells.map((c, i) => { const x = cellOf(c); return lines(x.text, cols[i] - 2 * pad, { size, font: isHead || x.bold || (o.firstCol && i === 0) ? "bold" : "sans" }); }), h = Math.max(o.height || 0, Math.max(1, ...wrapped.map((l) => l.length)) * lh + 2 * pad);
+      const wrapped = cells.map((c, i) => { const x = cellOf(c); return lines(x.text, cols[i] - 2 * pad, { size, font: isHead || x.bold || (o.firstCol && i === 0) ? "bold" : "sans" }); }), h = Math.max(isHead ? 0 : o.height || 0, Math.max(1, ...wrapped.map((l) => l.length)) * lh + 2 * pad);      // a row one writes in is tall ; its heading is not
       if (y + h > BOTTOM) { next(); if (head && !isHead) row(head, true); }
       let x = M;
       cells.forEach((c, i) => { const cell = cellOf(c), fill = isHead ? FILL.head : cell.fill ? FILL[cell.fill] : o.firstCol && i === 0 ? FILL.muted : null;
@@ -67,7 +67,7 @@ function layout(doc, pagesOf, total) {
     if (/^h[123]$/.test(b.type)) heading(b);
     else if (b.type === "p") write(b.runs ? b.runs.map((r) => r.text).join("") : b.text, { color: b.style === "muted" ? MUTED : b.style === "warn" ? "#A14A00" : INK, font: b.style === "note" ? "italic" : b.style === "warn" ? "bold" : "sans" });
     else if (b.type === "list") { const wide = b.ordered && b.items.length > 9 ? 1.9 : 0; b.items.forEach((it, i) => { const x = cellOf(it), ind = 4 + wide + 4 * (x.level || 0), size = 3.2, lh = size * 1.42, ls = lines(x.text, CW - ind, { size }); need(lh); sheet.text(M + ind - 3.4 - wide, y, b.ordered ? `${i + 1}.` : "•", { size, color: INK, baseline: "top" }); for (const l of ls) { need(lh); sheet.text(M + ind, y, l, { size, color: INK, baseline: "top" }); y += lh; } y += 0.5; }); y += 1.6; }
-    else if (b.type === "table") { table(b.head, b.rows, b.widths); if (b.caption) { y -= 1.5; write(b.caption, { size: 2.7, font: "italic", color: MUTED, align: "center", after: 3 }); } }
+    else if (b.type === "table") { if (b.rowHeight) need(b.rowHeight + 7); table(b.head, b.rows, b.widths, b.rowHeight ? { height: b.rowHeight } : {}); if (b.caption) { y -= 1.5; write(b.caption, { size: 2.7, font: "italic", color: MUTED, align: "center", after: 3 }); } }
     else if (b.type === "kv") table(null, b.rows, [30, 70], { firstCol: true });
     else if (b.type === "checklist") { for (const it of b.items) { const size = 3.2, lh = size * 1.42, ls = lines(it.text, CW - 8, { size }); need(ls.length * lh + 1.2); sheet.rect(M, y + 0.3, 3.2, 3.2, { color: INK, w: 0.25, fill: it.state === "ok" ? FILL.ok : it.state === "na" ? FILL.muted : null });
       if (it.state === "ok") sheet.polyline([[M + 0.6, y + 1.9], [M + 1.4, y + 2.8], [M + 2.7, y + 0.9]], { w: 0.45, color: "#1f7a4d" }); if (it.state === "na") sheet.line(M + 0.7, y + 1.9, M + 2.5, y + 1.9, { w: 0.35, color: MUTED });

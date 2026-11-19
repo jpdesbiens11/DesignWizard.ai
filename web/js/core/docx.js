@@ -19,7 +19,7 @@ function table(head, rows, widths, o = {}) {
   const n = (head || rows[0] || []).length, sum = (widths || []).reduce((s, w) => s + w, 0) || n, cols = Array.from({ length: n }, (_, i) => Math.round(WIDTH * ((widths && widths[i]) || 1) / sum));
   const tc = (c, i, isHead) => { const x = cellOf(c), fill = isHead ? FILL.head : x.fill ? FILL[x.fill] : o.firstCol && i === 0 ? FILL.muted : null;
     return `<w:tc><w:tcPr><w:tcW w:w="${cols[i]}" w:type="dxa"/>${fill ? `<w:shd w:val="clear" w:color="auto" w:fill="${fill}"/>` : ""}</w:tcPr>${para(run(x.text, { bold: isHead || x.bold || (o.firstCol && i === 0), size: 18 }), null, `<w:spacing w:before="40" w:after="40"/>${x.align === "right" ? '<w:jc w:val="right"/>' : ""}`)}</w:tc>`; };
-  const tr = (cells, isHead) => `<w:tr><w:trPr>${isHead ? "<w:tblHeader/>" : ""}${o.height ? `<w:trHeight w:val="${o.height}"/>` : ""}<w:cantSplit/></w:trPr>${cells.map((c, i) => tc(c, i, isHead)).join("")}</w:tr>`;
+  const tr = (cells, isHead) => `<w:tr><w:trPr>${isHead ? "<w:tblHeader/>" : ""}${o.height && !isHead ? `<w:trHeight w:val="${o.height}"/>` : ""}<w:cantSplit/></w:trPr>${cells.map((c, i) => tc(c, i, isHead)).join("")}</w:tr>`;
   const border = ["top", "left", "bottom", "right", "insideH", "insideV"].map((b) => `<w:${b} w:val="single" w:sz="4" w:space="0" w:color="9AA5B4"/>`).join("");
   return `<w:tbl><w:tblPr><w:tblW w:w="${WIDTH}" w:type="dxa"/><w:tblBorders>${border}</w:tblBorders><w:tblLayout w:type="fixed"/><w:tblCellMar><w:left w:w="70" w:type="dxa"/><w:right w:w="70" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>${cols.map((c) => `<w:gridCol w:w="${c}"/>`).join("")}</w:tblGrid>${head ? tr(head, true) : ""}${rows.map((r) => tr(r, false)).join("")}</w:tbl>${para("", null, '<w:spacing w:after="60"/>')}`;
 }
@@ -69,7 +69,7 @@ export function docx(doc) {
     if (/^h[123]$/.test(b.type)) body.push(para(run(b.text), `Heading${b.type[1]}`));
     else if (b.type === "p") body.push(para(b.runs ? b.runs.map((r) => run(r.text, r)).join("") : run(b.text, { color: b.style === "muted" ? "5A6472" : b.style === "warn" ? "A14A00" : null, italic: b.style === "note", bold: b.style === "warn" })));
     else if (b.type === "list") for (const it of b.items) { const x = cellOf(it); body.push(para(run(x.text), "ListParagraph", `<w:numPr><w:ilvl w:val="${Math.min(2, x.level || 0)}"/><w:numId w:val="${b.ordered ? 2 : 1}"/></w:numPr>`)); }
-    else if (b.type === "table") { body.push(table(b.head, b.rows, b.widths)); if (b.caption) body.push(para(run(b.caption), "Caption")); }
+    else if (b.type === "table") { body.push(table(b.head, b.rows, b.widths, b.rowHeight ? { height: Math.round(b.rowHeight * 56.7) } : {})); if (b.caption) body.push(para(run(b.caption), "Caption")); }
     else if (b.type === "kv") body.push(table(null, b.rows, [30, 70], { firstCol: true }));
     else if (b.type === "checklist") body.push(table(null, b.items.map((i) => [{ text: i.state === "ok" ? "Fait" : i.state === "na" ? "Sans objet" : "À faire", fill: i.state === "ok" ? "ok" : i.state === "na" ? "muted" : "warn" }, i.text]), [16, 84]));
     else if (b.type === "signatures") body.push(table(["Rôle", "Nom", "Date", "Signature"], b.roles.map((r) => [r, "", "", ""]), [28, 26, 16, 30], { height: 700 }));

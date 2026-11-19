@@ -17,6 +17,7 @@ const STEPS = [
   ["shop", "Atelier", "Dites l'intention : à quoi sert la pièce, ses interfaces, sa matière, sa matière première. Elle se construit sous vos yeux, sans esquisse — ou par une entrevue avec Claude."],
   ["parts", "Pièces", "Ajustez la pièce avec ses curseurs, la baguette (Ctrl+K) ou l'arbre de construction. Le DFM se vérifie en direct ; l'onglet Artéfacts prépare le dossier de commande."],
   ["pcba", "PCBA", "Une carte électronique à partir de ses fonctions : blocs de circuit, layout conceptuel puis détaillé, règles, Gerber, rapport de revue."],
+  ["elab", "Labo", "La carte essayée avant d'exister : chaque bloc sur un banc simulé — pistes qui s'allument, oscilloscopes — et le plan de test fonctionnel à dérouler au vrai laboratoire."],
   ["assembly", "Assemblage", "Ajoutez les pièces : les interfaces identiques se matent seules et restent liées. Changez un côté, l'autre suit."],
   ["physics", "Physique", "Une poutre, une vis, un tube, une ailette : des modèles simples disent si la physique fonctionne. La simulation par éléments finis simplifiés confirme, sur la vraie géométrie."],
   ["creepage", "Isolation", "Creepage et clearance mesurés sur l'assemblage complet, comparés à IEC 60664-1."],

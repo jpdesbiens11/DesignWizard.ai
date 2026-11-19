@@ -5,7 +5,7 @@ title: "Retour d'essai : "
 labels: retour
 ---
 
-**Ce que j'ai essayé** (démonstration, mon propre produit, quel onglet…)
+**Ce que j'ai essayé** (l'essai pilote d'une heure — docs/ESSAI_PILOTE.md : quelles stations ; ou mon propre produit, quel écran…)
 
 
 **Ce qui m'a plu**
