@@ -66,7 +66,7 @@ const project = {
   sections: [
     ["Le produit", ["description", "author", "drawing"]],
     ["La physique vérifiée — modèles analytiques et simulations gardés pour la revue", ["physics", "simulations"]],
-    ["Les cas de charge de la Simulation — par pièce ou assemblage : appuis, efforts, sources, zones et plans, avec ce qui est à Off ; le cas en cours (name) et, sous others, les autres cas gardés sous leur nom", ["cases"]],
+    ["Les cas de charge de la Simulation — par pièce ou assemblage : appuis, efforts, sources, zones et plans, avec ce qui est à Off ; sensors : les instruments posés sur le produit (capteurs de température TC, jauges de déformation SG — at : le point, angle : l'axe d'une jauge dans le plan de sa face n, rosette : trois grilles), lus sur le résultat ; le cas en cours (name) et, sous others, les autres cas gardés sous leur nom", ["cases"]],
     ["La revue de conception — ce que l'IA a retenu de l'entrevue, l'état de chaque artéfact, les itérations MVP et leurs revues", ["brief", "review", "mvp"]],
     ["L'équipe — les miroirs de chaque membre, ce qui a été fusionné, les messages", ["team", "talk"]],
     ["Les révisions libérées — numéros, contenus figés, ce avec quoi chaque assemblage a été libéré", ["plm"]],

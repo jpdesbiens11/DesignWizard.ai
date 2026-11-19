@@ -17,7 +17,9 @@ Le principe est le même partout :
 ## Simulation : des cas de charge à comparer
 
 Chaque appui, effort, source de chaleur et température imposée du cas de charge a son interrupteur et son bouton
-« Dupliquer » ; chaque zone de raffinement et chaque plan de coupe ou de symétrie aussi.
+« Dupliquer » ; chaque zone de raffinement et chaque plan de coupe ou de symétrie aussi ; et chaque **instrument**
+(capteur de température, jauge de déformation — `docs/SIMULATION.md`, § 5 bis) : à Off il est gardé et ne lit rien, sa
+copie naît à Off au même point, sous son propre numéro.
 
 - Une condition à Off n'est pas envoyée au solveur, n'entre pas dans l'estimation à la main ni dans la recherche de
   symétrie, n'a pas de symbole dans la vue (son endroit s'allume encore quand elle est sélectionnée) et ne demande rien

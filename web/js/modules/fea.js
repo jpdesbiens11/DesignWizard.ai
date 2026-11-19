@@ -34,22 +34,21 @@ import { prepareZones, zoneIssues, normZone } from "../analysis/fea/refine.js";
 import { compositeSkin } from "../analysis/fea/composite.js";
 import { zoneWalls } from "../analysis/fea/entity.js";
 import { zonesSection, zoneMenu, drawZones, ZONE_TINT } from "./fea_zones.js";
-import { caseOf, takeCase, withCase, sameCase, FIRST_CASE, caseList, freshCaseName, addCase, useCase, renameCase, dropCase } from "../analysis/fea/case_store.js";
+import { caseOf, takeCase, withCase, sameCase, sameSolve, FIRST_CASE, caseList, freshCaseName, addCase, useCase, renameCase, dropCase } from "../analysis/fea/case_store.js";
 import { casesSection } from "./fea_cases.js";
+import { readSensors, sensorIssues, sensorKindsFor, newSensor, keptSensors, isSensorId, SENSOR_KINDS } from "../analysis/fea/sensors.js";
+import { sensorsSection, sensorMenu, drawSensors } from "./fea_sensors.js";
+import { undeform } from "../analysis/fea/probe.js";
+import { fieldColours, isInfrared } from "../analysis/fea/palette.js";
 
 const FACES = [["-X", "gauche (−X)"], ["+X", "droite (+X)"], ["-Y", "avant (−Y)"], ["+Y", "arrière (+Y)"], ["-Z", "dessous (−Z)"], ["+Z", "dessus (+Z)"]];
-const st = { target: null, kind: "structure", cells: 3000, cuts: [], zones: [], places: {}, placeSeq: 0, fixed: [], loads: [], power: [], fixedT: [], conv: { on: true, h: 10, Tamb: 25 }, thermo: { uniform: true, T: 80, Tref: 20 }, sel: null, show: {}, view: "model", quantity: "stress", fsTarget: 1.5 };      // places : the faces, edges and points of the part that carry a condition (fea_places.js) ; sel : the item of the load case that is selected (A1, E2…) ; show : the labels of a type, on or off ; view : the model with its conditions, or the last result ; quantity : what the colours of a result show (stress or safety factor, against fsTarget)
+const st = { target: null, kind: "structure", cells: 3000, cuts: [], zones: [], places: {}, placeSeq: 0, fixed: [], loads: [], power: [], fixedT: [], conv: { on: true, h: 10, Tamb: 25 }, thermo: { uniform: true, T: 80, Tref: 20 }, sensors: [], sel: null, show: {}, view: "model", quantity: "stress", palette: "rainbow", fsTarget: 1.5 };      // sensors : the instruments, read on the result ; palette : the colour scale of a thermal result (an infrared one, or the one of a calculation) ; places : the faces, edges and points of the part that carry a condition (fea_places.js) ; sel : the item of the load case that is selected (A1, E2…) ; show : the labels of a type, on or off ; view : the model with its conditions, or the last result ; quantity : what the colours of a result show (stress or safety factor, against fsTarget)
 let seq = 0;
 
 /** Material of a body for the simulation (typical values; the data sheet of the grade prevails). */
 export function feaMaterial(id) {
   const p = props(id) || {}, E = p.E ? (p.E < 2000 ? p.E * 1000 : p.E) : 3000;
   return { id: id || "?", name: p.name || id || "matériau inconnu", E, nu: p.nu || 0.33, k: p.k || 0.3, rho: p.rho || 1200, Re: p.Re || null, alpha: (p.cte || 0) * 1e-6, known: !!p.E };
-}
-/** Blue to red, the way a result plot is read. */
-function colour(t) {
-  const stops = [[0.05, 0.25, 0.85], [0, 0.75, 0.9], [0.2, 0.78, 0.25], [1, 0.88, 0.1], [0.9, 0.12, 0.1]], x = Math.min(1, Math.max(0, t)) * 4, i = Math.min(3, Math.floor(x)), f = x - i;
-  return stops[i].map((c, k) => c + (stops[i + 1][k] - c) * f);
 }
 
 function render(main, args) {
@@ -61,12 +60,13 @@ function render(main, args) {
   if (!st.target || !targets.some((t) => t.id === st.target.id)) st.target = targets[0];
   { const key = `${p.id}:${st.target.id}`; if (st.from !== key) st.sel = null; st.from = key; takeCase(st, caseOf(p, st.target.id)); }      // the case as the project keeps it : what an earlier visit set, or a teammate
   const vp = createViewport(view, { name: () => `${st.target.id}_simulation`,
-    menuFor: (hit, x, sel) => { if (st.view === "result") return [{ title: `Résultat ${last ? last.n : ""} affiché` }, { label: "Revenir au modèle pour modifier le cas", icon: "edit", run: () => setView("model") }];
+    menuFor: (hit, x, sel) => { const inst = model && hit && hit.point ? sensorMenu(sensorKinds(), (k) => putSensor(k, hit)) : [];      // an instrument is put on the model or on the result
+      if (st.view === "result") return [{ title: `Résultat ${last ? last.n : ""} affiché` }, { label: "Revenir au modèle pour modifier le cas", icon: "edit", run: () => setView("model") }, ...(inst.length ? ["—", ...inst] : [])];
       const on = !!(hit && hit.point && (bodyOf(hit.id) >= 0 || hit.id === CUT_FIELD)), own = placeMenu(hit, sel), cut = whole && on ? cutMenu(hit, st, () => { outdate(); remesh(false); }) : [];
       const zone = model && on ? zoneMenu(hit, st, model, (z) => { applyZones(); toast(`Zone ${z.id} posée : entrez ses cotes à gauche.`, "success", 3500); setTimeout(() => { if (alive) nudge(left.querySelector(`[data-zone="${z.id}"] input.need`) || left.querySelector(`[data-zone="${z.id}"]`)); }, 90); }) : [];
-      return [...own, ...(own.length && cut.length ? ["—"] : []), ...cut, ...(zone.length && (own.length || cut.length) ? ["—"] : []), ...zone]; },
-    onPick: (hit) => { if (askingPoint) { const set = askingPoint; askingPoint = null; view.style.cursor = ""; if (hit && hit.point) set(hit.point, hit.normal); return true; } if (!asking) return false; pickRegion(hit); return true; } }), info = el("span", { class: "chip" }, "—");
-  let geo = null, model = null, whole = null, syms = [], regions = [], estimate = null, last = null, runs = [], worker = null, alive = true, asking = null, askingPoint = null, zonePreps = [], litZone = null;      // zonePreps : the refinement zones as the mesh took them ; askingPoint : the next click gives a point (the centre of a zone)
+      return [...own, ...(own.length && cut.length ? ["—"] : []), ...cut, ...(zone.length && (own.length || cut.length) ? ["—"] : []), ...zone, ...(on && inst.length ? ["—", ...inst] : [])]; },
+    onPick: (hit) => { if (askingPoint) { const set = askingPoint; askingPoint = null; view.style.cursor = ""; if (hit && hit.point) set(hit.point, hit.normal, hit); return true; } if (!asking) return false; pickRegion(hit); return true; } }), info = el("span", { class: "chip" }, "—");
+  let geo = null, model = null, whole = null, syms = [], regions = [], estimate = null, last = null, runs = [], worker = null, alive = true, asking = null, askingPoint = null, zonePreps = [], litZone = null, litSensor = null;      // zonePreps : the refinement zones as the mesh took them ; askingPoint : the next click gives a point (the centre of a zone)
   /* ---------- refinement zones : meshed on the page to be seen, solved in the worker with the model ---------- */
   const liveZones = () => st.zones.filter((z) => !z.off);      // a zone put aside (off) is kept, and neither meshed nor solved
   const rezone = () => { try { zonePreps = model ? prepareZones(model, geo.bodies, liveZones()) : []; } catch (e) { zonePreps = liveZones().map((z) => ({ id: z.id, error: e.message })); } };
@@ -75,8 +75,17 @@ function render(main, args) {
   const zonesOn = () => (st.view === "result" ? st.show.zonesResult === true : st.show.zones !== false);
   const showZones = () => drawZones(vp.viewer, st.zones.filter((z) => z === litZone || (zonesOn() && !z.off)), litZone, (z) => nudge(left.querySelector(`[data-zone="${z.id}"]`)));
   const zoneInfo = (z) => { const p = zonePreps.find((x) => x.id === z.id); return !p || !model ? null : p.prep ? { cells: p.prep.local.nCells, block: p.prep.block.count, h: model.grid.h, walls: normZone(z) ? zoneWalls(model, normZone(z)).length : 0 } : { error: p.error }; };
-  /* where the guide sends the designer : a value of the load case, an item of its tree, or a zone and its cote */
-  const spot = (x) => (x.id && x.id[0] === "Z" ? (x.field && left.querySelector(`[data-zone="${x.id}"] [data-field="${x.field}"]`)) || left.querySelector(`[data-zone="${x.id}"]`) : left.querySelector(x.field ? `.bc-edit [data-field="${x.field}"]` : x.id ? `[data-bc="${x.id}"]` : ".bc-tree"));
+  /* ---------- instruments : read on the result that is kept — putting one, moving it, turning a gauge solves nothing again ---------- */
+  const sensorKinds = () => sensorKindsFor(st.kind, st.kind === "thermal" || (st.kind === "thermo" && !st.thermo.uniform)), probeNow = () => (last && last.probe) || null, readings = () => readSensors(probeNow(), st.sensors);
+  const cardOf = (id) => left.querySelector(`[data-sensor="${id}"]`), showSensors = () => drawSensors(vp.viewer, st.sensors, readings(), { shown: st.show.sensors !== false, lit: litSensor, result: st.view === "result", kinds: st.view === "result" && last ? sensorKindsFor(last.kind, true) : sensorKinds(), onClick: (s) => nudge(cardOf(s.id)) });
+  const sensorsChanged = (s) => { saveCase(); drawLeft(); showSensors(); if (last) drawRight(); if (s) setTimeout(() => { if (alive) nudge((cardOf(s.id) || left).querySelector("input.need") || cardOf(s.id)); }, 90); };
+  /* a point of the view as a point of the product : a click on the result lands on the deformed shape, and is brought back */
+  const onProduct = (hit) => ({ at: st.view === "result" && probeNow() ? undeform(probeNow(), hit.point) : hit.point, normal: hit.normal, body: bodyOf(hit.id) >= 0 ? geo.bodies[bodyOf(hit.id)].name : null });
+  const putSensor = (kind, hit) => { const w = onProduct(hit), s = newSensor(st.sensors, kind, w.at, w); st.sensors.push(s); sensorsChanged(s); toast(`${s.id} posé — ${SENSOR_KINDS[kind].label}${kind === "gauge" ? " : tournez-la ou confirmez son axe, à gauche" : probeNow() ? "" : " : il se lira sur le résultat"}.`, "success", 3800); };
+  const aimSensor = (set) => { asking = null; askingPoint = (p, n, hit) => { const w = onProduct(hit); set(w.at, w.normal, w.body); }; view.style.cursor = "crosshair"; toast("Cliquez sur la pièce l'endroit où poser l'instrument.", "info", 4200); };
+  /* where the guide sends the designer : a value of the load case, an item of its tree, a zone and its cote, or an instrument */
+  const aside = (id) => (id[0] === "Z" ? "zone" : isSensorId(id) ? "sensor" : null);
+  const spot = (x) => (x.id && aside(x.id) ? (x.field && left.querySelector(`[data-${aside(x.id)}="${x.id}"] [data-field="${x.field}"]`)) || left.querySelector(`[data-${aside(x.id)}="${x.id}"]`) : left.querySelector(x.field ? `.bc-edit [data-field="${x.field}"]` : x.id ? `[data-bc="${x.id}"]` : ".bc-tree"));
   const RANK = { error: 0, todo: 1, warn: 2, tip: 3 };      // whole : the product entire ; model : what is solved — the same, or what the cuts keep
 
   /* ---------- pointing at the part : the view shows the part itself — any face, edge or point of it carries a condition ---------- */
@@ -135,7 +144,7 @@ function render(main, args) {
       each in the colour of its type, with its number ; the labels of a type show when its eye is open, the selected item always. */
   const regionName = (k) => (regionOf(k) || { label: k }).label, loadTree = () => bcTree(st, regionName);
   /** What the case still lacks or gets wrong, as the guide lists it. */
-  const issues = () => (whole ? [...caseIssues(st, { regionOk: (k) => { const r = regionOf(k); return !!r && !r.gone; }, regionName }), ...zoneIssues(st.zones, zoneInfo)].sort((a, b) => RANK[a.level] - RANK[b.level]) : []);
+  const issues = () => (whole ? [...caseIssues(st, { regionOk: (k) => { const r = regionOf(k); return !!r && !r.gone; }, regionName }), ...zoneIssues(st.zones, zoneInfo), ...sensorIssues(st.sensors, readings())].sort((a, b) => RANK[a.level] - RANK[b.level]) : []);
   /* brings the first value that waits to the eye of the designer : its field blinks in the left panel */
   const toEnter = () => setTimeout(() => { if (alive) nudge(left.querySelector(".bc-edit input.need")); }, 90);
   function drawSymbols() {
@@ -224,7 +233,7 @@ function render(main, args) {
     v.addField("fea", { pos: s.pos, idx: s.idx, col: flat([0.72, 0.72, 0.72]), epos: s.epos, faces: false, edgeOpacity: 0.13 });
     if (s.zone) { const idx = only((f) => s.zone[f] > 0); if (idx.length) v.addField("feazone", { pos: s.pos, idx, col: flat(ZONE_TINT), opacity: 0.55, lift: true }); }
     if (model.cut) { const cf = exposedFaces(model), on = cutFaces(model, cf), idx = only((f) => f < cf.count && on[f]); if (idx.length) v.addField(CUT_FIELD, { pos: s.pos, idx, col: flat([0.78, 0.84, 0.93]), pickable: true }); }
-    showZones();
+    showZones(); showSensors();
     info.textContent = `${model.cut ? `Modèle ${fraction(model.cut.copies)} · ` : ""}${model.nCells.toLocaleString("fr-CA")} cubes de ${fmt(model.grid.h, 2)} mm${fine ? ` + ${fine.toLocaleString("fr-CA")} cubes fins (${parts.length} zone${parts.length > 1 ? "s" : ""})` : ""} · ${model.nNodes.toLocaleString("fr-CA")} nœuds`; info.className = "chip";
   }
   /* ---------- the two views : the model with its conditions, the last result ---------- */
@@ -261,13 +270,14 @@ function render(main, args) {
     st.view = v === "result" && last && last.skin ? "result" : "model"; asking = null; askingPoint = null; view.style.cursor = "";
     const o = vp.viewer; o.clearOverlays("bc"); o.clearOverlays("bchover"); o.clearOverlays("bcsel");
     if (st.view === "result") { o.clear(); if (vp.sel) vp.sel.clear(); paint(); peak(); drawSymbols(); drawRight(); } else { showMesh(); refreshEstimate(); }      // the result is the mesh in colours ; the model is the part, to point at
-    drawSwitch(); if (st.zones.length) drawLeft();      // the eye of the zones says what this view shows
+    drawSwitch(); if (st.zones.length || st.sensors.length) drawLeft();      // the eye of the zones says what this view shows ; each instrument, what it reads on it
   }
   /* the worst point of the result shown, with its value : the peak stress or temperature, or the smallest safety factor */
   function peak() {
     const o = vp.viewer, thermal = last.kind === "thermal", p = thermal ? last.result.maxT : last.result.maxVm; o.clearOverlays("bc");
     if (!thermal && st.quantity === "fs" && last.fs) { const S = safetySummary(last.fs, st.fsTarget); if (S.min !== null && S.at >= 0) { const at = Array.from(last.skin.pos.subarray(3 * S.at, 3 * S.at + 3)); o.addMarker(at, "#ff5a4f", "bc", 1.8); o.addLabel(at, `FS ${Number.isFinite(S.min) ? show(S.min, 2) : "∞"}`, "bc", S.min < st.fsTarget ? "err" : ""); } return; }
     o.addMarker(p.at, "#ff5a4f", "bc", 1.8); o.addLabel(p.at, thermal ? `${show(p.value, 1)} °C` : `${show(p.value, 1)} MPa`, "bc", "err");
+    if (thermal && isInfrared(st.palette)) { const q = last.result.minT; o.addMarker(q.at, "#38bdf8", "bc", 1.5); o.addLabel(q.at, `min ${show(q.value, 1)} °C`, "bc"); }      // as an infrared camera marks them : the hot spot and the cold spot
   }
   /** The simple regions of a choice: one for a face, one per screw for a bolted interface (the effort is shared between them). */
   const listOf = (key) => (regionOf(key) || regions[0]).list;
@@ -324,12 +334,13 @@ function render(main, args) {
     scroll.append(casesSection({ list: caseList(store.project, st.target.id, st), use: pickCase, add: newCase, rename: nameCase, drop: removeCase }), sec);
     if (whole) scroll.append(cutsSection({ st, kind: st.kind, syms, bbox: whole.bbox, symmetric, apply: () => { outdate(); remesh(false); } }),
       zonesSection({ st, preps: zonePreps, h: model.grid.h, model, apply: applyZones, shown: zonesOn(), result: st.view === "result", show: (on) => { st.show[st.view === "result" ? "zonesResult" : "zones"] = on; showZones(); drawLeft(); }, hover: (z) => { if (litZone !== z) { litZone = z; showZones(); } },
-        aim: (set) => { if (st.view === "result") setView("model"); asking = null; askingPoint = set; view.style.cursor = "crosshair"; toast("Cliquez sur la pièce le point où centrer la zone.", "info", 4200); } }));
+        aim: (set) => { if (st.view === "result") setView("model"); asking = null; askingPoint = set; view.style.cursor = "crosshair"; toast("Cliquez sur la pièce le point où centrer la zone.", "info", 4200); } }),
+      sensorsSection({ st, kinds: sensorKinds(), rows: readings(), has: !!probeNow(), stale: !!(last && last.stale), shown: st.show.sensors !== false, show: (on) => { st.show.sensors = on; showSensors(); drawLeft(); }, apply: sensorsChanged, aim: aimSensor, hover: (s) => { if (litSensor !== s) { litSensor = s; showSensors(); } } }));
     const heat = st.kind === "thermal" || (st.kind === "thermo" && !st.thermo.uniform);
     if (st.sel && !bcFind(loadTree(), st.sel)) st.sel = null;
     const DEFAULT = { fixed: () => regions[0].key, loads: () => ({ region: regions[1].key, mode: "force", F: 100, dir: "-Z", p: 0.1, ask: ["F"] }), power: () => ({ region: regions[0].key, P: 5, ask: ["P"] }), fixedT: () => ({ region: regions[5].key, T: 25, ask: ["T"] }) };
     const aim = (set) => { if (st.view === "result") setView("model"); asking = set; view.style.cursor = "crosshair"; toast("Cliquez une face, une arête ou un point de la pièce : il s'allume sous le curseur. Caché ? Tournez la vue ou coupez-la.", "info", 4200); };
-    const go = (x) => { if (x.id && x.id[0] !== "Z" && st.sel !== x.id) select(x.id); setTimeout(() => { if (alive) nudge(spot(x)); }, 90); };
+    const go = (x) => { if (x.id && !aside(x.id) && st.sel !== x.id) select(x.id); setTimeout(() => { if (alive) nudge(spot(x)); }, 90); };
     const found = issues(); setGuide(found.map((x) => ({ ...x, si: true, go: () => go(x) })));      // the guide of the top bar says the same
     sec.append(el("h3", null, "Conditions du cas"), ...[guideBox(found, { go, si: true })].filter(Boolean), bcSection({ st, tree: loadTree(), regions: [...regions, ...usedPlaces()], select, changed, aim, relabel: () => { drawLeft(); drawSymbols(); },
       hover: (k, color) => { vp.viewer.clearOverlays("bchover"); if (k && !asking) lightRegion(k, color || LIT.named, "bchover"); },
@@ -368,7 +379,8 @@ function render(main, args) {
       el("ol", { class: "calc-steps" }, estimate.steps.map((s) => el("li", null, s))), ...estimate.warnings.map((w) => el("p", { class: "atelier-hint warn" }, icon("warning"), " ", w)));
     const method = el("div", { class: "side-section" }, el("h3", null, "La méthode"), el("p", { class: "muted small" }, "Cubes identiques, hexaèdre à modes incompatibles (flexion juste même avec un élément dans l'épaisseur), gradient conjugué. Tout le code du solveur est dans ce dépôt, sous licence MIT."));
     if (!last) { body.append(hand, method); return; }
-    resultPanel(body, { last, st, runs, named: named(), mat: geo.bodies[0].material, keep, setView, saveCase,
+    const before = runs.filter((x) => x !== last && x.kind === last.kind && x.probe && x.n < last.n).pop();      // the trial before, of the same physics : what each instrument read then
+    resultPanel(body, { last, st, runs, named: named(), mat: geo.bodies[0].material, keep, setView, saveCase, sensors: { sensors: st.sensors, rows: readings(), prev: before ? readSensors(before.probe, st.sensors) : null, prevN: before ? before.n : 0, thermo: last.kind === "thermo" },
       repaint: (only) => { if (st.view !== "result") { setView("result"); return; } paint(); peak(); if (!only) drawRight(); },
       pick: (x) => { last = x; setView("result"); } });
     body.append(hand, method);
@@ -377,10 +389,9 @@ function render(main, args) {
       safety factor against the one aimed at — red below it, then orange, blue, green. */
   function paint() {
     if (!last || !last.skin) return;
-    const s = last.skin, [a, b] = last.range, col = new Float32Array(s.pos.length);
-    if (st.quantity === "fs" && last.kind !== "thermal" && last.fs) for (let i = 0; i < last.fs.length; i++) { const c = fsColour(last.fs[i], st.fsTarget); col[3 * i] = c[0]; col[3 * i + 1] = c[1]; col[3 * i + 2] = c[2]; }
-    else for (let i = 0; i < s.val.length; i++) { const x = s.val[i], c = x > b * (1 + 1e-9) + 1e-12 ? [0.85, 0.27, 0.94] : x < a - 1e-9 * Math.abs(a) - 1e-12 ? [0.62, 0.64, 0.68] : colour((x - a) / (b - a)); col[3 * i] = c[0]; col[3 * i + 1] = c[1]; col[3 * i + 2] = c[2]; }
-    vp.viewer.addField("fea", { pos: s.pos, idx: s.idx, col, epos: s.epos, pickable: true }); showZones();
+    const s = last.skin, thermal = last.kind === "thermal", safety = st.quantity === "fs" && !thermal && last.fs, col = safety ? new Float32Array(s.pos.length) : fieldColours(s.val, last.range, thermal ? st.palette : "rainbow");
+    if (safety) for (let i = 0; i < last.fs.length; i++) { const c = fsColour(last.fs[i], st.fsTarget); col[3 * i] = c[0]; col[3 * i + 1] = c[1]; col[3 * i + 2] = c[2]; }
+    vp.viewer.addField("fea", { pos: s.pos, idx: s.idx, col, epos: thermal && isInfrared(st.palette) ? null : s.epos, pickable: true }); showZones(); showSensors();      // an infrared image shows no mesh
   }
   function run() {
     if (!model) return;
@@ -399,8 +410,8 @@ function render(main, args) {
       if (!m.ok) { setStatus("Simulation impossible", "bad"); toast(m.error, "error", 9000); return; }
       const s = m.skin, lo = kind === "thermal" ? m.result.minT.value : 0, hi = kind === "thermal" ? m.result.maxT.value : m.result.maxVm.value;
       last = { n: (runs.length ? runs[runs.length - 1].n : 0) + 1, kind, stale: false, skin: s, data: [lo, hi > lo ? hi : lo + 1], range: [lo, hi > lo ? hi : lo + 1], result: m.result, info: m.info, compare: compare(kind, est, m.result), estimate: est,
-        fs: kind !== "thermal" && s.re ? safetyField(s.val, s.re) : null, case: { ...ran, name: caseNow() } };
-      runs.push(last); if (runs.length > 6) runs[runs.length - 7].skin = null;      // the six last trials can be shown again ; the older ones keep their figures
+        fs: kind !== "thermal" && s.re ? safetyField(s.val, s.re) : null, case: { ...ran, name: caseNow() }, probe: m.probe || null };
+      runs.push(last); if (runs.length > 6) { runs[runs.length - 7].skin = null; runs[runs.length - 7].probe = null; }      // the six last trials can be shown again ; the older ones keep their figures
       setStatus(`Simulation : ${m.result.iterations} itérations, ${fmt(m.result.ms / 1000, 2)} s`, "done");
       setView("result");
     };
@@ -409,12 +420,12 @@ function render(main, args) {
   }
   function keep() {
     if (!last) return;
-    const r = last.result, mat = geo.bodies[0].material, thermal = last.kind === "thermal", nominal = r.nominalVm ? r.nominalVm.value : null;
+    const r = last.result, mat = geo.bodies[0].material, thermal = last.kind === "thermal", nominal = r.nominalVm ? r.nominalVm.value : null, read = keptSensors(readSensors(last.probe, st.sensors));
     store.commit(`Simulation gardée : ${st.target.id}`, (x) => { x.simulations = x.simulations || []; x.simulations.push({ id: `S${x.simulations.length + 1}`, kind: last.kind, target: st.target.id, ...(named() ? { case: last.case.name } : {}), cells: last.info.cells, h: last.info.h, ...(last.info.cuts ? { cuts: last.info.cuts, copies: last.info.copies } : {}),
       ...((r.zones || []).some((z) => !z.error) ? { zones: r.zones.filter((z) => !z.error).map((z) => ({ id: z.id, shape: z.shape, axis: z.axis, size: z.size, length: z.length, at: z.at, ratio: z.ratio, h: z.h, cells: z.cells, peak: z.peak.value, alone: z.alone ? z.alone.value : null })) } : {}),
       estimate: thermal ? { Tmax: last.estimate.values.Tmax } : { sigma: (last.kind === "thermo" && last.estimate.values.sigmaPlate) || last.estimate.values.sigma, delta: last.estimate.values.delta },
       result: thermal ? { Tmax: r.maxT.value, Tmin: r.minT.value } : { sigma: r.maxVm.value, nominal, delta: r.maxU.value, sf: mat.Re ? mat.Re / r.maxVm.value : null, ...(last.kind === "thermo" ? { Tmax: r.maxT.value, core: r.coreVm ? r.coreVm.value : null } : {}) },
-      worst: last.compare.rows.length ? last.compare.worst : null, verdict: last.compare.verdict, when: new Date().toISOString() }); });
+      ...(read.length ? { sensors: read } : {}), worst: last.compare.rows.length ? last.compare.worst : null, verdict: last.compare.verdict, when: new Date().toISOString() }); });
     toast("Simulation ajoutée au rapport de revue.", "success");
   }
 
@@ -422,7 +433,9 @@ function render(main, args) {
   loadGeometry();
   /* Ctrl + Z, Ctrl + Y : the case comes back as the project has it now ; anything else that was undone is built again */
   const unsee = store.on("change", (e) => { if (!alive || !e || !e.undo || !geo) return; const kept = takeCase({}, caseOf(store.project, st.target.id)), moved = !sameCase(kept, st), rebuilt = shape() !== built;
-    if (!moved && !rebuilt) { if (sig() !== caseSig) drawLeft(); return; } if (moved) { takeCase(st, kept); st.sel = null; }
+    if (!moved && !rebuilt) { if (sig() !== caseSig) drawLeft(); return; }
+    if (moved && !rebuilt && sameSolve(kept, st)) { st.sensors = kept.sensors; drawLeft(); showSensors(); if (last) drawRight(); return; }      // only the instruments came back : the result stands
+    if (moved) { takeCase(st, kept); st.sel = null; }
     if (rebuilt) loadGeometry(); else { if (last) last.stale = true; st.view = "model"; remesh(false); } });
   return () => { alive = false; unsee(); if (worker) worker.terminate(); vp.dispose(); };
 }

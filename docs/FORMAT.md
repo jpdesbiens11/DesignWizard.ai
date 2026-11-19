@@ -164,7 +164,10 @@ d'atelier, opérations du noyau) est dans [PART_LANGUAGE.md](PART_LANGUAGE.md). 
   accouplement nomme une pièce d'un sous-assemblage par son chemin (`s5~i1`). Voir
   [SOUS_ASSEMBLAGES.md](SOUS_ASSEMBLAGES.md). **`cases`** (projet) — les cas de charge de la Simulation de chaque pièce ou assemblage, une entrée sous son
   `id`. L'entrée porte le cas **en cours** : `kind`, `cells`, `fsTarget`, `fixed`, `loads`, `power`, `fixedT`, `conv`,
-  `thermo`, `cuts`, `zones`, `places`, `placeSeq` (ce qui y est à Off porte `off: true`), et, quand la pièce en garde
+  `thermo`, `cuts`, `zones`, `places`, `placeSeq`, `sensors` (ce qui y est à Off porte `off: true`) — `sensors` : les
+  instruments posés sur le produit, `{ id (TC1, SG2), kind (temp | gauge), at [x, y, z], name?, body?, n (la normale de
+  la face d'une jauge), angle (son axe, en degrés dans ce plan), rosette?, ask? }`, lus sur le résultat sans rien changer
+  au calcul ; une simulation gardée (`simulations`) porte leurs lectures sous `sensors` — et, quand la pièce en garde
   plusieurs : `name` (le nom du cas en cours, « Cas 1 » par défaut), `others: [{ name, …les mêmes clés }]` (les cas rangés)
   et `at` (la place du cas en cours dans la liste). Voir [VARIANTES.md](VARIANTES.md).
 - **`order`** — `quantity`, `need_by`, `note` : la commande du prototype.

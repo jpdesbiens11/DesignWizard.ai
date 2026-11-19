@@ -159,7 +159,7 @@ function render(main) {
     const sims = simulationSummary(p);
     if (sims.length) doc.append(el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, "Simulations — éléments finis simplifiés"),
       el("p", { class: "muted", style: { fontSize: ".84rem" } }, "Maillage grossier par cubes identiques. Chaque simulation est recoupée par le calcul à la main du modèle simple équivalent ; un écart de 20 % ou moins les dit concordants."),
-      table(["Cas", "Cible", "Maillage", "À la main", "Simulation", "Écart", "Recoupement"], sims.map((r) => [r.kind, r.target, r.mesh, r.estimate, r.result, r.deviation, badge(r.verdictLabel, r.verdict === "ok" ? "ok" : r.verdict === "warn" ? "warn" : r.verdict === "fail" ? "danger" : "neutral")]))));
+      table(["Cas", "Cible", "Maillage", "À la main", "Simulation", "Écart", "Recoupement"], sims.map((r) => [r.kind, r.target, r.mesh, r.estimate, r.instruments ? el("span", null, r.result, el("small", { class: "muted", style: { display: "block" } }, `Instruments : ${r.instruments}`)) : r.result, r.deviation, badge(r.verdictLabel, r.verdict === "ok" ? "ok" : r.verdict === "warn" ? "warn" : r.verdict === "fail" ? "danger" : "neutral")]))));
 
     for (const x of dfx.parts) {
       const s = x.spec, b = x.built, sum = x.res.summary || {};

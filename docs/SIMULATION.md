@@ -397,6 +397,93 @@ groupe « Zones de raffinement » cache ou montre les contours et les étiquette
 sont **montrés sur le modèle** et **rangés sur le résultat** ; l'œil bascule l'un ou l'autre, et chaque vue garde son
 choix. Cachés, le maillage fin reste visible, et le survol de la carte d'une zone la montre le temps du survol.
 
+## 5 bis. Instruments : ce que liraient les capteurs du banc, et la vue infrarouge
+
+Demande de JP (19 novembre 2026) : poser un **capteur de température** dans un calcul thermique et une **jauge de
+déformation** dans un calcul de structure, voir leurs lectures à l'écran ; et regarder un résultat thermique comme une
+**image infrarouge**. C'est ce que le banc d'essai collera sur le produit — thermocouples, jauges — et ce que la caméra
+thermique montrera, dit avant que le banc existe : de quoi choisir où instrumenter, et recouper l'essai ensuite.
+
+| Instrument | Étiquette | Se lit sur | Lecture |
+|---|---|---|---|
+| **Temperature sensor** (capteur de température) | TC1, TC2… | un résultat thermique, ou thermo-mécanique avec sources | la température au point, en °C |
+| **Strain gauge** (jauge de déformation) | SG1, SG2… | un résultat de structure ou thermo-mécanique | l'allongement le long de son axe, en µm/m (10⁻⁶, la « microdéformation » des instruments) ; positif : la matière s'allonge |
+| **Rosette 0°/45°/90°** (rosette rectangulaire) | une jauge à trois grilles | les mêmes | les deux déformations principales ε1, ε2, l'angle de ε1 depuis la grille à 0° ; en structure, les contraintes σ1, σ2 et von Mises de la surface |
+
+### Poser, régler
+
+Un clic droit sur la pièce → « **Instrumenter ici** », ou le « + TC » / « + SG » du groupe « Instrumentation » puis un
+clic — **sur le modèle ou sur le résultat**. Sur le résultat de structure, la vue montre la déformée amplifiée : le
+point cliqué est ramené à sa place sur le produit (`undeform`). Chaque instrument a sa carte : un nom libre (« près de
+la vis »), son point X, Y, Z (au clavier, ou « Viser »), son interrupteur, sa copie.
+
+Une jauge a un **axe**, dans le plan de la face où elle est collée : 0° suit l'axe du modèle le plus couché dans cette
+face (X avant Y avant Z), 90° est en travers ; n'importe quel angle se tape, 0° / 45° / 90° se cliquent. L'axe d'une
+jauge neuve est un **exemple** : son champ clignote, son trait est en pointillé dans la vue, et **sa lecture attend**
+qu'on le tourne ou qu'on le confirme (Entrée, ou la coche). Le calcul, lui, n'attend pas : un instrument n'en fait pas
+partie.
+
+### Un instrument se lit sur le résultat gardé
+
+Chaque calcul garde de quoi être relu en n'importe quel point (`probe.js`) : ses cubes, ses nœuds, la température ou
+les déplacements de chaque nœud — les cubes fins des zones de raffinement d'abord, le reste du modèle ensuite.
+**Poser un instrument, le déplacer, tourner une jauge ne relance rien** : la lecture suit aussitôt, et le résultat ne
+devient pas « d'avant ». Ctrl + Z ramène l'instrument, pas le résultat.
+
+- Le point est lu dans **le cube qui le contient** — ou le plus proche, à deux cubes au plus : les cubes suivent le
+  produit, ils ne sont pas le produit — par l'interpolation trilinéaire de ses huit nœuds, celle que le solveur suppose.
+  La carte dit quand la lecture vient d'un cube voisin, et à quelle distance.
+- Une jauge lit `d · ∇u · d` : l'allongement d'une courte ligne le long de son axe `d`, tiré des déplacements des
+  nœuds. C'est la **déformation totale** — en thermo-mécanique, la dilatation y est comprise, comme sur une vraie jauge
+  non compensée.
+- Derrière un **plan de symétrie**, l'instrument est lu à son image (et l'axe d'une jauge avec lui) ; derrière une
+  **coupe** simple, rien n'est calculé : la carte le dit.
+- Dans une **zone de raffinement**, il est lu sur les cubes fins.
+- Sur un assemblage, il lit le corps sur lequel il a été posé, même au bord d'un autre.
+
+Dans la vue : un point, le trait de l'axe d'une jauge (trois traits pour une rosette), et une étiquette — « TC1 ·
+39,2 °C », « SG1 · +312 µm/m » — placée sur la déformée. Dans le volet de droite, le groupe « Instrumentation » donne
+le tableau des lectures et, à côté, **ce que chaque instrument lisait à l'essai d'avant** de la même physique, avec
+l'écart : mettre une condition à Off, relancer, et lire ce que cela change à chaque capteur.
+
+### On / Off, copie, guide, rapport
+
+Comme toute entrée du cas : un instrument à Off est gardé et ne lit rien ; sa copie naît à Off, au même point, sous son
+propre numéro (un numéro n'est jamais redonné). Les instruments sont dans le cas de charge (`project.cases`, clé
+`sensors`) : un nouveau cas les emporte en copie, le fichier `.dwiz` les porte, l'aller-retour IA aussi. Le guide les
+suit sans jamais retenir le calcul : axe à confirmer, instrument hors du maillage ou du côté retiré par une coupe,
+lecture prise sur un cube voisin, doublon, « tous à Off ». « Ajouter au rapport » garde les lectures avec la
+simulation (`simulations[].sensors`) : elles sortent dans le rapport de revue, sous le résultat.
+
+### La vue infrarouge
+
+Sous « Ce que les couleurs montrent », un résultat thermique a trois vues : **Rainbow** — l'échelle d'un calcul, du
+bleu au rouge, avec le maillage — et deux vues infrarouges, **IR · Iron** (noir, violet, rouge, orange, jaune, blanc)
+et **IR · White hot** (du noir au blanc). En infrarouge le maillage est retiré, le **point chaud** et le **point
+froid** sont marqués comme sur une caméra, et l'échelle se règle comme avant (bas, haut, « Auto ») : pour comparer
+avec l'image prise au banc, lui donner le même bas et le même haut que sur la caméra. Ce qui sort de l'échelle prend
+une couleur qu'elle n'a pas (vert au-dessus, bleu en dessous pour Iron).
+
+Ce **n'est pas une image de caméra simulée** : c'est la température calculée de la surface. Ni émissivité (un métal nu
+se lit plus froid qu'il n'est sur une vraie caméra), ni reflets, ni résolution du capteur ; l'écran le dit. Les deux
+échelles sont fabriquées par l'outil (`palette.js`) : aucune palette de fabricant n'est reprise.
+
+### Ce qui est vérifié, ce qui ne l'est pas
+
+Vérifié par `tests/node/fea_sensors.test.mjs`, contre des solutions exactes : une droite de température lue
+exactement, en surface et à cœur ; une barre en traction — σ / E le long, −ν fois autant en travers, à 1–2 % ; une
+console en flexion — ± M c / (E I) sur les deux fibres à 5 %, rien sur la fibre neutre ; la rosette contre le tenseur
+dont elle sort, et la contrainte qu'elle annonce contre l'effort appliqué ; le demi-modèle symétrique lu comme le
+modèle entier ; un capteur dans une zone de raffinement ; le retour de la déformée au produit. Et dans Chromium : la
+pose sur le modèle et sur le résultat, la lecture sans relance, l'annulation, les trois vues thermiques.
+
+Pas vérifié, et à savoir : aucune comparaison avec un essai réel. Un instrument est ici **un point** : un vrai
+thermocouple a une soudure, une colle et des fils qui tirent de la chaleur ; une vraie jauge moyenne la déformation sur
+sa grille, a sa propre sensibilité transverse et sa propre dérive thermique. Les modes incompatibles de l'élément ne
+sont pas ajoutés à la lecture d'une jauge (nuls en flexion pure, de moyenne nulle sur un cube). Et la lecture vaut ce
+que vaut le maillage : près d'un trou, d'un congé ou du bord d'un appui, elle est indicative — une zone de raffinement
+l'affine.
+
 ## 6. Ce qui est vérifié
 
 Les tests (`tests/node/fea.test.mjs`, `tests/node/fea_precheck.test.mjs`) comparent le solveur à des solutions
@@ -459,5 +546,9 @@ Sur le projet de démonstration, en thermo-mécanique (navigateur, de 2 800 à 4
 - **Symétries** : planes et parallèles aux faces de l'enveloppe ; pas de symétrie cyclique (un secteur d'une pièce de
   révolution), pas d'antisymétrie. Les réactions affichées sont celles de la partie résolue. Le contrôle du chargement
   compare la position et la taille des régions, pas leur forme exacte : il se lit comme un garde-fou.
+
+- **Instruments** (§ 5 bis) : des points, sans taille, sans colle et sans fils ; pas de compensation thermique d'une
+  jauge, pas de sensibilité transverse. **Vue infrarouge** : la température calculée sur l'échelle d'une caméra, pas
+  une caméra simulée — ni émissivité, ni reflets.
 
 Pour ces cas, la brique dit *où regarder* ; un calcul détaillé ou l'essai en laboratoire tranche.

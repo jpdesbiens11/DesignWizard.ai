@@ -6,6 +6,7 @@ import { nominalStress, coreStress } from "./precheck.js";
 import { reduceModel, cutSetup } from "./symmetry.js";
 import { prepareZones } from "./refine.js";
 import { solveComposite, compositeSkin, onModel, peakOf, blockPeak } from "./composite.js";
+import { probeMesh, probePlanes, probeBuffers } from "./probe.js";
 
 const FLOATING = /^Le corps « (.+?) » (?:n'est relié à aucun appui|n'a ni température imposée)/;
 
@@ -29,11 +30,13 @@ function solve(kind, bodies, mesh, load, scale, progress, cuts, zones) {
   let comp = null, failed = null;
   const tied = () => { if (!ready.length) return; try { comp = solveComposite(kind, model, ready, load, (p) => progress({ ...p, stage: "zones" })); } catch (e) { failed = e && e.message ? e.message : String(e); } };
   const meshes = () => [comp.out, ...comp.parts.map((p) => p.prep.local)], fine = () => { info.fine = comp.parts.reduce((s, p) => s + p.prep.local.nCells, 0); info.zones = comp.parts.length; };
+  /* what the page keeps to read the result anywhere, afterwards (its instruments) : the fine cubes of the zones first, then the rest */
+  const keep = (list, more = {}) => ({ kind, meshes: list, planes: probePlanes(model), bodies: model.bodies.map((b) => ({ name: b.name, E: (b.material || {}).E, nu: (b.material || {}).nu })), ...more });
   if (kind === "thermal") {
     const r = solveThermal(model, heat(load), progress); tied();
-    if (!comp) return { info, skin: skin(model, r.T), result: { maxT: r.maxT, minT: r.minT, balance: r.balance, dofs: r.dofs, iterations: r.iterations, residual: r.residual, ms: r.ms, ...(preps.length ? { zones: zoneRows(preps, null, failed, model, r.T) } : {}) } };
+    if (!comp) return { info, probe: keep([probeMesh(model, { T: r.T })]), skin: skin(model, r.T), result: { maxT: r.maxT, minT: r.minT, balance: r.balance, dofs: r.dofs, iterations: r.iterations, residual: r.residual, ms: r.ms, ...(preps.length ? { zones: zoneRows(preps, null, failed, model, r.T) } : {}) } };
     const Ts = [comp.rt.T, ...comp.parts.map((p) => p.rt.T)], s = compositeSkin(model, onModel(model, comp.out, comp.rt.T, 1, r.T), comp.parts.map((p) => ({ prep: p.prep, field: p.rt.T, u: null }))); fine();
-    return { info, skin: { pos: s.pos, idx: s.idx, val: s.val, epos: s.epos }, result: { maxT: peakOf(meshes(), Ts), minT: peakOf(meshes(), Ts, -1), balance: { in: comp.rt.balance.in + comp.parts.reduce((a, p) => a + p.rt.balance.in, 0), out: comp.rt.balance.out + comp.parts.reduce((a, p) => a + p.rt.balance.out, 0) },
+    return { info, probe: keep([...comp.parts.map((p) => probeMesh(p.prep.local, { T: p.rt.T })), probeMesh(comp.out, { T: comp.rt.T })]), skin: { pos: s.pos, idx: s.idx, val: s.val, epos: s.epos }, result: { maxT: peakOf(meshes(), Ts), minT: peakOf(meshes(), Ts, -1), balance: { in: comp.rt.balance.in + comp.parts.reduce((a, p) => a + p.rt.balance.in, 0), out: comp.rt.balance.out + comp.parts.reduce((a, p) => a + p.rt.balance.out, 0) },
       dofs: comp.dofs, iterations: r.iterations + comp.iterations, residual: comp.residual, ms: r.ms + comp.ms, alone: { maxT: r.maxT, minT: r.minT }, zones: zoneRows(preps, comp, failed, model, r.T, (part) => part.rt.maxT) } };
   }
   let thermal = null, temps = null;
@@ -50,7 +53,9 @@ function solve(kind, bodies, mesh, load, scale, progress, cuts, zones) {
   let s;
   if (comp) { const c = compositeSkin(model, onModel(model, comp.out, comp.r.vm, 1, r.vm), comp.parts.map((p) => ({ prep: p.prep, field: p.r.vm, u: p.r.u })), { u: onModel(model, comp.out, comp.r.u, 3, r.u), scale: k }); s = { pos: c.pos, idx: c.idx, val: c.val, epos: c.epos, re: Float32Array.from(c.body, yieldOf) }; fine(); }
   else s = { ...skin(model, r.vm, { u: r.u, scale: k }), re: Float32Array.from(exposedFaces(model).elem, (e) => yieldOf(model.elemBody[e])) };
-  return { info, skin: s,
+  const flat = thermal && typeof thermal.T === "number" ? thermal.T : undefined;      // a uniform temperature is one number for every mesh
+  const probe = keep(comp ? [...comp.parts.map((p) => probeMesh(p.prep.local, { u: p.r.u, T: p.rt ? p.rt.T : flat })), probeMesh(comp.out, { u: comp.r.u, T: comp.rt ? comp.rt.T : flat })] : [probeMesh(model, { u: r.u, T: thermal ? thermal.T : undefined })], { scale: k });
+  return { info, skin: s, probe,
     result: { maxU, maxVm, nominalVm: nominalStress(model, load, r.vm), coreVm: kind === "thermo" ? coreStress(model, load, r.vm) : null, reaction: r.reaction, energy: r.energy,
       dofs: comp ? comp.dofs : r.dofs, iterations: r.iterations + (comp ? comp.iterations : 0), residual: comp ? comp.residual : r.residual, ms: r.ms + (comp ? comp.ms : 0), scale: k, ...(temps || {}),
       ...(comp ? { alone: { maxVm: r.maxVm, maxU: r.maxU } } : {}), ...(preps.length ? { zones: zoneRows(preps, comp, failed, model, r.vm, (part) => part.r.maxVm) } : {}) } };
@@ -63,7 +68,7 @@ self.onmessage = (e) => {
     for (;;) {
       try {
         const out = solve(kind, bodies, mesh, load, scale, progress, e.data.cuts, e.data.zones), s = out.skin;
-        self.postMessage({ id, ok: true, result: out.result, info: { ...out.info, dropped }, skin: s }, [s.pos.buffer, s.idx.buffer, s.val.buffer, s.epos.buffer, ...(s.re ? [s.re.buffer] : [])]);
+        self.postMessage({ id, ok: true, result: out.result, info: { ...out.info, dropped }, skin: s, probe: out.probe }, [s.pos.buffer, s.idx.buffer, s.val.buffer, s.epos.buffer, ...(s.re ? [s.re.buffer] : []), ...probeBuffers(out.probe)]);
         return;
       } catch (err) {
         // a body that touches nothing held (a small component lost by the coarse mesh) is left out, and said so

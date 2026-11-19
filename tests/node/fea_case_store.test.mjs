@@ -16,7 +16,7 @@ const set = (st) => { st.fixed = ["face:-X", { region: "place:P1", dofs: [true, 
   st.places = { "place:P1": { label: "Face 3", items: [{ kind: "face", body: 0, faceId: 3, sig: "a1b2" }], region: { any: [{ tris: new Float32Array(9000) }] }, gone: false } }; st.placeSeq = 1; st.cells = 4000; return st; };
 
 test("case : a blank case, and what a screen holds of its case", () => {
-  assert.deepEqual(CASE_KEYS, ["kind", "cells", "fsTarget", "fixed", "loads", "power", "fixedT", "conv", "thermo", "cuts", "zones", "places", "placeSeq"]);
+  assert.deepEqual(CASE_KEYS, ["kind", "cells", "fsTarget", "fixed", "loads", "power", "fixedT", "conv", "thermo", "cuts", "zones", "places", "placeSeq", "sensors"]);      // sensors : the instruments, read on a result (fea_sensors.test.mjs)
   assert.ok(isBlankCase(blankCase())); assert.ok(isBlankCase(screen()), "the target, the view, what is selected are not the case");
   const st = set(screen()), c = caseFrom(st);
   assert.deepEqual(Object.keys(c), CASE_KEYS); assert.equal(c.target, undefined); assert.equal(c.sel, undefined);

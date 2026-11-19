@@ -2,12 +2,16 @@
    The designer goes back and forth : the MODEL, grey, with its supports, loads and their labels — where the case is
    changed ; the RESULT, coloured — the last run, kept while the case is reworked and said to be « of before » until the
    next run. The result is read as a stress (or a temperature) on an adjustable scale, or as a SAFETY FACTOR against the
-   factor aimed at : red below it, then orange, blue, green. The trials of the session are listed, to see a case converge. */
+   factor aimed at : red below it, then orange, blue, green. A thermal result is also read as an INFRARED image (demande de JP) :
+   the scales of a thermal camera, no mesh, the hot spot and the cold spot marked — to be put beside the picture of the bench.
+   What the instruments read comes right under the figures. The trials of the session are listed, to see a case converge. */
 
 import { el, btn, badge, table, icon, fmt } from "../core/dom.js";
 import { VERDICT, show } from "../analysis/fea/summary.js";
 import { FS_TARGETS, FS_COLORS, fsBands, safetySummary, safetyText } from "../analysis/fea/safety.js";
 import { zonesResult } from "./fea_zones.js";
+import { sensorsResult } from "./fea_sensors.js";
+import { PALETTES, paletteOf, paletteCss, isInfrared } from "../analysis/fea/palette.js";
 
 const n = (v, d = 2) => String(Math.round(v * 10 ** d) / 10 ** d).replace(".", ",");
 const seg = (items, value, pick, label) => el("div", { class: "seg text", role: "group", "aria-label": label }, items.map(([k, text, tip, off]) => el("button", { class: "seg-btn" + (k === value ? " on" : ""), type: "button", "aria-pressed": k === value ? "true" : "false", disabled: !!off, "data-tip": tip || null, onClick: () => pick(k) }, text)));
@@ -39,9 +43,11 @@ export function resultPanel(body, o) {
     : [el("div", { class: "kpi" }, el("b", null, `${show(r.maxVm.value, 1)} MPa`), el("span", null, `Contrainte de pointe${r.nominalVm ? ` · nominale ${show(r.nominalVm.value, 1)}` : ""}`)), el("div", { class: "kpi" }, el("b", null, `${show(r.maxU.value)} mm`), el("span", null, "Déplacement maximal")),
       el("div", { class: "kpi" + (S && S.min !== null ? ` fs-${S.band}` : "") }, el("b", null, sf === null ? "—" : Number.isFinite(sf) ? show(sf, 2) : "∞"), el("span", null, `Facteur de sécurité minimal · ${n(st.fsTarget)} visé`)),
       ...(last.kind === "thermo" ? [el("div", { class: "kpi" }, el("b", null, `${show(r.maxT.value, 1)} °C`), el("span", null, r.minT.value === r.maxT.value ? "Température uniforme" : `Température, de ${show(r.minT.value, 1)} °C`))] : [])])));
+  { const inst = o.sensors ? sensorsResult(o.sensors) : null; if (inst) body.append(inst); }      // what the instruments read : what one came for, right under the figures
   { const zones = zonesResult(r.zones, thermal); if (zones) body.append(zones); }      // a group of its own      // what each refinement zone found, against the model alone
   /* what the colours of the view mean : a stress on a scale, or the safety factor against the one aimed at */
-  const sec = el("div", { class: "side-section" }, el("h3", null, "Ce que les couleurs montrent"));
+  const sec = el("div", { class: "side-section" }, el("h3", null, "Ce que les couleurs montrent")), scale = thermal && PALETTES[st.palette] ? st.palette : "rainbow", P = paletteOf(scale);
+  if (thermal) sec.append(seg(Object.entries(PALETTES).map(([k, p]) => [k, p.ir ? `IR · ${p.label}` : p.label, p.ir ? `Vue infrarouge, échelle ${p.label} (${p.fr}) : le résultat se lit comme l'image d'une caméra thermique — sans maillage, point chaud et point froid marqués` : `${p.label} (${p.fr}) : l'échelle d'un calcul, du bleu au rouge, avec le maillage`]), scale, (k) => { st.palette = k; o.repaint(); }, "Vue thermique"));
   if (!thermal) sec.append(seg([["stress", "Contrainte", "Contrainte de von Mises, en MPa"], ["fs", "Facteur de sécurité", "Limite élastique du matériau sur la contrainte, en chaque point"]], st.quantity === "fs" ? "fs" : "stress", (k) => { st.quantity = k; o.repaint(); }, "Grandeur affichée"));
   if (!thermal && st.quantity === "fs") {
     const input = el("input", { type: "number", min: 1, max: 20, step: 0.05, value: st.fsTarget, "aria-label": "Facteur de sécurité visé", onChange: (e) => { const v = parseFloat(e.target.value); if (v >= 1 && v <= 20) { st.fsTarget = v; o.saveCase(); o.repaint(); } } });
@@ -52,12 +58,13 @@ export function resultPanel(body, o) {
     const [d0, d1] = last.data, span = (d1 - d0) || 1, clampV = (x) => Math.min(d1, Math.max(d0, x));
     const lo = el("input", { type: "number", step: "any", value: +last.range[0].toPrecision(4), "aria-label": "Bas de l'échelle" }), hi = el("input", { type: "number", step: "any", value: +last.range[1].toPrecision(4), "aria-label": "Haut de l'échelle" });
     const sLo = el("input", { type: "range", min: 0, max: 1000, value: Math.round(1000 * (last.range[0] - d0) / span), "aria-label": "Bas de l'échelle (curseur)" }), sHi = el("input", { type: "range", min: 0, max: 1000, value: Math.round(1000 * (last.range[1] - d0) / span), "aria-label": "Haut de l'échelle (curseur)" });
-    const out = el("p", { class: "muted small" }), tell = () => { out.textContent = last.range[0] > d0 || last.range[1] < d1 ? `Résultat de ${show(d0, 1)} à ${show(d1, 1)} ${unit}. Hors échelle : au-dessus en magenta, en dessous en gris.` : `Échelle automatique : tout le résultat, de ${show(d0, 1)} à ${show(d1, 1)} ${unit}.`; };
+    const out = el("p", { class: "muted small" }), tell = () => { out.textContent = last.range[0] > d0 || last.range[1] < d1 ? `Résultat de ${show(d0, 1)} à ${show(d1, 1)} ${unit}. Hors échelle : au-dessus en ${P.overFr}, en dessous en ${P.underFr}.` : `Échelle automatique : tout le résultat, de ${show(d0, 1)} à ${show(d1, 1)} ${unit}.`; };
     const setRange = (a, b, from) => { if (!(b > a)) return; last.range = [a, b]; if (from !== "n") { lo.value = +a.toPrecision(4); hi.value = +b.toPrecision(4); } if (from !== "s") { sLo.value = Math.round(1000 * (clampV(a) - d0) / span); sHi.value = Math.round(1000 * (clampV(b) - d0) / span); } o.repaint(true); tell(); };
     lo.addEventListener("input", () => setRange(parseFloat(lo.value), last.range[1], "n")); hi.addEventListener("input", () => setRange(last.range[0], parseFloat(hi.value), "n"));
     sLo.addEventListener("input", () => setRange(d0 + span * Math.min(+sLo.value, +sHi.value - 5) / 1000, last.range[1], "s")); sHi.addEventListener("input", () => setRange(last.range[0], d0 + span * Math.max(+sHi.value, +sLo.value + 5) / 1000, "s"));
     tell();
-    sec.append(el("div", { class: "bc-row" }, el("small", { class: "grow" }, `Échelle (${unit})`), btn("Auto", () => setRange(d0, d1), { small: true, icon: "refresh", tip: "Revenir à l'échelle qui couvre tout le résultat" })), el("div", { class: "fea-legend" }, lo, el("i"), hi), el("div", { class: "fea-scale" }, sLo, sHi), out);
+    sec.append(el("div", { class: "bc-row" }, el("small", { class: "grow" }, `Échelle (${unit})`), btn("Auto", () => setRange(d0, d1), { small: true, icon: "refresh", tip: "Revenir à l'échelle qui couvre tout le résultat" })), el("div", { class: "fea-legend" }, lo, el("i", { style: { background: paletteCss(scale) } }), hi), el("div", { class: "fea-scale" }, sLo, sHi), out);
+    if (isInfrared(scale)) sec.append(el("p", { class: "muted small" }, "Vue infrarouge : la température calculée de la surface, sur l'échelle d'une caméra thermique. Ce n'est pas une image de caméra simulée — ni émissivité, ni reflets, ni résolution du capteur. Pour la comparer à une vraie image, donnez à l'échelle le même bas et le même haut que sur la caméra."));
   }
   if (!thermal) sec.append(el("p", { class: "muted small" }, `Déformée amplifiée ${fmt(r.scale, 0)} fois.`));
   body.append(sec);

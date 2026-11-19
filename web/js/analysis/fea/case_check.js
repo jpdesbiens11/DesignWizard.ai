@@ -51,4 +51,4 @@ export function caseIssues(st, o = {}) {
   return out.sort((a, b) => ORDER[a.level] - ORDER[b.level]);
 }
 /** The entries that must be dealt with before a run. */
-export const blocking = (list) => (list || []).filter((x) => x.level === "error" || x.level === "todo");
+export const blocking = (list) => (list || []).filter((x) => (x.level === "error" || x.level === "todo") && !x.soft);      // soft : what waits is not the run (an instrument : its reading)

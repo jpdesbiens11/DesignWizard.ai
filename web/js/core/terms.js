@@ -20,6 +20,8 @@ import { NATURES, INSTRUMENTS } from "../pcba/lab_bench.js";
 import { MODEL_WORDS } from "../cad/connector_series.js";
 import { RULE_TITLES } from "../analysis/dfx_titles.js";
 import { MODELS } from "../analysis/physics/index.js";
+import { SENSOR_KINDS, ROSETTE } from "../analysis/fea/sensors.js";
+import { PALETTES } from "../analysis/fea/palette.js";
 
 export const TERM_GROUPS = [
   { id: "process", label: "Procédés", hint: "comment la pièce se fabrique", icon: "cast", color: "#ee8a32" },
@@ -29,7 +31,7 @@ export const TERM_GROUPS = [
   { id: "interface", label: "Interfaces et assemblage", hint: "ce qui tient, positionne et relie", icon: "interface", color: "#25ad9f" },
   { id: "electrical", label: "Électrique", hint: "revêtements, contacts, capteurs, isolants", icon: "chip", color: "#46b97c" },
   { id: "finish", label: "Finitions et marquage", hint: "l'aspect, les étiquettes", icon: "palette", color: "#b45309" },
-  { id: "analysis", label: "Calculs analytiques", hint: "le nom de chaque modèle de calcul", icon: "ruler", color: "#2563eb" },
+  { id: "analysis", label: "Calculs et simulation", hint: "le nom de chaque modèle de calcul, les instruments de la simulation", icon: "ruler", color: "#2563eb" },
   { id: "rules", label: "Règles DFx, DFA et carte", hint: "ce que chaque règle vérifie", icon: "interface", color: "#64748b" },
 ];
 /* the words of the mold : [English, French, what it is] */
@@ -57,6 +59,10 @@ const LAB_TERMS = [["Functional test plan", "plan de test fonctionnel", "les ess
   ["Cut-off frequency", "fréquence de coupure", "là où le gain a perdu 3 dB"], ["Rise time", "temps de montée", "de 10 % à 90 % d'un front"], ["Hysteresis", "hystérésis", "l'écart entre le seuil à la montée et le seuil à la descente"], ["Debounce", "anti-rebond", "ce qui fait d'un contact qui rebondit un seul front"], ["Dead time", "temps mort", "l'instant où les deux interrupteurs d'un demi-pont sont ouverts"],
   ["Pull-up", "résistance de rappel", "ce qui tient une ligne à l'état haut quand personne ne la tire"], ["Acknowledge (ACK)", "acquittement", "le bit par lequel un composant I²C répond"], ["Dominant / recessive", "dominant / récessif", "les deux états d'un bus CAN ou LIN"], ["Flyback diode", "diode de roue libre", "ce qui laisse le courant d'une bobine s'éteindre"]];
 
+/* the words of the instruments of the simulation and of its infrared view : [English, French, what it is] */
+const FEA_TERMS = [["Uniaxial", "uniaxiale", "une jauge à une grille : une seule direction"], ["Microstrain (µε)", "microdéformation (µm/m)", "un millionième : un micromètre par mètre"], ["Infrared (IR)", "infrarouge (IR)", "un résultat thermique lu comme l'image d'une caméra thermique"],
+  ["Hot spot / cold spot", "point chaud / point froid", "le maximum et le minimum, marqués dans la vue infrarouge"]];
+
 /** The tables a term comes from : every entry carries `label` (English) and `fr`. For the tests, and for the next brick. */
 export const TERM_TABLES = { MODEL_WORDS, PROCESSES, INTERFACE_TYPES, ADHESIVES, WELD_PROCESSES, PLATINGS, CONTACT_FORMS, CONTACT_BASES, STOCK_FORMS, SHOP_VERBS, AM_PROCESSES, LASER_FAMILIES, ENDS, INSULATIONS, LABEL_KINDS, FINISHES };
 
@@ -76,6 +82,8 @@ export function glossary() {
   all("finish", FINISHES, "finition du rendu"); all("finish", LABEL_KINDS, "étiquette"); all("finish", PATTERNS, "camouflage, motif d'une pièce à l'écran"); all("finish", SHEENS, "finition à l'écran"); all("finish", LIGHT_KINDS, "lumière du studio photo"); all("finish", LIGHT_SETUPS, "éclairage du studio photo");
   for (const m of MATERIALS) if (m.fr) add("stock", m.name, m.fr, "matière");
   for (const m of Array.isArray(MODELS) ? MODELS : Object.values(MODELS)) add("analysis", m.title, m.fr, "modèle de calcul");
+  all("analysis", SENSOR_KINDS, "instrument de la simulation"); add("analysis", ROSETTE.label, ROSETTE.fr, "jauge à trois grilles : les déformations principales et leur direction");
+  all("analysis", PALETTES, (p) => (p.ir ? "échelle de couleurs d'une caméra infrarouge" : "échelle de couleurs d'un calcul")); for (const [en, fr, note] of FEA_TERMS) add("analysis", en, fr, note);
   add("analysis", "Refinement zone", "zone de raffinement", "simulation : un volume où les cubes du maillage sont plus petits"); add("analysis", "Mesh refinement", "raffinement du maillage", "simulation"); add("analysis", "Tied node (hanging node)", "nœud lié (nœud suspendu)", "simulation : un nœud fin, au bord d'une zone, qui suit le cube sur lequel il repose");
   for (const [fr, en] of Object.entries(RULE_TITLES)) add("rules", en, fr, /^(Short|Net-to|Trace|Unrouted|Drill|Insufficient annular|Holes too|Via|Component|Under the|Unplaced|Solder|Through-hole|Fiducials|Polarized|Bill|Decoupling|Test access|Board thickness|Four|Heavy|Large|Mounting|High voltage|Conformal|Coating|Tests before|Power net|Block|Unconnected|IC |Two sources|Inconsistent|Function|Single-pin|Net name|Insufficient voltage|Missing)/.test(en) ? "règle de carte" : "règle DFx");
   const order = TERM_GROUPS.map((g) => g.id);

@@ -3,7 +3,8 @@
    Now the cases of a part or an assembly are in the file of the project — one entry per document, holding the case IN USE and,
    beside it, the other cases kept under a name (demande de JP : « plusieurs cas de charge nommés par pièce ») :
      project.cases = [{ id (the part or the assembly), name?, kind, cells, fsTarget, fixed, loads, power, fixedT, conv, thermo,
-                        cuts, zones, places, placeSeq, others?: [{ name, …the same keys }], at? }]
+                        cuts, zones, places, placeSeq, sensors, others?: [{ name, …the same keys }], at? }]
+   `sensors` : the instruments put on the product (sensors.js) — they are read on a result and change nothing in the calculation.
    `name` is the name of the case in use (« Cas 1 » when nobody named it) ; `at` is its place among the others, so that the list
    keeps its order whichever case is in use. One is always in use — a case is a living document, not a snapshot : what the screen
    changes goes to it, the others wait as they were left. A file written before the names reads as before : one case, « Cas 1 ».
@@ -12,7 +13,7 @@
 
 const clone = (x) => JSON.parse(JSON.stringify(x));
 /** The case of a model nobody has set yet. */
-export const blankCase = () => ({ kind: "structure", cells: 3000, fsTarget: 1.5, fixed: [], loads: [], power: [], fixedT: [], conv: { on: true, h: 10, Tamb: 25 }, thermo: { uniform: true, T: 80, Tref: 20 }, cuts: [], zones: [], places: {}, placeSeq: 0 });
+export const blankCase = () => ({ kind: "structure", cells: 3000, fsTarget: 1.5, fixed: [], loads: [], power: [], fixedT: [], conv: { on: true, h: 10, Tamb: 25 }, thermo: { uniform: true, T: 80, Tref: 20 }, cuts: [], zones: [], places: {}, placeSeq: 0, sensors: [] });
 export const CASE_KEYS = Object.keys(blankCase());
 
 /** The case a screen state holds, as it is written : a copy, without the working marks of the screen — what a place was found to
@@ -27,6 +28,8 @@ export function caseFrom(st) {
 export const isBlankCase = (st) => JSON.stringify(caseFrom(st)) === JSON.stringify(blankCase());
 /** Do two states hold the same case ? */
 export const sameCase = (a, b) => JSON.stringify(caseFrom(a)) === JSON.stringify(caseFrom(b));
+/** Do two states ask the solver for the same thing ? Their instruments may differ : a sensor is read on the result, it is not solved. */
+export const sameSolve = (a, b) => JSON.stringify({ ...caseFrom(a), sensors: 0 }) === JSON.stringify({ ...caseFrom(b), sensors: 0 });
 /** The case kept for a part or an assembly — a copy, or null. */
 export function caseOf(project, id) { const c = ((project && project.cases) || []).find((x) => x.id === id); return c ? clone(c) : null; }
 /** Puts a case into the state of the screen (null : a blank one) ; what the state holds besides — its target, its view — is left. */
@@ -100,5 +103,5 @@ export function dropCase(project, id, st, name) {
 export function caseNote(c) {
   if (!c) return "";
   const part = (list, one, many) => { const n = (list || []).length, off = (list || []).filter((x) => x && x.off).length; return n ? `${n} ${n > 1 ? many : one}${off ? ` (${off} à Off)` : ""}` : ""; };
-  return [part(c.fixed, "appui", "appuis"), part(c.loads, "effort", "efforts"), part(c.power, "source", "sources"), part(c.fixedT, "température", "températures"), part(c.zones, "zone", "zones"), part(c.cuts, "plan", "plans")].filter(Boolean).join(" · ");
+  return [part(c.fixed, "appui", "appuis"), part(c.loads, "effort", "efforts"), part(c.power, "source", "sources"), part(c.fixedT, "température", "températures"), part(c.zones, "zone", "zones"), part(c.cuts, "plan", "plans"), ...[["temp", "capteur", "capteurs"], ["gauge", "jauge", "jauges"]].map(([k, one, many]) => part((c.sensors || []).filter((s) => s && s.kind === k), one, many))].filter(Boolean).join(" · ");
 }

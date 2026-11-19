@@ -16,7 +16,7 @@ export function casesSection(o) {
     el("h3", null, el("span", { class: "grow" }, `Cas de charge (${list.length})`), btn("", () => o.add(), { small: true, icon: "plus", tip: "Nouveau cas : une copie du cas en cours sous un autre nom — changez-y un effort, un appui ou le maillage, et comparez" })));
   for (const x of list) {
     sec.append(el("div", { class: "nav-item variant case" + (x.on ? " active" : ""), role: "button", tabindex: "0", "data-case": x.name, "aria-current": x.on ? "true" : null,
-      "data-tip": x.on ? `${x.name} — le cas en cours : ce que vous changez va dans ce cas` : `${x.name} — passer à ce cas (${x.note || "rien de posé"}) ; le cas en cours est gardé tel qu'il est`,
+      "data-tip": x.on ? `${x.name} — le cas en cours${x.note ? ` (${x.note})` : ""} : ce que vous changez va dans ce cas` : `${x.name} — passer à ce cas (${x.note || "rien de posé"}) ; le cas en cours est gardé tel qu'il est`,
       onClick: () => { if (!x.on) o.use(x.name); }, onKeydown: (e) => { if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); e.currentTarget.click(); } } },
       mark(x.on), el("span", { class: "grow bc-text" }, el("span", null, x.name), el("small", null, x.on ? `en cours${x.note ? ` · ${x.note}` : ""}` : x.note || "rien de posé")),
       el("button", { class: "icon-btn", type: "button", "aria-label": `Renommer le cas ${x.name}`, "data-tip": "Renommer ce cas", style: { fontSize: ".95rem" }, onClick: (e) => { e.stopPropagation(); o.rename(x.name); } }, icon("edit")),
