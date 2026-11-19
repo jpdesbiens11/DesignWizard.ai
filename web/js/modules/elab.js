@@ -13,8 +13,9 @@ import { resolveBoard } from "../pcba/model.js";
 import { LIBRARY } from "../pcba/library.js";
 import { BLOCKS, BLOCK_CATEGORIES } from "../pcba/blocks.js";
 import { NATURES, blockTests, eng } from "../pcba/lab_bench.js";
-import { testSheet, boardSheets, sheetJobs, jobSheet, expectedText, gapText, labPlanDoc, labGuide, labOf, setReading, setSkip, skipped, verdict, labStatus, testKey } from "../pcba/lab_plan.js";
+import { testSheet, boardSheets, boardSheet, sheetJobs, jobSheet, expectedText, gapText, labPlanDoc, labGuide, labOf, setReading, setSkip, skipped, verdict, labStatus, testKey } from "../pcba/lab_plan.js";
 import { labBoard, scope, bode } from "./elab_view.js";
+import { boardTests, BOARD_KEY } from "../pcba/lab_board.js";
 import { docx } from "../core/docx.js";
 import { pdfDoc } from "../core/pdfdoc.js";
 import { toDwiz } from "../core/dwiz.js";
@@ -50,16 +51,17 @@ function render(main, args) {
   const blocks = () => (board().blocks || []).filter((b) => BLOCKS[b.template]), refsOf = (b) => Object.fromEntries((board().parts || []).filter((p) => p.block === b.id && p.local).map((p) => [p.local, p.ref]));
   const boardHost = el("div", { class: "lab-board-host" }), bar = el("div", { class: "lab-bar" }), scopes = el("div", { class: "lab-scopes" }), veil = busyVeil(view); view.append(boardHost, bar, scopes);
   const pcb = labBoard(boardHost); let S1 = null, S2 = null, BD = null, stateNodes = [];
-  const key = () => (st.block && st.test ? testKey(st.block, st.test) : null), cur = () => blocks().find((b) => b.id === st.block) || null;
+  const key = () => (st.block && st.test ? testKey(st.block, st.test) : null), whole = () => st.block === BOARD_KEY, cur = () => (whole() ? { id: BOARD_KEY, whole: true } : blocks().find((b) => b.id === st.block) || null);
+  const testsOf = (b) => (!b ? [] : b.whole ? boardTests(board()) : blockTests(b.template));
   /* the net of the board that a net of the block is : found through a pin they share */
   const netOf = (b, built, local) => { const refs = refsOf(b), n = built.nets.find((x) => x.name === local); if (!n) return null; for (const pin of n.pins) { const dot = pin.indexOf("."), ref = refs[pin.slice(0, dot)]; if (!ref) continue; const bn = (board().nets || []).find((x) => (x.pins || []).includes(`${ref}.${pin.slice(dot + 1)}`)); if (bn) return bn.name; } return null; };
   function frame() {
-    const s = st.sheet, R = s && s.result, b = cur(); if (!R || !b) return { parts: {}, nets: {}, states: [] }; const refs = refsOf(b), out = { parts: {}, nets: {}, states: [] };
+    const s = st.sheet, R = s && s.result, b = cur(); if (!R || !b) return { parts: {}, nets: {}, states: [] }; const mine = b.whole ? null : refsOf(b), refs = mine || new Proxy({}, { get: (_, k) => k }), out = { parts: {}, nets: {}, states: [], quiet: !!b.whole };
     if (R.kind === "tran") { const q = Math.min(R.frames - 1, Math.round(st.q * (R.frames - 1)));
       for (const [local, a] of Object.entries(R.activity)) if (refs[local]) out.parts[refs[local]] = a.a[q];
-      for (const [local, n] of Object.entries(R.nets)) { const bn = st.netMap[local]; if (bn) out.nets[bn] = n.pp > 1e-3 ? n.a[q] : Math.abs(n.mean) > 0.05 ? 0.22 : 0; }
+      for (const [local, n] of Object.entries(R.nets)) { const bn = b.whole ? local : st.netMap[local]; if (bn) out.nets[bn] = n.pp > 1e-3 ? n.a[q] : Math.abs(n.mean) > 0.05 ? 0.22 : 0; }
       out.states = R.states.map((x) => ({ ref: refs[x.part], kind: x.kind, label: x.label, ...x.at(q) })).filter((x) => x.ref); }
-    else for (const p of R.built ? R.built.parts : []) if (refs[p.id]) out.parts[refs[p.id]] = R.kind === "ac" ? 0.3 + 0.5 * Math.abs(Math.sin(st.q * Math.PI * 6)) : 0.25;
+    else for (const p of R.built && !b.whole ? R.built.parts : []) if (refs[p.id]) out.parts[refs[p.id]] = R.kind === "ac" ? 0.3 + 0.5 * Math.abs(Math.sin(st.q * Math.PI * 6)) : 0.25;
     return out;
   }
   function paint() {
@@ -71,10 +73,10 @@ function render(main, args) {
   function tick(now) { if (!st.alive) return; if (st.playing && st.sheet && st.sheet.result.kind !== "none") { const dt = st.last ? Math.min(0.1, (now - st.last) / 1000) : 0; st.q += (dt * st.speed) / 5; if (st.q > 1) st.q = 0; paint(); } st.last = now; st.raf = requestAnimationFrame(tick); }
   /* runs the test of the block on the simulated bench — under the veil, for the longer ones */
   function run() {
-    const b = cur(); if (!b || !st.test) return; veil.set(`Essai simulé : ${BLOCKS[b.template].name}…`, {}); setStatus("Simulation…", "busy");
-    setTimeout(() => { if (!st.alive) return; let sheet = null; try { sheet = testSheet(b.template, st.test, b.params || {}, { refs: refsOf(b), name: `${b.name || BLOCKS[b.template].name} (${b.id})` }); } catch (e) { toast(`Essai : ${e.message}`, "error", 8000); }
-      veil.set(""); if (!sheet) { setStatus("Essai impossible", "error"); return; } st.sheet = { ...sheet, blockId: b.id }; st.q = 0; st.netMap = Object.fromEntries(sheet.result.built.nets.map((n) => [n.name, netOf(b, sheet.result.built, n.name)]));
-      setStatus(sheet.ok ? "Essai simulé" : "Essai non abouti", sheet.ok ? "done" : "error"); pcb.show(resolveBoard(board(), LIBRARY), { focus: new Set(Object.values(refsOf(b))) }); centre(); renderRight(); renderLeft(); paint(); tell(); }, 30);
+    const b = cur(); if (!b || !st.test) return; veil.set(`Essai simulé : ${b.whole ? "la carte entière" : BLOCKS[b.template].name}…`, {}); setStatus("Simulation…", "busy");
+    setTimeout(() => { if (!st.alive) return; let sheet = null; try { sheet = b.whole ? boardSheet(board(), st.test) : testSheet(b.template, st.test, b.params || {}, { refs: refsOf(b), name: `${b.name || BLOCKS[b.template].name} (${b.id})` }); } catch (e) { toast(`Essai : ${e.message}`, "error", 8000); }
+      veil.set(""); if (!sheet) { setStatus("Essai impossible", "error"); return; } st.sheet = { ...sheet, blockId: b.id }; st.q = 0; st.netMap = b.whole ? {} : Object.fromEntries(sheet.result.built.nets.map((n) => [n.name, netOf(b, sheet.result.built, n.name)]));
+      setStatus(sheet.ok ? "Essai simulé" : "Essai non abouti", sheet.ok ? "done" : "error"); pcb.show(resolveBoard(board(), LIBRARY), b.whole ? {} : { focus: new Set(Object.values(refsOf(b))) }); centre(); renderRight(); renderLeft(); paint(); tell(); }, 30);
   }
   function centre() {
     const R = st.sheet && st.sheet.result; clear(scopes); clear(bar); S1 = S2 = BD = null; if (!R) return;
@@ -91,7 +93,7 @@ function render(main, args) {
       const k = key(), L = labOf(board()); for (const r of s.rows) { const x = L.readings.find((q) => q.test === k && q.what === r.label); if (x && verdict(r, x.value) === "out") out.unshift({ level: "warn", text: `${s.title} — « ${r.label} » : ${eng(x.value, r.unit)} mesuré, hors de la plage attendue (${r.band.text}).`, field: "lab", go: () => { st.tab = "read"; renderRight(); const f = right.querySelector(`[data-read="${CSS.escape(r.label)}"]`); if (f) nudge(f); } }); } }
     return out; };
   const tell = () => setGuide(guide());
-  function pick(blockId, testId) { st.block = blockId; const b = cur(), tests = b ? blockTests(b.template) : []; st.test = testId && tests.some((t) => t.id === testId) ? testId : (["dynamic", "bus", "function", "frequency"].map((n) => tests.find((t) => t.nature === n)).find(Boolean) || tests.find((t) => !t.noSim && t.nature !== "power") || tests[0] || {}).id || null; st.playing = true; renderLeft(); run(); }
+  function pick(blockId, testId) { st.block = blockId; const b = cur(), tests = testsOf(b); if (b && b.whole && !testId && tests.length) testId = tests[0].id; st.test = testId && tests.some((t) => t.id === testId) ? testId : (["dynamic", "bus", "function", "frequency"].map((n) => tests.find((t) => t.nature === n)).find(Boolean) || tests.find((t) => !t.noSim && t.nature !== "power") || tests[0] || {}).id || null; st.playing = true; renderLeft(); run(); }
   /* the plan : every test of the board is simulated, one at a time — the veil says which, and « Annuler » stops between two */
   async function plan(kind) {
     try { const b = board(), jobs = sheetJobs(b), pause = () => new Promise((ok) => setTimeout(ok, 0));
@@ -122,10 +124,11 @@ function render(main, args) {
       el("div", { class: "side-actions" }, btn("Plan de test (.docx)", () => plan("docx"), { primary: true, small: true, icon: "download", tip: "Le plan de test fonctionnel de la carte : une fiche par essai — comprendre, puis faire — au gabarit des documents" }), btn("PDF", () => plan("pdf"), { small: true, icon: "pdf", tip: "Le même plan, en PDF" })));
     const scroll = el("div", { class: "side-scroll" }); left.append(scroll);
     if (boards.length > 1) scroll.append(el("div", { class: "side-section", "data-fold-note": String(boards.length) }, el("h3", null, "La carte"), boards.map((x) => el("a", { class: "nav-item" + (x.id === id ? " active" : ""), href: `#/elab/${encodeURIComponent(x.id)}` }, icon("chip"), el("span", { class: "grow" }, x.name || x.id)))));
-    scroll.append(el("div", { class: "side-section", "data-box": "block", "data-fold-note": b ? b.name || BLOCKS[b.template].name : "à choisir" }, el("h3", null, "Le bloc à l'essai"),
+    scroll.append(el("div", { class: "side-section", "data-box": "block", "data-fold-note": !b ? "à choisir" : b.whole ? "la carte entière" : b.name || BLOCKS[b.template].name }, el("h3", null, "Le bloc à l'essai"),
+      boardTests(board()).length ? [el("p", { class: "ft-label rd-group", style: "--dom:#0f172a" }, "Ensemble"), el("div", { class: "cf-tiles lab-blocks" }, tile({ sel: whole(), color: "#0f172a", label: "La carte entière", small: "tous les blocs reliés", tip: "Les blocs simulés ensemble, reliés par les nets de la carte : l'alimentation de laboratoire à l'entrée, chaque rail né du précédent", pic: icon("pcb", "lab-cat"), data: { "data-block": BOARD_KEY }, run: () => pick(BOARD_KEY) }))] : null,
       all.length ? BLOCK_CATEGORIES.filter((c) => all.some((x) => BLOCKS[x.template].category === c)).map((c) => [el("p", { class: "ft-label rd-group", style: `--dom:${CAT[c][0]}` }, c), el("div", { class: "cf-tiles lab-blocks" }, all.filter((x) => BLOCKS[x.template].category === c).map((x) => tile({ sel: x.id === st.block, color: CAT[c][0], label: x.name || BLOCKS[x.template].name, small: x.id, tip: BLOCKS[x.template].desc, pic: icon(CAT[c][1], "lab-cat"), data: { "data-block": x.id }, run: () => pick(x.id) })))])
         : el("p", { class: "atelier-hint" }, icon("info"), " Cette carte n'a pas encore de bloc : ajoutez-en dans le PCBA.")));
-    if (b) { const tests = blockTests(b.template);
+    if (b) { const tests = testsOf(b);
       scroll.append(el("div", { class: "side-section", "data-box": "test", "data-fold-note": `${tests.length}` }, el("h3", null, "L'essai"), tests.length ? el("div", { class: "lab-tests" }, tests.map((t) => { const N = NATURES.find((n) => n.id === t.nature), k = testKey(b.id, t.id), off = skipped(board(), k);
         return el("div", { class: `lab-test${t.id === st.test ? " sel" : ""}${off ? " off" : ""}`, style: `--dom:${N.color}`, "data-test": t.id }, onOff(!off, (on) => store.updateBoard(id, (x) => { x.lab = setSkip(x, k, !on); }, `Essai ${on ? "repris dans" : "mis de côté du"} plan`), t.title, off ? "Cet essai est de côté : il n'est pas dans le plan — cliquer pour le reprendre" : "Cet essai est dans le plan — cliquer pour le mettre de côté"),
           el("button", { class: "lab-test-name", type: "button", "aria-pressed": t.id === st.test ? "true" : "false", onClick: () => pick(b.id, t.id) }, naturePic(t.nature), el("span", null, el("b", null, t.title), el("small", null, `${N.label} — ${N.fr}`)))); })) : el("p", { class: "atelier-hint" }, icon("info"), " Aucun essai n'est écrit pour ce bloc.")));
@@ -141,7 +144,7 @@ function render(main, args) {
     if (!s) { body.append(el("p", { class: "atelier-hint" }, icon("info"), " Choisissez un bloc, à gauche : son essai se joue ici.")); return; }
     const sec = (title, note, ...kids) => { const x = el("div", { class: "side-section", "data-fold-note": note }, el("h3", null, title), ...kids.flat().filter(Boolean)); body.append(x); return x; }, R = s.result, k = key(), L = labOf(board()), note = L.notes.filter((n) => n.test === k);
     if (st.tab === "sheet") {
-      body.append(el("p", { class: "lab-nature", style: `--dom:${s.nature.color}` }, naturePic(s.test && blockTests(s.tpl).find((t) => t.id === s.test).nature), el("span", null, el("b", null, `${s.nature.label} — ${s.nature.fr}`), el("small", null, `${s.block} · ${s.gear.map((g) => g.label).join(", ")} · ${s.minutes} min au laboratoire`))));
+      body.append(el("p", { class: "lab-nature", style: `--dom:${s.nature.color}` }, naturePic(s.nature.id), el("span", null, el("b", null, `${s.nature.label} — ${s.nature.fr}`), el("small", null, `${s.block} · ${s.gear.map((g) => g.label).join(", ")} · ${s.minutes} min au laboratoire`))));
       sec("Comprendre", "pourquoi, à quoi s'attendre", el("p", { class: "lab-why" }, el("b", null, "Pourquoi cet essai. "), s.why), el("p", { class: "lab-why" }, el("b", null, "À quoi s'attendre. "), s.expect), note.map((n) => el("p", { class: "lab-note" }, icon("sparkle"), " ", n.text)));
       if (s.setup.length) sec("Le montage", `${s.setup.length} branchement(s)`, el("ul", { class: "lab-list" }, s.setup.map((t) => el("li", null, t))));
       if (s.settings.length) sec("Les réglages", `${s.settings.length}`, el("ul", { class: "lab-list" }, s.settings.map((t) => el("li", null, t))));
@@ -149,9 +152,9 @@ function render(main, args) {
       sec("Si le résultat s'écarte", "", el("ul", { class: "lab-list" }, s.traps.map((t) => el("li", null, t))), el("p", { class: "lab-why" }, el("b", null, "À retenir. "), s.learn));
       if (s.notes.length) sec("Hypothèses de la simulation", `${s.notes.length}`, el("ul", { class: "lab-list muted" }, s.notes.map((t) => el("li", null, t))), el("p", { class: "muted small" }, "Comportements typiques : la fiche technique du composant monté fait foi. ", el("a", { href: "#/help/sources/elec" }, "Sources")));
     } else {
-      if (R.states && R.states.length) sec("États", "en direct", el("div", { class: "lab-states" }, R.states.map((x) => { const n = el("span", { class: `lab-state ${x.kind}`, "data-state-row": x.part }, el("i"), el("b", null, `${x.label} (${(refsOf(cur()) || {})[x.part] || x.part})`), " —"); stateNodes.push(n); return n; })));
+      if (R.states && R.states.length) sec("États", "en direct", el("div", { class: "lab-states" }, R.states.map((x) => { const n = el("span", { class: `lab-state ${x.kind}`, "data-state-row": x.part }, el("i"), el("b", null, `${x.label} (${(cur() && !cur().whole ? refsOf(cur()) : {})[x.part] || x.part})`), " —"); stateNodes.push(n); return n; })));
       sec("Relevés", `${s.rows.length}`, el("p", { class: "muted small" }, "« Attendu » : ce que la simulation donne avec ce montage. « Mesuré » : ce que vous lisez au vrai laboratoire — la valeur se tape dans l'unité affichée."),
-        el("div", { class: "lab-rows" }, s.rows.map((r) => { const x = L.readings.find((q) => q.test === k && q.what === r.label), U = unitOf(r.expected, r.unit), v = verdict(r, x ? x.value : null);
+        el("div", { class: "lab-rows" }, s.rows.map((r) => { const x = L.readings.find((q) => q.test === k && q.what === r.label), U = unitOf(r.ceiling ? r.band.high : r.expected, r.unit), v = verdict(r, x ? x.value : null);
           return el("div", { class: `lab-row ${v}`, "data-row": r.label }, el("b", null, r.label), r.optional ? el("small", { class: "muted" }, `Demande ${r.needs} — facultatif`) : null, el("span", { class: "lab-exp" }, r.ceiling ? "Simulé " : "Attendu ", el("strong", null, expectedText(r)), el("small", null, r.ceiling ? ` · plafond : ${r.band.text}` : ` · plage ${r.band.text}`)),
             r.design !== null && r.design !== undefined ? el("span", { class: "lab-design" }, `Calcul de conception : ${eng(r.design, r.unit)}`, r.gap !== null && Math.abs(r.gap) > 0.15 ? badge(`écart ${gapText(r.gap)}`, "warn") : null) : null,
             el("label", { class: "lab-meas" }, `Mesuré (${U.label || "—"})`, el("input", { type: "number", step: "any", value: x ? String(+(x.value * U.k).toPrecision(6)) : "", "data-read": r.label, onChange: (e) => { const raw = e.target.value.trim(), val = raw === "" ? null : Number(raw.replace(",", ".")) / U.k; store.updateBoard(id, (b) => { b.lab = setReading(b, k, r.label, val); }, `Relevé : ${r.label}`); } }), v === "ok" ? badge("conforme", "ok") : v === "out" ? badge("hors plage", "bad") : null)); })));

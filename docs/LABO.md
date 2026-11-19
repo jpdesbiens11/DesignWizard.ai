@@ -171,11 +171,39 @@ ferait un ingénieur d'essais. La réponse revient par « Réimporter… » : ap
 - **Le banc** (`makeBench`) : chaque instrument branché câble la simulation **et** écrit le journal dont la fiche
   tire son montage — le plan décrit donc exactement le montage simulé.
 
+## 6 bis. Les blocs ensemble : la carte entière
+
+Choix de JP (19 novembre 2026) : simuler la chaîne de la carte d'un seul tenant, pour que les essais d'ensemble du plan
+aient aussi leurs valeurs attendues.
+
+Dans le volet de gauche, la tuile **« La carte entière »** précède les blocs. Les circuits de tous les blocs y sont
+reliés par les nets de la carte (`web/js/pcba/lab_board.js`) : un net d'un bloc est le net de la carte qui porte l'une
+de ses broches ; ce qui reste à l'intérieur d'un bloc garde un nom à lui ; chaque élément porte la référence de sa
+pièce, si bien que ce qui s'allume est une pièce de la carte. Une seule alimentation de laboratoire, sur ce qui vient
+du dehors ; chaque rail naît du précédent (`powerTree` : entrées, puis rails dans l'ordre où la puissance voyage).
+
+Deux essais, qui terminent le plan (fiches « Carte entière », section « Essais d'ensemble ») :
+
+| Essai | Ce que l'on relève | Plage |
+|---|---|---|
+| **Mise sous tension de la carte entière** | la tension de chaque rail ; le temps d'établissement du dernier rail ; le courant d'entrée, carte au repos | rails : ± 5 % ; temps et courant : un plafond (le courant simulé est un plancher) |
+| **Montée et baisse lentes de la tension d'entrée** | la tension d'entrée à laquelle chaque rail régulé s'établit, puis lâche | ± 15 % : ce sont des seuils de comportements typiques |
+
+Sur la carte de démonstration : 24 V, 5 V et 3,3 V établis ; le 5 V s'établit et lâche vers 5,2 V d'entrée (sa sortie
+divisée par le rapport cyclique le plus grand du régulateur), le 3,3 V vers 4,5 V (mise en marche typique du
+régulateur à découpage) — le rail le plus bas arrive le premier et lâche le dernier.
+
+Ce que cette simulation ne fait pas, et que l'écran comme la fiche disent : le **programme du microcontrôleur ne
+tourne pas** — ses broches ne commandent rien, une entrée de transceiver laissée seule est tenue au repos par son
+rappel interne ; le courant de repos des circuits intégrés n'est pas là ; un bloc qui n'a pas encore ses composants
+sur la carte est laissé de côté, et c'est dit.
+
 ## 7. Ce qui est vérifié, ce qui ne l'est pas
 
 - **Vérifié par les tests** (`tests/node/lab.test.mjs`) : le solveur contre des réponses exactes (pont diviseur,
   constante de temps RC, coupure RC, bobine RL, résonance RLC, diode, gain et saturation d'un amplificateur) ; les 88
-  essais des 44 blocs tournent et donnent des mesures finies ; les valeurs clés rejoignent le calcul de conception
+  essais des 44 blocs tournent et donnent des mesures finies ; les blocs de la carte de démonstration reliés entre eux
+  donnent ses trois rails, et le régulateur tient sa sortie à la moitié de sa tension d'entrée nominale ; les valeurs clés rejoignent le calcul de conception
   du bloc (ou l'écart est expliqué) ; les fiches, le document Word et PDF, les plages, les relevés et leur verdict,
   l'aller-retour `.dwiz` du bloc `lab`.
 - **Essayé dans Chromium** sur la carte de démonstration : ouverture depuis la barre du haut et depuis le PCBA,
@@ -189,8 +217,9 @@ ferait un ingénieur d'essais. La réponse revient par « Réimporter… » : ap
 
 ## 8. Limites
 
-- Un bloc à la fois : les blocs ne sont pas simulés ensemble, et la section « Essais d'ensemble » du plan n'a pas de
-  valeurs simulées.
+- Les blocs se simulent ensemble pour deux essais de la carte au repos (§ 6 bis) ; les liaisons de signal entre blocs
+  — bus, entrées analogiques, sorties — n'ont pas de valeurs simulées d'ensemble : le programme du microcontrôleur
+  ne tourne pas. Le plan en garde la liste à suivre de bout en bout.
 - Pas de résistance série des condensateurs, pas d'inductance des pistes, pas de bruit, pas de dérive en
   température des semi-conducteurs, pas de rayonnement. Le courant de repos des circuits intégrés n'est pas simulé.
 - Euler implicite amortit ce qui oscille vite : un dépassement réel peut être plus fort que le simulé.

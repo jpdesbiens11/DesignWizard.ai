@@ -47,7 +47,7 @@ export function labBoard(host) {
       for (const [ref, p] of parts) { const a = frame.parts && frame.parts[ref]; p.body.style.fill = a === undefined || a < 0.02 ? "" : heat(a); p.body.style.fillOpacity = a === undefined || a < 0.02 ? "" : String(0.35 + 0.65 * a); p.halo.setAttribute("opacity", "0"); p.g.classList.remove("on"); }
       tags.replaceChildren();
       for (const s of frame.states || []) { const p = parts.get(s.ref); if (!p) continue; if (s.on) { p.g.classList.add("on"); if (s.kind === "led") { p.halo.style.fill = LED[s.color] || LED.verte; p.halo.setAttribute("opacity", "0.75"); p.body.style.fill = LED[s.color] || LED.verte; p.body.style.fillOpacity = "1"; } }
-        if (!s.on && ["clamp", "switch", "reg", "switching", "sound"].includes(s.kind)) continue;                // what does nothing just now is not written over the board
+        if (!s.on && (frame.quiet || ["clamp", "switch", "reg", "switching", "sound"].includes(s.kind))) continue;                // what does nothing just now is not written over the board
         const r = root.getBoundingClientRect(), k = Math.min(r.width / vb[2], r.height / vb[3]), ox = (r.width - vb[2] * k) / 2, oy = (r.height - vb[3] * k) / 2, cx = ox + ((p.box[0] + p.box[2]) / 2 - vb[0]) * k, cy = oy + (-p.box[3] - vb[1]) * k;
         tags.append(el("span", { class: `lab-tag ${s.kind}${s.on ? " on" : ""}`, style: `left:${cx}px;top:${cy}px`, "data-state": s.ref }, el("i"), el("b", null, s.label), ` ${s.text}`)); }
     },

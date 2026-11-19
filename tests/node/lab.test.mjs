@@ -6,13 +6,14 @@ import { readFileSync } from "node:fs";
 import { waveAt, dcOp, transient, acSweep, measure, frequency, riseTime, cutoff, gainAt, pwmShare } from "../../web/js/pcba/lab_mna.js";
 import { parseValue, siValue, family, ntcOhms, blockCircuit, i2cWrite, uartFrame, I2C_ADDR } from "../../web/js/pcba/lab_devices.js";
 import { NATURES, INSTRUMENTS, eng, blockTests, testedBlocks, runTest } from "../../web/js/pcba/lab_bench.js";
-import { knob, timeBase, expectedText, gapText, channelSetting, band, SAFETY, SAFETY_HV, testSheet, boardSheets, sheetJobs, jobSheet, labSummary, labPlanDoc, labGuide, labOf, setReading, setSkip, skipped, verdict, labStatus, testKey } from "../../web/js/pcba/lab_plan.js";
+import { knob, timeBase, expectedText, gapText, channelSetting, band, SAFETY, SAFETY_HV, testSheet, boardSheet, boardSheets, sheetJobs, jobSheet, labSummary, labPlanDoc, labGuide, labOf, setReading, setSkip, skipped, verdict, labStatus, testKey } from "../../web/js/pcba/lab_plan.js";
 import { BLOCKS, blockParams } from "../../web/js/pcba/blocks.js";
 import { demoBoard } from "../../web/js/demo/demo_pcba.js";
 import { docx } from "../../web/js/core/docx.js";
 import { pdfDoc } from "../../web/js/core/pdfdoc.js";
 import { toDwiz, fromDwiz } from "../../web/js/core/dwiz.js";
 import { boardSummary } from "../../web/js/pcba/summary.js";
+import { boardCircuit, powerTree, boardTests, runBoardTest, BOARD_KEY } from "../../web/js/pcba/lab_board.js";
 import { METHODS, METHOD_HOW } from "../../web/js/core/methods.js";
 import { glossary } from "../../web/js/core/terms.js";
 
@@ -127,7 +128,7 @@ test("the plan : a sheet for the one who does the test ; knobs, bands, safety", 
 
 test("the plan of a board : in the order of the bench, as a document, with the house template", () => {
   const board = demoBoard(), sheets = boardSheets(board); assert.ok(sheets.length >= 20); assert.deepEqual(sheets.slice(0, 3).map((s) => s.id), ["E-01", "E-02", "E-03"]); assert.ok(sheets.every((s) => s.ok));
-  const cat = sheets.map((s) => BLOCKS[s.tpl].category), order = ["Raccorder", "Protéger", "Alimenter", "Calculer", "Mesurer", "Commander", "Communiquer", "Signaler", "Tester"]; assert.deepEqual(cat, [...cat].sort((a, b) => order.indexOf(a) - order.indexOf(b)), "what feeds is tested before what thinks");
+  const cat = sheets.filter((s) => !s.board).map((s) => BLOCKS[s.tpl].category), order = ["Raccorder", "Protéger", "Alimenter", "Calculer", "Mesurer", "Commander", "Communiquer", "Signaler", "Tester"]; assert.deepEqual(cat, [...cat].sort((a, b) => order.indexOf(a) - order.indexOf(b)), "what feeds is tested before what thinks");
   const buck = sheets.find((s) => s.tpl === "buck" && s.test === "ripple"); assert.match(buck.refs, /U\d+/); assert.doesNotMatch(buck.setup.join(" "), / de (CIN|COUT1)\b/, "the parts are named as on the board");
   const doc = labPlanDoc(board, { date: new Date("2026-11-19"), sheets }), text = doc.blocks.map((b) => [b.text, ...(b.items || []).map((i) => (typeof i === "string" ? i : i.text)), ...(b.rows || []).flat()].filter((x) => typeof x === "string").join(" ")).join("\n");
   assert.equal(doc.reference, `${board.id}-PTF`); assert.match(doc.title, /Plan de test fonctionnel/);
@@ -136,6 +137,45 @@ test("the plan of a board : in the order of the bench, as a document, with the h
   const meta = { kind: "Plan de test fonctionnel", project: "Essai" }, w = docx({ ...doc, ...meta }), p = pdfDoc({ ...doc, ...meta }); assert.ok(w.length > 100000 && w[0] === 0x50 && w[1] === 0x4b, "a Word file"); assert.ok(p.length > 100000 && String.fromCharCode(...p.slice(0, 5)) === "%PDF-", "a PDF file"); assert.match(read("web/js/core/pdfdoc.js"), /const wide = b\.ordered && b\.items\.length > 9 \? 1\.9 : 0;/, "a tenth step keeps its number clear of its text");
   assert.deepEqual(labGuide({ blocks: [] }).map((g) => g.level), ["todo"]); assert.ok(labGuide(board).some((g) => /typiques/.test(g.text))); assert.ok(labGuide({ blocks: board.blocks, nets: [{ name: "HV", class: "hv", voltage: 400 }] }).some((g) => g.level === "warn" && /50 V/.test(g.text)));
   assert.ok(labPlanDoc({ ...board, nets: [...board.nets, { name: "HVDC", class: "hv", voltage: 400, pins: [] }] }, { sheets }).blocks.some((b) => b.type === "h2" && /tension dangereuse/.test(b.text)), "a board with a dangerous voltage gets its own rules");
+});
+
+test("the blocks of a board, simulated together : joined by the nets of the board, each rail born of the one before", () => {
+  const board = demoBoard(), C = boardCircuit(board), ids = C.els.map((e) => e.id), refs = new Set(board.parts.map((p) => p.ref));
+  assert.equal(new Set(ids).size, ids.length, "every element has a name of its own"); assert.ok(ids.filter((id) => refs.has(id.split(":")[0])).length > 40, "an element is named by the reference of its part"); assert.equal(C.nets.GND, "0"); assert.equal(C.nets["+5V"], "+5V"); assert.equal(C.blocks.length, board.blocks.length);
+  for (const e of C.els) for (const k of ["a", "b", "k", "o", "p", "n"]) if (typeof e[k] === "string") assert.ok(e[k] === "0" || board.nets.some((n) => n.name === e[k]) || /^B\d+:/.test(e[k]) || /^(PS|LOAD)_/.test(e[k]), `${e.id}.${k} = ${e[k]} : a net of the board, or a name of its block`);
+  const T = powerTree(board); assert.deepEqual(T.inputs, [{ net: "+24V_IN", volts: 24 }]); assert.deepEqual(T.rails.map((r) => [r.net, r.volts, r.by]), [["+24V", 24, "B2"], ["+5V", 5, "B3"], ["+3V3", 3.3, "B4"]], "the rails, in the order the power travels");
+  /* a block that has no part on the board yet is left out, and said */
+  const bare = { ...board, parts: board.parts.filter((p) => p.block !== "B8") }, Cb = boardCircuit(bare); assert.equal(Cb.blocks.length, board.blocks.length - 1); assert.ok(Cb.notes.some((n) => /^B8 : ce bloc n'a pas encore ses composants/.test(n)));
+  assert.deepEqual(boardTests(board).map((t) => [t.id, t.nature]), [["powerup", "power"], ["thresholds", "static"]]); for (const t of boardTests(board)) { assert.ok(t.why.length > 80 && t.learn.length > 40 && typeof t.expect === "function"); for (const g of t.gear) assert.ok(INSTRUMENTS[g]); }
+  assert.deepEqual(boardTests({ blocks: [], nets: [], parts: [] }), [], "nothing to try together on a board that makes no rail"); assert.equal(runBoardTest(board, "nope").ok, false);
+
+  const R = runBoardTest(board, "powerup"), val = (X, re) => X.measures.find((m) => re.test(m.label)); assert.ok(R.ok && R.board && R.kind === "tran");
+  for (const [re, v] of [[/rail \+24V/, 24], [/rail \+5V/, 5], [/rail \+3V3/, 3.3]]) { const m = val(R, re); assert.ok(near(m.value, v, 0.02), `${m.label} : ${m.value}`); assert.equal(m.design, v); }
+  const cur = val(R, /Courant d'entrée/); assert.ok(cur.value > 2e-3 && cur.value < 0.05 && cur.under === 0.1, `idle current ${cur.value} : above what the regulators take themselves, under half the limit`); const settle = val(R, /Temps d'établissement de \+3V3/); assert.ok(settle.value > 0 && settle.value < 5e-3 && settle.under === 0.05);
+  assert.ok(Object.keys(R.activity).length > 20 && Object.keys(R.activity).every((k) => refs.has(k)), "what lights up is a part of the board"); assert.ok(R.nets["+5V"] && R.nets["+3V3"] && near(R.nets["+5V"].max, 5, 0.1), "and a net of the board");
+  const sw = R.states.find((x) => x.kind === "switching"); assert.ok(sw && refs.has(sw.part) && sw.at(R.frames - 1).on !== undefined); assert.ok(R.notes.some((n) => /programme du microcontrôleur ne tourne pas/.test(n)) && R.notes.some((n) => /^U\d+ : découpage/.test(n)), "the assumptions are said with the references of the board");
+  assert.deepEqual(R.log.filter((e) => e.instr === "supply").map((e) => [e.to, e.v, e.ilim]), [["+24V_IN", 24, 0.2]], "one supply, on what comes from outside");
+
+  const H = runBoardTest(board, "thresholds"), up5 = val(H, /\+5V s'établit/).value, up3 = val(H, /\+3V3 s'établit/).value, dn5 = val(H, /\+5V lâche/).value, dn3 = val(H, /\+3V3 lâche/).value;
+  assert.ok(H.ok && H.measures.length === 4 && H.measures.every((m) => m.tol === 0.15), "thresholds of typical behaviours : a wide band"); assert.ok(up5 > 4.9 && up5 < 5.9 && dn5 > 4.9 && dn5 < 5.9, `the 5 V rail needs its output over its largest duty : ${up5}, ${dn5}`); assert.ok(up3 >= 4.4 && up3 <= up5 && dn3 >= 4.2 && dn3 < dn5, `the lowest rail comes first and lets go last : ${up3}, ${dn3}`);
+  /* a regulator follows its input at once : half the nominal input, the rail is still right */
+  const vin = H.sim.v["+24V_IN"], v5 = H.sim.v["+5V"], k = vin.findIndex((x) => x >= 12); assert.ok(near(v5[k], 5, 0.03), `at 12 V in, +5V = ${v5[k]}`);
+});
+
+test("the plan ends on the board as a whole : the same sheet, said on the nets of the board", () => {
+  const board = demoBoard(), jobs = sheetJobs(board), last = jobs.slice(-2); assert.deepEqual(last.map((j) => [j.id, j.blockId, j.test]), [["E-25", BOARD_KEY, "powerup"], ["E-26", BOARD_KEY, "thresholds"]]); assert.ok(!board.blocks.some((b) => b.id === BOARD_KEY));
+  const s = jobSheet(last[0]); assert.ok(s.ok && s.board && s.blockId === BOARD_KEY); assert.equal(s.block, "Carte entière"); assert.equal(s.id, "E-25");
+  assert.match(s.setup.join("\n"), /Alimentation de laboratoire : le \+ sur \+24V_IN — broche \d+ du connecteur J\d+/); assert.match(s.setup.join("\n"), /voie 2 : sonde ×10 sur \+3V3 — point de test TP\d+/, "a rail is probed on its test point"); assert.match(s.settings.join("\n"), /Alimentation de \+24V_IN : 24 V, limite de courant 200 mA/);
+  assert.equal(s.rows.length, 5); assert.match(s.rows.find((r) => /Courant d'entrée/.test(r.label)).band.text, /^moins de 100 mA$/); assert.match(s.expect, /peut passer un instant en limitation/); assert.match(s.steps.join("\n"), /Une limitation d'un instant, le temps de charger les condensateurs, est normale/);
+  const h = boardSheet(board, "thresholds"); assert.deepEqual(h.gearIds, ["supply", "dmm"]); assert.doesNotMatch([...h.setup, ...h.settings, ...h.steps, ...h.traps].join("\n"), /[Oo]scilloscope|sonde ×10/, "a sweep by hand is read with a multimeter"); assert.match(h.steps.join("\n"), /par pas de 1 V depuis zéro/); assert.match(h.rows[0].band.text, /V à .* V$/); assert.equal(boardSheet(board, "nope"), null);
+  const sheets = boardSheets(board), doc = labPlanDoc(board, { sheets }), heads = doc.blocks.filter((b) => b.type === "h1" || b.type === "h2").map((b) => b.text), at = heads.findIndex((t) => /Essais d'ensemble/.test(t));
+  assert.equal(doc.sheets.length, 26); assert.deepEqual(heads.slice(at + 1, at + 3).map((t) => t.slice(0, 22)), ["E-25 — Carte entière :", "E-26 — Carte entière :"], "the two sheets of the whole board are in « Essais d'ensemble »"); assert.ok(heads.findIndex((t) => /^E-24 /.test(t)) < at && heads.findIndex((t) => /^E-01 /.test(t)) < at);
+  assert.ok(doc.blocks.some((b) => b.type === "p" && /blocs sont reliés par les nets de la carte/.test(b.text)));
+  /* a reading of the whole board is kept like any other */
+  const key = testKey(BOARD_KEY, "powerup"), b2 = { ...board, lab: setReading(board, key, "Tension du rail +5V", 5.02) }; assert.match(toDwiz(b2), /\n {2}reading BOARD\/powerup what="Tension du rail \+5V" value=5\.02\n/); assert.deepEqual(labOf(fromDwiz(toDwiz(b2))), labOf(b2)); assert.equal(labStatus(b2, sheets).rows.find((r) => r.key === key).state, "part");
+  assert.match(labSummary(board).text, /^26 essai\(s\) au plan/);
+  const screen = read("web/js/modules/elab.js"); assert.match(screen, /data: \{ "data-block": BOARD_KEY \}, run: \(\) => pick\(BOARD_KEY\)/); assert.match(screen, /b\.whole \? boardSheet\(board\(\), st\.test\) : testSheet\(/); assert.match(screen, /b\.whole \? local : st\.netMap\[local\]/);
+  assert.doesNotMatch(read("web/js/pcba/lab_board.js"), /\bdocument\.[a-zA-Z]|\bwindow\.[a-zA-Z]|\bfetch\(/, "pure");
 });
 
 test("what the lab keeps on a board : readings, tests set aside, notes — and where it stands", () => {
@@ -167,7 +207,7 @@ test("wiring : the screen plays the test on the board and on two oscilloscopes ;
   assert.match(read("web/js/modules/pcba.js"), /href: `#\/elab\/\$\{encodeURIComponent\(id\)\}`, "data-lab": ""/, "the PCBA opens the lab of its board"); assert.match(read("web/js/modules/report.js"), /"Labo — plan de test"/);
   assert.match(read("web/js/core/busy.js"), /if \(sig === shown && actions\.childNodes\.length === sig\.length\) return;/, "a line of progress does not take « Annuler » away from under the pointer");
   /* sources and words : said with their true level */
-  const src = Object.fromEntries(METHODS.filter((m) => m.id.startsWith("lab-")).map((m) => [m.id, m])); assert.deepEqual(Object.keys(src), ["lab-mna", "lab-devices", "lab-bus", "lab-plan"]); assert.deepEqual(Object.values(src).map((m) => m.how), ["tested", "usual", "typed", "own"]); for (const m of Object.values(src)) { assert.ok(METHOD_HOW[m.how] && m.check.length > 120 && m.doc === "docs/LABO.md" && m.where === "#/elab", m.id); }
+  const src = Object.fromEntries(METHODS.filter((m) => m.id.startsWith("lab-")).map((m) => [m.id, m])); assert.deepEqual(Object.keys(src), ["lab-mna", "lab-devices", "lab-bus", "lab-board", "lab-plan"]); assert.deepEqual(Object.values(src).map((m) => m.how), ["tested", "usual", "typed", "own", "own"]); assert.match(src["lab-board"].check, /Aucune carte réelle n'a été mesurée/); for (const m of Object.values(src)) { assert.ok(METHOD_HOW[m.how] && m.check.length > 120 && m.doc === "docs/LABO.md" && m.where === "#/elab", m.id); }
   assert.match(src["lab-devices"].check, /aucune fiche technique n'a été lue/); assert.match(src["lab-bus"].check, /sans relecture/); assert.match(src["lab-mna"].check, /de mémoire/);
   const words = glossary().filter((r) => r.group === "electrical").map((r) => r.en); for (const w of ["Oscilloscope", "DC power supply", "Time response", "Frequency response", "Ripple", "Transfer function", "Functional test plan", "Ground spring"]) assert.ok(words.includes(w), w); assert.match(screen, /e\.key === " "/, "the space bar plays and pauses");
   assert.match(view, /heat\(a\)/); assert.match(view, /url\(#lab-glow\)/); assert.match(view, /s\.kind === "led"/); assert.match(view, /lab-air/, "a net not routed yet still shows where the current goes"); assert.doesNotMatch(view, /https?:|<img/);

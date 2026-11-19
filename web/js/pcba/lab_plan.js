@@ -11,6 +11,7 @@
 import { BLOCKS, blockParams, BLOCK_CATEGORIES } from "./blocks.js";
 import { NATURES, INSTRUMENTS, blockTests, runTest, eng } from "./lab_bench.js";
 import { measure } from "./lab_mna.js";
+import { boardTests, runBoardTest, BOARD_KEY } from "./lab_board.js";
 
 const fr = (x, d = 3) => String(+(+x).toPrecision(d)).replace(".", ",");
 /** The next value of the 1 – 2 – 5 series at or above x : the steps of every knob of an instrument. */
@@ -33,6 +34,7 @@ export function band(m) {
   if (Number.isFinite(m.under)) return { low: -m.under, high: m.under, text: `moins de ${eng(m.under, m.unit)}` };
   /* a supply current at power-up : the integrated circuits take a quiescent current the model does not have — 10 mA are left for it */
   if (m.idle) { const high = 1.2 * v + 0.01, low = v > 2e-3 ? 0.8 * v : 0; return { low: low || -high, high, text: low ? `${eng(low, m.unit)} à ${eng(high, m.unit)}` : `moins de ${eng(high, m.unit)}` }; }
+  if (m.tol) { const d = Math.abs(v) * m.tol; return { low: v - d, high: v + d, text: `${eng(v - d, m.unit)} à ${eng(v + d, m.unit)}` }; }      // a threshold of a typical behaviour : judged wider than a rail
   if (m.swing) { const d = Math.abs(v) * 0.25; return { low: Math.max(0, v - d), high: v + d, text: `${eng(Math.max(0, v - d), m.unit)} à ${eng(v + d, m.unit)}` }; }      // a width — never negative, judged by its own size
   const rel = m.unit === "V" ? 0.05 : m.unit === "A" ? 0.2 : m.unit === "s" || m.unit === "Hz" ? 0.25 : 0.1, floor = m.unit === "V" ? 0.05 : m.unit === "A" ? 2e-4 : 0, d = Math.max(Math.abs(v) * rel, floor);
   if (Math.abs(v) < d * 0.02) return { low: -d, high: d, text: `0 ${m.unit} ± ${eng(d, m.unit)}` };      // nothing, to within what an instrument reads
@@ -67,8 +69,23 @@ function accessOf(built, refOf) {
     → { id, title, nature, block, why, expect, gear, setup: [text], settings: [text], steps: [text], rows: [{ label, expected, band, design, gap }], table, traps: [text], learn, notes, minutes, result } */
 export function testSheet(tpl, testId, given = {}, o = {}) {
   const T = BLOCKS[tpl], R = runTest(tpl, testId, given), test = R.test; if (!T || !test) return null;
-  const P = R.P || blockParams(T, given), built = R.built || T.build(P), refOf = (local) => (o.refs && o.refs[local]) || local, where = accessOf(built, refOf), N = NATURES.find((n) => n.id === test.nature), setup = [], settings = [], steps = [], scoped = test.gear.includes("scope"), gen = (R.log || []).some((e) => e.instr === "generator" || e.instr === "logic");
-  const refs = built.parts.map((p) => refOf(p.id)).join(", ");
+  const P = R.P || blockParams(T, given), built = R.built || T.build(P), refOf = (local) => (o.refs && o.refs[local]) || local;
+  return sheetFrom(R, test, accessOf(built, refOf), { id: o.id, tpl, P, name: o.name || T.name, refs: built.parts.map((p) => refOf(p.id)).join(", ") });
+}
+/** Where one reaches a net of the board : a connector pin, a test point, or the lead of a part. */
+function boardAccess(board) {
+  return (name) => { if (name === "GND" || name === "0") return "la masse de la carte (GND)"; const net = (board.nets || []).find((n) => n.name === name); if (!net || !(net.pins || []).length) return `le signal ${name}`;
+    const pick = net.pins.find((p) => /^TP/.test(p)) || net.pins.find((p) => /^J\d/.test(p)) || net.pins.find((p) => /^(R|C)\d/.test(p)) || net.pins[0], [ref, pin] = pick.split(".");      // a test point is made for a probe ; an input has only its connector
+    return `${name} — ${/^J/.test(ref) ? `broche ${pin} du connecteur ${ref}` : /^TP/.test(ref) ? `point de test ${ref}` : `patte ${pin} de ${ref}`}`; };
+}
+/** The sheet of a test of the WHOLE board (pcba/lab_board.js) : the same sheet, its set-up said on the nets of the board. */
+export function boardSheet(board, testId, o = {}) {
+  const R = runBoardTest(board, testId), test = R.test; if (!test) return null;
+  return { ...sheetFrom(R, test, boardAccess(board), { id: o.id, tpl: null, P: {}, name: "Carte entière", refs: "toute la carte" }), blockId: BOARD_KEY, board: true };
+}
+/* a sheet, from what a run gave : R (the result), test, where(name) → how to reach a signal, o : { id, tpl, P, name, refs } */
+function sheetFrom(R, test, where, o) {
+  const P = o.P || {}, tpl = o.tpl, refs = o.refs, N = NATURES.find((n) => n.id === test.nature), setup = [], settings = [], steps = [], scoped = test.gear.includes("scope"), gen = (R.log || []).some((e) => e.instr === "generator" || e.instr === "logic");
   for (const e of R.log || []) {
     const ref = e.ref && e.ref !== "GND" ? where(e.ref) : "la masse (GND)";
     if (e.instr === "supply") { setup.push(`Alimentation de laboratoire : le + sur ${where(e.to)}, le − sur ${ref}.${e.note ? ` (${e.note}.)` : ""}`); settings.push(`Alimentation de ${e.to} : ${e.v !== null ? `${fr(e.v)} V` : "voir la note du montage"}${e.ilim ? `, limite de courant ${eng(e.ilim, "A")}` : ""} — réglée SORTIE COUPÉE.`); }
@@ -89,11 +106,12 @@ export function testSheet(tpl, testId, given = {}, o = {}) {
   else {
     steps.push("Vérifiez le montage sur le schéma de la fiche, instrument par instrument, AVANT d'alimenter. Faites-le relire par quelqu'un la première fois.", "Sortie de l'alimentation coupée : réglez la tension et la limite de courant indiquées. Court-circuitez brièvement les cordons pour vérifier que la limite agit, si l'alimentation n'affiche pas sa consigne.");
     if (gen) steps.push("Réglez le générateur SANS le relier à la carte, et vérifiez son signal à l'oscilloscope : amplitude, décalage, fréquence. Coupez sa sortie.");
-    steps.push("Activez la sortie de l'alimentation en regardant l'afficheur de courant. S'il part en limitation : COUPEZ, et cherchez un court-circuit avant toute autre chose.");
+    steps.push("Activez la sortie de l'alimentation en regardant l'afficheur de courant. Une limitation d'un instant, le temps de charger les condensateurs, est normale ; si elle dure plus d'une seconde : COUPEZ, et cherchez un court-circuit avant toute autre chose.");
     if (gen) steps.push("Reliez le générateur, activez sa sortie.");
     if (R.kind === "tran" && !scoped) steps.push("Posez les pointes du multimètre comme indiqué — la noire d'abord, sur la masse —, et attendez que la lecture se stabilise.");
     if (R.kind === "tran" && scoped) steps.push("Réglez l'oscilloscope comme indiqué ; ajustez la base de temps jusqu'à voir deux ou trois cycles, ou l'événement entier.", "Comparez ce que montre l'écran à ce que la fiche annonce sous « À quoi s'attendre ». Faites une capture d'écran : elle ira dans le compte rendu.");
     if (R.kind === "ac") steps.push("À chaque fréquence : notez l'amplitude crête à crête de l'entrée ET de la sortie ; le gain est leur rapport. L'amplitude d'entrée bouge un peu avec la fréquence : on la relit à chaque point.", "Tracez les points sur un papier log – log (ou dans un tableur) : la coupure est là où le gain a perdu 3 dB — il vaut 0,71 fois sa valeur des basses fréquences.");
+    for (const x of test.steps || []) steps.push(x);
     for (const m of R.measures) steps.push(m.needs ? `« ${m.label} » demande ${m.needs} : sans elle, laissez la case vide — la valeur attendue est donnée pour comprendre ce qui se passe.` : `Relevez « ${m.label} » et inscrivez la valeur dans le tableau.`);
     if (R.table) steps.push(`Recommencez pour chaque valeur de « ${R.table.label} » du second tableau${/Température/.test(R.table.label) ? " : air chaud ou bombe de froid sur le composant, thermocouple collé à côté, attendre que la lecture se stabilise" : ""}.`);
     steps.push(`${gen ? "Coupez le générateur, puis l'alimentation" : "Coupez la sortie de l'alimentation"}. Attendez que les tensions soient retombées avant de décâbler.`);
@@ -104,7 +122,7 @@ export function testSheet(tpl, testId, given = {}, o = {}) {
     ...(R.kind === "ac" ? ["Le gain mesuré est trop bas à toutes les fréquences : l'entrée est peut-être chargée par le générateur — relisez l'amplitude d'entrée SUR la carte, pas sur l'afficheur du générateur."] : []),
     ...(test.nature === "bus" ? ["Aucune réponse : vérifiez d'abord l'alimentation du composant, puis les rappels, puis l'adresse ; un bus ne se dépanne pas à l'analyseur avant d'avoir regardé ses niveaux à l'oscilloscope."] : []),
     "La valeur est hors de la plage : notez-la telle quelle, refaites la mesure une fois, puis comparez les pièces montées à la nomenclature (une résistance d'une décade trop haute donne exactement ce genre d'écart)."];
-  return { id: o.id || "", tpl, test: test.id, title: test.title, nature: N, block: o.name || T.name, refs, why: test.why, expect: R.expect || test.expect, gear: test.gear.map((g) => INSTRUMENTS[g]), gearIds: test.gear, setup, settings, steps, rows, table: R.table || null, traps, learn: test.learn, notes: R.notes || [], minutes: MINUTES[test.nature] || 15, result: R, ok: R.ok };
+  return { id: o.id || "", tpl, test: test.id, title: test.title, nature: N, block: o.name, refs, why: test.why, expect: R.expect || test.expect, gear: test.gear.map((g) => INSTRUMENTS[g]), gearIds: test.gear, setup, settings, steps, rows, table: R.table || null, traps, learn: test.learn, notes: R.notes || [], minutes: MINUTES[test.nature] || 15, result: R, ok: R.ok };
 }
 /* the order one tests a board in : what feeds first, then what thinks, what measures, what drives, what talks, what signals */
 const ORDER = ["Raccorder", "Protéger", "Alimenter", "Calculer", "Mesurer", "Commander", "Communiquer", "Signaler", "Tester"];
@@ -115,10 +133,11 @@ export function boardSheets(board) { return sheetJobs(board).map(jobSheet).filte
 export function sheetJobs(board) {
   const blocks = (board.blocks || []).filter((b) => BLOCKS[b.template]).sort((a, b) => ORDER.indexOf(BLOCKS[a.template].category) - ORDER.indexOf(BLOCKS[b.template].category)), out = [];
   for (const b of blocks) { const refs = Object.fromEntries((board.parts || []).filter((p) => p.block === b.id && p.local).map((p) => [p.local, p.ref])); for (const t of blockTests(b.template)) out.push({ id: `E-${String(out.length + 1).padStart(2, "0")}`, blockId: b.id, tpl: b.template, test: t.id, title: t.title, name: `${b.name || BLOCKS[b.template].name} (${b.id})`, params: b.params || {}, refs }); }
+  for (const t of boardTests(board)) out.push({ id: `E-${String(out.length + 1).padStart(2, "0")}`, blockId: BOARD_KEY, board, test: t.id, title: t.title, name: "Carte entière" });      // last : the blocks together, once each one is right
   return out;
 }
 /** The sheet of one of those : the test is simulated here. */
-export function jobSheet(job) { const s = testSheet(job.tpl, job.test, job.params, { refs: job.refs, name: job.name, id: job.id }); return s ? { ...s, blockId: job.blockId } : null; }
+export function jobSheet(job) { if (job.board) return boardSheet(job.board, job.test, { id: job.id }); const s = testSheet(job.tpl, job.test, job.params, { refs: job.refs, name: job.name, id: job.id }); return s ? { ...s, blockId: job.blockId } : null; }
 /** Where the lab of a board stands, WITHOUT simulating anything — for a report : { tests, off, measured (tests with a reading), readings, notes, text }. */
 export function labSummary(board) {
   const jobs = sheetJobs(board), L = labOf(board), keys = new Set(jobs.map((j) => testKey(j.blockId, j.test))), off = jobs.filter((j) => skipped(board, testKey(j.blockId, j.test))).length, readings = L.readings.filter((r) => keys.has(r.test)), measured = new Set(readings.map((r) => r.test)).size, notes = L.notes.filter((n) => keys.has(n.test)).length;
@@ -147,20 +166,23 @@ export function labPlanDoc(board, o = {}) {
   p("On avance comme le courant : d'abord ce qui protège et alimente, puis ce qui calcule, ce qui mesure, ce qui commande, ce qui communique. Un essai ne se commence que si ceux d'avant sont conformes.");
   out.push({ type: "table", head: ["N°", "Bloc", "Essai", "Nature", "Durée"], widths: [8, 30, 36, 16, 10], rows: sheets.map((s) => [s.id, s.block, s.title, s.nature.fr, `${s.minutes} min`]) });
   sec("Fiches d'essai");
-  for (const s of sheets) {
+  const card = (s) => {
     out.push({ type: "pagebreak" }); h2(`${s.id} — ${s.block} : ${s.title}`);
-    out.push({ type: "kv", rows: [["Nature", `${s.nature.label} — ${s.nature.fr}`], ["Pièces du bloc", s.refs || "—"], ["Instruments", s.gear.map((g) => g.label).join(", ") || "—"], ["Durée", `${s.minutes} min`]] });
+    out.push({ type: "kv", rows: [["Nature", `${s.nature.label} — ${s.nature.fr}`], [s.board ? "Pièces" : "Pièces du bloc", s.refs || "—"], ["Instruments", s.gear.map((g) => g.label).join(", ") || "—"], ["Durée", `${s.minutes} min`]] });
     h3("Comprendre"); p(`Pourquoi cet essai. ${s.why}`); p(`À quoi s'attendre. ${s.expect}`);
     h3("Faire"); if (s.setup.length) { p("Le montage :", "muted"); list(s.setup); } if (s.settings.length) { p("Les réglages :", "muted"); list(s.settings); } p("Les étapes :", "muted"); list(s.steps, true);
     out.push({ type: "table", caption: "Relevés", head: ["Mesure", "Attendu", "Plage acceptée", "Calcul de conception", "Mesuré", "Conforme"], widths: [30, 13, 19, 14, 13, 11], rows: s.rows.map((r) => [r.optional ? `${r.label} (${r.needs})` : r.label, expectedText(r), r.band.text, r.design !== null && r.design !== undefined ? `${eng(r.design, r.unit)}${r.gap !== null && Math.abs(r.gap) > 0.15 ? ` (écart ${gapText(r.gap)})` : ""}` : "—", "", "oui / non"]) });
     if (s.table) out.push({ type: "table", caption: `Selon ${s.table.label.toLowerCase()}`, head: [`${s.table.label} (${s.table.unit})`, `${s.table.rows[0].col} — attendu`, "Mesuré"], widths: [34, 33, 33], rows: s.table.rows.map((r) => [fr(r.x), eng(r.y, r.unit), ""]) });
     h3("Si le résultat s'écarte"); list(s.traps);
     p(`À retenir. ${s.learn}`); for (const t of s.notes) p(`Hypothèse de la simulation — ${t}`, "muted");
-  }
-  out.push({ type: "pagebreak" }); sec("Essais d'ensemble");
+  };
+  for (const s of sheets) if (!s.board) card(s);
+  out.push({ type: "pagebreak" }); sec("Essais d'ensemble"); const whole = sheets.filter((s) => s.board);
   p("Une fois chaque bloc conforme, on les essaie ensemble, alimentés par la carte elle-même et non plus par le banc : c'est là que se voient les interactions — un rail qui plonge quand un moteur démarre, une mesure que le découpage bruite.");
+  if (whole.length) p(`${whole.length === 1 ? "La fiche qui suit a ses" : `Les ${whole.length} fiches qui suivent ont leurs`} valeurs attendues d'une simulation où les blocs sont reliés par les nets de la carte, l'alimentation de laboratoire à l'entrée. Le programme du microcontrôleur n'y tourne pas : ce sont des essais de la carte au repos.`, "muted");
   const links = (board.nets || []).filter((x) => x.class !== "ground" && new Set((x.pins || []).map((q) => ((board.parts || []).find((pp) => pp.ref === q.split(".")[0]) || {}).block).filter(Boolean)).size > 1).slice(0, 24);
   if (links.length) out.push({ type: "table", caption: "Liaisons entre blocs à suivre de bout en bout", head: ["Signal", "Relie", "Vérifié"], widths: [26, 60, 14], rows: links.map((x) => [x.name, [...new Set((x.pins || []).map((q) => { const part = (board.parts || []).find((pp) => pp.ref === q.split(".")[0]), b = part && (board.blocks || []).find((k) => k.id === part.block); return b ? b.name || b.id : null; }).filter(Boolean))].join(" → "), ""]) });
+  for (const s of whole) card(s);
   list(["Alimentez la carte par son entrée normale, limite de courant réglée sur sa consommation prévue plus un quart.", "Refaites le relevé de chaque rail : il ne doit pas avoir bougé depuis l'essai du bloc seul.", "Faites agir chaque sortie de puissance en regardant, à l'oscilloscope, le rail qui alimente le microcontrôleur : pas de creux de plus de 5 %.", "Laissez la carte fonctionner trente minutes à pleine charge, puis relevez la température des composants de puissance."], true);
   sec("Feuille de résultats");
   out.push({ type: "table", head: ["N°", "Essai", "Conforme", "Remarque"], widths: [8, 50, 12, 30], rows: sheets.map((s) => [s.id, `${s.block} — ${s.title}`, "", ""]) });
