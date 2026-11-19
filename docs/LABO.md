@@ -97,6 +97,11 @@ Le plan s'adresse à quelqu'un qui apprend le métier :
      et couplage de chaque voie, base de temps, déclenchement), les étapes une à une, et le tableau des relevés avec
      une case « Mesuré » et une case « Conforme ».
    - **Si le résultat s'écarte** — où chercher —, **À retenir**, et les **hypothèses de la simulation**.
+
+   Une fiche est écrite pour les instruments de son essai : un essai « au multimètre » dit où poser la pointe rouge
+   et la pointe noire, et ne parle ni d'oscilloscope ni de déclenchement ; le générateur n'est cité que s'il y en a
+   un. Un relevé qui demande un instrument que l'on n'a pas toujours — l'ondulation du courant dans une inductance
+   demande une sonde de courant — est donné pour comprendre, marqué facultatif, et la fiche est complète sans lui.
 7. **Essais d'ensemble** — la carte entière, une fois chaque bloc conforme.
 8. **Feuille de résultats** et signatures.
 
