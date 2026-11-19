@@ -194,6 +194,12 @@ Report template (short; the conclusion first):
   enough: measure.
 - **Say on what**: which browser, which screen, which data. And what was not tried — touch, another browser, the
   published site if it sits behind a sign-in.
+- **Look as well, with your own eye**: a robot measures boxes, it does not see that one button covers another. A
+  screenshot at the smallest window one aims for, looked at as the person will see it, catches what the measure
+  lets through. *Reason: a bar covered at 1366 px had passed every measure.*
+- **Read what the tool produces as its reader will**: a document, a sheet, an exported file is opened and read
+  page by page before it is delivered — not only "the file exists and weighs so much". *Reason: a test plan "for
+  a multimeter" spoke of an oscilloscope, and a tick box came out as "?": no test saw it.*
 - **After publishing, check what is served**, not only that the push succeeded.
 
 ## Moving forward
@@ -420,7 +426,9 @@ of the item ("Show only this part" becomes "Show all parts"). From the keyboard,
 
 Every operation that may last shows the same veil: what is being done, a line of progress, the time elapsed,
 **a word when nothing moves**, a "Cancel" button that really stops, then "Resume". The screen is never frozen
-without saying why. *New long operation: born with its veil and its cancellation.*
+without saying why. What is clicked while the screen changes **stays the same element**: a button rebuilt at each
+line of progress loses the click that straddles two lines — it is rebuilt only when its nature changes.
+*New long operation: born with its veil and its cancellation.*
 
 ## 10. Undo — established use
 

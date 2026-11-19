@@ -114,7 +114,9 @@ of the item ("Show only this part" becomes "Show all parts"). From the keyboard,
 
 Every operation that may last shows the same veil: what is being done, a line of progress, the time elapsed,
 **a word when nothing moves**, a "Cancel" button that really stops, then "Resume". The screen is never frozen
-without saying why. *New long operation: born with its veil and its cancellation.*
+without saying why. What is clicked while the screen changes **stays the same element**: a button rebuilt at each
+line of progress loses the click that straddles two lines — it is rebuilt only when its nature changes.
+*New long operation: born with its veil and its cancellation.*
 
 ## 10. Undo — established use
 

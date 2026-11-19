@@ -115,7 +115,9 @@ il s'ouvre sous la ligne.
 
 Toute opération qui peut durer montre le même voile : ce qui se fait, une ligne de progression, le temps écoulé,
 **un mot quand rien n'avance**, un bouton « Annuler » qui arrête vraiment, puis « Reprendre ». L'écran n'est jamais
-figé sans dire pourquoi. *Nouvelle opération longue : naît avec son voile et son annulation.*
+figé sans dire pourquoi. Ce qui se clique pendant que l'écran change **reste le même élément** : un bouton refait à
+chaque ligne de progression perd le clic qui chevauche deux lignes — on ne le refait que si sa nature change.
+*Nouvelle opération longue : naît avec son voile et son annulation.*
 
 ## 10. Annuler — usage établi
 

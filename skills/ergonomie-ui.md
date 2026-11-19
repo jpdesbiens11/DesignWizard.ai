@@ -194,6 +194,12 @@ Gabarit de compte rendu (court ; la conclusion d'abord) :
   pas : mesure.
 - **Dis sur quoi** : quel navigateur, quel écran, quelles données. Et ce qui n'a pas été essayé — le toucher, un
   autre navigateur, le site publié s'il est derrière une connexion.
+- **Regarde aussi, d'un œil** : un robot mesure des boîtes, il ne voit pas qu'un bouton en recouvre un autre. Une
+  capture à la plus petite fenêtre que l'on vise, regardée comme la personne la verra, attrape ce que la mesure
+  laisse passer. *Raison : une barre recouverte à 1366 px avait passé toutes les mesures.*
+- **Lis ce que l'outil produit comme son lecteur le lira** : un document, une fiche, un fichier exporté s'ouvre et
+  se lit page par page avant d'être livré — pas seulement « le fichier existe et pèse tant ». *Raison : un plan de
+  test « au multimètre » parlait d'oscilloscope, et une case à cocher sortait en « ? » : aucun test ne le voyait.*
 - **Après la publication, vérifie ce qui est servi**, pas seulement que l'envoi a réussi.
 
 ## Avancer
@@ -424,7 +430,9 @@ il s'ouvre sous la ligne.
 
 Toute opération qui peut durer montre le même voile : ce qui se fait, une ligne de progression, le temps écoulé,
 **un mot quand rien n'avance**, un bouton « Annuler » qui arrête vraiment, puis « Reprendre ». L'écran n'est jamais
-figé sans dire pourquoi. *Nouvelle opération longue : naît avec son voile et son annulation.*
+figé sans dire pourquoi. Ce qui se clique pendant que l'écran change **reste le même élément** : un bouton refait à
+chaque ligne de progression perd le clic qui chevauche deux lignes — on ne le refait que si sa nature change.
+*Nouvelle opération longue : naît avec son voile et son annulation.*
 
 ## 10. Annuler — usage établi
 
