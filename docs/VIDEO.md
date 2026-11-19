@@ -1,13 +1,13 @@
 # La vidéo de présentation
 
-Deux minutes trente-trois, entre la démonstration rapide et le film de marque : le problème (six logiciels autour d'une
-pièce), le nom, puis le chemin d'une conception — intention, pièce, assemblage, carte, physique, dessins, IA — et le nom
-de nouveau. Deux versions, **française et anglaise**, aux couleurs et sur le papier quadrillé de la plateforme.
+Deux minutes cinquante, entre la démonstration rapide et le film de marque : le problème (six logiciels autour d'une
+pièce), le nom, puis le chemin d'une conception — intention, pièce, sa famille de variantes, assemblage par modules,
+carte, physique, dessins, IA — et le nom de nouveau. Deux versions, **française et anglaise**, aux couleurs et sur le papier quadrillé de la plateforme.
 
 | | |
 |---|---|
 | En ligne | https://jpdesbiens11.github.io/DesignWizard.ai/vitrine.html#film |
-| Dans l'application | Accueil → « Voir la vidéo (2 min 33) » : une fenêtre, choix Français / English en cours de lecture |
+| Dans l'application | Accueil → « Voir la vidéo (2 min 50) » : une fenêtre, choix Français / English en cours de lecture |
 | Fichiers | `web/video/designwizard_fr.mp4`, `designwizard_en.mp4` (1280 × 720, 24 images/s, H.264), leur image d'attente `.jpg`, leurs sous-titres `.vtt` |
 | Narration à enregistrer | `docs/film/narration_fr.md`, `docs/film/narration_en.md` |
 | Storyline — l'image et la voix, deux langues côte à côte | `docs/film/storyline.md` |
@@ -21,8 +21,9 @@ Les deux phrases du film : **« La conception, sans les détours. »** / *« Des
 ## Ce que le film montre
 
 Rien qui ne soit dans l'outil : les images sont les **vrais écrans** — les captures de la présentation guidée
-(`web/img/tour`) et deux plans filmés sur l'application qui tourne (le Rover qui pivote et s'ouvre en vue éclatée ; un
-paramètre qui grimpe sous une flèche maintenue, ×1 à ×10, pendant que la pièce suit). Ce qui est **écrit** à l'écran —
+(`web/img/tour`) et trois plans filmés sur l'application qui tourne (le Rover, monté par modules, qui pivote et
+s'ouvre en vue éclatée ; un paramètre qui grimpe sous une flèche maintenue, ×1 à ×10, pendant que la pièce suit ; une
+pièce qui passe d'une variante à l'autre d'un clic). Ce qui est **écrit** à l'écran —
 titres, étiquettes, slogans — vient de la présentation guidée ; la voix, elle, raconte une histoire par-dessus (section
 suivante). Le film n'annonce rien de plus que la présentation.
 
@@ -32,12 +33,21 @@ suivante). Le film n'annonce rien de plus que la présentation.
 | 0:15 | Le nom | la marque et « La conception, sans les détours. » |
 | 0:23 | Atelier | la pièce naît de son intention |
 | 0:39 | Pièce | le paramètre sous la flèche, puis le studio et ses règles de fabrication |
-| 0:56 | Assemblage | le Rover : orbite, vue éclatée, retour |
-| 1:13 | Carte électronique | la carte, puis ses fonctions |
-| 1:27 | Physique et isolation | modèle analytique, simulation, lignes de fuite |
-| 1:46 | Dessins, revue, commande | le dessin, la revue, le dossier de commande |
-| 2:04 | Avec l'IA | l'entrevue : une tâche confiée, relue avant d'être acceptée |
-| 2:17 | Fin | logiciel libre, licence MIT ; la marque et « Moins de clics. Plus de conception. » |
+| 0:56 | Variantes | une pièce et ses cousines : un clic sur un nom, la pièce suit |
+| 1:08 | Assemblage | le Rover par modules : orbite, vue éclatée — les blocs, puis leurs pièces —, retour |
+| 1:30 | Carte électronique | la carte, puis ses fonctions |
+| 1:44 | Physique et isolation | modèle analytique, simulation, lignes de fuite |
+| 2:03 | Dessins, revue, commande | le dessin, la revue, le dossier de commande |
+| 2:21 | Avec l'IA | l'entrevue : une tâche confiée, relue avant d'être acceptée |
+| 2:34 | Fin | logiciel libre, licence MIT ; la marque et « Moins de clics. Plus de conception. » |
+
+**L'image est celle de l'outil d'aujourd'hui (v0.99).** Toutes les captures de la présentation ont été refaites et
+les trois plans filmés de nouveau : les commandes de vue sous le repère (« Libre · Table », les flèches du roulis),
+les groupes « Cas de charge » et « Variantes », le Rover en deux modules. Deux moments sont entrés dans l'histoire
+(choix de JP : « ajouter variantes et sous-assemblages à l'histoire ») : **la famille** — « Et quand il en faut
+plusieurs ? » : la même pièce sous un autre nom, et ses plans, ses fichiers, sa commande qui la suivent — et **les
+modules** — « Un produit se monte par modules : chacun se pose d'un seul bloc. » Le film passe de 2 min 33 à 2 min 50 ;
+les répliques qui n'ont pas changé sont celles déjà enregistrées, simplement posées plus tard.
 
 Les écrans de l'outil sont en français dans les deux versions ; seuls les titres, les étiquettes et la narration changent.
 Chaque plan porte la marque en haut à gauche ; la dernière carte porte la note de marque (`core/brand.js`).
@@ -177,8 +187,9 @@ node tools/film_shots.mjs http://127.0.0.1:8130 <dossier des plans>
 node tools/film_render.mjs <dossier des plans> web/video
 ```
 
-- `tools/film_shots.mjs` filme les deux plans animés (265 images) sur l'application locale. Il faut Playwright.
-- `tools/film_render.mjs` dessine les 3 672 images de chaque langue et les passe à `ffmpeg` (libx264) ; il écrit aussi
+- `tools/film_shots.mjs` filme les trois plans animés (environ 580 images) sur l'application locale ; un nom en plus
+  ne refait que ce plan. Il faut Playwright.
+- `tools/film_render.mjs` dessine les 4 080 images de chaque langue et les passe à `ffmpeg` (libx264) ; il écrit aussi
   l'image d'attente, les sous-titres `.vtt` et, dans `docs/film`, la narration. Environ trois minutes par langue.
   `--from 27 --to 36` rend un morceau pour le regarder ; `--crf` règle le poids (26 par défaut).
 - Pour regarder le film dans un navigateur sans le rendre : servir le dépôt et ouvrir
@@ -218,6 +229,12 @@ cadrage (`tools/film/script.mjs`) est à revoir, comme celui des scènes dont le
 - Vérifié dans Chromium (v0.92.0) : sur la vitrine et dans la fenêtre de l'accueil, la voix joue **et** les sous-titres
   se montrent ; l'autre langue, les deux à la fois, aucun ; le menu du lecteur ramène le choix sur les boutons ; les
   flèches du clavier ; le changement de voix dans la fenêtre. Vérifié à l'œil : des images de chaque scène.
+- Vérifié à la v0.99.0 (image refaite) : les 19 captures et les trois plans, filmés sans erreur sur l'application
+  locale ; six images du film relues à l'œil (la scène « Variantes », les quatre étiquettes de l'assemblage, le Rover
+  par modules, le calcul, le dessin) ; la durée de chaque réplique dans sa place — 23 répliques par langue sont celles
+  déjà enregistrées, 7 sont nouvelles ou redites à cause de leurs voisines ; une seule est accélérée (2 %, en anglais).
+  **Pas vérifié à la v0.99.0** : les 7 répliques nouvelles de chaque langue à l'oreille ; la lecture en ligne du film
+  refait dans un navigateur (seuls les fichiers sont contrôlés par les essais).
 - **Pas vérifié** : la nouvelle voix à l'oreille (prononciation, ton) ; la lecture dans Safari et Firefox, sur
   téléphone — en particulier deux pistes montrées à la fois, que chaque navigateur empile à sa façon ; le texte anglais
   par quelqu'un dont c'est la langue.

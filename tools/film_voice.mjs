@@ -6,7 +6,8 @@
    The key is never written here : it is read from ELEVENLABS_API_KEY and sent in the « xi-api-key » header. In a session whose network
    proxy holds the key, leave the variable unset : the proxy puts the real one in. Behind a proxy, Node wants NODE_USE_ENV_PROXY=1.
    --dry calls nobody : each line is a tone of a plausible length — the timing, the mix and the laying over are tried without a voice.
-   Each line is kept in the work folder under a name made of what produced it : a line is asked for once, a changed line again.
+   Each line is kept in the work folder under a name made of what produced it : a line is asked for once, a changed line again — and
+   a line said later because others were added before it keeps its recording (its `take`, in the timeline).
    A line longer than its room (to a breath before the next one) is sped up, at most by MAX_TEMPO ; beyond, the tool says which line to
    rewrite and stops, unless --force. The narration is text sent to ElevenLabs : nothing else of the project leaves. */
 
@@ -27,9 +28,10 @@ const MODEL = flag("--model", "eleven_multilingual_v2"), SETTINGS = { stability:
 
 /** One line said : the file of its sound, trimmed of the silence around it. */
 async function line(voice, lang, i, dir, dry) {
-  const text = CUES[i][lang], body = { text, model_id: MODEL, voice_settings: SETTINGS, seed: 5150 + i, previous_text: i ? CUES[i - 1][lang] : undefined, next_text: i + 1 < CUES.length ? CUES[i + 1][lang] : undefined };
+  const k = (CUES[i].take || i + 1) - 1;      // the number the line was first recorded under : a line added before it does not ask for it again
+  const text = CUES[i][lang], body = { text, model_id: MODEL, voice_settings: SETTINGS, seed: 5150 + k, previous_text: i ? CUES[i - 1][lang] : undefined, next_text: i + 1 < CUES.length ? CUES[i + 1][lang] : undefined };
   if (MODEL !== "eleven_multilingual_v2") body.language_code = lang;      // the multilingual v2 model reads the language from the text
-  const id = createHash("sha1").update(JSON.stringify([dry ? "dry" : voice, body])).digest("hex").slice(0, 10), raw = join(dir, `${lang}_${String(i + 1).padStart(2, "0")}_${id}.mp3`), cut = raw.replace(/\.mp3$/, ".wav");
+  const id = createHash("sha1").update(JSON.stringify([dry ? "dry" : voice, body])).digest("hex").slice(0, 10), raw = join(dir, `${lang}_${String(k + 1).padStart(2, "0")}_${id}.mp3`), cut = raw.replace(/\.mp3$/, ".wav");
   if (!existsSync(raw)) {
     if (dry) run("ffmpeg", ["-y", "-loglevel", "error", "-f", "lavfi", "-i", `sine=frequency=${200 + 12 * i}:duration=${(text.trim().split(/\s+/).length / 2.7 + 0.35).toFixed(2)}`, "-af", "volume=0.25", raw]);
     else writeFileSync(raw, Buffer.from(await (await call(`/v1/text-to-speech/${encodeURIComponent(voice)}?output_format=mp3_44100_128`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })).arrayBuffer()));

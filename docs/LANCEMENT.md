@@ -65,6 +65,9 @@ Vérifié : les règles ci-dessus, par les essais ; la fiche, relue à l'œil da
 déborde, polices incorporées) ; le montage de la bande-annonce, une image par plan ; la durée de chaque réplique dans
 son plan (aucune n'est accélérée de plus de 4 %).
 
+La bande-annonce a été recoupée du film refait à la v0.99 (écrans d'aujourd'hui, le Rover par modules) : mêmes
+répliques, nouvelle image.
+
 Pas vérifié : **la voix de la bande-annonce à l'oreille** — personne ne l'a écoutée (prononciation de
 « DesignWizard.ai », ton) ; l'anglais par quelqu'un dont c'est la langue ; l'accueil réel des textes sur un réseau ;
 la règle « les liens en premier commentaire », qui est un usage courant et non une mesure. L'image de la bande-annonce

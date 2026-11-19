@@ -89,8 +89,8 @@ The teaser is below. The demonstration and the code are in the comments.
 
 #engineering #mechatronics #design #opensource #CAD` },
   { id: "liens", where: L("Premier commentaire — les liens", "First comment — the links"), attach: L("Rien : le texte seul.", "Nothing: the text alone."),
-    fr: `La plateforme en vidéo (2 min 33) : ${LINKS.site}\nLa démonstration (accès sur demande) : ${LINKS.demo}\nLe code, sous licence MIT : ${LINKS.code}`,
-    en: `The platform on video (2 min 33): ${LINKS.site}\nThe demonstration (access on request): ${LINKS.demo}\nThe code, under the MIT licence: ${LINKS.code}` },
+    fr: `La plateforme en vidéo (2 min 50) : ${LINKS.site}\nLa démonstration (accès sur demande) : ${LINKS.demo}\nLe code, sous licence MIT : ${LINKS.code}`,
+    en: `The platform on video (2 min 50): ${LINKS.site}\nThe demonstration (access on request): ${LINKS.demo}\nThe code, under the MIT licence: ${LINKS.code}` },
   { id: "court", where: L("Réseau professionnel — le rappel, une semaine après", "Professional network — the reminder, a week later"), attach: L("La bande-annonce, ou une capture d'écran de l'assemblage.", "The teaser, or a screenshot of the assembly."),
     fr: `Une pièce commence par une question : à quoi sert-elle ?
 

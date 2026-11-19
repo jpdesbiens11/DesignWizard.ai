@@ -31,7 +31,7 @@ test("film — a screen of the platform : its pictures cover the scene, each one
       if (m.img) assert.ok(existsSync(at(`web/img/tour/${m.img}.jpg`)), `${s.id} : web/img/tour/${m.img}.jpg`); else assert.ok(new RegExp(`\\b${m.clip}\\b`).test(tool), `${s.id} : clip ${m.clip} is shot by tools/film_shots.mjs`);
       for (const f of [m.from, m.to]) { assert.equal(f.length, 3); assert.ok(f[0] >= 0 && f[0] <= 1 && f[1] >= 0 && f[1] <= 1 && f[2] >= 1 && f[2] <= 2.2, `${s.id} : framing ${f}`); }
     });
-    assert.ok(s.chips.length >= 2 && s.chips.length <= 3, s.id);
+    assert.ok(s.chips.length >= 2 && s.chips.length <= 4, s.id);
     for (const c of s.chips) { both(c, `${s.id} chip`); assert.ok(c.at > 0 && c.at < len - 2, `${s.id} : « ${c.fr} » has time to be read`); assert.ok(c.fr.length <= 40 && c.en.length <= 40, c.fr); }
   }
 });
@@ -48,7 +48,9 @@ test("film — the narration : one breath after another, sayable, and it names t
   assert.ok(CUES[CUES.length - 1].fr.endsWith("DesignWizard.ai.") && CUES[CUES.length - 1].en.endsWith("DesignWizard.ai."), "the last word of the film is its name");
   assert.equal(cueAt(1).fr, CUES[0].fr); assert.equal(cueAt(CUES[0].t1 + 0.05), null); assert.equal(cueAt(DURATION + 1), null);
   const words = (l) => CUES.reduce((n, c) => n + c[l].trim().split(/\s+/).length, 0);
-  assert.ok(words("fr") > 150 && words("fr") < 330 && words("en") > 150 && words("en") < 330, "a narration of two and a half minutes");
+  assert.ok(words("fr") > 150 && words("fr") < 380 && words("en") > 150 && words("en") < 380, "a narration of under three minutes");
+  CUES.forEach((c, i) => { if (c.take) { assert.ok(Number.isInteger(c.take) && c.take >= 1 && c.take <= i, `cue ${i + 1} : a line said later keeps the number it was first recorded under`); if (i && CUES[i - 1].take) assert.ok(c.take > CUES[i - 1].take); } });
+  assert.match(read("tools/film_voice.mjs"), /const k = \(CUES\[i\]\.take \|\| i \+ 1\) - 1;/, "the voice tool keeps the recording of a line that only moved");
 });
 
 test("film — a story, not a reading (demande de JP) : the voice never says word for word what the screen writes", () => {
@@ -80,7 +82,7 @@ test("film — subtitles and script : written from the timeline, and the files o
   assert.equal(blocks[0], "WEBVTT"); assert.equal(blocks.length, CUES.length + 1);
   assert.equal(blocks[1], `1\n00:00:00.500 --> 00:00:03.900\n${CUES[0].fr}`);
   for (const b of blocks.slice(1)) assert.match(b, /^\d+\n\d\d:\d\d:\d\d\.\d{3} --> \d\d:\d\d:\d\d\.\d{3}\n\S/);
-  assert.match(toScript("en"), /^# DesignWizard\.ai — video narration\n\nLength: 2 min 33 s\./); assert.ok(toScript("fr").includes(`**00:00.5 → 00:03.9** ${CUES[0].fr}`));
+  assert.match(toScript("en"), /^# DesignWizard\.ai — video narration\n\nLength: 2 min 50 s\./); assert.ok(toScript("fr").includes(`**00:00.5 → 00:03.9** ${CUES[0].fr}`));
   for (const l of LANGS) { assert.equal(read(`web/video/designwizard_${l}.vtt`), toVtt(l), `web/video/designwizard_${l}.vtt is out of date : render the film again`); assert.equal(read(`docs/film/narration_${l}.md`), toScript(l), `docs/film/narration_${l}.md is out of date : node tools/film_words.mjs`); }
   /* the storyline : every scene with what it writes on screen, every line of the voice in both languages */
   const story = toStoryline(); assert.equal(read("docs/film/storyline.md"), story, "docs/film/storyline.md is out of date : node tools/film_words.mjs");
@@ -90,7 +92,7 @@ test("film — subtitles and script : written from the timeline, and the files o
 });
 
 test("film — the files the site publishes : an MP4 of the length of the timeline, ready to play before it is all loaded, and light", () => {
-  assert.equal(FILM.seconds, DURATION); assert.deepEqual(FILM.langs, LANGS); assert.equal(filmLength(), "2 min 33"); assert.equal(filmLength(125), "2 min 05");
+  assert.equal(FILM.seconds, DURATION); assert.deepEqual(FILM.langs, LANGS); assert.equal(filmLength(), "2 min 50"); assert.equal(filmLength(125), "2 min 05");
   assert.equal(filmLang("en-CA"), "en"); assert.equal(filmLang("fr-CA"), "fr"); assert.equal(filmLang("de"), "fr"); assert.equal(filmLang(undefined), "fr");
   assert.deepEqual(filmFiles("zz"), filmFiles("fr")); assert.equal(filmFiles("en").src, "video/designwizard_en.mp4");
   for (const l of LANGS) {

@@ -1,6 +1,6 @@
 # DesignWizard.ai — narration de la vidéo
 
-Durée : 2 min 33 s. Une ligne, un souffle : chaque ligne se dit entre ses deux temps. Ton : chaleureux, assuré, sans emphase.
+Durée : 2 min 50 s. Une ligne, un souffle : chaque ligne se dit entre ses deux temps. Ton : chaleureux, assuré, sans emphase.
 
 ## 00:00 — Ouverture
 
@@ -28,39 +28,45 @@ Durée : 2 min 33 s. Une ligne, un souffle : chaque ligne se dit entre ses deux 
 - **00:45.8 → 00:50.8** Une paroi trop mince ? Un perçage hors des forets standard ?
 - **00:51.2 → 00:55.7** L'outil le voit avant l'atelier, et propose la correction.
 
-## 00:56 — Assemblage
+## 00:56 — Variantes
 
-- **00:56.5 → 01:01.6** Aucune pièce ne vit seule. Chacune sait déjà où elle s'attache.
-- **01:02.0 → 01:07.2** Mettez-les ensemble : elles trouvent leur place, sans qu'on la leur montre.
-- **01:07.6 → 01:12.7** Changez-en une, les autres suivent. Et si deux se gênent, vous le savez.
+- **00:56.5 → 01:01.4** Et quand il en faut plusieurs ? Une plus longue. Une autre, sans fenêtre.
+- **01:02.0 → 01:07.6** C'est la même pièce, sous un autre nom. Ses plans, ses fichiers, sa commande la suivent.
 
-## 01:13 — Carte électronique
+## 01:08 — Assemblage
 
-- **01:13.5 → 01:20.2** L'électronique ne vit pas ailleurs. La carte se conçoit dans le même projet que son boîtier.
-- **01:20.8 → 01:26.2** Et le jour où elle part en fabrication, ses fichiers sont prêts.
+- **01:08.5 → 01:13.6** Aucune pièce ne vit seule. Chacune sait déjà où elle s'attache.
+- **01:14.0 → 01:19.2** Mettez-les ensemble : elles trouvent leur place, sans qu'on la leur montre.
+- **01:19.6 → 01:24.7** Changez-en une, les autres suivent. Et si deux se gênent, vous le savez.
+- **01:25.2 → 01:29.7** Un produit se monte par modules : chacun se pose d'un seul bloc.
 
-## 01:27 — Physique et isolation
+## 01:30 — Carte électronique
 
-- **01:27.5 → 01:33.5** Chauffera-t-elle ? Tiendra-t-elle ? D'abord, un calcul qu'on refait au crayon.
-- **01:33.9 → 01:39.4** Puis la simulation. Et quand les deux réponses divergent, l'outil vous le dit.
-- **01:39.8 → 01:45.6** Entre deux conducteurs sous tension, il mesure le plus court chemin. Partout.
+- **01:30.5 → 01:37.2** L'électronique ne vit pas ailleurs. La carte se conçoit dans le même projet que son boîtier.
+- **01:37.8 → 01:43.2** Et le jour où elle part en fabrication, ses fichiers sont prêts.
 
-## 01:46 — Dessins, revue, commande
+## 01:44 — Physique et isolation
 
-- **01:46.5 → 01:52.6** Pendant ce temps, le plan s'est tracé tout seul. La pièce change ? Lui aussi.
-- **01:53.0 → 01:58.0** À la revue, tout le monde regarde la même pièce, au même endroit.
-- **01:58.5 → 02:03.6** Et le jour de commander, tout tient dans un seul dossier.
+- **01:44.5 → 01:50.5** Chauffera-t-elle ? Tiendra-t-elle ? D'abord, un calcul qu'on refait au crayon.
+- **01:50.9 → 01:56.4** Puis la simulation. Et quand les deux réponses divergent, l'outil vous le dit.
+- **01:56.8 → 02:02.6** Entre deux conducteurs sous tension, il mesure le plus court chemin. Partout.
 
-## 02:04 — Avec l'IA
+## 02:03 — Dessins, revue, commande
 
-- **02:04.5 → 02:10.6** Et l'intelligence artificielle ? Confiez-lui le dossier, comme à une recrue brillante.
-- **02:11.0 → 02:16.6** Elle propose. Vous relisez. Et rien ne change sans votre accord.
+- **02:03.5 → 02:09.6** Pendant ce temps, le plan s'est tracé tout seul. La pièce change ? Lui aussi.
+- **02:10.0 → 02:15.0** À la revue, tout le monde regarde la même pièce, au même endroit.
+- **02:15.5 → 02:20.6** Et le jour de commander, tout tient dans un seul dossier.
 
-## 02:17 — Logiciel libre
+## 02:21 — Avec l'IA
 
-- **02:17.5 → 02:23.4** Le code est ouvert à tous. Et votre travail ne reste prisonnier de personne.
+- **02:21.5 → 02:27.6** Et l'intelligence artificielle ? Confiez-lui le dossier, comme à une recrue brillante.
+- **02:28.0 → 02:33.6** Elle propose. Vous relisez. Et rien ne change sans votre accord.
 
-## 02:24 — Fin
+## 02:34 — Logiciel libre
 
-- **02:24.4 → 02:27.2** Une pièce commence par une question.
-- **02:27.5 → 02:32.7** Voici l'outil qui se souvient de la réponse : DesignWizard.ai.
+- **02:34.5 → 02:40.4** Le code est ouvert à tous. Et votre travail ne reste prisonnier de personne.
+
+## 02:41 — Fin
+
+- **02:41.4 → 02:44.2** Une pièce commence par une question.
+- **02:44.5 → 02:49.7** Voici l'outil qui se souvient de la réponse : DesignWizard.ai.

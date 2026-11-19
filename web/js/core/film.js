@@ -11,7 +11,7 @@ import { subsBox, subChoices, subDefault } from "./captions.js";
 
 /** The film : its length in seconds, its languages and their names, and what the screen says about its sound. */
 export const FILM = {
-  seconds: 153, langs: ["fr", "en"], names: { fr: "Français", en: "English" },
+  seconds: 170, langs: ["fr", "en"], names: { fr: "Français", en: "English" },
   voice: true,      // true once the published files speak : web/video/designwizard_<lang>.mp4 then carry a voice and no drawn subtitles
   silent: { fr: "Sans son : la narration se lit à l'écran.", en: "No sound: the narration reads on screen." },
   spoken: { fr: "La voix raconte ; les sous-titres restent, dans la langue de votre choix.", en: "The voice tells the story; the subtitles stay, in the language you choose." },
@@ -28,7 +28,7 @@ export function filmFiles(lang, base = "video/") {
   const l = FILM.langs.includes(lang) ? lang : "fr";
   return { lang: l, src: `${base}designwizard_${l}.mp4`, poster: `${base}designwizard_${l}.jpg`, vtt: `${base}designwizard_${l}.vtt` };
 }
-/** « 2 min 33 » */
+/** « 2 min 50 » */
 export const filmLength = (s = FILM.seconds) => `${Math.floor(s / 60)} min ${String(Math.round(s % 60)).padStart(2, "0")}`;
 
 /** Opens the film in a dialog and plays it. The language can be changed while it plays : the other version takes over at the same second. */
