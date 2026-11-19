@@ -2,8 +2,9 @@
 
 Demande de JP (18 novembre 2026) : à partir de l'histoire du film, de quoi annoncer la plateforme — **une bande-annonce
 d'environ 30 s, une fiche d'une page et des textes de publication prêts à poster**, en français et en anglais. Le kit
-n'est pas dans l'application : ce sont des fichiers, produits par deux outils et déposés dans le Drive de JP, dossier
-« DesignWizard.ai — Communications et marketing » → `Marketing`, nommés `Sujet_AAAA-MM-JJ`.
+n'est pas dans l'application : ce sont des fichiers, produits par deux outils et déposés dans le Drive de JP, dans
+« DesignWizard.ai » → « Communications et marketing » → `Marketing` → `Kit de lancement`, nommés `Sujet_AAAA-MM-JJ` ;
+un kit refait remplace le précédent, qui descend dans un sous-dossier « Versions du AAAA-MM-JJ ».
 
 | Fichier | Ce que c'est |
 |---|---|

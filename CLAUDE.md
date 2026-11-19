@@ -13,10 +13,15 @@ Consignes permanentes de JP (propriétaire du dépôt). Elles s'appliquent à to
   évidente : choisir, le dire, continuer.
 - Dire ce qui est vérifié et ce qui ne l'est pas ; ne jamais annoncer comme fait ce qui n'a pas tourné.
 - **Communications et marketing** (demande de JP) : la présentation, les communications et le matériel marketing sont
-  déposés dans le Google Drive de JP, dossier « DesignWizard.ai — Communications et marketing » (sous-dossiers
-  `Présentations`, `Communications`, `Marketing`), au fur et à mesure qu'ils sont produits ; fichiers nommés
-  `Sujet_AAAA-MM-JJ`. Le dossier « DesignWizard.ai » du Drive est l'arbre de travail de l'application : ne rien y déposer
-  d'autre. Le connecteur Drive refuse un fichier de plus de 3 Mo environ : le dire à JP, ne pas contourner sans son accord.
+  déposés dans le Google Drive de JP, au fur et à mesure qu'ils sont produits, dans « DesignWizard.ai » →
+  « Communications et marketing » (rangé là à sa demande, le 19 novembre 2026, pour tout trouver au même endroit).
+  **Rien en vrac** : chaque fichier va dans le sous-dossier de son sujet — `Présentations` (la plus récente en tête),
+  `Communications` (`Essai pilote`, `Anglais des dessins`), `Marketing` (`Kit de lancement`, `Vidéo`, `Studio photo`,
+  `Labo`), `Storyline` ; un nouveau sujet = un nouveau sous-dossier ; ce qu'une version remplace descend dans
+  « Versions précédentes », rien n'est supprimé. Fichiers nommés `Sujet_AAAA-MM-JJ` ; le `LISEZ-MOI.txt` du dossier dit
+  le rangement et tient le journal. Les autres dossiers de « DesignWizard.ai » (projets, pièces, révisions) et son
+  LISEZ-MOI sont l'arbre de travail de l'application : ne rien y déposer ni y déplacer. Le connecteur Drive refuse un
+  fichier de plus de 3 Mo environ : le dire à JP, ne pas contourner sans son accord.
 
 ## Publier (routine)
 
