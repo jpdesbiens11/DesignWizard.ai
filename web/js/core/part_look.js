@@ -1,8 +1,15 @@
 /* DesignWizard.ai — the look of a part on screen : the colour and the shade its designer gives it to tell the parts apart,
-   and how see-through it is. A visual aid, not a property of the product : it is not a finish, it goes on no drawing.
-   spec.look = { color: "#rrggbb", opacity: 0.2 … 1 } ; a part without a look shows the colour of its material.
-   The look paints the main body of the part ; a body with a colour of its own (spec.bodies) keeps it. A look never
-   dirties a review or a released revision (core/review.js leaves « look » out of the signature). Pure : no DOM. */
+   how see-through it is, the pattern laid on it (a camouflage) and how it answers light (its sheen). A visual aid, not a property
+   of the product : it is not a finish, it goes on no drawing.
+   look = { color: "#rrggbb", opacity: 0.2 … 1, pattern: "camo-forest", sheen: "matte" } — each one optional. It is held by a part
+   (spec.look : every instance of the part wears it) and, in an assembly, by an instance (inst.look : this part, or this whole
+   sub-assembly, HERE). The assembly wins over the part, and the outer assembly over the inner one — the convention of mechanical
+   modellers, where an appearance given in an assembly overrides the part's own (overLook, core/asm_levels.js flatAsm).
+   A part without a look shows the colour of its material. The look paints the main body of the part ; a body with a colour of its
+   own (spec.bodies) keeps it. A look never dirties a review or a released revision (core/review.js leaves « look » out of the
+   signature). Patterns and sheens : core/look_patterns.js. Pure : no DOM. */
+
+import { validPattern, validSheen, DEFAULT_SHEEN, PATTERNS, SHEENS } from "./look_patterns.js";
 
 /** The colours offered, one row each ; the shades are the columns. */
 export const HUES = [
@@ -42,23 +49,45 @@ export function colorName(hex) {
 }
 
 const clampOpacity = (v) => (typeof v === "number" && Number.isFinite(v) ? Math.max(0.2, Math.min(1, Math.round(v * 100) / 100)) : null);
-/** What a part asks for : { color (valid or null), opacity (0,2 … 1, or null) }. */
-export function lookOf(spec) {
-  const l = (spec && spec.look) || {};
-  return { color: validHex(l.color), opacity: clampOpacity(l.opacity) };
+/** A look put in order, whatever holds it : { color (valid or null), opacity (0,2 … 1, or null), pattern (a known one, or null), sheen (or null) }. */
+export function tidyLook(l) {
+  const x = l && typeof l === "object" ? l : {};
+  return { color: validHex(x.color), opacity: clampOpacity(x.opacity), pattern: validPattern(x.pattern), sheen: validSheen(x.sheen) };
 }
-/** The colour and the opacity a part shows, given the colour of its material : { color, opacity, own (it has a look of its own) }. */
+/** Does a look say anything ? */
+export const hasLook = (l) => !!(l && (l.color || l.pattern || l.sheen || (l.opacity !== null && l.opacity !== undefined)));
+/** What a part — or an instance of an assembly — asks for. */
+export function lookOf(holder) { return tidyLook(holder && holder.look); }
+/** What a part shows, given the colour of its material : { color, opacity, pattern, sheen, own (it has a look of its own) }. */
 export function shownLook(spec, materialColor, materialOpacity = 1) {
   const l = lookOf(spec);
-  return { color: l.color || validHex(materialColor) || "#b9c6ce", opacity: l.opacity ?? materialOpacity ?? 1, own: !!(l.color || l.opacity !== null) };
+  return { color: l.color || validHex(materialColor) || "#b9c6ce", opacity: l.opacity ?? materialOpacity ?? 1, pattern: l.pattern, sheen: l.sheen || DEFAULT_SHEEN, own: hasLook(l) };
 }
-/** Sets or clears the look of a part, in place. patch : { color, opacity } — null clears one, an opaque part keeps no opacity. */
-export function setLook(spec, patch = {}) {
-  const cur = lookOf(spec), next = { color: "color" in patch ? validHex(patch.color) : cur.color, opacity: "opacity" in patch ? clampOpacity(patch.opacity) : cur.opacity };
+/** Sets or clears the look of a part or of an instance, in place. patch : { color, opacity, pattern, sheen } — null clears one. A plain
+    colour chosen takes the pattern away (one paint at a time) ; an opaque part keeps no opacity, a satin one no sheen. */
+export function setLook(holder, patch = {}) {
+  const cur = lookOf(holder), next = { color: "color" in patch ? validHex(patch.color) : cur.color, opacity: "opacity" in patch ? clampOpacity(patch.opacity) : cur.opacity,
+    pattern: "pattern" in patch ? validPattern(patch.pattern) : cur.pattern, sheen: "sheen" in patch ? validSheen(patch.sheen) : cur.sheen };
+  if ("color" in patch && next.color && !("pattern" in patch)) next.pattern = null;
   if (next.opacity !== null && next.opacity >= 1) next.opacity = null;
-  if (!next.color && next.opacity === null) delete spec.look;
-  else spec.look = { ...(next.color ? { color: next.color } : {}), ...(next.opacity !== null ? { opacity: next.opacity } : {}) };
-  return spec;
+  if (next.sheen === DEFAULT_SHEEN) next.sheen = null;
+  if (!hasLook(next)) delete holder.look;
+  else holder.look = { ...(next.color ? { color: next.color } : {}), ...(next.opacity !== null ? { opacity: next.opacity } : {}), ...(next.pattern ? { pattern: next.pattern } : {}), ...(next.sheen ? { sheen: next.sheen } : {}) };
+  return holder;
+}
+/** A look laid over another : what the outer one says wins. The paint — a colour or a pattern — is taken whole from the one that gives
+    one (a plain colour given in an assembly covers the pattern of the part) ; the opacity and the sheen each on their own. → a tidy look */
+export function overLook(inner, outer) {
+  const a = tidyLook(inner), b = tidyLook(outer), paint = b.color || b.pattern ? b : a;
+  return { color: paint.color, pattern: paint.pattern, opacity: b.opacity ?? a.opacity, sheen: b.sheen ?? a.sheen };
+}
+/** A look in a few words : « Camouflage Forest, mat », « Bleu clair, voilé », or "" when it says nothing. */
+export function lookWords(look) {
+  const l = tidyLook(look), out = [];
+  if (l.pattern) out.push(`Camouflage ${PATTERNS[l.pattern].label}`); else if (l.color) out.push(colorName(l.color));
+  if (l.sheen) out.push(SHEENS[l.sheen].fr.toLowerCase());
+  if (l.opacity !== null) out.push(l.opacity <= 0.45 ? "transparent" : "voilé");
+  return out.join(", ");
 }
 /** A colour of its own for every part that has none : colours in turn, then their light and dark shades, so that neighbours in
     the list differ. taken : the colours already in use. → Map id → "#rrggbb" for the parts to paint (none for those that have one). */

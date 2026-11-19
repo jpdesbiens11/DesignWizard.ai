@@ -7,6 +7,7 @@ import { kernel } from "../cad/client.js";
 import { solveLevels, hardware, bom, massProps, placedTree } from "./assembly_logic.js";
 import { showBuilt } from "./viewport.js";
 import { bboxTransform, bboxUnion } from "../cad/vec.js";
+import { overLook, hasLook, tidyLook } from "./part_look.js";
 
 /** Build the parts used by `asm`. Returns {built, sol, errors, hardware, bom, mass, bbox, asm, levels}. onProgress(text, done, total) before
     each part ; an operation the user cancelled (kernel.cancel) ends the construction at once.
@@ -44,10 +45,13 @@ export function showAssembly(viewer, ctx, opts = {}) {
   const keep = new Set();
   for (const inst of ctx.asm.instances) {
     if (inst.hidden && opts.skipHidden !== false) continue;
-    const b = ctx.built[inst.part], colors = {};
-    if (opts.colorOf) for (const body of b.bodies) { const c = opts.colorOf(inst, body); if (c) colors[body.name] = c; }
-    for (const id of showBuilt(viewer, b, { prefix: inst.id, matrix: ctx.sol.placements[inst.id], explodeDir: ctx.sol.explode[inst.id], inst: inst.id, colors,
-      opacity: opts.opacityOf ? undefined : undefined })) keep.add(id);
+    const b = ctx.built[inst.part], colors = {}, looks = {}, opacities = {};
+    if (opts.colorOf) for (const body of b.bodies) { const c = opts.colorOf(inst, body); if (c) { colors[body.name] = c; looks[body.name] = null; } }      // a screen that paints by its own rule (a potential, a role) : plain, no pattern
+    /* what the assembly says of the look of this part HERE wins over the look of the part (core/part_look.js overLook) : its main body */
+    const main = b.bodies.find((x) => x.name === b.main) || b.bodies[0], here = tidyLook(inst.look);
+    if (main && hasLook(here) && !(main.name in looks)) { const L = overLook({ color: main.color, opacity: main.opacity, pattern: main.pattern, sheen: main.sheen }, here);
+      if (L.color) colors[main.name] = L.color; looks[main.name] = { pattern: L.pattern, sheen: L.sheen }; if (L.opacity !== null) opacities[main.name] = L.opacity; }
+    for (const id of showBuilt(viewer, b, { prefix: inst.id, matrix: ctx.sol.placements[inst.id], explodeDir: ctx.sol.explode[inst.id], inst: inst.id, colors, looks, opacities })) keep.add(id);
     if (opts.opacityOf) for (const body of b.bodies) { const o = opts.opacityOf(inst, body); if (o !== undefined && o !== null) viewer.setOpacity(`${inst.id}/${body.name}`, o); }
   }
   for (const k of [...viewer.objects.keys()]) if (!keep.has(k)) viewer.remove(k);

@@ -59,7 +59,7 @@ function render(main, args) {
   async function dress(keepView = true) {
     const token = ++st.token, ctx = st.ctx, r = R(); if (!ctx) return;
     const items = [];
-    for (const inst of ctx.asm.instances) { if (inst.hidden) continue; const b = ctx.built[inst.part]; for (const body of b.bodies) items.push({ id: `${inst.id}/${body.name}`, mesh: body.mesh, matrix: ctx.sol.placements[inst.id], look: bodyLook(body, r.looks[inst.part], b.main), data: { inst: inst.id, part: inst.part, body: body.name } }); }
+    for (const inst of ctx.asm.instances) { if (inst.hidden) continue; const b = ctx.built[inst.part]; for (const body of b.bodies) items.push({ id: `${inst.id}/${body.name}`, mesh: body.mesh, matrix: ctx.sol.placements[inst.id], look: bodyLook(body, r.looks[inst.part], b.main, inst.look), data: { inst: inst.id, part: inst.part, body: body.name } }); }
     if (r.labels) for (const l of asm().labels || []) { const m = l.on && l.inst && ctx.sol.placements[l.inst], mesh = m && labelPatch(l), map = mesh && await rasterLabel(l); if (token !== st.token || !st.alive) return; if (map) items.push({ id: `label/${l.id}`, mesh, map, matrix: m, data: { label: l.id } }); }
     const view0 = stage.viewNow(), target0 = stage.view.target.clone();
     stage.setScene(r.scene, r.ground); stage.setContent(items, ctx.bbox);

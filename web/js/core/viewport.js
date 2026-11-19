@@ -129,7 +129,8 @@ export function showBuilt(viewer, built, o = {}) {
   const ids = [];
   for (const b of built.bodies) {
     const id = `${o.prefix || built.id}/${b.name}`;
-    viewer.add({ id, name: b.label || b.name, mesh: b.mesh, color: (o.colors && o.colors[b.name]) || o.color || b.color, opacity: o.opacity ?? b.opacity, matrix: o.matrix || null,
+    const look = o.looks && b.name in o.looks ? o.looks[b.name] : b.pattern || b.sheen ? { pattern: b.pattern, sheen: b.sheen } : null;      // the pattern and the sheen of its look (core/look_paint.js)
+    viewer.add({ id, name: b.label || b.name, mesh: b.mesh, color: (o.colors && o.colors[b.name]) || o.color || b.color, opacity: (o.opacities && o.opacities[b.name]) ?? o.opacity ?? b.opacity, look, matrix: o.matrix || null,
       explodeDir: o.explodeDir || null, pickable: o.pickable, data: { part: built.id, body: b.name, inst: o.inst || null, ...(o.data || {}) } });
     ids.push(id);
   }

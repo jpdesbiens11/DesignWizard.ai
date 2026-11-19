@@ -23,7 +23,7 @@ const part = {
     ["Ses poignées — les paramètres que l'on règle", ["params"]],
     ["Comment elle se fait — les opérations, dans l'ordre de l'atelier", ["extrusion", "pcb", "features", "bodies"]],
     ["Ce qu'il faut savoir — notes du dessin, révision, hypothèses", ["notes", "revision", "interview"]],
-    ["De quoi elle a l'air à l'écran — sa couleur, pour la reconnaître (ce n'est pas une finition)", ["look"]],
+    ["De quoi elle a l'air à l'écran — sa couleur, son motif (un camouflage : camo-forest, camo-jungle, camo-desert, camo-snow, camo-urban, camo-navy) et sa finition (matte, gloss, metallic) ; ce n'est pas une finition du produit. Une occurrence d'un assemblage peut porter le même bloc : il vaut ici, et l'emporte sur la pièce", ["look"]],
     ["Ce qui se dit avec le fournisseur — la gamme annotée : une note par phase, les points à voir", ["plan"]],
   ],
   kids: {

@@ -10,7 +10,7 @@ import { interfaceDialog, nextIfaceId } from "../core/part_edit.js";
 import { INTERFACE_TYPES, interfaceType } from "../cad/interfaces.js";
 import { PROCESSES, materialOrDefault, materialMenu, materialLabel } from "../cad/materials.js";
 import { lookSwatch } from "./part_look.js";
-import { lookOf, colorName } from "../core/part_look.js";
+import { lookOf, hasLook, lookWords } from "../core/part_look.js";
 import { useMakerModel, dropMakerModel } from "../core/elec_parts.js";
 import { validateSpec } from "../cad/build.js";
 import { applyFix } from "../analysis/dfx_api.js";
@@ -134,8 +134,8 @@ export function sheetPanel(body, { st, id }) {
     field("Procédé", el("select", { onChange: set("process", "procédé") }, el("option", { value: "" }, "— à définir —"), Object.entries(PROCESSES).map(([k, p]) => el("option", { value: k, selected: k === s.process }, p.label))),
       s.material && s.process && mat.processes && mat.processes.length && !mat.processes.includes(s.process) ? "Ce matériau n'est pas courant pour ce procédé." : null),
     text("finish", "Finition"), text("revision", "Révision"),
-    el("div", { class: "field look-field" }, el("span", { class: "field-label" }, "Couleur à l'écran"), el("div", { class: "look-line" }, lookSwatch(s, { big: true }), el("span", null, lookOf(s).color ? colorName(lookOf(s).color) : `celle de la matière (${mat.name})`)),
-      el("span", { class: "field-hint" }, "Pour reconnaître la pièce d'un coup d'œil, ici et dans l'assemblage. Ce n'est pas la finition.")));
+    el("div", { class: "field look-field" }, el("span", { class: "field-label" }, "Apparence à l'écran"), el("div", { class: "look-line" }, lookSwatch(s, { big: true }), el("span", null, hasLook(lookOf(s)) ? lookWords(lookOf(s)) : `celle de la matière (${mat.name})`)),
+      el("span", { class: "field-hint" }, "Couleur, camouflage, finition : pour reconnaître la pièce d'un coup d'œil, ici et dans l'assemblage. Ce n'est pas la finition du dessin.")));
   if (s.library && s.family === "connector") body.append(makerModel(s, id));
   const elec = s.elec || {};
   body.append(el("div", { class: "side-section" }, el("h3", null, "Rôle électrique (analyse d'isolation)"),

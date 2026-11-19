@@ -9,6 +9,7 @@ import { compileInterface, interfaceType } from "./interfaces.js";
 import { FACES, faceKey, bboxUnion } from "./vec.js";
 import { materialOrDefault, hexToRgb } from "./materials.js";
 import { lookOf } from "../core/part_look.js";
+import { patternColor } from "../core/look_patterns.js";
 import { compileExtrusion } from "./family_extrusion.js";
 import { compilePcb } from "./family_pcb.js";
 import { compileFolded } from "./family_folded.js";
@@ -87,8 +88,8 @@ export function buildPart(K, source, opts = {}) {
     const mat = materialOrDefault(meta.material || spec.material);
     const p = K.props(shape);
     const m = p.volume * mat.rho / 1000;                       // mm3 * g/cm3 / 1000 = g
-    const elec = meta.elec || (name === st.main ? spec.elec : null) || {}, look = name === st.main ? lookOf(spec) : {}, color = meta.color || look.color || mat.color;      // the look the designer gave the part paints its main body
-    bodies.push({ name, shape, material: mat.id, materialName: mat.name, color, opacity: meta.opacity ?? look.opacity ?? mat.opacity ?? 1,
+    const elec = meta.elec || (name === st.main ? spec.elec : null) || {}, look = name === st.main ? lookOf(spec) : {}, color = meta.color || (look.pattern ? patternColor(look.pattern) : look.color) || mat.color;      // the look the designer gave the part paints its main body ; where a pattern cannot go (a STEP file), its ground colour stands for it
+    bodies.push({ name, shape, material: mat.id, materialName: mat.name, color, opacity: meta.opacity ?? look.opacity ?? mat.opacity ?? 1, pattern: look.pattern || null, sheen: look.sheen || null,
       conductive: !!mat.conductive, cti: mat.cti ?? null, printedWiring: !!mat.printedWiring, net: meta.net || elec.net || null, elecKind: meta.kind || elec.kind || null,
       label: meta.label || null, volume: p.volume, area: p.area, bbox: p.bbox, cog: p.cog, mass: m, rgb: hexToRgb(color) });
     bbox = bboxUnion(bbox, p.bbox); volume += p.volume; mass += m;

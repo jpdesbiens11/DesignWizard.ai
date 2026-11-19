@@ -128,7 +128,49 @@ Demande de JP : pouvoir donner soi-même une couleur et une teinte à chaque pi�
   annulable.
 - **Deux raccourcis** en tête de liste : « Une couleur par pièce » (chaque pièce qui n'en a pas reçoit la sienne,
   différente de ses voisines ; celles que l'on a choisies restent) et « Couleurs des matières ».
-- La fiche de la pièce rappelle sa couleur (« Couleur à l'écran »).
+- La fiche de la pièce rappelle son apparence (« Apparence à l'écran »).
+
+### Motif, finition, et ce que l'assemblage en dit
+
+Demande de JP (19 novembre 2026) : « adding color and shading that can be applied to each 3D parts (part & assembly
+defined and visible) : including military camouflage color / shade / texture options (4-6 different pattern / color
+set — snow, forest, desert, etc.) ».
+
+- **Un motif** se pose sur la pièce, sous le groupe « Camouflage » du sélecteur : **Forest, Jungle, Desert, Snow,
+  Urban, Navy** — chacun une vignette de lui-même et un nom court ; « Uni » revient à la couleur. Un motif et une
+  couleur ne se cumulent pas : choisir une couleur franche retire le motif (une peinture à la fois) ; la couleur
+  reste gardée sous le motif et revient quand il part.
+- **Une finition à l'écran** — Mat, Satiné, Brillant, Métallisé — dit comment la surface répond à la lumière de la
+  vue. « Satiné » est la vue de toujours : rien n'est gardé pour lui.
+- **L'assemblage a son mot à dire.** La pastille d'une ligne de l'assemblage montre ce que la pièce porte **ici** : en
+  pointillé, l'apparence de la pièce ; en trait plein, celle que l'assemblage lui donne. Un clic l'ouvre pour **cette
+  occurrence seulement** ; la fiche de la pièce (groupe « Apparence ») montre les deux — « Ici » et « La pièce » —,
+  et le clic droit propose « Apparence ici… ». Un **sous-assemblage** s'habille d'un seul bloc. La palette en tête de
+  la liste habille **tout l'assemblage d'un coup**, et la flèche à côté rend à chaque élément l'apparence de sa pièce.
+- **Qui l'emporte** : ce que l'assemblage dit ici couvre l'apparence de la pièce, et l'assemblage du dehors couvre
+  celui du dedans — l'usage des modeleurs mécaniques, où une apparence donnée dans un assemblage prend le pas sur
+  celle de la pièce. La peinture (couleur ou motif) se prend d'un bloc chez celui qui en donne une ; l'opacité et la
+  finition, chacune à part.
+- Le motif se voit **partout où la pièce se voit en 3D** : son studio, l'assemblage, les étiquettes, le rapport, et le
+  rendu marketing tant qu'aucune finition de rendu n'a été choisie pour elle. Un écran qui colore selon sa propre
+  règle (les potentiels de l'Isolation) garde ses couleurs unies. Le STEP, qui ne porte pas de texture, garde la
+  couleur de fond du motif.
+
+**Les motifs sont fabriqués par l'outil**, à partir de bruit : quelques couleurs d'un terrain, en taches qui cassent
+la silhouette. **Aucun ne reproduit le motif d'une armée ou d'un fabricant** — ce sont des dessins qui ont un
+propriétaire ; seuls l'idée et des noms ordinaires sont repris. Une tuile se répète sans couture et se pose par
+projection en boîte, une tuile tous les 130 à 170 mm, dans les coordonnées de la pièce : toutes les occurrences d'une
+pièce portent le même tissu.
+
+Code : `web/js/core/look_patterns.js` (motifs et finitions, purs), `core/part_look.js` (`overLook` : qui l'emporte),
+`core/look_paint.js` (la texture sur une vue), `core/asm_levels.js` (`flatAsm` : à travers les niveaux),
+`modules/part_look.js` (un seul sélecteur pour une pièce, une occurrence, tout un assemblage). Vérifié dans Chromium
+sur le Rover : un motif puis une finition sur une pièce, sa pastille, la pièce vue dans l'assemblage, « Desert » sur
+tout l'assemblage (les trente pièces), un bloc repassé en « Snow » brillant, le menu du clic droit, le retour aux
+pièces, Ctrl + Z ; le sous-assemblage lui-même inchangé. Pas vérifié : le rendu marketing avec un motif, à l'œil (la
+règle est tenue par un essai) ; les faces courbes de près, où la projection en boîte laisse une couture ; Firefox,
+Safari. Pas fait : un motif par corps ou par face ; l'échelle du motif au choix ; un guide (une apparence n'a rien
+qui manque ou qui bloque).
 
 C'est une **aide visuelle, pas une finition** : la couleur est gardée dans la pièce (`look`, voir `docs/FORMAT.md`),
 elle voyage dans le `.dwiz` et suit la pièce dans l'assemblage, l'isolation et le STEP exporté ; elle ne va sur aucun

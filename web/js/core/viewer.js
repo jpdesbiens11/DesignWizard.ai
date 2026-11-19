@@ -6,6 +6,7 @@ import * as THREE from "../../vendor/three/three.module.min.js";
 import { triadOf, gridOf, gridKey } from "./view_grid.js";
 import { snapDirection } from "./snap.js";
 import { mountOrbit, keyTurn } from "./view_orbit.js";
+import { paintLook } from "./look_paint.js";
 import { getUnits, measure, measures } from "./units.js";
 
 const GRAPHITE = 0x26323f;
@@ -96,6 +97,7 @@ export class Viewer {
     const mat = new THREE.MeshStandardMaterial({ color: new THREE.Color(map ? "#ffffff" : def.color || token(this.el, "--view-part", "#a8b0b8")), map, metalness: 0.08, roughness: 0.62, side: THREE.DoubleSide,
       polygonOffset: true, polygonOffsetFactor: map ? -3 : 1, polygonOffsetUnits: map ? -3 : 1, transparent: opacity < 1 || !!map, opacity, depthWrite: opacity >= 1 });
     const mesh = new THREE.Mesh(g, mat);
+    if (def.look && !map) paintLook(mesh, def.mesh, def.look);      // the pattern laid on the part (a camouflage) and its sheen
     const eg = new THREE.BufferGeometry();
     eg.setAttribute("position", new THREE.BufferAttribute(def.mesh.epos, 3));
     const edges = new THREE.LineSegments(eg, new THREE.LineBasicMaterial({ color: this.edgeColor.clone(), transparent: true, opacity: 0.85 }));

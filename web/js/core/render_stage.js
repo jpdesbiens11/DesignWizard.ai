@@ -7,12 +7,15 @@
 import * as THREE from "../../vendor/three/three.module.min.js";
 import { SCENES, patternPixels, boxUv, cameraFor } from "./render_looks.js";
 import { LOGO, MARK } from "./brand.js";
+import { PATTERNS } from "./look_patterns.js";
+import { patternTexture as lookTexture } from "./look_paint.js";
 
 const FOV = 28, rad = (d) => d * Math.PI / 180;
 const gradient = (top, bottom, h = 256) => { const c = document.createElement("canvas"); c.width = 4; c.height = h; const g = c.getContext("2d"), f = g.createLinearGradient(0, 0, 0, h); f.addColorStop(0, top); f.addColorStop(1, bottom); g.fillStyle = f; g.fillRect(0, 0, 4, h); return c; };
 const patterns = new Map();
 /** The tile of a pattern as a texture that repeats. */
 function patternTexture(name) {
+  if (Object.hasOwn(PATTERNS, name)) return lookTexture(name);      // a pattern of the look of a part (a camouflage) : in its colours
   if (patterns.has(name)) return patterns.get(name);
   const n = 128, px = patternPixels(name, n), c = document.createElement("canvas"); c.width = n; c.height = n; const g = c.getContext("2d"), img = g.createImageData(n, n);
   for (let k = 0; k < n * n; k++) { img.data[4 * k] = img.data[4 * k + 1] = img.data[4 * k + 2] = px[k]; img.data[4 * k + 3] = 255; } g.putImageData(img, 0, 0);

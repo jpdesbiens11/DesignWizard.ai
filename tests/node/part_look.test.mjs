@@ -27,12 +27,12 @@ test("the picker offers a row per colour and a column per shade, every cell its 
 
 test("a part keeps what its designer chose ; nothing is kept for an opaque part of the colour of its material", () => {
   const p = { id: "P-1", material: "AL6061-T6" };
-  assert.deepEqual(lookOf(p), { color: null, opacity: null }); assert.deepEqual(shownLook(p, "#b9c6ce"), { color: "#b9c6ce", opacity: 1, own: false });
-  setLook(p, { color: "#3D86E6" }); assert.deepEqual(p.look, { color: "#3d86e6" }); assert.deepEqual(shownLook(p, "#b9c6ce"), { color: "#3d86e6", opacity: 1, own: true });
+  assert.deepEqual(lookOf(p), { color: null, opacity: null, pattern: null, sheen: null }); assert.deepEqual(shownLook(p, "#b9c6ce"), { color: "#b9c6ce", opacity: 1, pattern: null, sheen: "satin", own: false });
+  setLook(p, { color: "#3D86E6" }); assert.deepEqual(p.look, { color: "#3d86e6" }); assert.deepEqual(shownLook(p, "#b9c6ce"), { color: "#3d86e6", opacity: 1, pattern: null, sheen: "satin", own: true });
   setLook(p, { opacity: 0.6 }); assert.deepEqual(p.look, { color: "#3d86e6", opacity: 0.6 }); setLook(p, { opacity: 1 }); assert.deepEqual(p.look, { color: "#3d86e6" });
   setLook(p, { opacity: 0.01 }); assert.equal(p.look.opacity, 0.2, "never invisible"); setLook(p, { color: null }); assert.deepEqual(p.look, { opacity: 0.2 }); assert.equal(shownLook(p, "#b9c6ce").color, "#b9c6ce");
   setLook(p, { opacity: null }); assert.equal("look" in p, false); setLook(p, { color: "not a colour" }); assert.equal("look" in p, false);
-  assert.deepEqual(lookOf({ look: { color: "zzz", opacity: "0.5" } }), { color: null, opacity: null });
+  assert.deepEqual(lookOf({ look: { color: "zzz", opacity: "0.5", pattern: "tartan", sheen: 3 } }), { color: null, opacity: null, pattern: null, sheen: null });
 });
 
 test("one colour per part : the parts without a colour get one each, different, and the chosen ones stay", () => {

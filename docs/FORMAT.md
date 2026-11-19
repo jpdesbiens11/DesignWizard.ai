@@ -167,9 +167,13 @@ d'atelier, opérations du noyau) est dans [PART_LANGUAGE.md](PART_LANGUAGE.md). 
   plusieurs : `name` (le nom du cas en cours, « Cas 1 » par défaut), `others: [{ name, …les mêmes clés }]` (les cas rangés)
   et `at` (la place du cas en cours dans la liste). Voir [VARIANTES.md](VARIANTES.md).
 - **`order`** — `quantity`, `need_by`, `note` : la commande du prototype.
-- **`look`** — `color` (`"#rrggbb"`), `opacity` (0,2 à 1) : la couleur de la pièce **à l'écran**, choisie par son
-  concepteur pour la reconnaître. Ce n'est pas une finition ; absente, la pièce a la couleur de sa matière. Elle
-  n'entre pas dans la signature de la pièce (revue, révision).
+- **`look`** — `color` (`"#rrggbb"`), `opacity` (0,2 à 1), `pattern` (un motif : `camo-forest`, `camo-jungle`,
+  `camo-desert`, `camo-snow`, `camo-urban`, `camo-navy`), `sheen` (`matte`, `gloss`, `metallic` — `satin`, la vue
+  ordinaire, ne s'écrit pas) : l'apparence de la pièce **à l'écran**, choisie par son concepteur. Ce n'est pas une
+  finition ; absente, la pièce a la couleur de sa matière. Elle n'entre pas dans la signature de la pièce (revue,
+  révision). **Une occurrence d'un assemblage porte le même bloc** (`instances[].look`) : l'apparence de cette pièce
+  — ou de tout ce sous-assemblage — dans cet assemblage ; elle l'emporte sur celle de la pièce, et l'assemblage du
+  dehors sur celui du dedans. Voir [ERGONOMIE.md](ERGONOMIE.md).
 - **`interface`** — `bolt_pattern`, `planar`, `fit`, `cutout`, `rail`, `pins` ; côté `A` ou `B`, même `key` et mêmes
   `params` sur la pièce voisine.
 - **`brief`** et **`review`** (projet) — ce que l'IA a retenu de l'entrevue d'un premier design (réponses, hypothèses,

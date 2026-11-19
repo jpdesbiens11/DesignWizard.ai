@@ -8,6 +8,7 @@
    through `find(id) → assembly`. */
 
 import { liveAsm } from "./asm_live.js";
+import { overLook } from "./part_look.js";
 
 export const SEP = "~";
 /** The instance of the assembly an id goes through : « S » for « S~i2 ». */
@@ -46,6 +47,7 @@ export function flatAsm(asm, find, trail = []) {
     for (const leaf of inner.instances) {
       const c = { ...leaf, id: `${i.id}${SEP}${leaf.id}`, group: i.id, sub: leaf.sub || i.asm }; delete c.fixed; delete c.local; delete c.burst;      // one rigid whole : what was fixed inside is carried with the rest
       if (i.hidden) c.hidden = true; else delete c.hidden;
+      if (i.look) c.look = overLook(c.look, i.look);      // what this assembly says of the look of the block covers what the block says of its own parts
       instances.push(c);
     }
     for (const m of inner.mates || []) mates.push({ ...m, id: `${i.id}${SEP}${m.id}`, a: { ...m.a, inst: `${i.id}${SEP}${m.a.inst}` }, b: { ...m.b, inst: `${i.id}${SEP}${m.b.inst}` }, of: i.id });

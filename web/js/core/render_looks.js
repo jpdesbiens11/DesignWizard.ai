@@ -7,7 +7,8 @@
 
 import { material } from "../cad/materials.js";
 import { liveAsm } from "./asm_live.js";
-import { validHex } from "./part_look.js";
+import { validHex, overLook } from "./part_look.js";
+import { PATTERNS, SHEENS } from "./look_patterns.js";
 
 export const FINISH_GROUPS = [
   { id: "paint", label: "Paints", fr: "Peintures", color: "#d6453d" }, { id: "metal", label: "Metals", fr: "Métaux", color: "#5b7fa6" }, { id: "plastic", label: "Plastics and elastomers", fr: "Plastiques et élastomères", color: "#ee8a32" },
@@ -54,8 +55,18 @@ export function defaultFinish(materialId, opacity = 1) {
   return cls === "component" ? "plastic-gloss" : "plastic-grain";
 }
 /** What a body shows : { finish (id), color, opacity, metal, rough, coat, pattern, period }. body : { name, material, color, opacity } as the kernel built it ;
-    choice : what the designer chose for its part ({ finish, color }) — it dresses the main body, the other bodies keep their own material. */
-export function bodyLook(body, choice = null, main = "main") {
+    choice : what the designer chose for its part ({ finish, color }) — it dresses the main body, the other bodies keep their own material.
+    here : the look the assembly gives this instance (inst.look). Without a finish chosen, the look the part wears on screen — its
+    camouflage, its sheen, what the assembly says of it here — goes on the picture too (core/part_look.js). */
+export function bodyLook(body, choice = null, main = "main", here = null) {
+  const L = bodyFinish(body, choice, main); if ((choice && FINISHES[choice.finish]) || body.name !== main) return L;
+  const worn = overLook({ pattern: body.pattern, sheen: body.sheen }, here);
+  if (worn.pattern) { L.pattern = worn.pattern; L.period = PATTERNS[worn.pattern].period; L.color = "#ffffff"; } else if (worn.color) L.color = worn.color;
+  if (worn.sheen) { L.rough = SHEENS[worn.sheen].rough; L.metal = SHEENS[worn.sheen].metal; L.coat = worn.sheen === "gloss" ? 0.6 : 0; }
+  if (worn.opacity !== null) L.opacity = worn.opacity;
+  return L;
+}
+function bodyFinish(body, choice = null, main = "main") {
   const mine = choice && body.name === main ? choice : null, id = mine && FINISHES[mine.finish] ? mine.finish : defaultFinish(body.material, body.opacity ?? 1), F = FINISHES[id];
   const color = mine && F.tint && validHex(mine.color) ? mine.color : F.own && !(mine && validHex(mine.color)) ? F.own : mine && validHex(mine.color) ? mine.color : body.color || "#a8b0b8";
   return { finish: id, color, opacity: F.opacity ?? (id === "clear-plastic" ? 0.38 : 1), metal: F.metal, rough: F.rough, coat: F.coat, pattern: F.pattern || null, period: F.period || 0 };

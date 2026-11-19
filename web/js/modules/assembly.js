@@ -5,7 +5,7 @@
 import { el, clear, icon, btn, badge, toast, modal, fmt, fmtMass, fmtDims, inUnits, unitInput, download, promptBox, confirmBox, table, onOff } from "../core/dom.js";
 import { registerModule, go, setStatus, app } from "../core/app.js";
 import { store } from "../core/store.js";
-import { lookSwatch } from "./part_look.js";
+import { instSwatch, asmLookTools, instLookSection, openInstLookPicker } from "./part_look.js";
 import { kernel } from "../cad/client.js";
 import { underVeil } from "../core/busy.js";
 import { createViewport } from "../core/viewport.js";
@@ -157,7 +157,7 @@ function render(main, args) {
     const scroll = el("div", { class: "side-scroll" });
     left.append(scroll);
     scroll.append(el("div", { class: "side-section" }, store.assemblies.map((x) => el("a", { class: "nav-item" + (x.id === id ? " active" : ""), href: `#/assembly/${encodeURIComponent(x.id)}` }, icon("assembly"), el("span", { class: "grow" }, x.name || x.id), el("small", null, x.id)))));
-    const sec = el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, `Pièces de l'assemblage (${a.instances.length - offOf(a).instances.length}${offOf(a).instances.length ? ` + ${offOf(a).instances.length} à Off` : ""})`), btn("", () => formFrom(st.sel ? [st.sel] : []), { small: true, icon: "assembly", tip: "Former un sous-assemblage : des pièces d'ici partent ensemble et reviennent d'un seul bloc" }), btn("", () => addDialog(), { small: true, icon: "plus", tip: "Ajouter une pièce du projet" })));
+    const sec = el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, `Pièces de l'assemblage (${a.instances.length - offOf(a).instances.length}${offOf(a).instances.length ? ` + ${offOf(a).instances.length} à Off` : ""})`), asmLookTools({ asm: a, id }), btn("", () => formFrom(st.sel ? [st.sel] : []), { small: true, icon: "assembly", tip: "Former un sous-assemblage : des pièces d'ici partent ensemble et reviennent d'un seul bloc" }), btn("", () => addDialog(), { small: true, icon: "plus", tip: "Ajouter une pièce du projet" })));
     for (const inst of a.instances) {
       const { spec, sub, name, icon: mark } = what(inst), placed = st.ctx && st.ctx.sol.placedBy[inst.id], nIn = sub && st.ctx ? st.ctx.asm.instances.filter((i) => i.group === inst.id).length : 0;
       sec.append(el("div", { class: "nav-item" + (st.sel === inst.id ? " active" : "") + (inst.hidden ? " off" : "") + (inst.off ? " is-off" : ""), role: "button", tabindex: "0", "data-inst": inst.id, "aria-haspopup": "menu",
@@ -167,7 +167,7 @@ function render(main, args) {
           if (st.sel !== inst.id) { st.sel = inst.id; vp.viewer.highlight(keysOf(inst.id)); renderLeft(); if (st.tab === "inst") renderRight(); }
           popupMenu(at, instMenu(inst.id)); },
         onClick: () => { st.sel = inst.id; st.tab = "inst"; vp.viewer.highlight(keysOf(inst.id)); renderLeft(); renderRight(); } },
-        icon(mark), el("span", { class: "grow" }, spec || sub ? name : `${name} (absent${isSub(inst) ? "" : "e"})`), spec ? lookSwatch(spec) : nIn ? el("small", { "data-tip": `Sous-assemblage de ${nIn} pièce${nIn > 1 ? "s" : ""}` }, `${nIn} p.`) : null,
+        icon(mark), el("span", { class: "grow" }, spec || sub ? name : `${name} (absent${isSub(inst) ? "" : "e"})`), nIn ? el("small", { "data-tip": `Sous-assemblage de ${nIn} pièce${nIn > 1 ? "s" : ""}` }, `${nIn} p.`) : null, spec || sub ? instSwatch(id, inst) : null,      // what it shows HERE : the look the assembly gives it, or that of its part
         inst.off ? el("span", { class: "off-chip" }, "Off") : inst.fixed ? badge("fixe", "neutral") : placed ? badge("matée", "ok") : badge("libre", "warn"),
         /* On / Off : put aside, the part stays in the list with its joints and counts for nothing — view, bill of materials, mass, drawing, exports */
         onOff(!inst.off, (on) => store.updateAssembly(id, (x) => { setInstOff(x, inst.id, !on); }, `${name} ${on ? "à On" : "à Off"}`), name,
@@ -311,7 +311,8 @@ function render(main, args) {
     if (!inst) return [...back, { label: "Ajouter une pièce ou un sous-assemblage…", icon: "plus", run: () => addDialog() }];
     const name = what(inst).name, flag = (key, on, word) => store.updateAssembly(id, (x) => { const i = x.instances.find((q) => q.id === iid); if (on) i[key] = true; else delete i[key]; }, `${name} ${word}`);
     const RUN = { open: () => openPart(iid), alone: () => isolate(iid), all: showAll, hide: () => hide(iid), show: () => flag("hidden", false, "à l'écran"), off: () => flag("off", true, "à Off"), on: () => flag("off", false, "à On"),
-      fix: () => flag("fixed", true, "fixe"), free: () => flag("fixed", false, "libre"), form: () => formFrom([iid]), dissolve: () => dissolve(iid), remove: () => dropInst(iid) };
+      fix: () => flag("fixed", true, "fixe"), free: () => flag("fixed", false, "libre"), form: () => formFrom([iid]), dissolve: () => dissolve(iid), remove: () => dropInst(iid),
+      look: () => openInstLookPicker(id, iid, left.querySelector(`[data-inst="${CSS.escape(iid)}"] .look-dot`) || left) };
     return instanceMenu(asm(), iid, name).map((it) => (it && it.act ? { ...it, run: RUN[it.act] } : it));      // one menu, on the line of the list and on the part in the view
   }
   function instKey(e) {
@@ -328,7 +329,7 @@ function render(main, args) {
         el("div", { class: "form-actions", style: { justifyContent: "flex-start" } }, btn("Remettre à On", () => store.updateAssembly(id, (x) => { setInstOff(x, inst.id, false); }, `${what(inst).name} à On`), { small: true, primary: true, icon: "power" }),
           btn("Retirer", () => store.updateAssembly(id, (x) => without(x, inst.id), `${what(inst).name} : retrait de ${id}`), { small: true, icon: "trash", danger: true }))); return; }
     if (isSub(inst)) { subTab(body, { inst, ctx: st.ctx, remove: () => dropInst(inst.id), dissolve: () => dissolve(inst.id), fix: () => store.updateAssembly(id, (x) => { const i = x.instances.find((q) => q.id === inst.id); if (i.fixed) delete i.fixed; else i.fixed = true; }, `${what(inst).name} ${inst.fixed ? "libre" : "fixe"}`),
-      move: (k, v) => store.updateAssembly(id, (x) => { const i = x.instances.find((q) => q.id === inst.id); i.placement = i.placement || { t: [0, 0, 0], r: [0, 0, 0] }; i.placement.t[k] = v; }, `${what(inst).name} : position`) }); const turn = turner.section(); if (turn) body.append(turn); return; }
+      move: (k, v) => store.updateAssembly(id, (x) => { const i = x.instances.find((q) => q.id === inst.id); i.placement = i.placement || { t: [0, 0, 0], r: [0, 0, 0] }; i.placement.t[k] = v; }, `${what(inst).name} : position`) }); body.append(instLookSection(id, inst)); const turn = turner.section(); if (turn) body.append(turn); return; }
     const spec = store.part(inst.part), b = st.ctx.built[inst.part], m = st.ctx.sol.placements[inst.id];
     if (!spec || !b) { body.append(el("h3", null, inst.part), el("p", { class: "form-error" }, "Cette pièce n'est plus dans le projet, ou n'a pas pu être construite."), el("div", { class: "form-actions", style: { justifyContent: "flex-start" } }, btn("Retirer", () => dropInst(inst.id), { small: true, icon: "trash", danger: true }))); return; }
     body.append(el("h3", null, spec.name || spec.id), el("p", { class: "muted", style: { fontSize: ".84rem" } }, `${spec.id} · occurrence ${inst.id} · ${fmtMass(b.mass)} · position ${fmtDims([m[12], m[13], m[14]], 1).replace(/ × /g, " ; ")}`),
@@ -341,6 +342,7 @@ function render(main, args) {
       const mate = (a.mates || []).find((k) => (k.a.inst === inst.id && k.a.iface === it.id) || (k.b.inst === inst.id && k.b.iface === it.id));
       return el("p", { style: { fontSize: ".86rem", margin: "0 0 .3rem" } }, badge(it.side, it.side === "B" ? "b" : "a"), " ", el("b", null, it.name), mate ? ` — matée (${mate.id})` : " — libre");
     }), !b.interfaces.length && el("p", { class: "muted" }, "Cette pièce n'a pas d'interface : elle ne peut pas se mater. Ajoutez-en dans le Part Studio.")));
+    body.append(instLookSection(id, inst));      // what it shows here, and what its part shows everywhere
     const turn = turner.section(); if (turn) body.append(turn);      // its orientation : the angle the handle of the view turns, as a number
     if (!st.ctx.sol.placedBy[inst.id] && !inst.fixed) {
       const t = (inst.placement && inst.placement.t) || [0, 0, 0];
