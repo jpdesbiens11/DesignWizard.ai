@@ -154,7 +154,7 @@ function render(main) {
     if ((p.boards || []).length) {                               // electronic boards : where each one stands in its flow
       const holder = el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, "Cartes électroniques"), el("p", { class: "muted" }, "Vérification en cours…"));
       doc.append(holder);
-      import("../pcba/summary.js").then(({ boardSummary }) => { if (!alive) return; holder.lastChild.replaceWith(table(["Carte", "Contenu", "Avancement", "Vérifications", "Gamme d'assemblage", "Revue"], boardSummary(p).map((b) => [el("a", { href: `#/pcba/${encodeURIComponent(b.id)}` }, `${b.id} — ${b.name}`), b.content, b.stage, badge(b.checks, b.errors ? "danger" : b.warns ? "warn" : "ok"), b.assembly, b.review]))); }).catch((e) => { holder.lastChild.textContent = e.message; });
+      import("../pcba/summary.js").then(({ boardSummary }) => { if (!alive) return; holder.lastChild.replaceWith(table(["Carte", "Contenu", "Avancement", "Vérifications", "Gamme d'assemblage", "Labo — plan de test", "Revue"], boardSummary(p).map((b) => [el("a", { href: `#/pcba/${encodeURIComponent(b.id)}` }, `${b.id} — ${b.name}`), b.content, b.stage, badge(b.checks, b.errors ? "danger" : b.warns ? "warn" : "ok"), b.assembly, el("a", { href: `#/elab/${encodeURIComponent(b.id)}` }, b.lab), b.review]))); }).catch((e) => { holder.lastChild.textContent = e.message; });
     }
     const sims = simulationSummary(p);
     if (sims.length) doc.append(el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, "Simulations — éléments finis simplifiés"),

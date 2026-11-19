@@ -1,0 +1,18 @@
+/* DesignWizard.ai — the top bar by discipline : three groups (Mécanique, Électronique, Produit), each of which flips down its screens as
+   numbered tiles ; the groups keep their width, the tools give way. Markup : core/app.js (NAV). See docs/ERGONOMIE.md. */
+
+.nav-wrap { flex: none; } .tab.nav-group { border: 0; background: none; cursor: pointer; font: inherit; font-size: .93rem; font-weight: 500; } .tab.nav-group .nav-name { display: inline; } .tab.nav-group.active { font-weight: 650; }
+.nav-chev { width: .8rem; height: .8rem; opacity: .6; transition: transform .2s ease; } .nav-group[aria-expanded="true"] .nav-chev { transform: rotate(180deg); }
+.tab:not(.nav-group):not(.active) span { display: none; }
+.menu.nav-pop { left: 0; right: auto; min-width: 330px; padding: .45rem; border-top: 5px solid var(--dom); transform-origin: top center; animation: nav-flip .18s ease; }
+@keyframes nav-flip { from { transform: perspective(600px) rotateX(-40deg); opacity: 0; } to { transform: none; opacity: 1; } }
+.nav-hint { display: flex; align-items: baseline; gap: .45rem; margin: .1rem .3rem .4rem; color: var(--dom); } .nav-hint small { color: var(--muted); font-size: .78rem; } .nav-hint .sk-icon { align-self: center; }
+.nav-tile { display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; gap: .55rem; padding: .42rem .5rem; border-radius: var(--r-small); border-left: 4px solid transparent; color: inherit; text-decoration: none; }
+.nav-tile:hover, .nav-tile:focus-visible { background: color-mix(in srgb, var(--dom) 12%, var(--surface)); border-left-color: var(--dom); outline: none; } .nav-tile.on { background: color-mix(in srgb, var(--dom) 18%, var(--surface)); border-left-color: var(--dom); }
+.nav-step { width: 1.25rem; height: 1.25rem; display: grid; place-items: center; border-radius: 50%; background: var(--dom); color: #fff; font: 700 .7rem var(--label-font, sans-serif); }
+.nav-text { display: grid; min-width: 0; } .nav-text small { color: var(--muted); font-size: .76rem; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 1250px) { .tab.nav-group .nav-name { max-width: 9rem; overflow: hidden; text-overflow: ellipsis; } }
+/* the groups are never covered : they keep their width, and what gives way is the status word of the tools, then the reminder of the wand's shortcut */
+.topbar .tabs { flex: 1 0 auto; } .topbar .top-tools { flex: 0 1 auto; min-width: 0; } .top-tools > * { flex: none; } .top-tools > #kernel-chip { flex: 0 1 auto; min-width: 2.4rem; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 1500px) { .wand kbd { display: none; } }
+@media (prefers-reduced-motion: reduce) { .menu.nav-pop { animation: none; } }

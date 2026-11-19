@@ -80,6 +80,7 @@ function render(main, args) {
     head.append(el("div", { class: "pcba-title" }, icon("chip"),
       store.boards.length > 1 ? el("select", { "aria-label": "Carte", onChange: (e) => { ui.ref = ui.net = ui.fn = null; go(`#/pcba/${encodeURIComponent(e.target.value)}`); } }, store.boards.map((b) => el("option", { value: b.id, selected: b.id === id }, `${b.id} — ${b.name || ""}`))) : el("b", null, `${board.id} — ${board.name || ""}`),
       badge(`rév. ${board.revision || "A"}`), el("span", { class: "grow" }),
+      el("a", { class: "btn btn-small", href: `#/elab/${encodeURIComponent(id)}`, "data-lab": "", "data-tip": "Laboratoire : essayer cette carte sur un banc simulé — pistes qui s'allument, oscilloscopes — et sortir son plan de test fonctionnel" }, icon("sensor"), "Labo"),
       btn("", () => createFrom(emptyBoard("PCBA-001", "Nouvelle carte")), { small: true, icon: "plus", tip: "Nouvelle carte" }),
       btn("", async () => { if (await confirmBox("Retirer la carte", `Retirer ${board.id} du projet ?`, "Retirer", true)) { store.removeBoard(id); go("#/pcba"); } }, { small: true, icon: "trash", tip: "Retirer cette carte du projet" })));
     head.append(flowDiagram(ctx, nav));

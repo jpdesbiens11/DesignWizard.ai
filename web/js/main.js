@@ -13,6 +13,7 @@ import "./modules/parts.js";
 import "./modules/extrusion.js";
 import "./modules/pcb.js";
 import "./modules/pcba.js";
+import "./modules/elab.js";
 import "./modules/assembly.js";
 import "./modules/physics.js";
 import "./modules/media.js";

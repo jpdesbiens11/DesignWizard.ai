@@ -230,6 +230,12 @@ liaisons sont refaites avant l'aperçu : on peut demander « écarte le bloc CAN
 technicien.
 Le geste et ses garde-fous sont décrits dans [IA.md](IA.md).
 
+### Et ensuite : le Labo
+
+Le bouton « Labo » de l'en-tête ouvre le laboratoire d'électronique de la carte : chaque bloc sur un banc simulé —
+pistes et composants qui s'allument, deux oscilloscopes, fonction de transfert —, et le **plan de test fonctionnel**
+à dérouler à la réception de la carte, écrit pour quelqu'un qui apprend. Voir [LABO.md](LABO.md).
+
 ## 9. Ce qui est vérifié, ce qui ne l'est pas
 
 - **Vérifié par les tests** : bibliothèque et blocs (chaque composant, chaque broche citée), dimensionnements contre

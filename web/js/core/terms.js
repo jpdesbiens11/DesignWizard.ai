@@ -16,6 +16,7 @@ import { LABEL_KINDS } from "./labels.js";
 import { FINISHES } from "./render_looks.js";
 import { PATTERNS, SHEENS } from "./look_patterns.js";
 import { LIGHT_KINDS, LIGHT_SETUPS } from "./photo_lights.js";
+import { NATURES, INSTRUMENTS } from "../pcba/lab_bench.js";
 import { MODEL_WORDS } from "../cad/connector_series.js";
 import { RULE_TITLES } from "../analysis/dfx_titles.js";
 import { MODELS } from "../analysis/physics/index.js";
@@ -48,6 +49,14 @@ const GATE_FR = { pin: "seuil capillaire ; buse chaude", edge: "seuil latéral",
 const FEATURES = [["Box", "bloc"], ["Cylinder", "cylindre"], ["Coil (helical tube)", "serpentin (tube en hélice)"], ["Extrude", "extrusion de profil"], ["Revolve", "révolution"], ["Hole", "trou"], ["Pocket", "poche"], ["Pad", "bossage plat"], ["Slot", "rainure"], ["Boss", "bossage cylindrique"],
   ["Arch (spring blade)", "lame en pont"], ["Shell", "coque"], ["Fillet", "congé"], ["Chamfer", "chanfrein"], ["Rib", "nervure"], ["Gusset", "gousset"], ["Standoff", "colonnette"], ["Bend", "pli"], ["Flange", "bord plié"], ["Flat pattern", "développé à plat"], ["Bend relief", "dégagement d'angle"]];
 
+/* the words of the electronics lab : what one reads on an instrument, what a test sheet asks for */
+const LAB_TERMS = [["Functional test plan", "plan de test fonctionnel", "les essais d'une carte à sa réception, fiche par fiche"], ["Bench", "banc d'essai", "le poste : alimentation, générateur, oscilloscope"], ["Current limit", "limite de courant", "le réglage de l'alimentation de laboratoire qui protège la carte"],
+  ["Probe (×10)", "sonde (×10)", "la sonde atténuée de l'oscilloscope"], ["Ground spring", "ressort de masse", "la masse courte d'une sonde, pour lire une ondulation"], ["Time base", "base de temps", "le temps par division de l'oscilloscope"], ["AC coupling", "couplage AC", "l'oscilloscope ne garde que ce qui varie"],
+  ["Ripple", "ondulation", "ce qui reste du découpage sur une tension continue"], ["Switching node", "nœud de commutation", "le point d'un régulateur à découpage qui bascule entre l'entrée et la masse"], ["Duty cycle", "rapport cyclique", "la part du temps où l'interrupteur est fermé"], ["Dropout", "chute minimale", "ce qu'un régulateur linéaire perd au moins entre son entrée et sa sortie"],
+  ["Load step", "échelon de charge", "un courant demandé d'un coup, pour voir la sortie se reprendre"], ["Soft start", "démarrage progressif", "la sortie d'un régulateur monte doucement"], ["Transfer function", "fonction de transfert", "la sortie divisée par l'entrée, selon la fréquence"], ["Bode plot", "diagramme de Bode", "gain et phase selon la fréquence"],
+  ["Cut-off frequency", "fréquence de coupure", "là où le gain a perdu 3 dB"], ["Rise time", "temps de montée", "de 10 % à 90 % d'un front"], ["Hysteresis", "hystérésis", "l'écart entre le seuil à la montée et le seuil à la descente"], ["Debounce", "anti-rebond", "ce qui fait d'un contact qui rebondit un seul front"], ["Dead time", "temps mort", "l'instant où les deux interrupteurs d'un demi-pont sont ouverts"],
+  ["Pull-up", "résistance de rappel", "ce qui tient une ligne à l'état haut quand personne ne la tire"], ["Acknowledge (ACK)", "acquittement", "le bit par lequel un composant I²C répond"], ["Dominant / recessive", "dominant / récessif", "les deux états d'un bus CAN ou LIN"], ["Flyback diode", "diode de roue libre", "ce qui laisse le courant d'une bobine s'éteindre"]];
+
 /** The tables a term comes from : every entry carries `label` (English) and `fr`. For the tests, and for the next brick. */
 export const TERM_TABLES = { MODEL_WORDS, PROCESSES, INTERFACE_TYPES, ADHESIVES, WELD_PROCESSES, PLATINGS, CONTACT_FORMS, CONTACT_BASES, STOCK_FORMS, SHOP_VERBS, AM_PROCESSES, LASER_FAMILIES, ENDS, INSULATIONS, LABEL_KINDS, FINISHES };
 
@@ -62,6 +71,8 @@ export function glossary() {
   all("stock", STOCK_FORMS); all("stock", LASER_FAMILIES, "matière en feuille, au laser");
   all("interface", INTERFACE_TYPES, "type d'interface"); all("interface", ADHESIVES, "colle"); all("interface", WELD_PROCESSES, "soudage"); add("interface", "Mate", "accouplement"); add("interface", "Dowel pin", "goupille de positionnement"); add("interface", "Heat-set insert", "insert posé à chaud"); add("interface", "Clearance hole", "trou de passage"); add("interface", "Tapped hole", "trou taraudé"); add("interface", "Counterbore", "lamage"); add("interface", "Countersink", "fraisure"); add("interface", "Slip fit / press fit", "ajustement glissant / serré");
   all("electrical", MODEL_WORDS, "modèle de connecteur"); all("electrical", PLATINGS, "revêtement"); all("electrical", CONTACT_FORMS, "forme de contact"); all("electrical", CONTACT_BASES, "matière de contact"); all("electrical", ENDS, "circuit flexible"); all("electrical", INSULATIONS, "isolant de busbar");
+  all("electrical", NATURES, "nature d'un essai de laboratoire"); all("electrical", INSTRUMENTS, "instrument du laboratoire");
+  for (const [en, fr, note] of LAB_TERMS) add("electrical", en, fr, note);
   all("finish", FINISHES, "finition du rendu"); all("finish", LABEL_KINDS, "étiquette"); all("finish", PATTERNS, "camouflage, motif d'une pièce à l'écran"); all("finish", SHEENS, "finition à l'écran"); all("finish", LIGHT_KINDS, "lumière du studio photo"); all("finish", LIGHT_SETUPS, "éclairage du studio photo");
   for (const m of MATERIALS) if (m.fr) add("stock", m.name, m.fr, "matière");
   for (const m of Array.isArray(MODELS) ? MODELS : Object.values(MODELS)) add("analysis", m.title, m.fr, "modèle de calcul");

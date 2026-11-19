@@ -127,6 +127,7 @@ via GND at=[16, 70.25] d=0.8 drill=0.4
 | `net` | un net : classe, tension, courant, broches |
 | `board` | la carte nue : contour, épaisseur, couches, finition, `coating` (vernis), `hole` (trous) |
 | `plane`, `track`, `via` | le cuivre |
+| `lab` | ce que le Labo garde ([LABO.md](LABO.md)) : `reading` (un relevé mesuré : essai `bloc/essai`, `what`, `value` en SI), `skip` (un essai mis de côté), `note` (une remarque sur un essai) |
 | `component` | un composant ajouté à la bibliothèque du métier, avec ses `pin` et ses `pad` |
 
 Noms réservés aux modules à venir — le format s'étend, la notation ne change pas :

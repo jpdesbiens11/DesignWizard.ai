@@ -21,13 +21,18 @@ import { installPanelKeep } from "./panel_keep.js";
 import { installLoupe, loupeButton } from "./loupe.js";
 import { installUpdateCheck, updateButton } from "./update_check.js";
 
-export const APP_VERSION = "0.101.0";
+export const APP_VERSION = "0.102.0";
 /** What every document of the open project carries beside its content : approval names, organisation, confidentiality note, extraction stamp (core/brand.js). */
 export const docMeta = (when = new Date()) => docIdentity(store.project, when, APP_VERSION);
 const modules = new Map();
-const ORDER = ["home", "shop", "parts", "pcb", "pcba", "assembly", "physics", "creepage", "dfx", "drawings", "review", "report"];
+/* the tools of the top bar, by discipline (demande de JP : « des drop down visuels, ou flip down, par groupes de modules de conception — du haut jusqu'à la
+   simulation — par discipline ») : each group flips down its screens, from the one where one designs to the one where one simulates */
+export const NAV = [
+  { id: "mech", label: "Mécanique", icon: "part", color: "#2563eb", hint: "De l'intention à la simulation", keys: ["shop", "parts", "assembly", "drawings", "physics", "fea"] },
+  { id: "elec", label: "Électronique", icon: "chip", color: "#16a34a", hint: "De la carte au laboratoire", keys: ["pcb", "pcba", "elab", "creepage"] },
+  { id: "product", label: "Produit", icon: "report", color: "#7c3aed", hint: "Règles, revue, dossier", keys: ["dfx", "review", "report"] },
+];
 const SHOP_SCREENS = new Set(["interfaces", "process", "extrusion", "library", "busbar", "flex"]);      // screens of the Shop : its tab stays lit on them (see modules/shop_tabs.js)
-const GROUP_BREAK = new Set(["shop", "assembly", "physics", "review"]);         // a pencil tick before these tabs
 export const app = { modules, context: {}, version: APP_VERSION, current: null, cleanup: null, commands: [] };
 
 /** Register a tool: {key, label, icon, tip, hidden, render(main, args) -> cleanup?}. */
@@ -76,12 +81,18 @@ function studioPanes(main, key) {
 let shellOff = [];                                             // listeners of the current top bar (it is rebuilt on a theme change)
 function topbar() {
   shellOff.forEach((off) => off()); shellOff = [];
-  const tabs = el("nav", { class: "tabs", "aria-label": "Outils" });
-  for (const key of ORDER) {
-    const m = modules.get(key);
-    if (!m || m.hidden) continue;
-    if (GROUP_BREAK.has(key)) tabs.append(el("span", { class: "tab-sep", "aria-hidden": "true" }));
-    tabs.append(el("a", { class: "tab", href: `#/${key}`, "data-key": key, "data-tip": m.tip }, icon(m.icon), el("span", null, m.label)));
+  const tabs = el("nav", { class: "tabs", "aria-label": "Outils" }), home = modules.get("home");
+  if (home) tabs.append(el("a", { class: "tab", href: "#/home", "data-key": "home", "data-tip": home.tip }, icon(home.icon), el("span", null, home.label)));
+  for (const G of NAV) {
+    const wrap = el("div", { class: "menu-wrap nav-wrap" }), close = () => { const m = wrap.querySelector(".menu"); if (m) m.remove(); b.setAttribute("aria-expanded", "false"); };
+    const b = el("button", { class: "tab nav-group", type: "button", "data-group": G.id, "data-key": "", "aria-haspopup": "true", "aria-expanded": "false", "data-tip": `${G.label} — ${G.hint.toLowerCase()}`, style: `--tab-acc:${G.color}`, onClick: () => {
+      const open = wrap.querySelector(".menu"); document.querySelectorAll(".menu").forEach((m) => m.remove()); document.querySelectorAll(".nav-group").forEach((x) => x.setAttribute("aria-expanded", "false")); if (open) return;
+      const list = G.keys.map((k) => [k, modules.get(k)]).filter(([, m]) => m), pop = el("div", { class: "menu nav-pop", role: "menu", "aria-label": G.label, style: `--dom:${G.color}` }, el("p", { class: "nav-hint" }, icon(G.icon), el("b", null, G.label), el("small", null, G.hint)),
+        list.map(([k, m], i) => el("a", { class: "nav-tile" + (b.dataset.key === k ? " on" : ""), href: `#/${k}`, role: "menuitem", "data-nav": k, onClick: close }, el("span", { class: "nav-step", "aria-hidden": "true" }, String(i + 1)), icon(m.icon), el("span", { class: "nav-text" }, el("b", null, m.label), el("small", null, String(m.tip || "").split(/ : | — |\. /)[0])))));
+      wrap.append(pop); b.setAttribute("aria-expanded", "true"); const first = pop.querySelector(".nav-tile.on") || pop.querySelector(".nav-tile"); if (first) first.focus();
+      pop.addEventListener("keydown", (e) => { const t = [...pop.querySelectorAll(".nav-tile")], i = t.indexOf(document.activeElement); if (e.key === "ArrowDown") { e.preventDefault(); t[(i + 1) % t.length].focus(); } else if (e.key === "ArrowUp") { e.preventDefault(); t[(i - 1 + t.length) % t.length].focus(); } });
+    } }, icon(G.icon), el("span", { class: "nav-name" }, G.label), icon("chevron-down", "nav-chev"));
+    wrap.append(b); tabs.append(wrap);
   }
   const chip = el("span", { class: "chip", id: "kernel-chip" }, "Prêt");
   shellOff.push(kernel.onStage((s) => setStatus(s || "Prêt", s ? "busy" : "")));
@@ -89,7 +100,7 @@ function topbar() {
   const showSave = (s) => { save.textContent = s === "saved" ? (store.mode === "drive" ? "Enregistré dans Drive" : "Enregistré") : s === "saving" ? "Enregistrement…" : s === "dirty" ? "Modifié…" : s ? "Non enregistré" : "—"; save.className = "chip" + (s === "error" ? " bad" : s === "saved" ? " done" : s ? " busy" : ""); };
   showSave(store.project ? store.saveState : null);
   shellOff.push(store.on("saved", showSave), store.on("project", () => showSave(store.project ? store.saveState : null)), session.on(() => rebuildShell()));
-  const wand = el("button", { class: "wand", type: "button", "data-tip": "La baguette : tapez ce que vous voulez faire (« 4 trous M4 aux coins », « longueur 150 », « aller à Assemblage »…)", onClick: () => app.openPalette && app.openPalette() },
+  const wand = el("button", { class: "wand", type: "button", "data-tip": "La baguette (Ctrl + K) : tapez ce que vous voulez faire (« 4 trous M4 aux coins », « longueur 150 », « aller à Assemblage »…)", onClick: () => app.openPalette && app.openPalette() },
     icon("wizard"), el("span", { class: "wand-text" }, "Que voulez-vous faire ?"), el("kbd", null, "Ctrl K"));
   const tools = el("div", { class: "top-tools" }, wand, chip, save, mountCodeSwitch(app),
     btn("", () => app.aiLoop && app.aiLoop(), { icon: "sparkle", small: true, tip: "Confier à l'IA : exporter ce que montre l'écran (pièce, assemblage, carte) avec une demande, réimporter la réponse et voir les changements avant de les appliquer" }),
@@ -178,8 +189,10 @@ function route() {
   app.context = {}; app.current = key; app.commands = []; app.guide = [];
   setStatus(kernel.stage().text || "Prêt", kernel.stage().text ? "busy" : "");      // what the last screen said (« … construit en 300 ms ») is not about this one — but a kernel still arriving is
   document.documentElement.dataset.module = key;
-  document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.key === (key === "mvp" || key === "team" || key === "plm" ? "review" : key === "render" || key === "labels" ? "assembly" : SHOP_SCREENS.has(key) ? "shop" : key)));
-  const tab = document.querySelector(".tab.active"); if (tab && tab.scrollIntoView) tab.scrollIntoView({ block: "nearest", inline: "nearest" });      // the tool in use stays in sight in a narrow bar
+  const shown = key === "mvp" || key === "team" || key === "plm" ? "review" : key === "render" || key === "labels" ? "assembly" : key === "media" ? "physics" : SHOP_SCREENS.has(key) ? "shop" : key;      // a screen reached from another lights the one it belongs to
+  document.querySelectorAll(".tab").forEach((t) => { if (!t.dataset.group) { t.classList.toggle("active", t.dataset.key === shown); return; }
+    const G = NAV.find((g) => g.id === t.dataset.group), on = !!G && G.keys.includes(shown), n = t.querySelector(".nav-name"); t.classList.toggle("active", on); t.dataset.key = on ? shown : ""; if (n) n.textContent = on && modules.get(shown) ? `${G.label} · ${modules.get(shown).label}` : G ? G.label : ""; });
+  document.querySelectorAll(".topbar .nav-pop").forEach((m) => m.remove());
   const m = modules.get(key);
   document.title = `${m.label} · DesignWizard.ai`;
   if (!store.project && !["home", "help", "account"].includes(key)) {
@@ -214,9 +227,9 @@ export async function start() {
     else if (mod && !typing && e.key.toLowerCase() === "z" && !e.shiftKey) { e.preventDefault(); const l = store.undo(); toast(l ? `Annulé : ${l}` : "Rien à annuler."); }
     else if (mod && !typing && (e.key.toLowerCase() === "y" || (e.key.toLowerCase() === "z" && e.shiftKey))) { e.preventDefault(); const l = store.redo(); toast(l ? `Rétabli : ${l}` : "Rien à rétablir."); }
     else if (mod && e.key.toLowerCase() === "s") { e.preventDefault(); store.saveNow().then(() => toast("Projet enregistré.", "success")); }
-    else if (e.key === "Escape") { const open = document.querySelector(".topbar .menu"); if (open) { const b = open.parentElement && open.parentElement.querySelector("button"); open.remove(); if (b) b.focus(); } }      // Escape closes a menu of the top bar — the guide too — and gives the focus back to its button
+    else if (e.key === "Escape") { const open = document.querySelector(".topbar .menu"); if (open) { const b = open.parentElement && open.parentElement.querySelector("button"); open.remove(); if (b) { if (b.hasAttribute("aria-expanded")) b.setAttribute("aria-expanded", "false"); b.focus(); } } }      // Escape closes a menu of the top bar — the guide too — and gives the focus back to its button
   });
-  document.addEventListener("click", (e) => { if (!e.target.closest(".menu-wrap")) document.querySelectorAll(".menu").forEach((m) => m.remove()); });
+  document.addEventListener("click", (e) => { if (!e.target.closest(".menu-wrap")) { document.querySelectorAll(".menu").forEach((m) => m.remove()); document.querySelectorAll('.nav-group[aria-expanded="true"]').forEach((x) => x.setAttribute("aria-expanded", "false")); } });      // a click elsewhere closes what was open — and a group says it is closed
   window.addEventListener("beforeunload", () => { if (store.saveState === "dirty") store.saveNow(); });
   if (!location.hash) location.hash = "#/home";
   route();

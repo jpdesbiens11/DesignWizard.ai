@@ -15,7 +15,7 @@ export function busyVeil(host, cls = "view-busy") {
   const time = el("small", { class: "busy-time" }), hint = el("p", { class: "busy-hint" }), actions = el("div", { class: "busy-actions" }), spin = el("span", { class: "busy-spin", "aria-hidden": "true" });
   const card = el("div", { class: "busy-card", role: "status", "aria-live": "polite" }, el("div", { class: "busy-head" }, spin, title, time), bar, sub, hint, actions), node = el("div", { class: `${cls} hidden` }, card);
   host.append(node);
-  let cur = null, timer = 0, off = null, seen = "";
+  let cur = null, timer = 0, off = null, seen = "", shown = "";
   const draw = () => {
     if (!cur) return;
     const now = Date.now(), v = busyView({ ...cur, canCancel: !!cur.cancel, stage: cur.stopped ? null : kernel.stage(), now }), mark = `${v.title}|${v.sub}|${v.ratio}`;
@@ -26,12 +26,15 @@ export function busyVeil(host, cls = "view-busy") {
     if (v.ratio === null) bar.removeAttribute("aria-valuenow"); else bar.setAttribute("aria-valuenow", String(Math.round(v.ratio * 100)));
     const h = cur.stopped ? "" : busyView({ ...cur, canCancel: !!cur.cancel, stage: kernel.stage(), now }).hint; hint.textContent = h; hint.hidden = !h;
   };
-  const buttons = () => { actions.replaceChildren(...[cur && cur.cancel && !cur.stopped ? btn("Annuler", () => { const c = cur.cancel; c(); }, { small: true, icon: "cross", tip: "Arrêter cette opération" }) : null,
+  /* the buttons are made again only when what they are changes : a line of progress that arrives while « Annuler » is being clicked must not
+     take the button away from under the pointer (the click would be lost) — each one reads what to do when it is clicked */
+  const buttons = () => { const sig = `${cur && cur.cancel && !cur.stopped ? "c" : ""}${cur && cur.retry ? (cur.stopped ? "R" : "r") : ""}`; if (sig === shown && actions.childNodes.length === sig.length) return; shown = sig;
+    actions.replaceChildren(...[cur && cur.cancel && !cur.stopped ? btn("Annuler", () => { const c = cur.cancel; c(); }, { small: true, icon: "cross", tip: "Arrêter cette opération" }) : null,
     cur && cur.retry ? btn(cur.stopped ? "Reprendre" : "Réessayer", () => { const r = cur.retry; r(); }, { small: true, primary: !!cur.stopped, icon: "refresh" }) : null].filter(Boolean)); actions.hidden = !actions.childNodes.length; };
   return { node,
     /** Shows the veil, or hides it when the text is empty. */
     set(text, o = {}) {
-      if (!text) { cur = null; seen = ""; node.classList.add("hidden"); clearInterval(timer); timer = 0; if (off) { off(); off = null; } return; }
+      if (!text) { cur = null; seen = ""; shown = ""; actions.replaceChildren(); node.classList.add("hidden"); clearInterval(timer); timer = 0; if (off) { off(); off = null; } return; }
       const fresh = !cur || !!cur.stopped !== !!o.stopped;
       cur = { text, done: o.done, total: o.total, kind: o.kind || "", cancel: o.cancel || null, retry: o.retry || null, stopped: !!o.stopped, startedAt: fresh ? Date.now() : cur.startedAt, changedAt: fresh ? Date.now() : cur.changedAt };
       node.classList.remove("hidden"); buttons(); draw();

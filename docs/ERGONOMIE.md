@@ -435,6 +435,39 @@ Question de JP (18 novembre 2026) : crée-t-on une interface nouvelle, ou s'appu
   l'interface honnête, les mécanismes dont tout écran hérite, l'aller-retour IA (recommandé, jamais supposé). Chaque
   règle y dit si c'est un usage établi ou un choix maison. Voir `skills/README.md`.
 
+## La barre du haut : trois groupes, par discipline
+
+Demande de JP (19 novembre 2026) : « si le menu commence à être peuplé horizontalement, peut-être des drop down
+visuels ou flip down, par groupes de modules de conception, par discipline ». L'essai pilote l'avait montré : à
+1366 px, les onglets étaient coupés sans que rien ne le dise.
+
+La barre porte l'accueil et **trois groupes** : **Mécanique** (Atelier, Pièces, Assemblage, Dessins, Physique,
+Simulation), **Électronique** (PCB, PCBA, Labo, Isolation), **Produit** (DFx, Revue, Rapport). Un clic sur un groupe
+fait basculer un panneau de tuiles numérotées, dans l'ordre où l'on conçoit — chacune avec son pictogramme, son nom
+et une ligne qui dit ce qu'elle fait. Le groupe de l'écran ouvert est allumé et le nomme : « Électronique · Labo ».
+
+- **Usage suivi** : le bouton de menu du web — le bouton dit qu'il a un panneau et s'il est ouvert (`aria-haspopup`,
+  `aria-expanded`), le panneau est un `menu`, les flèches passent d'une tuile à l'autre, Échap ferme et rend le
+  curseur au bouton, un clic ailleurs ferme.
+- **Choix maison** : le découpage en trois disciplines et l'ordre des tuiles ; le basculement (« flip ») est un effet,
+  coupé quand le système demande moins d'animation.
+- Un nouvel écran s'ajoute à un groupe (`NAV` de `web/js/core/app.js`) ; il n'y a plus d'onglet à plat.
+
+Les groupes gardent toujours leur largeur : quand la fenêtre est étroite, c'est le mot d'état des outils (« Prêt »,
+« Essai simulé ») qui se raccourcit, et le rappel « Ctrl K » de la baguette s'efface sous 1500 px (il reste dans son
+infobulle). Avant cette règle, à 1366 px, la baguette recouvrait le dernier groupe — le robot d'audit ne le voyait
+pas, une capture l'a montré.
+
+Essayé dans Chromium à 1280, 1366 et 1600 px (rien n'est coupé ni recouvert, le panneau reste dans la fenêtre), au
+clavier ; pas essayé au toucher, ni sur Firefox et Safari.
+
+### Le bouton « Annuler » ne bouge pas sous le pointeur
+
+Trouvé en essayant le plan de test du Labo : le voile refaisait ses boutons à chaque ligne de progression, et un clic
+sur « Annuler » qui chevauchait deux lignes se perdait (appui sur un bouton, relâchement sur le suivant). Le voile ne
+refait plus ses boutons que si leur nature change (`buttons()` de `web/js/core/busy.js`) : toute opération longue en
+hérite.
+
 ## Une page ouverte annonce la nouvelle version
 
 L'application est une seule page, gardée ouverte des heures : ce qui est publié entre-temps ne l'atteint pas tant
