@@ -18,7 +18,8 @@ import { simulationSummary } from "../analysis/fea/summary.js";
 import { routing } from "../cad/shop.js";
 import { orderCheck } from "../cad/order.js";
 import { labelRows, labelGuide } from "../core/labels.js";
-import { lookRows, renderOf, SCENES, SHOTS } from "../core/render_looks.js";
+import { lookRows, renderOf, renderLights, SCENES, SHOTS } from "../core/render_looks.js";
+import { LIGHT_SETUPS } from "../core/photo_lights.js";
 import { makeDrawing, svgNode } from "./drawings.js";
 import { reviewRows, reviewProgress, revisionRows } from "../core/review.js";
 import { mvpRows, trlReached } from "../core/mvp.js";
@@ -130,7 +131,7 @@ function render(main) {
       if (lab.length) sec.append(el("h3", { style: { marginTop: ".8rem" } }, "Étiquettes, autocollants et marquages"), table(["Repère", "Nom", "Genre", "Motif", "Sur", "Surface", "Taille (mm)", "Aire (cm²)"], lab.map((r) => [r.id, r.name, r.kind, r.art, r.on, r.surface, `${fmt(r.w, 0)} × ${fmt(r.h, 0)}`, fmt(r.area, 1)])),
         ...(labAsk.length ? [el("p", { class: "muted", style: { fontSize: ".84rem" } }, labAsk.map((x) => x.text).join(" "))] : []));
       const fin = a.asm.render ? lookRows({ ...a.asm, instances: a.ctx.asm.instances }, a.ctx.built, Object.fromEntries(a.ctx.asm.instances.map((i) => [i.part, (store.part(i.part) || {}).name || i.part]))).filter((r) => r.chosen) : [], rd = renderOf(a.asm);
-      if (fin.length) sec.append(el("h3", { style: { marginTop: ".8rem" } }, "Rendu marketing — finitions choisies"), el("p", { class: "muted", style: { fontSize: ".84rem" } }, `Décor : ${(SCENES[rd.scene] || SCENES.studio).fr.toLowerCase()} ; point de vue : ${rd.view ? "réglé à la souris" : (SHOTS[rd.shot] || SHOTS.hero).fr.toLowerCase()}. Réglages d'image, pas des finitions d'atelier.`),
+      if (fin.length) sec.append(el("h3", { style: { marginTop: ".8rem" } }, "Studio photo — finitions choisies"), el("p", { class: "muted", style: { fontSize: ".84rem" } }, `Décor : ${(SCENES[rd.scene] || SCENES.studio).fr.toLowerCase()} ; éclairage : ${renderLights(rd).own ? "lumières placées à la main" : LIGHT_SETUPS[renderLights(rd).setup].label} ; point de vue : ${rd.view ? "réglé à la souris" : (SHOTS[rd.shot] || SHOTS.hero).fr.toLowerCase()}. Réglages d'image, pas des finitions d'atelier.`),
         table(["Référence", "Pièce", "Finition", "Couleur"], fin.map((r) => [r.part, r.name, r.label, r.color])));
       const isoA = (a.asm.isolation || {}).results;
       sec.append(el("h3", { style: { marginTop: ".8rem" } }, "Isolation — creepage et clearance (IEC 60664-1)"));

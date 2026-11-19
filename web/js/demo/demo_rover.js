@@ -198,7 +198,7 @@ const BUILD = [
    list by the same step as the button « Former un sous-assemblage » (core/asm_form.js). One joint is left at the top : the tray on
    the four posts of the chassis, from a part of one module to a part of the other. */
 const TRAY = ["plaque", "boitier", "joint", "pi", "pwm", "imu", "diviseurs", "convertisseur", "moniteur", "coupure", "us_centre", "us_gauche", "us_droite", "tof", "arret", "del"];
-const MODULES = { parts: PARTS, assemblies: [{ dw: "assembly/1", id: "RVR-ASM", name: "Rover — assemblage général",
+const MODULES = { parts: PARTS, assemblies: [{ dw: "assembly/1", id: "RVR-ASM", name: "Rover — assemblage général", render: { scene: "desert", shot: "road", size: "hd", ground: true, labels: true, looks: {}, view: null },      // the photo studio opens on a dune
   instances: BUILD.map(([id, p], k) => ({ id, part: p.id, ...(k ? {} : { fixed: true, placement: { t: [0, 0, 0], r: [0, 0, 0] } }) })),
   mates: BUILD.slice(1).map(([id, , mine, to, theirs, o], k) => ({ id: `M${k + 1}`, a: { inst: id, iface: mine }, b: { inst: to, iface: theirs }, linked: true, by: "key", ...(o || {}) })),
   plan: { order: BUILD.map(([id]) => id) } }] };

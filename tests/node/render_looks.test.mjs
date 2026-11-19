@@ -12,7 +12,7 @@ test("finishes are grouped by nature, each group with its colour ; scenes, point
   assert.equal(Object.keys(FINISHES).length, 15);
   for (const [k, f] of Object.entries(FINISHES)) { assert.ok(FINISH_GROUPS.some((g) => g.id === f.group), k); assert.ok(f.fr && f.text, k); assert.ok(f.metal >= 0 && f.metal <= 1 && f.rough > 0 && f.rough <= 1 && f.coat >= 0 && f.coat <= 1, k); if (f.pattern) assert.ok(f.period > 0, k); }
   for (const g of FINISH_GROUPS) assert.ok(Object.values(FINISHES).some((f) => f.group === g.id), g.id);
-  assert.deepEqual(Object.keys(SCENES), ["studio", "dark", "sky"]); assert.deepEqual(Object.keys(SHOTS), ["hero", "side", "front", "low", "top"]); assert.deepEqual([SIZES.hd.w, SIZES.hd.h, SIZES.uhd.w], [1920, 1080, 3840]);
+  assert.deepEqual(Object.keys(SCENES).slice(0, 3), ["studio", "dark", "sky"]); assert.deepEqual(Object.keys(SHOTS), ["hero", "road", "side", "front", "low", "top"]); assert.deepEqual([SIZES.hd.w, SIZES.hd.h, SIZES.uhd.w], [1920, 1080, 3840]);
   assert.equal(methodById("render-finishes").how, "own");
 });
 test("a body shows the finish of its material until one is chosen for its part", () => {

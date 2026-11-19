@@ -15,6 +15,7 @@ import { INSULATIONS } from "./busbar.js";
 import { LABEL_KINDS } from "./labels.js";
 import { FINISHES } from "./render_looks.js";
 import { PATTERNS, SHEENS } from "./look_patterns.js";
+import { LIGHT_KINDS, LIGHT_SETUPS } from "./photo_lights.js";
 import { MODEL_WORDS } from "../cad/connector_series.js";
 import { RULE_TITLES } from "../analysis/dfx_titles.js";
 import { MODELS } from "../analysis/physics/index.js";
@@ -61,7 +62,7 @@ export function glossary() {
   all("stock", STOCK_FORMS); all("stock", LASER_FAMILIES, "matière en feuille, au laser");
   all("interface", INTERFACE_TYPES, "type d'interface"); all("interface", ADHESIVES, "colle"); all("interface", WELD_PROCESSES, "soudage"); add("interface", "Mate", "accouplement"); add("interface", "Dowel pin", "goupille de positionnement"); add("interface", "Heat-set insert", "insert posé à chaud"); add("interface", "Clearance hole", "trou de passage"); add("interface", "Tapped hole", "trou taraudé"); add("interface", "Counterbore", "lamage"); add("interface", "Countersink", "fraisure"); add("interface", "Slip fit / press fit", "ajustement glissant / serré");
   all("electrical", MODEL_WORDS, "modèle de connecteur"); all("electrical", PLATINGS, "revêtement"); all("electrical", CONTACT_FORMS, "forme de contact"); all("electrical", CONTACT_BASES, "matière de contact"); all("electrical", ENDS, "circuit flexible"); all("electrical", INSULATIONS, "isolant de busbar");
-  all("finish", FINISHES, "finition du rendu"); all("finish", LABEL_KINDS, "étiquette"); all("finish", PATTERNS, "camouflage, motif d'une pièce à l'écran"); all("finish", SHEENS, "finition à l'écran");
+  all("finish", FINISHES, "finition du rendu"); all("finish", LABEL_KINDS, "étiquette"); all("finish", PATTERNS, "camouflage, motif d'une pièce à l'écran"); all("finish", SHEENS, "finition à l'écran"); all("finish", LIGHT_KINDS, "lumière du studio photo"); all("finish", LIGHT_SETUPS, "éclairage du studio photo");
   for (const m of MATERIALS) if (m.fr) add("stock", m.name, m.fr, "matière");
   for (const m of Array.isArray(MODELS) ? MODELS : Object.values(MODELS)) add("analysis", m.title, m.fr, "modèle de calcul");
   add("analysis", "Refinement zone", "zone de raffinement", "simulation : un volume où les cubes du maillage sont plus petits"); add("analysis", "Mesh refinement", "raffinement du maillage", "simulation"); add("analysis", "Tied node (hanging node)", "nœud lié (nœud suspendu)", "simulation : un nœud fin, au bord d'une zone, qui suit le cube sur lequel il repose");

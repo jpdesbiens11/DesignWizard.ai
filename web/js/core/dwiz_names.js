@@ -49,7 +49,7 @@ const assembly = {
     ["Ce qui les tient ensemble — les interfaces accouplées", ["mates"]],
     ["Ce que l'on vérifie — isolation électrique", ["isolation"]],
     ["Ce qu'il porte — étiquettes, autocollants, marquages", ["labels"]],
-    ["L'image que l'on en fait — décor, point de vue, finition de chaque pièce", ["render"]],
+    ["La photo que l'on en fait — décor (scene : studio, dark, sky, desert, country, snow, seaside, boat, carrier, city, roof), taille du produit dans le décor (scale), point de vue, éclairage (setup : three-point, high-key, low-key, backlit, noon, morning, golden, overcast — ou des lignes « light » placées à la main : kind key, fill, rim, top, sun ; az, el en degrés ; power ; soft 0 à 1 ; kelvin ; shadow ; off), lumière d'ambiance (ambient), finesse (quality) et exposition (exposure) de l'image, finition de chaque pièce", ["render"]],
     ["Comment il se monte — la gamme d'assemblage annotée : l'ordre, une note par étape, les points à voir", ["plan"]],
   ],
   kids: {
@@ -57,7 +57,7 @@ const assembly = {
     mates: { word: "mate", head: ["id"] },
     isolation: { kids: { nets: { word: "net", head: ["name"] }, params: {} } },
     labels: { word: "label", head: ["id", "kind"], first: ["name", "inst", "w", "h", "turn"], kids: { art: {}, on: {} } },
-    render: { first: ["scene", "shot", "size", "ground", "labels"], kids: { looks: { word: "look", keyed: true, head: ["finish"] }, view: {} } },
+    render: { first: ["scene", "shot", "size", "ground", "labels", "setup", "ambient", "scale", "quality", "exposure"], kids: { looks: { word: "look", keyed: true, head: ["finish"] }, view: {}, lights: { word: "light", head: ["id", "kind"] } } },
     plan: PLAN,
   },
 };

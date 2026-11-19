@@ -2,13 +2,16 @@
    size of the picture. A finish is how a surface answers light — a gloss paint, a brushed metal, a matte plastic, a carbon
    weave, a clear shell — with, for some, a fine pattern laid on it ; it is chosen per part (every instance of the part
    wears it) and may carry its own colour. What is not chosen follows the material of the part.
-   render = { scene, shot, size, ground, labels, looks: { <part id>: { finish, color } }, view: { az, el, dist } | null }
+   render = { scene, shot, size, ground, labels, looks: { <part id>: { finish, color } }, view: { az, el, dist } | null,
+              setup, lights: [ … ] | null, ambient, scale, quality, exposure }
    kept on the assembly. Pure : no DOM, no three.js — the stage that draws it is core/render_stage.js. */
 
 import { material } from "../cad/materials.js";
 import { liveAsm } from "./asm_live.js";
 import { validHex, overLook } from "./part_look.js";
 import { PATTERNS, SHEENS } from "./look_patterns.js";
+import { SETS, validSet } from "./photo_sets.js";
+import { LIGHT_SETUPS, tidyLights, setupLights, setupAmbient, lightGuide } from "./photo_lights.js";
 
 export const FINISH_GROUPS = [
   { id: "paint", label: "Paints", fr: "Peintures", color: "#d6453d" }, { id: "metal", label: "Metals", fr: "Métaux", color: "#5b7fa6" }, { id: "plastic", label: "Plastics and elastomers", fr: "Plastiques et élastomères", color: "#ee8a32" },
@@ -32,20 +35,22 @@ export const FINISHES = {
   glass: { group: "clear", label: "Glass", fr: "Verre", text: "Presque invisible, reflets vifs", metal: 0, rough: 0.04, coat: 1, opacity: 0.22 },
   "clear-plastic": { group: "clear", label: "Clear plastic", fr: "Plastique transparent", text: "Laisse voir ce qu'il couvre", metal: 0, rough: 0.18, coat: 0.5, opacity: 0.38 },
 };
-export const SCENES = {
-  studio: { fr: "Studio clair", text: "Fond blanc, lumière douce : le produit seul", sky: ["#ffffff", "#e3e8ee"], ground: "#f3f5f7", key: 1.5, fill: 0.5, room: 1 },
-  dark: { fr: "Studio sombre", text: "Fond anthracite, reflets marqués", sky: ["#4a5360", "#0f1217"], ground: "#16191e", key: 2.2, fill: 0.22, room: 1.5 },
-  sky: { fr: "Plein air", text: "Ciel clair, horizon : le produit dehors", sky: ["#8fc0f0", "#eef4fa"], ground: "#dfe4e8", key: 1.9, fill: 0.6, room: 1.1 },
-};
+/* the sets (where the product stands) are in core/photo_sets.js, the lights in core/photo_lights.js ; a render keeps which set, how large the
+   product looks in it (scale), the lighting — a setup of the list, or lights of one's own —, the light from everywhere (ambient), the exposure
+   of the picture (in stops) and how far it is refined */
+export const SCENES = SETS;
+export const QUALITY = { draft: { fr: "Rapide", text: "16 passes : une image en un instant", n: 16 }, fine: { fr: "Soignée", text: "48 passes : des ombres fondues", n: 48 }, max: { fr: "Maximale", text: "160 passes : pour l'image que l'on publie", n: 160 } };
 /* az : around the vertical axis from +X toward +Y, el : above the horizon (degrees) ; fill : how much of the picture the product takes */
 export const SHOTS = {
-  hero: { fr: "Trois-quarts", text: "La vue qui montre le plus", az: -35, el: 18, fill: 0.82 }, side: { fr: "Profil", text: "De côté, à hauteur", az: -90, el: 4, fill: 0.86 },
+  hero: { fr: "Trois-quarts", text: "La vue qui montre le plus", az: -35, el: 18, fill: 0.82 }, road: { fr: "Près du sol", text: "De trois-quarts, bas : le décor derrière le produit", az: -38, el: 6.5, fill: 0.6 }, side: { fr: "Profil", text: "De côté, à hauteur", az: -90, el: 4, fill: 0.86 },
   front: { fr: "De face", text: "Dans l'axe", az: 0, el: 6, fill: 0.8 }, low: { fr: "Contre-plongée", text: "D'en bas : le produit domine", az: -40, el: -12, fill: 0.84 },
   top: { fr: "Plongée", text: "D'en haut", az: -30, el: 55, fill: 0.78 },
 };
 export const SIZES = { hd: { fr: "Écran 16:9", w: 1920, h: 1080 }, square: { fr: "Carré", w: 1600, h: 1600 }, portrait: { fr: "Portrait 2:3", w: 1400, h: 2100 }, wide: { fr: "Bandeau 3:1", w: 2400, h: 800 }, uhd: { fr: "Grand format 4K", w: 3840, h: 2160 } };
 export const blankRender = () => ({ scene: "studio", shot: "hero", size: "hd", ground: true, labels: true, looks: {}, view: null });
-export const renderOf = (asm) => ({ ...blankRender(), ...((asm && asm.render) || {}), looks: { ...(((asm && asm.render) || {}).looks || {}) } });
+/* what a render says of its lighting and of its picture when it says nothing : it follows the lighting of its set, at the size of the product, refined with care. A file keeps these only when they were chosen. */
+const UNSAID = { setup: null, lights: null, ambient: null, scale: 1, quality: "fine", exposure: 0 };
+export const renderOf = (asm) => ({ ...UNSAID, ...blankRender(), ...((asm && asm.render) || {}), looks: { ...(((asm && asm.render) || {}).looks || {}) } });
 
 /** The finish a body wears when nothing is chosen : from the class of its material, and whether it is see-through. */
 export function defaultFinish(materialId, opacity = 1) {
@@ -81,7 +86,7 @@ export function lookRows(asm, built, names = {}) {
 /** What the render asks for. parts : the ids of the parts of the assembly. → [{ level, text, id, field }] for the guide */
 export function renderGuide(asm, parts = []) {
   const out = [], say = (level, text, id = null, field = null) => out.push({ level, text, id, field }), R = renderOf(asm);
-  if (!SCENES[R.scene]) say("error", `Décor inconnu : « ${R.scene} ».`, null, "scene"); if (!SHOTS[R.shot] && !R.view) say("error", `Point de vue inconnu : « ${R.shot} ».`, null, "shot"); if (!SIZES[R.size]) say("error", `Format inconnu : « ${R.size} ».`, null, "size");
+  if (!validSet(R.scene)) say("error", `Décor inconnu : « ${R.scene} ».`, null, "scene"); if (!SHOTS[R.shot] && !R.view) say("error", `Point de vue inconnu : « ${R.shot} ».`, null, "shot"); if (!SIZES[R.size]) say("error", `Format inconnu : « ${R.size} ».`, null, "size");
   for (const [p, c] of Object.entries(R.looks)) {
     if (parts.length && !parts.includes(p)) say("warn", `Une finition est gardée pour ${p}, qui n'est plus dans l'assemblage.`, p, "looks");
     else if (!c || !FINISHES[c.finish]) say("error", `${p} : finition inconnue (« ${c && c.finish} »).`, p, "looks");
@@ -89,6 +94,7 @@ export function renderGuide(asm, parts = []) {
     else if (c.color && !FINISHES[c.finish].tint) say("tip", `${p} : « ${FINISHES[c.finish].label} » montre la couleur de la matière — la couleur choisie ne compte pas.`, p, "looks");
   }
   if (!Object.keys(R.looks).length) say("tip", "Aucune finition choisie : chaque pièce montre celle de sa matière. Cliquez une pièce pour l'habiller.", null, "looks");
+  const L = renderLights(R); for (const g of lightGuide(L.lights, L.ambient)) out.push(g);
   return out;
 }
 
@@ -126,8 +132,20 @@ export function cameraFor(bbox, shot, aspect = 16 / 9, fov = 28) {
 /** A render block put back in order — what comes from a file or from an AI. */
 export function tidyRender(raw) {
   const b = blankRender(), r = { ...b, ...(raw && typeof raw === "object" ? raw : {}) };
-  if (!SCENES[r.scene]) r.scene = b.scene; if (!SHOTS[r.shot]) r.shot = b.shot; if (!SIZES[r.size]) r.size = b.size; r.ground = r.ground !== false; r.labels = r.labels !== false;
+  if (!validSet(r.scene)) r.scene = b.scene; if (!SHOTS[r.shot]) r.shot = b.shot; if (!SIZES[r.size]) r.size = b.size; r.ground = r.ground !== false; r.labels = r.labels !== false;
   r.looks = Object.fromEntries(Object.entries(r.looks && typeof r.looks === "object" ? r.looks : {}).filter(([, c]) => c && FINISHES[c.finish]).map(([p, c]) => [p, { finish: c.finish, ...(validHex(c.color) ? { color: c.color } : {}) }]));
   r.view = r.view && [r.view.az, r.view.el, r.view.dist].every((x) => Number.isFinite(Number(x))) ? { az: +r.view.az, el: +r.view.el, dist: +r.view.dist } : null;
+  r.setup = typeof r.setup === "string" && Object.hasOwn(LIGHT_SETUPS, r.setup) ? r.setup : null; r.lights = Array.isArray(r.lights) ? tidyLights(r.lights) : null;
+  const within = (v, lo, hi, d) => (v !== null && v !== "" && Number.isFinite(Number(v)) ? Math.max(lo, Math.min(hi, Number(v))) : d);
+  r.ambient = within(r.ambient ?? null, 0, 1.5, null); r.scale = within(r.scale ?? null, 0.4, 2.5, 1); r.exposure = within(r.exposure ?? null, -2, 2, 0); if (!Object.hasOwn(QUALITY, r.quality)) r.quality = UNSAID.quality;
+  for (const k of Object.keys(UNSAID)) if (r[k] === UNSAID[k]) delete r[k];                       // what was not chosen is not written
   return r;
+}
+/** Where the camera of a render stands around the product (degrees) : its kept view, or its point of view of the list. */
+export const shotAz = (r) => (r && r.view ? r.view.az : (SHOTS[r && r.shot] || SHOTS.hero).az);
+/** The lighting of a render, as it is : { lights, ambient, setup (the setup in use — the one chosen, or the one of the set), own (the lights
+    were placed by hand : they no longer follow the setup, nor the camera) }. A setup is laid relative to the camera of the render. */
+export function renderLights(render) {
+  const r = { ...UNSAID, ...(render || blankRender()) }, setup = r.setup && Object.hasOwn(LIGHT_SETUPS, r.setup) ? r.setup : (SETS[validSet(r.scene) || "studio"]).setup, own = Array.isArray(r.lights);
+  return { lights: own ? tidyLights(r.lights) : setupLights(setup, shotAz(r)), ambient: Number.isFinite(r.ambient) && r.ambient !== null ? r.ambient : setupAmbient(setup), setup, own };
 }

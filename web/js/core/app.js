@@ -21,7 +21,7 @@ import { installPanelKeep } from "./panel_keep.js";
 import { installLoupe, loupeButton } from "./loupe.js";
 import { installUpdateCheck, updateButton } from "./update_check.js";
 
-export const APP_VERSION = "0.100.0";
+export const APP_VERSION = "0.101.0";
 /** What every document of the open project carries beside its content : approval names, organisation, confidentiality note, extraction stamp (core/brand.js). */
 export const docMeta = (when = new Date()) => docIdentity(store.project, when, APP_VERSION);
 const modules = new Map();
@@ -141,7 +141,7 @@ async function projectMenu(menu, close) {
     menu.append(item("Busbars et contacts…", "power", () => go("#/busbar"), close));
     menu.append(item("Circuits flexibles…", "chip", () => go("#/flex"), close));
     menu.append(item("Étiquettes et autocollants…", "edit", () => go("#/labels"), close));
-    menu.append(item("Rendu marketing…", "sparkle", () => go("#/render"), close));
+    menu.append(item("Studio photo…", "camera", () => go("#/render"), close));
     menu.append(item("Exporter le projet (.dwiz)", "download", () => download(dwizFileName(p), toDwiz(p), "text/plain;charset=utf-8"), close));
     menu.append(item("Exporter en JSON", "download", () => download(`${p.id}.dwproject.json`, store.exportJson(), "application/json"), close));
   }
@@ -178,7 +178,7 @@ function route() {
   app.context = {}; app.current = key; app.commands = []; app.guide = [];
   setStatus(kernel.stage().text || "Prêt", kernel.stage().text ? "busy" : "");      // what the last screen said (« … construit en 300 ms ») is not about this one — but a kernel still arriving is
   document.documentElement.dataset.module = key;
-  document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.key === (key === "mvp" || key === "team" || key === "plm" ? "review" : SHOP_SCREENS.has(key) ? "shop" : key)));
+  document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.key === (key === "mvp" || key === "team" || key === "plm" ? "review" : key === "render" || key === "labels" ? "assembly" : SHOP_SCREENS.has(key) ? "shop" : key)));
   const tab = document.querySelector(".tab.active"); if (tab && tab.scrollIntoView) tab.scrollIntoView({ block: "nearest", inline: "nearest" });      // the tool in use stays in sight in a narrow bar
   const m = modules.get(key);
   document.title = `${m.label} · DesignWizard.ai`;
@@ -214,6 +214,7 @@ export async function start() {
     else if (mod && !typing && e.key.toLowerCase() === "z" && !e.shiftKey) { e.preventDefault(); const l = store.undo(); toast(l ? `Annulé : ${l}` : "Rien à annuler."); }
     else if (mod && !typing && (e.key.toLowerCase() === "y" || (e.key.toLowerCase() === "z" && e.shiftKey))) { e.preventDefault(); const l = store.redo(); toast(l ? `Rétabli : ${l}` : "Rien à rétablir."); }
     else if (mod && e.key.toLowerCase() === "s") { e.preventDefault(); store.saveNow().then(() => toast("Projet enregistré.", "success")); }
+    else if (e.key === "Escape") { const open = document.querySelector(".topbar .menu"); if (open) { const b = open.parentElement && open.parentElement.querySelector("button"); open.remove(); if (b) b.focus(); } }      // Escape closes a menu of the top bar — the guide too — and gives the focus back to its button
   });
   document.addEventListener("click", (e) => { if (!e.target.closest(".menu-wrap")) document.querySelectorAll(".menu").forEach((m) => m.remove()); });
   window.addEventListener("beforeunload", () => { if (store.saveState === "dirty") store.saveNow(); });

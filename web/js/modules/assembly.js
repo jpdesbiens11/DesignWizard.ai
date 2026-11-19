@@ -153,7 +153,7 @@ function render(main, args) {
     clear(left);
     const a = asm();
     left.append(el("img", { class: "side-mark", src: "img/marks/assembly.svg", alt: "" }),
-      el("div", { class: "side-head" }, el("h2", null, "Assemblages"), btn("", async () => { const name = await promptBox("Nouvel assemblage", "Nom", "Sous-ensemble"); if (name) go(`#/assembly/${encodeURIComponent(store.addAssembly(name))}`); }, { small: true, icon: "plus", tip: "Nouvel assemblage" })));
+      el("div", { class: "side-head" }, el("h2", null, "Assemblages"), el("a", { class: "btn btn-small", href: `#/render/${encodeURIComponent(id)}`, "data-photo": "", "data-tip": "Studio photo : cet assemblage dans un décor, sous des lumières que l'on place, et son image" }, icon("camera"), "Photo"), btn("", async () => { const name = await promptBox("Nouvel assemblage", "Nom", "Sous-ensemble"); if (name) go(`#/assembly/${encodeURIComponent(store.addAssembly(name))}`); }, { small: true, icon: "plus", tip: "Nouvel assemblage" })));
     const scroll = el("div", { class: "side-scroll" });
     left.append(scroll);
     scroll.append(el("div", { class: "side-section" }, store.assemblies.map((x) => el("a", { class: "nav-item" + (x.id === id ? " active" : ""), href: `#/assembly/${encodeURIComponent(x.id)}` }, icon("assembly"), el("span", { class: "grow" }, x.name || x.id), el("small", null, x.id)))));
