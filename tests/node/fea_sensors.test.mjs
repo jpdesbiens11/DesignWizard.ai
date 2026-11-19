@@ -64,7 +64,7 @@ test("strain gauge — a bar pulled : the gauge along the bar reads σ / E, the 
   /* a rosette, turned 30° : the same two principal strains, the first one 30° back from its first grid ; the stress it tells is the pull */
   const ros = readSensor(probe, gauge([70, 5, 10], [0, 0, 1], { angle: 30, rosette: true }));
   near(ros.e1, eps, 0.01, "ε1"); near(ros.e2, -steel.nu * eps, 0.02, "ε2"); close(ros.phi, -30, 0.3, "the angle to ε1"); near(ros.stress.s1, 100, 0.01, "σ1"); close(ros.stress.s2, 0, 1, "σ2"); near(ros.stress.vm, 100, 0.015, "von Mises");
-  assert.equal(ros.grids.length, 3); assert.equal(rosetteLines(ros).length, 3); assert.match(sensorText(ros), /^ε1 \+476 · ε2 −143 µm\/m$/);
+  assert.equal(ros.grids.length, 3); assert.equal(rosetteLines(ros).length, 3); assert.match(rosetteLines(ros)[1], /ε1 à −30(,\d)?° de la grille 0°/, "a negative angle is written with a true minus sign"); assert.equal(sensorText({ state: "ok", kind: "temp", value: -5.31 }), "−5,3 °C"); assert.match(sensorText(ros), /^ε1 \+476 · ε2 −143 µm\/m$/);
   assert.equal(readSensor({ ...probe, kind: "thermo" }, gauge([70, 5, 10], [0, 0, 1], { rosette: true })).stress, undefined, "a heated part : no stress is told from the strains");
   /* drawn on the deformed shape : where the point went, amplified as the view amplifies it */
   close(along.shown[0], 70 + 100 * eps * 1e-6 * 70, 0.05, "its place on the deformed shape"); assert.equal(readSensor(probe, gauge([70, 5, 10], [0, 0, 1], { ask: ["angle"] })).state, "wait", "an axis the tool chose is confirmed before the gauge is read");

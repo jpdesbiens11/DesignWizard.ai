@@ -17,7 +17,7 @@ export const SENSOR_KINDS = {
   gauge: { tag: "SG", label: "Strain gauge", fr: "jauge de déformation", unit: "µm/m", color: "#a16207", reads: "u", waits: "attend un calcul de structure" },
 };
 export const ROSETTE = { label: "Rosette 0°/45°/90°", fr: "rosette rectangulaire" };
-const r2 = (v) => Math.round(v * 100) / 100, r4 = (v) => Math.round(v * 1e4) / 1e4, fr = (v, d = 1) => (Math.round(v * 10 ** d) / 10 ** d).toLocaleString("fr-CA", { maximumFractionDigits: d });
+const r2 = (v) => Math.round(v * 100) / 100, r4 = (v) => Math.round(v * 1e4) / 1e4, fr = (v, d = 1) => (Math.round(v * 10 ** d) / 10 ** d).toLocaleString("fr-CA", { maximumFractionDigits: d }).replace("-", "−");      // a true minus sign, as the strains have
 const unit = (v) => { const l = v ? Math.hypot(v[0], v[1], v[2]) : 0; return l > 1e-9 ? [v[0] / l, v[1] / l, v[2] / l] : null; };
 
 /** Is this the number of an instrument (TC1, SG2) ? */
