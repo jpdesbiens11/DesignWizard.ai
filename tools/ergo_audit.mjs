@@ -11,7 +11,7 @@ const { chromium } = createRequire(import.meta.url)("playwright");
 const base = process.argv[2], out = process.argv[3], only = process.argv[4] ? process.argv[4].split(",") : null;
 if (!base || !out) { console.error("usage : node ergo_audit.mjs <base url> <output dir> [screens]"); process.exit(2); }
 const SIZES = [[1366, 768, "portable"], [1600, 1000, "bureau"], [1920, 1080, "grand"]];
-const SCREENS = [["home", "#/home", 1500], ["shop", "#/shop", 2000], ["shop-nature", "#/shop/n/molded", 1500], ["shop-new", "#/shop/new", 3500], ["interview", "#/interview", 2000], ["interfaces", "#/interfaces", 2500], ["process", "#/process/pliage", 1500], ["extrusion", "#/extrusion", 4000], ["library", "#/library", 2000], ["busbar", "#/busbar", 3000], ["flex", "#/flex", 3000],
+const SCREENS = [["home", "#/home", 1500], ["shop", "#/shop", 2000], ["shop-nature", "#/shop/n/molded", 1500], ["shop-new", "#/shop/new", 3500], ["shop-new-all", "#/shop/new/all", 3500], ["interview", "#/interview", 2000], ["interfaces", "#/interfaces", 2500], ["process", "#/process/pliage", 1500], ["extrusion", "#/extrusion", 4000], ["library", "#/library", 2000], ["busbar", "#/busbar", 3000], ["flex", "#/flex", 3000],
   ["parts", "#/parts/DRV-BASE", 9000], ["pcba", "#/pcba", 6000], ["elab", "#/elab", 7000], ["assembly", "#/assembly/DRV-ASM", 11000], ["physics", "#/physics", 2500], ["fea", "#/fea/DRV-BASE", 10000], ["creepage", "#/creepage", 7000], ["dfx", "#/dfx", 9000], ["drawings", "#/drawings/DRV-BASE", 11000],
   ["review", "#/review", 4000], ["mvp", "#/mvp", 3000], ["team", "#/team", 2500], ["plm", "#/plm", 2500], ["report", "#/report", 9000], ["help", "#/help", 1500], ["account", "#/account", 1500]].filter((s) => !only || only.includes(s[0]));
 const probe = () => {

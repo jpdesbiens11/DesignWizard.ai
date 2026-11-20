@@ -162,6 +162,32 @@ d'Ariane + plancher », « onglets dans l'outil ».
 - Essayé dans Chromium (61 vérifications : plancher, recherche, par assemblage, Ctrl + clic, onglets gardés après
   rechargement, chevrons, Monter, Alt + ↑, la marche de dix écrans) ; pas au toucher, ni sur Firefox et Safari.
 
+## Une nouvelle pièce : une question à la fois
+
+Demande de JP (20 novembre 2026) : « la première page, qui a vraiment beaucoup d'informations pour définir l'intention
+de conception, devait vraiment changer. Les champs qui apparaissent sont les bons… on devrait plus procéder sous forme
+d'une entrevue d'intention de conception, aspect par aspect ». Forme choisie par JP sur maquette : « une question à la
+fois ».
+
+- **Les mêmes champs, six questions** (`web/js/core/shop_steps.js`, pur et testé) : son rôle (nom, à quoi elle sert),
+  ses contraintes (efforts, milieu, quantité, ce qui compte le plus), ses voisines, ses interfaces, sa matière (matériau
+  et matière première), la pièce proposée. Rien n'est ajouté, rien n'est perdu : chaque champ de l'intention a sa
+  question, et une seule.
+- **L'écran** (`web/js/modules/shop_steps.js`) pose les questions PAR-DESSUS la page de l'intention, dont il ne possède
+  pas les champs : ses blocs portent `data-step`, et seul celui de la question posée se montre. C'est l'usage de
+  l'assistant pas à pas du web : un **rail** qui dit où l'on est (répondu, à dire, en cours — un clic y saute),
+  « Retour », « Passer » (rien n'est obligatoire tant que le guide ne le demande pas), « Suivant » — et **Entrée** dans
+  un champ.
+- **La pièce naît à droite tout du long** : la vue, la gamme et ce que le compagnon a décidé se mettent à jour à
+  chaque réponse, comme avant.
+- **« Ce qui est retenu »** : une fiche d'une ligne par réponse — répondu, à dire, exemple à confirmer (la matière que
+  l'outil a choisie reste un exemple tant qu'elle n'est pas confirmée), rien de dit. **Un clic sur une ligne revient à
+  sa question** ; à la dernière question, la fiche se détache : c'est le résumé avant « Créer la pièce ».
+- **Le guide ouvre la question dont il parle** : un clic sur « donnez un nom à la pièce » mène à la question 1.
+- **« Tout voir sur une page »** ramène la page entière, pour qui la connaît ; le choix est gardé, et
+  `#/shop/new/all` y mène d'office.
+- Essayé dans Chromium (23 vérifications) ; pas au toucher, ni sur Firefox et Safari.
+
 ## Choisir dans une longue liste, et en choisir plusieurs
 
 Demandes de JP (20 novembre 2026) : « un menu déroulant pour choisir la pièce… quand il y a 30 pièces, il faut vraiment

@@ -30,6 +30,7 @@ import { orderCheck } from "../cad/order.js";
 import { lightSide, sideOf, LIT } from "../core/view_marks.js";
 import { popupMenu } from "../core/view_select.js";
 import { floor } from "./shop_floor.js";
+import { mountSteps } from "./shop_steps.js";
 import { specialCard } from "./shop_special.js";
 import { foldSides } from "../core/shop_folded.js";
 import { printProcess, amLimits } from "../cad/special_processes.js";
@@ -59,8 +60,8 @@ const numIn = (obj, key, label, redraw, step = 1) => { const len = !COUNTS.has(k
   return field(len ? mmLabel(label) : label, el("input", { type: "number", value: obj[key] === undefined || obj[key] === null ? "" : len ? mmShown(obj[key]) : obj[key], step: conv ? "any" : step, min: 0, onInput: (e) => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) { obj[key] = len ? inMm(v) : v; redraw(); } } })); };
 
 /* `#/shop` and `#/shop/n/<nature>` : the floor (levels 1 and 2, modules/shop_floor.js) ; `#/shop/new` : a new part, from its intent */
-const render = (main, args) => (args[0] === "new" ? intent(main) : floor(main, args));
-function intent(main) {
+const render = (main, args) => (args[0] === "new" ? intent(main, args[1] === "all") : floor(main, args));
+function intent(main, all) {
   if (app.shopPreset) { brief = { ...blank(), ...app.shopPreset }; app.shopPreset = null; }      // sent by the screen of the special processes : this material, this process
   const p = store.project, page = el("div", { class: "page atelier" });
   main.append(page);
@@ -73,9 +74,10 @@ function intent(main) {
   /* what the brief lacks or gets wrong, said as it is typed : next to the proposal, and on the field that waits */
   const guideHost = el("div");
   let proposed = [];                                           // the interfaces the companion added of its own in the last proposal
-  const advise = () => { const list = briefIssues(brief, p, { proposed }), to = (x) => nudge(page.querySelector(`[data-brief="${x.field}"]`) || guideHost); clear(guideHost); const g = guideBox(list, { go: to }); if (g) guideHost.append(g);
+  let steps = null, issues = [];                               // the six questions laid over the page (modules/shop_steps.js), and what the guide last said
+  const advise = () => { const list = briefIssues(brief, p, { proposed }), to = (x) => { if (steps) steps.show(x.field); nudge(page.querySelector(`[data-brief="${x.field}"]`) || guideHost); }; issues = list; clear(guideHost); const g = guideBox(list, { go: to }); if (g) guideHost.append(g);
     for (const n of page.querySelectorAll("[data-brief]")) n.classList.toggle("need", list.some((x) => x.level === "todo" && x.field === n.dataset.brief));
-    setGuide(list.map((x) => ({ ...x, go: () => to(x) }))); return guideCount(list).blocking; };
+    setGuide(list.map((x) => ({ ...x, go: () => to(x) }))); if (steps) steps.refresh(); return guideCount(list).blocking; };
   const propose = () => { token++; create.disabled = true; advise(); rebuild(); };   // the shown part is stale from the first keystroke: no creation until it is rebuilt
   /* ---- the faces of the proposal answer the lists, and the mouse answers the faces ---- */
   const mark = (side, color, tag) => { if (!viewer) return; viewer.clearOverlays(tag); if (side) lightSide(viewer, side, { color, tag, ids: ["at"] }); };
@@ -98,9 +100,9 @@ function intent(main) {
   const qty = el("input", { type: "number", min: 1, step: 1, value: brief.quantity, onInput: (e) => { brief.quantity = Math.max(1, parseInt(e.target.value, 10) || 1); drawStock(); propose(); } });
   const prio = el("select", { onChange: (e) => { brief.priority = e.target.value; propose(); } }, [["", "Équilibre"], ["cost", "Le coût"], ["mass", "La masse"], ["stiffness", "La rigidité"], ["lead_time", "Le délai"]].map(([k, l]) => el("option", { value: k, selected: k === brief.priority }, l)));
   left.append(el("section", { class: "card taped" }, el("h2", null, el("span", { class: "step-no" }, "1"), "L'intention"),
-    el("div", { class: "form-row" }, text("name", "Nom de la pièce", "Ex. : Support du capteur de position"), field("Quantité", qty), field("Ce qui compte le plus", prio)),
-    text("fn", "À quoi sert-elle ? (une phrase)", "Ex. : Tient le capteur face à l'aimant du rotor, réglable de ± 1 mm"),
-    el("div", { class: "form-row" }, text("loads", "Efforts et charges", "Ex. : 20 N en bout, vibrations"), text("environment", "Milieu", "Ex. : −20 à 60 °C, intérieur, 400 V à proximité"))));
+    el("div", { "data-step": "0" }, text("name", "Nom de la pièce", "Ex. : Support du capteur de position"), text("fn", "À quoi sert-elle ? (une phrase)", "Ex. : Tient le capteur face à l'aimant du rotor, réglable de ± 1 mm")),
+    el("div", { "data-step": "1" }, el("div", { class: "form-row" }, text("loads", "Efforts et charges", "Ex. : 20 N en bout, vibrations"), text("environment", "Milieu", "Ex. : −20 à 60 °C, intérieur, 400 V à proximité")),
+      el("div", { class: "form-row" }, field("Quantité", qty), field("Ce qui compte le plus", prio)))));
 
   /* 2 — interfaces */
   const neigh = el("div", { class: "atelier-neigh" }), ownBox = el("div", { "data-brief": "proposed" }), list = el("div"), gallery = el("div", { class: "shape-grid" });
@@ -110,9 +112,9 @@ function intent(main) {
   }
   for (const s of SHAPES) gallery.append(el("button", { class: "shape-card", type: "button", onClick: () => addShape(s) }, icon(s.icon), el("b", null, s.title), el("small", null, s.text)));
   left.append(el("section", { class: "card taped" }, el("h2", null, el("span", { class: "step-no" }, "2"), "Ses interfaces"),
-    el("p", { class: "muted small" }, "La pièce n'existe que par ce qu'elle relie. Cochez ses voisines déjà dans le projet — leurs interfaces libres deviennent les siennes — puis ajoutez les autres par leur forme."),
-    p.parts.length ? neigh : el("p", { class: "muted small" }, "Aucune pièce dans le projet : celle-ci définira les premières interfaces."), ownBox, list,
-    el("h3", null, "Ajouter une interface par sa forme"), gallery));
+    el("div", { "data-step": "2" }, el("p", { class: "muted small" }, "La pièce n'existe que par ce qu'elle relie. Cochez ses voisines déjà dans le projet — leurs interfaces libres deviennent les siennes — puis ajoutez les autres par leur forme."),
+      p.parts.length ? neigh : el("p", { class: "muted small" }, "Aucune pièce dans le projet : celle-ci définira les premières interfaces.")),
+    el("div", { "data-step": "3" }, ownBox, list, el("h3", null, "Ajouter une interface par sa forme"), gallery)));
 
   /* 3 — material and raw stock */
   /* the materials by nature, a swatch each ; once a stock form is chosen by hand, those its process cannot work are greyed */
@@ -133,7 +135,7 @@ function intent(main) {
   }
   const stockGrid = el("div", { class: "stock-grid" }), stockWhy = el("p", { class: "muted small" }), moldBox = el("div"), profBox = el("div"), specBox = el("div");
   left.append(el("section", { class: "card taped" }, el("h2", null, el("span", { class: "step-no" }, "3"), "Sa matière et sa matière première"),
-    el("h3", null, "Matériau"), matBox, el("h3", null, "Ce que l'on prend sur l'étagère"), stockGrid, stockWhy, moldBox, profBox, specBox));
+    el("div", { "data-step": "4" }, el("h3", null, "Matériau"), matBox, el("h3", null, "Ce que l'on prend sur l'étagère"), stockGrid, stockWhy, moldBox, profBox, specBox)));
 
   /* 4 — the proposal */
   const holder = el("div", { class: "viewport atelier-view" }), chips = el("div", { class: "atelier-chips" }), out = el("div");
@@ -282,7 +284,7 @@ function intent(main) {
     try {
       const built = await kernel.build(res.spec, null, "~shop");
       if (mine !== token) return;
-      current = { ...res, built }; setContext({ spec: res.spec, built });      // what the code view and the AI round trip read
+      current = { ...res, built }; if (steps) steps.refresh(); setContext({ spec: res.spec, built });      // what the code view and the AI round trip read
       if (JSON.stringify(proposed.map((x) => x.id + x.name)) !== JSON.stringify((res.proposed || []).map((x) => x.id + x.name))) { const none = !proposed.length || !(res.proposed || []).length; proposed = res.proposed || []; drawOwn(); if (none && !brief.interfaces.length) drawIfaces(); }
       if (!viewer) { viewer = new Viewer(holder, { onHover, onPick, onMenu }); holder._viewer = viewer; }      // exposed for whoever inspects the page (tests, the console)
       viewer.clear(); showBuilt(viewer, built, { prefix: "at" });
@@ -332,6 +334,8 @@ function intent(main) {
     go(mate ? `#/assembly/${encodeURIComponent(p.assemblies[0].id)}` : `#/parts/${encodeURIComponent(r.id)}`);
   }
 
+  /* one question at a time, over these same fields ; `#/shop/new/all` : the whole page */
+  steps = mountSteps({ left, all, memo: () => { const form = brief.form || recommend(brief).form, m = material(brief.material); return [brief, { parts: p.parts, material: m ? m.name : "", stock: (STOCK_FORMS[form] || {}).label || "", issues, built: !!current }]; } });
   syncNeighbours(); drawIfaces(); drawStock(); build();
   return () => { token++; if (viewer) viewer.dispose(); kernel.forget("~shop").catch(() => {}); };
 }

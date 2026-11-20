@@ -100,9 +100,8 @@ ordre ; ce qui est fait se raye ici.
    **L'Atelier, réorganisé** (demandes du 20 novembre, mise en page choisie par JP sur maquettes : « fil d'Ariane + plancher »,
    « onglets dans l'outil », « une question à la fois ») : ~~niveaux, fil d'Ariane, marche d'escalier, onglets de travail,
    plancher~~ — fait (v0.106.0) ; ~~la sélection multiple qui agit sur toute la sélection, les opérations d'une pièce en
-   lot, les dossiers repliables~~ — fait (v0.107.0) ; reste, dans l'ordre : **« Nouvelle pièce » pas à pas** — six étapes (rôle, contraintes, voisines,
-   interfaces, matière, pièce proposée), la pièce qui naît à droite, la fiche « ce qui est retenu », un lien « tout voir
-   sur une page » ; **la porte « Avec l'IA »** — une phrase, la portée (une pièce, plusieurs, un assemblage complet), la
+   lot, les dossiers repliables~~ — fait (v0.107.0) ; ~~« Nouvelle pièce » pas à pas~~ — fait (v0.108.0 : six questions posées par-dessus
+   les champs de l'intention, `core/shop_steps.js`, `modules/shop_steps.js`) ; reste : **la porte « Avec l'IA »** — une phrase, la portée (une pièce, plusieurs, un assemblage complet), la
    consigne proposée, le dossier .zip, la réponse déposée (.dwiz, .json, .zip), l'aperçu de ce qui sera créé et où cela se
    range, une étape annulable, le journal (c'est la première brique du point 2).
 2. **Aller-retour IA sur toutes les pages** : un bouton « IA » bien visible sur chaque page fonctionnelle, qui prend
