@@ -25,6 +25,7 @@ import { aiRead, aiDiff } from "../core/ai_loop.js";
 import { guideBox, nudge } from "../core/guide.js";
 import { busyVeil, pageVeil, underVeil } from "../core/busy.js";
 import { demoBoard } from "../demo/demo_pcba.js";
+import { rs485Board } from "../demo/demo_rs485.js";
 
 const CAT = { Raccorder: ["#64748b", "link"], "Protéger": ["#b45309", "lock"], Alimenter: ["#d6453d", "power"], Calculer: ["#7c3aed", "chip"], Mesurer: ["#2563eb", "sensor"], Commander: ["#ea580c", "bolt"], Communiquer: ["#0891b2", "cloud"], Signaler: ["#16a34a", "star"], Tester: ["#475569", "check"] };
 const pic = (...kids) => svg("svg", { viewBox: "0 0 30 30", width: 30, height: 30, class: "cf-icon", "aria-hidden": "true" }, ...kids.flat(Infinity));
@@ -46,7 +47,7 @@ function render(main, args) {
   root.style.setProperty("--right-w", "430px"); main.append(root);
   if (!id) { root.classList.add("no-right"); right.remove(); left.append(el("div", { class: "side-head" }, el("h2", null, "Labo")));
     view.append(el("div", { class: "page" }, el("div", { class: "empty" }, el("h2", null, "Le laboratoire essaie une carte"), el("p", null, "Avant de la faire fabriquer : chaque bloc de la carte est mis sur un banc simulé — alimentation, générateur, oscilloscope — et le plan de test sort avec les valeurs à retrouver au vrai laboratoire."),
-      el("div", { class: "form-actions", style: { justifyContent: "center" } }, btn("Charger la carte de démonstration", () => { const nid = store.addBoard(demoBoard()); go(`#/elab/${encodeURIComponent(nid)}`); }, { primary: true, icon: "sparkle" }), btn("Ouvrir le PCBA", () => go("#/pcba"), { icon: "chip" }))))); return null; }
+      el("div", { class: "form-actions", style: { justifyContent: "center" } }, btn("Charger la carte de démonstration", () => { const nid = store.addBoard(demoBoard()); go(`#/elab/${encodeURIComponent(nid)}`); }, { primary: true, icon: "sparkle" }), btn("Exemple : nœud RS-485", () => { const nid = store.addBoard(rs485Board()); go(`#/elab/${encodeURIComponent(nid)}`); }, { icon: "cloud", tip: "La liaison RS-485 du bornier au microcontrôleur, avec ses essais" }), btn("Ouvrir le PCBA", () => go("#/pcba"), { icon: "chip" }))))); return null; }
   const st = { block: null, test: null, sheet: null, q: 0, playing: true, speed: 1, tab: "sheet", alive: true, raf: 0, last: 0, sheets: null }, board = () => store.board(id);
   const blocks = () => (board().blocks || []).filter((b) => BLOCKS[b.template]), refsOf = (b) => Object.fromEntries((board().parts || []).filter((p) => p.block === b.id && p.local).map((p) => [p.local, p.ref]));
   const boardHost = el("div", { class: "lab-board-host" }), bar = el("div", { class: "lab-bar" }), scopes = el("div", { class: "lab-scopes" }), veil = busyVeil(view); view.append(boardHost, bar, scopes);

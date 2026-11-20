@@ -32,6 +32,7 @@ export const PARTS = [
   D("D-ZEN-SOD123", "Diode Zener SOD-123", "SOD-123", "Écrêtage, 0,5 W", { P: 0.5 }, 0.05),
   D("D-TVS-SMA", "Diode TVS 400 W SMA", "SMA", "Écrêteur de surtension unidirectionnel", { P: 400, V: 60 }, 0.2),
   D("D-TVS-SMB", "Diode TVS 600 W SMB", "SMB", "Écrêteur de surtension unidirectionnel", { P: 600, V: 80 }, 0.3),
+  { id: "D-TVS-485-SOT23", kind: "diode", name: "Double TVS bidirectionnel pour bus RS-485 SOT-23", package: "SOT-23", pins: ["IO1:passive", "IO2:passive", "GND"], desc: "Protection des deux lignes, tension de veille de 12 V ou plus", ratings: { V: 12 }, price: 0.3 },
   { id: "D-TVS-CAN-SOT23", kind: "diode", name: "Double TVS pour bus CAN SOT-23", package: "SOT-23", pins: ["IO1:passive", "IO2:passive", "GND"], desc: "Protection des deux lignes, 24 V", ratings: { V: 24 }, price: 0.25 },
   { id: "LED-0603", kind: "led", name: "DEL 0603", package: "0603", pins: ["K:passive", "A:passive"], desc: "Témoin, 2 V typique à 2 mA (couleur dans la valeur)", ratings: { I: 0.02 }, price: 0.06 },
   Q("Q-NMOS-SOT23", "MOSFET N 60 V 0,3 A SOT-23", "SOT-23", "Commutation de signal et de petites charges", { V: 60, I: 0.3 }, 0.08),

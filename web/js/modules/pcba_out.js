@@ -33,6 +33,8 @@ import { draftsOf } from "../core/ai_draft.js";
 import { autoroute } from "../pcba/route.js";
 import { planPanel, setPlanNote, setPlanPoints } from "./plan_view.js";
 import { docMeta } from "../core/app.js";
+import { rs485Links, hwswDoc, driverFiles, linkTimes } from "../sw/hwsw.js";
+import { zip as zipFiles } from "../core/zip.js";
 import { findingTree, treeFind } from "../core/trees.js";
 import { stateTree } from "./state_tree.js";
 
@@ -165,6 +167,15 @@ function revue(ctx, { left, view, right }) {
     btn("DynamiteAgile (.json)", () => { const { file, notes } = toProjectStarter(store.project), d = file.diamond; download(`${file.project.key}-project-starter.json`, JSON.stringify(file, null, 1), "application/json");
       toast(`Fichier Project Starter écrit : ${d.functions.length} fonctions, ${d.ports.length} entrées et sorties, ${d.flows.length} flux, ${d.parts.length} pièces${notes.length ? ` — ${notes.join(" ; ")}` : ""}. Dans DynamiteAgile : ⚙ Admin → Spaces → Commencer.`, "success", 10000); }, { small: true, icon: "export", tip: "L'arbre fonctionnel, la structure fonctionnelle et les pièces du projet au format « dynamite-project-starter » : DynamiteAgile le lit dans Diamond, en Brouillon IA" }),
     btn("Importer de DynamiteAgile…", () => pickStarter(board), { small: true, icon: "upload", tip: "Lit l'arbre fonctionnel d'un fichier Project Starter (ou d'un Space exporté) : les fonctions nouvelles arrivent en Brouillon IA, rien n'est retiré" }))));
+  /* where the hardware and the software meet : read from the nets of the board (sw/hwsw.js) */
+  const links = rs485Links(board);
+  if (links.length) { const hw = (kind) => { try { const d = { ...hwswDoc(board, { date: new Date(), project: { id: store.project.id, name: store.project.name }, author: rv.author || "" }), kind: "Interface matériel / logiciel", ...docMeta() }, n = `${board.id}-rev${board.revision || "A"}-interface-hw-sw`;
+      if (kind === "docx") download(`${n}.docx`, docx(d), "application/vnd.openxmlformats-officedocument.wordprocessingml.document"); else if (kind === "pdf") download(`${n}.pdf`, pdfDoc(d), "application/pdf"); else download(`${board.id}-rev${board.revision || "A"}-pilote-rs485.zip`, new Blob([zipFiles(driverFiles(board).map((f) => ({ name: f.name, bytes: f.text })))], { type: "application/zip" })); } catch (e) { toast(`Interface matériel / logiciel : ${e.message}`, "error", 8000); } };
+    const sec = section("Interface matériel / logiciel", el("p", { class: "muted small" }, "Où le matériel et le logiciel se touchent sur la liaison RS-485 — lu des nets de la carte : quelle broche du microcontrôleur porte quel signal, sous quel nom le logiciel le connaît."),
+      ...links.map((L) => el("table", { class: "data hwsw-table" }, el("thead", null, el("tr", null, el("th", null, "Logiciel"), el("th", { "data-tip": "La broche du microcontrôleur" }, "MCU"), el("th", { "data-tip": "La broche de l'émetteur-récepteur, ou la borne du bus" }, L.ref || "Bus"))), el("tbody", null, L.pins.map((x) => el("tr", null, el("td", null, x.sw), el("td", null, x.mcu || badge("non relié", "warn")), el("td", null, x.signal))), L.bus.map((x) => el("tr", null, el("td", null, x.line), el("td", { class: "muted" }, x.net), el("td", null, x.at || "—")))))),
+      el("p", { class: "muted small" }, linkTimes().slice(0, 4).map((r) => `${r[0]} : ${r[1]}`).join(" · ")),
+      el("div", { class: "form-actions", style: { justifyContent: "flex-start", flexWrap: "wrap" } }, btn("Fiche (.docx)", () => hw("docx"), { small: true, primary: true, icon: "download", tip: "La fiche d'interface : signaux, temps, trame, trames de référence, ce qui a été lu" }), btn("PDF", () => hw("pdf"), { small: true, icon: "pdf" }), btn("Pilote C (.zip)", () => hw("zip"), { small: true, icon: "code", tip: "rs485_link.h, rs485_link.c, un programme d'essai et les trames de référence — un squelette en C99, écrit à partir du même modèle que la fiche" })));
+    sec.dataset.hwsw = ""; l.append(sec); }
   l.append(section("Artéfact de la carte", el("div", { class: "form-actions", style: { justifyContent: "flex-start", flexWrap: "wrap" } }, btn("Carte (.dwiz)", () => download(dwizFileName(board), toDwiz(board), "text/plain"), { small: true, icon: "download" }), btn("Copier pour l'IA", () => boardAiLoop(ctx), { small: true, icon: "sparkle", tip: "Copier la carte avec une demande, travailler avec l'assistant de son choix, réimporter avec un aperçu : ce que l'IA ajoute arrive en « Brouillon IA »" }))));
   const page = el("div", { class: "pcba-report" }, el("h1", null, doc.title), el("p", { class: "muted" }, `${doc.subtitle} — ${doc.reference}, révision ${doc.revision}`));
   for (const b of doc.blocks) {

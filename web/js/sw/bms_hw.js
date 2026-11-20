@@ -1,5 +1,5 @@
 /* DesignWizard.ai — Logiciel : the boards, as the software sees them. A battery management system is two kinds of boards :
-   one CMB (cell monitoring board) on each module — it measures the voltage of every cell and a few temperatures, bleeds a cell
+   the cell electronics (ISO 12405-4 ; a « cell monitoring board ») on each module — it measures the voltage of every cell and a few temperatures, bleeds a cell
    on demand, and answers on an isolated link — and one BMS board that reads the pack current and the two voltages across the
    contactors, drives the contactors and reads them back, watches the interlock loop, and speaks to the vehicle over low voltage
    (a CAN bus, a few discrete lines). This file is that hardware / software interface : what each signal is (the « HSI »), how a
@@ -12,11 +12,11 @@ import { packVoltage } from "./plant.js";
 
 /** What can be broken on the bench. on : what it applies to ; value : what it takes (with its unit and an example). */
 export const FAULT_KINDS = {
-  openWire: { label: "Open wire", fr: "fil de mesure coupé", on: "cell", text: "Le fil de mesure d'une cellule est coupé : la CMB lit 0 V sur cette voie." },
-  refDrift: { label: "Reference drift", fr: "dérive de la référence de mesure", on: "module", value: ["%", 3], text: "La référence de tension d'une CMB a dérivé : toutes ses cellules se lisent trop haut ou trop bas." },
-  ntcOpen: { label: "NTC open", fr: "sonde de température coupée", on: "ntc", text: "Une sonde est coupée : sa résistance est infinie, la CMB lit le froid extrême." },
-  ntcShort: { label: "NTC short", fr: "sonde en court-circuit", on: "ntc", text: "Une sonde est en court-circuit : la CMB lit le chaud extrême." },
-  linkLoss: { label: "Link loss", fr: "liaison perdue avec une CMB", on: "module", text: "Une CMB ne répond plus : ses mesures ne sont plus rafraîchies." },
+  openWire: { label: "Open wire", fr: "fil de mesure coupé", on: "cell", text: "Le fil de mesure d'une cellule est coupé : l'électronique de cellules lit 0 V sur cette voie." },
+  refDrift: { label: "Reference drift", fr: "dérive de la référence de mesure", on: "module", value: ["%", 3], text: "La référence de tension de l'électronique de cellules d'un module a dérivé : toutes ses cellules se lisent trop haut ou trop bas." },
+  ntcOpen: { label: "NTC open", fr: "sonde de température coupée", on: "ntc", text: "Une sonde est coupée : sa résistance est infinie, l'électronique de cellules lit le froid extrême." },
+  ntcShort: { label: "NTC short", fr: "sonde en court-circuit", on: "ntc", text: "Une sonde est en court-circuit : l'électronique de cellules lit le chaud extrême." },
+  linkLoss: { label: "Link loss", fr: "liaison perdue avec l'électronique de cellules d'un module", on: "module", text: "L'électronique de cellules d'un module ne répond plus : ses mesures ne sont plus rafraîchies." },
   currentOffset: { label: "Current sensor offset", fr: "décalage du capteur de courant", on: "bms", value: ["A", 5], text: "Le capteur de courant a un décalage : le compte des ampères-heures dérive." },
   weld: { label: "Welded contactor", fr: "contacteur soudé", on: "contactor", text: "Les contacts sont soudés : le contacteur ne s'ouvre plus." },
   stuckOpen: { label: "Contactor stuck open", fr: "contacteur qui ne ferme pas", on: "contactor", text: "La bobine est commandée, les contacts ne se ferment pas." },
@@ -31,16 +31,16 @@ export function plantFaults(faults, t, spec) {
   return { faults: { weld: active(faults, t, "weld").map((f) => f.contactor || "mainP"), stuckOpen: active(faults, t, "stuckOpen").map((f) => f.contactor || "mainP"), busShort: active(faults, t, "busShort").length > 0 }, heat };
 }
 const q = (v, step) => Math.round(v / step) * step;
-/** What the software holds between two readings : the last frame of each CMB. */
+/** What the software holds between two readings : the last frame of the cell electronics of each module. */
 export const hwMemo = (spec) => ({ cells: new Float64Array(spec.cells), temps: new Float64Array(spec.m * spec.ntc), first: true });
 
 /** One reading of every board. P : the plant ; inputs : what the vehicle side sets — { wake, drive, chargerOn, hvil (default true) } ;
-    → { cells (V, one per cell), temps (°C, ntc per module), fresh (per module : its CMB answered this time), i (A), vPack, vBus (V),
+    → { cells (V, one per cell), temps (°C, ntc per module), fresh (per module : its cell electronics answered this time), i (A), vPack, vBus (V),
         fb: { mainP, mainN, pre }, hvil, wake, drive, chargerOn } */
 export function measure(P, spec, faults, inputs, memo) {
   const t = P.t, lost = new Set(active(faults, t, "linkLoss").map((f) => f.module || 0)), fresh = new Uint8Array(spec.m);
   for (let m = 0; m < spec.m; m++) {
-    if (lost.has(m) && !memo.first) continue;      // a CMB that does not answer : the software keeps what it last heard
+    if (lost.has(m) && !memo.first) continue;      // cell electronics that do not answer : the software keeps what it last heard
     fresh[m] = lost.has(m) ? 0 : 1; if (!fresh[m]) continue;
     const gain = 1 + active(faults, t, "refDrift").filter((f) => (f.module || 0) === m).reduce((s, f) => s + (f.value ?? 3) / 100, 0);
     for (let c = 0; c < spec.s; c++) { const g = m * spec.s + c, cut = active(faults, t, "openWire").some((f) => (f.module || 0) === m && (f.cell || 0) === c); memo.cells[g] = cut ? 0 : q(P.v[g] * gain + 0.0015 * Math.sin(2.3 * g + 1), 0.001); }      // 1 mV, and each channel its own small offset
@@ -54,14 +54,14 @@ export function measure(P, spec, faults, inputs, memo) {
 }
 
 /** The hardware / software interface : every signal the software reads or drives, board by board.
-    → [{ board ("CMB" | "BMS"), name, dir ("in" | "out" | "bus"), kind, unit, range, step, period (s), count, diag (how a wrong value is caught) }] */
+    → [{ board ("cell electronics" | "BMS"), name, dir ("in" | "out" | "bus"), kind, unit, range, step, period (s), count, diag (how a wrong value is caught) }] */
 export function hsiSignals(spec) {
   const n = (v) => String(v).replace(".", ",");
   return [
-    { board: "CMB", name: "CELL_V", dir: "in", kind: "tension de cellule", unit: "V", range: "0 à 5", step: "1 mV", period: 0.1, count: spec.s, diag: "plausibilité (0,5 à 5 V) ; somme des cellules contre la tension du pack" },
-    { board: "CMB", name: "NTC_T", dir: "in", kind: "température du module", unit: "°C", range: "−40 à 125", step: "0,5 °C", period: 0.1, count: spec.ntc, diag: "plausibilité (−35 à 120 °C) : sonde coupée ou en court-circuit" },
-    { board: "CMB", name: "BAL", dir: "out", kind: "équilibrage : décharge d'une cellule", unit: "—", range: "0 / 1", step: "", period: 0.1, count: spec.s, diag: `résistance de ${n(spec.rBal)} Ω par cellule` },
-    { board: "CMB", name: "ISO_LINK", dir: "bus", kind: "liaison isolée vers la carte BMS", unit: "trame", range: "", step: "", period: 0.1, count: 1, diag: "délai sans réponse (timeout)" },
+    { board: "cell electronics", name: "CELL_V", dir: "in", kind: "tension de cellule", unit: "V", range: "0 à 5", step: "1 mV", period: 0.1, count: spec.s, diag: "plausibilité (0,5 à 5 V) ; somme des cellules contre la tension du pack" },
+    { board: "cell electronics", name: "NTC_T", dir: "in", kind: "température du module", unit: "°C", range: "−40 à 125", step: "0,5 °C", period: 0.1, count: spec.ntc, diag: "plausibilité (−35 à 120 °C) : sonde coupée ou en court-circuit" },
+    { board: "cell electronics", name: "BAL", dir: "out", kind: "équilibrage : décharge d'une cellule", unit: "—", range: "0 / 1", step: "", period: 0.1, count: spec.s, diag: `résistance de ${n(spec.rBal)} Ω par cellule` },
+    { board: "cell electronics", name: "ISO_LINK", dir: "bus", kind: "liaison isolée vers la carte BMS", unit: "trame", range: "", step: "", period: 0.1, count: 1, diag: "délai sans réponse (timeout)" },
     { board: "BMS", name: "I_PACK", dir: "in", kind: "courant du pack", unit: "A", range: `± ${n(spec.iRange)}`, step: "0,05 A", period: 0.01, count: 1, diag: "seuils de surintensité ; courant nul contacteurs ouverts" },
     { board: "BMS", name: "V_PACK", dir: "in", kind: "tension du pack, avant les contacteurs", unit: "V", range: `0 à ${n(Math.ceil(spec.vTop * 1.15))}`, step: "0,1 V", period: 0.01, count: 1, diag: "contre la somme des cellules" },
     { board: "BMS", name: "V_BUS", dir: "in", kind: "tension du bus, après les contacteurs", unit: "V", range: `0 à ${n(Math.ceil(spec.vTop * 1.15))}`, step: "0,1 V", period: 0.01, count: 1, diag: "fin de précharge : 95 % de la tension du pack" },

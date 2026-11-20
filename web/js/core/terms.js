@@ -17,6 +17,7 @@ import { FINISHES } from "./render_looks.js";
 import { PATTERNS, SHEENS } from "./look_patterns.js";
 import { LIGHT_KINDS, LIGHT_SETUPS } from "./photo_lights.js";
 import { NATURES, INSTRUMENTS } from "../pcba/lab_bench.js";
+import { BATTERY_TERMS, HOUSE_WORDS } from "./battery_terms.js";
 import { MODEL_WORDS } from "../cad/connector_series.js";
 import { RULE_TITLES } from "../analysis/dfx_titles.js";
 import { MODELS } from "../analysis/physics/index.js";
@@ -53,7 +54,10 @@ const FEATURES = [["Box", "bloc"], ["Cylinder", "cylindre"], ["Coil (helical tub
   ["Arch (spring blade)", "lame en pont"], ["Shell", "coque"], ["Fillet", "congé"], ["Chamfer", "chanfrein"], ["Rib", "nervure"], ["Gusset", "gousset"], ["Standoff", "colonnette"], ["Bend", "pli"], ["Flange", "bord plié"], ["Flat pattern", "développé à plat"], ["Bend relief", "dégagement d'angle"]];
 
 /* the words of the electronics lab : what one reads on an instrument, what a test sheet asks for */
-const LAB_TERMS = [["Functional test plan", "plan de test fonctionnel", "les essais d'une carte à sa réception, fiche par fiche"], ["Bench", "banc d'essai", "le poste : alimentation, générateur, oscilloscope"], ["Current limit", "limite de courant", "le réglage de l'alimentation de laboratoire qui protège la carte"],
+const LAB_TERMS = [["Transceiver", "émetteur-récepteur", "le circuit qui traduit les niveaux logiques en niveaux du bus, et l'inverse"], ["Half-duplex", "demi-duplex (à l'alternat)", "une seule paire : un seul nœud émet à la fois"], ["Driver enable (DE)", "validation de l'émetteur", "la broche par laquelle le logiciel prend le bus RS-485"],
+  ["Termination", "terminaison", "la résistance posée à chaque bout d'un câble, égale à son impédance"], ["Failsafe biasing", "polarisation du bus au repos", "deux résistances qui écartent A et B quand personne n'émet"], ["Stub", "dérivation", "le bout de ligne entre le câble et un émetteur-récepteur"], ["Unit load (UL)", "charge unitaire", "ce qu'un récepteur RS-485 prend au bus : environ 12 kΩ"],
+  ["Twisted pair", "paire torsadée", "les deux fils A et B, tordus ensemble"], ["Turnaround", "retournement", "le moment où un nœud rend le bus et où un autre le prend"], ["Hardware / software interface", "interface matériel / logiciel", "où une carte et son logiciel se touchent : broches, noms, temps"], ["Cyclic redundancy check (CRC)", "contrôle de redondance cyclique", "les deux octets qui disent si une trame est arrivée entière"],
+  ["Functional test plan", "plan de test fonctionnel", "les essais d'une carte à sa réception, fiche par fiche"], ["Bench", "banc d'essai", "le poste : alimentation, générateur, oscilloscope"], ["Current limit", "limite de courant", "le réglage de l'alimentation de laboratoire qui protège la carte"],
   ["Probe (×10)", "sonde (×10)", "la sonde atténuée de l'oscilloscope"], ["Ground spring", "ressort de masse", "la masse courte d'une sonde, pour lire une ondulation"], ["Time base", "base de temps", "le temps par division de l'oscilloscope"], ["AC coupling", "couplage AC", "l'oscilloscope ne garde que ce qui varie"],
   ["Ripple", "ondulation", "ce qui reste du découpage sur une tension continue"], ["Switching node", "nœud de commutation", "le point d'un régulateur à découpage qui bascule entre l'entrée et la masse"], ["Duty cycle", "rapport cyclique", "la part du temps où l'interrupteur est fermé"], ["Dropout", "chute minimale", "ce qu'un régulateur linéaire perd au moins entre son entrée et sa sortie"],
   ["Load step", "échelon de charge", "un courant demandé d'un coup, pour voir la sortie se reprendre"], ["Soft start", "démarrage progressif", "la sortie d'un régulateur monte doucement"], ["Transfer function", "fonction de transfert", "la sortie divisée par l'entrée, selon la fréquence"], ["Bode plot", "diagramme de Bode", "gain et phase selon la fréquence"],
@@ -65,7 +69,7 @@ const FEA_TERMS = [["Uniaxial", "uniaxiale", "une jauge à une grille : une seul
   ["Hot spot / cold spot", "point chaud / point froid", "le maximum et le minimum, marqués dans la vue infrarouge"]];
 
 /** The tables a term comes from : every entry carries `label` (English) and `fr`. For the tests, and for the next brick. */
-export const TERM_TABLES = { MODEL_WORDS, PROCESSES, INTERFACE_TYPES, ADHESIVES, WELD_PROCESSES, PLATINGS, CONTACT_FORMS, CONTACT_BASES, STOCK_FORMS, SHOP_VERBS, AM_PROCESSES, LASER_FAMILIES, ENDS, INSULATIONS, LABEL_KINDS, FINISHES };
+export const TERM_TABLES = { BATTERY_TERMS, MODEL_WORDS, PROCESSES, INTERFACE_TYPES, ADHESIVES, WELD_PROCESSES, PLATINGS, CONTACT_FORMS, CONTACT_BASES, STOCK_FORMS, SHOP_VERBS, AM_PROCESSES, LASER_FAMILIES, ENDS, INSULATIONS, LABEL_KINDS, FINISHES };
 
 /** The glossary : [{ group, en, fr, note }], in the order of the groups, then of the alphabet. */
 export function glossary() {
@@ -81,6 +85,7 @@ export function glossary() {
   all("electrical", MODEL_WORDS, "modèle de connecteur"); all("electrical", PLATINGS, "revêtement"); all("electrical", CONTACT_FORMS, "forme de contact"); all("electrical", CONTACT_BASES, "matière de contact"); all("electrical", ENDS, "circuit flexible"); all("electrical", INSULATIONS, "isolant de busbar");
   all("electrical", NATURES, "nature d'un essai de laboratoire"); all("electrical", INSTRUMENTS, "instrument du laboratoire");
   for (const [en, fr, note] of LAB_TERMS) add("electrical", en, fr, note);
+  all("electrical", BATTERY_TERMS, "système de batterie — terme publié"); for (const w of HOUSE_WORDS) add("electrical", w.word, w.use ? `mot de maison : écrire « ${BATTERY_TERMS[w.use].label} »` : "mot de maison : rien d'établi", w.said);
   all("finish", FINISHES, "finition du rendu"); all("finish", LABEL_KINDS, "étiquette"); all("finish", PATTERNS, "camouflage, motif d'une pièce à l'écran"); all("finish", SHEENS, "finition à l'écran"); all("finish", LIGHT_KINDS, "lumière du studio photo"); all("finish", LIGHT_SETUPS, "éclairage du studio photo");
   for (const m of MATERIALS) if (m.fr) add("stock", m.name, m.fr, "matière");
   for (const m of Array.isArray(MODELS) ? MODELS : Object.values(MODELS)) add("analysis", m.title, m.fr, "modèle de calcul");

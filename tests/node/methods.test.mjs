@@ -31,7 +31,7 @@ test("what the page says of a standard is what the code says of it", () => {
   // folded sheet metal : summaries only
   assert.equal(methodById("dfx-sheet").how, "excerpt"); assert.match(readFileSync(new URL("../../docs/TOLERIE.md", import.meta.url), "utf8"), /aucun guide n'a été lu en entier/);
   // a standard nobody read is never marked « lu » : the only lines marked read are the ones a document was opened for
-  assert.deepEqual(METHODS.filter((m) => m.how === "read").map((m) => m.id).sort(), ["connector-series", "laser-guides", "onshape", "trl", "validation-openstax", "validation-others", "validation-toolbox"]);      // the pages of the reference cases were opened, each one (docs/VALIDATION.md)
+  assert.deepEqual(METHODS.filter((m) => m.how === "read").map((m) => m.id).sort(), ["battery-terms-public", "connector-series", "laser-guides", "modbus-serial", "onshape", "rs485-notes", "trl", "validation-openstax", "validation-others", "validation-toolbox"]);      // the pages of the reference cases were opened, each one (docs/VALIDATION.md)
   assert.ok(TRL_SOURCES.filter((s) => s.read).length >= 3); assert.match(methodById("trl").check, /ISO 16290 n'a pas été lue/);
   // the glue well is a workshop rule, said so
   assert.equal(methodById("glue-well").how, "own"); assert.equal(methodById("nothing"), null);
