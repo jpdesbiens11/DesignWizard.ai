@@ -8,6 +8,7 @@ import { el, btn, badge, table, fmt, icon, toast } from "../core/dom.js";
 import { MODELS, DOMAINS, model, shortTitle, runsByPart } from "../analysis/physics/index.js";
 import { sketch, domainIcon } from "./physics_sketch.js";
 import { CALC_UNITS, quantity, toShown, shownUnit, dualOf, pressureEquivalents } from "../core/units.js";
+import { validationSection, validationMark } from "./validation_view.js";
 
 export const VERDICT = { ok: ["OK", "ok"], warn: ["À vérifier", "warn"], fail: ["NON", "danger"] };
 export const verdictBadge = (v) => badge((VERDICT[v] || VERDICT.warn)[0], (VERDICT[v] || VERDICT.warn)[1]);
@@ -45,10 +46,11 @@ export function modelTiles(body, o) {
     body.append(el("section", { class: "phys-group", style: `--dom:${d.color}`, "data-domain": d.id },
       el("header", { class: "phys-group-head" }, domainIcon(d.id, d.color, 26), el("div", { class: "grow" }, el("b", null, d.label), el("small", null, d.hint)), el("span", { class: "phys-count", "data-tip": `${list.length} modèles` }, String(list.length))),
       el("div", { class: "phys-tiles" }, list.map((m) => {
-        const on = o.cur && o.cur.id === m.id, k = kept.get(m.id);
-        return el("button", { class: `phys-tile${on ? " sel" : ""}`, type: "button", "data-model": m.id, "aria-pressed": on ? "true" : "false", "data-tip": m.question, onClick: () => o.pick(m.id) },
+        const on = o.cur && o.cur.id === m.id, k = kept.get(m.id), v = validationMark(m.id);      // a tile says whether a published example was found again with this model
+        return el("button", { class: `phys-tile${on ? " sel" : ""}`, type: "button", "data-model": m.id, "aria-pressed": on ? "true" : "false", "data-tip": `${m.question} — ${v.text}`, onClick: () => o.pick(m.id) },
           sketch(m, { mini: true, color: d.color }), el("span", { class: "phys-tile-name" }, shortTitle(m)),
-          ...[k ? el("i", { class: `phys-kept ${k.verdict || "warn"}`, "data-tip": `${k.n} calcul${k.n > 1 ? "s" : ""} au rapport — ${(VERDICT[k.verdict] || VERDICT.warn)[0]}` }, String(k.n)) : null].filter(Boolean));
+          ...[k ? el("i", { class: `phys-kept ${k.verdict || "warn"}`, "data-tip": `${k.n} calcul${k.n > 1 ? "s" : ""} au rapport — ${(VERDICT[k.verdict] || VERDICT.warn)[0]}` }, String(k.n)) : null,
+            v.n ? el("i", { class: `phys-val ${v.bad ? "bad" : "ok"}`, "data-validated": String(v.ok), "aria-label": v.text }, icon(v.bad ? "warning" : "check")) : null].filter(Boolean));
       }))));
   }
 }
@@ -85,15 +87,18 @@ export function exportBar(out, gate, title) {
     ...(out.note ? [el("p", { class: "muted small", style: { margin: ".3rem 0 0" } }, out.note)] : []));
 }
 
-/** The calculation written like a hand calculation, with what it assumes and where it comes from. */
+/** The calculation written like a hand calculation, with what it assumes and where it comes from — then the published examples it was replayed against.
+    o : { cur, r, loadCase(c) : put the data of a reference case in the fields of the model } */
 export function calcPanel(body, o) {
   const { cur, r } = o;
   if (!cur || !r) { body.append(el("p", { class: "muted" }, "Le calcul d'un modèle s'écrit ici, étape par étape, avec ses hypothèses et sa source.")); return; }
   body.append(el("div", { class: "side-section" }, el("h3", null, "Calcul"), el("ol", { class: "phys-steps" }, r.steps.map((s) => el("li", null, s)))),
     el("div", { class: "side-section" }, el("h3", null, "Hypothèses"), el("ul", { class: "phys-steps" }, cur.assumptions.map((a) => el("li", null, a)))),
     el("div", { class: "side-section" }, el("h3", null, "Domaine de validité"), el("p", { class: "small" }, cur.validity)),
-    el("div", { class: "side-section" }, el("h3", null, "Référence"), el("p", { class: "muted small" }, cur.reference)));
+    el("div", { class: "side-section" }, el("h3", null, "Référence"), el("p", { class: "muted small" }, cur.reference)),
+    validationSection({ id: cur.id, load: o.loadCase }));
 }
+export { validationMark };
 
 /** The runs kept in the project, by part. o : { rows (physicsSummary), project, reopen(id), remove(id) } */
 export function savedPanel(body, o) {

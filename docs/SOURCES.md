@@ -70,3 +70,11 @@ références dont un document a été ouvert sont marquées « lu », et qu'aucu
   la résument pas.
 - Les sources détaillées de certaines briques restent dans leur document : procédés spéciaux (`docs/PROCEDES.md`),
   tôlerie (`docs/TOLERIE.md`), bibliothèque électrique (`docs/ELECTRIQUE.md`), niveaux de maturité (`docs/ITERATIONS.md`).
+
+## Les cas de référence publiés
+
+Un calcul n'est pas vérifié parce que sa formule est citée. Chaque modèle analytique, et le solveur de la simulation, est
+**rejoué contre des exemples chiffrés publiés par d'autres** : `docs/VALIDATION.md` dit lesquels, ce que chaque source
+imprime, ce que l'outil trouve et l'écart — et quels modèles n'ont pas encore d'exemple. Le registre a une ligne pour la
+méthode (« Cas de référence publiés ») et une par famille de sources ; elles sont au niveau **lu** parce que chaque page a
+été ouverte, et elles disent ce qui ne l'a pas été (le Roark, pour les coefficients de plaque).

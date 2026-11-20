@@ -60,6 +60,10 @@ Une formule qui nommerait une case absente du classeur fait échouer l'export, a
 
 ## Ce qui est vérifié, et comment
 
+- **Contre des exemples publiés.** Chaque modèle est rejoué contre des exemples chiffrés que d'autres ont publiés : la
+  source, ce qu'elle imprime, ce que l'outil trouve, l'écart — dans l'onglet « Calcul », groupe « Validation », et dans
+  `docs/VALIDATION.md`. Un modèle sans exemple le dit ; la note de calcul et le classeur n'en disent rien de plus.
+
 - **Par les tests, à chaque publication.** `xl_eval.js` lit une formule comme un tableur la lit — le signe moins avant
   la puissance, les puissances de gauche à droite, une division par zéro qui est une **erreur** et non un infini, `IF`
   qui ne calcule que sa branche. Le classeur de chaque modèle est recalculé ainsi pour 115 jeux de cases jaunes (les

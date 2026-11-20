@@ -6,7 +6,7 @@ import { PI, SHEAR, n, sheet, num, opt, out, MAT, GEO, LOAD, CRIT } from "./mode
 const SHIGLEY = "Shigley's Mechanical Engineering Design";
 
 /* ISO 68-1 / ISO 261 coarse threads: [pitch P, clearance hole ISO 273 medium]. As = pi/4 (d - 0.9382 P)^2 (ISO 898-1). */
-export const THREADS = { M2: [0.4, 2.4], "M2.5": [0.45, 2.9], M3: [0.5, 3.4], M4: [0.7, 4.5], M5: [0.8, 5.5], M6: [1, 6.6], M8: [1.25, 9], M10: [1.5, 11], M12: [1.75, 13.5], M16: [2, 17.5] };
+export const THREADS = { M2: [0.4, 2.4], "M2.5": [0.45, 2.9], M3: [0.5, 3.4], M4: [0.7, 4.5], M5: [0.8, 5.5], M6: [1, 6.6], M8: [1.25, 9], M10: [1.5, 11], M12: [1.75, 13.5], M16: [2, 17.5], M20: [2.5, 22], M24: [3, 26], M30: [3.5, 33] };
 /* ISO 898-1 (d ≤ 16 mm) and ISO 3506 (A2-70): proof strength Sp, yield Rp0.2, tensile Rm, in MPa. */
 export const BOLT_CLASSES = { "4.8": { Sp: 310, Re: 340, Rm: 420 }, "8.8": { Sp: 580, Re: 640, Rm: 800 }, "10.9": { Sp: 830, Re: 940, Rm: 1040 }, "12.9": { Sp: 970, Re: 1100, Rm: 1220 }, "A2-70": { Sp: 450, Re: 450, Rm: 700 } };
 const E_BOLT = 205e3;   // MPa
@@ -30,7 +30,7 @@ const bolt = { id: "bolted_joint", domain: "joints", sketch: "bolt", title: "Met
     "Cisaillement repris par le filetage (cas prudent), limite 0,577 Rp0,2 ; matage contre la limite élastique de la tôle la plus mince.",
     "Arrachement du taraudage : aire cisaillée π d Le × 0,875 (profil ISO nominal), résistance 0,6 Rm. Règle pratique : 1,5 d en prise dans l'aluminium, 2 à 2,5 d ou un insert dans un plastique.",
     "Charges statiques, vis uniformément chargées ; pas de fatigue, pas de fluage du plastique sous la tête."],
-  validity: "Vis ISO à pas gros M2 à M16, serrage au couple dans le domaine élastique (précharge ≤ 90 % de la charge d'épreuve), assemblage sans joint souple.",
+  validity: "Vis ISO à pas gros M2 à M30, serrage au couple dans le domaine élastique (précharge ≤ 90 % de la charge d'épreuve), assemblage sans joint souple.",
   reference: `VDI 2230 (simplified) ; ${SHIGLEY} — chap. 8 (éq. 8-22, 8-24, 8-27) ; ISO 898-1 ; ISO 3506`,
   fill: { size: "screw", tp: "h", lk: "h", Em: "E", Re_p: "Re", Rm_t: "Rm" },
   compute(i) {

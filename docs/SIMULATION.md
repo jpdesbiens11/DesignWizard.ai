@@ -486,8 +486,13 @@ l'affine.
 
 ## 6. Ce qui est vérifié
 
-Les tests (`tests/node/fea.test.mjs`, `tests/node/fea_precheck.test.mjs`) comparent le solveur à des solutions
-exactes :
+**Contre des exemples publiés** (`docs/VALIDATION.md`, groupe « Validation » du volet de droite) : le solveur rejoue quatre
+exemples chiffrés de manuels et de pages publiques — deux barreaux bout à bout en conduction, une tige en traction, un
+barreau rond en flexion, des dalles bridées qui chauffent — sur un petit maillage dit dans chaque cas. La valeur attendue
+y est celle que la source imprime. C'est peu, et tout en barreaux : ce que ces cas ne couvrent pas est écrit à côté.
+
+**Contre des solutions exactes**, écrites dans les tests — des recoupements internes, pas des cas publiés. Les tests
+(`tests/node/fea.test.mjs`, `tests/node/fea_precheck.test.mjs`) comparent le solveur à des solutions exactes :
 
 | Cas | Simulation | Solution exacte | Écart |
 |---|---|---|---|

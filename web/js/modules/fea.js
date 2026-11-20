@@ -7,6 +7,7 @@
 
 import { el, clear, icon, btn, badge, field, table, fmt, toast, confirmBox, promptBox } from "../core/dom.js";
 import { registerModule, setStatus, setGuide } from "../core/app.js";
+import { validationSection } from "./validation_view.js";
 import { store } from "../core/store.js";
 import { kernel } from "../cad/client.js";
 import { createViewport } from "../core/viewport.js";
@@ -378,12 +379,13 @@ function render(main, args) {
     const hand = el("div", { class: "side-section", "data-fold-note": estimate.title }, el("h3", null, "Avant de calculer — l'estimation à la main"), el("p", { class: "small" }, el("b", null, estimate.title)),
       el("ol", { class: "calc-steps" }, estimate.steps.map((s) => el("li", null, s))), ...estimate.warnings.map((w) => el("p", { class: "atelier-hint warn" }, icon("warning"), " ", w)));
     const method = el("div", { class: "side-section" }, el("h3", null, "La méthode"), el("p", { class: "muted small" }, "Cubes identiques, hexaèdre à modes incompatibles (flexion juste même avec un élément dans l'épaisseur), gradient conjugué. Tout le code du solveur est dans ce dépôt, sous licence MIT."));
-    if (!last) { body.append(hand, method); return; }
+    const valid = validationSection({ ids: { structure: ["fea:structure"], thermal: ["fea:thermal"], thermo: ["fea:thermo", "fea:structure"] }[st.kind] || ["fea:structure"], redraw: drawRight });      // the published examples the solver was replayed against
+    if (!last) { body.append(hand, method, valid); return; }
     const before = runs.filter((x) => x !== last && x.kind === last.kind && x.probe && x.n < last.n).pop();      // the trial before, of the same physics : what each instrument read then
     resultPanel(body, { last, st, runs, named: named(), mat: geo.bodies[0].material, keep, setView, saveCase, sensors: { sensors: st.sensors, rows: readings(), prev: before ? readSensors(before.probe, st.sensors) : null, prevN: before ? before.n : 0, thermo: last.kind === "thermo" },
       repaint: (only) => { if (st.view !== "result") { setView("result"); return; } paint(); peak(); if (!only) drawRight(); },
       pick: (x) => { last = x; setView("result"); } });
-    body.append(hand, method);
+    body.append(hand, method, valid);
   }
   /** Paints the result : the stress (or the temperature) on the current scale — blue to red inside, magenta above, grey below — or the
       safety factor against the one aimed at — red below it, then orange, blue, green. */

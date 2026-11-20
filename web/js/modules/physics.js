@@ -5,7 +5,7 @@
    A value the tool put there is an example : it is marked, the next one to enter blinks, and the report waits.
    Route : #/physics or #/physics/<modelId>/<partId>. Runs added to the report live in project.physics. */
 
-import { el, clear, btn, toast, download } from "../core/dom.js";
+import { el, clear, btn, icon, toast, download } from "../core/dom.js";
 import { app, registerModule, setStatus, setGuide, docMeta } from "../core/app.js";
 import { docx } from "../core/docx.js";
 import { pdfDoc } from "../core/pdfdoc.js";
@@ -25,7 +25,7 @@ import { session } from "../core/access.js";
 import { TREE, itemFolderName } from "../google/drive_fs.js";
 import { sceneOf } from "../analysis/physics/scene3d.js";
 import { sketch, domainIcon } from "./physics_sketch.js";
-import { physicsSummary, show, qty, verdictBadge, domainOf, modelTiles, resultPanel, calcPanel, savedPanel, tabBar } from "./physics_panels.js";
+import { physicsSummary, show, qty, verdictBadge, domainOf, modelTiles, resultPanel, calcPanel, savedPanel, tabBar, validationMark } from "./physics_panels.js";
 import { CALC_UNITS, shownUnit, fromShown, fieldValue, converts } from "../core/units.js";
 
 export { physicsSummary, show };
@@ -72,6 +72,14 @@ function render(main, args) {
     nudge(f ? f.input : guideHost);
   }
   function confirmAll() { for (const k of examples()) done().add(k); update(); }
+  /* a reference case, in the fields of the model : the values of the source, typed — no medium gives them — and none of them is an example of the tool */
+  function loadCase(c) {
+    const m = model(c.model); if (!m) return;
+    const blank = Object.fromEntries((m.media || []).filter((s) => !s.own).map((s) => [s.key, ""])), next = { ...defaults(m.id), ...blank, ...c.inputs };
+    memory.set(m.id, next); prefillNotes.delete(m.id); entered.set(m.id, new Set(Object.keys(next))); ui.tab = "calc"; open(m.id);
+    toast(`Cas de référence chargé — ${c.title} : les valeurs sont celles de la source. « Valeurs par défaut » revient au modèle.`, "success", 6000);
+  }
+  const toValidation = () => { ui.tab = "calc"; drawRight(); setTimeout(() => { if (alive) nudge(right.querySelector(".val-section")); }, 60); };
 
   /* ---------- what follows every change : the run, the guide, the marks on the fields, the views ---------- */
   function update(refit) {
@@ -167,7 +175,8 @@ function render(main, args) {
     const d = domainOf(cur), eg = examples().length;
     top.append(el("div", { class: "phys-2d-head", style: `--dom:${d.color}` }, el("span", { class: "phys-chip" }, domainIcon(d.id, "currentColor", 18), d.label), el("div", { class: "grow" }, el("h2", null, cur.question), el("small", { class: "muted" }, cur.title)), verdictBadge(r.verdict)),
       sketch(cur, { fill: true, color: d.color }),
-      el("div", { class: "phys-2d-foot" }, el("span", { class: "zone-tag" }, "2D · schéma de principe"), cur.outputs.slice(0, 3).map((x) => el("span", { class: "chip" }, `${x.label} : ${qty(r.values[x.key], x.unit)}`)), eg ? el("span", { class: "chip eg", "data-tip": "Le verdict ne vaut que pour vos valeurs : le guide de gauche dit lesquelles restent des exemples" }, `${eg} valeur${eg > 1 ? "s" : ""} d'exemple`) : null));
+      el("div", { class: "phys-2d-foot" }, el("span", { class: "zone-tag" }, "2D · schéma de principe"), cur.outputs.slice(0, 3).map((x) => el("span", { class: "chip" }, `${x.label} : ${qty(r.values[x.key], x.unit)}`)), eg ? el("span", { class: "chip eg", "data-tip": "Le verdict ne vaut que pour vos valeurs : le guide de gauche dit lesquelles restent des exemples" }, `${eg} valeur${eg > 1 ? "s" : ""} d'exemple`) : null,
+        ((v) => el("button", { class: `chip val-chip ${v.n ? (v.bad ? "bad" : "done") : "none"}`, type: "button", "data-tip": "Les exemples publiés contre lesquels ce modèle a été rejoué : la source, ce qu'elle imprime, ce que l'outil trouve, l'écart — onglet « Calcul »", onClick: toValidation }, icon(v.n ? (v.bad ? "warning" : "check") : "minus"), v.text))(validationMark(cur.id))));
   }
   /* ---------- centre, bottom : the same model in 3D, with the typed dimensions ---------- */
   function drawScene(refit) {
@@ -206,7 +215,7 @@ function render(main, args) {
       name: ui.name || runName(store.project, cur.id, partId), setName: (v) => { ui.name = v; }, out: outNow(),
       save: () => { const entry = { id: `phy-${Date.now().toString(36)}`, name: (ui.name || runName(store.project, cur.id, partId)).trim(), model: cur.id, part: partId || null, inputs: r.inputs, values: r.values, checks: r.checks, verdict: r.verdict, when: new Date().toISOString() };
         store.commit(`Physique : ${entry.name}`, (p) => { p.physics = p.physics || []; p.physics.push(entry); }); ui.name = ""; toast(`« ${entry.name} » gardé dans le projet${partId ? `, au nom de ${partId}` : ""}.`, "success"); file(entry); } });
-    else if (ui.tab === "calc") calcPanel(body, { cur, r });
+    else if (ui.tab === "calc") calcPanel(body, { cur, r, loadCase });
     else savedPanel(body, { rows, project: store.project, out: outAll(), remove: (id) => store.commit("Physique : calcul retiré du rapport", (p) => { p.physics = (p.physics || []).filter((x) => x.id !== id); }),
       reopen: (id) => { const s = (store.project.physics || []).find((x) => x.id === id); if (!s || !model(s.model)) return; memory.set(s.model, { ...defaults(s.model), ...s.inputs }); prefillNotes.delete(s.model); entered.set(s.model, new Set(Object.keys(sessionDefaults(s.model))));
         ui.tab = "result"; open(s.model, s.part && store.part(s.part) ? s.part : ""); } });

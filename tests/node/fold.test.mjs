@@ -106,7 +106,7 @@ test("wiring : the Simulation says what its groups hold, folds the types of its 
   assert.ok((fea.match(/data-fold-note/g) || []).length >= 4);
   assert.match(tree, /"data-fold-key": key/); assert.match(tree, /bc-ghead fold-head/);
   assert.match(fea, /class: "side-actions"/, "launch and the switch of view are pinned at the top of the right panel");
-  assert.ok(fea.indexOf("resultPanel(body") < fea.lastIndexOf("body.append(hand, method);"), "once there is a result it comes before the hand estimate");
+  assert.ok(fea.indexOf("resultPanel(body") < fea.lastIndexOf("body.append(hand, method, valid);"), "once there is a result it comes before the hand estimate, the method and the published examples");
   assert.match(result, /`Résultat \$\{last\.n\}`/);
   assert.match(zones, /Volumes de raffinement dans la vue/, "the eye that hides or shows the volumes of the zones");
   assert.match(fea, /st\.view === "result" \? st\.show\.zonesResult === true : st\.show\.zones !== false/, "shown on the model, put away on the result, unless asked");
