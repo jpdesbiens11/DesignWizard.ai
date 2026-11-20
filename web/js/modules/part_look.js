@@ -4,7 +4,9 @@
    another. ONE picker for three things (demande de JP : « part & assembly defined and visible ») :
      a part       — its look, worn by every instance of it ;
      an instance  — the look of this part, or of this whole sub-assembly, in THIS assembly : it wins over the look of the part ;
-     an assembly  — every instance of it at once.
+     an assembly  — every instance of it at once ; and several parts, or several instances, chosen together (Ctrl + click).
+   The picker opens IN THE RIGHT MARGIN of the studio (demande de JP), over the tab that was there, and stays until it is closed :
+   the view is left clear, and closing it shows the tab again. Where there is no right margin it floats at the right of the window.
    Words, colours and the rule of who wins : core/part_look.js ; patterns and sheens : core/look_patterns.js. */
 
 import { el, icon } from "../core/dom.js";
@@ -34,8 +36,19 @@ const instTarget = (asmId, instId) => ({ kind: "inst", holder: () => instOf(asmI
   paint: (patch, label) => store.updateAssembly(asmId, (a) => { const i = (a.instances || []).find((q) => q.id === instId); if (i) setLook(i, patch); }, `${asmId} : ${instId} — ${label}, ici`),
   back: (b, i) => (i.asm ? "Revenir à l'apparence de ses pièces" : "Revenir à l'apparence de la pièce"),
   note: "Ce que l'assemblage dit ici l'emporte sur l'apparence de la pièce, dans cet assemblage seulement — et dans ceux qui le contiennent. Un sous-assemblage s'habille d'un seul bloc. Rien ne va sur un dessin." });
-/* every instance of an assembly at once : what they all share is what the picker shows */
-const common = (a) => { const all = (a.instances || []).map((i) => lookOf(i)), same = (k) => (all.length && all.every((l) => l[k] === all[0][k]) ? all[0][k] : null); return { color: same("color"), opacity: same("opacity"), pattern: same("pattern"), sheen: same("sheen") }; };
+/* several things at once : what they all share is what the picker shows */
+const shared = (list) => { const all = (list || []).map((i) => lookOf(i)), same = (k) => (all.length && all.every((l) => l[k] === all[0][k]) ? all[0][k] : null); return { color: same("color"), opacity: same("opacity"), pattern: same("pattern"), sheen: same("sheen") }; };
+const common = (a) => shared(a.instances);
+const EACH = { color: "#b9c6ce", opacity: 1, pattern: null, sheen: DEFAULT_SHEEN, words: "chacune garde la sienne" };
+/* the parts chosen together in the list of parts, and the elements chosen together in an assembly */
+const partsTarget = (ids) => ({ kind: "all", holder: () => { const l = ids.map((i) => store.part(i)).filter(Boolean); return l.length ? { look: shared(l), n: l.length } : null; }, dialog: "Apparence des pièces choisies",
+  title: (h) => `${h.n} pièce${h.n > 1 ? "s" : ""} choisie${h.n > 1 ? "s" : ""}`, base: () => EACH, back: () => "Revenir à la couleur de leur matière",
+  paint: (patch, label) => store.commit(`${ids.length} pièces : ${label}`, (p) => { for (const x of p.parts || []) if (ids.includes(x.id)) setLook(x, patch); }),
+  note: "Habille d'un coup les pièces choisies ensemble (Ctrl + clic dans la liste). Chacune peut ensuite être reprise seule. Ce n'est pas une finition : rien ne va sur un dessin." });
+const instsTarget = (asmId, ids) => ({ kind: "all", holder: () => { const a = store.assembly(asmId), l = a ? (a.instances || []).filter((i) => ids.includes(i.id)) : []; return l.length ? { look: shared(l), n: l.length } : null; }, dialog: "Apparence des éléments choisis",
+  title: (h) => `${h.n} élément${h.n > 1 ? "s" : ""} choisi${h.n > 1 ? "s" : ""} — ici`, base: () => EACH, back: () => "Revenir à l'apparence de chaque pièce",
+  paint: (patch, label) => store.updateAssembly(asmId, (a) => { for (const i of a.instances || []) if (ids.includes(i.id)) setLook(i, patch); }, `${asmId} : ${ids.length} éléments — ${label}, ici`),
+  note: "Habille d'un coup les éléments choisis ensemble (Ctrl + clic), dans cet assemblage. Chacun peut ensuite être repris seul, par sa fiche ou son menu." });
 const asmTarget = (asmId) => ({ kind: "all", holder: () => { const a = store.assembly(asmId); return a ? { id: a.id, name: a.name, look: common(a), n: (a.instances || []).length } : null; }, dialog: "Apparence de tout l'assemblage",
   title: (h) => `${h.name || h.id} — ses ${h.n} élément${h.n > 1 ? "s" : ""}`, base: () => ({ color: "#b9c6ce", opacity: 1, pattern: null, sheen: DEFAULT_SHEEN, words: "chaque pièce garde la sienne" }),
   paint: (patch, label) => store.updateAssembly(asmId, (a) => { for (const i of a.instances || []) setLook(i, patch); }, `${asmId} : ${label}, sur tout l'assemblage`), back: () => "Revenir à l'apparence de chaque pièce",
@@ -57,13 +70,19 @@ export function instSwatch(asmId, inst, o = {}) {
 export const openLookPicker = (id, anchor) => openPicker(partTarget(id), anchor);
 export const openInstLookPicker = (asmId, instId, anchor) => openPicker(instTarget(asmId, instId), anchor);
 export const openAsmLookPicker = (asmId, anchor) => openPicker(asmTarget(asmId), anchor);
+export const openPartsLookPicker = (ids, anchor) => openPicker(partsTarget(ids), anchor);
+export const openInstsLookPicker = (asmId, ids, anchor) => openPicker(instsTarget(asmId, ids), anchor);
 
-/* The picker, next to the node that opened it. It reads what it paints again after each choice. */
+/* the right margin of the studio, when the page has one and it is shown : where the picker settles */
+const margin = () => { const m = document.querySelector(".studio > .side.right"); return m && m.offsetWidth > 120 && getComputedStyle(m).visibility !== "hidden" ? m : null; };
+let shut = null;      // closes the picker that is open
+/* The picker. It reads what it paints again after each choice ; in the right margin it stays through every redraw of the margin. */
 function openPicker(T, anchor) {
-  document.querySelectorAll(".look-pop").forEach((n) => n.remove());
-  const pop = el("div", { class: "look-pop", role: "dialog", "aria-label": T.dialog, "data-look-kind": T.kind });
-  const close = () => { pop.remove(); document.removeEventListener("pointerdown", away, true); document.removeEventListener("keydown", key, true); };
-  const away = (ev) => { if (!pop.contains(ev.target)) close(); }, key = (ev) => { if (ev.key === "Escape") { ev.stopPropagation(); close(); } };
+  if (shut) shut();
+  const host = margin(), pop = el("div", { class: `look-pop${host ? " docked" : ""}`, role: "dialog", "aria-label": T.dialog, "data-look-kind": T.kind });
+  const keep = host ? new MutationObserver(() => { if (!host.isConnected) close(); else if (!pop.isConnected) host.append(pop); }) : null;      // the margin was drawn again : the picker comes back over it
+  function close() { if (keep) keep.disconnect(); pop.remove(); document.removeEventListener("pointerdown", away, true); document.removeEventListener("keydown", key, true); window.removeEventListener("hashchange", close); if (shut === close) shut = null; if (anchor && anchor.isConnected && anchor.focus) anchor.focus(); }
+  const away = (ev) => { if (!host && !pop.contains(ev.target)) close(); }, key = (ev) => { if (!pop.isConnected) return close(); if (ev.key === "Escape") { ev.stopPropagation(); close(); } };      // in the margin it stays until it is closed
   const set = (patch, label) => { if (!T.holder()) return close(); T.paint(patch, label); draw(); };
   function draw() {
     const h = T.holder(); if (!h) return close();
@@ -78,7 +97,7 @@ function openPicker(T, anchor) {
       el("span", { class: "look-tile plain", style: { background: s.color || b.color } }), el("small", null, "Uni"));
     pop.replaceChildren(
       el("div", { class: "look-head" }, el("span", { class: "look-dot big own", style: { ...fill({ color: s.color || b.color, pattern: s.pattern }), opacity: String(Math.max(0.45, s.opacity ?? 1)) } }), el("div", { class: "grow" }, el("b", null, T.title(h)), el("small", null, hasLook(own) ? lookWords(own) || said(s) : b.words)),
-        el("button", { class: "icon-btn", type: "button", "aria-label": "Fermer", onClick: close }, icon("close"))),
+        el("button", { class: "icon-btn", type: "button", "aria-label": "Fermer la palette", "data-tip": host ? "Fermer la palette : l'onglet d'avant revient (Échap)" : "Fermer (Échap)", "data-look-close": "1", onClick: close }, icon("close"))),
       el("div", { class: "look-grid", role: "group", "aria-label": "Couleurs et teintes" }, el("span"), SHADES.map((x) => el("small", { class: "look-col" }, x.fr)),
         palette().map((row) => [el("small", { class: "look-row" }, row.fr), row.cells.map(cell)])),
       el("div", { class: "look-tools" }, el("button", { class: "chip-btn", type: "button", "data-shade": "lighter", "data-tip": "La même couleur, un cran plus clair", onClick: () => set({ color: lighter(s.color || b.color) }, "teinte plus claire") }, "☀ Plus clair"),
@@ -92,10 +111,10 @@ function openPicker(T, anchor) {
       el("button", { class: "menu-item", type: "button", "data-look-reset": "1", disabled: !hasLook(own), onClick: () => set({ color: null, opacity: null, pattern: null, sheen: null }, T.kind === "part" ? "couleur de la matière" : "apparence de la pièce") }, icon("undo"), el("span", { class: "grow" }, T.back(b, h))),
       el("p", { class: "muted small look-note" }, T.note));
   }
-  draw(); document.body.append(pop);
-  const a = anchor && anchor.getBoundingClientRect ? anchor.getBoundingClientRect() : { right: 80, top: 80, bottom: 100 }, r = pop.getBoundingClientRect();
-  pop.style.left = `${Math.max(6, Math.min(a.right + 8, window.innerWidth - r.width - 8))}px`; pop.style.top = `${Math.max(6, Math.min(a.top - 8, window.innerHeight - r.height - 8))}px`;
-  setTimeout(() => { document.addEventListener("pointerdown", away, true); document.addEventListener("keydown", key, true); }, 0);
+  draw(); shut = close;
+  if (host) { host.append(pop); keep.observe(host, { childList: true }); }
+  else { document.body.append(pop); const r = pop.getBoundingClientRect(); pop.style.left = `${Math.max(6, window.innerWidth - r.width - 12)}px`; pop.style.top = `${Math.max(6, Math.min(96, window.innerHeight - r.height - 8))}px`; }      // no margin on this page : at the right of the window, over what one looks at
+  setTimeout(() => { document.addEventListener("pointerdown", away, true); document.addEventListener("keydown", key, true); window.addEventListener("hashchange", close); const first = pop.querySelector("[data-look-close]"); if (first) first.focus({ preventScroll: true }); }, 0);
   return close;
 }
 

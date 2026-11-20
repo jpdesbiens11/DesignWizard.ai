@@ -71,7 +71,7 @@ test("menu and .dwiz : a sub-assembly says what it is", () => {
 test("wiring : the builder opens the levels, the screen treats a sub-assembly as one block, the readers go through the levels", () => {
   const scene = read("web/js/core/asm_scene.js"), a = read("web/js/modules/assembly.js"), sub = read("web/js/modules/asm_sub.js");
   assert.match(scene, /const \{ asm: usable, sol \} = solveLevels\(asm, built, find\);/); assert.match(scene, /levels: bomLevels\(asm, find\)/);
-  assert.match(a, /st\.sel = hit && hit\.def\.data\.inst \? topOf\(hit\.def\.data\.inst\) : null;/, "a click on a part of a sub-assembly selects the sub-assembly");
+  assert.match(a, /const iid = hit && hit\.def\.data\.inst \? topOf\(hit\.def\.data\.inst\) : null;/, "a click on a part of a sub-assembly selects the sub-assembly"); assert.match(a, /else \{ st\.multi = \[\]; st\.anchor = iid; st\.sel = iid; \}/, "a plain click selects it alone ; with Ctrl it joins what is chosen");
   assert.match(a, /const keysOf = \(iid\) => \[\.\.\.vp\.viewer\.objects\.keys\(\)\]\.filter\(\(k\) => ownsKey\(iid, k\)\);/); assert.doesNotMatch(a, /startsWith\(/, "no key of the view is matched by hand");
   assert.equal((a.match(/autoMate\(p\.assemblies\.find\(\(x\) => x\.id === id\), [a-z.]*built, (st\.)?ctx\.asm\)/g) || []).length, 3, "the automatic joints are found through the levels");
   assert.match(a, /const without = \(x, iid\) => \{ x\.instances = x\.instances\.filter\(\(q\) => q\.id !== iid\); x\.mates = \(x\.mates \|\| \[\]\)\.filter\(\(k\) => topOf\(k\.a\.inst\) !== iid && topOf\(k\.b\.inst\) !== iid\); \};/);

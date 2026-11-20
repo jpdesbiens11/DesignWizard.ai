@@ -53,6 +53,15 @@ one chooses and what one gets**. Both panels resize and hide; their width is the
   the label of the view and in the message of the guide, in the same colour. A click in the list lights it in the
   view, and the reverse.
 - **Common settings stay on the row** (the switch, the eye); the rest goes into the menu of the row.
+- **A long list where ONE thing is chosen folds into a drop-down list one can search — established use** (the
+  *combobox* of the web). The button names what is chosen; the list keeps its groups, its colours and its
+  pictograms; typing narrows it; ↑ ↓ Enter Escape. What depends on the choice (the tree, the settings) then comes
+  right under the menu, instead of being pushed off the screen by thirty rows.
+- **Ctrl + click chooses several, Shift + click a whole run — established use** (file managers). The plain click
+  keeps its meaning. A bar appears with what can be done at once, and each batch action is ONE undoable step. One
+  rule of selection, pure and tested, for every list.
+- **A picker one tries several times settles in a margin, not over what one is judging — house choice.** The look
+  palette takes the right margin and stays there until it is closed; the tab that was there then comes back.
 
 ## 4. Fields
 

@@ -22,7 +22,7 @@ import { moldPanel, isMolded, clearMold } from "./part_mold.js";
 import { runDfx } from "../analysis/dfx_api.js";
 import { lightSide, LIT } from "../core/view_marks.js";
 import { partGestures, PART_KEYS } from "./part_gestures.js";
-import { lookSwatch, lookTools } from "./part_look.js";
+import { partPicker, partsSection } from "./part_list.js";
 
 const OP_ICON = { box: "part", cylinder: "part", extrude: "extrusion", revolve: "refresh", hole: "bolt", pocket: "section", pad: "layers", slot: "minus", boss: "bolt", shell: "layers", fillet: "edit", chamfer: "edit", interfaces: "interfaces",
   drill: "drill", tap: "tap", cbore: "drill", csink: "drill", ream: "drill", mill: "mill", groove: "mill", face: "mill", step: "mill", outline: "laser", turn: "lathe", bore: "lathe", break_edges: "deburr", deburr: "deburr", finish: "palette" };
@@ -148,15 +148,12 @@ export function partStudio(main, args, cfg) {
   function renderLeft() {
     clear(left);
     left.append(el("img", { class: "side-mark", src: `img/marks/${cfg.mark || cfg.key}.svg`, alt: "" }),
-      el("div", { class: "side-head" }, el("h2", null, cfg.title), btn("", () => newPartDialog(cfg), { small: true, icon: "plus", tip: "Nouvelle pièce (gabarit) — ou démarrez par l'intention, dans l'Atelier" })));
+      el("div", { class: "side-head" }, el("h2", null, cfg.title), btn("", () => newPartDialog(cfg), { small: true, icon: "plus", tip: "Nouvelle pièce (gabarit) — ou démarrez par l'intention, dans l'Atelier" })),
+      partPicker({ parts: parts(), id, key: cfg.key }));      // the part one looks at : a drop-down list one can search, at the head of the panel
     const scroll = el("div", { class: "side-scroll" });
     left.append(scroll);
-    const list = el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, `Pièces (${parts().length})`), lookTools(parts())));
-    for (const p of parts()) list.append(el("div", { class: "nav-row" }, el("a", { class: "nav-item" + (p.id === id ? " active" : ""), href: `#/${cfg.key}/${encodeURIComponent(p.id)}` },
-      icon(p.family === "pcb" ? "pcb" : p.family === "extrusion" ? "extrusion" : p.step ? "step" : "part"), el("span", { class: "grow" }, p.name || p.id), el("small", null, p.id)), lookSwatch(p)));      // its colour, a click away
-    if (!parts().length) list.append(el("p", { class: "muted" }, "Aucune pièce."));
-    scroll.append(list);
-    if (!st.spec) return;
+    const everyPart = () => partsSection({ parts: parts(), id, key: cfg.key, st, redraw: renderLeft });      // the whole list, under the tree : to choose several (Ctrl + click) and change them together
+    if (!st.spec) { scroll.append(everyPart()); return; }
     const s = st.spec, tree = el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, "Arbre de construction"), addFeatureButton()));
     if (s.stock) tree.append(el("button", { class: "nav-item", type: "button", onClick: () => editStock(), "data-tip": "Matière première : ce que l'on prend sur l'étagère" }, icon("stock"),
       el("span", { class: "grow" }, `Brut : ${(STOCK_FORMS[s.stock.form] || { label: s.stock.form }).label.toLowerCase()}`), st.built && st.built.facts.stock && !st.built.facts.stock.exact ? badge("hors série", "warn") : null));
@@ -180,6 +177,7 @@ export function partStudio(main, args, cfg) {
       btn("STEP", async () => { try { const bytes = await underVeil({ set: (t, o) => vp.setBusy(t, o) }, `Écriture du STEP de ${s.id}…`, async () => { await kernel.build(s); return kernel.step([{ key: s.id, name: `${s.id} ${s.name || ""}`.trim() }], s.id); }, { after: () => rebuild(), cancelled: "Export annulé : aucun fichier n'a été écrit." });
         if (bytes !== undefined) download(`${s.id}.step`, bytes, "application/step"); } catch (e) { toast(e.message, "error"); } }, { small: true, icon: "step", tip: "Télécharger le STEP AP214 de la pièce" }), " ",
       btn("Supprimer", async () => { if (await confirmBox("Supprimer la pièce", `Supprimer ${s.id} du projet (et de ses assemblages) ? Ctrl+Z l'annule.`, "Supprimer", true)) { store.removePart(s.id); go(`#/${cfg.key}`); } }, { small: true, icon: "trash", danger: true })));
+    scroll.append(everyPart());
   }
   function iconBtn(name, tip, fn, transform) {
     const b = el("button", { class: "icon-btn", type: "button", "data-tip": tip, "aria-label": tip, onClick: (e) => { e.stopPropagation(); fn(); } }, icon(name));

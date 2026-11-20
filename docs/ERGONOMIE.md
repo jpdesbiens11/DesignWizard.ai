@@ -114,6 +114,31 @@ pas est fixe (5 mm) ; dans le studio des pièces, les axes sont ceux de l'encomb
 face ; la reprise par maintien n'existe que dans l'écran des busbars ; l'Atelier place ses interfaces par face, sans
 position à régler. Rien de cela n'a été essayé sur un écran tactile.
 
+## Choisir dans une longue liste, et en choisir plusieurs
+
+Demandes de JP (20 novembre 2026) : « un menu déroulant pour choisir la pièce… quand il y a 30 pièces, il faut vraiment
+scroller », et « la fonction contrôle doit permettre de faire des multiples sélections ».
+
+- **La pièce que l'on regarde se choisit dans un menu déroulant**, en tête du volet de gauche du studio des pièces
+  (`web/js/core/pick_list.js`). Le bouton nomme la pièce affichée ; il ouvre la liste des pièces **groupées par
+  procédé** (le nom du métier, une couleur par groupe), chacune avec son pictogramme, son numéro, sa matière et sa
+  couleur. Un champ de recherche a le curseur : taper réduit la liste (les accents et la casse ne comptent pas), le
+  compte dit « 3 sur 30 ». C'est le *combobox* du web : Entrée, Espace ou ↓ ouvre ; ↑ ↓ Début Fin parcourent ; Entrée
+  choisit ; Échap ferme et rend le curseur au bouton ; un clic ailleurs ferme.
+- **L'arbre de construction vient donc tout de suite sous le menu**, quel que soit le nombre de pièces. La liste
+  entière reste, **sous l'arbre** : « Toutes les pièces », un groupe qui se replie comme les autres.
+- **Ctrl + clic choisit plusieurs lignes** (⌘ sur un Mac), **Maj + clic toute une suite** depuis la dernière ligne
+  cliquée — l'usage de tout gestionnaire de fichiers (`web/js/core/multi_select.js`, pur et testé). Un clic simple
+  garde son sens : ouvrir la pièce, sélectionner l'élément. Les lignes choisies se marquent, et une **barre** apparaît
+  en tête de la liste avec ce qui se fait d'un coup, chaque fois en **une seule étape annulable** :
+  - dans **Pièces** : « Apparence » (la palette, pour toutes), « Matériau… », « Assemblage » (un nouvel assemblage fait
+    de ces pièces) ;
+  - dans **l'Assemblage** : « Apparence » (dans cet assemblage), « Grouper » (former un sous-assemblage, les éléments
+    déjà cochés), « Off / On », « Masquer / Montrer ». Ctrl + clic sur une pièce **dans la vue 3D** fait de même ; Échap
+    vide le choix.
+- Pas encore : la sélection multiple dans les autres listes (opérations d'une pièce, conditions d'un cas de charge,
+  blocs d'une carte). Le mécanisme est commun ; chaque liste y viendra avec ce qui a un sens à faire en lot.
+
 ## La couleur de chaque pièce
 
 Demande de JP : pouvoir donner soi-même une couleur et une teinte à chaque pièce, pour s'y retrouver d'un coup d'œil.
@@ -129,6 +154,11 @@ Demande de JP : pouvoir donner soi-même une couleur et une teinte à chaque pi�
 - **Deux raccourcis** en tête de liste : « Une couleur par pièce » (chaque pièce qui n'en a pas reçoit la sienne,
   différente de ses voisines ; celles que l'on a choisies restent) et « Couleurs des matières ».
 - La fiche de la pièce rappelle son apparence (« Apparence à l'écran »).
+- **La palette s'ouvre dans la marge de droite** (demande de JP, 20 novembre 2026), par-dessus l'onglet qui s'y
+  trouvait, et **y reste jusqu'à ce qu'on la ferme** (la croix, ou Échap) : la vue reste dégagée pour juger du
+  résultat, un clic dans la vue ou dans la liste ne la ferme pas, et l'onglet d'avant réapparaît tel quel à la
+  fermeture. La marge se redessine derrière elle à chaque choix ; la palette revient par-dessus. Sur une page sans
+  marge de droite, ou quand elle est repliée, la palette flotte à droite de la fenêtre et se ferme d'un clic ailleurs.
 
 ### Motif, finition, et ce que l'assemblage en dit
 
@@ -460,6 +490,11 @@ pas, une capture l'a montré.
 
 Essayé dans Chromium à 1280, 1366 et 1600 px (rien n'est coupé ni recouvert, le panneau reste dans la fenêtre), au
 clavier ; pas essayé au toucher, ni sur Firefox et Safari.
+
+Fenêtre étroite (mesuré dans Chromium, v0.105.0) : sous 1280 px, les groupes où l'on n'est pas ne gardent que leur
+pictogramme et leur chevron — leur nom reste dans la bulle et pour un lecteur d'écran — ; sous 1180 px, le mot d'état du
+noyau s'efface. La barre tient ainsi jusqu'à 1100 px sans rien pousser hors de la page ; à 1024 px il reste une
+cinquantaine de pixels de défilement horizontal, et c'est dit ici plutôt que caché.
 
 ### Le bouton « Annuler » ne bouge pas sous le pointeur
 

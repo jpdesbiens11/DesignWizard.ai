@@ -369,6 +369,15 @@ choisit et ce que l'on obtient**. Les deux volets se redimensionnent et se cache
   A1 sur l'étiquette de la vue et dans le message du guide, de la même couleur. Un clic dans la liste l'allume dans
   la vue, et l'inverse.
 - **Les réglages courants restent sur la ligne** (l'interrupteur, l'œil) ; le reste va dans le menu de la ligne.
+- **Une longue liste où l'on choisit UNE chose se replie en menu déroulant avec recherche — usage établi** (le
+  *combobox* du web). Le bouton nomme ce qui est choisi ; la liste garde ses groupes, ses couleurs et ses
+  pictogrammes ; taper la réduit ; ↑ ↓ Entrée Échap. Ce qui dépend du choix (l'arbre, les réglages) remonte alors
+  juste sous le menu, au lieu d'être poussé hors de l'écran par trente lignes.
+- **Ctrl + clic en choisit plusieurs, Maj + clic toute une suite — usage établi** (les gestionnaires de fichiers).
+  Le clic simple garde son sens. Une barre apparaît avec ce qui se fait d'un coup, et chaque action de lot est UNE
+  étape annulable. Une seule règle de sélection, pure et testée, pour toutes les listes.
+- **Un sélecteur que l'on essaie plusieurs fois s'installe dans une marge, pas sur ce que l'on juge — choix maison.**
+  La palette d'apparence prend la marge de droite et y reste jusqu'à sa fermeture ; l'onglet d'avant revient ensuite.
 
 ## 4. Les champs
 
