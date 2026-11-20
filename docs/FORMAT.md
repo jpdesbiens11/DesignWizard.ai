@@ -156,6 +156,9 @@ Le vocabulaire complet (familles, procédés, matériaux, types d'interface, for
 d'atelier, opérations du noyau) est dans [PART_LANGUAGE.md](PART_LANGUAGE.md). En bref :
 
 - **`intent`** — `loads`, `environment`, `quantity`, `priority` : pourquoi la pièce existe.
+- **`aiJournal`** (projet) — les réponses d'IA appliquées par la porte « Avec l'IA » de l'Atelier, la plus récente en
+  tête, vingt au plus : `id`, `when`, `ask` (la phrase), `created` (`kind`, `id`), `modified` (`kind`, `id`, `before` —
+  l'artéfact tel qu'il était). C'est ce qui permet de revenir à avant une réponse ; voir `docs/IA.md`.
 - **Dossiers** — `folder: "nom"` sur une opération d'une pièce ou sur une instance d'un assemblage : le dossier où la
   ligne est rangée dans la liste, rien de plus. Un dossier range, il ne change rien : l'ordre des opérations reste celui
   de la construction, les instances gardent leur place et leurs accouplements, et la signature d'un artéfact l'ignore

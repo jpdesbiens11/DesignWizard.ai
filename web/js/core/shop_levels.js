@@ -94,6 +94,7 @@ export function levelsOf(key, args, project) {
   const natureCrumb = (n, on) => ({ level: 2, label: n.label, sub: n.fr, icon: n.icon, color: n.color, hash: on ? null : natureHash(n.key), drop: "natures", on });
   if (key === "shop") {
     if (a[0] === "new") return place("Nouvelle pièce · pas à pas", "intent");
+    if (a[0] === "ai") return place("Nouvelles pièces · avec l'IA", "sparkle");
     if (a[0] === "n" && BY.has(a[1])) { const n = nature(a[1]); return { crumbs: [shop, natureCrumb(n, true)], up: "#/shop", part: null, nature: n, assembly: null }; }
     return { crumbs: [{ ...shop, hash: null, on: true }], up: null, part: null, nature: null, assembly: null };
   }

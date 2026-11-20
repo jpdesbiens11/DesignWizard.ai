@@ -31,6 +31,7 @@ import { lightSide, sideOf, LIT } from "../core/view_marks.js";
 import { popupMenu } from "../core/view_select.js";
 import { floor } from "./shop_floor.js";
 import { mountSteps } from "./shop_steps.js";
+import { aiDoor } from "./shop_ai.js";
 import { specialCard } from "./shop_special.js";
 import { foldSides } from "../core/shop_folded.js";
 import { printProcess, amLimits } from "../cad/special_processes.js";
@@ -59,8 +60,9 @@ const COUNTS = new Set(["n", "nx", "ny", "i", "u"]), inMm = (v) => fromShown(v, 
 const numIn = (obj, key, label, redraw, step = 1) => { const len = !COUNTS.has(key), conv = len && converts("mm", getUnits());
   return field(len ? mmLabel(label) : label, el("input", { type: "number", value: obj[key] === undefined || obj[key] === null ? "" : len ? mmShown(obj[key]) : obj[key], step: conv ? "any" : step, min: 0, onInput: (e) => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) { obj[key] = len ? inMm(v) : v; redraw(); } } })); };
 
-/* `#/shop` and `#/shop/n/<nature>` : the floor (levels 1 and 2, modules/shop_floor.js) ; `#/shop/new` : a new part, from its intent */
-const render = (main, args) => (args[0] === "new" ? intent(main, args[1] === "all") : floor(main, args));
+/* `#/shop` and `#/shop/n/<nature>` : the floor (levels 1 and 2, modules/shop_floor.js) ; `#/shop/new` : a new part, from its intent ;
+   `#/shop/ai` : new parts or a whole assembly, with an AI (modules/shop_ai.js) */
+const render = (main, args) => (args[0] === "new" ? intent(main, args[1] === "all") : args[0] === "ai" ? aiDoor(main) : floor(main, args));
 function intent(main, all) {
   if (app.shopPreset) { brief = { ...blank(), ...app.shopPreset }; app.shopPreset = null; }      // sent by the screen of the special processes : this material, this process
   const p = store.project, page = el("div", { class: "page atelier" });

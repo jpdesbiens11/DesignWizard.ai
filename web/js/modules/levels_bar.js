@@ -54,7 +54,7 @@ function crumbEl(c) {
 function crumbsRow() {
   const step = stairOf(last.key, last.args, project()), up = step ? stairButton(step, { label: "Monter", keys: true }) : null;      // the same step as at the head of the left panel (core/stairs.js)
   if (up) { up.classList.add("levels-up"); up.append(el("kbd", null, "Alt ↑")); }
-  const h = here(), ai = btn("IA", () => (h && app.aiLoop ? app.aiLoop(`${h.kind === "asm" ? "assembly" : "part"}:${h.id}`) : go("#/interfaces")), { small: true, primary: true, icon: "sparkle", tip: h ? "Confier ce que montre l'écran à l'IA : l'exporter avec une demande, réimporter la réponse, voir les changements avant de les appliquer" : "Créer avec l'IA : la pièce décrite en mots, la consigne proposée, la réponse rapportée" });
+  const h = here(), ai = btn("IA", () => (h && app.aiLoop ? app.aiLoop(`${h.kind === "asm" ? "assembly" : "part"}:${h.id}`) : go("#/shop/ai")), { small: true, primary: true, icon: "sparkle", tip: h ? "Confier ce que montre l'écran à l'IA : l'exporter avec une demande, réimporter la réponse, voir les changements avant de les appliquer" : "Créer avec l'IA : la pièce décrite en mots, la consigne proposée, la réponse rapportée" });
   return el("div", { class: "levels-row" }, el("nav", { class: "levels-crumbs", "aria-label": "Fil d'Ariane" }, el("span", { class: "crumb root", "data-tip": "Le projet ouvert" }, icon("folder"), el("span", { class: "crumb-name" }, project().name || "Projet")),
     lv.crumbs.flatMap((c) => [el("span", { class: "crumb-sep", "aria-hidden": "true" }, icon("chevron-right")), crumbEl(c)])), el("span", { class: "grow" }), up, ai);
 }

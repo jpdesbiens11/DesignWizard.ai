@@ -92,6 +92,40 @@ Ce qui est refusé donne une **demande de correction** prête à copier dans la 
 collé n'importe où dans l'outil est reconnu et suit le même chemin. « Voir un exemple » charge une description et la
 réponse correspondante (un module de température : boîtier moulé, couvercle, platine, carte, quatre analyses).
 
+## La porte « Avec l'IA » de l'Atelier : créer et modifier, avec l'aperçu de ce qui se range où
+
+Demandes de JP (20 novembre 2026) : « propose seulement le bouton IA avec une proposition de prompt… une façon de
+réinjecter l'information… quels artéfacts vont être créés en apportant le résultat du prompt, qui peut être un .zip ou
+n'importe quelle forme de fichier » ; « pouvoir revenir en arrière si l'IA n'a pas bien compris ». Choix confirmé par
+menu : une réponse peut **modifier et créer**.
+
+- **Une phrase, et la consigne est proposée** (`#/shop/ai`, `web/js/modules/shop_ai.js`). On dit ce que l'on veut, on
+  choisit ce que l'IA doit rendre — une pièce, plusieurs, un assemblage complet — et ce qu'elle reçoit : les pièces du
+  projet avec leurs **interfaces libres** (ce qui naît se raccorde alors à ce qui existe), et « pose-moi tes questions
+  d'abord » (l'IA mène l'entrevue, une question à la fois). La consigne porte le langage d'une pièce
+  (`LANGUAGE_REFERENCE`). Elle se copie, ou part en **dossier .zip** avec le projet entier (.dwiz), pour un assistant
+  à qui l'on donne des fichiers. **L'outil n'appelle aucune IA** : c'est la personne qui porte la consigne et rapporte
+  la réponse.
+- **La réponse revient sous n'importe quelle forme** : un fichier .dwiz ou .json, plusieurs fichiers, un **.zip**
+  (lu sans bibliothèque : `web/js/core/unzip.js`, entrées stockées ou compressées), ou le texte collé. Ce qui n'est ni
+  une pièce ni un assemblage est dit, avec le nom du fichier.
+- **Rien n'entre avant l'accord** : l'aperçu (`planAnswer`, `web/js/core/ai_door.js`, pur et testé) dit pour chaque
+  artéfact ce que la réponse ferait — **créé**, **modifié** (combien de changements), **identique**, **écarté** avec
+  sa raison (pièce invalide, numéro donné deux fois, assemblage qui nomme une pièce absente) — et **où il se range**
+  dans la structure du produit : « Atelier ▸ Molded », « Atelier ▸ Busbars », « Mécanique ▸ Assemblage ». Une pièce
+  qui porte le numéro d'une pièce du projet la modifie ; un numéro nouveau crée.
+- **« Appliquer » est une seule étape annulable** (`applyPlan`). On reste sur la page, avec les liens vers ce qui a
+  été fait — ouvrir tout de suite un assemblage neuf l'accouplerait et glisserait des étapes entre la réponse et son
+  annulation. Un assemblage neuf sans accouplement s'accouple par ses interfaces quand on l'ouvre.
+- **Le journal revient à avant une réponse**, même après d'autres changements (`project.aiJournal`, `revertEntry`) :
+  ce qu'elle a créé est retiré, ce qu'elle a modifié est remis comme avant — en une étape annulable. Une pièce créée
+  qu'un autre assemblage a montée depuis est **gardée**, et c'est dit. Le journal garde les vingt dernières réponses.
+- Pas encore : les cartes (PCBA), les dessins et les cas de simulation dans une même réponse — ils gardent leur
+  aller-retour propre, par le bouton « IA » de leur écran ; c'est la suite du point 2 de la feuille de route.
+- Essayé dans Chromium (23 vérifications : consigne, dossier, réponse en fichier et en .zip, aperçu, application,
+  Ctrl + Z, journal, texte collé, réponse illisible). Aucune vraie réponse d'assistant n'a été essayée ici : les
+  réponses d'essai sont faites à partir du projet lui-même.
+
 ## La revue de conception
 
 Tout ce qu'une IA a écrit arrive dans l'écran **Revue** en « Brouillon IA ». Chaque artéfact — pièce, assemblage, carte,

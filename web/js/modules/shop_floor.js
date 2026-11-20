@@ -28,7 +28,7 @@ const MAKE = {
 };
 const DOORS = [
   ["#/shop/new", "intent", "#2563eb", "Pas à pas", "Son rôle, ses voisines, ses interfaces, sa matière : la pièce naît à droite, à mesure des réponses.", true],
-  ["#/interfaces", "sparkle", "#7c3aed", "Avec l'IA", "La pièce dite en mots : l'outil écrit la consigne, la réponse de l'IA revient et se relit avant d'entrer.", false],
+  ["#/shop/ai", "sparkle", "#7c3aed", "Avec l'IA", "Une phrase : l'outil écrit la consigne. La réponse revient en fichier — une pièce, plusieurs, ou tout un assemblage — et se relit avant d'entrer.", false],
   ["#/library", "library", "#64748b", "Du commerce", "Connecteurs LV et HV, cellules : la pièce arrive avec ses interfaces et ses potentiels.", false],
 ];
 const STUDIOS = ["extrusion", "busbar", "flex", "molded", "sheet", "laser", "printed", "pcb"];

@@ -101,14 +101,18 @@ ordre ; ce qui est fait se raye ici.
    « onglets dans l'outil », « une question à la fois ») : ~~niveaux, fil d'Ariane, marche d'escalier, onglets de travail,
    plancher~~ — fait (v0.106.0) ; ~~la sélection multiple qui agit sur toute la sélection, les opérations d'une pièce en
    lot, les dossiers repliables~~ — fait (v0.107.0) ; ~~« Nouvelle pièce » pas à pas~~ — fait (v0.108.0 : six questions posées par-dessus
-   les champs de l'intention, `core/shop_steps.js`, `modules/shop_steps.js`) ; reste : **la porte « Avec l'IA »** — une phrase, la portée (une pièce, plusieurs, un assemblage complet), la
-   consigne proposée, le dossier .zip, la réponse déposée (.dwiz, .json, .zip), l'aperçu de ce qui sera créé et où cela se
-   range, une étape annulable, le journal (c'est la première brique du point 2).
+   les champs de l'intention, `core/shop_steps.js`, `modules/shop_steps.js`) ; ~~la porte « Avec l'IA »~~ — faite (v0.109.0, `#/shop/ai` : une phrase, la portée,
+   la consigne proposée, le dossier .zip, la réponse en .dwiz / .json / .zip ou collée, l'aperçu de ce qui serait créé,
+   modifié ou écarté et où cela se range, une étape annulable, le journal — `core/ai_door.js`, `core/unzip.js`,
+   `modules/shop_ai.js`) : c'est la première brique du point 2, pour les pièces et les assemblages.
 2. **Aller-retour IA sur toutes les pages** : un bouton « IA » bien visible sur chaque page fonctionnelle, qui prend
    l'artéfact de la page (pièce, assemblage, dessin, carte, cas de simulation, isolation, banc…) ; une réponse peut
    **modifier et créer** des artéfacts, l'aperçu dit où chacun se range dans la structure du produit ; chaque réponse
    appliquée est une étape annulable, avec un journal pour revenir à avant. Pièces, Assemblage et Dessins d'abord : on n'y
    a accès ni aux esquisses ni à la feuille, tout se demande à l'IA. La boucle commune existe (`modules/ai_loop.js`).
+   Fait : la porte « Avec l'IA » de l'Atelier crée et modifie pièces et assemblages, avec l'aperçu et le journal
+   (`core/ai_door.js`). Reste : le même aperçu « créé / modifié / écarté, et où » et le même journal derrière le bouton
+   « IA » de chaque écran (carte, dessin, cas de simulation, isolation, banc) ; les cartes et les dessins dans une réponse.
 3. **Cas de validation référencés** pour chaque modèle (analytique, thermique, structure) : source publiée, valeur
    attendue, valeur obtenue, écart, visibles dans l'interface et rejoués par un test ; ne jamais valider une formule par
    elle-même, ni donner pour lue une source qui ne l'a pas été.
