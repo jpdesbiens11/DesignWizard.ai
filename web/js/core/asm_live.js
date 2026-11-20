@@ -59,7 +59,22 @@ export const asmVariantOf = (asm) => ({ off: ((asm && asm.instances) || []).filt
 /** Is the assembly, now, the variant given ? A part that is gone from the assembly does not make another variant. */
 export function isAsmVariant(asm, v) { const now = new Set(asmVariantOf(asm).off), want = offIds(asm, v); return now.size === want.size && [...now].every((id) => want.has(id)); }
 /** The name of the variant the assembly is in now, or null. */
-export const asmVariantNow = (asm) => { const v = ((asm && asm.variants) || []).find((x) => isAsmVariant(asm, x)); return v ? v.name : null; };
+export const asmVariantNow = (asm) => { const list = (asm && asm.variants) || [], on = list.find((x) => x.name === asm.variantOn), v = on && isAsmVariant(asm, on) ? on : list.find((x) => isAsmVariant(asm, x)); return v ? v.name : null; };
+/* the variant in use is ALIVE, as for a part (core/variants.js) : a part of the assembly put on or off belongs to it ; the first variant also keeps the original */
+export const ASM_ORIGIN = "Origine";
+/** A new variant of the assembly : a copy of its state now, which becomes the one in use. → { variants, variantOn }, or null without a name */
+export function newAsmVariant(asm, name) {
+  const n = String(name || "").replace(/\s+/g, " ").trim(); if (!n) return null; const list = ((asm && asm.variants) || []).slice();
+  if (!list.length && n !== ASM_ORIGIN) list.push({ name: ASM_ORIGIN, ...asmVariantOf(asm) });
+  return { variants: keepAsmVariant({ ...asm, variants: list }, n), variantOn: n };
+}
+/** The variant in use follows the assembly : called after every change and when a project is opened. The assembly given is changed. → true when something was written */
+export function followAsmVariant(asm) {
+  const list = asm && asm.variants; if (!Array.isArray(list) || !list.length) { if (asm && asm.variantOn !== undefined) { delete asm.variantOn; return true; } return false; }
+  const at = list.findIndex((v) => v.name === asm.variantOn);
+  if (at < 0) { const now = (list.find((x) => isAsmVariant(asm, x)) || {}).name; if (now) { asm.variantOn = now; return true; } if (asm.variantOn !== undefined) { delete asm.variantOn; return true; } return false; }
+  const next = { name: list[at].name, ...asmVariantOf(asm) }; if (JSON.stringify(next) === JSON.stringify(list[at])) return false; list[at] = next; return true;
+}
 /** The assembly brought to a variant : each part on or off as the variant says — the assembly given is changed (inside
     store.updateAssembly). → how many parts changed */
 export function applyAsmVariant(asm, v) { const want = offIds(asm, v); let n = 0; for (const i of asm.instances || []) { if (instOff(i) !== want.has(i.id)) { n++; if (want.has(i.id)) i.off = true; else delete i.off; } } return n; }

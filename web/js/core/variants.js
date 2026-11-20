@@ -53,8 +53,34 @@ export function isVariant(spec, v) {
   if (off.size !== want.size || [...off].some((id) => !want.has(id))) return false;
   return Object.entries((v && v.params) || {}).every(([name, value]) => !(name in now.params) || now.params[name] === value);
 }
-/** The name of the variant the part is in now, or null : it is then a cousin that has no name yet. */
-export const variantNow = (spec) => { const v = ((spec && spec.variants) || []).find((x) => isVariant(spec, x)); return v ? v.name : null; };
+/** The name of the variant the part is in now, or null : it is then a cousin that has no name yet. The one in use (`variantOn`) first : two
+    variants that are the same — a copy just made — are told apart by it. */
+export const variantNow = (spec) => { const list = (spec && spec.variants) || [], on = list.find((x) => x.name === spec.variantOn), v = on && isVariant(spec, on) ? on : list.find((x) => isVariant(spec, x)); return v ? v.name : null; };
+
+/* ---------- the variant in use : ALIVE (demande de JP : « où sont les features modifiables d'une variante… comment les voir comme la pièce originale ? ») ----------
+   What mechanical modelers do with their configurations, and what the cases of the Simulation do here : ONE variant is in use, and it is alive — an
+   operation put on or off, a parameter changed belongs to it, in the step that changes it. The others stay as one left them. The tree and the
+   parameters one sees ARE those of the variant in use. The first variant one makes also keeps the part as it was, under « Origine » : there is
+   always an original to come back to. What does not differ from one variant to the next : the fields of an operation — a dimension that must
+   differ is a parameter, or an operation copied (born off) with one on in each variant. */
+export const ORIGIN = "Origine";
+const clean = (name) => String(name || "").replace(/\s+/g, " ").trim();
+/** A new variant : a copy of the part as it is now, under `name` ; it becomes the one in use. The first also keeps the original. → { variants, variantOn }, or null without a name */
+export function newVariant(spec, name) {
+  const n = clean(name); if (!n) return null; const list = ((spec && spec.variants) || []).slice();
+  if (!list.length && n !== ORIGIN) list.push({ name: ORIGIN, ...variantOf(spec) });
+  return { variants: keepVariant({ ...spec, variants: list }, n), variantOn: n };
+}
+/** The part brought to a variant, which becomes the one in use. → { features, params, variantOn } (new) */
+export const useVariant = (spec, v) => ({ ...applyVariant(spec, v), variantOn: v.name });
+/** The variant in use follows the part : called after every change, and when a project is opened (a part kept before variants were alive takes the
+    variant its state is). The part given is changed. → true when something was written */
+export function followVariant(spec) {
+  const list = spec && spec.variants; if (!Array.isArray(list) || !list.length) { if (spec && spec.variantOn !== undefined) { delete spec.variantOn; return true; } return false; }
+  const at = list.findIndex((v) => v.name === spec.variantOn);
+  if (at < 0) { const now = (list.find((x) => isVariant(spec, x)) || {}).name; if (now) { spec.variantOn = now; return true; } if (spec.variantOn !== undefined) { delete spec.variantOn; return true; } return false; }
+  const next = { name: list[at].name, ...variantOf(spec) }; if (JSON.stringify(next) === JSON.stringify(list[at])) return false; list[at] = next; return true;
+}
 /** The part brought to a variant : its operations on or off as the variant says, its parameters at the values it says. What the
     variant does not know stays as it is ; the other values a parameter keeps beside stay too. → { features, params } (new) */
 export function applyVariant(spec, v) {

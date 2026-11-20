@@ -4,6 +4,8 @@ import { app, start, go } from "./core/app.js";
 import { store } from "./core/store.js";
 import { linkHook } from "./core/links.js";
 import { syncTwins } from "./pcba/twin.js";
+import { followVariant } from "./core/variants.js";
+import { followAsmVariant } from "./core/asm_live.js";
 import { LIBRARY } from "./pcba/library.js";
 import { openPalette } from "./core/palette.js";
 import { installImport, pickFile } from "./core/importer.js";
@@ -42,6 +44,8 @@ import { gate } from "./core/gate.js";
 import { session } from "./core/access.js";
 
 store.hooks.push(linkHook);
+const followAll = (p) => { for (const x of p.parts || []) followVariant(x); for (const a of p.assemblies || []) followAsmVariant(a); };
+store.hooks.push(followAll); store.loaders.push(followAll);      // the variant in use of a part or of an assembly is alive : it follows its tree, in the step that changes it (core/variants.js)
 store.hooks.push((p, extra) => { if (extra && extra.board) syncTwins(p, LIBRARY, extra.board); });      // the mechanical twin of a board follows it, in the step that changes it (pcba/twin.js)
 app.openPalette = openPalette;
 app.onImported = (r) => {

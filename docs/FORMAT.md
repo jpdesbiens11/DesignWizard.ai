@@ -166,7 +166,8 @@ d'atelier, opérations du noyau) est dans [PART_LANGUAGE.md](PART_LANGUAGE.md). 
 - **On / Off** — `suppressed: true` sur une opération (elle n'est pas faite), `alts: [valeur, …]` dans un paramètre (les
   autres valeurs gardées à côté de `value`), `off: true` sur une instance d'assemblage (elle ne compte pour rien, ses
   accouplements attendent). **`variants`** (pièce) — les cousines gardées sous un nom : `name`, `off` (les opérations
-  mises de côté), `params` (la valeur de chaque paramètre). **`variants`** (assemblage) — `name`, `off` (les instances
+  mises de côté), `params` (la valeur de chaque paramètre) ; **`variantOn`** (pièce et assemblage) — le nom de la variante
+  en cours, qui suit l'arbre. **`variants`** (assemblage) — `name`, `off` (les instances
   mises de côté). **Sous-assemblage** — une instance d'assemblage nomme une pièce (`part`) ou un assemblage (`asm`) ; un
   accouplement nomme une pièce d'un sous-assemblage par son chemin (`s5~i1`). Voir
   [SOUS_ASSEMBLAGES.md](SOUS_ASSEMBLAGES.md). **`cases`** (projet) — les cas de charge de la Simulation de chaque pièce ou assemblage, une entrée sous son

@@ -1,7 +1,7 @@
 /* DesignWizard.ai — editing helpers shared by the studios: generic forms for a feature or an interface of the part
    language, with values typed as numbers, expressions or small JSON fragments. */
 
-import { el, field, btn, modal, toast } from "./dom.js";
+import { el, field, btn, modal, toast, icon } from "./dom.js";
 import { app } from "./app.js";
 import { store } from "./store.js";
 import { INTERFACE_TYPES } from "../cad/interfaces.js";
@@ -85,11 +85,11 @@ function faceLink(select, level) {
 }
 
 /** Dialog to edit one feature. `onSave(feature)` receives the new feature object. */
-export function featureDialog(feature, onSave, title) {
+export function featureDialog(feature, onSave, title, note) {
   const f = JSON.parse(JSON.stringify(feature)), form = FEATURE_FORMS[f.op] || Object.keys(f).filter((k) => !["op", "id", "name"].includes(k)).map((k) => [k, k, "json"]);
   const inputs = {}, err = el("p", { class: "form-error" });
   const name = el("input", { type: "text", value: f.name || "" });
-  const rows = [field("Nom (libre)", name)];
+  const rows = [...(note ? [el("p", { class: "atelier-hint", "data-feature-note": "", style: { gridColumn: "1 / -1", margin: 0 } }, icon("info"), ` ${note}`)] : []), field("Nom (libre)", name)];
   let link = null;
   for (const [key, , kind] of form) inputs[key] = { input: kind === "face" ? faceSelect(f[key]) : el("input", { type: "text", value: show(f[key]), spellcheck: false }), kind };
   for (const [key, label, kind, hint] of form) {

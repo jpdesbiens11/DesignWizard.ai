@@ -54,7 +54,7 @@ test("wiring : the assembly has its variants group, each variant its drawing, an
   const a = read("web/js/modules/assembly.js"), v = read("web/js/modules/part_variants.js"), d = read("web/js/modules/drawings.js");
   assert.match(a, /scroll\.append\(sec, asmVariantsSection\(\{ asm: a, id, names: /); assert.doesNotMatch(a.split("asmVariantsSection({")[1].split("\n")[0], /instName/, "the left panel is drawn before instName exists : the names come from the store");
   assert.match(v, /export function variantPanel\(o\)/); assert.match(v, /export function variantsSection\(o\)/); assert.match(v, /export function asmVariantsSection\(o\)/, "one group, the same for a part and for an assembly");
-  assert.match(v, /store\.updateAssembly\(o\.id, \(x\) => \{ applyAsmVariant\(x, v\); \}, `\$\{a\.id\} : variante « \$\{v\.name\} »`\)/, "one named step, undone by Ctrl + Z");
+  assert.match(v, /store\.updateAssembly\(o\.id, \(x\) => \{ applyAsmVariant\(x, v\); x\.variantOn = v\.name; \}, `\$\{a\.id\} : variante « \$\{v\.name\} »`\)/, "one named step, undone by Ctrl + Z — and the variant becomes the one in use");
   assert.match(v, /drawing: \(v\) => `#\/drawings\/\$\{encodeURIComponent\(o\.id\)\}\/\$\{encodeURIComponent\(v\.name\)\}`/); assert.match(v, /drawing: \(v\) => `#\/drawings\/asm\/\$\{encodeURIComponent\(o\.id\)\}\/\$\{encodeURIComponent\(v\.name\)\}`/);
   assert.match(d, /const o = partOut\(own, extra\.variant\), spec = o\.doc;/, "a part is drawn as a variant from a copy (core/variant_out.js)");
   assert.match(d, /const key = o\.copy \? "drawing:variant" : partId, built = await kernel\.build\(spec, undefined, key\);/, "built beside the part : the kernel keeps the part as the other screens show it");

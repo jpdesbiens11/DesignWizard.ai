@@ -1,6 +1,8 @@
 /* DesignWizard.ai — inspector panels of the part studio: parameters (sliders with live rebuild), interfaces,
    DFx findings with one-click fixes, data sheet, raw JSON. */
 
+import { variantNow } from "../core/variants.js";
+import { variantChip } from "./part_variants.js";
 import { el, clear, icon, btn, badge, field, toast, fmt, fmtMass, fmtLen, fmtDims, inUnits, copyText, download, onOff } from "../core/dom.js";
 import { paramAlts, canKeepAlts, addAlt, swapAlt, setAlt, dropAlt } from "../core/variants.js";
 import { store } from "../core/store.js";
@@ -24,7 +26,8 @@ export function paramsPanel(body, { st, id, live }) {
   const defs = Object.entries(st.spec.params || {});
   if (!defs.length) { body.append(el("p", { class: "muted" }, "Cette pièce n'a pas de paramètres. Ajoutez-en dans l'onglet JSON (« params »), ou demandez-les à l'entrevue.")); return; }
   const raws = st.spec.params || {}, scope = st.built ? st.built.params.scope : {}, pending = {}, U = getUnits();      // a parameter is kept in its own unit (mm) ; it is read and typed in the unit chosen
-  const groups = new Map();
+  const groups = new Map(), vOn = variantNow(st.spec);
+  if (vOn) body.append(el("p", { class: "atelier-hint variant-note", "data-variant-params": vOn }, variantChip(vOn, "Ces valeurs"), el("span", null, ` Ces valeurs sont celles de la variante « ${vOn} » : en changer une ne touche pas les autres variantes.`)));
   for (const [name, raw] of defs) { const d = raw !== null && typeof raw === "object" ? raw : { value: raw }; const g = d.group || "Paramètres"; if (!groups.has(g)) groups.set(g, []); groups.get(g).push([name, d]); }
   for (const [g, list] of groups) {
     const sec = el("div", { class: "side-section" }, el("h3", null, g));

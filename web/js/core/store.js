@@ -14,6 +14,7 @@ class Store {
   constructor() {
     this.mode = "browser"; this.project = null; this.server = null; this.drive = null;
     this.hooks = [];
+    this.loaders = [];              // what is done to a project when it is opened (a document kept by an older version takes what a newer one expects)
     this.listeners = new Map(); this.undoStack = []; this.redoStack = []; this.saveTimer = 0; this.saveState = "saved";
   }
   on(evt, fn) { if (!this.listeners.has(evt)) this.listeners.set(evt, new Set()); this.listeners.get(evt).add(fn); return () => this.listeners.get(evt).delete(fn); }
@@ -76,6 +77,7 @@ class Store {
   cancelOpen() { this.openSeq = (this.openSeq || 0) + 1; }
   adopt(p) {
     p.parts = p.parts || []; p.assemblies = p.assemblies || []; p.boards = p.boards || []; p.log = p.log || [];
+    for (const f of this.loaders || []) f(p);
     this.project = p; this.undoStack = []; this.redoStack = []; this.saveState = "saved";
     try { localStorage.setItem(LS_LAST, p.id); } catch (e) { /* private mode */ }
     this.emit("project", p); this.emit("change", { label: "open" });

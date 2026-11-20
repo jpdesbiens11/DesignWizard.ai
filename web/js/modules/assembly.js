@@ -24,10 +24,10 @@ import { matPoint, matDir, bboxTransform } from "../cad/vec.js";
 import { INTERFACE_TYPES } from "../cad/interfaces.js";
 import { gammeTab, showWhole } from "./asm_gamme.js";
 import { mateTree, mateFind, mateLabels } from "../core/asm_tree.js";
-import { liveAsm, offOf, setInstOff, instanceMenu, showAlone, showEvery } from "../core/asm_live.js";
+import { liveAsm, offOf, setInstOff, instanceMenu, showAlone, showEvery, asmVariantNow } from "../core/asm_live.js";
 import { popupMenu } from "../core/view_select.js";
 import { mateSection } from "./asm_tree.js";
-import { asmVariantsSection } from "./part_variants.js";
+import { asmVariantsSection, variantChip } from "./part_variants.js";
 import { asmOut, variantTag } from "../core/variant_out.js";
 import { topOf, isSub, ownsKey, usedIn } from "../core/asm_levels.js";
 import { subTab, subChoices, levelRows, levelTable, levelCsv, formDialog } from "./asm_sub.js";
@@ -175,7 +175,7 @@ function render(main, args) {
     const scroll = el("div", { class: "side-scroll" });
     left.append(scroll);
     scroll.append(el("div", { class: "side-section" }, store.assemblies.map((x) => el("a", { class: "nav-item" + (x.id === id ? " active" : ""), href: `#/assembly/${encodeURIComponent(x.id)}` }, icon("assembly"), el("span", { class: "grow" }, x.name || x.id), el("small", null, x.id)))));
-    const sec = el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, `Pièces de l'assemblage (${a.instances.length - offOf(a).instances.length}${offOf(a).instances.length ? ` + ${offOf(a).instances.length} à Off` : ""})`), asmLookTools({ asm: a, id }), btn("", () => formFrom(st.multi.length ? st.multi : st.sel ? [st.sel] : []), { small: true, icon: "assembly", tip: "Former un sous-assemblage : des pièces d'ici partent ensemble et reviennent d'un seul bloc" }), btn("", () => addDialog(), { small: true, icon: "plus", tip: "Ajouter une pièce du projet" })));
+    const sec = el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, `Pièces de l'assemblage (${a.instances.length - offOf(a).instances.length}${offOf(a).instances.length ? ` + ${offOf(a).instances.length} à Off` : ""})`), ...[variantChip(asmVariantNow(a), "La liste")].filter(Boolean), asmLookTools({ asm: a, id }), btn("", () => formFrom(st.multi.length ? st.multi : st.sel ? [st.sel] : []), { small: true, icon: "assembly", tip: "Former un sous-assemblage : des pièces d'ici partent ensemble et reviennent d'un seul bloc" }), btn("", () => addDialog(), { small: true, icon: "plus", tip: "Ajouter une pièce du projet" })));
     st.multi = keepChosen(st.multi, a.instances.map((i) => i.id)); if (st.multi.length > 1) sec.append(batchBar(a));
     const line = (inst, inFolder) => {
       const { spec, sub, name, icon: mark } = what(inst), placed = st.ctx && st.ctx.sol.placedBy[inst.id], nIn = sub && st.ctx ? st.ctx.asm.instances.filter((i) => i.group === inst.id).length : 0;

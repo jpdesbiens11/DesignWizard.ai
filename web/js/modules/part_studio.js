@@ -3,7 +3,8 @@
    rebuilds the part in the kernel worker; linked interfaces adapt the neighbouring parts. */
 
 import { el, clear, icon, btn, badge, toast, modal, fmt, fmtMass, fmtLen, fmtDims, download, confirmBox } from "../core/dom.js";
-import { variantsSection } from "./part_variants.js";
+import { variantsSection, variantChip } from "./part_variants.js";
+import { variantNow } from "../core/variants.js";
 import { store } from "../core/store.js";
 import { app, go, setContext, setStatus, setGuide } from "../core/app.js";
 import { kernel } from "../cad/client.js";
@@ -154,7 +155,7 @@ export function partStudio(main, args, cfg) {
     left.append(scroll);
     const everyPart = () => partsSection({ parts: parts(), id, key: cfg.key, st, redraw: renderLeft });      // the whole list, under the tree : to choose several (Ctrl + click) and change them together
     if (!st.spec) { scroll.append(everyPart()); return; }
-    const s = st.spec, tree = el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, "Arbre de construction"), addFeatureButton()));
+    const s = st.spec, tree = el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, "Arbre de construction"), ...[variantChip(variantNow(st.spec)), addFeatureButton()].filter(Boolean)));
     if (s.stock) tree.append(el("button", { class: "nav-item", type: "button", onClick: () => editStock(), "data-tip": "Matière première : ce que l'on prend sur l'étagère" }, icon("stock"),
       el("span", { class: "grow" }, `Brut : ${(STOCK_FORMS[s.stock.form] || { label: s.stock.form }).label.toLowerCase()}`), st.built && st.built.facts.stock && !st.built.facts.stock.exact ? badge("hors série", "warn") : null));
     for (const it of s.interfaces || []) tree.append(el("button", { class: "nav-item", type: "button", onClick: () => editIface(it.id), "data-tip": "Interface : modifier" }, icon("interfaces"),
@@ -186,7 +187,8 @@ export function partStudio(main, args, cfg) {
   function editFeature(i) {
     const f = st.spec.features[i];
     if (f.op === "interfaces") { toast("Ce repère indique où la géométrie des interfaces est taillée dans l'arbre. Déplacez-le avec la flèche.", "info"); return; }
-    featureDialog({ ...f, id: f.id || `f${i + 1}` }, (nf) => store.updatePart(id, (x) => { x.features[i] = nf; }, `${nf.id} modifiée`));
+    featureDialog({ ...f, id: f.id || `f${i + 1}` }, (nf) => store.updatePart(id, (x) => { x.features[i] = nf; }, `${nf.id} modifiée`), undefined,
+      (st.spec.variants || []).length ? "Les cotes de cette opération valent pour TOUTES les variantes de la pièce. Pour qu'une cote diffère d'une variante à l'autre, écrivez-la avec un paramètre (par exemple L, ou L/2 − 5) : la valeur d'un paramètre appartient à chaque variante." : "");
   }
   function editStock() {
     stockDialog(st.spec.stock, (ns) => store.updatePart(id, (x) => { if (ns) x.stock = ns; else delete x.stock; }, ns ? `${id} : matière première modifiée` : `${id} : matière première retirée`));

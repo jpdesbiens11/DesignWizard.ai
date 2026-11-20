@@ -110,7 +110,7 @@ elle deviennent « non matées » jusqu'à son retour.
 **Variantes d'un assemblage.** Le groupe « Variantes » du volet de gauche garde sous un nom les pièces à On et à Off
 en ce moment (« Complet », « Sans couvercle ni isolant »). Un clic sur un nom ramène **toute la version d'un coup**, en
 une étape que Ctrl + Z annule ; la variante en cours est marquée, chaque autre dit ce que le clic changerait
-(« Couvercle à Off · Isolant à Off »). Une pièce ajoutée plus tard vaut pour toutes les variantes. La variante de
+(« Couvercle à Off · Isolant à Off »). Une pièce ajoutée plus tard vaut pour toutes les variantes. Comme pour une pièce (v0.120.0), la variante en cours est **vivante** — une pièce mise à On ou à Off lui appartient —, son nom est sur le titre de la liste, et le premier « + » garde l'assemblage d'avant sous « Origine » (`newAsmVariant`, `followAsmVariant`). La variante de
 chaque pièce n'en fait pas partie : elle se choisit dans la pièce.
 
 Dans le fichier : `off: true` sur l'instance ; `variants: [{ name, off: [identifiants d'instances] }]` sur
@@ -129,12 +129,32 @@ dessin) ; le groupe est celui de la pièce (`variantPanel` de `web/js/modules/pa
   prend la place de la valeur du dessus, qui est gardée à son tour. La pièce se reconstruit ; les pièces liées par une
   interface suivent, comme pour tout changement de paramètre. Un paramètre calculé (`expr`) n'a pas de valeur à garder.
 
-- **Variantes nommées.** Le groupe « Variantes » du volet de gauche garde sous un nom l'état de la pièce en ce moment :
-  les opérations à On et à Off, et la valeur de chaque paramètre. Un clic sur un nom ramène **toute la cousine d'un
-  coup**, en une seule étape que Ctrl + Z annule ; la variante en cours est marquée, et chaque autre dit ce que le clic
-  changerait (« 1 opération bascule · Longueur 200 → 160 »). Une variante ne copie pas la pièce : une opération ou un
-  paramètre ajouté plus tard vaut pour toutes les variantes. « Mettre à jour » remplace une variante par l'état en
-  cours ; retirer un nom ne change pas la pièce.
+- **Variantes nommées.** Le groupe « Variantes » du volet de gauche garde sous un nom un état de la pièce : les
+  opérations à On et à Off, et la valeur de chaque paramètre. Un clic sur un nom ramène **toute la cousine d'un
+  coup**, en une seule étape que Ctrl + Z annule ; chaque autre variante dit ce que le clic changerait (« 1 opération
+  bascule · Longueur 200 → 160 »). Une variante ne copie pas la pièce : une opération ou un paramètre ajouté plus tard
+  vaut pour toutes les variantes ; retirer un nom ne change pas la pièce.
+
+- **Une variante en cours, vivante — et l'origine toujours là** (v0.120.0 ; question de JP sur une capture : « où sont
+  les features modifiables d'une variante de pièce mécanique et comment les voir comme la pièce originale ? c'est pas
+  clair ou pas encore possible »). C'était possible, et pas clair : l'arbre montrait bien la variante en cours, mais rien
+  ne le disait ; la moindre opération basculée faisait quitter la variante sans prévenir (« état sans nom »), il fallait
+  presser « Mettre à jour » pour l'y remettre, et la pièce d'avant les variantes n'était gardée nulle part.
+  Désormais, comme les configurations d'un modeleur mécanique et comme les cas de la Simulation :
+  - **l'arbre et les paramètres que l'on voit SONT ceux de la variante en cours** — son nom est sur le titre de l'arbre
+    et en tête des paramètres (`variantChip`) ;
+  - **ce que l'on y change lui appartient** — une opération mise à On ou à Off, une valeur de paramètre —, dans l'étape
+    même qui le change, par quelque chemin que ce soit (`followVariant`, crochet du magasin : `main.js`) ; les autres
+    variantes restent telles qu'on les a laissées ; il n'y a plus de bouton « Mettre à jour » ;
+  - **le « + » fait une nouvelle variante, copie de celle en cours**, qui devient la variante en cours (`newVariant`) ;
+    **le premier « + » garde aussi la pièce d'avant sous « Origine »** : il y a toujours un original où revenir ;
+  - une pièce gardée avant la v0.120.0 prend, à l'ouverture du projet, la variante que son état est (`store.loaders`).
+
+  **Ce qui ne diffère pas d'une variante à l'autre : les cotes d'une opération.** Une cote qui doit différer s'écrit
+  avec un paramètre (« L », « L/2 − 5 ») — la valeur d'un paramètre appartient à chaque variante — ou par une opération
+  dupliquée (la copie naît à Off), l'une à On dans chaque variante. L'éditeur d'une opération le dit quand la pièce a
+  des variantes. L'usage des modeleurs (une configuration active, une configuration d'origine, un changement qui vaut
+  pour toutes sauf ce que l'on a « configuré ») est écrit de mémoire, non relu dans une documentation.
 
 ## Un dessin par variante
 

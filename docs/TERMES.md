@@ -83,8 +83,10 @@ ce qui a été trouvé (`web/js/core/battery_terms.js`, carte « Vocabulaire des
   pour « battery monitoring unit ». **BCU** — « battery control unit » pour l'ISO, « battery charger unit » pour le
   même rapport. À écrire en toutes lettres.
 - **BM** — un sigle trouvé nulle part : « battery module ».
-- **EFC** — rien d'établi pour une partie d'un système de batterie ; le seul sens trouvé est « equivalent full
-  cycles », un compteur. Une pièce se nomme par sa fonction.
+- **EFC** — rien d'établi pour une partie d'un système de batterie : aucun document lu ne porte ce nom. Le projet dit
+  (JP, par menu, le 20 novembre 2026) « energy flow counter » : ce qui compte l'énergie qui entre dans le pack et celle
+  qui en sort. Le seul autre sens trouvé est « equivalent full cycles », un compteur de cycles. Une pièce se nomme par
+  sa fonction : l'outil écrit « mesure du courant du pack » et « compteur d'énergie » (courant, charge, énergie).
 - **EESS** — pour un aéronef, seulement dans un texte proposé de 2021 ; les textes récents écrivent ESS.
 
 **Quel bus ?** Les textes des autorités lus ne nomment aucun bus. Les manuels publics de batteries d'avion
