@@ -375,7 +375,12 @@ choisit et ce que l'on obtient**. Les deux volets se redimensionnent et se cache
   juste sous le menu, au lieu d'être poussé hors de l'écran par trente lignes.
 - **Ctrl + clic en choisit plusieurs, Maj + clic toute une suite — usage établi** (les gestionnaires de fichiers).
   Le clic simple garde son sens. Une barre apparaît avec ce qui se fait d'un coup, et chaque action de lot est UNE
-  étape annulable. Une seule règle de sélection, pure et testée, pour toutes les listes.
+  étape annulable. Une seule règle de sélection, pure et testée, pour toutes les listes. **Et tout réglage touché sur
+  une ligne choisie vaut pour toute la sélection** — sa pastille, son interrupteur, son menu : sinon l'on croit avoir
+  changé dix pièces et l'on en a changé une.
+- **Un dossier range, il ne change rien — usage établi** (les *feature folders* des modeleurs). Un nom porté par les
+  lignes, une ligne qui se replie, ses réglages pour tout le dossier ; rien ne bouge dans le document, et la
+  signature de l'objet l'ignore. À ne pas confondre avec ce qui change la structure (former un sous-ensemble).
 - **Un fil d'Ariane dit où l'on est, et chaque niveau y est une porte — usage établi** (la barre d'adresse d'un
   explorateur de fichiers). Un clic sur un niveau y remonte ; son chevron liste ce qui est à côté, avec recherche.
   Une rangée d'onglets qui mêle des façons de créer, des outils et des références n'est pas une navigation.

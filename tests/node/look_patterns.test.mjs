@@ -135,7 +135,7 @@ test("wiring : the views lay the look on, the assembly says its own, one picker 
   for (const fn of ["openLookPicker", "openInstLookPicker", "openAsmLookPicker", "lookSwatch", "instSwatch", "asmLookTools", "instLookSection"]) assert.match(ui, new RegExp(`export (?:function|const) ${fn}\\b`), fn);
   assert.match(ui, /\.\.\.patternGroups\(\)\.map\(\(g\) => el\("div", \{ class: "look-patterns"/, "the patterns by group, each under its name and its colour"); assert.match(ui, /"data-pattern": id, "aria-pressed"/); assert.match(ui, /"data-sheen": id, "aria-pressed"/);
   assert.match(ui, /store\.updateAssembly\(asmId, \(a\) => \{ for \(const i of a\.instances \|\| \[\]\) setLook\(i, patch\); \}/, "the whole assembly in one undoable step");
-  assert.match(asm, /asmLookTools\(\{ asm: a, id \}\)/); assert.match(asm, /instSwatch\(id, inst\)/); assert.equal((asm.match(/instLookSection\(id, inst\)/g) || []).length, 2, "the card of a part and the card of a sub-assembly");
+  assert.match(asm, /asmLookTools\(\{ asm: a, id \}\)/); assert.match(asm, /instSwatch\(id, inst, \{ group: \(\) => G\.of\(inst\.id\) \}\)/, "the swatch of a line — for the whole choice when the line is part of one"); assert.equal((asm.match(/instLookSection\(id, inst\)/g) || []).length, 2, "the card of a part and the card of a sub-assembly");
   assert.ok(instanceMenu({ instances: [{ id: "i1", part: "A" }, { id: "i2", part: "B" }] }, "i1").some((x) => x && x.act === "look"), "the menu of an instance offers its look here"); assert.match(asm, /look: \(\) => openInstLookPicker\(id, iid,/);
   for (const c of [".look-patterns", ".look-pat", ".look-tile", ".look-sheen"]) assert.ok(css.includes(`${c} `) || css.includes(`${c}.`) || css.includes(`${c}:`), c);
 });

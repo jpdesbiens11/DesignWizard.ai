@@ -156,6 +156,10 @@ Le vocabulaire complet (familles, procédés, matériaux, types d'interface, for
 d'atelier, opérations du noyau) est dans [PART_LANGUAGE.md](PART_LANGUAGE.md). En bref :
 
 - **`intent`** — `loads`, `environment`, `quantity`, `priority` : pourquoi la pièce existe.
+- **Dossiers** — `folder: "nom"` sur une opération d'une pièce ou sur une instance d'un assemblage : le dossier où la
+  ligne est rangée dans la liste, rien de plus. Un dossier range, il ne change rien : l'ordre des opérations reste celui
+  de la construction, les instances gardent leur place et leurs accouplements, et la signature d'un artéfact l'ignore
+  (une pièce libérée n'est pas « modifiée » parce qu'on a rangé ses opérations). Voir `web/js/core/folders.js`.
 - **On / Off** — `suppressed: true` sur une opération (elle n'est pas faite), `alts: [valeur, …]` dans un paramètre (les
   autres valeurs gardées à côté de `value`), `off: true` sur une instance d'assemblage (elle ne compte pour rien, ses
   accouplements attendent). **`variants`** (pièce) — les cousines gardées sous un nom : `name`, `off` (les opérations

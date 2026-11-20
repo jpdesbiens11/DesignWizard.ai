@@ -266,6 +266,12 @@ main h1 { font-family: var(--hand); display: inline; padding: 0 .2em; -webkit-bo
 .out-variant.other { background: var(--warn-soft); border-left-color: var(--warn); }
 .plan-variant { margin: .1rem 0 .45rem; }
 .nav-item.off { opacity: .45; text-decoration: line-through; }
+/* a folder in a list : a line that ranges entries and folds (core/folders.js, core/folders_ui.js) */
+.folder-head { display: flex; align-items: center; gap: .1rem; margin: 3px 0 1px; border-radius: var(--r-hand); background: color-mix(in srgb, var(--graphite) 7%, var(--surface)); }
+.folder-toggle { flex: 1; min-width: 0; display: flex; align-items: center; gap: .4rem; min-height: 1.75rem; padding: .22rem .45rem; border: 0; border-radius: var(--r-hand); background: none; color: var(--ink); font: inherit; font-size: .88rem; font-weight: 650; text-align: left; cursor: pointer; }
+.folder-toggle:hover { background: color-mix(in srgb, var(--graphite) 10%, transparent); } .folder-toggle .sk-icon { flex: none; width: .95rem; height: .95rem; } .folder-toggle .grow { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .folder-toggle small { flex: none; color: var(--muted); font-size: .74rem; font-weight: 400; white-space: nowrap; }
+.folder-head > .icon-btn .sk-icon { width: .9rem; height: .9rem; } .folder-flag { flex: none; display: inline-grid; place-items: center; width: 1.05rem; height: 1.05rem; border-radius: 50%; background: var(--danger); color: #fff; font: 800 .7rem var(--label-font, sans-serif); }
+.nav-item.in-folder { margin-left: .85rem; width: calc(100% - .85rem); border-left: 2px solid color-mix(in srgb, var(--graphite) 22%, transparent); border-radius: 0 var(--r-hand) var(--r-hand) 0; }
 .nav-item.err { box-shadow: inset 3px 0 0 var(--hl-red); }
 .viewport { position: relative; min-width: 0; min-height: 0; overflow: hidden; background: var(--view-bg); }
 .dw-view-canvas { display: block; outline: none; }

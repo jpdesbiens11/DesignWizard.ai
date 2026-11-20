@@ -49,7 +49,7 @@ export function partsSection(o) {
     sec.append(el("div", { class: "nav-row" }, el("a", { class: "nav-item" + (p.id === o.id ? " active" : "") + (on ? " multi" : ""), href: `#/${o.key}/${encodeURIComponent(p.id)}`, "data-part": p.id, "aria-current": p.id === o.id ? "true" : null,
       onClick: (e) => { if (!isMulti(e)) { st.multi = []; st.anchor = p.id; return; }      // a plain click opens the part ; with Ctrl or Shift it builds a choice, and the page stays
         e.preventDefault(); const r = pickStep(st.multi.length ? st.multi : [o.id].filter((x) => order.includes(x)), order, p.id, modsOf(e), st.anchor ?? o.id); st.multi = r.ids; st.anchor = r.anchor; o.redraw(); } },
-      icon(partMark(p)), el("span", { class: "grow" }, p.name || p.id), el("small", null, p.id)), lookSwatch(p)));
+      icon(partMark(p)), el("span", { class: "grow" }, p.name || p.id), el("small", null, p.id)), lookSwatch(p, { group: () => (st.multi.length > 1 && st.multi.includes(p.id) ? st.multi : null) })));      // the swatch of a part chosen with others paints them all
   }
   if (!parts.length) sec.append(el("p", { class: "muted" }, "Aucune pièce."));
   else sec.append(el("p", { class: "muted small" }, "Ctrl + clic : choisir plusieurs pièces · Maj + clic : toute une suite — pour changer ensemble leur apparence ou leur matériau, ou en faire un assemblage."));

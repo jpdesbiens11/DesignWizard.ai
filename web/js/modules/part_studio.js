@@ -2,8 +2,7 @@
    and the inspector (parameters with sliders, interfaces, live DFx, data sheet, JSON). Every edit is one undo step and
    rebuilds the part in the kernel worker; linked interfaces adapt the neighbouring parts. */
 
-import { el, clear, icon, btn, badge, toast, modal, fmt, fmtMass, fmtLen, fmtDims, download, confirmBox, onOff } from "../core/dom.js";
-import { withFeatureOff, copyFeature } from "../core/variants.js";
+import { el, clear, icon, btn, badge, toast, modal, fmt, fmtMass, fmtLen, fmtDims, download, confirmBox } from "../core/dom.js";
 import { variantsSection } from "./part_variants.js";
 import { store } from "../core/store.js";
 import { app, go, setContext, setStatus, setGuide } from "../core/app.js";
@@ -23,6 +22,7 @@ import { runDfx } from "../analysis/dfx_api.js";
 import { lightSide, LIT } from "../core/view_marks.js";
 import { partGestures, PART_KEYS } from "./part_gestures.js";
 import { partPicker, partsSection } from "./part_list.js";
+import { featureRows } from "./part_tree.js";
 
 const OP_ICON = { box: "part", cylinder: "part", extrude: "extrusion", revolve: "refresh", hole: "bolt", pocket: "section", pad: "layers", slot: "minus", boss: "bolt", shell: "layers", fillet: "edit", chamfer: "edit", interfaces: "interfaces",
   drill: "drill", tap: "tap", cbore: "drill", csink: "drill", ream: "drill", mill: "mill", groove: "mill", face: "mill", step: "mill", outline: "laser", turn: "lathe", bore: "lathe", break_edges: "deburr", deburr: "deburr", finish: "palette" };
@@ -159,17 +159,7 @@ export function partStudio(main, args, cfg) {
       el("span", { class: "grow" }, `Brut : ${(STOCK_FORMS[s.stock.form] || { label: s.stock.form }).label.toLowerCase()}`), st.built && st.built.facts.stock && !st.built.facts.stock.exact ? badge("hors série", "warn") : null));
     for (const it of s.interfaces || []) tree.append(el("button", { class: "nav-item", type: "button", onClick: () => editIface(it.id), "data-tip": "Interface : modifier" }, icon("interfaces"),
       el("span", { class: "grow" }, it.name || it.type), badge(it.side || "A", it.side === "B" ? "b" : "a")));
-    (s.features || []).forEach((f, i) => {
-      const fid = f.id || `f${i + 1}`, err = st.built && st.built.log.some((l) => l.feature === fid && l.level === "error");
-      tree.append(el("div", { class: "nav-item" + (f.suppressed ? " off is-off" : "") + (err ? " err" : ""), role: "button", tabindex: "0", onClick: () => editFeature(i), onKeydown: (e) => { if (e.key === "Enter") editFeature(i); } },
-        icon(OP_ICON[f.op] || "part"), el("span", { class: "grow" }, f.name || FEATURE_LABEL[f.op] || f.op), el("small", null, fid),
-        /* On / Off, and a copy born off : close cousins of the part kept in one part (core/variants.js) */
-        f.op !== "interfaces" && onOff(!f.suppressed, (on) => store.updatePart(id, (x) => { x.features[i] = withFeatureOff(x.features[i], !on); }, `${fid} ${on ? "remise à On" : "mise à Off"}`), fid,
-          f.suppressed ? `${fid} est de côté (Off) : l'opération n'est pas faite — cliquer pour la remettre (On)` : `${fid} est faite (On) — cliquer pour la mettre de côté (Off) sans la perdre`),
-        f.op !== "interfaces" && iconBtn("copy", `Dupliquer ${fid} : la copie naît à Off — changez-y une cote, mettez-la à On à la place de ${fid}`, () => store.updatePart(id, (x) => { x.features = copyFeature(x.features, i, nextFeatureId(x)); }, `${fid} dupliquée (copie à Off)`)),
-        i > 0 && iconBtn("chevron-down", "Monter dans l'arbre", () => store.updatePart(id, (x) => { const [a] = x.features.splice(i, 1); x.features.splice(i - 1, 0, a); }, `${fid} montée`), "rotate(180deg)"),
-        iconBtn("trash", "Supprimer", () => store.updatePart(id, (x) => { x.features.splice(i, 1); }, `${fid} supprimée`))));
-    });
+    tree.append(...featureRows({ id, spec: s, st, built: st.built, icons: OP_ICON, edit: editFeature, redraw: renderLeft, iconBtn }));      // one line per operation ; Ctrl + click chooses several, a folder ranges a run of them (modules/part_tree.js)
     scroll.append(tree);
     if (!s.step) scroll.append(variantsSection({ spec: s, id }));      // the cousins of the part, each under its name
     scroll.append(el("div", { class: "side-section" }, el("h3", null, "Pièce"),

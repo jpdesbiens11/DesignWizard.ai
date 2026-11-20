@@ -65,7 +65,7 @@ test("wiring : every reader of an assembly goes through what counts ; the trees 
   assert.match(read("web/js/core/asm_plan.js"), /asm = liveAsm\(asm\);/); assert.match(read("web/js/analysis/dfa_rules.js"), /asm = liveAsm\(asm \|\| \{\}\);/);
   assert.match(read("web/js/core/render_looks.js"), /asm = liveAsm\(asm\);/); assert.match(read("web/js/draw/asm_drawing.js"), /liveAsm\(asm\)\.instances\.length/);
   const screen = read("web/js/modules/assembly.js"); assert.match(screen, /onOff\(!inst\.off/); assert.match(screen, /Cette pièce est à Off/);
-  const studio = read("web/js/modules/part_studio.js"); assert.match(studio, /onOff\(!f\.suppressed/); assert.match(studio, /copyFeature\(x\.features, i, nextFeatureId\(x\)\)/);
+  const studio = read("web/js/modules/part_tree.js"); assert.match(studio, /onOff\(!f\.suppressed/); assert.match(studio, /copyFeature\(x\.features, i, nextFeatureId\(x\)\)/);      // the lines of the construction tree live in part_tree.js
   assert.match(read("web/js/modules/part_panels.js"), /swapAlt\(s\.params\[name\], k\)/);
   assert.match(read("web/js/draw/dim_model.js"), /if \(!f \|\| f\.suppressed\) continue;/, "an operation put aside is not dimensioned");
   assert.doesNotMatch(read("web/js/core/asm_live.js"), /^import /m, "the helper every tool takes has no import of its own");

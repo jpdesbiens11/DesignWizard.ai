@@ -172,5 +172,5 @@ export function evalDeep(value, scope, keep = TEXT_KEYS) {
 }
 
 export const TEXT_KEYS = new Set(["id", "op", "name", "label", "type", "key", "side", "face", "plane", "axis", "mode", "body", "material", "process",
-  "family", "screw", "thread", "head", "net", "kind", "ref", "note", "notes", "unit", "group", "depth_mode", "shape", "fit", "path", "edges",
+  "family", "screw", "thread", "head", "net", "kind", "ref", "note", "notes", "unit", "group", "folder", "depth_mode", "shape", "fit", "path", "edges",
   "dir", "of", "text", "title", "description", "function", "role", "color", "finish", "pattern_type", "standard", "designator", "value_text", "partner", "datum", "gen", "file", "form", "shop", "tool"]);

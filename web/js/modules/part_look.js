@@ -58,14 +58,14 @@ const asmTarget = (asmId) => ({ kind: "all", holder: () => { const a = store.ass
 export function lookSwatch(spec, o = {}) {
   const s = shown(spec), tip = s.own ? `Apparence de ${spec.id} : ${lookWords(lookOf(spec)) || said(s)} — cliquer pour la changer` : `${spec.id} a la couleur de sa matière — cliquer pour lui donner la sienne`;
   return el("button", { class: `look-dot${s.own ? " own" : ""}${o.big ? " big" : ""}`, type: "button", "data-look": spec.id, "data-pattern": s.pattern || null, "aria-label": tip, "data-tip": tip, style: { ...fill(s), opacity: String(Math.max(0.45, s.opacity)) },
-    onClick: (e) => { e.preventDefault(); e.stopPropagation(); openLookPicker(spec.id, e.currentTarget); } });
+    onClick: (e) => { e.preventDefault(); e.stopPropagation(); const ids = o.group ? o.group() : null; if (ids && ids.length > 1) openPicker(partsTarget(ids), e.currentTarget); else openLookPicker(spec.id, e.currentTarget); } });      // o.group : the parts chosen with this one — its swatch then paints them all
 }
 /** The swatch of an instance in an assembly : what it shows HERE — solid when the assembly says so, dashed when it follows its part. */
 export function instSwatch(asmId, inst, o = {}) {
   const T = instTarget(asmId, inst.id), b = T.base(inst), own = lookOf(inst), s = { ...overLook(b, own), own: hasLook(own) }, what = lookWords(own) || said(s);
   const tip = s.own ? `Ici : ${what} — l'assemblage l'emporte sur la pièce. Cliquer pour changer.` : `Ici : ${b.words}. Cliquer pour lui donner une apparence propre à cet assemblage.`;
   return el("button", { class: `look-dot${s.own ? " own" : ""}${o.big ? " big" : ""}`, type: "button", "data-look-inst": inst.id, "data-pattern": s.pattern || null, "aria-label": tip, "data-tip": tip, style: { ...fill({ color: s.color || b.color, pattern: s.pattern }), opacity: String(Math.max(0.45, s.opacity ?? 1)) },
-    onClick: (e) => { e.preventDefault(); e.stopPropagation(); openPicker(T, e.currentTarget); } });
+    onClick: (e) => { e.preventDefault(); e.stopPropagation(); const ids = o.group ? o.group() : null; openPicker(ids && ids.length > 1 ? instsTarget(asmId, ids) : T, e.currentTarget); } });
 }
 export const openLookPicker = (id, anchor) => openPicker(partTarget(id), anchor);
 export const openInstLookPicker = (asmId, instId, anchor) => openPicker(instTarget(asmId, instId), anchor);

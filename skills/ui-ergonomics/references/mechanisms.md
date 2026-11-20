@@ -59,7 +59,11 @@ one chooses and what one gets**. Both panels resize and hide; their width is the
   right under the menu, instead of being pushed off the screen by thirty rows.
 - **Ctrl + click chooses several, Shift + click a whole run — established use** (file managers). The plain click
   keeps its meaning. A bar appears with what can be done at once, and each batch action is ONE undoable step. One
-  rule of selection, pure and tested, for every list.
+  rule of selection, pure and tested, for every list. **And a setting touched on a chosen line applies to the whole
+  choice** — its swatch, its switch, its menu: otherwise one believes ten parts changed and one did.
+- **A folder ranges, it changes nothing — established use** (the feature folders of the modellers). A name carried by
+  the lines, a line that folds, its settings for the whole folder; nothing moves in the document, and the signature
+  of the object ignores it. Not to be confused with what changes the structure (forming a sub-assembly).
 - **A breadcrumb says where one stands, and each of its levels is a door — established use** (the address bar of a
   file explorer). A click on a level goes up to it; its chevron lists what is beside it, with a search. A row of
   tabs that mixes ways of creating, tools and references is not navigation.

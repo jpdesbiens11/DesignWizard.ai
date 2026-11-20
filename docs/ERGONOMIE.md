@@ -184,8 +184,39 @@ scroller », et « la fonction contrôle doit permettre de faire des multiples s
   - dans **l'Assemblage** : « Apparence » (dans cet assemblage), « Grouper » (former un sous-assemblage, les éléments
     déjà cochés), « Off / On », « Masquer / Montrer ». Ctrl + clic sur une pièce **dans la vue 3D** fait de même ; Échap
     vide le choix.
-- Pas encore : la sélection multiple dans les autres listes (opérations d'une pièce, conditions d'un cas de charge,
-  blocs d'une carte). Le mécanisme est commun ; chaque liste y viendra avec ce qui a un sens à faire en lot.
+- **Tout réglage touché pendant que plusieurs éléments sont choisis s'applique à toute la sélection** (demande de JP,
+  20 novembre : « si on change une propriété, il y a juste la première pièce du lot qui va changer »). Ce n'est plus
+  seulement la barre : la pastille de couleur d'une ligne choisie ouvre la palette pour toutes, son interrupteur
+  On / Off et son œil agissent sur toutes, le clic droit — sur la ligne comme sur la pièce dans la vue — ouvre le menu
+  de la sélection, et le volet de droite montre la fiche du lot. Une ligne qui n'est pas dans la sélection garde ses
+  réglages à elle. Chaque geste reste UNE étape annulable (`web/js/modules/asm_group.js` ; dans Pièces, la pastille
+  d'une pièce choisie peint toutes les pièces choisies).
+- **Les opérations d'une pièce se choisissent aussi à plusieurs**, dans l'arbre de construction : Ctrl + clic, Maj +
+  clic ; la barre propose « Off / On », « Dupliquer » (une copie de chacune, née à Off), « Dossier », « Supprimer »
+  (`web/js/modules/part_tree.js`).
+- Pas encore : la sélection multiple dans les conditions d'un cas de charge et les blocs d'une carte. Le mécanisme est
+  commun ; chaque liste y viendra avec ce qui a un sens à faire en lot.
+
+### Un dossier range, il ne change rien
+
+Demande de JP (20 novembre 2026) : « prendre plusieurs caractéristiques, plusieurs pièces d'assemblage… les regrouper
+avec un item qui peut les folder ou les défolder… pour montrer le détail ou montrer la vue globale ». C'est l'usage des
+*feature folders* des modeleurs mécaniques.
+
+- **Un dossier est un nom porté par les lignes qu'il contient** (`folder`), et rien d'autre (`web/js/core/folders.js`,
+  pur et testé ; `core/folders_ui.js`). Aucune opération ne bouge, aucune pièce n'est remontée, aucune révision n'est
+  touchée : la signature d'un artéfact l'ignore. Ce n'est pas « Grouper », qui forme un sous-assemblage et change la
+  structure du produit — les deux boutons se côtoient, et leurs bulles disent la différence.
+- **La ligne d'un dossier** : un chevron, le pictogramme, le nom, combien de lignes (« 4 · 1 à Off »), puis ce qui
+  s'applique à tout le dossier — On / Off, et dans un assemblage l'apparence et l'œil —, « renommer » et « défaire »
+  (ce qu'il contient reste là, tel quel). **Un clic replie ou déplie** ; Ctrl + clic choisit tout ce qu'il contient.
+  L'état replié est un état de la vue, gardé dans le navigateur par liste.
+- **Deux sortes de listes** : dans l'arbre d'une pièce, l'ordre est celui de la construction — un dossier montre donc
+  chaque **suite** d'opérations qui porte son nom (deux suites séparées se lisent comme deux lignes du même nom, à
+  leur place) ; dans un assemblage, l'ordre ne dit rien — un dossier réunit ses éléments là où est le premier.
+- Un dossier replié ne cache pas un problème : une opération en erreur y met un point rouge.
+- Pas encore : des dossiers dans la liste des pièces du projet (elles se rangent déjà par nature), ni de dossier dans
+  un dossier. Essayé dans Chromium (25 vérifications) ; pas au toucher.
 
 ## La couleur de chaque pièce
 

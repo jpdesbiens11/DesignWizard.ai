@@ -7,6 +7,7 @@ import { registerModule, go, setStatus, app } from "../core/app.js";
 import { store } from "../core/store.js";
 import { instSwatch, asmLookTools, instLookSection, openInstLookPicker, openInstsLookPicker } from "./part_look.js";
 import { pickStep, modsOf, isMulti, keepChosen, chosenWords } from "../core/multi_select.js";
+import { asmGroup } from "./asm_group.js";
 import { kernel } from "../cad/client.js";
 import { underVeil } from "../core/busy.js";
 import { createViewport } from "../core/viewport.js";
@@ -56,16 +57,19 @@ function render(main, args) {
   const without = (x, iid) => { x.instances = x.instances.filter((q) => q.id !== iid); x.mates = (x.mates || []).filter((k) => topOf(k.a.inst) !== iid && topOf(k.b.inst) !== iid); };      // an instance leaves with the joints that go through it
   const vp = createViewport(view, { name: () => id, explode: true, explodeScale: () => (st.ctx ? Math.max(20, (st.ctx.bbox[5] - st.ctx.bbox[2] + st.ctx.bbox[3] - st.ctx.bbox[0]) * 0.25) : 50),
     menuFor: (hit) => [...instMenu(hit && hit.def.data.inst ? topOf(hit.def.data.inst) : null), ...(hit && hit.def.data.inst ? ["—", ...pins.menu(hit)] : [])], onKey: (e) => instKey(e), keys: [["H · I · Maj + H", "Masquer la pièce choisie · l'isoler · tout afficher"], ["Entrée · Suppr", "Ouvrir la pièce choisie · la retirer de l'assemblage"]],
-    onPick: (hit, e) => { const iid = hit && hit.def.data.inst ? topOf(hit.def.data.inst) : null; if (iid && isMulti(e)) choose(iid, e); else { st.multi = []; st.anchor = iid; st.sel = iid; } lightSel(); renderLeft(); if (st.sel && !st.multi.length) { st.tab = "inst"; } renderRight(); } });
+    onPick: (hit, e) => { const iid = hit && hit.def.data.inst ? topOf(hit.def.data.inst) : null; if (iid && isMulti(e)) choose(iid, e); else { st.multi = []; st.anchor = iid; st.sel = iid; } lightSel(); renderLeft(); if (st.sel) { st.tab = "inst"; } renderRight(); } });
   /* several elements chosen together — Ctrl + click or Shift + click, on the list or on the parts in the view (core/multi_select.js) */
   const lightSel = () => vp.viewer.highlight((st.multi.length ? st.multi : st.sel ? [st.sel] : []).flatMap((i) => keysOf(i)));
   function choose(iid, e) { const order = asm().instances.map((i) => i.id), r = pickStep(st.multi.length ? st.multi : st.sel ? [st.sel] : [], order, iid, modsOf(e), st.anchor ?? st.sel); st.anchor = r.anchor; st.multi = r.ids.length > 1 ? r.ids : []; st.sel = r.ids.includes(iid) ? iid : r.ids[r.ids.length - 1] || null; }
+  /* several elements chosen : a setting touched on one of them applies to all ; and the folders of the list (modules/asm_group.js) */
+  const G = asmGroup({ id, st, asm, name: (i) => what(i).name, form: (ids) => formFrom(ids), left, redraw: () => { lightSel(); renderLeft(); renderRight(); } });
   function batchBar(a) {
     const ids = st.multi, n = ids.length, some = a.instances.filter((i) => ids.includes(i.id)), allOff = some.every((i) => i.off), allHid = some.every((i) => i.hidden), words = chosenWords(n, "élément", "éléments");
     const flag = (key, on, word) => store.updateAssembly(id, (x) => { for (const i of x.instances) if (ids.includes(i.id)) { if (on) i[key] = true; else delete i[key]; } }, `${id} : ${n} éléments ${word}`);
     return el("div", { class: "batch-bar", role: "group", "aria-label": words, "data-batch": "insts" }, el("b", null, words),
       btn("Apparence", (e, b) => openInstsLookPicker(id, ids, b), { small: true, icon: "palette", tip: "Une couleur, un motif, une finition pour tous les éléments choisis, dans cet assemblage — la palette s'ouvre dans la marge de droite" }),
-      btn("Grouper", () => formFrom(ids), { small: true, icon: "assembly", tip: "Former un sous-assemblage avec les éléments choisis : ils partent ensemble et reviennent d'un seul bloc" }),
+      btn("Dossier", () => G.toFolder(ids), { small: true, icon: "folder", tip: "Ranger les éléments choisis dans un dossier repliable : la liste se lit d'un coup d'œil, l'assemblage ne change pas" }),
+      btn("Grouper", () => formFrom(ids), { small: true, icon: "assembly", tip: "Former un sous-assemblage avec les éléments choisis : ils partent ensemble et reviennent d'un seul bloc — la structure du produit change" }),
       btn(allOff ? "On" : "Off", () => flag("off", !allOff, allOff ? "remis à On" : "mis à Off"), { small: true, tip: allOff ? "Remettre à On les éléments choisis" : "Mettre à Off les éléments choisis : gardés, ils ne comptent pour rien" }),
       btn(allHid ? "Montrer" : "Masquer", () => flag("hidden", !allHid, allHid ? "à l'écran" : "masqués"), { small: true, icon: allHid ? "eye" : "eye-off", tip: allHid ? "Ramener à l'écran les éléments choisis" : "Masquer les éléments choisis" }),
       el("button", { class: "icon-btn", type: "button", "aria-label": "Ne plus rien choisir", "data-tip": "Ne plus rien choisir (Échap)", onClick: () => { st.multi = []; lightSel(); renderLeft(); } }, icon("close")));
@@ -173,22 +177,23 @@ function render(main, args) {
     scroll.append(el("div", { class: "side-section" }, store.assemblies.map((x) => el("a", { class: "nav-item" + (x.id === id ? " active" : ""), href: `#/assembly/${encodeURIComponent(x.id)}` }, icon("assembly"), el("span", { class: "grow" }, x.name || x.id), el("small", null, x.id)))));
     const sec = el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, `Pièces de l'assemblage (${a.instances.length - offOf(a).instances.length}${offOf(a).instances.length ? ` + ${offOf(a).instances.length} à Off` : ""})`), asmLookTools({ asm: a, id }), btn("", () => formFrom(st.multi.length ? st.multi : st.sel ? [st.sel] : []), { small: true, icon: "assembly", tip: "Former un sous-assemblage : des pièces d'ici partent ensemble et reviennent d'un seul bloc" }), btn("", () => addDialog(), { small: true, icon: "plus", tip: "Ajouter une pièce du projet" })));
     st.multi = keepChosen(st.multi, a.instances.map((i) => i.id)); if (st.multi.length > 1) sec.append(batchBar(a));
-    for (const inst of a.instances) {
+    const line = (inst, inFolder) => {
       const { spec, sub, name, icon: mark } = what(inst), placed = st.ctx && st.ctx.sol.placedBy[inst.id], nIn = sub && st.ctx ? st.ctx.asm.instances.filter((i) => i.group === inst.id).length : 0;
-      sec.append(el("div", { class: "nav-item" + (st.sel === inst.id ? " active" : "") + (st.multi.includes(inst.id) ? " multi" : "") + (inst.hidden ? " off" : "") + (inst.off ? " is-off" : ""), role: "button", tabindex: "0", "data-inst": inst.id, "aria-haspopup": "menu",
+      return el("div", { class: "nav-item" + (inFolder ? " in-folder" : "") + (st.sel === inst.id ? " active" : "") + (st.multi.includes(inst.id) ? " multi" : "") + (inst.hidden ? " off" : "") + (inst.off ? " is-off" : ""), role: "button", tabindex: "0", "data-inst": inst.id, "aria-haspopup": "menu",
         /* a right click on the line : the menu of the part — show it alone, bring the others back, on / off, fix, open, remove (the same menu as on the part in the view) */
         "data-kind": isSub(inst) ? "sub" : "part", "data-tip": `${isSub(inst) ? "Sous-assemblage : il se porte d'un seul bloc. " : ""}Clic : ${isSub(inst) ? "le" : "la"} sélectionner · Ctrl + clic : en choisir plusieurs · clic droit : ses options (${isSub(inst) ? "le" : "la"} montrer seul${isSub(inst) ? "" : "e"}, tout afficher, On / Off, fixer, ouvrir, retirer)`,
         onContextmenu: (e) => { e.preventDefault(); const r = e.currentTarget.getBoundingClientRect(), at = e.clientX || e.clientY ? { clientX: e.clientX, clientY: e.clientY } : { clientX: r.left + 24, clientY: r.bottom };      // the menu key has no pointer : under the line
-          if (st.sel !== inst.id) { st.sel = inst.id; vp.viewer.highlight(keysOf(inst.id)); renderLeft(); if (st.tab === "inst") renderRight(); }
+          if (st.sel !== inst.id && !st.multi.includes(inst.id)) { st.multi = []; st.sel = inst.id; vp.viewer.highlight(keysOf(inst.id)); renderLeft(); if (st.tab === "inst") renderRight(); }      // a right click on a line of the choice keeps the choice : its menu is for all of them
           popupMenu(at, instMenu(inst.id)); },
-        onClick: (e) => { if (isMulti(e)) choose(inst.id, e); else { st.multi = []; st.anchor = inst.id; st.sel = inst.id; st.tab = "inst"; } lightSel(); renderLeft(); renderRight(); } },
-        icon(mark), el("span", { class: "grow" }, spec || sub ? name : `${name} (absent${isSub(inst) ? "" : "e"})`), nIn ? el("small", { "data-tip": `Sous-assemblage de ${nIn} pièce${nIn > 1 ? "s" : ""}` }, `${nIn} p.`) : null, spec || sub ? instSwatch(id, inst) : null,      // what it shows HERE : the look the assembly gives it, or that of its part
+        onClick: (e) => { if (isMulti(e)) choose(inst.id, e); else { st.multi = []; st.anchor = inst.id; st.sel = inst.id; } st.tab = "inst"; lightSel(); renderLeft(); renderRight(); } },
+        icon(mark), el("span", { class: "grow" }, spec || sub ? name : `${name} (absent${isSub(inst) ? "" : "e"})`), nIn ? el("small", { "data-tip": `Sous-assemblage de ${nIn} pièce${nIn > 1 ? "s" : ""}` }, `${nIn} p.`) : null, spec || sub ? instSwatch(id, inst, { group: () => G.of(inst.id) }) : null,      // what it shows HERE : the look the assembly gives it, or that of its part
         inst.off ? el("span", { class: "off-chip" }, "Off") : inst.fixed ? badge("fixe", "neutral") : placed ? badge("matée", "ok") : badge("libre", "warn"),
         /* On / Off : put aside, the part stays in the list with its joints and counts for nothing — view, bill of materials, mass, drawing, exports */
-        onOff(!inst.off, (on) => store.updateAssembly(id, (x) => { setInstOff(x, inst.id, !on); }, `${name} ${on ? "à On" : "à Off"}`), name,
+        onOff(!inst.off, (on) => G.off(G.of(inst.id), !on, name), name,
           inst.off ? "À Off : hors de la vue, de la nomenclature, de la masse, des accouplements et des exports — cliquer pour la remettre (On)" : "À On — cliquer pour la mettre de côté (Off) sans la retirer : elle garde sa place et ses accouplements"),
-        iconBtn(inst.hidden ? "eye-off" : "eye", inst.hidden ? "Afficher" : "Masquer", () => store.updateAssembly(id, (x) => { const i = x.instances.find((q) => q.id === inst.id); if (i.hidden) delete i.hidden; else i.hidden = true; }, `${name} ${inst.hidden ? "à l'écran" : "hors de l'écran"}`))));
-    }
+        iconBtn(inst.hidden ? "eye-off" : "eye", inst.hidden ? "Afficher" : "Masquer", () => G.flag(G.of(inst.id), "hidden", !inst.hidden, inst.hidden ? "à l'écran" : "hors de l'écran", name)));
+    };
+    sec.append(...G.rows(a.instances, line));      // the elements, and the folders that range them
     if (!a.instances.length) sec.append(el("p", { class: "muted" }, "Ajoutez une première pièce : elle sera la pièce fixe."));
     scroll.append(sec, asmVariantsSection({ asm: a, id, names: Object.fromEntries(a.instances.map((i) => { const s = store.part(i.part); return [i.id, s ? s.name || s.id : i.part]; })) }));      // the parts on and off, kept under a name
     if (st.ctx) scroll.append(el("div", { class: "side-section" }, el("h3", null, `Accouplements (${(liveAsm(a).mates || []).length}${offOf(a).mates.length ? ` + ${offOf(a).mates.length} en attente` : ""})`),
@@ -322,6 +327,7 @@ function render(main, args) {
   const dropInst = async (iid) => { const inst = asm().instances.find((i) => i.id === iid), name = inst && what(inst).name; if (!inst || !(await confirmBox(isSub(inst) ? "Retirer le sous-assemblage" : "Retirer la pièce", `Retirer ${name} de ${id} ? Ses liaisons partent avec ${isSub(inst) ? "lui. Le sous-assemblage reste dans le projet" : "elle"}. (Ctrl + Z pour revenir.)`, "Retirer", true))) return;
     store.updateAssembly(id, (x) => without(x, iid), `${name} retiré${isSub(inst) ? "" : "e"} de ${id}`); st.sel = null; };
   function instMenu(iid) {
+    if (iid && G.of(iid).length > 1) return G.menu(G.of(iid));      // several chosen, and this one among them : the menu is for all
     const inst = iid ? asm().instances.find((i) => i.id === iid) : null, hid = hiddenOnes(), back = hid.length ? [{ label: `Tout afficher (${hid.length} masquée${hid.length > 1 ? "s" : ""})`, keys: "Maj+H", icon: "eye", run: showAll }] : [];
     if (!inst) return [...back, { label: "Ajouter une pièce ou un sous-assemblage…", icon: "plus", run: () => addDialog() }];
     const name = what(inst).name, flag = (key, on, word) => store.updateAssembly(id, (x) => { const i = x.instances.find((q) => q.id === iid); if (on) i[key] = true; else delete i[key]; }, `${name} ${word}`);
@@ -338,6 +344,7 @@ function render(main, args) {
     else if (k === "h") hide(st.sel); else if (k === "i") isolate(st.sel); else if (k === "enter") openPart(st.sel); else if (k === "delete" || k === "backspace") dropInst(st.sel);
   }
   function instTab(body, a) {
+    if (st.multi.length > 1) { G.card(body); return; }      // several chosen : what is set for all of them
     const inst = a.instances.find((i) => i.id === st.sel);
     if (!inst) { body.append(el("p", { class: "muted" }, "Cliquez une pièce dans la vue 3D ou dans la liste.")); return; }
     if (inst.off) { const waits = (a.mates || []).filter((k) => topOf(k.a.inst) === inst.id || topOf(k.b.inst) === inst.id).length;      // put aside : nothing of it is built — what it is, and the way back
