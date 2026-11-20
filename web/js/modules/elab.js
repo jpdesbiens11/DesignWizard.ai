@@ -15,6 +15,8 @@ import { BLOCKS, BLOCK_CATEGORIES } from "../pcba/blocks.js";
 import { NATURES, blockTests, eng } from "../pcba/lab_bench.js";
 import { testSheet, boardSheets, boardSheet, sheetJobs, jobSheet, expectedText, gapText, labPlanDoc, labGuide, labOf, setReading, setSkip, skipped, verdict, labStatus, testKey } from "../pcba/lab_plan.js";
 import { labBoard, scope, bode } from "./elab_view.js";
+import { openManip } from "./elab_manip.js";
+import { readUnit as unitOf } from "../pcba/lab_manip.js";
 import { boardTests, BOARD_KEY } from "../pcba/lab_board.js";
 import { docx } from "../core/docx.js";
 import { pdfDoc } from "../core/pdfdoc.js";
@@ -37,8 +39,6 @@ const naturePic = (id) => ({
   bus: () => pic(svg("path", { d: "M3 11 H8 L10 19 H15 L17 11 H22 L24 19 H27", ...stroke }), svg("path", { d: "M3 24 H27", fill: "none", stroke: "var(--dom)", "stroke-width": 1 })),
 })[id]();
 const tile = (o) => el("button", { class: `cf-tile${o.sel ? " sel" : ""}${o.off ? " off" : ""}`, type: "button", "aria-pressed": o.sel ? "true" : "false", "data-tip": o.tip || null, style: `--dom:${o.color}`, onClick: o.run, ...o.data }, o.pic, el("b", null, o.label), o.small ? el("small", null, o.small) : null);
-/* a reading is typed in the unit one reads it in : 3,3 mA, not 0.0033 A */
-function unitOf(v, unit) { const a = Math.abs(v || 0), [k, p] = !unit ? [1, ""] : a === 0 ? [1, ""] : a >= 1e6 ? [1e-6, "M"] : a >= 1e3 ? [1e-3, "k"] : a >= 1 ? [1, ""] : a >= 1e-3 ? [1e3, "m"] : a >= 1e-6 ? [1e6, "µ"] : [1e9, "n"]; return { k, label: `${p}${unit}` }; }
 
 function render(main, args) {
   const boards = store.boards, id = args[0] && store.board(args[0]) ? args[0] : (boards[0] && boards[0].id) || null;
@@ -105,6 +105,8 @@ function render(main, args) {
       if (kind === "docx") download(`${name}.docx`, docx(full), "application/vnd.openxmlformats-officedocument.wordprocessingml.document"); else download(`${name}.pdf`, pdfDoc(full), "application/pdf");
       toast(`Plan de test : ${doc.sheets.length} fiches, enregistré.`, "success", 5000); } catch (e) { toast(`Plan de test : ${e.message}`, "error", 8000); }
   }
+  /* the test chosen, done at the real bench : one step per screen, pointed at the board (modules/elab_manip.js) */
+  function manip() { const s = st.sheet, k = key(); if (!s || !k) return; st.playing = false; centre(); st.manip = openManip({ boardId: id, key: k, sheet: s, onClose: () => { st.manip = null; const b = left.querySelector("[data-manip]"); if (b) b.focus(); } }); }
   const request = () => { const b = board(), s = st.sheet; return ["Tu es l'assistant de conception de DesignWizard.ai. Voici une carte électronique et, plus bas, la fiche d'un essai de laboratoire préparé par simulation. Seul le bloc « lab » de la carte se modifie.",
     "TA TÂCHE — relis l'essai comme le ferait un ingénieur d'essais : ce qui manque au montage, une étape risquée, une valeur attendue qui te paraît fausse, un essai à mettre de côté. Dis-le en quelques lignes, puis attends mon accord.",
     "RÉPONSE ATTENDUE — un seul bloc ```dwiz avec la carte entière, bloc « lab » à jour : une ligne « note » par remarque (test = « bloc/essai », text = ta remarque en une phrase), une ligne « skip » par essai à mettre de côté (test). Ne change ni les pièces, ni les nets, ni les relevés (lignes « reading » : ce sont des mesures faites au laboratoire).",
@@ -113,7 +115,7 @@ function render(main, args) {
     const area = el("textarea", { rows: 9, placeholder: "Collez la réponse de l'assistant : elle contient la carte dans un bloc ```dwiz." }), out = el("div"); let next = null;
     const ok = btn("Appliquer ces changements", () => { if (!next) return; store.updateBoard(id, (b) => { b.lab = next; }, "Labo : notes de l'IA"); m.close(); toast("Notes et mises de côté reprises de la réponse de l'IA.", "success"); }, { primary: true, icon: "check", disabled: true });
     area.addEventListener("input", () => { next = null; ok.disabled = true; out.replaceChildren(); if (!area.value.trim()) return;
-      try { const doc = aiRead(area.value); if (!doc || !doc.lab) throw new Error("La réponse ne contient pas de bloc « lab »."); const mine = labOf(board()), theirs = labOf(doc), d = { ...theirs, readings: mine.readings }, diff = aiDiff(mine, d);      // the readings are the lab's : an answer cannot rewrite them
+      try { const doc = aiRead(area.value); if (!doc || !doc.lab) throw new Error("La réponse ne contient pas de bloc « lab »."); const mine = labOf(board()), theirs = labOf(doc), d = { ...theirs, readings: mine.readings, ticks: mine.ticks, passes: mine.passes, notes: [...theirs.notes.filter((n) => !n.step), ...mine.notes.filter((n) => n.step)] }, diff = aiDiff(mine, d);      // what was read, ticked, let pass and noted at the bench is the lab's : an answer cannot rewrite it
         out.append(el("p", null, diff.length ? `${diff.length} changement(s) :` : "Aucun changement."), el("ul", { class: "decisions" }, diff.slice(0, 30).map((x) => el("li", null, `${x.path} — ${x.text}`)))); if (diff.length) { next = d; ok.disabled = false; }
       } catch (e) { out.append(el("p", { class: "form-error" }, e.message)); } });
     const m = modal("Réimporter les notes du laboratoire depuis une IA", [field("Réponse de l'assistant", area), out, el("div", { class: "form-actions" }, btn("Annuler", () => m.close()), ok)], { wide: true });
@@ -121,7 +123,7 @@ function render(main, args) {
   function renderLeft() {
     clear(left); const b = cur(), all = blocks();
     left.append(el("div", { class: "side-head" }, el("h2", null, "Labo"))      /* the step up to the PCBA of this board comes with every screen : core/stairs.js */,
-      el("div", { class: "side-actions" }, btn("Plan de test (.docx)", () => plan("docx"), { primary: true, small: true, icon: "download", tip: "Le plan de test fonctionnel de la carte : une fiche par essai — comprendre, puis faire — au gabarit des documents" }), btn("PDF", () => plan("pdf"), { small: true, icon: "pdf", tip: "Le même plan, en PDF" })));
+      el("div", { class: "side-actions" }, (() => { const m = btn("Manipulation en labo", () => manip(), { primary: true, small: true, icon: "play", disabled: !st.sheet, tip: "L'essai choisi, fait au vrai banc : une étape par écran, pointée sur la carte, en plein écran — relevés et notes gardés dans le carnet de la carte" }); m.dataset.manip = ""; return m; })(), btn("Plan de test (.docx)", () => plan("docx"), { small: true, icon: "download", tip: "Le plan de test fonctionnel de la carte : une fiche par essai — comprendre, puis faire — au gabarit des documents" }), btn("PDF", () => plan("pdf"), { small: true, icon: "pdf", tip: "Le même plan, en PDF" })));
     const scroll = el("div", { class: "side-scroll" }); left.append(scroll);
     if (boards.length > 1) scroll.append(el("div", { class: "side-section", "data-fold-note": String(boards.length) }, el("h3", null, "La carte"), boards.map((x) => el("a", { class: "nav-item" + (x.id === id ? " active" : ""), href: `#/elab/${encodeURIComponent(x.id)}` }, icon("chip"), el("span", { class: "grow" }, x.name || x.id)))));
     scroll.append(el("div", { class: "side-section", "data-box": "block", "data-fold-note": !b ? "à choisir" : b.whole ? "la carte entière" : b.name || BLOCKS[b.template].name }, el("h3", null, "Le bloc à l'essai"),
@@ -142,7 +144,7 @@ function render(main, args) {
     right.append(el("div", { class: "side-head" }, el("h2", null, s ? s.title : "L'essai")), el("div", { class: "subtabs", style: { margin: "0 .6rem" }, role: "tablist" }, [["sheet", "Fiche"], ["read", "Relevés"]].map(([k, l]) => el("button", { class: "subtab" + (st.tab === k ? " active" : ""), type: "button", role: "tab", "aria-selected": st.tab === k ? "true" : "false", "data-tab": k, onClick: () => { st.tab = k; renderRight(); paint(); } }, l))));
     const body = el("div", { class: "side-scroll" }); right.append(body);
     if (!s) { body.append(el("p", { class: "atelier-hint" }, icon("info"), " Choisissez un bloc, à gauche : son essai se joue ici.")); return; }
-    const sec = (title, note, ...kids) => { const x = el("div", { class: "side-section", "data-fold-note": note }, el("h3", null, title), ...kids.flat().filter(Boolean)); body.append(x); return x; }, R = s.result, k = key(), L = labOf(board()), note = L.notes.filter((n) => n.test === k);
+    const sec = (title, note, ...kids) => { const x = el("div", { class: "side-section", "data-fold-note": note }, el("h3", null, title), ...kids.flat().filter(Boolean)); body.append(x); return x; }, R = s.result, k = key(), L = labOf(board()), note = L.notes.filter((n) => n.test === k && !n.step);
     if (st.tab === "sheet") {
       body.append(el("p", { class: "lab-nature", style: `--dom:${s.nature.color}` }, naturePic(s.nature.id), el("span", null, el("b", null, `${s.nature.label} — ${s.nature.fr}`), el("small", null, `${s.block} · ${s.gear.map((g) => g.label).join(", ")} · ${s.minutes} min au laboratoire`))));
       sec("Comprendre", "pourquoi, à quoi s'attendre", el("p", { class: "lab-why" }, el("b", null, "Pourquoi cet essai. "), s.why), el("p", { class: "lab-why" }, el("b", null, "À quoi s'attendre. "), s.expect), note.map((n) => el("p", { class: "lab-note" }, icon("sparkle"), " ", n.text)));
@@ -168,6 +170,6 @@ function render(main, args) {
   pcb.show(resolveBoard(board(), LIBRARY)); renderLeft(); renderRight(); tell(); st.raf = requestAnimationFrame(tick);
   const lively = (b, natures) => blockTests(b.template).some((t) => natures.includes(t.nature)), cyc = blocks().find((b) => blockTests(b.template).some((t) => t.id === "ripple")), first = cyc || blocks().find((b) => lively(b, ["dynamic", "bus"])) || blocks().find((b) => lively(b, ["function", "frequency", "static"])) || blocks()[0]; if (first) pick(first.id, cyc ? "ripple" : undefined);      // it opens on a test where something moves — a chopper first : tracks that beat, a square wave, a ripple
   view._lab = { st, run, labStatus: () => labStatus(board(), st.sheets || (st.sheets = boardSheets(board()))) };      // for whoever inspects the page (tests, the console)
-  return () => { st.alive = false; cancelAnimationFrame(st.raf); document.removeEventListener("keydown", onKey); off(); setGuide([]); veil.dispose(); pcb.destroy(); };
+  return () => { st.alive = false; if (st.manip) st.manip.close(); cancelAnimationFrame(st.raf); document.removeEventListener("keydown", onKey); off(); setGuide([]); veil.dispose(); pcb.destroy(); };
 }
 registerModule({ key: "elab", label: "Labo", icon: "sensor", tip: "Laboratoire d'électronique : chaque bloc de la carte sur un banc simulé — pistes qui s'allument, oscilloscopes — et le plan de test fonctionnel", render });

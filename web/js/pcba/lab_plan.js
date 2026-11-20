@@ -60,9 +60,12 @@ const wave = (w) => { if (typeof w === "number") return `${fr(w)} V continu`; if
 
 /** Where one puts a clip or a probe to reach a signal of a block : a connector pin, a test point, or the lead of a part. where(name) → text. */
 function accessOf(built, refOf) {
-  return (name) => { if (name === "GND" || name === "0") return "la masse de la carte (GND)"; const port = built.ports[name], net = built.nets.find((n) => n.name === (port ? port.net : name)); if (String(name).includes(".")) { const [p, pin] = String(name).split("."); return `la broche ${pin} de ${refOf(p)}`; }
+  const pinOf = (name) => { if (String(name).includes(".") && name !== "0") { const [p, pin] = String(name).split("."); return [p, pin]; } const gnd = name === "GND" || name === "0", port = built.ports[name], net = built.nets.find((n) => (gnd ? n.name === "GND" || n.name === "0" : n.name === (port ? port.net : name)));
+    if (!net || !(net.pins || []).length) return null; return (net.pins.find((p) => /^J\d*\./.test(p)) || net.pins.find((p) => /^TP/.test(p)) || net.pins.find((p) => /^(R|C)/.test(p)) || net.pins[0]).split("."); };
+  return Object.assign(textOf, { pick: (name) => { const x = pinOf(name); return x ? { ref: refOf(x[0]), pin: String(x[1]), signal: String(name) } : null; } });      // the same choice as the words : a connector, a test point, the lead of a part
+  function textOf(name) { if (name === "GND" || name === "0") return "la masse de la carte (GND)"; const port = built.ports[name], net = built.nets.find((n) => n.name === (port ? port.net : name)); if (String(name).includes(".")) { const [p, pin] = String(name).split("."); return `la broche ${pin} de ${refOf(p)}`; }
     if (!net) return `le signal ${name}`; const pick = net.pins.find((p) => /^J\d*\./.test(p)) || net.pins.find((p) => /^TP/.test(p)) || net.pins.find((p) => /^(R|C)/.test(p)) || net.pins[0], [p, pin] = pick.split(".");
-    return `${name} — ${/^J/.test(p) ? `broche ${pin} du connecteur ${refOf(p)}` : /^TP/.test(p) ? `point de test ${refOf(p)}` : `patte ${pin} de ${refOf(p)}`}`; };
+    return `${name} — ${/^J/.test(p) ? `broche ${pin} du connecteur ${refOf(p)}` : /^TP/.test(p) ? `point de test ${refOf(p)}` : `patte ${pin} de ${refOf(p)}`}`; }
 }
 /** One sheet of the plan : a test of a block, said for the one who does it.
     o : { refs: { local id → reference on the board }, name (the name of the block on the board), id (its number in the plan) }
@@ -74,9 +77,11 @@ export function testSheet(tpl, testId, given = {}, o = {}) {
 }
 /** Where one reaches a net of the board : a connector pin, a test point, or the lead of a part. */
 function boardAccess(board) {
-  return (name) => { if (name === "GND" || name === "0") return "la masse de la carte (GND)"; const net = (board.nets || []).find((n) => n.name === name); if (!net || !(net.pins || []).length) return `le signal ${name}`;
+  const pinOf = (name) => { const net = (board.nets || []).find((n) => n.name === (name === "0" ? "GND" : name)); if (!net || !(net.pins || []).length) return null; return (net.pins.find((p) => /^TP/.test(p)) || net.pins.find((p) => /^J\d/.test(p)) || net.pins.find((p) => /^(R|C)\d/.test(p)) || net.pins[0]).split("."); };
+  return Object.assign(textOf, { pick: (name) => { const x = pinOf(name); return x ? { ref: x[0], pin: String(x[1]), signal: String(name) } : null; } });
+  function textOf(name) { if (name === "GND" || name === "0") return "la masse de la carte (GND)"; const net = (board.nets || []).find((n) => n.name === name); if (!net || !(net.pins || []).length) return `le signal ${name}`;
     const pick = net.pins.find((p) => /^TP/.test(p)) || net.pins.find((p) => /^J\d/.test(p)) || net.pins.find((p) => /^(R|C)\d/.test(p)) || net.pins[0], [ref, pin] = pick.split(".");      // a test point is made for a probe ; an input has only its connector
-    return `${name} — ${/^J/.test(ref) ? `broche ${pin} du connecteur ${ref}` : /^TP/.test(ref) ? `point de test ${ref}` : `patte ${pin} de ${ref}`}`; };
+    return `${name} — ${/^J/.test(ref) ? `broche ${pin} du connecteur ${ref}` : /^TP/.test(ref) ? `point de test ${ref}` : `patte ${pin} de ${ref}`}`; }
 }
 /** The sheet of a test of the WHOLE board (pcba/lab_board.js) : the same sheet, its set-up said on the nets of the board. */
 export function boardSheet(board, testId, o = {}) {
@@ -116,13 +121,17 @@ function sheetFrom(R, test, where, o) {
     if (R.table) steps.push(`Recommencez pour chaque valeur de « ${R.table.label} » du second tableau${/Température/.test(R.table.label) ? " : air chaud ou bombe de froid sur le composant, thermocouple collé à côté, attendre que la lecture se stabilise" : ""}.`);
     steps.push(`${gen ? "Coupez le générateur, puis l'alimentation" : "Coupez la sortie de l'alimentation"}. Attendez que les tensions soient retombées avant de décâbler.`);
   }
-  const rows = R.measures.map((m) => ({ label: m.label, unit: m.unit, expected: m.value, band: test.noSim ? { text: "moins de 1 Ω", low: 0, high: 1 } : band(m), design: m.design, gap: m.gap, ...(m.under !== undefined || m.idle ? { ceiling: true } : {}), ...(m.needs ? { optional: true, needs: m.needs } : {}) }));
+  const pick = where.pick || (() => null);
+  const rows = R.measures.map((m) => ({ label: m.label, unit: m.unit, expected: m.value, points: (m.at || []).map(pick).filter(Boolean), band: test.noSim ? { text: "moins de 1 Ω", low: 0, high: 1 } : band(m), design: m.design, gap: m.gap, ...(m.under !== undefined || m.idle ? { ceiling: true } : {}), ...(m.needs ? { optional: true, needs: m.needs } : {}) }));
   const traps = [...(test.nature === "power" ? ["L'alimentation passe en limitation : court-circuit, composant à l'envers, ou limite réglée trop bas pour le courant d'appel des condensateurs — remontez-la d'un cran, une seule fois."] : []),
     ...(R.kind === "tran" && scoped ? ["L'écran ne montre rien de stable : vérifiez le déclenchement (bonne voie, niveau à l'intérieur du signal), puis le couplage et le calibre de la sonde (×10 des deux côtés : sur la sonde ET dans le menu de la voie)."] : []),
     ...(R.kind === "ac" ? ["Le gain mesuré est trop bas à toutes les fréquences : l'entrée est peut-être chargée par le générateur — relisez l'amplitude d'entrée SUR la carte, pas sur l'afficheur du générateur."] : []),
     ...(test.nature === "bus" ? ["Aucune réponse : vérifiez d'abord l'alimentation du composant, puis les rappels, puis l'adresse ; un bus ne se dépanne pas à l'analyseur avant d'avoir regardé ses niveaux à l'oscilloscope."] : []),
     "La valeur est hors de la plage : notez-la telle quelle, refaites la mesure une fois, puis comparez les pièces montées à la nomenclature (une résistance d'une décade trop haute donne exactement ce genre d'écart)."];
-  return { id: o.id || "", tpl, test: test.id, title: test.title, nature: N, block: o.name, refs, why: test.why, expect: R.expect || test.expect, gear: test.gear.map((g) => INSTRUMENTS[g]), gearIds: test.gear, setup, settings, steps, rows, table: R.table || null, traps, learn: test.learn, notes: R.notes || [], minutes: MINUTES[test.nature] || 15, result: R, ok: R.ok };
+  /* the same set-up, as data : which instrument, on which pin — what a screen needs to POINT at the board instead of naming a pin (pcba/lab_manip.js) */
+  const other = (e) => (e.ref && e.ref !== "GND" ? e.ref : e.toRef && e.toRef !== "GND" ? e.toRef : "GND");
+  const links = (R.log || []).filter((e) => e.to).map((e) => ({ instr: e.instr, ch: e.ch || null, to: e.to, at: pick(e.to), back: other(e), backAt: pick(other(e)), v: e.v ?? null, ilim: e.ilim ?? null, r: e.r ?? null, ac: !!e.ac, logic: !!e.logic, note: e.note || "" }));
+  return { id: o.id || "", tpl, test: test.id, title: test.title, nature: N, block: o.name, refs, links, noSim: !!test.noSim, why: test.why, expect: R.expect || test.expect, gear: test.gear.map((g) => INSTRUMENTS[g]), gearIds: test.gear, setup, settings, steps, rows, table: R.table || null, traps, learn: test.learn, notes: R.notes || [], minutes: MINUTES[test.nature] || 15, result: R, ok: R.ok };
 }
 /* the order one tests a board in : what feeds first, then what thinks, what measures, what drives, what talks, what signals */
 const ORDER = ["Raccorder", "Protéger", "Alimenter", "Calculer", "Mesurer", "Commander", "Communiquer", "Signaler", "Tester"];
@@ -200,9 +209,18 @@ export function labGuide(board) {
 }
 
 /* ---------- what the lab keeps on a board : the readings of the real bench, the tests set aside, the notes of a review ----------
-   board.lab = { readings: [{ test: "B3/ripple", what: "Fréquence de découpage", value (SI) }], skips: [{ test }], notes: [{ test, text }] } */
+   board.lab = { readings: [{ test: "B3/ripple", what: "Fréquence de découpage", value (SI) }], skips: [{ test }], notes: [{ test, text, step? }],
+                 ticks: [{ test, step, when? }] (a step of the bench done), passes: [{ test, step, by, why, when? }] (a supervisor let it pass) }
+   A note with a step is what one wrote at the bench on that step ; without, a remark of a review. */
 export const testKey = (blockId, testId) => `${blockId}/${testId}`;
-export function labOf(board) { const l = (board && board.lab) || {}, list = (x) => (Array.isArray(x) ? x.filter((r) => r && typeof r.test === "string") : []); return { readings: list(l.readings).filter((r) => typeof r.what === "string" && Number.isFinite(Number(r.value))).map((r) => ({ test: r.test, what: r.what, value: Number(r.value) })), skips: list(l.skips).map((r) => ({ test: r.test })), notes: list(l.notes).filter((r) => typeof r.text === "string" && r.text.trim()).map((r) => ({ test: r.test, text: r.text.trim() })) }; }
+export function labOf(board) { const l = (board && board.lab) || {}, list = (x) => (Array.isArray(x) ? x.filter((r) => r && typeof r.test === "string") : []); return { readings: list(l.readings).filter((r) => typeof r.what === "string" && Number.isFinite(Number(r.value))).map((r) => ({ test: r.test, what: r.what, value: Number(r.value) })), skips: list(l.skips).map((r) => ({ test: r.test })), notes: list(l.notes).filter((r) => typeof r.text === "string" && r.text.trim()).map((r) => ({ test: r.test, text: r.text.trim(), ...(typeof r.step === "string" && r.step ? { step: r.step } : {}) })),
+  ticks: list(l.ticks).filter((r) => typeof r.step === "string").map((r) => ({ test: r.test, step: r.step, ...(r.when ? { when: String(r.when) } : {}) })), passes: list(l.passes).filter((r) => typeof r.step === "string" && typeof r.by === "string" && r.by.trim()).map((r) => ({ test: r.test, step: r.step, by: r.by.trim(), why: String(r.why || "").trim(), ...(r.when ? { when: String(r.when) } : {}) })) }; }
+/** A step of the bench ticked (or unticked) : → the new lab block */
+export function setTick(board, key, step, on, when = "") { const l = labOf(board), rest = l.ticks.filter((r) => !(r.test === key && r.step === step)); return { ...l, ticks: on ? [...rest, { test: key, step, ...(when ? { when } : {}) }] : rest }; }
+/** A supervisor lets a step pass although its reading is out of its band : who, and why — it goes to the report. by empty : the pass is taken away. */
+export function setPass(board, key, step, by, why = "", when = "") { const l = labOf(board), rest = l.passes.filter((r) => !(r.test === key && r.step === step)); return { ...l, passes: String(by || "").trim() ? [...rest, { test: key, step, by: String(by).trim(), why: String(why || "").trim(), ...(when ? { when } : {}) }] : rest }; }
+/** What one notes at the bench on a step of a test (empty : taken away). The remarks of a review — notes without a step — are left as they are. */
+export function setNote(board, key, step, text) { const l = labOf(board), rest = l.notes.filter((r) => !(r.test === key && r.step === step)); return { ...l, notes: String(text || "").trim() ? [...rest, { test: key, step, text: String(text).trim() }] : rest }; }
 /** Writes a reading (value null : takes it away). → the new lab block */
 export function setReading(board, key, what, value) { const l = labOf(board), rest = l.readings.filter((r) => !(r.test === key && r.what === what)); return { ...l, readings: value === null || value === "" || !Number.isFinite(Number(value)) ? rest : [...rest, { test: key, what, value: Number(value) }] }; }
 export const skipped = (board, key) => labOf(board).skips.some((r) => r.test === key);

@@ -92,7 +92,7 @@ const board = {
     nets: { word: "net", head: ["name"], first: ["class", "voltage", "current", "pins"] },
     library: { word: "component", keyed: true, first: ["kind", "prefix", "name", "package"], kids: { pins: { word: "pin", head: ["n", "name"] }, pads: { word: "pad", head: ["n"] }, ratings: {} } },
     board: { kids: { coating: {}, holes: { word: "hole" } } },
-    lab: { kids: { readings: { word: "reading", head: ["test"] }, skips: { word: "skip", head: ["test"] }, notes: { word: "note", head: ["test"] } } },
+    lab: { kids: { readings: { word: "reading", head: ["test"] }, skips: { word: "skip", head: ["test"] }, notes: { word: "note", head: ["test"] }, ticks: { word: "tick", head: ["test", "step"] }, passes: { word: "pass", head: ["test", "step"] } } },
     rules: { kids: { classes: { word: "class", keyed: true } } },
     planes: { word: "plane", head: ["net", "layer"] },
     tracks: { word: "track", head: ["net", "layer"], first: ["w", "pts"] },

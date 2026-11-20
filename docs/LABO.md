@@ -144,17 +144,65 @@ lab
 - `reading` — une valeur mesurée au vrai laboratoire, pour une mesure d'un essai (`bloc/essai`). Elle se tape dans
   l'unité affichée (3,3 mA, pas 0,0033 A) ; chaque relevé est une étape annulable.
 - `skip` — un essai mis à **Off** : gardé, avec ses relevés, mais hors du plan (règle « On / Off et copies »).
-- `note` — une remarque sur un essai, montrée sur sa fiche.
+- `note` — une remarque sur un essai, montrée sur sa fiche ; avec `step`, ce que l'on a noté au banc sur une étape.
+- `tick` — une étape du banc faite (`bloc/essai`, l'étape, l'heure) ; `pass` — un superviseur a laissé passer une
+  étape (qui, pourquoi, l'heure). Voir § 4 bis.
 
 Le guide signale un relevé hors plage ; le dossier de revue du projet dit, pour chaque carte, combien d'essais sont
 au plan, combien sont de côté et combien ont des relevés.
+
+## 4 bis. Manipulation en labo
+
+Demande de JP : « un étudiant de 1re année… chaque étape pointée sur le schéma ou la carte directement, au lieu de
+numéros de broches… s'assurer qu'on ne détruit pas les circuits par de mauvaises manipulations… un mode
+"Manipulation en labo", plein écran, avec les étapes à faire et les notes / mesures à noter ».
+
+« Manipulation en labo », en tête du volet de gauche, ouvre l'essai choisi **par-dessus la page, une étape par
+écran** (`modules/elab_manip.js`) :
+
+- **à gauche, la carte** — les pastilles que l'étape touche portent un anneau qui bat, le cordon qui y va (« + »,
+  « − », pointe rouge « R », noire « N », sonde « S », pince de masse « M ») et, en petit, la référence et la broche.
+  La vue se cadre sur les points en gardant au moins un bon tiers de la carte autour, pour savoir où l'on est ;
+  « Toute la carte » dézoome. Une étape qui se fait sur l'appareil le dit ;
+- **à droite, l'étape** — son genre (Sécurité, Régler l'appareil, Brancher sur la carte, Vérifier avant d'alimenter,
+  Mise sous tension, Relever, Couper), ce qu'il faut faire, **l'appareil dessiné avec son réglage**
+  (`modules/elab_gear.js` : tension, limite de courant et état de la sortie d'une alimentation, position du
+  sélecteur d'un multimètre, voie d'un oscilloscope), le **pourquoi**, puis UNE action : « C'est fait », ou le
+  relevé à taper dans l'unité affichée ; une case de notes — un champ de texte ordinaire : la dictée du système y
+  tape, l'outil n'ouvre aucun micro et n'appelle aucun service.
+
+**Tout se calcule sans IA** : les étapes viennent du journal du banc simulé (`pcba/lab_manip.js`, `manipSteps`), les
+mêmes pour chaque essai ; chaque mesure dit quels signaux elle lit (`at`, relevé par le banc), et un signal se
+ramène à une pastille par le même choix que les mots de la fiche (connecteur, point de test, patte d'un composant).
+
+**L'ordre est le garde-fou.** Sécurité ; chaque source réglée **sortie coupée** ; les cordons posés, le noir
+d'abord ; la **recherche d'un court-circuit avant d'alimenter** ; la relecture du montage ; alors seulement la mise
+sous tension ; les relevés un à un ; la coupure. Un essai sans alimentation — le générateur seul fait vivre le
+circuit — a les mêmes étapes, le générateur à la place de l'alimentation.
+
+**Les verrous** (`manipState`) : une étape s'ouvre quand celles d'avant sont faites — cochée, ou relevée **et dans
+sa plage**. Lire la suite est permis (les pastilles du haut, « Suivant », les flèches) ; la faire attend son tour, et
+l'écran dit quelle étape attend. **Un relevé hors plage arrête l'essai** : l'écran dit de couper, de refaire la
+mesure une fois, de comparer les pièces à la nomenclature — jamais de corriger le relevé. **Un superviseur peut
+laisser passer**, avec son nom et sa raison : c'est écrit dans le carnet de la carte (`pass`) et montré au bilan.
+Un relevé facultatif (il demande un appareil que tous les bancs n'ont pas) se passe d'un clic.
+
+À la fin, **le bilan** : chaque relevé avec son attendu et son verdict, les passages, les notes.
+
+Clavier : Entrée fait l'action, ← → changent d'étape, F met en plein écran, Échap ferme. Chaque coche, relevé et
+note est une étape annulable (Ctrl + Z). Fermer ne perd rien : tout est dans le bloc `lab` de la carte.
+
+Choix pris d'office (le menu a été fermé deux fois par un message ; ils se changent) : le mode est pensé pour un
+portable ou l'écran du banc ; les étapes sont **verrouillées**, un superviseur passe outre et c'est noté ; le PDF
+complet, une image par étape, sera écrit par l'outil — il n'est pas encore fait.
 
 ## 5. Avec une IA
 
 « Copier pour une IA » envoie la carte, la fiche de l'essai en cours et une consigne : relire l'essai comme le
 ferait un ingénieur d'essais. La réponse revient par « Réimporter… » : aperçu des changements, validation, une seule
-étape annulable. **Seuls les notes et les essais de côté se reprennent : une réponse ne peut pas réécrire un relevé**
-— ce sont des mesures.
+étape annulable. **Seuls les remarques et les essais de côté se reprennent : une réponse ne peut réécrire ni un
+relevé, ni une étape cochée, ni un passage par un superviseur, ni une note prise au banc** — c'est ce qui s'est
+passé au laboratoire.
 
 ## 6. Ce qui est simulé
 
@@ -210,6 +258,14 @@ sur la carte est laissé de côté, et c'est dit.
   lecture, pause, position, vitesse, pistes et composants qui s'allument, deux oscilloscopes, DEL qui s'allume et
   s'éteint, écriture I²C, fonction de transfert, relevé conforme puis hors plage, guide, Ctrl + Z, essai mis de
   côté, plan annulé puis enregistré en Word et en PDF, aller-retour IA, fenêtre de 1366 px.
+- **Manipulation en labo** — vérifié par les tests (`tests/node/lab_manip.test.mjs`) : pour les 26 essais de la carte
+  de démonstration, l'ordre des étapes (sources réglées avant tout branchement, court-circuit cherché avant la
+  mise sous tension, relevés après), chaque point nommé sur une pièce est une pastille de la carte, les verrous, le
+  relevé hors plage qui arrête, le passage par un superviseur, l'aller-retour `.dwiz` des coches, des passages et
+  des notes. Essayé dans Chromium (18 vérifications) : ouverture, étape verrouillée, branchement pointé, relevé
+  hors plage, passage, note gardée quand on clique « Suivant », bilan, Échap et retour du curseur, fenêtre de
+  1100 px. **Non vérifié** : le plein écran du navigateur lui-même (le robot ne le déclenche pas), le toucher, une
+  tablette, la dictée ; aucun étudiant n'a déroulé un essai avec.
 - **Non vérifié** : aucune carte réelle n'a été mesurée pour comparer — ni les valeurs, ni les plages. Les
   comportements typiques et les niveaux des bus sont écrits de mémoire, sans relecture d'une fiche technique ni d'une
   norme (registre des sources : `lab-devices` « usage », `lab-bus` « à vérifier »). Le plan n'a pas été déroulé par
