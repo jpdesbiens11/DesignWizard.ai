@@ -78,6 +78,22 @@ html[data-module="account"] { --acc: var(--hl-green); }
 .hash-list { max-height: 220px; overflow: auto; margin: .4rem 0; border: 1.5px solid var(--line); border-radius: var(--r-field); }
 .hash-list div { display: flex; gap: .5rem; align-items: center; padding: .25rem .55rem; font-family: var(--mono); font-size: .8rem; border-top: 1px dashed var(--line); }
 .hash-list div:first-child { border-top: 0; }
+/* Compte : the access list said clearly — a line per account, its role in its colour, what is published and what waits (modules/account_access.js) */
+.account-grid > .access-card { column-span: all; } .access-sum { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin: .1rem 0 .6rem; }
+.access-roles { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: .6rem; margin-bottom: .7rem; }
+.access-role { border: 1.4px solid color-mix(in srgb, var(--role) 45%, transparent); border-left: 5px solid var(--role); border-radius: var(--r-card); padding: .45rem .7rem; background: color-mix(in srgb, var(--role) 6%, var(--surface)); }
+.access-role b { display: flex; align-items: center; gap: .4rem; } .access-role b .sk-icon { color: var(--role); } .access-role ul { margin: .25rem 0 0; padding-left: 1.1rem; font-size: .84rem; }
+.access-list { display: grid; gap: .35rem; margin-bottom: .7rem; }
+.access-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: .6rem; align-items: center; padding: .4rem .6rem; border: 1.3px solid var(--line); border-left: 5px solid var(--role); border-radius: var(--r-card); background: var(--surface); }
+.access-row.gone { opacity: .62; } .access-row.gone .access-name { text-decoration: line-through; } .access-ico { color: var(--role); display: flex; } .access-ico .sk-icon { width: 1.6rem; height: 1.6rem; }
+.access-who { display: grid; gap: .1rem; min-width: 0; } .access-can { color: var(--muted); font-size: .8rem; }
+.access-name { font-weight: 650; border: 1.2px dashed transparent; background: transparent; padding: .1rem .3rem; margin-left: -.3rem; min-width: 0; max-width: 26rem; min-height: 0; }
+.access-name:hover, .access-name:focus { border-color: var(--line); background: var(--surface-2); } .access-name::placeholder { font-weight: 400; font-style: italic; }
+.access-ctl { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; justify-content: flex-end; } .access-ctl select, .access-add select { width: auto; }
+.access-add { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .5rem; margin-bottom: .6rem; } .access-add .field { flex: 1 1 320px; margin: 0; }
+.access-todo { border: 1.4px solid var(--line); border-radius: var(--r-card); padding: .5rem .8rem; margin: .7rem 0 .5rem; } .access-todo.due { border-color: var(--warn); background: color-mix(in srgb, var(--hl-yellow) 14%, var(--surface)); }
+.access-todo h3 { margin: 0 0 .3rem; font-size: .95rem; } .access-todo ol { margin: 0; padding-left: 1.2rem; display: grid; gap: .45rem; font-size: .88rem; } .access-acts { display: inline-flex; flex-wrap: wrap; gap: .35rem; vertical-align: middle; }
+@media (max-width: 700px) { .access-row { grid-template-columns: auto minmax(0, 1fr); } .access-ctl { grid-column: 1 / -1; justify-content: flex-start; } }
 .theme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .5rem; }
 .menu-item.on { font-weight: 700; }
 

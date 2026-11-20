@@ -2,7 +2,8 @@
    analysis grouped by type. */
 import test from "node:test";
 import assert from "node:assert/strict";
-import { PANE, clampPane, readPanes, writePanes, dragPane } from "../../web/js/core/panes.js";
+import { readFileSync, readdirSync } from "node:fs";
+import { PANE, clampPane, readPanes, writePanes, dragPane, hasRightPane } from "../../web/js/core/panes.js";
 import { bodyGroups, GROUP_COLORS } from "../../web/js/analysis/cc_groups.js";
 import { netColor } from "../../web/js/cad/materials.js";
 
@@ -36,4 +37,18 @@ test("Isolation : the bodies are grouped by what they are — conductors by pote
   assert.equal(g[0].color, netColor("HV+")); assert.equal(g[0].title, "Conducteurs — HV+"); assert.deepEqual(g.slice(3).map((x) => x.color), [GROUP_COLORS.noNet, GROUP_COLORS.floating, GROUP_COLORS.insulator, GROUP_COLORS.ignore]);
   assert.equal(g.reduce((n, x) => n + x.bodies.length, 0), bodies.length, "every body is in one group, once");
   assert.deepEqual(bodyGroups([b("x", "conductor", "AUX")], []).map((x) => x.key), ["net:AUX"], "a potential the list of nets does not know still gets its group"); assert.deepEqual(bodyGroups([], []), []); assert.deepEqual(bodyGroups(null), []);
+});
+
+test("every side panel of every page can be resized and hidden : a studio gets its borders wherever it stands, and a right panel that comes later too", () => {
+  const read = (p) => readFileSync(new URL(`../../${p}`, import.meta.url), "utf8"), side = (right, hidden = false) => ({ hidden, classList: { contains: (c) => c === "side" || (right && c === "right") } });
+  const studio = (kids, cls = []) => ({ children: kids, classList: { contains: (c) => cls.includes(c) } });
+  assert.equal(hasRightPane(studio([side(false), {}, side(true)])), true); assert.equal(hasRightPane(studio([side(false), {}])), false);
+  assert.equal(hasRightPane(studio([side(false), {}, side(true)], ["no-right"])), false, "a screen that says it goes without a right panel"); assert.equal(hasRightPane(studio([side(false), {}, side(true, true)])), false, "a right panel that is hidden for now"); assert.equal(hasRightPane(null), false);
+  const panes = read("web/js/core/panes.js"), app = read("web/js/core/app.js");
+  assert.match(app, /main\.querySelectorAll\("\.studio"\)\.forEach\(\(s\) => mountPanes\(s, key\)\)/, "a studio under a header of its own (the PCBA) has its borders too"); assert.match(app, /panesWatch\.observe\(main, \{ childList: true, subtree: true \}\)/);
+  assert.match(panes, /const sync = \(\) => \{ const now = hasRightPane\(studio\); if \(now === right\) return;/); assert.match(panes, /new MutationObserver\(sync\)\.observe\(studio, \{ attributes: true, attributeFilter: \["class"\], childList: true \}\)/);
+  /* a screen that has side panels builds them in a studio — the one structure the borders know */
+  const dir = new URL("../../web/js/modules/", import.meta.url), withSides = readdirSync(dir).filter((f) => f.endsWith(".js") && /el\("aside", \{ class: "side/.test(readFileSync(new URL(f, dir), "utf8")));
+  assert.ok(withSides.length >= 13 && withSides.includes("pcba.js") && withSides.includes("sw.js"), `${withSides.length} screens have side panels`);
+  for (const f of withSides) assert.match(readFileSync(new URL(f, dir), "utf8"), /class: "studio/, `${f} : its side panels are in a studio`);
 });

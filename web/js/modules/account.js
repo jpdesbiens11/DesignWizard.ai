@@ -5,7 +5,8 @@ import { el, clear, icon, btn, badge, field, toast, modal, copyText, download, f
 import { pageVeil } from "../core/busy.js";
 import { registerModule, refresh, setStatus, rebuildShell } from "../core/app.js";
 import { store } from "../core/store.js";
-import { session, signIn, signOut, accessHash, approve, revoke, accessFileText, isHash, shortHash, loadAccess } from "../core/access.js";
+import { session, signIn, signOut, shortHash } from "../core/access.js";
+import { accessCard } from "./account_access.js";
 import { authMessage } from "../google/auth.js";
 import { THEMES, currentTheme, applyTheme } from "../core/theme.js";
 import { projectArtifacts } from "../core/artifacts.js";
@@ -71,9 +72,9 @@ function render(main) {
     el("p", { class: "muted" }, "Vos fichiers restent chez vous : sur ce poste, ou dans votre propre Google Drive. L'application ne voit que les fichiers qu'elle a créés."))));
   const grid = el("div", { class: "account-grid" });
   page.append(grid);
-  const who = el("section", { class: "card taped" }), drive = el("section", { class: "card taped" }), theme = el("section", { class: "card taped" }), access = el("section", { class: "card taped" });
+  const who = el("section", { class: "card taped" }), drive = el("section", { class: "card taped" }), theme = el("section", { class: "card taped" }), access = el("section", { class: "card taped access-card" });
   grid.append(who, drive, theme, access);
-  let draft = null, tree = null;
+  let tree = null;
 
   function drawWho() {
     clear(who); who.append(el("h2", null, "Compte Google"));
@@ -122,36 +123,10 @@ function render(main) {
       icon("palette"), el("b", null, t.label), el("small", null, t.text)))));
   }
 
-  async function drawAccess() {
-    clear(access); access.append(el("h2", null, "Accès à la démo en ligne"));
-    const a = session.account, canEdit = !session.hosted || (a && a.admin);
-    if (!draft) draft = session.list || await loadAccess();
-    if (!canEdit) {
-      access.append(...[el("p", null, "La démo en ligne est ouverte aux comptes Google approuvés par l'administrateur."), a && a.hash ? el("p", { class: "muted small" }, `Votre empreinte d'accès : ${a.hash}`) : null].filter(Boolean));
-      return;
-    }
-    const input = el("input", { type: "text", placeholder: "adresse@gmail.com — ou empreinte reçue d'une demande d'accès", spellcheck: false }), asAdmin = el("input", { type: "checkbox" });
-    const add = async () => {
-      const v = input.value.trim();
-      if (!v) return;
-      if (!draft.salt) { toast("Le fichier d'accès n'a pas de sel : régénérez web/acces.json (voir docs/GOOGLE.md).", "error"); return; }
-      try { const h = isHash(v) ? v.toLowerCase() : await accessHash(v, draft.salt, draft.iterations); draft = approve(draft, h, asAdmin.checked); input.value = ""; drawAccess(); toast("Compte ajouté à la liste — pensez à publier le fichier.", "success"); }
-      catch (e) { toast(e.message, "error"); }
-    };
-    input.addEventListener("keydown", (e) => { if (e.key === "Enter") add(); });
-    const rows = [...(draft.admins || []).map((h) => [h, true]), ...(draft.approved || []).map((h) => [h, false])];
-    access.append(el("p", { class: "muted small" }, "La liste ne contient aucune adresse : chaque compte y est une empreinte calculée dans ce navigateur. Elle vit dans le fichier public ", el("code", null, "web/acces.json"), " ; pour l'appliquer, téléchargez-le et commitez-le dans le dépôt."),
-      el("div", { class: "form-row" }, el("div", { style: { flex: "1 1 100%" } }, field("Approuver un compte", input)), el("label", { class: "check" }, asAdmin, "administrateur"), btn("Ajouter", add, { icon: "plus" })),
-      el("div", { class: "hash-list" }, rows.length ? rows.map(([h, adm]) => el("div", null, el("span", { class: "grow", "data-tip": h }, `${shortHash(h)}…`), adm ? badge("admin", "ok") : null, a && a.hash === h ? badge("vous", "info") : null,
-        el("button", { class: "icon-btn", type: "button", "aria-label": "Retirer ce compte", onClick: () => { draft = revoke(draft, h); drawAccess(); } }, "×"))) : el("div", null, "Aucun compte approuvé.")),
-      el("div", { class: "form-row" }, field("Ouverture", el("select", { onChange: (e) => { draft = { ...draft, mode: e.target.value }; } },
-        [["approved", "Sur approbation (comptes de la liste)"], ["open", "Ouverte à tout compte Google connecté"]].map(([k, l]) => el("option", { value: k, selected: k === (draft.mode || "approved") }, l))))),
-      el("div", { class: "form-actions" }, btn("Copier", async () => toast((await copyText(accessFileText(draft))) ? "Contenu de acces.json copié." : "Copie impossible."), { small: true, icon: "copy" }),
-        btn("Télécharger acces.json", () => download("acces.json", accessFileText(draft), "application/json"), { primary: true, small: true, icon: "download" })));
-  }
+  const drawAccess = () => accessCard(access);      // the list of accounts, said clearly (modules/account_access.js)
 
   const redraw = () => { drawWho(); drawDrive(); drawAccess(); };
-  const off = session.on(() => { tree = null; draft = null; redraw(); });
+  const off = session.on(() => { tree = null; redraw(); });
   drawWho(); drawDrive(); drawTheme(); drawAccess();
   return () => off();
 }

@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 import { createAuth, authMessage } from "../../web/js/google/auth.js";
 import { createDrive, GoogleError, FOLDER, APP_KEY } from "../../web/js/google/drive.js";
 import { createDriveFs, safeName, itemFolderName, TREE } from "../../web/js/google/drive_fs.js";
-import { accessHash, decide, approve, revoke, accessFileText, requestUrl, isHosted, isHash, shortHash, loadAccess } from "../../web/js/core/access.js";
+import { accessHash, decide, approve, revoke, accessFileText, requestUrl, isHosted, isHash, shortHash, loadAccess, ROLES, accessRows, pendingAccess, setRole, editUrl, readNames, readDraft } from "../../web/js/core/access.js";
 import { CONFIG } from "../../web/js/config.js";
 
 function fakeGoogle() {
@@ -195,4 +195,31 @@ test("the committed access list holds hashes only and one administrator; the con
   assert.match(CONFIG.scopes, /drive\.file/); assert.ok(!/drive(\s|$)|drive\.readonly/.test(CONFIG.scopes.replace("drive.file", "")), "only the per-file Drive scope");
   assert.match(CONFIG.clientId, /^\d+-[a-z0-9]+\.apps\.googleusercontent\.com$/, "a public OAuth client ID, never a client secret");
   assert.ok(!/GOCSPX|client_secret|refresh_token/i.test(readFileSync(new URL("../../web/js/config.js", import.meta.url), "utf8")));
+});
+
+test("access, said clearly to who administers it : a line per account, its role in words, what is published and what waits", async () => {
+  const salt = "00ff", A = await accessHash("admin@example.com", salt, 1000), U = await accessHash("user@example.com", salt, 1000), N = await accessHash("new@example.com", salt, 1000);
+  const published = { v: 1, mode: "approved", salt, iterations: 1000, admins: [A], approved: [U] };
+  assert.deepEqual(accessRows(published, published, A, { [U]: "Testeur" }).map((r) => [r.role, r.state, r.you, r.name]), [["admin", "online", true, ""], ["user", "online", false, "Testeur"]], "administrators first ; a name of one's own ; « vous »");
+  assert.equal(pendingAccess(published, published), 0); assert.equal(pendingAccess(published, null), 0);
+  let draft = setRole(published, N, false); assert.deepEqual(accessRows(draft, published).map((r) => r.state), ["online", "online", "new"]); assert.equal(pendingAccess(draft, published), 1);
+  draft = setRole(draft, U, true); assert.deepEqual([draft.admins, draft.approved], [[A, U], [N]], "one role only : promoted, it leaves the approved list");
+  assert.deepEqual(accessRows(draft, published).find((r) => r.hash === U), { hash: U, role: "admin", was: "user", name: "", you: false, state: "changed" });
+  draft = revoke(draft, A); const gone = accessRows(draft, published).find((r) => r.hash === A); assert.deepEqual([gone.state, gone.role, gone.was], ["removed", "admin", "admin"], "taken away here, it keeps its line until the list is published");
+  assert.equal(pendingAccess(draft, published), 3); assert.equal(pendingAccess({ ...published, mode: "open" }, published), 1, "the opening mode counts as a change");
+  assert.deepEqual(accessRows(revoke(setRole(published, N, false), N), published).map((r) => r.state), ["online", "online"], "added then removed : no trace");
+  /* what a role allows is said in words, the same on the screen and in the documentation */
+  assert.deepEqual(Object.keys(ROLES), ["user", "admin"]); assert.ok(ROLES.user.can.some((c) => /créer et enregistrer ses projets dans SON Google Drive/.test(c))); assert.equal(ROLES.admin.can.length, ROLES.user.can.length + 1); assert.match(ROLES.admin.can.at(-1), /approuver, retirer et nommer/);
+  const doc = readFileSync(new URL("../../docs/GOOGLE.md", import.meta.url), "utf8"); assert.match(doc, /créer et enregistrer ses\s+projets dans \*\*son\*\* Google Drive/); assert.match(doc, /gardé \*\*dans son navigateur\s+seulement\*\*/);
+  assert.equal(editUrl("o/r"), "https://github.com/o/r/edit/main/web/acces.json");
+  /* the names live in the browser of the administrator : anything that is not a fingerprint and a name is dropped */
+  assert.deepEqual(readNames(JSON.stringify({ [U]: "  Testeur ", nope: "x", [A]: 4, [N]: "" })), { [U]: "Testeur" }); for (const bad of ["", "{", "[1]", "null"]) assert.deepEqual(readNames(bad), {});
+  assert.equal(readNames(JSON.stringify({ [U]: "x".repeat(200) }))[U].length, 80);
+  /* a draft is kept only while it differs from what is published, and never across another salt */
+  const kept = JSON.stringify({ salt, mode: "approved", admins: [A], approved: [U, N, "not-a-hash"] }); assert.deepEqual(readDraft(kept, published).approved, [U, N]); assert.ok(!kept.includes("@"));
+  assert.equal(readDraft(JSON.stringify({ salt, mode: "approved", admins: [A], approved: [U] }), published), null, "once published, nothing is left to keep"); assert.equal(readDraft(JSON.stringify({ salt: "other", admins: [A], approved: [N] }), published), null); assert.equal(readDraft("{", published), null);
+  /* the screen : names in the browser only, the draft kept, the steps said */
+  const scr = readFileSync(new URL("../../web/js/modules/account_access.js", import.meta.url), "utf8");
+  assert.match(scr, /"dw\.access\.names"/); assert.match(scr, /"dw\.access\.draft"/); assert.match(scr, /"data-access-row": r\.state/); assert.match(scr, /L'outil ne peut pas voir cette liste/); assert.match(scr, /editUrl\(\)/);
+  assert.doesNotMatch(scr, /fetch\(|XMLHttpRequest/, "a name never leaves the browser"); assert.doesNotMatch(readFileSync(new URL("../../web/acces.json", import.meta.url), "utf8"), /@/, "no address in the published list");
 });

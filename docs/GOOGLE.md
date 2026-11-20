@@ -112,8 +112,26 @@ La page hébergée s'ouvre sur une porte : connexion Google, puis vérification 
 1. La personne ouvre la démo et se connecte : l'écran lui montre son **empreinte d'accès** et un bouton
    « Demander l'accès » qui ouvre une demande GitHub contenant l'empreinte seulement.
 2. L'administrateur ouvre **Compte → Accès à la démo**, colle l'empreinte (ou tape l'adresse : l'empreinte est
-   calculée dans son navigateur), clique « Ajouter », puis « Télécharger acces.json ».
-3. Il remplace `web/acces.json` dans le dépôt et publie. La personne se reconnecte : la porte s'ouvre.
+   calculée dans son navigateur), choisit le rôle et clique « Ajouter ». La ligne dit « À publier ».
+3. Il publie la liste : « 1. Copier le fichier », puis « 2. Ouvrir le fichier dans GitHub » — tout sélectionner,
+   coller, « Commit changes » ; la démo se republie seule en quelques minutes (ou « télécharger », pour déposer le
+   fichier soi-même à la place de `web/acces.json`). La ligne passe à « Publié ». La personne se reconnecte : la
+   porte s'ouvre.
+
+**Ce que l'administrateur voit** (`web/js/modules/account_access.js`, fonctions pures dans `core/access.js`) :
+
+- **une ligne par compte** : un **nom qu'il lui donne** (« Testeur », l'adresse tapée) — gardé **dans son navigateur
+  seulement**, jamais dans le fichier, qui ne porte que des empreintes — ; le début de l'empreinte ; le **rôle**, qui
+  se change sur la ligne ; l'**état** : « Publié », « À publier », « Rôle à publier », « Retrait à publier » ;
+- **ce que permet chaque rôle**, en mots. *Utilisateur approuvé* : ouvrir la démo en ligne, créer et enregistrer ses
+  projets dans **son** Google Drive, lire le projet qu'un membre de son équipe lui partage. *Administrateur* : tout
+  cela, et approuver, retirer et nommer les comptes de la liste ;
+- **ce qu'il reste à faire**, pas à pas : publier la liste ; ajouter l'adresse aux **utilisateurs test** de Google si
+  l'écran de consentement est en mode « Test » (l'outil ne peut pas voir cette liste) ; la connexion du compte.
+
+Ce qui est ajouté ou retiré est **gardé d'une visite à l'autre** dans le navigateur de l'administrateur, tant que ce
+n'est pas publié ; une fois la liste publiée à jour, ce brouillon s'efface. L'administrateur ne voit jamais les
+projets d'un utilisateur : chacun range les siens dans son propre Drive.
 
 Pour voir la porte sur votre poste, ajoutez `?porte` à l'adresse : `http://127.0.0.1:8070/?porte`.
 

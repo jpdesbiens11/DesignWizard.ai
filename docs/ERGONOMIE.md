@@ -431,6 +431,29 @@ le reste est vérifié dans Chromium), styles dans `web/css/app.css`. Essayé su
 replier, tout déplier, aucune erreur. Pas essayé sur Firefox, Safari ni un écran tactile ; les écrans sans volet à
 groupes (Atelier, Itérations, Équipe…) ne changent pas.
 
+## Les marges de gauche et de droite : à glisser, à cacher, sur toutes les pages
+
+*Demande de JP, sur une capture du PCBA : « toutes les marges gauche droite des pages dans l'interface doivent
+pouvoir être cachées et redimensionnées, pour plus d'aisance dans la navigation ».*
+
+**Ce que l'on voit.** Entre un volet et le centre, une bordure : on la glisse pour élargir le volet, son bouton le
+cache et le ramène (aussi : double clic ou Entrée sur la bordure, flèches ← → pour l'élargir au clavier, Ctrl + B
+pour le volet de gauche). La largeur et ce qui est caché sont **les mêmes d'un écran à l'autre**, gardés dans le
+navigateur.
+
+**Usage établi.** Les panneaux latéraux des outils de conception et des éditeurs : une séparation que l'on glisse,
+un bouton pour replier.
+
+**Ce qui manquait** (v0.123.0). Le mécanisme (`web/js/core/panes.js`) ne se posait que sur un studio enfant direct de
+la page : le **PCBA**, dont le studio est sous son propre en-tête, n'avait aucune bordure ; le **Logiciel**, qui
+s'ouvre sans volet de droite, n'en recevait pas quand le volet arrivait. Un tour des écrans au robot l'a montré
+(treize écrans ont des volets ; deux étaient fautifs). Maintenant un studio reçoit ses bordures **où qu'il soit dans
+la page**, et un volet de droite qui apparaît après coup reçoit la sienne.
+
+**Ce qu'un nouvel écran doit faire : rien.** Un `.studio` avec son `aside.side`, et un `aside.side.right` pour le
+volet de droite. Un essai tient que tout écran qui a des volets les bâtit dans un studio (`tests/node/panes.test.mjs`).
+Non essayé : au toucher ; sous 1100 px de large le volet de droite est caché d'office, comme avant.
+
 ## Zoomer ce que montre le centre, et la loupe
 
 Demande de JP (18 novembre 2026), devant une feuille de dessin dont les notes ne se lisaient pas à l'écran.

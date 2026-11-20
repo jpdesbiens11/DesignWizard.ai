@@ -2,7 +2,11 @@
    room ; a panel hides and comes back with one button, always in sight on its border (also : a double click or Enter
    on the border, Ctrl + B for the left panel). The widths and what is hidden are kept in the browser and SHARED by every
    screen : a panel widened in one module has the same width in the next. The studio lays itself out from --left-w and
-   --right-w (app.css) : this module only moves those two lengths. */
+   --right-w (app.css) : this module only moves those two lengths.
+   Every panel of every page (demande de JP : « toutes les marges gauche droite des pages doivent pouvoir être cachées et redimensionnées ») :
+   a studio gets its borders wherever it stands in the page — under a header of its own too — and a right panel that only appears later
+   (a screen that opens on an empty state) gets its border when it comes. A new screen has nothing to declare : a `.studio` with its
+   `aside.side`, and a `.side.right` for the right one. */
 
 export const PANE = { min: 200, max: 760, left: 300, right: 340, view: 320, step: 24, key: "dw.panes", all: "*" };
 const num = (v, d) => (Number.isFinite(v) && v > 0 ? v : d);
@@ -26,12 +30,14 @@ export function dragPane(state, side, width, room) {
   return width < PANE.min / 2 ? { ...state, [off]: true } : { ...state, [off]: false, [side]: clampPane(width, room) };
 }
 
+/** True when a studio shows a right panel now : it has one, it is not hidden, and the studio is not said to go without. Pure enough to test. */
+export const hasRightPane = (studio) => !!studio && !studio.classList.contains("no-right") && [...studio.children].some((c) => c.classList && c.classList.contains("side") && c.classList.contains("right") && !c.hidden);
 /** Puts the two borders on a studio (once). key : the screen ; store : where the widths are kept. */
 export function mountPanes(studio, key, store) {
   if (!studio || studio.dataset.panes) return; studio.dataset.panes = key;
   const keep = store || (typeof localStorage !== "undefined" ? localStorage : null), get = () => { try { return keep ? keep.getItem(PANE.key) : ""; } catch (e) { return ""; } };
   let st = readPanes(get(), key);
-  const right = !studio.classList.contains("no-right") && [...studio.children].some((c) => c.classList && c.classList.contains("side") && c.classList.contains("right"));
+  let right = hasRightPane(studio);
   const handles = {};
   /* the widths are kept at the normal size of the display ; a larger display (the preferences) widens the panels with their text */
   const zoom = () => { try { return parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--ui-scale")) || 1; } catch (e) { return 1; } };
@@ -46,7 +52,7 @@ export function mountPanes(studio, key, store) {
   };
   const room = (side) => studio.getBoundingClientRect().width / zoom() - (side === "left" ? (right && !st.rightOff ? st.right : 0) : (st.leftOff ? 0 : st.left));
   const toggle = (side) => { st = { ...st, [`${side}Off`]: !st[`${side}Off`] }; apply(true); };
-  for (const side of right ? ["left", "right"] : ["left"]) {
+  const make = (side) => {
     const h = document.createElement("div"), b = document.createElement("button");
     h.className = `split ${side}`; h.tabIndex = 0; h.setAttribute("role", "separator"); h.setAttribute("aria-orientation", "vertical"); h.setAttribute("aria-valuemin", "0"); h.setAttribute("aria-valuemax", String(PANE.max));
     h.setAttribute("aria-label", `Bordure du panneau de ${side === "left" ? "gauche" : "droite"} : glisser pour l'élargir, double clic pour le masquer`);
@@ -66,7 +72,13 @@ export function mountPanes(studio, key, store) {
       h.addEventListener("pointermove", move); h.addEventListener("pointerup", up); h.addEventListener("pointercancel", up);
     });
     studio.append(h);
-  }
+  };
+  make("left"); if (right) make("right");
+  /* a right panel that comes later, or goes : its border follows (the screen changes a class of the studio, or its children) */
+  const sync = () => { const now = hasRightPane(studio); if (now === right) return; right = now;
+    if (right) make("right"); else if (handles.right) { handles.right.el.remove(); delete handles.right; studio.classList.remove("right-off"); studio.style.removeProperty("--right-w"); }
+    apply(false); };
+  if (typeof MutationObserver !== "undefined") new MutationObserver(sync).observe(studio, { attributes: true, attributeFilter: ["class"], childList: true });
   /* Ctrl + B : the left panel, from anywhere on the screen ; the listener goes away with the studio */
   const onKey = (e) => { if (!studio.isConnected) { window.removeEventListener("keydown", onKey); return; } if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && String(e.key).toLowerCase() === "b") { e.preventDefault(); toggle("left"); } };
   const onScale = () => { if (!studio.isConnected) { window.removeEventListener("dw:scale", onScale); return; } apply(false); };

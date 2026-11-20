@@ -24,7 +24,7 @@ import { installLoupe, loupeButton } from "./loupe.js";
 import { installUpdateCheck, updateButton } from "./update_check.js";
 import { installWhatsNew, newsButton } from "./whats_new_ui.js";
 
-export const APP_VERSION = "0.122.0";
+export const APP_VERSION = "0.123.0";
 /** What every document of the open project carries beside its content : approval names, organisation, confidentiality note, extraction stamp (core/brand.js). */
 export const docMeta = (when = new Date()) => docIdentity(store.project, when, APP_VERSION);
 const modules = new Map();
@@ -76,9 +76,10 @@ function guideButton() {
 /* the borders of the side panels of a studio : put when a screen draws its studio, again when it rebuilds it */
 let panesWatch = null;
 function studioPanes(main, key) {
-  const put = () => main.querySelectorAll(":scope > .studio").forEach((s) => mountPanes(s, key));
+  const put = () => main.querySelectorAll(".studio").forEach((s) => mountPanes(s, key));      // wherever the studio stands in the page : under a header of its own too (the PCBA)
+  let due = false; const soon = () => { if (due) return; due = true; requestAnimationFrame(() => { due = false; put(); }); };
   if (panesWatch) panesWatch.disconnect();
-  put(); if (typeof MutationObserver !== "undefined") { panesWatch = new MutationObserver(put); panesWatch.observe(main, { childList: true }); }
+  put(); if (typeof MutationObserver !== "undefined") { panesWatch = new MutationObserver(soon); panesWatch.observe(main, { childList: true, subtree: true }); }
 }
 
 let shellOff = [];                                             // listeners of the current top bar (it is rebuilt on a theme change)

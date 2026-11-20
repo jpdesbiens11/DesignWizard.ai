@@ -56,6 +56,35 @@ export function approve(list, hash, admin = false) {
 export function revoke(list, hash) { return { ...list, approved: (list.approved || []).filter((h) => h !== hash), admins: (list.admins || []).filter((h) => h !== hash) }; }
 /** The file to commit as web/acces.json. */
 export const accessFileText = (list) => `${JSON.stringify({ v: 1, mode: list.mode || "approved", salt: list.salt, iterations: list.iterations, admins: list.admins || [], approved: list.approved || [] }, null, 2)}\n`;
+/* ---------- the list, said in words for who administers it (demande de JP : « voir clairement les comptes ajoutés et leur permission ») ---------- */
+const USER_CAN = ["ouvrir la démo en ligne", "créer et enregistrer ses projets dans SON Google Drive", "lire le projet qu'un membre de son équipe lui partage"];
+/** What each role may do on the hosted demo — the same words on the screen and in the documentation. */
+export const ROLES = { user: { label: "Utilisateur approuvé", short: "Utilisateur", icon: "user", color: "#16a34a", line: "Ouvre la démo et crée ses projets dans son Google Drive.", can: USER_CAN },
+  admin: { label: "Administrateur", short: "Administrateur", icon: "admin", color: "#7c3aed", line: "Comme un utilisateur, et gère cette liste d'accès.", can: [...USER_CAN, "approuver, retirer et nommer les comptes de cette liste"] } };
+const roleIn = (list, h) => (((list && list.admins) || []).includes(h) ? "admin" : ((list && list.approved) || []).includes(h) ? "user" : null);
+/** The accounts of a list, one line each, against the list that is PUBLISHED : `state` says what is online ("online"), what was added here
+    and waits to be published ("new"), whose role changed ("changed"), and what was taken away ("removed"). names : { hash: a name the
+    administrator gave, kept in his browser only }. → [{ hash, role, was, name, you, state }], administrators first */
+export function accessRows(draft, published, myHash = null, names = {}) {
+  const all = [...new Set([...((draft && draft.admins) || []), ...((draft && draft.approved) || []), ...((published && published.admins) || []), ...((published && published.approved) || [])])];
+  const rows = all.map((h) => { const now = roleIn(draft, h), was = published ? roleIn(published, h) : now; return { hash: h, role: now || was, was, name: names[h] || "", you: !!myHash && h === myHash, state: !now ? "removed" : !was ? "new" : was !== now ? "changed" : "online" }; });
+  return rows.sort((a, b) => (a.role === b.role ? 0 : a.role === "admin" ? -1 : 1));
+}
+/** How many changes wait to be published : the accounts that differ from the published list, and the opening mode. */
+export const pendingAccess = (draft, published) => (published ? accessRows(draft, published).filter((r) => r.state !== "online").length + ((draft.mode || "approved") !== (published.mode || "approved") ? 1 : 0) : 0);
+/** A new list where a hash has ONE role : administrator or approved user. */
+export function setRole(list, hash, admin) { return approve(revoke(list, String(hash).trim().toLowerCase()), hash, admin); }
+/** Where the file is edited on GitHub : paste, commit — the demo republishes itself. */
+export const editUrl = (repo = CONFIG.repo, file = "web/acces.json") => `https://github.com/${repo}/edit/main/${file}`;
+/** The names an administrator gives to the fingerprints (« Testeur », an address) : read from what HIS browser kept — never in the file. */
+export function readNames(text) {
+  try { const j = JSON.parse(text || "{}"); return j && typeof j === "object" && !Array.isArray(j) ? Object.fromEntries(Object.entries(j).filter(([h, n]) => isHash(h) && typeof n === "string" && n.trim()).map(([h, n]) => [h, n.trim().slice(0, 80)])) : {}; } catch (e) { return {}; }
+}
+/** A draft kept between two visits : only a list that still differs from the published one is worth keeping. → the draft, or null */
+export function readDraft(text, published) {
+  try { const j = JSON.parse(text || "null"); if (!j || typeof j !== "object" || j.salt !== published.salt) return null;
+    const d = { ...published, mode: j.mode === "open" ? "open" : "approved", admins: (j.admins || []).filter(isHash), approved: (j.approved || []).filter(isHash) }; return pendingAccess(d, published) ? d : null; } catch (e) { return null; }
+}
 /** GitHub issue that asks for access: carries the fingerprint, never the address. */
 export function requestUrl(hash, repo = CONFIG.repo) {
   const body = `Bonjour,\n\nJe souhaite accéder à la démo de DesignWizard.ai.\n\nEmpreinte d'accès : ${hash}\n\n(L'empreinte est calculée dans mon navigateur à partir de mon adresse Google ; l'adresse elle-même n'est pas publiée. Je vous l'envoie en privé si besoin.)\n`;
