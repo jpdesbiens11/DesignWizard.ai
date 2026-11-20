@@ -48,3 +48,26 @@ export function twinPart(board, lib = {}, existing = null) {
   return { dw: "part/1", id: board.part || `${board.id}-PCB`, name: board.name || board.id, family: "pcb", process: "pcb", material: "FR4", revision: board.revision || "A", function: board.description || "Carte électronique.",
     params: {}, interfaces: [], pcb: { size: [...(b.size || [60, 40])], r: b.r || 0, t: b.t || 1.6, holes: (b.holes || []).map((h) => ({ at: h.at, d: h.d })), components, zones: [], nets }, features: [], notes: [`Jumeau mécanique de la carte ${board.id}.`] };
 }
+/** The twin, kept as the board is designed (demande de JP : « le jumeau numérique fait / mis à jour dès les dimensions et les gros composants connus ») :
+    a board whose first component is placed and that has no part yet receives one ; a board that has its part gives it its components and its
+    nets whenever they change. Called inside the step that changes the board (a hook of the store) : the twin follows in the same undo step.
+    only : the id of the board that changed (every board when absent). → [{ board, part, made }] : what was created or updated */
+export function syncTwins(project, lib = {}, only = null) {
+  const out = [], parts = project.parts || (project.parts = []);
+  for (const b of project.boards || []) {
+    if (only && b.id !== only) continue;
+    let part = b.part ? parts.find((p) => p.id === b.part) : null;
+    if (part && (part.family !== "pcb" || !part.pcb)) continue;                 // tied by hand to another kind of part : left alone
+    if (!part) {
+      if (!(b.parts || []).some((p) => p.at)) continue;                           // nothing placed yet : no envelope to give
+      const tw = twinPart({ ...b, part: null }, lib); let id = tw.id, n = 2; while (parts.some((p) => p.id === id)) id = `${tw.id}-${n++}`;
+      parts.push({ ...tw, id }); b.part = id; out.push({ board: b.id, part: id, made: true }); continue;
+    }
+    const { components, nets } = twinBlocks(b, lib), next = { ...(part.pcb.nets || {}), ...nets };
+    if (JSON.stringify(part.pcb.components || []) !== JSON.stringify(components) || JSON.stringify(part.pcb.nets || {}) !== JSON.stringify(next)) { part.pcb = { ...part.pcb, components, nets: next }; out.push({ board: b.id, part: part.id, made: false }); }
+  }
+  return out;
+}
+/** The board a part is the twin of, or null. */
+export const boardOfPart = (project, partId) => ((project && project.boards) || []).find((b) => b.part === partId) || null;
+

@@ -138,6 +138,12 @@ d'Ariane + plancher », « onglets dans l'outil ».
   côté** — les autres natures, ou les autres pièces : les sœurs d'abord, puis toutes les autres par nature, avec
   recherche. Choisir un busbar depuis un profilé ouvre le studio des busbars. L'ancienne rangée de sous-onglets de
   l'Atelier, qui mêlait des façons de créer, des studios et des étagères, a disparu.
+- **On descend comme on monte** (v0.112) : après la marche vers le haut et le bouton « IA », en tête du volet de gauche, les
+  pictogrammes de **ce qui est fait à partir de ce que l'écran montre**, avec une flèche vers le bas — l'inverse exact de la
+  marche vers le haut (`downOf` de `web/js/core/stairs.js`, un essai tient que chaque marche vers le bas ramène en haut d'où
+  l'on vient). Une carte mène à son PCBA, un PCBA à son Labo, une pièce à son dessin et à sa simulation, un assemblage à ses
+  sous-assemblages, à son isolation et à son dessin ; quatre au plus, ce qui définit le produit d'abord ; Alt + ↓ prend la
+  première. L'usage suivi : l'explorateur de fichiers, où l'on monte au dossier parent et où l'on entre dans un dossier.
 - **La marche d'escalier : un pictogramme, toujours au même endroit, vers ce dont l'écran dépend directement**
   (`web/js/core/stairs.js`, pur et testé ; `core/stairs_ui.js`). En tête du volet de gauche, juste après son titre : le
   pictogramme de là où l'on arrive, avec une petite flèche vers le haut. Le Labo monte au PCBA de sa carte ; la
@@ -546,6 +552,24 @@ son accouplement (aperçu, écriture, masse inchangée), Échap, le clavier, le 
 côté, tournée sur place autour de Z et ramenée à zéro au centième ; la poignée replacée quand la pièce est au bord de
 la vue. Pas vérifié : le toucher ; un motif de vis lié, que l'angle peut désaligner (la santé des accouplements le
 dira, l'outil ne l'empêche pas) ; Firefox et Safari.
+
+## Les noms du métier : la carte nue, la carte assemblée
+
+D'une maison à l'autre, la même carte ne porte pas le même nom. L'outil dit **PCB** pour la carte nue et **PCBA** pour la
+carte assemblée — l'usage courant. Le menu du compte, « Noms du métier (carte) », en propose trois autres : **PWB · CCA**
+(fréquent en aérospatiale et en défense), **PWB · PWA** (plus ancien), et **« Vos mots »**, deux champs pour les mots de la
+maison.
+
+- **Un seul endroit** : `nameBoards(texte)` de `web/js/core/board_names.js`. Les écrans sont traduits au moment où ils sont
+  dessinés (`core/board_names_ui.js`, installé une fois : le texte d'un élément, son infobulle, son nom accessible) — un
+  écran ne déclare rien, un nouvel écran suit sans le savoir. Les documents Word et PDF le sont au moment où ils sont écrits.
+- **Ce qui ne change pas, exprès** : les identifiants (`DRV-CTRL-PCBA`), les noms de fichiers, le `.dwiz` et le JSON d'un
+  artéfact, les consignes à copier, les fichiers de fabrication, et ce que l'on est en train de taper. Ce sont des données.
+- **Revenir au choix d'avant** rend le texte tel qu'il a été écrit : chaque texte traduit garde son original.
+- **Ce qui a été lu** : des pages de fabricants de cartes ; la norme de terminologie IPC-T-50 ne l'a pas été. « ECB / ECBA »
+  n'a été trouvé nulle part comme terme établi — « Vos mots » le permet sans que l'outil l'affirme.
+- **Non essayé** : un mot de la maison plus long que la place d'un onglet ; les fichiers texte (CSV, notes de fabrication),
+  qui gardent PCB et PCBA.
 
 ## Sur quoi l'interface s'appuie
 

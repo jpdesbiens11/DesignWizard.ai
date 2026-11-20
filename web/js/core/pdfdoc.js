@@ -5,6 +5,7 @@
 
 import { PdfSheet } from "../draw/pdf.js";
 import { BRAND, FOOT_NOTE, drawLogo, confidentialNote } from "./brand.js";
+import { nameBoardsDeep } from "./board_names.js";
 
 const W = 210, H = 297, M = 18, CW = W - 2 * M, TOP = 35, BOTTOM = H - 22, INK = "#1c2430", HEADC = "#1F3A5F", MUTED = "#5A6472", LINE = "#9AA5B4", FILL = { ok: "#DCF2E3", warn: "#FCEFC7", error: "#F9D9D9", muted: "#EEF0F3", head: "#DDE5F0" };
 /** Text the standard PDF fonts can show : characters outside Windows-1252 are spelled out. */
@@ -86,7 +87,7 @@ function layout(doc, pagesOf, total) {
 }
 
 /** A PDF file from a document model. → Uint8Array */
-export function pdfDoc(doc) {
-  const first = layout(doc, null, 0);
+export function pdfDoc(model) {
+  const doc = nameBoardsDeep(model), first = layout(doc, null, 0);      // PCB · PCBA, or the words of the house (core/board_names.js)
   return layout(doc, first.seen, first.pages).sheet.toBytes();
 }

@@ -6,6 +6,7 @@
 import { zip } from "./zip.js";
 import { BRAND, FOOT_NOTE, confidentialNote } from "./brand.js";
 import { logoPng } from "./brand_logo.js";
+import { nameBoardsDeep } from "./board_names.js";
 
 const esc = (s) => String(s ?? "").replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const NS = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"';
@@ -55,7 +56,8 @@ function headerTable(doc) {
 }
 
 /** A .docx file from a document model. → Uint8Array */
-export function docx(doc) {
+export function docx(model) {
+  const doc = nameBoardsDeep(model);      // PCB · PCBA, or the words of the house (core/board_names.js)
   const body = [], media = [], rels = [], heads = doc.blocks.filter((b) => /^h[123]$/.test(b.type));
   const rel = (type, target) => { rels.push(`<Relationship Id="rId${rels.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/${type}" Target="${target}"/>`); return `rId${rels.length}`; };
   rel("styles", "styles.xml"); rel("numbering", "numbering.xml"); rel("settings", "settings.xml"); const hid = rel("header", "header1.xml"), fid = rel("footer", "footer1.xml");

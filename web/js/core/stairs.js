@@ -25,6 +25,7 @@ export function stairOf(key, args, project) {
   switch (key) {
     case "assembly": { const me = asm(a[0]) || asms[0] || null, parent = me ? asms.find((x) => x.id !== me.id && (x.instances || []).some((i) => i.asm === me.id)) : null; return parent ? toAsm(parent, "Ce sous-assemblage est monté dans un autre") : null; }
     case "elab": { const b = boards.find((x) => x.id === a[0]) || boards[0] || null; return b ? { hash: `#/pcba/${enc(b.id)}`, icon: "chip", color: "#16a34a", label: b.name || b.id, tip: "Ouvrir la carte dans le PCBA" } : null; }
+    case "pcba": { const b = boards.find((x) => x.id === a[0]) || boards[0] || null; return b ? toPart(part(b.part), "La carte (PCB) que ce PCBA équipe") : null; }      // the assembled board hangs from its bare board, when it has one
     case "fea": { const p = part(a[0]), x = p ? null : asm(a[0]); return p ? toPart(p, "La pièce simulée") : x ? toAsm(x, "L'assemblage simulé") : toPart(parts[0], "La pièce simulée") || toAsm(asms[0], "L'assemblage simulé"); }
     case "physics": return toPart(part(a[1]), "La pièce de ce calcul");
     case "media": return { hash: "#/physics", icon: "physics", color: null, label: "Physique", tip: "Revenir aux modèles analytiques, qui lisent cette base" };
@@ -36,6 +37,24 @@ export function stairOf(key, args, project) {
     case "mvp": case "team": case "plm": return { hash: "#/review", icon: "check", color: null, label: "Revue", tip: "Monter d'un niveau : la revue du produit" };
     default: return null;
   }
+}
+/** The steps DOWN from a screen (demande de JP : « monter d'un niveau… descendre d'un niveau, plus profond dans la définition ») : what is made FROM what
+    the screen shows — the exact reverse of the step up. A board (PCB) leads down to the PCBA mounted on it, a PCBA to its Labo ; a part to its
+    simulation and its drawing ; an assembly to its sub-assemblies, its isolation and its drawing. What defines the product comes first ; at most
+    four, the rest is in the menus. → [{ hash, icon, color, label, tip }] */
+export function downOf(key, args, project) {
+  if (!project) return [];
+  const a = args || [], parts = project.parts || [], asms = project.assemblies || [], boards = project.boards || [], out = [], lv = levelsOf(key, a, project);
+  const B = (b, why) => out.push({ hash: `#/pcba/${enc(b.id)}`, icon: "chip", color: "#16a34a", label: b.name || b.id, tip: `Descendre d'un niveau : ${why} — « ${b.name || b.id} »` });
+  if (lv && lv.part) { const p = lv.part;
+    for (const b of boards.filter((x) => x.part === p.id)) B(b, "le PCBA monté sur cette carte");
+    if (!p.step) out.push({ hash: `#/drawings/${enc(p.id)}`, icon: "drawing", color: null, label: "Dessin", tip: `Descendre d'un niveau : le dessin de « ${p.name || p.id} »` });
+    out.push({ hash: `#/fea/${enc(p.id)}`, icon: "physics", color: null, label: "Simulation", tip: `Descendre d'un niveau : la simulation de « ${p.name || p.id} »` });
+  } else if (lv && lv.assembly) { const x = lv.assembly, name = x.name || x.id;
+    for (const s of [...new Set((x.instances || []).map((i) => i.asm).filter(Boolean))].map((id) => asms.find((y) => y.id === id)).filter(Boolean)) out.push({ hash: asmHash(s), icon: "assembly", color: "#475569", label: s.name || s.id, tip: `Descendre d'un niveau : le sous-assemblage « ${s.name || s.id} »` });
+    out.push({ hash: `#/creepage/${enc(x.id)}`, icon: "creepage", color: null, label: "Isolation", tip: `Descendre d'un niveau : l'isolation de « ${name} »` }, { hash: `#/drawings/asm/${enc(x.id)}`, icon: "drawing", color: null, label: "Dessin", tip: `Descendre d'un niveau : le dessin d'ensemble de « ${name} »` });
+  } else if (key === "pcba") { const b = boards.find((x) => x.id === a[0]) || boards[0] || null; if (b) out.push({ hash: `#/elab/${enc(b.id)}`, icon: "sensor", color: "#16a34a", label: "Labo", tip: `Descendre d'un niveau : le Labo de « ${b.name || b.id} » — chaque bloc sur le banc simulé` }); }
+  return out.slice(0, 4);
 }
 /** What a screen hands to an AI (demande de JP : « un aller-retour avec l'IA sur toutes les pages, sur l'artéfact de la page ») : the artefact the screen
     shows — a board, a part, an assembly — or the whole project when it shows none. The keys are those of the common loop (modules/ai_loop.js).

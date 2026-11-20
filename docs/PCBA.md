@@ -170,6 +170,13 @@ Mesuré sur la carte de démonstration : le bloc CAN (7 composants) déplacé de
 | `-netlist.ipc` `-netlist.csv` | netlist d'essai de la carte nue (IPC-D-356A) et liste des nets |
 | `-fabrication.txt` | empilage, finition, perçages, consignes d'assemblage et de vernissage |
 
+**Depuis la v0.112, le jumeau suit la carte de lui-même.** La pièce « pcb » naît au premier composant placé (son
+identifiant : celui de la carte suivi de `-PCB`), et reçoit les composants et les nets à chaque changement de la carte,
+dans la même étape annulable (`syncTwins` de `web/js/pcba/twin.js`, un crochet du magasin). Elle garde ce qui est à elle :
+son contour, son épaisseur, ses zones d'isolation, ses interfaces. Une carte liée à la main à une pièce d'une autre
+famille est laissée telle quelle. De la pièce on descend au PCBA, du PCBA on remonte à la pièce (les marches du volet de
+gauche). Le bouton ci-dessous reste, pour forcer le report.
+
 Le **jumeau mécanique** reporte les composants (encombrements, hauteurs) et les nets sur la pièce « pcb » de la carte :
 elle apparaît telle quelle dans l'assemblage, l'analyse d'isolation et la simulation.
 

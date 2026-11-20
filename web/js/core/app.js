@@ -15,6 +15,7 @@ import { projectIssues, issuesHere } from "./guide_checks.js";
 import { firstStepHere } from "./first_steps.js";
 import { docIdentity } from "./brand.js";
 import { unitPicker } from "./units_ui.js";
+import { installBoardNames, boardNamePicker } from "./board_names_ui.js";
 import { installStepper } from "./stepper.js";
 import { installFolds } from "./fold.js";
 import { installStairs } from "./stairs_ui.js";
@@ -22,7 +23,7 @@ import { installPanelKeep } from "./panel_keep.js";
 import { installLoupe, loupeButton } from "./loupe.js";
 import { installUpdateCheck, updateButton } from "./update_check.js";
 
-export const APP_VERSION = "0.111.0";
+export const APP_VERSION = "0.112.0";
 /** What every document of the open project carries beside its content : approval names, organisation, confidentiality note, extraction stamp (core/brand.js). */
 export const docMeta = (when = new Date()) => docIdentity(store.project, when, APP_VERSION);
 const modules = new Map();
@@ -173,6 +174,7 @@ function accountMenu(menu, close) {
   const z = currentScale(), row = el("div", { class: "scale-row", role: "group", "aria-label": "Taille de l'affichage" }, SCALES.map(([k, label]) => el("button", { type: "button", class: k === z ? "on" : null, "aria-pressed": k === z ? "true" : "false", "data-tip": `${label} — ${k} %`, "data-scale": String(k), style: { fontSize: `${0.62 + (k - 90) * 0.011}rem` },
     onClick: (e) => { e.stopPropagation(); applyScale(k); for (const b of row.children) { const on = b.dataset.scale === String(k); b.classList.toggle("on", on); b.setAttribute("aria-pressed", on ? "true" : "false"); } } }, "A")));
   menu.append(el("hr"), el("div", { class: "menu-title" }, "Taille de l'affichage"), row);
+  menu.append(el("hr"), el("div", { class: "menu-title", "data-raw": "" }, "Noms du métier (carte)"), boardNamePicker({ keep: true }));      // PCB · PCBA, PWB · CCA, or the words of the house : every screen and every document follows
   menu.append(el("hr"), el("div", { class: "menu-title" }, "Unités"), unitPicker({ keep: true }));      // SI or the imperial hybrid, and the unit of a pressure : the screens that show units follow
 }
 function onshapeMenu(menu, close) {
@@ -212,6 +214,7 @@ export async function start() {
   document.body.append(topbar(), el("div", { id: "levels", class: "levels", hidden: true }), el("main", { id: "main" }));      // #levels : the breadcrumb and the work tabs (modules/levels_bar.js)
   installStepper();      // the arrows of every number field : 1 at a time, faster when held or clicked quickly
   installFolds();        // the groups of every side panel fold on a click on their title
+  installBoardNames();       // the names of the trade for a board, mapped on everything that is drawn (core/board_names.js)
   installStairs({ ai: (key) => app.aiLoop && app.aiLoop(key) });       // the step up of every screen, and its « IA » button : one pictogram at the head of the left panel, towards what the screen is made from
   installPanelKeep();    // a panel drawn anew keeps its place, and the cursor its field
   installLoupe();        // the magnifier of the top bar : a lens over drawings, boards, diagrams and 3D views

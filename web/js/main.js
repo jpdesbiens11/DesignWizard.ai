@@ -3,6 +3,8 @@
 import { app, start, go } from "./core/app.js";
 import { store } from "./core/store.js";
 import { linkHook } from "./core/links.js";
+import { syncTwins } from "./pcba/twin.js";
+import { LIBRARY } from "./pcba/library.js";
 import { openPalette } from "./core/palette.js";
 import { installImport, pickFile } from "./core/importer.js";
 import "./modules/home.js";
@@ -40,6 +42,7 @@ import { gate } from "./core/gate.js";
 import { session } from "./core/access.js";
 
 store.hooks.push(linkHook);
+store.hooks.push((p, extra) => { if (extra && extra.board) syncTwins(p, LIBRARY, extra.board); });      // the mechanical twin of a board follows it, in the step that changes it (pcba/twin.js)
 app.openPalette = openPalette;
 app.onImported = (r) => {
   if (!r) return;

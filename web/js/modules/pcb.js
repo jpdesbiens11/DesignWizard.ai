@@ -8,6 +8,7 @@ import { store } from "../core/store.js";
 import { partStudio } from "./part_studio.js";
 import { PCB_KINDS } from "../cad/family_pcb.js";
 import { parseValue } from "../core/part_edit.js";
+import { boardOfPart } from "../pcba/twin.js";
 
 const show = (v) => (v === undefined || v === null ? "" : typeof v === "object" ? JSON.stringify(v) : String(v));
 
@@ -20,7 +21,8 @@ function boardTab(body, { st, id }) {
   const pcb = st.spec.pcb;
   if (!pcb) { body.append(el("p", { class: "muted" }, "Cette pièce n'a pas de bloc « pcb ».")); return; }
   body.append(el("div", { class: "form-row" }, field("Taille [l, h]", cell(id, ["size"], pcb.size, "json", "90px")), field("Épaisseur", cell(id, ["t"], pcb.t ?? 1.6, "num")), field("Rayon des coins", cell(id, ["r"], pcb.r ?? 0, "num"))));
-  const comps = pcb.components || [];
+  const comps = pcb.components || [], from = boardOfPart(store.project, id);
+  if (from) body.append(el("p", { class: "atelier-hint", "data-twin-of": from.id }, icon("chip"), el("span", null, " Cette carte porte le PCBA ", el("a", { href: `#/pcba/${encodeURIComponent(from.id)}` }, `« ${from.name || from.id} »`), " : ses composants et ses nets en viennent, et suivent chaque changement fait là-bas. Le contour, l'épaisseur et les fixations se règlent ici.")));
   const sec = el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, `Composants (${comps.length})`), btn("", () => store.updatePart(id, (s) => { s.pcb.components = s.pcb.components || []; s.pcb.components.push({ ref: `X${s.pcb.components.length + 1}`, name: "Composant", kind: "other", at: [10, 10], size: [8, 6, 3] }); }, `${id} : composant ajouté`), { small: true, icon: "plus", tip: "Ajouter un composant" })));
   comps.forEach((c, i) => {
     const kind = el("select", { style: { padding: ".12rem .2rem", fontSize: ".8rem" }, onChange: (e) => store.updatePart(id, (s) => { s.pcb.components[i].kind = e.target.value; }, `${id} : ${c.ref}`) }, Object.entries(PCB_KINDS).map(([k, v]) => el("option", { value: k, selected: k === (c.kind || "other") }, v.fr)));
