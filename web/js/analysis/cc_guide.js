@@ -36,3 +36,12 @@ export function isolationGuide(asm, nets, o = {}) {
   if (open.length) say("warn", `${many(open.length, "paire sans verdict", "paires sans verdict")} (${open[0].a} ↔ ${open[0].b}${open.length > 1 ? "…" : ""}) : à examiner à l'écran Isolation.`, "results");
   return out;
 }
+
+/** The potentials of a board, read without its copper : the voltages its nets declare. Enough to tell whether a result kept is stale. */
+export const boardLevelNames = (board) => [...new Set(((board && board.nets) || []).map((n) => `${String(Math.round((Number(n.voltage) || 0) * 1000) / 1000).replace(".", ",").replace("-", "−")} V`))].map((name) => ({ name, voltage: 1 }));
+/** What the isolation of a board analysed ALONE still asks for : only a board whose analysis was run says something — its pairs in fault,
+    its stale results. A board never analysed asks for nothing here (its screen says the rest). → [{ level, text, field }] */
+export function boardIsolationGuide(board) {
+  if (!(((board || {}).isolation || {}).results || []).length) return [];
+  return isolationGuide(board, boardLevelNames(board)).filter((x) => x.field === "run" || x.field === "results").map((x) => ({ ...x, text: x.text.replace(" — isolation : ", " — isolation de la carte seule : ") }));
+}

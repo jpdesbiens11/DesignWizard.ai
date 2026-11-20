@@ -195,6 +195,8 @@ export class Viewer {
   /** Looks straight at a face : n = its outward normal. Asked again while already square on it, the view turns round and shows the other side. → true when it shows the back. */
   lookAlong(n) { const d = new THREE.Vector3(n[0], n[1], n[2]).normalize(), back = this.dir.dot(d) > 0.999; if (back) d.negate(); this.dir.copy(d); this.camera.up.set(0, Math.abs(d.z) > 0.9 ? 1 : 0, Math.abs(d.z) > 0.9 ? 0 : 1); this.fit(); return back; }
   view(name) { this.dir.set(...(VIEWS[name] || VIEWS.iso)).normalize(); this.camera.up.set(0, name === "top" ? 1 : name === "bottom" ? -1 : 0, name === "top" || name === "bottom" ? 0 : 1); this.fit(); }
+  /** Centres the view on a point of the model and shows `span` mm around it (a path a few tenths long on a large board). */
+  focus(p, span = 20) { this.target.set(p[0], p[1], p[2]); this.span = Math.max(1, span); this.dirty = true; }
   fit(margin = 1.25) {
     const bb = this.bbox(), c = bb.getCenter(new THREE.Vector3()), s = bb.getSize(new THREE.Vector3());
     this.target.copy(c);

@@ -101,7 +101,7 @@ function render(main) {
   function build(dfx, pics, drawings) {
     clear(doc);
     const errs = dfx.parts.reduce((s, x) => s + ((x.res.summary || {}).errors || 0), 0), warns = dfx.parts.reduce((s, x) => s + ((x.res.summary || {}).warnings || 0), 0);
-    const iso = store.assemblies.flatMap((a) => ((a.isolation || {}).results || []).map((r) => ({ ...r, asm: a.id }))), isoBad = iso.filter((r) => r.ok === false).length;
+    const iso = [...store.assemblies, ...store.boards].flatMap((a) => ((a.isolation || {}).results || []).map((r) => ({ ...r, asm: a.id }))), isoBad = iso.filter((r) => r.ok === false).length;
     const mass = dfx.asms[0] && dfx.asms[0].ctx ? dfx.asms[0].ctx.mass.mass : dfx.parts.reduce((s, x) => s + (x.built ? x.built.mass : 0), 0);
     const verdict = errs || isoBad ? ["Points bloquants à lever", "danger"] : warns ? ["Acceptable sous réserve des points à vérifier", "warn"] : ["Conforme aux règles évaluées", "ok"];
     doc.append(el("section", { class: "card", style: { marginBottom: "1rem" } },
@@ -155,6 +155,10 @@ function render(main) {
       const holder = el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, "Cartes électroniques"), el("p", { class: "muted" }, "Vérification en cours…"));
       doc.append(holder);
       import("../pcba/summary.js").then(({ boardSummary }) => { if (!alive) return; holder.lastChild.replaceWith(table(["Carte", "Contenu", "Avancement", "Vérifications", "Gamme d'assemblage", "Labo — plan de test", "Revue"], boardSummary(p).map((b) => [el("a", { href: `#/pcba/${encodeURIComponent(b.id)}` }, `${b.id} — ${b.name}`), b.content, b.stage, badge(b.checks, b.errors ? "danger" : b.warns ? "warn" : "ok"), b.assembly, el("a", { href: `#/elab/${encodeURIComponent(b.id)}` }, b.lab), b.review]))); }).catch((e) => { holder.lastChild.textContent = e.message; });
+      for (const b of p.boards) { const R = (b.isolation || {}).results || []; if (!R.length) continue; const P = { level: "functional", ...((b.isolation || {}).params || {}) };      // a board analysed alone : its real copper, by potential
+        holder.append(el("h3", { style: { marginTop: ".8rem" } }, `Isolation de la carte seule — ${b.id}`), el("p", { class: "muted", style: { fontSize: ".84rem" } }, `Pollution degree ${P.pollution_degree ?? 2} · altitude ${P.altitude_m ?? 2000} m · OVC ${P.ovc || "II"} · analysé le ${new Date(R[0].when).toLocaleString("fr-CA")}`),
+          table(["Potentiels", "Au plus court", "Tension", "Niveau", "Clr requise", "Clr mesurée", "Crp requis", "Crp mesuré", "Verdict"], R.map((r) => [`${r.a} ↔ ${r.b}`, r.nets ? `${r.nets[0] || "?"} ↔ ${r.nets[1] || "?"}` : "—", `${fmt(r.u, 0)} V`, LEVEL_LABEL[r.level] || r.level, fmt(r.clrReq, 2), r.clr === null ? "> plafond" : fmt(r.clr, 2), r.crpReq === null ? "—" : fmt(r.crpReq, 2), r.crp === null ? "—" : fmt(r.crp, 2), r.ok === false ? badge("NON", "danger") : r.ok ? badge("OK", "ok") : badge("?", "warn")])),
+          el("p", { class: "muted", style: { fontSize: ".78rem" } }, "Distances en mm, mesurées sur le cuivre des deux couches externes de la carte nue, les nets regroupés par tension. Les couches internes et les corps des composants ne sont pas mesurés.")); }
     }
     const sims = simulationSummary(p);
     if (sims.length) doc.append(el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, "Simulations — éléments finis simplifiés"),

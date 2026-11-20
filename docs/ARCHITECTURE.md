@@ -88,6 +88,9 @@ tools/                     génération des icônes Carnet, de la doc du langage
   continus, conducteurs flottants traversés sans compter).
 - Validation : le produit d'exemple DEMO-HVB, dont les distances sont connues par construction, est reproduit
   (tests `cc_paths.test.mjs`).
+- **Une carte seule** : le même moteur mesure le cuivre réel d'un PCBA, sans le reste du produit —
+  `web/js/pcba/board_iso.js` bâtit la scène, `web/js/modules/creepage_board.js` l'apporte à l'écran. Voir
+  [PCBA.md](PCBA.md), « Isolation d'une carte seule ».
 - **À décider** : un joint non collé entre deux isolants est aujourd'hui un chemin de creepage mais pas de clearance
   (`opts.jointClearance` l'active). À trancher selon votre lecture de la norme.
 

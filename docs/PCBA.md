@@ -243,6 +243,41 @@ Le bouton « Labo » de l'en-tête ouvre le laboratoire d'électronique de la ca
 pistes et composants qui s'allument, deux oscilloscopes, fonction de transfert —, et le **plan de test fonctionnel**
 à dérouler à la réception de la carte, écrit pour quelqu'un qui apprend. Voir [LABO.md](LABO.md).
 
+## Isolation d'une carte seule
+
+L'écran **Isolation** analyse un assemblage, ou **une carte seule** : le menu « Ce que l'on analyse », en tête du
+volet de gauche, liste les cartes (PCBA) puis les assemblages. Depuis le PCBA, la marche « Isolation » y mène ; de
+l'Isolation, la marche vers le haut ramène au PCBA.
+
+**Ce qui est mesuré.** La scène est bâtie du document de la carte, sans noyau géométrique
+(`web/js/pcba/board_iso.js`) : le stratifié nu avec ses trous, et le **cuivre réel des deux couches externes** —
+pastilles, pistes, vias. Le moteur est celui de l'assemblage (`analysis/cc_paths.js`) : la clearance dans l'air, le
+creepage sur la surface, d'une face à l'autre par le bord ou par un trou nu.
+
+- **Par potentiel.** Les nets sont regroupés par tension (« 24 V », « 5 V », « 0 V »…) : deux nets à la même tension
+  ne se demandent aucune distance, et le verdict d'une paire de potentiels est celui de ses deux nets les plus
+  proches — que le résultat nomme, avec la couche. Comparer chaque net à chaque autre demandait plus de trois cents
+  paires sur la carte de démonstration ; par potentiel il y en a six, mesurées en une dizaine de secondes.
+- **Une tension vient du PCBA.** Elle ne se tape pas dans l'Isolation ; un potentiel se dit seulement alternatif
+  (case « AC » : la valeur est alors efficace).
+- **Cuivre arrondi.** Un rond est décrit par un polygone qui l'**enveloppe** : une distance mesurée est égale à la
+  vraie ou un peu plus courte (moins de 2 % du rayon), jamais plus longue. Quand le chemin est droit sur une couche,
+  la distance est ensuite rendue **exacte** par le calcul entre les formes du cuivre, et l'écran le dit.
+- **Pastille sans net** : un conducteur flottant, qu'un chemin peut franchir (d1 + d2).
+- **« Functional » d'abord.** Sur une carte seule, les paires partent à « Functional » : entre deux nets d'un même
+  circuit, aucun essai diélectrique ne fixe la clearance. C'est un **choix de l'outil**, écrit dans le calcul de la
+  paire ; la paire qui sépare deux circuits (puissance ↔ commande) se monte à « Basic » ou à « Reinforced », et l'essai
+  à 2 U + 1000 V la relève alors.
+
+**Ce qui n'est pas mesuré, et que l'écran dit** (groupe « Ce que cette analyse regarde ») : les couches internes —
+entre deux couches, c'est le stratifié qui isole — ; un plan de cuivre sur une couche externe ; les corps des
+composants — ce qu'un composant ponte (optocoupleur, transformateur) a les distances de sa propre fiche — ; la vis
+d'un trou de fixation, qui se regarde dans l'analyse de l'assemblage. Le cuivre d'une carte ne se voit pas encore
+dans l'analyse d'un assemblage : un assemblage sans paire renvoie à la carte.
+
+Le résumé de l'analyse est gardé sur la carte (`board.isolation` : conditions, niveaux, résultats), repris par le
+guide du projet et par le rapport. Tests : `tests/node/board_iso.test.mjs`.
+
 ## 9. Ce qui est vérifié, ce qui ne l'est pas
 
 - **Vérifié par les tests** : bibliothèque et blocs (chaque composant, chaque broche citée), dimensionnements contre
