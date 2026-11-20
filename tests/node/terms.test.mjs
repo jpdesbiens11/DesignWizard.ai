@@ -11,7 +11,7 @@ import { MOLDS, GATES } from "../../web/js/core/mold_plan.js";
 const FRENCH = /[éèêëàâçùûîïôœ]/i, files = (dir) => readdirSync(dir).flatMap((f) => { const p = `${dir}/${f}`; return statSync(p).isDirectory() ? files(p) : p.endsWith(".js") ? [p] : []; });
 
 test("every vocabulary table names its entries in English and keeps the French word", () => {
-  assert.deepEqual(Object.keys(TERM_TABLES), ["BATTERY_TERMS", "MODEL_WORDS", "PROCESSES", "INTERFACE_TYPES", "ADHESIVES", "WELD_PROCESSES", "PLATINGS", "CONTACT_FORMS", "CONTACT_BASES", "STOCK_FORMS", "SHOP_VERBS", "AM_PROCESSES", "LASER_FAMILIES", "ENDS", "INSULATIONS", "LABEL_KINDS", "FINISHES"]);
+  assert.deepEqual(Object.keys(TERM_TABLES), ["SW_KINDS", "BATTERY_TERMS", "MODEL_WORDS", "PROCESSES", "INTERFACE_TYPES", "ADHESIVES", "WELD_PROCESSES", "PLATINGS", "CONTACT_FORMS", "CONTACT_BASES", "STOCK_FORMS", "SHOP_VERBS", "AM_PROCESSES", "LASER_FAMILIES", "ENDS", "INSULATIONS", "LABEL_KINDS", "FINISHES"]);
   let n = 0;
   for (const [name, table] of Object.entries(TERM_TABLES)) for (const [k, v] of Object.entries(table)) { n++; assert.ok(typeof v.label === "string" && v.label.length > 1, `${name}.${k} has an English term`); assert.ok(typeof v.fr === "string" && v.fr.length > 1, `${name}.${k} keeps its French word`); assert.ok(!FRENCH.test(v.label), `${name}.${k} : « ${v.label} » is English`); }
   assert.ok(n >= 110, `${n} terms in the tables`);

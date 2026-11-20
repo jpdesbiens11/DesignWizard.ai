@@ -24,6 +24,7 @@ import { MODELS } from "../analysis/physics/index.js";
 import { SENSOR_KINDS, ROSETTE } from "../analysis/fea/sensors.js";
 import { PALETTES } from "../analysis/fea/palette.js";
 import { NATURES as PART_NATURES } from "./shop_levels.js";
+import { KINDS as SW_KINDS } from "../sw/sw_objects.js";
 
 export const TERM_GROUPS = [
   { id: "process", label: "Procédés", hint: "comment la pièce se fabrique", icon: "cast", color: "#ee8a32" },
@@ -70,7 +71,7 @@ const FEA_TERMS = [["Uniaxial", "uniaxiale", "une jauge à une grille : une seul
   ["Hot spot / cold spot", "point chaud / point froid", "le maximum et le minimum, marqués dans la vue infrarouge"]];
 
 /** The tables a term comes from : every entry carries `label` (English) and `fr`. For the tests, and for the next brick. */
-export const TERM_TABLES = { BATTERY_TERMS, MODEL_WORDS, PROCESSES, INTERFACE_TYPES, ADHESIVES, WELD_PROCESSES, PLATINGS, CONTACT_FORMS, CONTACT_BASES, STOCK_FORMS, SHOP_VERBS, AM_PROCESSES, LASER_FAMILIES, ENDS, INSULATIONS, LABEL_KINDS, FINISHES };
+export const TERM_TABLES = { SW_KINDS, BATTERY_TERMS, MODEL_WORDS, PROCESSES, INTERFACE_TYPES, ADHESIVES, WELD_PROCESSES, PLATINGS, CONTACT_FORMS, CONTACT_BASES, STOCK_FORMS, SHOP_VERBS, AM_PROCESSES, LASER_FAMILIES, ENDS, INSULATIONS, LABEL_KINDS, FINISHES };
 
 /** The glossary : [{ group, en, fr, note }], in the order of the groups, then of the alphabet. */
 export function glossary() {
@@ -86,6 +87,7 @@ export function glossary() {
   all("electrical", MODEL_WORDS, "modèle de connecteur"); all("electrical", PLATINGS, "revêtement"); all("electrical", CONTACT_FORMS, "forme de contact"); all("electrical", CONTACT_BASES, "matière de contact"); all("electrical", ENDS, "circuit flexible"); all("electrical", INSULATIONS, "isolant de busbar");
   all("electrical", NATURES, "nature d'un essai de laboratoire"); all("electrical", INSTRUMENTS, "instrument du laboratoire");
   for (const [en, fr, note] of LAB_TERMS) add("electrical", en, fr, note);
+  all("electrical", SW_KINDS, "objet du logiciel embarqué");
   all("electrical", BATTERY_TERMS, "système de batterie — terme publié"); for (const w of HOUSE_WORDS) add("electrical", w.word, w.use ? `mot de maison : écrire « ${BATTERY_TERMS[w.use].label} »` : "mot de maison : rien d'établi", w.said);
   all("finish", FINISHES, "finition du rendu"); all("finish", LABEL_KINDS, "étiquette"); all("finish", PATTERNS, "camouflage, motif d'une pièce à l'écran"); all("finish", SHEENS, "finition à l'écran"); all("finish", LIGHT_KINDS, "lumière du studio photo"); all("finish", LIGHT_SETUPS, "éclairage du studio photo");
   for (const m of MATERIALS) if (m.fr) add("stock", m.name, m.fr, "matière");
