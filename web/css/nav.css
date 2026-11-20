@@ -50,3 +50,13 @@
 .head-ai { flex: none; gap: .25rem; font-weight: 650; } .head-ai .sk-icon { color: var(--violet-ink, #6d28d9); }
 .stair-downs { display: inline-flex; align-items: center; gap: .3rem; margin-left: auto; } .stair-btn.down::after { content: "↓"; top: auto; bottom: -6px; }
 .board-words { display: grid; grid-template-columns: 1fr 1fr; gap: .35rem; margin-top: .35rem; } .board-word { display: grid; gap: .1rem; font-size: .74rem; color: var(--muted); } .board-word input { min-width: 0; padding: .2rem .35rem; font: inherit; font-size: .84rem; color: var(--ink); } .board-word input.bad { outline: 2px solid var(--danger); }
+/* ---------- what is new (core/whats_new_ui.js) : a mark above the element, a list in a dialog ---------- */
+#news-layer { position: fixed; inset: 0; z-index: 60; pointer-events: none; }
+.new-flag { position: fixed; pointer-events: auto; padding: 0 .38rem; border: 1.5px solid #fff; border-radius: 99px; background: #c026d3; color: #fff; font: 700 .64rem/1.05rem system-ui, sans-serif; letter-spacing: .02em; cursor: pointer; box-shadow: 0 1px 4px rgb(0 0 0 / .3); }
+.new-flag.seen { background: var(--ok); } .new-flag:hover, .new-flag:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+.news-btn[hidden] { display: none; } .news-btn { position: relative; } .news-btn .sk-icon { color: #c026d3; } .news-btn.done .sk-icon { color: var(--ok); }
+.news-count { min-width: 1.05rem; padding: 0 .25rem; border-radius: 99px; background: #c026d3; color: #fff; font: 700 .68rem/1.05rem var(--mono); text-align: center; } .news-count[hidden] { display: none; }
+.news-bar { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: .4rem 0 .6rem; } .news-version h3 { margin: .8rem 0 .3rem; font-size: .82rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.news-line { display: flex; align-items: flex-start; gap: .6rem; padding: .45rem .55rem; border: 1.4px solid var(--line); border-left: 4px solid #c026d3; border-radius: var(--r-card); margin-bottom: .35rem; background: var(--surface); }
+.news-line.seen { border-left-color: var(--ok); } .news-line p { margin: .1rem 0 0; font-size: .86rem; } .news-line .btn { flex: none; } .news-seen { display: grid; justify-items: center; gap: .05rem; font-size: .68rem; color: var(--muted); cursor: pointer; } .news-seen input { width: 1.1rem; height: 1.1rem; }
+

@@ -553,6 +553,31 @@ côté, tournée sur place autour de Z et ramenée à zéro au centième ; la po
 la vue. Pas vérifié : le toucher ; un motif de vis lié, que l'angle peut désaligner (la santé des accouplements le
 dira, l'outil ne l'empêche pas) ; Firefox et Safari.
 
+## Ce qui est nouveau se voit, le temps d'une revue
+
+L'outil change vite ; la personne qui le relit doit trouver ce qui a changé sans le chercher (demande de JP : « tague-moi
+ce qui est nouveau dans l'interface entre les versions… quand on passe à une nouvelle revue seulement cache les tags,
+sinon laisse-les actifs, pour la traçabilité et faciliter les checks croisés »).
+
+- **Chaque version déclare ses lignes** dans `web/js/core/whats_new.js` (`NEWS`) : ce qui est nouveau, en une phrase, sur
+  quel écran (`where`), et sur **quel élément** de cet écran (`sel`, un sélecteur). Un essai tient que la version qui tourne
+  a ses lignes, et que l'élément désigné existe dans le code.
+- **L'élément porte une marque** « Nouveau » (`core/whats_new_ui.js`, installé une fois). Les marques vivent dans un seul
+  calque au-dessus de la page, placées d'après la position des éléments : rien n'est ajouté dans un écran, aucune mise en
+  page ne bouge, un écran ne déclare rien. Une marque ne se montre que si son élément se voit — pas sous une boîte de
+  dialogue, pas hors du défilement.
+- **Le bouton à l'étoile** de la barre du haut dit combien de lignes restent et ouvre leur liste : « Montrer » mène à
+  l'élément, la case coche la ligne.
+- **Une ligne cochée garde sa marque**, qui passe au vert et dit « Vu » : c'est la trace de la revue. Rien ne disparaît
+  parce qu'on l'a regardé.
+- **Seul « Passer à une nouvelle revue » range les marques** : la version de départ de la revue devient la version qui
+  tourne, et la version suivante apportera les siennes. La revue rangée est gardée, avec ses coches, et se rouvre du même
+  endroit.
+- Une première revue remonte de quatre versions. La revue est gardée dans le navigateur, comme les unités.
+- **Usage suivi** : la pastille « nouveau » d'une application après une mise à jour, et la liste de contrôle d'une revue.
+  Ce qui est propre à l'outil : la marque qui reste une fois vue.
+- **Non essayé** : au toucher ; une revue partagée entre deux postes (elle est locale au navigateur).
+
 ## Les noms du métier : la carte nue, la carte assemblée
 
 D'une maison à l'autre, la même carte ne porte pas le même nom. L'outil dit **PCB** pour la carte nue et **PCBA** pour la

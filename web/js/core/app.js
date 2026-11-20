@@ -22,8 +22,9 @@ import { installStairs } from "./stairs_ui.js";
 import { installPanelKeep } from "./panel_keep.js";
 import { installLoupe, loupeButton } from "./loupe.js";
 import { installUpdateCheck, updateButton } from "./update_check.js";
+import { installWhatsNew, newsButton } from "./whats_new_ui.js";
 
-export const APP_VERSION = "0.113.0";
+export const APP_VERSION = "0.114.0";
 /** What every document of the open project carries beside its content : approval names, organisation, confidentiality note, extraction stamp (core/brand.js). */
 export const docMeta = (when = new Date()) => docIdentity(store.project, when, APP_VERSION);
 const modules = new Map();
@@ -110,7 +111,7 @@ function topbar() {
     btn("", () => store.redo() || toast("Rien à rétablir."), { icon: "redo", small: true, tip: "Rétablir (Ctrl+Y)" }),
     menuButton("Onshape", "onshape", onshapeMenu), menuButton("Projet", "folder", projectMenu),
     menuButton("", session.account && session.account.admin ? "admin" : "user", accountMenu, session.account ? `Compte : ${session.account.email}` : "Compte Google, Drive et thème"),
-    updateButton(), loupeButton(), guideButton(), el("a", { class: "btn btn-small", href: "#/help", "data-tip": "Aide, raccourcis et guide des collaborateurs" }, icon("help")));
+    updateButton(), newsButton(), loupeButton(), guideButton(), el("a", { class: "btn btn-small", href: "#/help", "data-tip": "Aide, raccourcis et guide des collaborateurs" }, icon("help")));
   return el("header", { class: "topbar" },
     el("a", { class: "brand", href: "#/home", "aria-label": "DesignWizard.ai, accueil" }, icon("logo", "brand-logo"),
       el("span", { class: "brand-name" }, el("b", null, "DesignWizard", el("i", null, ".ai")), el("small", null, "by DynamiteAgile™"))),
@@ -214,6 +215,7 @@ export async function start() {
   document.body.append(topbar(), el("div", { id: "levels", class: "levels", hidden: true }), el("main", { id: "main" }));      // #levels : the breadcrumb and the work tabs (modules/levels_bar.js)
   installStepper();      // the arrows of every number field : 1 at a time, faster when held or clicked quickly
   installFolds();        // the groups of every side panel fold on a click on their title
+  installWhatsNew({ running: APP_VERSION });       // what a version changed carries a mark on the screen, for as long as its review is open (core/whats_new.js)
   installBoardNames();       // the names of the trade for a board, mapped on everything that is drawn (core/board_names.js)
   installStairs({ ai: (key) => app.aiLoop && app.aiLoop(key) });       // the step up of every screen, and its « IA » button : one pictogram at the head of the left panel, towards what the screen is made from
   installPanelKeep();    // a panel drawn anew keeps its place, and the cursor its field
