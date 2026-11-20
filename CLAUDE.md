@@ -44,7 +44,7 @@ Consignes permanentes de JP (propriétaire du dépôt). Elles s'appliquent à to
 - **Aller-retour IA partout** (demande de JP) : chaque module doit pouvoir exporter son artéfact sous une forme qu'une IA
   comprend (`.dwiz` + consigne courte), comme on confierait une tâche à un technicien ou à un stagiaire, puis
   réimporter l'artéfact modifié pour mettre à jour le projet — avec un aperçu des changements et la validation de
-  l'humain avant d'appliquer (une seule étape annulable). Toute nouvelle brique naît avec cette fonction.
+  l'humain avant d'appliquer (une seule étape annulable). Toute nouvelle brique naît avec cette fonction. **Le bouton « IA » est en tête du volet de gauche de chaque studio** (installé une fois : `core/stairs_ui.js`) et confie ce que l'écran montre (`aiTargetOf` de `web/js/core/stairs.js` — un nouvel écran y a sa ligne) ; **toute réponse appliquée entre au journal** (`project.aiJournal`, `web/js/core/ai_door.js`) dans l'étape même qui l'applique, et « Revenir à avant » la défait même après d'autres changements ; une réponse peut créer et modifier, et l'aperçu dit où chaque artéfact se range (`planAnswer`).
 - **Guide partout** (demande de JP) : chaque écran dit en direct ce qui manque ou cloche — quatre niveaux, « à corriger »,
   « à entrer », « à vérifier », « conseil » (`web/js/core/guide.js`, bouton « Guide » de la barre du haut). Une valeur que
   l'outil invente est un exemple : son champ clignote jusqu'à ce qu'elle soit entrée ou confirmée, et l'action attend.
@@ -111,8 +111,11 @@ ordre ; ce qui est fait se raye ici.
    appliquée est une étape annulable, avec un journal pour revenir à avant. Pièces, Assemblage et Dessins d'abord : on n'y
    a accès ni aux esquisses ni à la feuille, tout se demande à l'IA. La boucle commune existe (`modules/ai_loop.js`).
    Fait : la porte « Avec l'IA » de l'Atelier crée et modifie pièces et assemblages, avec l'aperçu et le journal
-   (`core/ai_door.js`). Reste : le même aperçu « créé / modifié / écarté, et où » et le même journal derrière le bouton
-   « IA » de chaque écran (carte, dessin, cas de simulation, isolation, banc) ; les cartes et les dessins dans une réponse.
+   (`core/ai_door.js`, v0.109.0) ; un bouton « IA » en tête du volet de gauche de TOUS les studios, sur ce que l'écran
+   montre (`aiTargetOf` de `core/stairs.js`), et un seul journal pour la boucle commune et la porte (`journalChange`,
+   `modules/ai_journal.js`, v0.110.0). Reste : la feuille d'un dessin, un cas de charge, un réglage d'isolation comme
+   artéfacts de la boucle ; ramener au journal les écrans qui ont leur propre aller-retour (flex, étiquettes, photo, Labo,
+   révisions, équipe) ; les cartes et les dessins dans une réponse de la porte.
 3. **Cas de validation référencés** pour chaque modèle (analytique, thermique, structure) : source publiée, valeur
    attendue, valeur obtenue, écart, visibles dans l'interface et rejoués par un test ; ne jamais valider une formule par
    elle-même, ni donner pour lue une source qui ne l'a pas été.

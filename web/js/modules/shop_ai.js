@@ -11,7 +11,8 @@ import { zip } from "../core/zip.js";
 import { unzipTexts } from "../core/unzip.js";
 import { stampText } from "../core/brand.js";
 import { dwizFileName } from "../core/dwiz_names.js";
-import { SCOPES, doorPrompt, readAnswer, planAnswer, planWords, planApplies, applyPlan, revertEntry, journalLines } from "../core/ai_door.js";
+import { SCOPES, doorPrompt, readAnswer, planAnswer, planWords, planApplies, applyPlan } from "../core/ai_door.js";
+import { journalBox } from "./ai_journal.js";
 import { partHash, asmHash } from "../core/shop_levels.js";
 
 const st = { ask: "", scope: "assembly", context: true, questions: true, pasted: "", files: [], rows: null, errors: [], skipped: [], done: null };
@@ -31,7 +32,7 @@ export function aiDoor(main) {
   main.append(page);
   page.append(el("div", { class: "page-head" }, el("div", { class: "grow" }, el("h1", null, "Créer avec l'IA"),
     el("p", { class: "muted" }, "Vous dites ce que vous voulez ; l'outil écrit la consigne ; l'IA pose ses questions puis rend un fichier ; vous voyez ce qui sera créé, et où, avant d'accepter. L'outil n'appelle aucune IA : c'est vous qui portez la consigne, et qui rapportez la réponse."))));
-  const c1 = el("section", { class: "card" }), c2 = el("section", { class: "card" }), c3 = el("section", { class: "card" }), log = el("section", { class: "card ai-journal" });
+  const c1 = el("section", { class: "card" }), c2 = el("section", { class: "card" }), c3 = el("section", { class: "card" }), log = journalBox(), drawLog = () => log.draw();
   page.append(el("div", { class: "ai-grid" }, c1, c2, c3), log, el("p", { class: "muted small" }, "Une seule pièce, interface par interface, avec ses voisines cochées ? ", el("a", { href: "#/interfaces" }, "L'entrevue d'une pièce"), " reste là. Une pièce déjà dans le projet se confie à l'IA par le bouton « IA » de son écran."));
   const prompt = () => doorPrompt(store.project, st), advise = () => setGuide(doorIssues(st).map((x) => ({ ...x, go: () => { const n = page.querySelector(`[data-door="${x.field}"]`); if (n) n.scrollIntoView({ block: "center", behavior: "smooth" }); } })));
 
@@ -96,15 +97,6 @@ export function aiDoor(main) {
           el("span", { class: "grow" }), btn("Appliquer — une étape annulable", apply, { primary: true, icon: "check", disabled: !planApplies(st.rows), tip: planApplies(st.rows) ? "Créer et modifier ce que l'aperçu annonce, d'un seul coup" : "Rien à appliquer dans cette réponse" })));
     }
     c3.replaceChildren(...kids);
-  }
-  /* the journal : back to before an answer */
-  function drawLog() {
-    const lines = journalLines(store.project);
-    log.hidden = !lines.length; if (!lines.length) return;
-    log.replaceChildren(el("h2", null, icon("undo"), "Journal des réponses appliquées", el("small", { class: "floor-sub" }, "revenir à avant une réponse, même après d'autres changements")),
-      ...lines.map((l) => el("div", { class: "ai-log" }, el("span", { class: "grow" }, el("b", null, l.ask || "(sans phrase)"), el("small", null, `${new Date(l.when).toLocaleString("fr-CA", { dateStyle: "medium", timeStyle: "short" })} · ${l.words}`)),
-        btn("Revenir à avant", () => { let r = null; store.commit(`Retour à avant la réponse d'IA « ${(l.ask || "").slice(0, 40)} »`, (x) => { r = revertEntry(x, l.id); });
-          toast(`${r.removed.length} retiré${r.removed.length > 1 ? "s" : ""}, ${r.restored.length} remis comme avant${r.kept.length ? ` ; gardé${r.kept.length > 1 ? "s" : ""} : ${r.kept.map((k) => `${k.id} (${k.why})`).join(", ")}` : ""}. Ctrl + Z défait ce retour.`, "info", 7000); drawLog(); }, { small: true, icon: "undo", tip: "Retirer ce que cette réponse a créé et remettre ce qu'elle a modifié comme avant — une étape annulable" }))));
   }
   draw1(); draw2(); draw3(); drawLog(); advise();
   const off = store.on("change", (c) => { if (!document.body.contains(page)) return; if (c && c.undo && st.done) { st.done = null; draw3(); } drawLog(); });      // an undo takes the answer back : its summary goes too

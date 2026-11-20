@@ -47,3 +47,4 @@
 /* the step up (core/stairs_ui.js) : the pictogram of where it leads, a small mark that says « up », the same place on every screen */
 .stair-btn { position: relative; flex: none; } .stair-btn .sk-icon { color: var(--g, currentColor); } .stair-btn.with-label .sk-icon { color: currentColor; }
 .stair-btn::after { content: "↑"; position: absolute; top: -6px; right: -6px; width: 14px; height: 14px; border-radius: 50%; background: var(--graphite); color: var(--surface); font: 800 10px/14px system-ui, sans-serif; text-align: center; box-shadow: 0 0 0 1.5px var(--surface); }
+.head-ai { flex: none; gap: .25rem; font-weight: 650; } .head-ai .sk-icon { color: var(--violet-ink, #6d28d9); }

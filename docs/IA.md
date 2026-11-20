@@ -126,6 +126,30 @@ menu : une réponse peut **modifier et créer**.
   Ctrl + Z, journal, texte collé, réponse illisible). Aucune vraie réponse d'assistant n'a été essayée ici : les
   réponses d'essai sont faites à partir du projet lui-même.
 
+## Le bouton « IA » de chaque écran, et un seul journal
+
+Demande de JP (20 novembre 2026) : « s'assurer que c'est possible, dans tous les modules ou les pages fonctionnelles, de
+faire des allers-retours avec l'IA… de pouvoir revenir en arrière si l'IA n'a pas bien compris ».
+
+- **Un bouton « IA » visible, au même endroit sur tous les studios** : en tête du volet de gauche, à côté de la marche
+  d'escalier (`web/js/core/stairs_ui.js`, installé une fois — un écran n'a rien à déclarer). Il ouvre la boucle commune
+  (`web/js/modules/ai_loop.js`) sur **ce que l'écran montre** — la pièce, l'assemblage ou la carte — et sur le projet
+  entier quand il n'en montre pas (`aiTargetOf` de `web/js/core/stairs.js`, pur et testé : une seule règle, que suit
+  aussi le bouton de la barre du haut). Sa bulle nomme ce qui part. Sur le plancher de l'Atelier, sans volet, le
+  bouton du fil d'Ariane mène à la porte « Avec l'IA ».
+- **Un seul journal** : une réponse appliquée par la boucle commune — depuis n'importe quel écran, sur une pièce, un
+  assemblage, une carte ou tout le projet — entre dans le même journal que celles de la porte de l'Atelier, **dans
+  l'étape même qui l'applique** (`journalChange`, un crochet du magasin). Le journal se lit dans la boîte de
+  dialogue de la boucle et sur la page « Créer avec l'IA » ; « Revenir à avant » retire ce qu'une réponse a créé,
+  remet ce qu'elle a modifié **ou retiré**, même après d'autres changements. Le journal ne part jamais chez un
+  assistant.
+- Pas encore — c'est la suite : la **feuille d'un dessin** (cartouche, notes, vues), un **cas de charge**, un réglage
+  d'**isolation** comme artéfacts à part entière de la boucle (aujourd'hui, depuis ces écrans, c'est la pièce ou
+  l'assemblage qui part) ; les écrans qui ont leur propre aller-retour (circuit flexible, étiquettes, studio photo,
+  Labo, révisions, équipe) ne passent pas encore par le journal.
+- Essayé dans Chromium (19 vérifications : le bouton sur douze écrans avec la bonne cible, l'ouverture de la boucle,
+  une réponse appliquée, le journal, le retour à avant après un autre changement).
+
 ## La revue de conception
 
 Tout ce qu'une IA a écrit arrive dans l'écran **Revue** en « Brouillon IA ». Chaque artéfact — pièce, assemblage, carte,

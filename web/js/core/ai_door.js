@@ -109,7 +109,22 @@ export function planWords(rows) {
 }
 export const planApplies = (rows) => (rows || []).some((r) => r.action === "create" || r.action === "modify");
 
-const LIST = { part: "parts", assembly: "assemblies" }, KEEP = 20;
+const LIST = { part: "parts", assembly: "assemblies", board: "boards" }, KEEP = 20;
+/** What a project holds, artefact by artefact — taken BEFORE a change, to tell afterwards what the change did (the common AI loop : modules/ai_loop.js). */
+export function snapshotLists(project) { const out = { journal: (project && project.aiJournal) || [] }; for (const [kind, key] of Object.entries(LIST)) out[kind] = new Map(((project && project[key]) || []).map((x) => [x.id, JSON.stringify(x)])); return out; }
+/** The journal entry of a change made between a snapshot and now : what appeared, what changed, what went. Written in project.aiJournal ; null when nothing changed.
+    To be called inside the step that makes the change (a hook of the store). */
+export function journalChange(before, project, o = {}) {
+  const entry = { id: `ai-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`, when: o.when || new Date().toISOString(), ask: String(o.ask || "").slice(0, 300), created: [], modified: [], removed: [] };
+  for (const [kind, key] of Object.entries(LIST)) {
+    const now = project[key] || [], seen = new Set();
+    for (const x of now) { seen.add(x.id); const was = before[kind].get(x.id); if (was === undefined) entry.created.push({ kind, id: x.id }); else if (was !== JSON.stringify(x)) entry.modified.push({ kind, id: x.id, before: JSON.parse(was) }); }
+    for (const [id, was] of before[kind]) if (!seen.has(id)) entry.removed.push({ kind, id, before: JSON.parse(was) });
+  }
+  if (!entry.created.length && !entry.modified.length && !entry.removed.length) return null;
+  project.aiJournal = [entry, ...(project.aiJournal || before.journal || [])].slice(0, KEEP);
+  return entry;
+}
 /** Apply a plan to a project — to be called INSIDE one step of the store. → the entry written in the journal (project.aiJournal) */
 export function applyPlan(project, rows, o = {}) {
   const entry = { id: `ai-${Date.now().toString(36)}`, when: o.when || new Date().toISOString(), ask: String(o.ask || "").slice(0, 300), created: [], modified: [] };
@@ -128,6 +143,8 @@ export function revertEntry(project, entryId) {
   if (!e) return out;
   const mine = new Set(e.created.filter((c) => c.kind === "assembly").map((c) => c.id));
   for (const c of e.created.filter((x) => x.kind === "assembly")) { project.assemblies = (project.assemblies || []).filter((a) => a.id !== c.id); out.removed.push(c.id); }
+  for (const c of e.created.filter((x) => x.kind === "board")) { project.boards = (project.boards || []).filter((b) => b.id !== c.id); out.removed.push(c.id); }
+  for (const r of e.removed || []) { const list = (project[LIST[r.kind]] = project[LIST[r.kind]] || []); if (!list.some((x) => x.id === r.id)) { list.push(JSON.parse(JSON.stringify(r.before))); out.restored.push(r.id); } }      // what the answer took away comes back
   for (const c of e.created.filter((x) => x.kind === "part")) {
     const user = (project.assemblies || []).find((a) => !mine.has(a.id) && (a.instances || []).some((i) => i.part === c.id));
     if (user) { out.kept.push({ id: c.id, why: `montée dans ${user.id}` }); continue; }
@@ -138,4 +155,5 @@ export function revertEntry(project, entryId) {
   return out;
 }
 /** The journal, for its lines : → [{ id, when, ask, words }] */
-export const journalLines = (project) => ((project && project.aiJournal) || []).map((e) => ({ id: e.id, when: e.when, ask: e.ask, words: [e.created.length ? `${e.created.length} créé${e.created.length > 1 ? "s" : ""}` : "", e.modified.length ? `${e.modified.length} modifié${e.modified.length > 1 ? "s" : ""}` : ""].filter(Boolean).join(", ") }));
+export const journalLines = (project) => ((project && project.aiJournal) || []).map((e) => { const n = (k, one, many) => ((e[k] || []).length ? `${e[k].length} ${e[k].length > 1 ? many : one}` : "");
+  return { id: e.id, when: e.when, ask: e.ask, words: [n("created", "créé", "créés"), n("modified", "modifié", "modifiés"), n("removed", "retiré", "retirés")].filter(Boolean).join(", "), what: [...(e.created || []), ...(e.modified || []), ...(e.removed || [])].map((x) => x.id).slice(0, 6).join(", ") }; });

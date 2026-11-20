@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { readFileSync, existsSync } from "node:fs";
 import { NATURES, natureKey, natureOf, studioOf, partHash, natureHash, natureGroups, assemblyGroups, levelsOf, partChoices, natureChoices } from "../../web/js/core/shop_levels.js";
 import { pinTab, closeTab, isPinned, keepTabs, tabRow, tabFace, loadTabs, saveTabs, MAX_TABS } from "../../web/js/core/work_tabs.js";
-import { stairOf, addressOf } from "../../web/js/core/stairs.js";
+import { stairOf, aiTargetOf, addressOf } from "../../web/js/core/stairs.js";
 import { glossary } from "../../web/js/core/terms.js";
 
 const P = { id: "P1", name: "Variateur", parts: [
@@ -78,11 +78,23 @@ test("the step up of every screen leads to what the screen is made from — one 
   for (const [k, a] of [["elab", []], ["fea", ["PLATE"]], ["drawings", ["PLATE"]], ["creepage", []], ["parts", ["PLATE"]], ["shop", ["new"]]]) { const s = S(k, a); assert.ok(s.icon && s.label && s.tip.length > 12, k); }
   assert.deepEqual(addressOf("#/busbar/A%20B/x"), { key: "busbar", args: ["A B", "x"] }); assert.deepEqual(addressOf(""), { key: "home", args: [] });
 });
+test("every functional screen hands its artefact to an AI — the part, the assembly or the board it shows, the project otherwise", () => {
+  const T = (k, a) => (aiTargetOf(k, a, P) || {}).key;
+  assert.equal(T("parts", ["PLATE"]), "part:PLATE"); assert.equal(T("busbar", ["BB1"]), "part:BB1"); assert.equal(T("pcb", []), "part:PCB1"); assert.equal(T("assembly", ["SUB"]), "assembly:SUB");
+  assert.equal(T("fea", ["PLATE"]), "part:PLATE"); assert.equal(T("fea", ["ASM"]), "assembly:ASM"); assert.equal(T("fea", []), "part:BASE"); assert.equal(T("drawings", ["BB1"]), "part:BB1"); assert.equal(T("drawings", ["asm", "ASM"]), "assembly:ASM");
+  assert.equal(T("pcba", ["BRD"]), "board:BRD"); assert.equal(T("elab", []), "board:BRD"); for (const k of ["creepage", "render", "labels"]) assert.equal(T(k, ["ASM"]), "assembly:ASM", k);
+  assert.equal(T("physics", ["beam", "PLATE"]), "part:PLATE"); assert.equal(T("physics", ["beam"]), "project"); assert.equal(T("dfx", ["points", "PLATE"]), "part:PLATE"); assert.equal(T("dfx", []), "project"); assert.equal(T("shop", []), "project"); assert.equal(aiTargetOf("parts", [], null), null);
+  assert.match(aiTargetOf("parts", ["PLATE"], P).label, /la pièce « Plaque »/); assert.match(aiTargetOf("review", [], P).label, /tout le projet/);
+  const app = readFileSync(new URL("../../web/js/core/app.js", import.meta.url), "utf8"), nav = [...app.matchAll(/keys: \[([^\]]+)\]/g)].flatMap((m) => m[1].split(",").map((x) => x.trim().replace(/"/g, "")));
+  assert.ok(nav.length >= 12, "the screens of the top bar are read from NAV"); for (const k of nav) assert.ok(aiTargetOf(k, [], P), `${k} : a screen of the top bar hands something to an AI`);
+  assert.match(app, /installStairs\(\{ ai: \(key\) => app\.aiLoop && app\.aiLoop\(key\) \}\)/); const ui = readFileSync(new URL("../../web/js/core/stairs_ui.js", import.meta.url), "utf8"); assert.match(ui, /class: "btn btn-small head-ai"/);
+  assert.match(readFileSync(new URL("../../web/js/modules/ai_loop.js", import.meta.url), "utf8"), /aiTargetOf\(key, args, store\.project\)/, "the top bar and the head of the panel follow one rule");
+});
 test("the mechanism holds in the screens : one bar, one step, no row of sub-tabs left", () => {
   const read = (f) => readFileSync(new URL(`../../web/js/${f}`, import.meta.url), "utf8");
   assert.ok(!existsSync(new URL("../../web/js/modules/shop_tabs.js", import.meta.url)), "the row of sub-tabs of the Shop is gone");
   for (const f of ["modules/extrusion.js", "modules/interfaces.js", "modules/library.js", "modules/shop_special.js", "modules/shop.js"]) assert.ok(!/shopTabs/.test(read(f)), f);
-  const app = read("core/app.js"); assert.match(app, /id: "levels"/); assert.match(app, /app\.levels\(key, parts\.slice\(1\)\)[\s\S]*m\.render\(main/, "the bar is drawn before the screen, which then measures the room it has"); assert.match(app, /installStairs\(\)/);
+  const app = read("core/app.js"); assert.match(app, /id: "levels"/); assert.match(app, /app\.levels\(key, parts\.slice\(1\)\)[\s\S]*m\.render\(main/, "the bar is drawn before the screen, which then measures the room it has"); assert.match(app, /installStairs\(/);
   assert.ok(!/Ouvrir la carte dans le PCBA/.test(read("modules/elab.js")), "the Labo no longer has a step of its own : it has the common one");
   for (const f of ["modules/part_studio.js", "modules/busbar.js", "modules/flex.js", "modules/fea.js", "modules/drawings.js", "modules/creepage.js", "modules/render.js", "modules/labels.js", "modules/elab.js", "modules/physics.js"]) assert.match(read(f), /class: "side-head"/, `${f} : the step up settles in the head of its left panel`);
   const css = readFileSync(new URL("../../web/css/app.css", import.meta.url), "utf8"); assert.match(css, /\.studio \{[^}]*var\(--levels-h, 0px\)/, "a studio leaves room for the bar");

@@ -4,7 +4,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { deflateRawSync } from "node:zlib";
-import { SCOPES, doorPrompt, readAnswer, planAnswer, planWords, planApplies, applyPlan, revertEntry, journalLines } from "../../web/js/core/ai_door.js";
+import { SCOPES, doorPrompt, readAnswer, planAnswer, planWords, planApplies, applyPlan, revertEntry, journalLines, snapshotLists, journalChange } from "../../web/js/core/ai_door.js";
 import { unzip, unzipTexts } from "../../web/js/core/unzip.js";
 import { zip, crc32 } from "../../web/js/core/zip.js";
 import { toDwiz } from "../../web/js/core/dwiz.js";
@@ -49,12 +49,26 @@ test("applying is one change of the project ; the journal goes back to before, a
   const rows = planAnswer(P, [{ kind: "part", doc: part }, { kind: "part", doc: changed }, { kind: "assembly", doc: { id: "ASM-N", name: "Ens", instances: [{ id: "i1", part: "NEW-1", fixed: true }] } }]);
   const e = applyPlan(P, rows, { ask: "un capot", when: "2026-11-20T10:00:00.000Z" });
   assert.deepEqual(e.created.map((c) => c.id), ["NEW-1", "ASM-N"]); assert.deepEqual(e.modified.map((m) => m.id), ["DRV-COVER"]); assert.equal(P.parts.find((p) => p.id === "DRV-COVER").name, "Couvercle ventilé"); assert.equal(P.parts.length, before.parts.length + 1); assert.equal(P.assemblies.length, before.assemblies.length + 1);
-  assert.deepEqual(journalLines(P), [{ id: e.id, when: "2026-11-20T10:00:00.000Z", ask: "un capot", words: "2 créés, 1 modifié" }]); assert.doesNotThrow(() => toDwiz(P), "a project with its journal still writes as .dwiz");
+  assert.deepEqual(journalLines(P), [{ id: e.id, when: "2026-11-20T10:00:00.000Z", ask: "un capot", words: "2 créés, 1 modifié", what: "NEW-1, ASM-N, DRV-COVER" }]); assert.doesNotThrow(() => toDwiz(P), "a project with its journal still writes as .dwiz");
   const back = revertEntry(P, e.id); assert.deepEqual(back, { removed: ["ASM-N", "NEW-1"], restored: ["DRV-COVER"], kept: [] }); assert.deepEqual(P.parts, before.parts); assert.deepEqual(P.assemblies, before.assemblies); assert.deepEqual(P.aiJournal, []);
   const Q = demo(), e2 = applyPlan(Q, planAnswer(Q, [{ kind: "part", doc: fresh(Q, "NEW-2", "Patte") }]), {}); Q.assemblies[0].instances.push({ id: "i99", part: "NEW-2" });
   const kept = revertEntry(Q, e2.id); assert.deepEqual(kept.kept, [{ id: "NEW-2", why: `montée dans ${Q.assemblies[0].id}` }]); assert.ok(Q.parts.some((p) => p.id === "NEW-2"), "a part an assembly mounts is not taken away under it");
   assert.deepEqual(revertEntry(Q, "nope"), { removed: [], restored: [], kept: [] });
   const R = demo(); for (let i = 0; i < 25; i++) applyPlan(R, planAnswer(R, [{ kind: "part", doc: fresh(R, `N-${i}`, "x") }]), {}); assert.equal(R.aiJournal.length, 20, "the journal keeps the last twenty answers");
+});
+test("the common AI loop writes the same journal : what an answer created, changed or took away, whatever the screen", () => {
+  const P = demo(); P.boards = [{ id: "BRD-1", name: "Carte de commande", blocks: [] }]; const before = snapshotLists(P), was = copy(P);
+  P.parts.find((p) => p.id === "DRV-COVER").name = "Couvercle ventilé"; P.parts.push(fresh(P, "NEW-9", "Ajoutée")); P.parts = P.parts.filter((p) => p.id !== "DRV-ISO"); P.boards[0].name = "Carte revue";
+  const e = journalChange(before, P, { ask: "revois la carte" });
+  assert.deepEqual(e.created, [{ kind: "part", id: "NEW-9" }]); assert.deepEqual(e.modified.map((m) => `${m.kind}:${m.id}`), ["part:DRV-COVER", `board:${P.boards[0].id}`]); assert.deepEqual(e.removed.map((r) => r.id), ["DRV-ISO"]); assert.equal(P.aiJournal[0], e);
+  assert.match(journalLines(P)[0].words, /1 créé, 2 modifiés, 1 retiré/);
+  const r = revertEntry(P, e.id); assert.deepEqual(r.removed, ["NEW-9"]); assert.deepEqual(r.restored.sort(), ["DRV-COVER", "DRV-ISO", P.boards[0].id].sort());
+  assert.deepEqual(P.parts.map((p) => p.id).sort(), was.parts.map((p) => p.id).sort()); assert.equal(P.parts.find((p) => p.id === "DRV-COVER").name, was.parts.find((p) => p.id === "DRV-COVER").name); assert.equal(P.boards[0].name, was.boards[0].name);
+  assert.equal(journalChange(snapshotLists(P), P, {}), null, "nothing changed : nothing is written");
+  const Q = demo(); applyPlan(Q, planAnswer(Q, [{ kind: "part", doc: fresh(Q, "N-1", "x") }]), {}); const snap = snapshotLists(Q); const kept = Q.aiJournal; delete Q.aiJournal; Q.parts[0].name = "Autre";      // a whole project replaced by an answer loses its journal on the way
+  journalChange(snap, Q, {}); assert.equal(Q.aiJournal.length, 2, "the journal that was there is kept"); assert.equal(Q.aiJournal[1], kept[0]);
+  const loop = readFileSync(new URL("../../web/js/modules/ai_loop.js", import.meta.url), "utf8");
+  assert.match(loop, /store\.hooks\.push\(\(p\) => \{ if \(journaling\) journalChange\(journaling\.before, p/, "inside the very step that applies the answer"); assert.match(loop, /delete d\.aiJournal/, "the journal is not sent to an assistant"); assert.match(loop, /journalBox\(/);
 });
 test("a .zip is read without a library : stored and deflated entries, what a system adds is left, and a file that is not one is said", async () => {
   const stored = zip([{ name: "consigne.md", bytes: "bonjour" }, { name: "pieces/a.dwiz", bytes: "dwiz part/1\n" }, { name: "image.png", bytes: new Uint8Array([1, 2, 3]) }, { name: "__MACOSX/x", bytes: "x" }, { name: ".DS_Store", bytes: "x" }]);
@@ -74,7 +88,7 @@ test("in the screens : the door of the floor leads to the page, which has its pl
   const read = (f) => readFileSync(new URL(`../../web/js/modules/${f}`, import.meta.url), "utf8"), ui = read("shop_ai.js");
   assert.match(read("shop.js"), /args\[0\] === "ai" \? aiDoor\(main\)/); assert.match(read("shop_floor.js"), /\["#\/shop\/ai", "sparkle"/);
   assert.deepEqual(levelsOf("shop", ["ai"], demo()).crumbs.map((c) => c.label), ["Atelier", "Nouvelles pièces · avec l'IA"]);
-  assert.match(ui, /store\.commit\(`Réponse d'IA appliquée/, "one step"); assert.equal((ui.match(/applyPlan\(/g) || []).length, 1); assert.match(ui, /revertEntry\(x, l\.id\)/); assert.match(ui, /setGuide\(doorIssues\(st\)/); assert.match(ui, /download\(`/, "a file leaves by download()"); assert.ok(!/fetch\(|XMLHttpRequest/.test(ui), "the tool calls no AI");
+  assert.match(ui, /store\.commit\(`Réponse d'IA appliquée/, "one step"); assert.equal((ui.match(/applyPlan\(/g) || []).length, 1); assert.match(read("ai_journal.js"), /revertEntry\(x, l\.id\)/); assert.match(ui, /journalBox\(\)/); assert.match(ui, /setGuide\(doorIssues\(st\)/); assert.match(ui, /download\(`/, "a file leaves by download()"); assert.ok(!/fetch\(|XMLHttpRequest/.test(ui), "the tool calls no AI");
   const { doorIssues } = await import("../../web/js/modules/shop_ai.js").catch(() => ({ doorIssues: null }));
   if (doorIssues) { assert.equal(doorIssues({ ask: "" })[0].level, "todo"); assert.ok(doorIssues({ ask: "x", rows: [{ action: "skip" }] }).some((x) => x.level === "check")); assert.ok(doorIssues({ ask: "x", errors: [{ from: "a", message: "b" }] }).some((x) => x.level === "error")); }
 });

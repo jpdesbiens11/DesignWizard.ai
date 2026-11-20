@@ -13,12 +13,18 @@ import { markAiDraft } from "../core/ai_draft.js";
 import { markDrafts, changedKeys } from "../core/review.js";
 import { adoptIteration } from "../core/first_design.js";
 import { isSub, holds } from "../core/asm_levels.js";
+import { snapshotLists, journalChange } from "../core/ai_door.js";
+import { aiTargetOf, addressOf } from "../core/stairs.js";
+import { journalBox } from "./ai_journal.js";
 
 /* What an answer changes goes back to « Brouillon IA » in the review ledger, inside the very step that applies it. */
 let applying = null;
 store.hooks.push((p) => { if (applying) markDrafts(p, applying); });
+/* …and enters the journal of the AI answers, inside that same step : « Revenir à avant » can then undo this answer even after other changes (core/ai_door.js) */
+let journaling = null;
+store.hooks.push((p) => { if (journaling) journalChange(journaling.before, p, { ask: journaling.ask }); });
 /** The whole project, without its review ledger : the notes travel in the request, the ledger stays here. */
-const shed = (d) => { delete d.review; delete d.mvp; delete d.team; delete d.talk; delete d.plm; return d; };      // the ledgers — review states, MVP iterations — stay here
+const shed = (d) => { delete d.review; delete d.mvp; delete d.team; delete d.talk; delete d.plm; delete d.aiJournal; return d; };      // the ledgers — review states, MVP iterations — stay here
 
 const STEP_MARK = "(géométrie STEP importée, non modifiable)";
 /** A copy fit for reading : the imported STEP geometry of a part is replaced by a note. */
@@ -62,13 +68,7 @@ export function aiTargets() {
   return out;
 }
 /** Key of the artefact the current screen shows. */
-export function currentAiTarget() {
-  const [key, id] = location.hash.replace(/^#\/?/, "").split("/").map(decodeURIComponent);
-  if (key === "pcba" && store.boards.length) return `board:${(store.board(id) || store.boards[0]).id}`;
-  if (id && store.part(id)) return `part:${id}`;
-  if (id && store.assembly(id)) return `assembly:${id}`;
-  return "project";
-}
+export function currentAiTarget() { const { key, args } = addressOf(location.hash), t = aiTargetOf(key, args, store.project); return t ? t.key : "project"; }      // one rule for every screen : core/stairs.js
 
 /** opts : { doc, title, help: [lines], check(newDoc) → [{ severity, text }] (may be async), draft(newDoc) → { drafts, norms }
     (tags what the answer adds or changes as « Brouillon IA »), apply(newDoc), targets, target }. */
@@ -105,7 +105,7 @@ export function openAiLoop(opts) {
     el("div", { class: "form-actions", style: { justifyContent: "flex-start" } }, btn("Copier pour l'IA", async () => { await copyText(aiBrief(opts.doc, ask.value, opts.help || [], opts.context)); toast("Copié : collez-le dans votre assistant IA.", "success"); }, { primary: true, icon: "copy" }),
       btn("Télécharger l'artéfact (.dwiz)", () => download(dwizFileName(opts.doc), toDwiz(opts.doc), "text/plain"), { icon: "download" })),
     el("h3", null, "2. Importer d'une IA"), answer, out,
-    el("div", { class: "form-actions" }, go)), { wide: true });
+    el("div", { class: "form-actions" }, go), journalBox({ title: "Journal des réponses d'IA appliquées à ce projet" })), { wide: true });
   go.addEventListener("click", () => { if (!next) return; try { const dr = opts.draft ? opts.draft(next) : null; opts.apply(next); toast(dr && dr.drafts.length ? `Importé : ${dr.drafts.length} élément(s) en « Brouillon IA » à confirmer dans l'arbre fonctionnel${dr.norms.length ? `, ${dr.norms.length} norme(s) à confirmer` : ""}. Ctrl+Z pour revenir en arrière.` : "Changements importés (Ctrl+Z pour revenir en arrière).", "success", 7000); m.close(); } catch (e) { toast(e.message, "error"); } });
   return { ...m, ask, answer };
 }
@@ -116,7 +116,8 @@ export async function openAiLoopFor(key, more = {}) {
   if (!store.project) { toast("Ouvrez d'abord un projet.", "info"); return null; }
   const targets = aiTargets(), t = targets.find((x) => x.key === key) || targets[targets.length - 1], o = await t.open();
   const apply = o.apply, own = t.key === "project" ? null : [t.key];           // the project marks its own changes, artefact by artefact
-  const dlg = openAiLoop({ ...o, apply: (d) => { applying = own; try { return apply(d); } finally { applying = null; } }, help: [...(o.help || []), ...(more.help || [])], context: more.context || "", targets, target: t.key });
+  let dlg = null;
+  dlg = openAiLoop({ ...o, apply: (d) => { applying = own; journaling = { before: snapshotLists(store.project), ask: dlg ? dlg.ask.value : "" }; try { return apply(d); } finally { applying = null; journaling = null; } }, help: [...(o.help || []), ...(more.help || [])], context: more.context || "", targets, target: t.key });
   if (more.ask && dlg) dlg.ask.value = more.ask;                                // the note of the review becomes the request
   return dlg;
 }

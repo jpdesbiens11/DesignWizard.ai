@@ -37,5 +37,26 @@ export function stairOf(key, args, project) {
     default: return null;
   }
 }
+/** What a screen hands to an AI (demande de JP : « un aller-retour avec l'IA sur toutes les pages, sur l'artéfact de la page ») : the artefact the screen
+    shows — a board, a part, an assembly — or the whole project when it shows none. The keys are those of the common loop (modules/ai_loop.js).
+    → { key ("part:ID" | "assembly:ID" | "board:ID" | "project"), label (what is handed over, in words) } or null without a project */
+export function aiTargetOf(key, args, project) {
+  if (!project) return null;
+  const a = args || [], parts = project.parts || [], asms = project.assemblies || [], boards = project.boards || [];
+  const P = (p) => (p ? { key: `part:${p.id}`, label: `la pièce « ${p.name || p.id} »` } : null), A = (x) => (x ? { key: `assembly:${x.id}`, label: `l'assemblage « ${x.name || x.id} »` } : null), B = (b) => (b ? { key: `board:${b.id}`, label: `la carte « ${b.name || b.id} »` } : null);
+  const part = (id) => (id ? parts.find((p) => p.id === id) : null) || null, asm = (id) => (id ? asms.find((x) => x.id === id) : null) || null, all = { key: "project", label: `tout le projet « ${project.name || "sans nom"} »` };
+  const lv = levelsOf(key, a, project);
+  if (lv && lv.part) return P(lv.part);
+  if (lv && lv.assembly) return A(lv.assembly);
+  switch (key) {
+    case "pcba": case "elab": return B(boards.find((b) => b.id === a[0]) || boards[0]) || all;
+    case "fea": return P(part(a[0])) || A(asm(a[0])) || P(parts[0]) || all;
+    case "drawings": return (a[0] === "asm" ? A(asm(a[1])) : P(part(a[0]) || parts.find((p) => !p.step))) || all;
+    case "physics": return P(part(a[1])) || all;
+    case "dfx": return (a[0] === "points" ? P(part(a[1])) : null) || all;
+    case "creepage": case "render": case "labels": return A(asm(a[0]) || asms[0]) || all;
+    default: return all;
+  }
+}
 /** The address of the page, read as the shell reads it. → { key, args } */
 export function addressOf(hash) { const p = String(hash || "").replace(/^#\/?/, "").split("/").filter(Boolean).map((x) => { try { return decodeURIComponent(x); } catch { return x; } }); return { key: p[0] || "home", args: p.slice(1) }; }

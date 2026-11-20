@@ -22,7 +22,7 @@ import { installPanelKeep } from "./panel_keep.js";
 import { installLoupe, loupeButton } from "./loupe.js";
 import { installUpdateCheck, updateButton } from "./update_check.js";
 
-export const APP_VERSION = "0.109.0";
+export const APP_VERSION = "0.110.0";
 /** What every document of the open project carries beside its content : approval names, organisation, confidentiality note, extraction stamp (core/brand.js). */
 export const docMeta = (when = new Date()) => docIdentity(store.project, when, APP_VERSION);
 const modules = new Map();
@@ -212,7 +212,7 @@ export async function start() {
   document.body.append(topbar(), el("div", { id: "levels", class: "levels", hidden: true }), el("main", { id: "main" }));      // #levels : the breadcrumb and the work tabs (modules/levels_bar.js)
   installStepper();      // the arrows of every number field : 1 at a time, faster when held or clicked quickly
   installFolds();        // the groups of every side panel fold on a click on their title
-  installStairs();       // the step up of every screen : one pictogram at the head of the left panel, towards what the screen is made from
+  installStairs({ ai: (key) => app.aiLoop && app.aiLoop(key) });       // the step up of every screen, and its « IA » button : one pictogram at the head of the left panel, towards what the screen is made from
   installPanelKeep();    // a panel drawn anew keeps its place, and the cursor its field
   installLoupe();        // the magnifier of the top bar : a lens over drawings, boards, diagrams and 3D views
   installUpdateCheck({ running: APP_VERSION, save: () => (store.saveState === "dirty" ? store.saveNow() : Promise.resolve()) });      // a page kept open says when a newer version is published, and offers to load it
