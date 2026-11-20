@@ -28,7 +28,7 @@ test("a part is released : its number, its revision frozen ; then form, fit and 
   const p = project(), key = "part:BASE", base = p.parts[0];
   assert.deepEqual([planRelease(p, key).action, planRelease(p, "physics:x"), lastRelease(p, key)], ["first", null, null]);
   let r = release(p, key, { date: D(1), by: "jp", form: form() }); assert.deepEqual([r.action, r.pn, r.rev, r.done], ["first", "PRT-46023-50069", "A", true]); assert.deepEqual([base.pn, base.revision], ["PRT-46023-50069", "A"]);
-  assert.equal(reviewItems(p).find((x) => x.key === key).state, "ok", "a released revision is a validated one : the number does not count as a change"); assert.equal(release(p, key, { date: D(2) }).done, false, "nothing changed : nothing to release");
+  assert.equal(reviewItems(p).find((x) => x.key === key).state, "todo", "freezing is not validating : the frozen revision waits for its review"); assert.equal(releases(p).at(-1).state, "frozen"); assert.equal(release(p, key, { date: D(2) }).done, false, "nothing changed : nothing to release");
   /* a change inside : a note, a hole that touches no interface — the same number, revision B */
   base.notes = ["Ébavurer."]; base.features.splice(1, 0, { op: "hole", id: "h", face: "+Z", at: [10, 10], d: 3, depth: 2 }); base.name = "Base du boîtier";
   let plan = planRelease(p, key, { form: form() }); assert.deepEqual([plan.action, plan.rev, plan.f3.ok], ["revision", "B", true]);
@@ -54,12 +54,12 @@ test("form, fit, function : what breaks each, and what breaks none", () => {
 
 test("an assembly is released with the revision of each of its parts : they are pinned, and a part that moves on is not taken as compatible", () => {
   const p = project(), key = "assembly:ASM", asm = p.assemblies[0];
-  assert.deepEqual(planRelease(p, key).blockers, ["BASE : jamais libérée — la libérer d'abord", "CAPOT : jamais libérée — la libérer d'abord"]); assert.throws(() => release(p, key, { date: D(1) }), /Avant de libérer : BASE : jamais libérée/);
+  assert.deepEqual(planRelease(p, key).blockers, ["BASE : jamais gelée — la geler d'abord", "CAPOT : jamais gelée — la geler d'abord"]); assert.throws(() => release(p, key, { date: D(1) }), /Avant de geler : BASE : jamais gelée/);
   release(p, "part:BASE", { date: D(1) }); release(p, "part:CAPOT", { date: D(2) }); let r = release(p, key, { date: D(3) });
   assert.deepEqual([r.pn, r.rev, r.release.uses], ["ASM-46023-50208", "A", { BASE: { pn: "PRT-46023-50069", rev: "A" }, CAPOT: { pn: "PRT-46023-50139", rev: "A" } }]);
   assert.deepEqual([...outerInterfaces(p, asm).keys()], ["i1/IF2", "i2/IF2"], "what the assembly offers outside : the interfaces no mate uses"); assert.ok(compatibility(p, key).every((x) => x.ok));
   /* the base gets a note and its revision B : the same number, yet not the assembly that was released */
-  p.parts[0].notes = ["Ébavurer."]; assert.deepEqual(compatibility(p, key).map((x) => [x.part, x.state]), [["BASE", "working"], ["CAPOT", "same"]]); assert.match(planRelease(p, key).blockers[0], /BASE : modifiée depuis sa dernière révision libérée/);
+  p.parts[0].notes = ["Ébavurer."]; assert.deepEqual(compatibility(p, key).map((x) => [x.part, x.state]), [["BASE", "working"], ["CAPOT", "same"]]); assert.match(planRelease(p, key).blockers[0], /BASE : modifiée depuis sa dernière révision gelée/);
   release(p, "part:BASE", { date: D(4) }); const c = compatibility(p, key)[0]; assert.deepEqual([c.state, c.pinned.rev, c.now.rev, c.ok], ["revision", "A", "B", false]); assert.match(c.text, /pas validée dans cette révision de l'assemblage/);
   let plan = planRelease(p, key); assert.deepEqual([plan.action, plan.rev, plan.moved], ["revision", "B", ["BASE"]], "the assembly itself is unchanged outside : its next revision takes the base rev. B");
   r = release(p, key, { date: D(5) }); assert.deepEqual([r.rev, r.release.uses.BASE], ["B", { pn: "PRT-46023-50069", rev: "B" }]); assert.ok(compatibility(p, key).every((x) => x.ok)); assert.equal(releases(p).find((x) => x.id === "ASM-46023-50208_A").uses.BASE.rev, "A", "revision A of the assembly still says rev. A of the base");
@@ -76,7 +76,7 @@ test("an earlier revision can be taken back ; each release has its folder ; the 
   const back = restore(p, "PRT-46023-50069_A"); assert.deepEqual([back.notes, back.revision, back.pn, p.parts[0] === back], [undefined, "A", "PRT-46023-50069", true]); assert.equal(restore(p, "nobody"), null);
   assert.equal(planRelease(p, key).action, "revision", "taken back to A while B exists : releasing it makes C, nothing is rewritten");
   const files = releaseFiles(p, toDwiz); assert.deepEqual(files.map((f) => [f.path.join("/"), f.name]), [["06_Revisions/PRT-46023-50069_A Pièce BASE", "PRT-46023-50069_A Pièce BASE.dwiz"], ["06_Revisions/PRT-46023-50069_B Pièce BASE", "PRT-46023-50069_B Pièce BASE.dwiz"]]);
-  assert.equal(fromDwiz(files[1].bytes).notes[0], "v2", "the file of a revision is the part as it was"); assert.deepEqual(plmRows(p)[0].slice(0, 6), ["PRT-46023-50069", "B", "Pièce BASE", "2026-01-01", "—", "3F conservé"]);
+  assert.equal(fromDwiz(files[1].bytes).notes[0], "v2", "the file of a revision is the part as it was"); assert.deepEqual(plmRows(p)[0].slice(0, 8), ["PRT-46023-50069", "B", "Pièce BASE", "Gelée", "—", "2026-01-01", "—", "3F conservé"]);
   const again = fromDwiz(toDwiz(p)); assert.deepEqual(again.plm, p.plm, "the released revisions travel in the project file"); assert.equal(signature(again.parts[0]), signature(p.parts[0]));
   assert.deepEqual(usesOf(p, p.assemblies[0]).BASE.released, true); p.parts[0].notes = ["encore"]; assert.equal(usesOf(p, p.assemblies[0]).BASE.released, false);
 });
@@ -94,28 +94,28 @@ test("a sub-assembly is released first, and pinned in the release of its parent 
   p.assemblies.push({ dw: "assembly/1", id: "TOP", name: "Produit", instances: [{ id: "i1", part: "SOCLE", fixed: true }, { id: "s1", asm: "ASM" }, { id: "s2", asm: "ASM" }], mates: [{ id: "J1", a: { inst: "i1", iface: "IF2" }, b: { inst: "s1~i1", iface: "IF2" } }] });
   const key = "assembly:TOP";
   assert.deepEqual(subsOf(p, p.assemblies[1]), { ASM: { pn: null, rev: "A", released: false } }, "each sub-assembly once, whatever the number of times it is placed");
-  assert.deepEqual(planRelease(p, key).blockers, ["SOCLE : jamais libérée — la libérer d'abord", "BASE : jamais libérée — la libérer d'abord", "CAPOT : jamais libérée — la libérer d'abord", "ASM : sous-assemblage jamais libéré — le libérer d'abord"], "the parts first — through the levels —, then the sub-assembly");
+  assert.deepEqual(planRelease(p, key).blockers, ["SOCLE : jamais gelée — la geler d'abord", "BASE : jamais gelée — la geler d'abord", "CAPOT : jamais gelée — la geler d'abord", "ASM : sous-assemblage jamais gelé — le geler d'abord"], "the parts first — through the levels —, then the sub-assembly");
   for (const [k, id] of ["BASE", "CAPOT", "SOCLE"].entries()) release(p, `part:${id}`, { date: D(k + 1) });
-  assert.deepEqual(planRelease(p, key).blockers, ["ASM : sous-assemblage jamais libéré — le libérer d'abord"], "its parts are released : the sub-assembly itself is not"); assert.throws(() => release(p, key, { date: D(4) }), /ASM : sous-assemblage jamais libéré/);
+  assert.deepEqual(planRelease(p, key).blockers, ["ASM : sous-assemblage jamais gelé — le geler d'abord"], "its parts are released : the sub-assembly itself is not"); assert.throws(() => release(p, key, { date: D(4) }), /ASM : sous-assemblage jamais gelé/);
   release(p, "assembly:ASM", { date: D(5) }); assert.equal(subsOf(p, p.assemblies[1]).ASM.released, true);
   let r = release(p, key, { date: D(6) }); assert.equal(r.done, true); assert.deepEqual(r.release.subs, { ASM: { pn: sub.pn, rev: "A" } }, "pinned : its number and its revision"); assert.deepEqual(Object.keys(r.release.uses).sort(), ["BASE", "CAPOT", "SOCLE"], "and every part, through the levels");
   assert.equal(planRelease(p, key).action, "none"); assert.ok(compatibility(p, key).every((x) => x.ok)); assert.deepEqual(compatibility(p, key).filter((x) => x.kind === "assembly").map((x) => [x.part, x.state]), [["ASM", "same"]]);
   assert.ok(!("subs" in lastRelease(p, "assembly:ASM")), "an assembly without a sub-assembly keeps the record it always had");
   /* the sub-assembly changes : it is no longer a released state, and the parent says so */
   sub.notes = ["Serrer en croix"]; assert.equal(subsOf(p, p.assemblies[1]).ASM.released, false);
-  assert.deepEqual(compatibility(p, key).find((x) => x.part === "ASM").state, "working"); assert.equal(compatibility(p, key).find((x) => x.part === "ASM").text, "sous-assemblage modifié, pas encore libéré");
-  assert.deepEqual(planRelease(p, key).blockers, ["ASM : sous-assemblage modifié depuis sa dernière révision libérée — le libérer d'abord"]);
+  assert.deepEqual(compatibility(p, key).find((x) => x.part === "ASM").state, "working"); assert.equal(compatibility(p, key).find((x) => x.part === "ASM").text, "sous-assemblage modifié, pas encore gelé");
+  assert.deepEqual(planRelease(p, key).blockers, ["ASM : sous-assemblage modifié depuis sa dernière révision gelée — le geler d'abord"]);
   /* released again : revision B of the sub-assembly — not the one the parent was released with */
   r = release(p, "assembly:ASM", { date: D(7) }); assert.deepEqual([r.action, r.rev], ["revision", "B"]);
   const c = compatibility(p, key).find((x) => x.part === "ASM"); assert.deepEqual([c.state, c.pinned.rev, c.now.rev, c.ok], ["revision", "A", "B", false]); assert.match(c.text, /pas validée dans cette révision de l'assemblage/);
   const plan = planRelease(p, key); assert.deepEqual([plan.action, plan.rev, plan.moved, plan.blockers], ["revision", "B", ["ASM"], []], "the parent itself did not change : its sub-assembly moved on");
   r = release(p, key, { date: D(8) }); assert.deepEqual(r.release.subs, { ASM: { pn: sub.pn, rev: "B" } }); assert.equal(planRelease(p, key).action, "none");
   /* a part inside moves on : the sub-assembly first, then the parent */
-  p.parts[0].notes = ["Ébavurer"]; assert.deepEqual(planRelease(p, key).blockers, ["BASE : modifiée depuis sa dernière révision libérée — la libérer d'abord", "ASM : sous-assemblage modifié depuis sa dernière révision libérée — le libérer d'abord"]);
-  release(p, "part:BASE", { date: D(9) }); assert.deepEqual(planRelease(p, key).blockers, ["ASM : sous-assemblage modifié depuis sa dernière révision libérée — le libérer d'abord"], "the sub-assembly was released with the earlier revision of the part");
+  p.parts[0].notes = ["Ébavurer"]; assert.deepEqual(planRelease(p, key).blockers, ["BASE : modifiée depuis sa dernière révision gelée — la geler d'abord", "ASM : sous-assemblage modifié depuis sa dernière révision gelée — le geler d'abord"]);
+  release(p, "part:BASE", { date: D(9) }); assert.deepEqual(planRelease(p, key).blockers, ["ASM : sous-assemblage modifié depuis sa dernière révision gelée — le geler d'abord"], "the sub-assembly was released with the earlier revision of the part");
   release(p, "assembly:ASM", { date: D(10) }); assert.deepEqual([planRelease(p, key).action, planRelease(p, key).moved.sort()], ["revision", ["ASM", "BASE"]]);
   /* taken out : the parent is no longer what was released */
   release(p, key, { date: D(11) }); p.assemblies[1].instances = p.assemblies[1].instances.filter((i) => !i.asm); p.assemblies[1].mates = [];
   assert.deepEqual(compatibility(p, key).find((x) => x.part === "ASM").state, "removed"); assert.notEqual(planRelease(p, key).action, "none");
-  assert.match(plmRows(p).find((row) => row[2] === "Produit")[6], /^ASM = ASM-\d{5}-\d{5} rév\. C · /, "the report names the sub-assembly first, then the parts");
+  assert.match(plmRows(p).find((row) => row[2] === "Produit")[8], /^ASM = ASM-\d{5}-\d{5} rév\. C · /, "the report names the sub-assembly first, then the parts");
 });

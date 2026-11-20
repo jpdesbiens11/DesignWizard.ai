@@ -196,9 +196,9 @@ function render(main) {
       el("p", { class: "muted" }, "Les pièces découpées au laser, pliées ou imprimées : le laser ou le procédé de leur matière, ce qu'il demande au dessin, et ce qui se contrôle — l'état du bord coupé, la suite après impression. Valeurs typiques de guides publiés : le fournisseur et la fiche de la matière font foi (Atelier → Procédés spéciaux)."),
       table(["Pièce", "Nom", "Procédé", "Matière", "Laser · norme", "Ce que le procédé demande", "À contrôler · après"], spe)));
     const rel = plmRows(store.project);
-    if (rel.length) doc.append(el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, "Révisions libérées"),
-      el("p", { class: "muted" }, "Chaque libération fige une révision. Forme, ajustement et fonction conservés : la révision suivante du même numéro. Rompus : un nouveau numéro, avec celui dont il dérive. Un assemblage est libéré avec la révision de chacune de ses pièces. Tenu dans l'écran Révisions."),
-      table(["Numéro", "Rév.", "Nom", "Libérée le", "Dérive de", "Forme · ajustement · fonction", "Libéré avec"], rel)));
+    if (rel.length) doc.append(el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, "Révisions gelées et libérées"),
+      el("p", { class: "muted" }, "Geler fige une révision ; sa revue de conception, par quelqu'un d'autre que son auteur, la libère ou la refuse. Forme, ajustement et fonction conservés : la révision suivante du même numéro. Rompus : un nouveau numéro, avec celui dont il dérive. Un assemblage est gelé avec la révision de chacune de ses pièces, et ne se libère qu'une fois chacune libérée. Tenu dans l'écran Révisions."),
+      table(["Numéro", "Rév.", "Nom", "État", "Approuvée par", "Gelée le", "Dérive de", "Forme · ajustement · fonction", "Gelée avec"], rel)));
     if (store.project.team && store.project.team.owner) { const tr = teamRows(store.project);
       doc.append(el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, "Équipe et messages ", badge(tr.conflicts ? `${tr.conflicts} conflit(s) à trancher` : "aucun conflit", tr.conflicts ? "warn" : "ok")),
         el("p", { class: "muted" }, `Miroir de @${store.project.team.owner}. Chaque membre garde le projet entier chez lui ; les miroirs se fusionnent par artéfact. Tenu dans l'écran Équipe.`),

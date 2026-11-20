@@ -29,8 +29,8 @@ export const FIRST_STEPS = [
     how: ["Le bouton « Guide » de la barre du haut liste ce qui reste, écran par écran : à corriger, à entrer, à vérifier, conseil.", "DFx : les règles par procédé, chacune avec sa source. Isolation : clearance et creepage mesurés sur l'assemblage complet."], done: (p) => !!p && (p.parts || []).length > 0 && blocking(p) === 0 },
   { id: "review", group: "deliver", screen: "review", icon: "check", title: "Passer en revue", what: "Chaque pièce, assemblage, carte et analyse a son état de revue et vos notes.",
     how: ["Marquez « Revu » ce que vous avez relu ; ce qui change ensuite repasse « Modifié depuis la revue ».", "Ce qu'une IA a écrit arrive en « Brouillon IA » : rien n'est validé sans vous."], done: (p) => !!p && Object.values((p.review && p.review.items) || {}).some((x) => x && x.state === "ok") },
-  { id: "release", group: "deliver", screen: "plm", icon: "lock", title: "Libérer une révision", what: "Une révision libérée est figée : son dossier — dessin PDF, STEP, .dwiz — part chez le fournisseur.",
-    how: ["Dessins : vues, cotes à bulles, cartouche et notes, en PDF.", "Révisions : la règle 3F dit s'il faut une nouvelle révision ou un nouveau numéro."], done: (p) => !!p && (p.releases || []).length > 0 },
+  { id: "release", group: "deliver", screen: "plm", icon: "lock", title: "Geler une révision", what: "Une révision gelée est figée sous son numéro ; sa revue de conception, par quelqu'un d'autre que son auteur, la libère : son dossier — dessin PDF, STEP, .dwiz — part alors chez le fournisseur.",
+    how: ["Dessins : vues, cotes à bulles, cartouche et notes, en PDF.", "Révisions : « Geler la révision », puis « Revue de conception » ; la règle 3F dit s'il faut une nouvelle révision ou un nouveau numéro."], done: (p) => !!p && (p.releases || []).length > 0 },
 ];
 const hashOf = (s) => `#/${s.screen}`;
 
