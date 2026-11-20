@@ -77,6 +77,7 @@ Consignes permanentes de JP (propriétaire du dépôt). Elles s'appliquent à to
 - **Le film raconte, il ne lit pas** (demande de JP) : la narration de la vidéo est une histoire que les images appuient, en français ou en anglais au choix ; elle ne redit jamais mot pour mot ce qui est écrit à l'écran (titres, étiquettes, slogans : `shownTexts` / `readsScreen` de `tools/film/script.mjs`, tenus par un essai), ne dit que ce que l'outil fait sur l'écran montré, et ne donne aucun chiffre de gain. Les sous-titres restent avec la voix, et chaque lecteur porte les deux langues (`web/js/core/captions.js`). Changer l'histoire : `CUES`, puis `node tools/film_words.mjs`, puis la voix. Voir `docs/VIDEO.md`.
 - **Dessins en anglais, classeur vivant** (choix de JP) : tout ce que l'outil écrit sur un dessin est en anglais, en millimètres ou en pouces selon les unités choisies (`docs/DESSINS.md`). Ce que le projet a tapé s'y écrit dans son anglais quand le projet l'a donné (`project.drawing.words`, `web/js/core/drawing_words.js`) ; toute démonstration arrive avec l'anglais de ses dessins (`web/js/demo/demo_words.js`). Tout modèle analytique part avec un classeur Excel dont les résultats, les marges et les verdicts sont des formules (`web/js/analysis/physics/xl_*.js`) ; un nouveau modèle arrive avec les siennes, vérifiées par les tests (`docs/CALCULS.md`).
 - **Un calcul se rejoue contre un exemple publié** (demande de JP) : un modèle — analytique, ou le solveur de la simulation — n'est pas validé par sa propre formule. Il rejoue des **exemples chiffrés publiés par d'autres**, et l'écran montre la source (lien, niveau de lecture, licence), ce qu'elle donne, ce qu'elle imprime, ce que l'outil trouve, l'écart et la tolérance — onglet « Calcul » d'un modèle, volet de droite de la Simulation, `#/help/validation`. **La valeur attendue est celle que la source imprime**, relue sur sa page, jamais recalculée ici ; d'une source on ne reprend que des nombres et la référence. Un cas rejoué hors de la plage du modèle échoue ; la tolérance suit les chiffres imprimés ; **un modèle sans cas le dit (`NONE`), un modèle qui en a dit ce qu'ils ne couvrent pas (`GAPS`)**. Cas : `web/js/analysis/validation_cases.js`, `validation_fea.js` ; lecture : `analysis/validation.js` ; écran : `modules/validation_view.js` ; `docs/VALIDATION.md` est écrit par `node tools/validation_doc.mjs`. Tout nouveau modèle naît avec un cas publié, ou avec la phrase qui dit qu'il n'en a pas.
+- **Du calcul à la main à la simulation, avec la même géométrie** (demande de JP : « passer du module Analytique au module Simulation avec la même géométrie, même si ce n'est pas une pièce du produit ») : sous le schéma d'un modèle analytique, « Simuler cette géométrie » fait du calcul un **modèle simplifié** — dimensions, matière, appuis et charge — et ouvre la Simulation dessus, en une étape annulable (`studyOf` / `putStudy` de `web/js/analysis/physics/to_fea.js`). C'est une **aide à la conception, pas une pièce du produit** : la pièce porte `study`, n'entre dans aucun assemblage, et l'Atelier la range **en dernier**, sous la nature « Simplified models » ; une par modèle analytique, mise à jour quand on simule de nouveau ; sa marche vers le haut ramène au modèle analytique. **N'est repris que ce que la simulation tient exactement** ; un modèle qui ne l'est pas dit pourquoi (`WHY_NOT`). Un nouveau modèle analytique dit s'il se simule, et comment. Voir `docs/SIMULATION.md` (§ 5 ter).
 - **Sources partout** (demande de JP) : toute méthode, convention ou norme qu'un outil utilise a sa ligne dans le registre des sources (`web/js/core/methods.js`, écran Aide) — ce qu'elle couvre, ce que l'outil en prend, et son **niveau de vérification vrai** (lu, testé, page lue, extrait, à vérifier, usage, choix maison, non lu). Une définition qui prête à débat (les TRL, par exemple) se cite telle que publiée, avec ses références en bas de page. Toute nouvelle brique ajoute ses lignes ; voir `docs/SOURCES.md`.
 - Vie privée : aucune adresse courriel dans le dépôt (les comptes approuvés sont des empreintes dans `web/acces.json`),
   aucun secret ; l'identifiant client OAuth est public. Pas de contenu H55.
@@ -186,9 +187,10 @@ ordre ; ce qui est fait se raye ici.
    et notes dans `board.lab`) devient le compte rendu ; un **PDF complet**, une image par étape. Confirmé à JP : tout cela se
    calcule **sans IA** pour ce que l'outil connaît (gabarits de blocs, netlist, position des broches) ; une IA ne sert
    qu'aux essais fonctionnels d'un circuit monté à la main, par l'aller-retour, sa réponse vérifiée par l'outil (chaque
-   étape pointe quelque chose qui existe ; elle ne réécrit jamais un relevé). **Quatre choix restent à poser par menu au
-   moment de construire** (le menu a été fermé par un message) : PDF sorti par l'outil ou PDF existant joint ; appareil au
-   banc (portable, tablette tactile) ; étapes verrouillées ou simple avertissement ; ordre par rapport au point 9.
+   étape pointe quelque chose qui existe ; elle ne réécrit jamais un relevé). **Choix cliqué le 20 novembre : le Labo
+   passe en premier**, avant les révisions, l'historique et la fabrication. **Trois choix restent à poser par menu au moment
+   de construire** (un premier menu a été fermé par un message) : PDF sorti par l'outil ou PDF existant joint ; appareil au
+   banc (portable, tablette tactile) ; étapes verrouillées ou simple avertissement.
 11. ~~**La carte et son PCBA, attachés**~~ — fait (v0.112.0 ; demande de JP sur la capture du fil d'Ariane d'une carte : « il
    manque le lien vers le PCBA résultant… monter d'un niveau, descendre d'un niveau ») : les marches vers le bas sur tous
    les écrans, le jumeau mécanique né et tenu à jour d'office (première partie du point 6), la bascule des noms du métier.
@@ -200,6 +202,9 @@ ordre ; ce qui est fait se raye ici.
    composant ou d'un assemblage gelé, par convention de l'industrie ; **l'état et le nom de la révision se voient
    facilement** dans cet écran. À cadrer par menu au moment de construire (qui approuve, ce que contient la revue lean) ;
    lié au point 9 (un point de restauration est rattaché à une étape MVP et à une révision gelée ou non).
+15. ~~**De l'Analytique à la Simulation, avec la même géométrie**~~ — fait (v0.113.0 ; demande de JP du 20 novembre) : poutre
+   encastrée, plaque encastrée, paroi d'un matériau. Reste : les appuis simples (poutres sur deux appuis, plaque appuyée),
+   le tube, le couple, les empilements ; exclure les modèles simplifiés du bilan DFx et des révisions.
 13. **Atelier de fabrication virtuel** (demande de JP, 20 novembre : « un genre d'atelier de fab virtuel… une gamme de fab
    visuelle ») : en **dernier point du menu Mécanique**, un écran qui joue les étapes du procédé d'une pièce, de la réception
    du brut au nettoyage et à l'ébavurage, pour montrer l'intention de fabrication aux étudiants, aux stagiaires et aux
@@ -207,7 +212,7 @@ ordre ; ce qui est fait se raye ici.
    **simulations par défaut** — montages conventionnels (table, étau…), porte-outils manuels ou CNC simple, presse
    d'estampage… — bâties avec ou sans IA ; par le bouton « IA », un assistant qui connaît le cadre décrit une simulation
    que l'outil sait reconstruire, selon la pièce, son type et son procédé (JP se demande si l'écran ne doit montrer d'abord
-   que le bouton « IA » et les consignes : à poser par menu). **Partage fournisseur** : sortir la gamme et la vidéo, ou un
+   que le bouton « IA » et les consignes — **choix cliqué : l'écran s'ouvre sur la gamme par défaut**, le bouton « IA » à sa place habituelle). **Partage fournisseur** : sortir la gamme et la vidéo, ou un
    `.pptx` de la gamme avec les images des étapes et les mesures intermédiaires ; une case pour que le fournisseur écrive
    ses commentaires, ou les pose sur la gamme « en 2 secondes ». S'appuie sur l'onglet « Gamme » d'une pièce, qui existe
    (`docs/GAMMES.md` : phases, pièce après chaque phase, Word / PDF avec images et colonne « Réponse »). Machines et montages

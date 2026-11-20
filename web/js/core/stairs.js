@@ -26,7 +26,8 @@ export function stairOf(key, args, project) {
     case "assembly": { const me = asm(a[0]) || asms[0] || null, parent = me ? asms.find((x) => x.id !== me.id && (x.instances || []).some((i) => i.asm === me.id)) : null; return parent ? toAsm(parent, "Ce sous-assemblage est monté dans un autre") : null; }
     case "elab": { const b = boards.find((x) => x.id === a[0]) || boards[0] || null; return b ? { hash: `#/pcba/${enc(b.id)}`, icon: "chip", color: "#16a34a", label: b.name || b.id, tip: "Ouvrir la carte dans le PCBA" } : null; }
     case "pcba": { const b = boards.find((x) => x.id === a[0]) || boards[0] || null; return b ? toPart(part(b.part), "La carte (PCB) que ce PCBA équipe") : null; }      // the assembled board hangs from its bare board, when it has one
-    case "fea": { const p = part(a[0]), x = p ? null : asm(a[0]); return p ? toPart(p, "La pièce simulée") : x ? toAsm(x, "L'assemblage simulé") : toPart(parts[0], "La pièce simulée") || toAsm(asms[0], "L'assemblage simulé"); }
+    case "fea": { const p = part(a[0]), x = p ? null : asm(a[0]);
+      if (p && p.study && p.study.model) return { hash: `#/physics/${enc(p.study.model)}/${enc(p.id)}`, icon: "physics", color: "#a16207", label: "Modèle analytique", tip: `Ce modèle simplifié est fait à partir d'un modèle analytique : y revenir, avec ses valeurs` }; return p ? toPart(p, "La pièce simulée") : x ? toAsm(x, "L'assemblage simulé") : toPart(parts[0], "La pièce simulée") || toAsm(asms[0], "L'assemblage simulé"); }
     case "physics": return toPart(part(a[1]), "La pièce de ce calcul");
     case "media": return { hash: "#/physics", icon: "physics", color: null, label: "Physique", tip: "Revenir aux modèles analytiques, qui lisent cette base" };
     case "drawings": return a[0] === "asm" ? toAsm(asm(a[1]), "L'assemblage dessiné") : toPart(part(a[0]) || parts.find((p) => !p.step), "La pièce dessinée");

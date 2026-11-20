@@ -484,6 +484,28 @@ sont pas ajoutés à la lecture d'une jauge (nuls en flexion pure, de moyenne nu
 que vaut le maillage : près d'un trou, d'un congé ou du bord d'un appui, elle est indicative — une zone de raffinement
 l'affine.
 
+## 5 ter. Partir d'un calcul à la main : le modèle simplifié
+
+Un calcul à la main et une simulation de la même chose valent plus ensemble. Sous le schéma d'un modèle analytique
+(`#/physics`), « Simuler cette géométrie » fait du calcul un **modèle simplifié** — une petite pièce aux dimensions du
+modèle, dans sa matière, avec son cas de charge déjà posé — et ouvre la Simulation dessus (`studyOf` / `putStudy` de
+`web/js/analysis/physics/to_fea.js`, une seule étape annulable). Il ne reste qu'à lancer ; le recoupement dit si les deux
+calculs s'accordent.
+
+- **Ce n'est pas une pièce du produit** : elle porte `study` (le modèle et ses valeurs), n'entre dans aucun assemblage, et
+  l'Atelier la range en dernier, sous sa propre nature, « Simplified models ». Une par modèle analytique (`MS-CANT`,
+  `MS-PLATE`…) : simuler de nouveau la met à jour.
+- **Sa marche vers le haut** ramène au modèle analytique, avec les valeurs dont elle a été faite.
+- **Ce qui est repris** : la poutre encastrée chargée en bout (section rectangulaire ou ronde) ou par une charge répartie
+  (section rectangulaire : une pression sur la face du dessus), la plaque encastrée sous pression, la paroi d'un seul
+  matériau (température imposée d'un côté, puissance de l'autre).
+- **Ce qui ne l'est pas, et l'écran dit pourquoi** : un appui simple (une ligne sous un bout), un couple, un empilement de
+  matériaux, une section donnée par son inertie, le flambement — la simulation ne les tient pas exactement, donc rien
+  n'est fabriqué à moitié.
+- **Matière** : celle du média choisi dans le modèle ; si le calcul utilise des valeurs tapées, la simulation prend
+  l'aluminium 6061-T6 et le dit.
+- **Essayé** : poutre de 1000 × 100 × 100 mm, 1000 N en bout — 0,5797 mm à la main, 0,5803 mm en simulation.
+
 ## 6. Ce qui est vérifié
 
 **Contre des exemples publiés** (`docs/VALIDATION.md`, groupe « Validation » du volet de droite) : le solveur rejoue quatre

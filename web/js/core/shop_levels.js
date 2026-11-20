@@ -23,6 +23,7 @@ export const NATURES = [
   { key: "bought", label: "Off the shelf", fr: "du commerce", icon: "library", color: "#64748b", studio: "parts", rules: null },
   { key: "imported", label: "Imported (STEP)", fr: "importées", icon: "step", color: "#475569", studio: "parts", rules: null },
   { key: "other", label: "To be defined", fr: "procédé à définir", icon: "part", color: "#78716c", studio: "parts", rules: null },
+  { key: "study", label: "Simplified models", fr: "modèles simplifiés — aides à la conception, hors du produit", icon: "physics", color: "#a16207", studio: "parts", rules: null },      // last : what helps to design is not what is designed
 ];
 const BY = new Map(NATURES.map((n) => [n.key, n]));
 const MOLD = new Set(["injection_molding", "die_casting", "lp_die_casting", "permanent_mold", "sand_casting"]), AM = new Set(["fdm", "mjf", "sla", "lpbf"]), BOUGHT = new Set(["purchased", "connector", "cell"]);
@@ -31,6 +32,7 @@ export const nature = (key) => BY.get(key) || BY.get("other");
 /** The nature of a part : what it is before how it is made — a busbar, a flex circuit, a board, a profile — then its process. */
 export function natureKey(p) {
   if (!p) return "other";
+  if (p.study) return "study";                          // the geometry of an analytical model, made to be simulated (analysis/physics/to_fea.js)
   const proc = p.process || "";
   if (p.busbar || p.family === "busbar") return "busbar";
   if (p.flex || p.family === "flex") return "flex";

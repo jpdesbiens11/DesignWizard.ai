@@ -6,7 +6,8 @@
    Route : #/physics or #/physics/<modelId>/<partId>. Runs added to the report live in project.physics. */
 
 import { el, clear, btn, icon, toast, download } from "../core/dom.js";
-import { app, registerModule, setStatus, setGuide, docMeta } from "../core/app.js";
+import { app, go, registerModule, setStatus, setGuide, docMeta } from "../core/app.js";
+import { studyOf, putStudy } from "../analysis/physics/to_fea.js";
 import { docx } from "../core/docx.js";
 import { pdfDoc } from "../core/pdfdoc.js";
 import { xlsx } from "../core/xlsx.js";
@@ -78,6 +79,12 @@ function render(main, args) {
     const blank = Object.fromEntries((m.media || []).filter((s) => !s.own).map((s) => [s.key, ""])), next = { ...defaults(m.id), ...blank, ...c.inputs };
     memory.set(m.id, next); prefillNotes.delete(m.id); entered.set(m.id, new Set(Object.keys(next))); ui.tab = "calc"; open(m.id);
     toast(`Cas de référence chargé — ${c.title} : les valeurs sont celles de la source. « Valeurs par défaut » revient au modèle.`, "success", 6000);
+  }
+  /* the same geometry, in the Simulation : a simplified model — the dimensions, the material, the supports and the load of this calculation — made or updated in one step */
+  function toSimulation() {
+    const s = studyOf(cur.id, r.inputs); if (!s.ok) { toast(s.why, "info", 8000); return; }
+    const had = !!store.part(s.id); store.commit(`Modèle simplifié : ${s.part.name}`, (p) => { putStudy(p, s); }, { part: s.id });
+    toast(`${had ? "Modèle simplifié mis à jour" : "Modèle simplifié créé"} (${s.id}) — ${s.says}${s.notes.length ? ` ${s.notes[0]}` : ""}`, "success", 10000); go(`#/fea/${encodeURIComponent(s.id)}`);
   }
   const toValidation = () => { ui.tab = "calc"; drawRight(); setTimeout(() => { if (alive) nudge(right.querySelector(".val-section")); }, 60); };
 
@@ -176,7 +183,8 @@ function render(main, args) {
     top.append(el("div", { class: "phys-2d-head", style: `--dom:${d.color}` }, el("span", { class: "phys-chip" }, domainIcon(d.id, "currentColor", 18), d.label), el("div", { class: "grow" }, el("h2", null, cur.question), el("small", { class: "muted" }, cur.title)), verdictBadge(r.verdict)),
       sketch(cur, { fill: true, color: d.color }),
       el("div", { class: "phys-2d-foot" }, el("span", { class: "zone-tag" }, "2D · schéma de principe"), cur.outputs.slice(0, 3).map((x) => el("span", { class: "chip" }, `${x.label} : ${qty(r.values[x.key], x.unit)}`)), eg ? el("span", { class: "chip eg", "data-tip": "Le verdict ne vaut que pour vos valeurs : le guide de gauche dit lesquelles restent des exemples" }, `${eg} valeur${eg > 1 ? "s" : ""} d'exemple`) : null,
-        ((v) => el("button", { class: `chip val-chip ${v.n ? (v.bad ? "bad" : "done") : "none"}`, type: "button", "data-tip": "Les exemples publiés contre lesquels ce modèle a été rejoué : la source, ce qu'elle imprime, ce que l'outil trouve, l'écart — onglet « Calcul »", onClick: toValidation }, icon(v.n ? (v.bad ? "warning" : "check") : "minus"), v.text))(validationMark(cur.id))));
+        ((v) => el("button", { class: `chip val-chip ${v.n ? (v.bad ? "bad" : "done") : "none"}`, type: "button", "data-tip": "Les exemples publiés contre lesquels ce modèle a été rejoué : la source, ce qu'elle imprime, ce que l'outil trouve, l'écart — onglet « Calcul »", onClick: toValidation }, icon(v.n ? (v.bad ? "warning" : "check") : "minus"), v.text))(validationMark(cur.id)),
+        ((s) => el("button", { class: `chip sim-chip${s.ok ? "" : " none"}`, type: "button", "data-study": s.ok ? s.id : "", "aria-disabled": s.ok ? null : "true", "data-tip": s.ok ? `Ouvrir la Simulation sur la même géométrie : ${s.says} C'est un modèle simplifié, rangé à part — pas une pièce du produit.` : `Pas encore dans la Simulation — ${s.why}`, onClick: toSimulation }, icon("physics"), s.ok ? "Simuler cette géométrie" : "Simulation : pas pour ce modèle"))(studyOf(cur.id, r.inputs))));
   }
   /* ---------- centre, bottom : the same model in 3D, with the typed dimensions ---------- */
   function drawScene(refit) {
@@ -229,6 +237,9 @@ function render(main, args) {
     catch (e) { toast(`Drive : la fiche du calcul n'a pas pu être rangée (${e.message}). Le calcul reste dans le projet.`, "error", 7000); }
   }
   const off = store.on("change", () => { if (alive) drawRight(true); });
+  /* back from the Simulation of a simplified model : its values are those of the calculation it was made from */
+  const made = cur && partId ? store.part(partId) : null;
+  if (made && made.study && made.study.model === cur.id) { if (!memory.has(cur.id)) { memory.set(cur.id, { ...defaults(cur.id), ...made.study.inputs }); entered.set(cur.id, new Set(Object.keys(made.study.inputs))); } partId = ""; }
   if (cur) { inputs = take(cur.id); carry(); }
   drawLeft(); update(true); drawRight();
   return () => { alive = false; clearTimeout(timer); off(); vp.dispose(); };
