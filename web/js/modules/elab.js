@@ -16,6 +16,7 @@ import { NATURES, blockTests, eng } from "../pcba/lab_bench.js";
 import { testSheet, boardSheets, boardSheet, sheetJobs, jobSheet, expectedText, gapText, labPlanDoc, labGuide, labOf, setReading, setSkip, skipped, verdict, labStatus, testKey } from "../pcba/lab_plan.js";
 import { labBoard, scope, bode } from "./elab_view.js";
 import { openManip } from "./elab_manip.js";
+import { manipDoc } from "../pcba/lab_manip_doc.js";
 import { readUnit as unitOf } from "../pcba/lab_manip.js";
 import { boardTests, BOARD_KEY } from "../pcba/lab_board.js";
 import { docx } from "../core/docx.js";
@@ -107,7 +108,14 @@ function render(main, args) {
       toast(`Plan de test : ${doc.sheets.length} fiches, enregistré.`, "success", 5000); } catch (e) { toast(`Plan de test : ${e.message}`, "error", 8000); }
   }
   /* the test chosen, done at the real bench : one step per screen, pointed at the board (modules/elab_manip.js) */
-  function manip() { const s = st.sheet, k = key(); if (!s || !k) return; st.playing = false; centre(); st.manip = openManip({ boardId: id, key: k, sheet: s, onClose: () => { st.manip = null; const b = left.querySelector("[data-manip]"); if (b) b.focus(); } }); }
+  function manip() { const s = st.sheet, k = key(); if (!s || !k) return; st.playing = false; centre(); st.manip = openManip({ boardId: id, key: k, sheet: s, pdf: manipPdf, onClose: () => { st.manip = null; const b = left.querySelector("[data-manip]"); if (b) b.focus(); } }); }
+  /* the procedure on paper — a picture of the board per step ; filled with what the notebook of the board holds, it is the report (pcba/lab_manip_doc.js) */
+  async function manipPdf(all) {
+    try { const b = board(), R = resolveBoard(b, LIBRARY), pause = () => new Promise((ok) => setTimeout(ok, 0)); let sheets = st.sheet ? [st.sheet] : [];
+      if (all) { const jobs = sheetJobs(b); sheets = await underVeil(pageVeil(), "Manipulations : simulation de chaque essai…", async (say, signal) => { const out = []; for (let i = 0; i < jobs.length; i++) { say(`Manipulations — essai ${i + 1} / ${jobs.length} : ${jobs[i].name}, ${jobs[i].title}`, i, jobs.length); await pause(); if (signal.off) return null; const s = jobSheet(jobs[i]); if (s) out.push({ ...s, blockId: jobs[i].blockId }); } say("Manipulations : écriture du document…", jobs.length, jobs.length, { hold: true }); await pause(); return out; }, { kernel: false, cancelled: "Manipulations : aucun fichier n'a été enregistré." }); if (!sheets) return; }
+      if (!sheets.length) return; const d = manipDoc(b, R, sheets, { date: new Date(), project: { id: store.project.id, name: store.project.name } }); download(`${d.name}.pdf`, pdfDoc({ ...d, kind: "Manipulations en laboratoire", ...docMeta() }), "application/pdf"); toast(`Manipulations : ${sheets.length} essai${sheets.length > 1 ? "s" : ""}, enregistré.`, "success", 5000);
+    } catch (e) { toast(`Manipulations : ${e.message}`, "error", 8000); }
+  }
   const request = () => { const b = board(), s = st.sheet; return ["Tu es l'assistant de conception de DesignWizard.ai. Voici une carte électronique et, plus bas, la fiche d'un essai de laboratoire préparé par simulation. Seul le bloc « lab » de la carte se modifie.",
     "TA TÂCHE — relis l'essai comme le ferait un ingénieur d'essais : ce qui manque au montage, une étape risquée, une valeur attendue qui te paraît fausse, un essai à mettre de côté. Dis-le en quelques lignes, puis attends mon accord.",
     "RÉPONSE ATTENDUE — un seul bloc ```dwiz avec la carte entière, bloc « lab » à jour : une ligne « note » par remarque (test = « bloc/essai », text = ta remarque en une phrase), une ligne « skip » par essai à mettre de côté (test). Ne change ni les pièces, ni les nets, ni les relevés (lignes « reading » : ce sont des mesures faites au laboratoire).",

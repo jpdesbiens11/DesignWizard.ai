@@ -192,9 +192,17 @@ Un relevé facultatif (il demande un appareil que tous les bancs n'ont pas) se p
 Clavier : Entrée fait l'action, ← → changent d'étape, F met en plein écran, Échap ferme. Chaque coche, relevé et
 note est une étape annulable (Ctrl + Z). Fermer ne perd rien : tout est dans le bloc `lab` de la carte.
 
+**Sur papier** (`pcba/lab_manip_doc.js`). « PDF », en haut de l'écran, sort la procédure de l'essai au gabarit des
+documents : pour chaque étape, ce qu'il faut faire, l'appareil et son réglage, le pourquoi, **une image de la carte**
+quand l'étape la touche — dessinée en vecteurs : l'anneau sur la pastille, la lettre du cordon, la référence et la
+broche —, une case « Fait », une case par relevé, des lignes de notes, et deux signatures. **Vide, c'est la
+procédure ; remplie de ce que le carnet de la carte garde** — coches avec leur heure, relevés et leur verdict,
+passages par un superviseur, notes —, **c'est le compte rendu**. « Tout le plan » fait le même cahier pour tous les
+essais de la carte, sous le voile, annulable (228 pages pour les 26 essais de la carte de démonstration).
+
 Choix pris d'office (le menu a été fermé deux fois par un message ; ils se changent) : le mode est pensé pour un
 portable ou l'écran du banc ; les étapes sont **verrouillées**, un superviseur passe outre et c'est noté ; le PDF
-complet, une image par étape, sera écrit par l'outil — il n'est pas encore fait.
+est écrit par l'outil.
 
 ## 5. Avec une IA
 
@@ -264,7 +272,8 @@ sur la carte est laissé de côté, et c'est dit.
   relevé hors plage qui arrête, le passage par un superviseur, l'aller-retour `.dwiz` des coches, des passages et
   des notes. Essayé dans Chromium (18 vérifications) : ouverture, étape verrouillée, branchement pointé, relevé
   hors plage, passage, note gardée quand on clique « Suivant », bilan, Échap et retour du curseur, fenêtre de
-  1100 px. **Non vérifié** : le plein écran du navigateur lui-même (le robot ne le déclenche pas), le toucher, une
+  1100 px ; le PDF d'un essai téléchargé depuis l'écran. Le cahier : l'image d'une étape et ses marques, une case
+  par relevé, le cahier vide puis rempli, le document passé dans l'écrivain de PDF. **Non vérifié** : le plein écran du navigateur lui-même (le robot ne le déclenche pas), le toucher, une
   tablette, la dictée ; aucun étudiant n'a déroulé un essai avec.
 - **Non vérifié** : aucune carte réelle n'a été mesurée pour comparer — ni les valeurs, ni les plages. Les
   comportements typiques et les niveaux des bus sont écrits de mémoire, sans relecture d'une fiche technique ni d'une

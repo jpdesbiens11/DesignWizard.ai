@@ -10,6 +10,8 @@ import { resolveBoard } from "../../web/js/pcba/model.js";
 import { LIBRARY } from "../../web/js/pcba/library.js";
 import { toDwiz, fromDwiz } from "../../web/js/core/dwiz.js";
 import { NEWS } from "../../web/js/core/whats_new.js";
+import { manipDoc, manipBlocks, stepFigure } from "../../web/js/pcba/lab_manip_doc.js";
+import { pdfDoc } from "../../web/js/core/pdfdoc.js";
 
 const read = (p) => readFileSync(new URL(`../../${p}`, import.meta.url), "utf8");
 const board = demoBoard(), sheets = boardSheets(board), R = resolveBoard(board, LIBRARY);
@@ -109,4 +111,27 @@ test("the screen : a dialog over the Labo, one action per step, nothing an answe
   for (const k of ["supply", "meter", "scope", "generator", "load"]) assert.match(gear, new RegExp(`\\b${k}: \\(g\\) =>`), `the ${k} has its drawing`);
   const gears = new Set(sheets.flatMap((s) => manipSteps(s).map((x) => x.gear && x.gear.kind).filter(Boolean))); assert.deepEqual([...gears].sort(), ["generator", "load", "meter", "scope", "supply"], "and every instrument a step names is one that is drawn");
   assert.ok(NEWS.some((n) => n.id === "lab-manip" && n.sel === "[data-manip]" && n.where === "#/elab"), "what is new is marked on the button");
+});
+
+test("on paper : the procedure of a test with a picture of the board per step — empty it is the procedure, filled it is the report", () => {
+  const s = sheets.find((x) => x.test === "power" && x.rows.length >= 2), key = testKey(s.blockId, s.test), S = manipSteps(s); let b = { ...board };
+  /* the picture of a step : only when the step touches the board ; its marks stay inside the picture */
+  const con = S.find((x) => x.id === "con-supply-0"), fig = stepFigure(R, placedPoints(R, con)); assert.ok(fig && fig.width === 120 && fig.height > 20 && fig.height <= 95); assert.match(fig.caption, /le cordon noir \(−\) → /); assert.equal(stepFigure(R, placedPoints(R, S[0])), null, "a step done on the instrument has no picture");
+  const calls = []; const rec = new Proxy({}, { get: (_, k) => (...a) => { calls.push([k, a]); } }); fig.draw(rec, 10, 20, 120, fig.height);
+  const marks = calls.filter(([k, a]) => k === "text" && ["+", "−"].includes(a[2])); assert.equal(marks.length, 2, "one letter per lead"); assert.ok(marks.every(([, a]) => a[0] >= 10 && a[0] <= 130 && a[1] >= 20 && a[1] <= 20 + fig.height), "the marks are inside the picture");
+  assert.ok(calls.some(([k, a]) => k === "text" && /^[A-Z]+\d+ · /.test(a[2])), "the pin is written beside its lead"); assert.ok(calls.filter(([k]) => k === "rect").length > 10, "the parts and the pads around are drawn");
+  /* empty : boxes to tick, a box per reading, lines for the notes */
+  let blocks = manipBlocks(b, R, s), text = JSON.stringify(blocks); assert.equal(blocks.filter((x) => x.type === "h3").length, S.length, "one heading per step"); assert.equal(blocks.filter((x) => x.type === "figure").length, S.filter((x) => stepFigure(R, placedPoints(R, x))).length);
+  assert.equal(blocks.filter((x) => x.type === "table").length, s.rows.length, "one box per reading"); assert.ok(text.includes("[     ]  Fait.") && text.includes("Notes : ____") && !text.includes("[ X ]")); assert.ok(blocks.some((x) => x.type === "signatures"));
+  /* filled : what the notebook of the board holds is on the page */
+  for (const id of ["safety", "set-supply-0"]) b = { ...b, lab: setTick(b, key, id, true, "2026-11-20T10:02:00.000Z") }; b = { ...b, lab: setNote(b, key, "safety", "Bracelet vérifié au testeur.") };
+  const first = S.find((x) => x.needs === "reading"), row = s.rows[first.row]; b = { ...b, lab: setReading(b, key, row.label, row.band.high * 3 + 1) }; b = { ...b, lab: setPass(b, key, first.id, "A. Tremblay", "mesure refaite", "2026-11-20T10:30:00.000Z") };
+  text = JSON.stringify(manipBlocks(b, R, s)); for (const w of ["[ X ]  Fait à 10 h 02.", "Notes : Bracelet vérifié au testeur.", "HORS PLAGE", "Laissé passer par A. Tremblay à 10 h 30 — mesure refaite", "COUPEZ l'alimentation"]) assert.ok(text.includes(w), w);
+  /* the document : one test, or the whole plan ; it carries the house template through the PDF writer */
+  const one = manipDoc(b, R, [s], { date: new Date(Date.UTC(2026, 10, 20)) }); assert.match(one.name, /-manipulations-e-\d+$/); assert.match(one.reference, /-MANIP-E-\d+$/); assert.ok(one.blocks.some((x) => x.type === "toc"));
+  assert.ok(JSON.stringify(one.blocks).includes("comportement TYPIQUE") && JSON.stringify(one.blocks).includes("Les règles de sécurité de votre établissement passent avant ce cahier"));
+  const pdf = pdfDoc({ ...one, kind: "Manipulations en laboratoire" }); assert.ok(pdf.length > 20000); assert.equal(String.fromCharCode(...pdf.slice(0, 5)), "%PDF-");
+  const all = manipDoc(b, R, sheets.slice(0, 4), {}); assert.equal(all.blocks.filter((x) => x.type === "h1" && /^E-\d+ — /.test(x.text)).length, 4); assert.match(all.name, /-manipulations$/);
+  const lab = read("web/js/modules/elab.js"), screen2 = read("web/js/modules/elab_manip.js"); assert.match(lab, /pdf: manipPdf/); assert.match(lab, /cancelled: "Manipulations : aucun fichier n'a été enregistré\."/, "the whole plan is written under the veil, and can be cancelled"); assert.match(screen2, /b\.dataset\.manipPdf = "one"/); assert.match(screen2, /b\.dataset\.manipPdf = "all"/);
+  assert.ok(NEWS.some((n) => n.id === "lab-manip-pdf" && n.sel === "[data-manip-pdf]"));
 });
