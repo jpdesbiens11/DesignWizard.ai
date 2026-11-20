@@ -1,126 +1,138 @@
 /* DesignWizard.ai — Logiciel : the software of an embedded BMS, drawn as objects one links, and written by the tool (demande de JP :
    « une approche de design logiciel via des objets visuels adaptés qui se codent tout seuls en librairie, module et structure de
    fichiers pour un CPU de BMS embarqué, sachant les in/out à gérer, leurs plages et le CPU choisi »).
-   The same three places as every studio. Left, what one gives : the CPU chosen — its sheet, each figure with the page it was read on —,
-   the objects one can put on the page, by nature, and what the guide asks. Centre, what one looks at : the tiles and their wires, each
-   output with what it is worth at the instant of the timeline under it. Right, what one sets and what one gets : the sheet of the object
-   chosen (a value the tool proposed blinks until it is entered or confirmed), the files the tool writes, and the run of the scenario.
-   Every change is one step of the store : Ctrl + Z takes it back. The models are sw/sw_objects.js, sw/sw_design.js, sw/sw_c.js and
-   sw/sw_cpu.js ; the page is modules/sw_canvas.js. The tool calls no assistant : the round trip is a text one copies and pastes. */
+   STEP BY STEP (demande de JP : « mettre ça pas à pas, comme si la partie logiciel était faite pour un étudiant de 16 ans… tester la routine
+   de démarrage, l'initialisation, la mémoire… une vraie simulation en temps réel… l'important, c'est de voir le package final, puis de savoir
+   comment il serait téléchargé dans le microprocesseur ») : seven steps, numbered at the head of the left panel — CPU, objects, values,
+   start-up, live simulation, code, loading (sw/sw_steps.js). Each says in plain words what it is and what one does, whether it is done —
+   read from the design, never ticked by hand —, and unfolds the words of the trade it uses. The address keeps the step (#/sw/<step>).
+   The same three places as every studio. Left, what one gives and where one is : the steps, the step, what the step lists (the CPUs, the
+   objects to put, the values to read again, the files of the package, the journal of the live run) and what the guide asks. Centre, what
+   one looks at : the tiles and their wires, or a page one reads (the sheet of the CPU, the start-up, a file of the code, the loading).
+   Right, what one sets : the sheet of the object chosen — what enters, what leaves, its values — or, live, the bench.
+   Every change is one step of the store : Ctrl + Z takes it back. The tool calls no assistant : the round trip is a text one copies. */
 
-import { el, clear, icon, btn, field, onOff, toast, download, confirmBox, copyText, modal } from "../core/dom.js";
+import { el, clear, icon, btn, toast, download, copyText } from "../core/dom.js";
 import { store } from "../core/store.js";
 import { registerModule, setGuide, setStatus } from "../core/app.js";
-import { guideBox, needField, nudge } from "../core/guide.js";
+import { guideBox, nudge } from "../core/guide.js";
 import { zip } from "../core/zip.js";
-import { KINDS, NATURES, cfgOf, paramUnit } from "../sw/sw_objects.js";
+import { KINDS, NATURES } from "../sw/sw_objects.js";
 import { demoDesign, problems, unsure, ready, simulate, events, wireCheck, order, split } from "../sw/sw_design.js";
-import { cFiles, requirement } from "../sw/sw_c.js";
-import { cpuOf, cpuList, CPU_SOURCES } from "../sw/sw_cpu.js";
+import { cFiles } from "../sw/sw_c.js";
+import { cpuOf, cpuList } from "../sw/sw_cpu.js";
+import { STEPS, stepOf, stepStates, nextStep, wordsIn, kindShape, rankOf } from "../sw/sw_steps.js";
 import { swCanvas } from "./sw_canvas.js";
+import { swBench } from "./sw_bench.js";
+import { sheet, aiText, reimport } from "./sw_sheet.js";
+import { cpuPage, startPage, codePage, loadPage } from "./sw_pages.js";
 
-const FOLDERS = { lib: ["#0891b2", "un module par genre d'objet"], cfg: ["#7c3aed", "une table par objet posé"], io: ["#64748b", "signal ↔ broche"], app: ["#16a34a", "le pas du logiciel"], hal: ["#b45309", "ce qui touche le CPU"], test: ["#dc2626", "le scénario rejoué"], doc: ["#475569", "objet ↔ fichiers ↔ exigence"] };
-const LEVEL = { error: "error", todo: "todo", check: "warn" };
+const FOLDERS = { lib: ["#0891b2", "un module par genre de tuile"], cfg: ["#7c3aed", "une table de réglages par tuile posée"], io: ["#64748b", "le nom de chaque broche"], app: ["#16a34a", "le pas du logiciel"], hal: ["#b45309", "ce qui touche le CPU"], test: ["#dc2626", "le scénario rejoué sur un ordinateur"], doc: ["#475569", "traçabilité et chargement"] };
+const LEVEL = { error: "error", todo: "todo", check: "warn" }, CANVAS = new Set(["objects", "values", "live"]), RIGHT = CANVAS;
 const tile = (o) => el("button", { class: `cf-tile${o.sel ? " sel" : ""}`, type: "button", "aria-pressed": o.sel === undefined ? null : o.sel ? "true" : "false", "data-tip": o.tip || null, style: `--dom:${o.color}`, onClick: o.run, ...o.data }, o.pic, el("b", null, o.label), o.small ? el("small", null, o.small) : null);
+const fr = (n) => (n === null || n === undefined ? "" : String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " ").replace("-", "−"));
 
-function render(main) {
+function render(main, args) {
   clear(main);
-  const left = el("aside", { class: "side" }), view = el("div", { class: "viewport sw-view" }), right = el("aside", { class: "side right" }), root = el("div", { class: "studio" }, left, view, right); root.style.setProperty("--right-w", "400px"); main.append(root);
-  const st = { sel: null, k: 0, tab: "obj", file: "bms/app/bms_app.c", alive: true }, design = () => (store.project && (store.project.software || [])[0]) || null;
+  const left = el("aside", { class: "side" }), view = el("div", { class: "viewport sw-view" }), right = el("aside", { class: "side right" }), root = el("div", { class: "studio" }, left, view, right); main.append(root);
+  const design = () => (store.project && (store.project.software || [])[0]) || null;
+  const st = { step: STEPS.some((s) => s.key === args[0]) ? args[0] : null, sel: null, k: 0, file: "bms/README.md", alive: true };
+  if (!st.step) st.step = nextStep(design(), design() ? cpuOf(design()) : null);
   const change = (label, fn) => store.commit(label, (p) => { p.software = p.software || []; if (!p.software[0]) return; fn(p.software[0]); });
-  const host = el("div", { class: "sw-host" }), bar = el("div", { class: "lab-bar sw-bar" }), empty = el("div", { class: "page", hidden: true }); view.append(empty, host, bar);
-  const canvas = swCanvas(host, {
-    onPick: (s) => { st.sel = s; st.tab = "obj"; paint(); renderRight(); },
+  const host = el("div", { class: "sw-host" }), pageHost = el("div", { class: "sw-pagehost" }), replay = el("div", { class: "lab-bar sw-bar" }), liveBox = el("div", { class: "sw-livebox" }), empty = el("div", { class: "page", hidden: true });
+  view.append(empty, pageHost, host, liveBox, replay);
+  const canvas = swCanvas(host, { rank: rankOf,
+    onPick: (s) => { st.sel = s; paint(); renderRight(); },
     onMove: (id, x, y) => change(`Logiciel : ${id} déplacé`, (d) => { const o = d.objects.find((q) => q.id === id); if (o) { o.x = x; o.y = y; } }),
     onWire: (from, to) => { const d = design(), c = wireCheck(d, from, to); if (!c.ok) { toast(c.text, "error", 7000); paint(); return; }
       const loops = order({ ...d, wires: [...d.wires.filter((w) => w.to !== to), { from, to }] }).loop.length > 0;
       change(`Logiciel : fil ${from} → ${to}`, (x) => { x.wires = x.wires.filter((w) => w.to !== to); x.wires.push({ from, to, ...(loops ? { delay: true } : {}) }); });
       toast(loops ? "Ce fil ferme une boucle : il porte la valeur du pas d'avant, comme le font les schémas-blocs. Un clic sur le fil pour le voir." : c.level ? c.text : "Fil posé.", loops || c.level ? "info" : "success", loops || c.level ? 7000 : 2200); } });
-  const run = () => { const d = design(); return d ? simulate(d) : null; };
-  let R = null;
-  function paint() { const d = design(); if (!d) return; canvas.draw(d, R, st.k, st.sel); const s = bar.querySelector("[data-sw-now]"); if (s && R) s.textContent = `${R.t[Math.min(st.k, R.t.length - 1)] ?? 0} ms`; }
-  const guide = () => { const d = design(); return d ? problems(d, cpuOf(d)).map((p) => ({ level: LEVEL[p.level] || "tip", text: p.text, field: "sw", go: p.obj ? () => { st.sel = { obj: p.obj }; st.tab = "obj"; paint(); renderRight(); const f = p.field ? right.querySelector(`[data-sw-param="${p.field}"]`) : right.querySelector("[data-sw-param]"); if (f) nudge(f); } : null })) : []; };
+  let R = null, bench = null, journalHost = null;
   const files = () => { const d = design(); return d ? cFiles(d, { cpu: cpuOf(d) }) : []; };
+  const valuesAt = () => (R ? Object.fromEntries(Object.entries(R.ports).map(([r, y]) => [r, y[Math.min(st.k, y.length - 1)]])) : null);
+  const guide = () => { const d = design(); return d ? problems(d, cpuOf(d)).map((p) => ({ level: LEVEL[p.level] || "tip", text: p.text, field: "sw", go: p.obj ? () => pick(p.obj, p.field) : null })) : []; };
+  /* choose an object from a list : the page shows it, its sheet opens, the value asked blinks under the pointer */
+  function pick(id, field) { if (!CANVAS.has(st.step) || st.step === "live") { st.step = unsure(design()).some((u) => u.obj === id) ? "values" : "objects"; mark(); }
+    st.sel = { obj: id }; all(); const f = field ? right.querySelector(`[data-sw-param="${field}"]`) : right.querySelector("[data-sw-param].need, [data-sw-param]"); if (f) nudge(f); }
+  const mark = () => { try { history.replaceState(null, "", `#/sw/${st.step}`); } catch (e) { /* a page without history */ } };
+  const open = (key) => { st.step = key; mark(); all(); left.scrollTop = 0; };
   const add = (kind) => change(`Logiciel : ${KINDS[kind].label} posé`, (d) => { let n = 1; while (d.objects.some((o) => o.id === `${kind}_${n}`)) n++; const y = Math.max(20, ...d.objects.map((o) => (o.y || 0) + 150)); d.objects.push({ id: `${kind}_${n}`, kind, name: `${KINDS[kind].label} ${n}`, params: {}, sure: [], x: 20, y }); st.sel = { obj: `${kind}_${n}` }; });
 
+  /* ---------- the live bench : made when the step opens, gone when it closes ---------- */
+  const stopBench = () => { if (bench) { bench.dispose(); bench = null; } };
+  function ensureBench() { if (bench) return; bench = swBench({ design, onFrame: () => { if (!bench) return; canvas.values(bench.values); for (const td of right.querySelectorAll("[data-ref]")) td.textContent = fr(bench.values(td.dataset.ref)); }, onLog: () => { if (bench && journalHost && journalHost.isConnected) journalHost.replaceChildren(bench.journal()); } }); }
+
   function renderLeft() {
-    clear(left); const d = design();
+    clear(left); const d = design(), cpu = d ? cpuOf(d) : null, S = stepStates(d, cpu), cur = stepOf(st.step), prev = STEPS[cur.n - 2], next = STEPS[cur.n];
     left.append(el("div", { class: "side-head" }, el("h2", null, "Logiciel")));
-    if (!d) { left.append(el("div", { class: "side-scroll" }, el("p", { class: "atelier-hint" }, icon("info"), " Aucun logiciel dans ce projet. L'exemple pose une chaîne entière : une tension de cellule surveillée, une surtension qui ouvre le contactor, l'énergie comptée."))); return; }
-    const cpu = cpuOf(d), ok = ready(d, cpu), n = unsure(d).length, zipBtn = btn("Fichiers C (.zip)", () => { const f = files(); download(`${d.id}-c.zip`, zip(f.map((x) => ({ name: x.name, bytes: x.text }))), "application/zip"); toast(`${f.length} fichiers écrits : une bibliothèque, des modules, leur structure — et l'essai dos à dos.`, "success", 5000); },
-      { primary: true, small: true, icon: "download", disabled: !ok, tip: ok ? "La bibliothèque, les modules, la structure de fichiers et l'essai qui compare le C au modèle" : n ? `${n} valeur${n > 1 ? "s" : ""} d'exemple à confirmer d'abord — le guide y mène` : "Le guide dit ce qui manque" }); zipBtn.dataset.swZip = "";
-    left.append(el("div", { class: "side-actions" }, zipBtn, btn("Copier pour une IA", async () => toast((await copyText(aiText(d))) ? "Copié : le logiciel, ses objets et la consigne." : "Copie impossible.", "success", 4000), { small: true, icon: "sparkle", tip: "Confier le logiciel à un assistant : objets, fils, CPU, consigne" }), btn("Réimporter…", reimport, { small: true, icon: "wizard", tip: "Aperçu des changements, puis une seule étape annulable" })));
+    if (d) { const ok = ready(d, cpu), n = unsure(d).length, zipBtn = btn("Fichiers C (.zip)", () => { const f = files(); download(`${d.id}-c.zip`, zip(f.map((x) => ({ name: x.name, bytes: x.text }))), "application/zip"); toast(`${f.length} fichiers écrits : la bibliothèque, les modules, leur structure, l'essai — et doc/LOADING.md, pour les charger dans le CPU.`, "success", 6000); },
+      { primary: true, small: true, icon: "download", disabled: !ok, tip: ok ? "Le paquet : la bibliothèque, les modules, la structure de fichiers, l'essai et la marche à suivre pour le CPU" : n ? `${n} valeur${n > 1 ? "s" : ""} d'exemple à confirmer d'abord — étape 3` : "Le guide dit ce qui manque" }); zipBtn.dataset.swZip = "";
+      left.append(el("div", { class: "side-actions" }, zipBtn, btn("Copier pour une IA", async () => toast((await copyText(aiText(d))) ? "Copié : le logiciel, ses objets et la consigne." : "Copie impossible.", "success", 4000), { small: true, icon: "sparkle", tip: "Confier le logiciel à un assistant : objets, fils, CPU, consigne" }), btn("Réimporter…", () => reimport(design, change), { small: true, icon: "wizard", tip: "Aperçu des changements, puis une seule étape annulable" }))); }
     const scroll = el("div", { class: "side-scroll" }); left.append(scroll);
-    scroll.append(el("div", { class: "side-section", "data-box": "cpu", "data-fold-note": cpu.name }, el("h3", null, "Le CPU choisi"),
+    scroll.append(el("ol", { class: "sw-steps", "aria-label": "Les sept étapes du logiciel" }, STEPS.map((s) => el("li", null, el("button", { type: "button", class: `sw-step ${S[s.key].state}${s.key === st.step ? " on" : ""}`, "aria-current": s.key === st.step ? "step" : null, "data-sw-step-btn": s.key, style: `--dom:${s.color}`, "data-tip": `${s.n}. ${s.long} — ${S[s.key].text}`, disabled: !d && s.key !== "cpu", onClick: () => open(s.key) },
+      el("span", { class: "sw-step-n" }, S[s.key].state === "done" ? "✓" : String(s.n)), icon(s.icon), el("span", { class: "sw-step-t" }, s.title))))));
+    const words = wordsIn(`${cur.plain} ${cur.do}`);
+    scroll.append(el("div", { class: "side-section sw-stepcard", "data-sw-step": cur.key, "data-fold-note": `étape ${cur.n} sur ${STEPS.length}`, style: `--dom:${cur.color}` }, el("h3", null, `Étape ${cur.n} — ${cur.long}`),
+      el("p", { class: "sw-plain", "data-sw-plain": "" }, el("span", { class: "sw-tag" }, "En clair"), " ", cur.plain), el("p", null, el("span", { class: "sw-tag do" }, "On fait"), " ", cur.do),
+      el("p", { class: `sw-state ${S[cur.key].state}`, "data-sw-state-of": S[cur.key].state }, icon(S[cur.key].state === "done" ? "check" : S[cur.key].state === "todo" ? "warning" : "info"), " ", S[cur.key].text),
+      words.length ? el("details", { class: "sw-words", "data-sw-words": String(words.length) }, el("summary", null, `Les mots de cette étape (${words.length})`), el("dl", null, words.flatMap((w) => [el("dt", null, w.word, el("small", null, ` — ${w.en}`)), el("dd", null, w.says)]))) : null,
+      el("div", { class: "sw-nav" }, prev ? btn(`← ${prev.n}. ${prev.title}`, () => open(prev.key), { small: true, tip: prev.long }) : el("span"), next && d ? (() => { const b = btn(`${next.n}. ${next.title} →`, () => open(next.key), { small: true, primary: S[cur.key].state === "done", tip: next.long }); b.dataset.swNext = next.key; return b; })() : null)));
+    if (!d) return;
+    if (st.step === "cpu") scroll.append(el("div", { class: "side-section", "data-box": "cpu", "data-fold-note": cpu.name }, el("h3", null, "Les CPU que l'outil connaît"),
       el("div", { class: "cf-tiles lab-blocks" }, cpuList().map((c) => tile({ sel: c.key === cpu.key, color: c.lockstep ? "#b45309" : "#64748b", label: c.key === "generic" ? "Générique" : c.name.replace(/^TMS570LS1224 \(|\)$/g, "").split(",")[0], small: c.lockstep ? "TMS570LS1224 · lockstep" : "fiche à remplir", tip: c.says, pic: icon("chip", "lab-cat"), data: { "data-cpu": c.key }, run: () => change(`Logiciel : CPU ${c.name}`, (x) => { x.cpu = c.key; }) }))),
-      el("p", { class: "muted small" }, `${cpu.adc.modules > 1 ? `${cpu.adc.modules} convertisseurs` : "Un convertisseur"} de ${cpu.adc.bits} bits, ${cpu.adc.channels} voies ; ${cpu.gio} broches logiques au plus ; ${cpu.can} CAN, ${cpu.uart} UART.${cpu.lockstep ? " Deux cœurs en lockstep." : ""}`),
-      cpu.facts.length ? el("table", { class: "data sw-facts" }, el("tbody", null, cpu.facts.map((f) => el("tr", null, el("td", null, el("b", null, f.what), el("br"), f.value), el("td", { class: "muted" }, f.page))))) : null,
-      el("p", { class: "lab-note", "data-cpu-says": "" }, icon("info"), " ", cpu.says), cpu.source ? el("p", { class: "muted small" }, `${CPU_SOURCES[0].maker} — ${CPU_SOURCES[0].doc}. ${CPU_SOURCES[0].read}`) : null));
-    scroll.append(el("div", { class: "side-section", "data-box": "kinds", "data-fold-note": `${Object.keys(KINDS).length}` }, el("h3", null, "Poser un objet"),
-      NATURES.map((N) => [el("p", { class: "ft-label rd-group", style: `--dom:${N.color}` }, `${N.fr} — ${N.label}`), el("div", { class: "cf-tiles lab-blocks" }, Object.entries(KINDS).filter(([, K]) => K.nature === N.id).map(([k, K]) => tile({ color: N.color, label: K.label, small: K.fr, tip: K.text, pic: icon(K.icon, "lab-cat"), data: { "data-kind": k }, run: () => add(k) })))])));
-    const g = guideBox(guide(), { title: "Ce que le logiciel demande", quiet: "Rien à signaler : les fichiers peuvent être écrits." }); if (g) scroll.append(el("div", { class: "side-section", "data-box": "guide" }, el("h3", null, "À régler"), g));
-  }
-  const aiText = (d) => ["Tu es l'assistant de conception de DesignWizard.ai. Voici le logiciel embarqué d'un BMS, décrit comme des OBJETS reliés par des fils : chaque objet a un genre (kind), des paramètres, et des ports ; un fil va d'une sortie « objet.port » à une entrée « objet.port ».",
-    `GENRES DISPONIBLES — ${Object.entries(KINDS).map(([k, K]) => `${k} (${K.label} : entrées ${K.ports.in.map((p) => p.key).join(", ") || "aucune"} ; sorties ${K.ports.out.map((p) => p.key).join(", ") || "aucune"} ; paramètres ${K.params.map((p) => p.key).join(", ") || "aucun"})`).join(" · ")}.`,
-    `CPU CHOISI — ${cpuOf(d).name} : ${cpuOf(d).adc.channels} voies analogiques de ${cpuOf(d).adc.bits} bits, ${cpuOf(d).gio} broches logiques.`,
-    "TA TÂCHE — relis ce logiciel comme un ingénieur de logiciel embarqué : un objet qui manque, un seuil ou un délai qui te paraît faux, une entrée non reliée. Dis-le en quelques lignes, puis attends mon accord.",
-    "RÉPONSE ATTENDUE — un seul bloc ```json avec le logiciel entier, même forme. Toute valeur que tu changes ou ajoutes reste un EXEMPLE : ne l'inscris pas dans « sure ». N'invente pas de genre d'objet.", "", "```json", JSON.stringify(d, null, 1), "```"].join("\n");
-  function reimport() {
-    const area = el("textarea", { rows: 9, placeholder: "Collez la réponse de l'assistant : elle contient le logiciel dans un bloc ```json." }), out = el("div"); let next = null;
-    const ok = btn("Appliquer ces changements", () => { if (!next) return; change("Logiciel : réponse de l'IA", (d) => { for (const k of Object.keys(d)) delete d[k]; Object.assign(d, next); }); m.close(); toast("Logiciel mis à jour. Ctrl + Z pour revenir.", "success"); }, { primary: true, icon: "check", disabled: true });
-    area.addEventListener("input", () => { next = null; ok.disabled = true; out.replaceChildren(); if (!area.value.trim()) return;
-      try { const m2 = area.value.match(/```json\s*([\s\S]*?)```/), doc = JSON.parse(m2 ? m2[1] : area.value), now = design(); if (!doc || !Array.isArray(doc.objects) || !Array.isArray(doc.wires)) throw new Error("La réponse ne contient pas un logiciel (objects, wires)."); const bad = doc.objects.filter((o) => !KINDS[o.kind]); if (bad.length) throw new Error(`Genre d'objet inconnu : ${bad.map((o) => o.kind).join(", ")}.`);
-        const was = new Map(now.objects.map((o) => [o.id, JSON.stringify({ ...o, x: 0, y: 0 })])), lines = []; for (const o of doc.objects) { const w = was.get(o.id); if (w === undefined) lines.push(`+ ${o.name || o.id} (${KINDS[o.kind].label}) — créé`); else if (w !== JSON.stringify({ ...o, x: 0, y: 0 })) lines.push(`~ ${o.name || o.id} — modifié`); was.delete(o.id); }
-        for (const id of was.keys()) lines.push(`− ${id} — retiré`); const wn = JSON.stringify(now.wires) !== JSON.stringify(doc.wires); if (wn) lines.push(`~ les fils : ${now.wires.length} → ${doc.wires.length}`);
-        /* a value an answer changed or brought is an example : it is not taken for confirmed */
-        const old = new Map(now.objects.map((o) => [o.id, o])); doc.objects = doc.objects.map((o) => { const p = old.get(o.id), c0 = p ? cfgOf(p) : {}, c1 = cfgOf(o); return { ...o, sure: (p ? p.sure || [] : []).filter((k) => c0[k] === c1[k]) }; });
-        const ps = problems(doc, cpuOf(doc)).filter((p) => p.level === "error"); out.append(el("p", null, lines.length ? `${lines.length} changement(s) :` : "Aucun changement."), el("ul", { class: "decisions" }, lines.slice(0, 30).map((t) => el("li", null, t))), ...(ps.length ? [el("p", { class: "form-error" }, `Ce que cela dérange : ${ps.map((p) => p.text).join(" ")}`)] : []));
-        if (lines.length) { next = doc; ok.disabled = false; } } catch (e) { out.append(el("p", { class: "form-error" }, e.message)); } });
-    const m = modal("Réimporter le logiciel depuis une IA", [field("Réponse de l'assistant", area), out, el("div", { class: "form-actions" }, btn("Annuler", () => m.close()), ok)], { wide: true });
-  }
-  function renderRight() {
-    clear(right); const d = design(); if (!d) return; const o = st.sel && st.sel.obj ? d.objects.find((x) => x.id === st.sel.obj) : null, w = st.sel && st.sel.wire ? d.wires.find((x) => x.from === st.sel.wire.from && x.to === st.sel.wire.to) : null;
-    right.append(el("div", { class: "side-head" }, el("h2", null, o ? o.name : w ? "Un fil" : d.name || "Logiciel")), el("div", { class: "subtabs", style: { margin: "0 .6rem" }, role: "tablist" }, [["obj", "Objet"], ["files", "Fichiers"], ["run", "Essai"]].map(([k, l]) => el("button", { class: "subtab" + (st.tab === k ? " active" : ""), type: "button", role: "tab", "aria-selected": st.tab === k ? "true" : "false", "data-tab": k, onClick: () => { st.tab = k; renderRight(); } }, l))));
-    const body = el("div", { class: "side-scroll" }); right.append(body); const sec = (title, note, ...kids) => { const x = el("div", { class: "side-section", "data-fold-note": note }, el("h3", null, title), ...kids.flat().filter(Boolean)); body.append(x); return x; };
-    if (st.tab === "obj") {
-      if (o) { const K = KINDS[o.kind], N = NATURES.find((n) => n.id === K.nature), c = cfgOf(o), mine = (o.sure || []), left0 = K.params.filter((p) => !mine.includes(p.key));
-        body.append(el("p", { class: "lab-nature", style: `--dom:${N.color}` }, icon(K.icon), el("span", null, el("b", null, `${K.label} — ${K.fr}`), el("small", null, `${N.fr} · ${K.text}`))));
-        sec("L'objet", o.off ? "à Off" : "à On", field("Nom", el("input", { type: "text", value: o.name, "data-sw-name": "", onChange: (e) => change(`Logiciel : ${o.id} renommé`, (x) => { x.objects.find((q) => q.id === o.id).name = e.target.value.trim() || o.id; }) })),
-          el("div", { class: "form-actions", style: { justifyContent: "flex-start" } }, onOff(!o.off, (on) => change(`Logiciel : ${o.name} ${on ? "à On" : "à Off"}`, (x) => { const q = x.objects.find((z) => z.id === o.id); if (on) delete q.off; else q.off = true; }), o.name, o.off ? "Cet objet est de côté : il n'est ni simulé ni écrit — cliquer pour le remettre" : "Mettre cet objet de côté sans le perdre"),
-            btn("Dupliquer", () => change(`Logiciel : ${o.name} dupliqué (copie à Off)`, (x) => { let n = 2; while (x.objects.some((z) => z.id === `${o.id}_${n}`)) n++; x.objects.push({ ...JSON.parse(JSON.stringify(o)), id: `${o.id}_${n}`, name: `${o.name} (copie)`, off: true, x: (o.x || 0) + 20, y: (o.y || 0) + 30 }); }), { small: true, icon: "copy", tip: "La copie naît à Off, sans fils" }),
-            btn("Supprimer", () => { change(`Logiciel : ${o.name} supprimé`, (x) => { x.objects = x.objects.filter((z) => z.id !== o.id); x.wires = x.wires.filter((q) => split(q.from)[0] !== o.id && split(q.to)[0] !== o.id); }); st.sel = null; }, { small: true, icon: "trash", danger: true })));
-        if (K.params.length) sec("Ses valeurs", left0.length ? `${left0.length} à confirmer` : "confirmées", K.params.map((p) => { const U = paramUnit(o, p), set = (v) => change(`Logiciel : ${o.name} — ${p.label}`, (x) => { const q = x.objects.find((z) => z.id === o.id); q.params = q.params || {}; q.params[p.key] = v; q.sure = [...new Set([...(q.sure || []), p.key])]; });
-          const input = p.choices ? el("select", { "data-sw-param": p.key, onChange: (e) => set(typeof p.value === "number" ? Number(e.target.value) : e.target.value) }, p.choices.map((v) => el("option", { value: v, selected: v === c[p.key] }, String(v)))) : el("input", { type: "number", step: "1", value: String(c[p.key]), min: p.min, max: p.max, "data-sw-param": p.key, onChange: (e) => { const v = Math.round(Number(e.target.value)); if (Number.isFinite(v)) set(v); } });
-          if (!mine.includes(p.key)) needField(input, { hint: "Une valeur d'exemple proposée par l'outil : tapez la vôtre, ou confirmez-la." }); return field(`${p.label}${U ? ` (${U})` : ""}`, input, p.text || null); }),
-          left0.length ? (() => { const b = btn(`Confirmer ${left0.length > 1 ? `ces ${left0.length} valeurs` : "cette valeur"}`, () => change(`Logiciel : valeurs de ${o.name} confirmées`, (x) => { x.objects.find((z) => z.id === o.id).sure = K.params.map((p) => p.key); }), { small: true, icon: "check", tip: "Vous avez relu ces valeurs : elles ne sont plus des exemples" }); b.dataset.swSure = ""; return b; })() : null);
-        sec("Ce qu'il doit faire", "", el("p", { class: "lab-why", "data-sw-req": "" }, requirement(d, o)), el("p", { class: "muted small" }, "Cette phrase est écrite d'après les valeurs et les fils : elle va dans doc/TRACE.md, à côté des fichiers de l'objet."));
-      } else if (w) { const c = wireCheck(d, w.from, w.to);
-        sec("Le fil", w.delay ? "valeur du pas d'avant" : "", el("p", { class: "lab-why" }, `${w.from} → ${w.to}`), c.text ? el("p", { class: c.ok ? "lab-note" : "form-error" }, c.text) : null,
-          el("div", { class: "form-actions", style: { justifyContent: "flex-start" } }, onOff(!!w.delay, (on) => change(`Logiciel : fil ${w.from} → ${w.to}`, (x) => { const q = x.wires.find((z) => z.from === w.from && z.to === w.to); if (on) q.delay = true; else delete q.delay; }), "valeur du pas d'avant", "Ce fil porte la valeur du pas d'avant : ce qui ouvre une boucle, comme dans un schéma-bloc"), el("span", null, "Valeur du pas d'avant"),
-            btn("Retirer le fil", () => { change(`Logiciel : fil ${w.from} → ${w.to} retiré`, (x) => { x.wires = x.wires.filter((z) => !(z.from === w.from && z.to === w.to)); }); st.sel = null; }, { small: true, icon: "trash", danger: true })));
-      } else { const n = unsure(d).length;
-        sec("Le logiciel", `${d.objects.length} objets`, el("p", { class: "lab-why" }, "Un clic sur une tuile ouvre sa fiche ; sa tête se glisse pour la déplacer. Un clic sur une sortie, puis sur une entrée, tire un fil — l'outil le refuse quand les unités ne s'accordent pas."),
-          field("Période du pas (ms)", el("input", { type: "number", min: 1, max: 1000, step: 1, value: String(d.period || 10), "data-sw-period": "", onChange: (e) => { const v = Math.round(Number(e.target.value)); if (v >= 1) change("Logiciel : période du pas", (x) => { x.period = v; }); } }), "Tous les combien le logiciel refait son pas : les délais se comptent en pas."),
-          n ? (() => { const b = btn(`Confirmer les ${n} valeurs d'exemple…`, async () => { if (await confirmBox("Confirmer toutes les valeurs", `Les ${n} valeurs proposées par l'outil — seuils, délais, échelles, numéros de broches — seront tenues pour relues. Faites-le seulement si vous les avez lues.`, "Je les ai relues")) change("Logiciel : toutes les valeurs confirmées", (x) => { for (const q of x.objects) if (KINDS[q.kind]) q.sure = KINDS[q.kind].params.map((p) => p.key); }); }, { small: true, icon: "check" }); b.dataset.swSureAll = ""; return b; })() : null); }
-    } else if (st.tab === "files") { const F = files(), cur = F.find((f) => f.name === st.file) || F[0], cpu = cpuOf(d);
-      sec("Ce que l'outil écrit", `${F.length} fichiers`, el("p", { class: "muted small" }, `C99 sobre : pas d'allocation, types à largeur fixe, aucun nombre à virgule. C'est un SQUELETTE : il n'a tourné sur aucun microcontrôleur, et le code des registres du ${cpu.key === "generic" ? "CPU" : "TMS570"} reste à écrire avec la bibliothèque de son fabricant. Aucune prétention de certification.`),
-        Object.entries(FOLDERS).map(([dir, [c, what]]) => { const mine = F.filter((f) => f.name.startsWith(`bms/${dir}/`)); return mine.length ? [el("p", { class: "ft-label rd-group", style: `--dom:${c}` }, `${dir}/ — ${what}`), mine.map((f) => el("button", { class: "nav-item" + (cur && f.name === cur.name ? " active" : ""), type: "button", "data-sw-file": f.name, onClick: () => { st.file = f.name; renderRight(); } }, icon("code"), el("span", { class: "grow" }, f.name.replace(`bms/${dir}/`, "")), el("small", null, `${f.text.split("\n").length} l.`)))] : null; }),
-        F.filter((f) => f.name === "bms/README.md").map((f) => el("button", { class: "nav-item" + (cur && f.name === cur.name ? " active" : ""), type: "button", "data-sw-file": f.name, onClick: () => { st.file = f.name; renderRight(); } }, icon("info"), el("span", { class: "grow" }, "README.md"))));
-      if (cur) sec(cur.name.replace("bms/", ""), "", el("pre", { class: "code sw-code", "data-sw-code": cur.name, tabindex: 0 }, cur.text));
-    } else { const ev = R ? events(d, R) : [], name = (ref) => { const [id, key] = split(ref), x = d.objects.find((q) => q.id === id); return `${x ? x.name : id} — ${key}`; };
-      sec("Le scénario rejoué", R ? `${R.t.length} pas` : "", el("p", { class: "lab-why" }, "Le modèle est rejoué pas à pas contre le scénario du banc : la demande de fermeture, la cellule qui monte, le contact qui suit. Le curseur sous la page montre chaque instant ; le programme d'essai en C rejoue le même scénario, et doit imprimer les mêmes nombres."),
-        ev.length ? el("ul", { class: "lab-list", "data-sw-events": String(ev.length) }, ev.map((e) => el("li", null, el("button", { class: "link", type: "button", onClick: () => { st.k = R.t.indexOf(e.t); const s = bar.querySelector("[data-sw-pos]"); if (s) s.value = String(st.k); paint(); } }, `${e.t} ms`), ` — ${name(e.ref)} passe à ${e.to}`))) : el("p", { class: "muted" }, "Rien ne bascule dans ce scénario."),
-        el("p", { class: "muted small" }, "Les valeurs du scénario sont celles d'un exemple. Les pannes injectées à la main et la ligne de temps complète viendront avec le banc du pack."));
+      el("p", { class: "muted small" }, "Sa fiche est au centre : chaque chiffre avec la page de la fiche technique où il a été lu.")));
+    if (st.step === "objects") scroll.append(el("div", { class: "side-section", "data-box": "kinds", "data-fold-note": `${Object.keys(KINDS).length} genres` }, el("h3", null, "Poser une tuile"), el("p", { class: "muted small" }, "Chaque tuile dit combien elle a d'entrées (à gauche) et de sorties (à droite)."),
+      NATURES.map((N) => [el("p", { class: "ft-label rd-group", style: `--dom:${N.color}` }, `${N.fr} — ${N.label}`), el("div", { class: "cf-tiles lab-blocks" }, Object.entries(KINDS).filter(([, K]) => K.nature === N.id).map(([k, K]) => tile({ color: N.color, label: K.label, small: `${K.fr} · ${kindShape(k)}`, tip: K.text, pic: icon(K.icon, "lab-cat"), data: { "data-kind": k }, run: () => add(k) })))])));
+    if (st.step === "values") { const U = unsure(d), objs = d.objects.filter((o) => U.some((u) => u.obj === o.id));
+      scroll.append(el("div", { class: "side-section", "data-box": "todo", "data-fold-note": `${U.length} à relire` }, el("h3", null, "Les valeurs à relire"), objs.length ? el("div", { "data-sw-todo": String(U.length) }, objs.map((o) => { const K = KINDS[o.kind], n = U.filter((u) => u.obj === o.id).length, N = NATURES.find((x) => x.id === K.nature);
+        return el("button", { class: `nav-item${st.sel && st.sel.obj === o.id ? " active" : ""}`, type: "button", style: `box-shadow: inset 3px 0 0 ${N.color}`, "data-sw-todo-obj": o.id, onClick: () => pick(o.id) }, icon(K.icon), el("span", { class: "grow" }, o.name), el("small", null, `${n} à relire`)); })) : el("p", { class: "lab-note" }, icon("check"), " Toutes les valeurs ont été relues.")));
     }
+    if (st.step === "live") { journalHost = el("div"); scroll.append(el("div", { class: "side-section", "data-box": "journal", "data-fold-note": "ce qui a basculé" }, el("h3", null, "Ce qui a basculé"), journalHost)); if (bench) journalHost.replaceChildren(bench.journal()); }
+    if (st.step === "code") { const F = files(), cur0 = F.find((f) => f.name === st.file) || F[0];
+      scroll.append(el("div", { class: "side-section", "data-box": "files", "data-fold-note": `${F.length} fichiers` }, el("h3", null, "Le paquet, fichier par fichier"),
+        F.filter((f) => f.name === "bms/README.md").map((f) => el("button", { class: "nav-item" + (cur0 && f.name === cur0.name ? " active" : ""), type: "button", "data-sw-file": f.name, onClick: () => { st.file = f.name; all(); } }, icon("info"), el("span", { class: "grow" }, "README.md — à lire d'abord"))),
+        Object.entries(FOLDERS).map(([dir, [c, what]]) => { const mine = F.filter((f) => f.name.startsWith(`bms/${dir}/`)); return mine.length ? [el("p", { class: "ft-label rd-group", style: `--dom:${c}` }, `${dir}/ — ${what}`), mine.map((f) => el("button", { class: "nav-item" + (cur0 && f.name === cur0.name ? " active" : ""), type: "button", "data-sw-file": f.name, onClick: () => { st.file = f.name; all(); } }, icon("code"), el("span", { class: "grow" }, f.name.replace(`bms/${dir}/`, "")), el("small", null, `${f.text.split("\n").length} l.`)))] : null; })));
+    }
+    if (st.step === "load") scroll.append(el("div", { class: "side-section", "data-box": "pack", "data-fold-note": "" }, el("h3", null, "Le paquet"), el("p", { class: "muted small" }, "Tout ce qui est décrit au centre est aussi écrit dans le paquet, en anglais : doc/LOADING.md."),
+      btn("Lire doc/LOADING.md", () => { st.file = "bms/doc/LOADING.md"; open("code"); }, { small: true, icon: "code" })));
+    const g = guideBox(guide(), { title: "Ce que le logiciel demande", quiet: "Rien à signaler : le paquet peut être écrit." }); if (g) scroll.append(el("div", { class: "side-section", "data-box": "guide", "data-fold-note": "le guide" }, el("h3", null, "À régler — le guide"), g));
   }
-  function renderBar() { clear(bar); const d = design(); if (!d || !R || !R.t.length) return; bar.append(el("span", { class: "chip" }, "Instant"), el("input", { type: "range", min: 0, max: R.t.length - 1, value: String(Math.min(st.k, R.t.length - 1)), "data-sw-pos": "", "aria-label": "Instant du scénario", onInput: (e) => { st.k = Number(e.target.value); paint(); } }), el("span", { class: "chip", "data-sw-now": "" }, `${R.t[Math.min(st.k, R.t.length - 1)]} ms`), el("span", { class: "muted small" }, `pas de ${d.period || 10} ms · chaque sortie montre ce qu'elle vaut à cet instant`)); }
-  function all() { const d = design(); R = run(); if (R && st.k >= R.t.length) st.k = Math.max(0, R.t.length - 1);
-    host.hidden = bar.hidden = !d; empty.hidden = !!d; root.classList.toggle("no-right", !d); right.hidden = !d;
-    if (!d) { clear(empty); empty.append(el("div", { class: "empty" }, el("h2", null, "Le logiciel du BMS, par objets"), el("p", null, "Chaque chose que le CPU doit gérer est un objet posé sur la page : il connaît ses entrées, ses sorties, leurs plages. Vous reliez les objets ; l'outil écrit le C — une bibliothèque, des modules, leur structure de fichiers — et prouve, en le compilant, qu'il fait ce que le dessin dit."),
+
+  function renderRight() {
+    clear(right); journalHost = journalHost && journalHost.isConnected ? journalHost : null; const d = design(); if (!d || !RIGHT.has(st.step)) return;
+    const o = st.sel && st.sel.obj ? d.objects.find((x) => x.id === st.sel.obj) : null, w = st.sel && st.sel.wire ? d.wires.find((x) => x.from === st.sel.wire.from && x.to === st.sel.wire.to) : null;
+    right.append(el("div", { class: "side-head" }, el("h2", null, st.step === "live" ? "Le banc" : o ? o.name : w ? "Un fil" : d.name || "Logiciel")));
+    const body = el("div", { class: "side-scroll" }); right.append(body);
+    if (st.step === "live") { const at = el("div");
+      body.append(el("div", { class: "side-section", "data-box": "bench", "data-fold-note": "ce que lisent les broches" }, el("h3", null, "Ce que lisent les broches"), el("p", { class: "muted small" }, "Chaque entrée du logiciel est une broche du CPU : vous décidez ce qu'elle lit. Changez-en une pendant la marche, ou en pause puis « Un pas »."), at));
+      if (bench) bench.mountSide(at);
+      if (o) sheet(body, { d, sel: st.sel, change, live: true, values: bench ? { ...bench.L.m.last } : null, onGone: () => { st.sel = null; } });
+      else body.append(el("p", { class: "muted small" }, "Un clic sur une tuile montre ici ce qui y entre et ce qui en sort, en direct."));
+      return; }
+    sheet(body, { d, sel: st.sel, change, values: valuesAt(), onGone: () => { st.sel = null; } });
+    if (!o && !w && R) { const ev = events(d, R), name = (ref) => { const [id, key] = split(ref), x = d.objects.find((q) => q.id === id); return `${x ? x.name : id} — ${key}`; };
+      body.append(el("div", { class: "side-section", "data-fold-note": `${R.t.length} pas` }, el("h3", null, "Le scénario rejoué"), el("p", { class: "muted small" }, "Le modèle est rejoué contre le scénario de l'exemple ; le curseur sous la page montre chaque instant. Pour tenir le banc vous-même : étape 5."),
+        ev.length ? el("ul", { class: "lab-list", "data-sw-events": String(ev.length) }, ev.map((e) => el("li", null, el("button", { class: "link", type: "button", onClick: () => { st.k = R.t.indexOf(e.t); const s = replay.querySelector("[data-sw-pos]"); if (s) s.value = String(st.k); paint(); renderRight(); } }, `${e.t} ms`), ` — ${name(e.ref)} passe à ${e.to}`))) : el("p", { class: "muted" }, "Rien ne bascule dans ce scénario."))); }
+  }
+  function renderReplay() { clear(replay); const d = design(); if (!d || !R || !R.t.length) return; replay.append(el("span", { class: "chip" }, "Scénario"), el("input", { type: "range", min: 0, max: R.t.length - 1, value: String(Math.min(st.k, R.t.length - 1)), "data-sw-pos": "", "aria-label": "Instant du scénario", onInput: (e) => { st.k = Number(e.target.value); paint(); } }), el("span", { class: "chip", "data-sw-now": "" }, `${R.t[Math.min(st.k, R.t.length - 1)]} ms`), el("span", { class: "muted small" }, `pas de ${d.period || 10} ms · chaque sortie montre ce qu'elle vaut à cet instant`)); }
+  function paint() { const d = design(); if (!d || !CANVAS.has(st.step)) return; canvas.draw(d, st.step === "live" ? null : R, st.k, st.sel); if (st.step === "live" && bench) canvas.values(bench.values); const s = replay.querySelector("[data-sw-now]"); if (s && R) s.textContent = `${R.t[Math.min(st.k, R.t.length - 1)] ?? 0} ms`; }
+  function centre(d) { const cpu = cpuOf(d); if (st.step === "cpu") return cpuPage(d, cpu); if (st.step === "start") return startPage(d, cpu); if (st.step === "load") return loadPage(d, cpu);
+    const F = files(); return codePage(F, F.find((f) => f.name === st.file) || F[0], FOLDERS); }
+
+  function all() {
+    const d = design(); R = d ? simulate(d) : null; if (R && st.k >= R.t.length) st.k = Math.max(0, R.t.length - 1);
+    const onCanvas = !!d && CANVAS.has(st.step), showRight = !!d && RIGHT.has(st.step), errs = d ? problems(d, cpuOf(d)).filter((p) => p.level === "error") : [];
+    root.classList.toggle("no-right", !showRight); right.hidden = !showRight; empty.hidden = !!d; host.hidden = !onCanvas; pageHost.hidden = !d || onCanvas; replay.hidden = !onCanvas || st.step === "live"; liveBox.hidden = !d || st.step !== "live";
+    if (!d) { stopBench(); clear(empty); empty.append(el("div", { class: "empty" }, el("h2", null, "Le logiciel du BMS, par objets"), el("p", null, "Chaque chose que le CPU doit gérer est une tuile posée sur la page : elle connaît ses entrées, ses sorties, leurs plages. Vous reliez les tuiles ; l'outil écrit le C — une bibliothèque, des modules, leur structure de fichiers —, le fait tourner devant vous, et dit comment le charger dans le CPU."),
       (() => { const b = btn("Partir de l'exemple", () => store.commit("Logiciel : exemple posé", (p) => { p.software = [demoDesign()]; }), { primary: true, icon: "play" }); b.dataset.swDemo = ""; return b; })())); renderLeft(); clear(right); setGuide([]); return; }
-    renderLeft(); renderRight(); renderBar(); paint(); setGuide(guide()); setStatus(ready(d, cpuOf(d)) ? "Logiciel prêt à écrire" : "Logiciel : à régler", ready(d, cpuOf(d)) ? "done" : ""); }
-  const off = store.on("change", () => { if (st.alive) all(); });
+    if (st.step === "live" && !errs.length) ensureBench(); else stopBench();
+    clear(liveBox); if (st.step === "live") { if (bench) liveBox.append(bench.bar, el("div", { class: "sw-lanes-box" }, el("p", { class: "muted small" }, "Chronogramme — les dernières secondes : une ligne par décision (rouge quand elle vaut 1) et par mesure."), bench.chart)); else liveBox.append(el("p", { class: "form-error", "data-sw-live-blocked": "" }, `Le banc attend un logiciel sans erreur : ${errs[0] ? errs[0].text : ""}`)); }
+    if (!onCanvas) pageHost.replaceChildren(centre(d));
+    renderLeft(); renderRight(); renderReplay(); paint(); setGuide(guide()); setStatus(ready(d, cpuOf(d)) ? "Logiciel prêt à écrire" : "Logiciel : à régler", ready(d, cpuOf(d)) ? "done" : "");
+  }
+  const off = store.on("change", () => { if (!st.alive) return; if (bench) { stopBench(); } all(); });
   all();
-  return () => { st.alive = false; off(); canvas.destroy(); setGuide([]); };
+  return () => { st.alive = false; off(); stopBench(); canvas.destroy(); setGuide([]); };
 }
-registerModule({ key: "sw", label: "Logiciel", icon: "code", tip: "Le logiciel embarqué du BMS, par objets reliés : l'outil en écrit le C — bibliothèque, modules, structure de fichiers — pour le CPU choisi", render });
+registerModule({ key: "sw", label: "Logiciel", icon: "code", tip: "Le logiciel embarqué du BMS, pas à pas : des tuiles reliées, un banc en direct, le code que l'outil écrit et la façon de le charger dans le CPU", render });

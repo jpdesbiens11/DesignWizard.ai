@@ -16,6 +16,7 @@
 import { FOOT_NOTE_ASCII } from "../core/brand.js";
 import { KINDS, cfgOf, portsOf } from "./sw_objects.js";
 import { order, liveWires, simulate, unsure, split } from "./sw_design.js";
+import { loadDoc } from "./sw_load.js";
 
 const up = (s) => String(s).toUpperCase().replace(/[^A-Z0-9]+/g, "_"), lo = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, "_");
 const head = (name, what) => `/* ${name} — ${what}\n * ${FOOT_NOTE_ASCII}\n * WRITTEN BY THE TOOL from the objects of the design : change the design, not this file.\n * A skeleton : it has run on no microcontroller. */\n`;
@@ -120,6 +121,24 @@ void dw_contactor_step(dw_contactor_t *s, const dw_contactor_cfg_t *c, dw_bool r
     cfg: (c) => `{ ${c.t_fb}U }`, call: (v, i, C) => `dw_contactor_step(&${v}, &${C}, ${i.request}, ${i.inhibit}, ${i.feedback}, dt_ms);`, outs: { drive: "drive", fault: "fault" } },
 };
 const ctype = (p) => (p.unit === "0/1" ? "dw_bool" : p.unit === "counts" ? "uint16_t" : "int32_t");
+const SIZE = { dw_bool: 1, uint8_t: 1, uint16_t: 2, int16_t: 2, int32_t: 4, uint32_t: 4, int64_t: 8, uint64_t: 8 };
+/** The size of a C structure as a compiler lays it out with natural alignment : each field on a multiple of its own size, the whole on a
+    multiple of its largest field. fields : [{ name, type, n? }] or the text between the braces of a typedef. → { size, align, fields: [{ name, type, n, at, size }] } */
+export function structSize(fields) {
+  const list = typeof fields === "string" ? fields.split(";").map((f) => f.trim()).filter(Boolean).map((f) => { const m = /^(\w+)\s+(\w+)(?:\[(\d+)\])?$/.exec(f); return m ? { type: m[1], name: m[2], n: m[3] ? Number(m[3]) : 1 } : null; }).filter(Boolean) : fields;
+  let at = 0, align = 1; const out = [];
+  for (const f of list) { const one = SIZE[f.type] || 4, n = f.n || 1; at = Math.ceil(at / one) * one; out.push({ name: f.name, type: f.type, n, at, size: one * n }); at += one * n; align = Math.max(align, one); }
+  return { size: Math.ceil(at / align) * align, align, fields: out };
+}
+const inBraces = (text, name) => { const m = new RegExp(`typedef struct \\{([^}]*)\\} ${name};`).exec(text || ""); return m ? m[1] : null; };
+/** What the software keeps in memory, read from the very structures the files declare : for each object its working memory (RAM) and its table
+    of settings (constant, in flash) ; and the one structure of every signal. → { objects: [{ id, name, kind, mod, ram, rom, vars: [{ name, type, n }] }], signals: { size, fields }, ram, rom } */
+export function memoryPlan(d) {
+  const P = plan(d), objects = P.objs.filter((x) => LIB[x.kind]).map((x) => { const L = LIB[x.kind], st = structSize(inBraces(L.h, `${L.mod}_t`) || ""), cf = inBraces(L.h, `${L.mod}_cfg_t`);
+    return { id: x.id, name: x.name, kind: x.kind, mod: L.mod, ram: st.size, rom: cf ? structSize(cf).size : 0, vars: st.fields.map((f) => ({ name: f.name, type: f.type, n: f.n })) }; });
+  const signals = structSize(P.outs.map((x) => ({ name: x.name, type: ctype(x.port) })));
+  return { objects, signals, ram: objects.reduce((n, o) => n + o.ram, 0) + signals.size, rom: objects.reduce((n, o) => n + o.rom, 0) };
+}
 
 /** What the design is, read once for the writers. */
 function plan(d) {
@@ -177,6 +196,7 @@ export function cFiles(d, o = {}) {
   /* doc/ */
   const rows = P.objs.map((x) => { const L = LIB[x.kind]; return `| ${ascii(x.name)} | ${KINDS[x.kind].label} | ${L ? `lib/${L.mod}.c` : "hal/hal.h"} | ${L && L.cfg ? cname(x) : KINDS[x.kind].pin ? pname(x) : "-"} | ${ascii(requirement(d, x))} |`; });
   put("doc/TRACE.md", `# ${ascii(d.name || d.id)} - object <-> files <-> what it must do\n\n${FOOT_NOTE_ASCII}\n\n| Object | Kind | Module | Table / pin | What it must do |\n| --- | --- | --- | --- | --- |\n${rows.join("\n")}\n\nThe test (test/bms_test.c) replays the scenario of the design and prints every signal at every step ; test/expected.txt is what the MODEL of the tool gives for the same scenario. The two must be the same, character for character.\n`);
+  put("doc/LOADING.md", loadDoc(cpu, ascii(d.name || d.id)));      // from these files to the microcontroller, step by step — what the maker of the CPU publishes, where it was read
   put("README.md", `# ${ascii(d.name || d.id)}\n\n${FOOT_NOTE_ASCII}\n\nWritten by the tool from ${P.objs.length} objects and ${liveWires(d).length} wires. CPU chosen : ${ascii(cpu.name)}. Period of the step : ${d.period || 10} ms.\n${pending.length ? `\n**${pending.length} value(s) are examples proposed by the tool and not confirmed by the project.**\n` : ""}\n- lib/ : one module per kind of object (${P.kinds.map((k) => LIB[k].mod).join(", ")})\n- cfg/ : one table per object\n- io/ : signal <-> pin\n- app/ : the step, every object in the order of the wires\n- hal/ : the interface to the microcontroller ; hal/${dir}/ is to be written with the library of the maker ; hal/host/ lets a computer run the test\n- test/ : the scenario replayed ; doc/ : object <-> files <-> what it must do\n\nBack to back, on a computer :\n\n    cc -std=c99 -Wall -Wextra -pedantic -Werror -Ilib -Icfg -Iio -Iapp -Ihal lib/*.c cfg/*.c app/*.c hal/host/*.c test/*.c -o bms_test\n    ./bms_test > got.txt && cmp got.txt test/expected.txt\n\nThis is a SKELETON. It has run on no microcontroller. No claim of certification is made : under DO-178C or ISO 26262 a code generator must itself be qualified.\n`);
   return files;
 }

@@ -68,6 +68,51 @@ C99 sobre : pas d'allocation, types à largeur fixe, aucun nombre à virgule, AS
 `-std=c99 -Wall -Wextra -pedantic -Werror`, le programme d'essai doit imprimer, caractère pour caractère, ce que le
 modèle donne pour le même scénario (`cExpected`). Le README du dossier donne la ligne de commande.
 
+## 4 bis. Pas à pas : sept étapes, une simulation en direct, le code à l'écran, le chargement (v0.124.0)
+
+Demande de JP (20 novembre 2026), sur l'écran `#/sw` : les entrées et les sorties des blocs ne sont pas claires, les
+références aux pages de la fiche non plus, le guide ne se voit pas, le code final ne se voit qu'une fois téléchargé ;
+le vouloir **pas à pas, comme pour un étudiant de 16 ans** ; essayer **le démarrage, l'initialisation, la mémoire** ;
+**une vraie simulation en temps réel**, en pause, où l'on change les entrées et voit le logiciel réagir ; et
+**l'important : voir le paquet final et savoir comment il se charge dans le microcontrôleur choisi**.
+
+**Les sept étapes** (`web/js/sw/sw_steps.js`), numérotées en tête du volet de gauche — CPU, Objets, Valeurs,
+Démarrage, Simulation, Code, Chargement. Chacune dit **en clair** ce qu'elle est et **ce que l'on fait**, si elle est
+faite (lu dans le logiciel, jamais coché à la main), et déplie les **mots du métier** qu'elle emploie (le mot, son nom
+anglais, une phrase). L'adresse garde l'étape (`#/sw/live`). Le **guide** est dans le volet, sous l'étape.
+
+- **CPU** — la fiche du CPU est au CENTRE : chaque chiffre, ce que la fiche dit, et une colonne « Page de la fiche »
+  dont chaque page est un lien vers le document, ouvert à cette page.
+- **Objets** — chaque tuile dit sous sa tête **ENTRÉES** (à gauche, une flèche qui ENTRE dans la tuile) et **SORTIES**
+  (à droite, un point qui en sort), et son rang dans le pas (« n° 3 ») ; sa fiche dit, ligne par ligne, d'où vient chaque
+  entrée, où va chaque sortie, sa plage et ce qu'elle vaut (`ioRows`).
+- **Valeurs** — la liste des tuiles qui ont des valeurs d'exemple à relire ; un clic ouvre leur fiche, la valeur clignote.
+- **Démarrage** (`web/js/sw/sw_start.js`) — ce qui se passe, dans l'ordre : ce que le CPU fait seul (lu dans sa fiche :
+  3 497 cycles de l'oscillateur en quatre phases, tableau 6-3, p. 52), `hal_init()`, `bms_init()`, puis le pas, tuile après
+  tuile. **L'essai de démarrage** : signaux à 0 après l'initialisation, aucune sortie commandée au premier pas ni pendant
+  une seconde d'entrées au repos, ce qui bascule pendant ce repos (dit, non jugé : une mesure à 0 se dit « non
+  vraisemblable », c'est voulu). **La mémoire** : les octets de RAM et de réglages, lus des structures que les fichiers
+  déclarent (`memoryPlan` de `sw_c.js`, alignement naturel) — un essai les compare au `sizeof` d'un compilateur C. La taille
+  du CODE ne se connaît qu'une fois compilé pour le CPU, et c'est dit.
+- **Simulation** (`web/js/sw/sw_live.js`, écran `modules/sw_bench.js`) — le **même pas** que le scénario rejoue et que le C
+  fait (`machine` de `sw_design.js`), une période à la fois. Le banc est dans le volet de droite : une grandeur se règle
+  par un curseur et un champ, dans l'unité de la mesure qu'elle nourrit (l'écran dit les comptes que la broche lit, et
+  quand la valeur sort de sa plage vraisemblable) ; une demande est un interrupteur ; un contact **suit sa bobine**, ou
+  est **coincé ouvert**, ou **soudé fermé**. Sous la page : **Marche / Pause / Un pas / Redémarrer**, la vitesse (temps
+  réel, 5 ou 20 fois plus lent), un **chronogramme** des dernières secondes ; à gauche, le journal de ce qui a basculé.
+  Usages suivis : le transport d'un simulateur, le chronogramme d'un analyseur logique.
+- **Code** — chaque fichier du paquet s'ouvre au centre, avec ses numéros de ligne ; le README d'abord.
+- **Chargement** (`web/js/sw/sw_load.js`) — sept gestes, du paquet au CPU, dits pour quelqu'un qui apprend ; pour le
+  TMS570LS1224, ce que **le fabricant publie** sur chacun, ses mots entre guillemets, avec la page lue : la sonde sur la
+  carte du kit d'évaluation, la prise JTAG, les broches JTAG du CPU (p. 20), le générateur de pilotes et les ateliers qui
+  en reprennent le code, l'outil de programmation, le temps d'écriture de la flash (tableau 6-23, p. 77), le verrou JTAG
+  (p. 109). La même suite, en anglais, est dans le paquet : `doc/LOADING.md` (24 fichiers en tout).
+
+**Lu pour le chargement** : les pages des produits du kit LAUNCHXL2-TMS57012, de HALCoGen, d'UniFlash et de Code Composer
+Studio (Texas Instruments), le 20 novembre 2026. **Pas lu** : les guides d'utilisation de ces outils et du kit.
+**Rien n'a été essayé** : aucun outil n'a été installé ni lancé, rien n'a été chargé dans un CPU. La page du kit dit le CPU
+« IEC 61508 SIL 3 and ISO 26262 ASIL D certified » ; le certificat n'a pas été lu, et la fiche technique ne cite aucune norme.
+
 ## 5. Ce qui est vérifié, ce qui ne l'est pas
 
 Vérifié : 6 essais Node (`tests/node/sw_objects.test.mjs`) — objets, fils, guide, simulation, et le C compilé qui
@@ -80,6 +125,12 @@ microcontrôleur** ; le code des registres reste à écrire avec la bibliothèqu
 n'est repris) ; **aucune prétention de certification** — sous DO-178C ou ISO 26262, un générateur de code doit
 lui-même être qualifié (DO-330 côté aéronautique, non lu). Les usages sur lesquels l'approche s'appuie (blocs dont on
 génère le code, logiciel en couches, retard d'un pas pour ouvrir une boucle) sont écrits de mémoire.
+
+Le pas à pas (v0.124.0) : 7 essais Node de plus (`tests/node/sw_steps.test.mjs`) — la machine pas à pas redonne, nombre
+pour nombre, la trace du scénario ; le banc ouvre le contactor quand la cellule dépasse son seuil et voit un contact
+soudé ; l'essai de démarrage trouve une sous-tension qui commande une sortie au repos ; la mémoire égale le `sizeof` du
+compilateur ; 26 vérifications dans Chromium, les sept étapes une à une. Non essayé : au toucher, sur Firefox et Safari,
+et par un vrai débutant.
 
 ## 6. Reste
 

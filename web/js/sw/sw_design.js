@@ -10,6 +10,7 @@
        confirmed, more pins than the CPU has ;
      - order : the objects in the order the step runs them — a source before what reads it ;
      - simulate : the design run step by step against a scenario of the pins → the trace of every port. The same numbers the C must give.
+     - machine : the same step, one period at a time, for a simulation one drives by hand (sw/sw_live.js) ;
    A value a kind proposes is an EXAMPLE until the project confirms it (`sure`) : the guide says so, and the files wait. */
 
 import { KINDS, NATURES, cfgOf, portOf, portsOf } from "./sw_objects.js";
@@ -64,23 +65,37 @@ export const ready = (d, cpu) => !problems(d, cpu).some((p) => p.level === "erro
 /* ---------- the simulation ---------- */
 /** What a pin reads at step k of a scenario. pin : { points : [[t ms, value]] (held between two points) } or { follows : object id of a « Digital output », delay : ms, stuck? : 0 | 1 } */
 const held = (pts, t) => { let v = pts.length ? pts[0][1] : 0; for (const [at, x] of pts) { if (at <= t) v = x; else break; } return v; };
-/** Runs the design against a scenario. sc : { steps, pins : { objectId : { points } | { follows, delay, stuck } } } → { t : [ms], ports : { "obj.port" : [values] }, ids (the order), ok } */
-export function simulate(d, sc = d.scenario || { steps: 0, pins: {} }) {
+/** The design as a MACHINE one steps by hand — the one step `simulate` replays and the live simulation runs (sw/sw_live.js). Each call of
+    step(read) is one period : read(id, k, now, drove) gives what an input pin (ADC channel, digital input) reads at this step ; drove is what
+    each « Digital output » was given, step after step. → { ids, ok, dt, mem (the memory of each object), last (every port, as it is now),
+    drove, k (steps done), step(read) → the instant of the step, in ms } */
+export function machine(d) {
   const O = byId(d), ord = order(d), W = liveWires(d), dt = d.period || 10, src = Object.fromEntries(W.map((w) => [w.to, w.from]));
   const mem = Object.fromEntries(ord.ids.map((id) => [id, KINDS[O[id].kind].init ? KINDS[O[id].kind].init() : {}])), cfg = Object.fromEntries(ord.ids.map((id) => [id, cfgOf(O[id])]));
-  const ports = {}, t = [], last = {}, drove = {};      // drove : what each « Digital output » was given, step after step — a contact that follows it reads it late
-  for (const id of ord.ids) for (const p of [...portsOf(O[id]).in, ...portsOf(O[id]).out]) { ports[`${id}.${p.key}`] = []; last[`${id}.${p.key}`] = 0; }
-  for (let k = 0; k < (sc.steps || 0); k++) { const now = k * dt; t.push(now);
-    for (const id of ord.ids) { const o = O[id], K = KINDS[o.kind], inp = {};
-      for (const p of K.ports.in) { const from = src[`${id}.${p.key}`]; inp[p.key] = from ? last[from] : 0; last[`${id}.${p.key}`] = inp[p.key]; }
-      let out = {};
-      if (K.pin === "ain" || K.pin === "din") { const s = (sc.pins || {})[id] || { points: [] }, key = K.ports.out[0].key;
-        if (s.follows) { const h = drove[s.follows] || [], lag = Math.round((s.delay || 0) / dt), was = k - 1 - lag >= 0 ? h[k - 1 - lag] : 0; out[key] = s.stuck === 0 || s.stuck === 1 ? s.stuck : was || 0; } else out[key] = held(s.points || [], now); }
-      else if (K.pin === "dout") (drove[id] = drove[id] || []).push(inp.level);
-      else out = K.step(mem[id], cfg[id], inp, dt);
-      for (const [key, v] of Object.entries(out)) last[`${id}.${key}`] = v; }
-    for (const ref of Object.keys(ports)) ports[ref].push(last[ref]); }
-  return { t, ports, ids: ord.ids, ok: !ord.loop.length };
+  const last = {}, drove = {}; let k = 0;      // drove : a contact that follows an output reads it late
+  for (const id of ord.ids) for (const p of [...portsOf(O[id]).in, ...portsOf(O[id]).out]) last[`${id}.${p.key}`] = 0;
+  return { ids: ord.ids, ok: !ord.loop.length, dt, mem, last, drove, get k() { return k; },
+    step(read) { const now = k * dt;
+      for (const id of ord.ids) { const o = O[id], K = KINDS[o.kind], inp = {};
+        for (const p of K.ports.in) { const from = src[`${id}.${p.key}`]; inp[p.key] = from ? last[from] : 0; last[`${id}.${p.key}`] = inp[p.key]; }
+        let out = {};
+        if (K.pin === "ain" || K.pin === "din") out[K.ports.out[0].key] = read(id, k, now, drove);
+        else if (K.pin === "dout") (drove[id] = drove[id] || []).push(inp.level);
+        else out = K.step(mem[id], cfg[id], inp, dt);
+        for (const [key, v] of Object.entries(out)) last[`${id}.${key}`] = v; }
+      k++; return now; } };
+}
+/** What an input pin reads at step k of a scenario : its points held, or the output it follows, late. */
+export function pinRead(spec, k, now, drove, dt) {
+  const s = spec || { points: [] };
+  if (s.follows) { const h = drove[s.follows] || [], lag = Math.round((s.delay || 0) / dt), was = k - 1 - lag >= 0 ? h[k - 1 - lag] : 0; return s.stuck === 0 || s.stuck === 1 ? s.stuck : was || 0; }
+  return held(s.points || [], now);
+}
+/** Runs the design against a scenario. sc : { steps, pins : { objectId : { points } | { follows, delay, stuck } } } → { t : [ms], ports : { "obj.port" : [values] }, ids (the order), ok } */
+export function simulate(d, sc = d.scenario || { steps: 0, pins: {} }) {
+  const m = machine(d), ports = Object.fromEntries(Object.keys(m.last).map((ref) => [ref, []])), t = [], read = (id, k, now, drove) => pinRead((sc.pins || {})[id], k, now, drove, m.dt);
+  for (let k = 0; k < (sc.steps || 0); k++) { t.push(m.step(read)); for (const ref of Object.keys(ports)) ports[ref].push(m.last[ref]); }
+  return { t, ports, ids: m.ids, ok: m.ok };
 }
 /** What happened in a run, in a few facts for the screen : when each 0 / 1 output changed. → [{ t, ref, to }] */
 export function events(d, R) { const O = byId(d), out = []; for (const [ref, y] of Object.entries(R.ports)) { const [id, key] = split(ref), p = O[id] && portOf(O[id], "out", key); if (!p || p.unit !== "0/1") continue; for (let k = 1; k < y.length; k++) if (y[k] !== y[k - 1]) out.push({ t: R.t[k], ref, to: y[k] }); } return out.sort((a, b) => a.t - b.t || a.ref.localeCompare(b.ref)); }
