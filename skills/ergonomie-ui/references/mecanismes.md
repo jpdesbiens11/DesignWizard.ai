@@ -61,6 +61,16 @@ choisit et ce que l'on obtient**. Les deux volets se redimensionnent et se cache
 - **Ctrl + clic en choisit plusieurs, Maj + clic toute une suite — usage établi** (les gestionnaires de fichiers).
   Le clic simple garde son sens. Une barre apparaît avec ce qui se fait d'un coup, et chaque action de lot est UNE
   étape annulable. Une seule règle de sélection, pure et testée, pour toutes les listes.
+- **Un fil d'Ariane dit où l'on est, et chaque niveau y est une porte — usage établi** (la barre d'adresse d'un
+  explorateur de fichiers). Un clic sur un niveau y remonte ; son chevron liste ce qui est à côté, avec recherche.
+  Une rangée d'onglets qui mêle des façons de créer, des outils et des références n'est pas une navigation.
+- **Une marche vers ce dont l'écran dépend, toujours au même endroit — usage établi pour le geste** (le « dossier
+  parent »), **choix maison pour la règle** : un seul pas à la fois, dessiné comme le pictogramme de là où l'on
+  arrive ; plusieurs niveaux d'un coup, c'est le rôle des menus. Une fonction pure dit, pour chaque écran, de quoi il
+  dépend ; le bouton s'installe seul en tête du volet.
+- **Des onglets de travail pour garder plusieurs objets sous la main — usage établi** (les onglets d'un éditeur) :
+  un onglet gardé exprès reste ; ce que l'on ne fait que regarder passe dans un onglet de passage que le suivant
+  remplace. Des adresses, jamais des copies : un seul document en mémoire.
 - **Un sélecteur que l'on essaie plusieurs fois s'installe dans une marge, pas sur ce que l'on juge — choix maison.**
   La palette d'apparence prend la marge de droite et y reste jusqu'à sa fermeture ; l'onglet d'avant revient ensuite.
 

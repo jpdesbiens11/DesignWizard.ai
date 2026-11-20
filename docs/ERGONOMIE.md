@@ -114,6 +114,54 @@ pas est fixe (5 mm) ; dans le studio des pièces, les axes sont ceux de l'encomb
 face ; la reprise par maintien n'existe que dans l'écran des busbars ; l'Atelier place ses interfaces par face, sans
 position à régler. Rien de cela n'a été essayé sur un écran tactile.
 
+## Les niveaux : un fil d'Ariane, une marche d'escalier, des onglets de travail
+
+Demandes de JP (20 novembre 2026) : « il n'y a présentement pas de façon de monter à l'atelier principal puis aux
+sous-composantes de pièces… à quel niveau tu les fais, ce que tu peux faire, comment tu passes d'un niveau à l'autre »,
+puis, devant le petit bouton du Labo qui ouvre la carte dans le PCBA : « tu utilises ce concept-là pour remonter de
+niveau, vers le niveau qui est lié directement à ce qu'on regarde… en escalier, d'une échelle à l'autre. Si on veut en
+skipper plusieurs niveaux, on peut aller dans les menus ». Mise en page choisie par JP sur quatre maquettes : « fil
+d'Ariane + plancher », « onglets dans l'outil ».
+
+- **Trois niveaux dans l'Atelier, et un seul chemin** (`web/js/core/shop_levels.js`, pur et testé) :
+  **1 — l'Atelier** (`#/shop`) : toutes les pièces du produit, par nature ou par assemblage, les portes pour en créer
+  (pas à pas, avec l'IA, du commerce, ou dans un studio) et les étagères que l'on consulte de partout (registre des
+  interfaces, procédés spéciaux, bibliothèque électrique) ; **2 — une nature de pièce** (`#/shop/n/<nature>`) : ses
+  pièces, ce que son procédé demande, une nouvelle pièce de cette nature ; **3 — une pièce**, dans le studio de sa
+  nature (un busbar dans le studio des busbars, un profilé dans celui des profilés, une carte dans le PCB, le reste
+  dans Pièces). Une **nature** dit ce qu'est la pièce avant de dire comment elle est faite : *Machined, Molded,
+  Extrusion, Sheet metal, Laser cutting, 3D printing, Busbars, Flex PCB, PCB, Off the shelf, Imported* — une couleur et
+  un pictogramme chacune (`NATURES`).
+- **Le fil d'Ariane dit où l'on est, sur chaque écran de l'Atelier** — Busbars et circuits flexibles compris, qui n'en
+  avaient aucun (`web/js/modules/levels_bar.js`). Chaque niveau porte son numéro. C'est l'usage de la barre d'adresse
+  d'un explorateur de fichiers : **un clic sur un niveau y remonte** ; **le chevron d'un niveau liste ce qui est à
+  côté** — les autres natures, ou les autres pièces : les sœurs d'abord, puis toutes les autres par nature, avec
+  recherche. Choisir un busbar depuis un profilé ouvre le studio des busbars. L'ancienne rangée de sous-onglets de
+  l'Atelier, qui mêlait des façons de créer, des studios et des étagères, a disparu.
+- **La marche d'escalier : un pictogramme, toujours au même endroit, vers ce dont l'écran dépend directement**
+  (`web/js/core/stairs.js`, pur et testé ; `core/stairs_ui.js`). En tête du volet de gauche, juste après son titre : le
+  pictogramme de là où l'on arrive, avec une petite flèche vers le haut. Le Labo monte au PCBA de sa carte ; la
+  Simulation, un dessin, un calcul attaché à une pièce, les points DFx d'une pièce montent à la pièce ; l'Isolation, le
+  Studio photo, les Étiquettes, le dessin d'un assemblage montent à l'assemblage ; un sous-assemblage monte à
+  l'assemblage qui le porte ; une pièce monte à sa nature, une nature à l'Atelier. **Alt + ↑** fait de même. Une page
+  sans volet la porte dans son en-tête. C'est le bouton « dossier parent » d'un explorateur ; **une seule marche à la
+  fois est un choix maison**, dit ici : sauter plusieurs niveaux, c'est le rôle des menus de la barre du haut et des
+  chevrons du fil d'Ariane. Un écran n'a rien à déclarer : il lui suffit d'un volet de gauche avec son `.side-head`,
+  et d'une ligne dans `stairOf` qui dit de quoi il dépend.
+- **Les onglets de travail gardent plusieurs pièces sous la main** (`web/js/core/work_tabs.js`), sous le fil d'Ariane :
+  Ctrl + clic sur une pièce du plancher ou d'un chevron, ou le petit bouton au bout de sa ligne, la **garde** en
+  onglet sans quitter la page ; ce que l'on ne fait que regarder passe dans un onglet **de passage**, en italique,
+  que la pièce suivante remplace — un double clic, ou son « + », le garde. × ou le clic du milieu ferme. C'est l'usage
+  des onglets d'un éditeur. Les onglets sont des adresses, jamais des copies : un seul projet en mémoire, rien ne se
+  désynchronise ; ils sont gardés d'une séance à l'autre, par projet, dans le navigateur.
+- **Deux sens pour Ctrl + clic, chacun dans son contexte** : sur un **lien** vers une pièce (plancher, chevron), il
+  garde un onglet — comme un lien dans un navigateur ; sur une **ligne de liste d'un volet**, il choisit plusieurs
+  lignes — comme dans un gestionnaire de fichiers. Le bouton au bout de la ligne fait voir le premier.
+- Pas encore : les cartes (PCBA) et les dessins dans les onglets de travail ; la position de la vue 3D n'est pas gardée
+  quand on revient à un onglet ; la marche du PCBA vers son PCB attend que chaque carte ait le sien.
+- Essayé dans Chromium (61 vérifications : plancher, recherche, par assemblage, Ctrl + clic, onglets gardés après
+  rechargement, chevrons, Monter, Alt + ↑, la marche de dix écrans) ; pas au toucher, ni sur Firefox et Safari.
+
 ## Choisir dans une longue liste, et en choisir plusieurs
 
 Demandes de JP (20 novembre 2026) : « un menu déroulant pour choisir la pièce… quand il y a 30 pièces, il faut vraiment

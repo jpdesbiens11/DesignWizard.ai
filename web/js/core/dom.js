@@ -12,7 +12,7 @@ export function el(tag, attrs, ...children) {
     if (v === null || v === undefined || v === false) continue;
     if (k === "class") node.className = v;
     else if (k === "text") node.textContent = v;
-    else if (k === "style" && typeof v === "object") Object.assign(node.style, v);
+    else if (k === "style" && typeof v === "object") { for (const [p, x] of Object.entries(v)) { if (p.startsWith("--")) node.style.setProperty(p, x); else node.style[p] = x; } }      // a custom property (« --g ») is set by name : an assignment would drop it
     else if (k.startsWith("on") && typeof v === "function") node.addEventListener(k.slice(2).toLowerCase(), v);
     else if (k === "dataset") Object.assign(node.dataset, v);
     else if (k in node && !["list", "type", "form"].includes(k) && typeof v !== "string") node[k] = v;

@@ -12,7 +12,6 @@ import { connectorPart, connectorBuild, cellPart, defaultPoles } from "../core/e
 import { seriesOf, MODEL_WORDS, DIMS_LEVELS, makerSite, dimsCount } from "../cad/connector_series.js";
 import { WELD_PROCESSES } from "../cad/interfaces_elec.js";
 import { thermalPadPart } from "../core/busbar_lam.js";
-import { shopTabs } from "./shop_tabs.js";
 import { connectorPictures, cellPicture, livePreview } from "./library_preview.js";
 import { SHAPE_WORDS } from "../core/connector_shapes.js";
 
@@ -68,7 +67,7 @@ function render(main) {
   main.append(page);
   page.append(el("div", { class: "page-head" }, el("div", { class: "grow" }, el("h1", null, "Bibliothèque électrique"),
     el("p", { class: "muted" }, "Des familles réelles de connecteurs — basse tension pour les capteurs et les signaux, haute tension et puissance pour ce qui sort du produit — et les cellules cylindriques. Filtrez par ce que la liaison doit porter, choisissez, dites le nombre de pôles et le potentiel : la pièce arrive avec ses conducteurs, ses potentiels et ses interfaces.")),
-    shopTabs("library")), body);
+    null), body);
   function draw() {
     const need = { domain: filter.domain || undefined, amps: parseFloat(filter.amps) || undefined, volts: parseFloat(filter.volts) || undefined, sealed: filter.sealed, hvil: filter.hvil }, list = filter.domain === "cells" ? [] : pickConnectors(need);
     const set = (k) => (e) => { filter[k] = e.target.type === "checkbox" ? e.target.checked : e.target.value; draw(); };

@@ -29,7 +29,7 @@ import { runDfx } from "../analysis/dfx_api.js";
 import { orderCheck } from "../cad/order.js";
 import { lightSide, sideOf, LIT } from "../core/view_marks.js";
 import { popupMenu } from "../core/view_select.js";
-import { shopTabs } from "./shop_tabs.js";
+import { floor } from "./shop_floor.js";
 import { specialCard } from "./shop_special.js";
 import { foldSides } from "../core/shop_folded.js";
 import { printProcess, amLimits } from "../cad/special_processes.js";
@@ -58,14 +58,15 @@ const COUNTS = new Set(["n", "nx", "ny", "i", "u"]), inMm = (v) => fromShown(v, 
 const numIn = (obj, key, label, redraw, step = 1) => { const len = !COUNTS.has(key), conv = len && converts("mm", getUnits());
   return field(len ? mmLabel(label) : label, el("input", { type: "number", value: obj[key] === undefined || obj[key] === null ? "" : len ? mmShown(obj[key]) : obj[key], step: conv ? "any" : step, min: 0, onInput: (e) => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) { obj[key] = len ? inMm(v) : v; redraw(); } } })); };
 
-function render(main) {
+/* `#/shop` and `#/shop/n/<nature>` : the floor (levels 1 and 2, modules/shop_floor.js) ; `#/shop/new` : a new part, from its intent */
+const render = (main, args) => (args[0] === "new" ? intent(main) : floor(main, args));
+function intent(main) {
   if (app.shopPreset) { brief = { ...blank(), ...app.shopPreset }; app.shopPreset = null; }      // sent by the screen of the special processes : this material, this process
   const p = store.project, page = el("div", { class: "page atelier" });
   main.append(page);
   let viewer = null, token = 0, current = null, active = null, flash = null;        // active : the interface whose face the mouse is choosing ; flash : the side just chosen, to confirm in green
-  page.append(el("div", { class: "page-head" }, el("div", { class: "grow" }, el("h1", null, "Atelier"),
-    el("p", { class: "muted" }, "Pas d'esquisse, pas de plan : dites à quoi sert la pièce, à quoi elle se raccorde, dans quoi elle est faite. Le compagnon d'atelier prend la matière première du commerce et écrit la pièce — vous la voyez naître à droite.")),
-    shopTabs("shop")));
+  page.append(el("div", { class: "page-head" }, el("div", { class: "grow" }, el("h1", null, "Nouvelle pièce"),
+    el("p", { class: "muted" }, "Pas d'esquisse, pas de plan : dites à quoi sert la pièce, à quoi elle se raccorde, dans quoi elle est faite. Le compagnon d'atelier prend la matière première du commerce et écrit la pièce — vous la voyez naître à droite."))));
   const left = el("div", { class: "atelier-brief" }), right = el("div", { class: "atelier-side" });
   page.append(el("div", { class: "atelier-grid" }, left, right));
   const rebuild = debounce(() => build(), 220);
@@ -140,7 +141,7 @@ function render(main) {
   const asmBox = el("input", { type: "checkbox", checked: brief.addToAsm, onChange: (e) => { brief.addToAsm = e.target.checked; } });
   right.append(el("section", { class: "card taped" }, el("h2", null, el("span", { class: "step-no" }, "4"), "La pièce proposée"), guideHost, holder, chips, out,
     el("div", { class: "form-actions" }, el("label", { class: "check", style: { marginRight: "auto" } }, asmBox, p.assemblies.length ? `Ajouter à ${p.assemblies[0].id} et mater` : "Assembler avec ses voisines et mater"),
-      btn("Affiner avec Claude", async () => { if (!current) return; toast((await copyText(shopPrompt(p, brief, current.spec))) ? "Prompt copié : collez-le dans Claude, puis collez sa réponse dans « Entrevue avec Claude »." : "Copie impossible.", "success", 6000); }, { icon: "wizard", tip: "Copie un prompt qui contient l'intention et cette proposition : Claude l'améliore sans toucher aux interfaces" }),
+      btn("Affiner avec Claude", async () => { if (!current) return; toast((await copyText(shopPrompt(p, brief, current.spec))) ? "Prompt copié : collez-le dans Claude, puis collez sa réponse par la porte « Avec l'IA » de l'Atelier." : "Copie impossible.", "success", 6000); }, { icon: "wizard", tip: "Copie un prompt qui contient l'intention et cette proposition : Claude l'améliore sans toucher aux interfaces" }),
       create)));
 
   function syncNeighbours() {

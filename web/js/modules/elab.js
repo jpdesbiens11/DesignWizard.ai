@@ -120,7 +120,7 @@ function render(main, args) {
   }
   function renderLeft() {
     clear(left); const b = cur(), all = blocks();
-    left.append(el("div", { class: "side-head" }, el("h2", null, "Labo"), el("a", { class: "btn btn-small", href: `#/pcba/${encodeURIComponent(id)}`, "data-tip": "Ouvrir la carte dans le PCBA" }, icon("chip"))),
+    left.append(el("div", { class: "side-head" }, el("h2", null, "Labo"))      /* the step up to the PCBA of this board comes with every screen : core/stairs.js */,
       el("div", { class: "side-actions" }, btn("Plan de test (.docx)", () => plan("docx"), { primary: true, small: true, icon: "download", tip: "Le plan de test fonctionnel de la carte : une fiche par essai — comprendre, puis faire — au gabarit des documents" }), btn("PDF", () => plan("pdf"), { small: true, icon: "pdf", tip: "Le même plan, en PDF" })));
     const scroll = el("div", { class: "side-scroll" }); left.append(scroll);
     if (boards.length > 1) scroll.append(el("div", { class: "side-section", "data-fold-note": String(boards.length) }, el("h3", null, "La carte"), boards.map((x) => el("a", { class: "nav-item" + (x.id === id ? " active" : ""), href: `#/elab/${encodeURIComponent(x.id)}` }, icon("chip"), el("span", { class: "grow" }, x.name || x.id)))));

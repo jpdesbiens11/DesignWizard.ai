@@ -17,11 +17,12 @@ import { docIdentity } from "./brand.js";
 import { unitPicker } from "./units_ui.js";
 import { installStepper } from "./stepper.js";
 import { installFolds } from "./fold.js";
+import { installStairs } from "./stairs_ui.js";
 import { installPanelKeep } from "./panel_keep.js";
 import { installLoupe, loupeButton } from "./loupe.js";
 import { installUpdateCheck, updateButton } from "./update_check.js";
 
-export const APP_VERSION = "0.105.0";
+export const APP_VERSION = "0.106.0";
 /** What every document of the open project carries beside its content : approval names, organisation, confidentiality note, extraction stamp (core/brand.js). */
 export const docMeta = (when = new Date()) => docIdentity(store.project, when, APP_VERSION);
 const modules = new Map();
@@ -195,6 +196,7 @@ function route() {
   document.querySelectorAll(".topbar .nav-pop").forEach((m) => m.remove());
   const m = modules.get(key);
   document.title = `${m.label} · DesignWizard.ai`;
+  if (app.levels) app.levels(key, parts.slice(1));      // where this screen stands (Shop → nature → part), before it is drawn : a studio then measures the room it really has
   if (!store.project && !["home", "help", "account"].includes(key)) {
     main.append(el("div", { class: "page" }, el("div", { class: "empty" }, el("h2", null, "Aucun projet ouvert"),
       el("p", null, "Ouvrez un projet ou chargez la démonstration pour utiliser cet outil."), el("a", { class: "btn btn-primary", href: "#/home" }, "Aller à l'accueil"))));
@@ -207,9 +209,10 @@ function route() {
 
 export async function start() {
   installTips();
-  document.body.append(topbar(), el("main", { id: "main" }));
+  document.body.append(topbar(), el("div", { id: "levels", class: "levels", hidden: true }), el("main", { id: "main" }));      // #levels : the breadcrumb and the work tabs (modules/levels_bar.js)
   installStepper();      // the arrows of every number field : 1 at a time, faster when held or clicked quickly
   installFolds();        // the groups of every side panel fold on a click on their title
+  installStairs();       // the step up of every screen : one pictogram at the head of the left panel, towards what the screen is made from
   installPanelKeep();    // a panel drawn anew keeps its place, and the cursor its field
   installLoupe();        // the magnifier of the top bar : a lens over drawings, boards, diagrams and 3D views
   installUpdateCheck({ running: APP_VERSION, save: () => (store.saveState === "dirty" ? store.saveNow() : Promise.resolve()) });      // a page kept open says when a newer version is published, and offers to load it

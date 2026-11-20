@@ -5,7 +5,7 @@
    The definition goes to an AI and comes back with a preview of what changed. Route : #/flex/<part>. */
 
 import { el, clear, icon, btn, badge, field, toast, fmt, fmtMass, inUnits, unitField, unitInput, unitLabel as unitLabelOf, debounce, modal, copyText, table } from "../core/dom.js";
-import { registerModule, go, setStatus, setContext, setGuide } from "../core/app.js";
+import { registerModule, go, setStatus, setContext, setGuide, app } from "../core/app.js";
 import { store } from "../core/store.js";
 import { kernel } from "../cad/client.js";
 import { createViewport, showBuilt } from "../core/viewport.js";
@@ -35,6 +35,7 @@ function render(main, args) {
   /* a new circuit : a folded strip, a core with branches, or the worked example with seven branches */
   const make = (kind) => { const nid = store.nextPartId(), r = importPart(kind === "strip" ? flexPart(blankFlex(), nid) : treePart(kind === "example" ? exampleTree() : blankTree(), nid), { replace: false }); if (r.errors && r.errors.length) { toast(r.errors.join(" "), "error"); return; } go(`#/flex/${encodeURIComponent(r.id)}`); };
   const create = () => { const m = modal("Nouveau circuit flexible", [el("p", { class: "muted" }, "Une bande que l'on plie, ou un cœur large d'où partent des branches vers les points à mesurer."), kindTiles((k) => { m.close(); make(k); })], { wide: true }); };
+  if (app.pendingNew === "flex") { app.pendingNew = null; setTimeout(create, 0); }      // sent by the floor of the Shop : « new flex circuit »
   const head = () => el("div", { class: "side-head" }, el("h2", null, "Circuits flexibles"), btn("", create, { small: true, icon: "plus", tip: "Nouveau circuit flexible : bande pliée, circuit ramifié ou exemple" }));
   const listed = () => el("div", { class: "side-section" }, list.map((p) => el("a", { class: "nav-item" + (p.id === id ? " active" : ""), href: `#/flex/${encodeURIComponent(p.id)}` }, icon("chip"), el("span", { class: "grow" }, p.name || p.id), isTree(p.flex) ? badge("ramifié", "info") : null, el("small", null, p.id))));
   if (!id) {

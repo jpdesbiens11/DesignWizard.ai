@@ -5,14 +5,14 @@ pliée et l'impression 3D. Ils vivent tous dans l'Atelier (*Shop*) :
 
 | Procédé | Où | Règles |
 |---|---|---|
-| Moulage (injection, fonderie) | Atelier → Intention d'abord → « Moulage » | [MOULAGE.md](MOULAGE.md) |
-| Extrusion (aluminium, plastique) | Atelier → Intention d'abord → « Profilé sur mesure », et Atelier → **Profilés extrudés** (le studio, qui était un onglet du haut jusqu'à la v0.29) | [EXTRUSION.md](EXTRUSION.md) |
-| Découpe laser de précision | Atelier → Intention d'abord → « Tôle ou feuille » | ce document |
-| Tôlerie pliée | Atelier → Intention d'abord → « Tôle ou feuille », côtés cochés ou interface sur un côté | [TOLERIE.md](TOLERIE.md) |
-| Impression 3D | Atelier → Intention d'abord → « Fabrication additive » | ce document |
+| Moulage (injection, fonderie) | Atelier → Pas à pas → « Moulage » | [MOULAGE.md](MOULAGE.md) |
+| Extrusion (aluminium, plastique) | Atelier → Pas à pas → « Profilé sur mesure », et Atelier → **Profilés extrudés** (le studio — niveau 2 de l'Atelier) | [EXTRUSION.md](EXTRUSION.md) |
+| Découpe laser de précision | Atelier → Pas à pas → « Tôle ou feuille » | ce document |
+| Tôlerie pliée | Atelier → Pas à pas → « Tôle ou feuille », côtés cochés ou interface sur un côté | [TOLERIE.md](TOLERIE.md) |
+| Impression 3D | Atelier → Pas à pas → « Fabrication additive » | ce document |
 
 L'écran **Atelier → Procédés spéciaux** (`#/process`) montre, pour chacun, ce qu'il demande matière par matière, d'où
-viennent les valeurs, et ouvre « Intention d'abord » avec la matière et le procédé choisis.
+viennent les valeurs, et ouvre « Pas à pas » (Atelier → Nouvelle pièce) avec la matière et le procédé choisis.
 
 ## 1. Ce que fait la plateforme
 
@@ -27,7 +27,7 @@ viennent les valeurs, et ouvre « Intention d'abord » avec la matière et le pr
 - **Le DFx vérifie** (règles `LAS-01` à `LAS-06`, `AM-10` à `AM-17`, en plus des règles de plaque et de boîtier imprimé).
 - **Aller-retour IA** : la consigne « Affiner avec Claude » de l'Atelier porte la fiche du procédé pour la matière de la
   pièce ; l'écran des procédés copie la fiche complète d'un procédé, matière par matière, avec sa consigne. La pièce
-  revient par « Entrevue avec Claude », avec l'aperçu des changements et la validation habituels.
+  revient par la porte « Avec l'IA » de l'Atelier, avec l'aperçu des changements et la validation habituels.
 - **Le rapport** liste les pièces découpées au laser, pliées ou imprimées, avec ce que leur procédé demande et ce qui se contrôle.
 - **La tôlerie pliée** est le cinquième procédé spécial : une base et des bords pliés (bloc `folded`), le développé à plat
   et son DXF avec lignes de pliage, des règles de pliage mesurées. Elle a son document : [TOLERIE.md](TOLERIE.md).

@@ -64,7 +64,7 @@ Total : 60 minutes.
 
 *Mécanique › 1 Atelier.* Faire une pièce sans esquisse : dire à quoi elle sert, l'outil propose.
 
-1. Ouvrez l'Atelier, onglet « Intention d'abord ».
+1. Ouvrez l'Atelier, puis la porte « Pas à pas ».
 2. Étape 1 : dans « Nom de la pièce », tapez un nom (par exemple : Équerre de capteur), et dites en une phrase à quoi elle sert.
 3. Étape 2 : cliquez « Je me visse sur… », puis « On se visse sur moi ». La pièce se dessine à mesure.
 4. Étape 3 : choisissez un matériau, par exemple « Aluminium 6061-T6 » ; ce que le procédé choisi ne sait pas travailler est grisé.

@@ -21,7 +21,7 @@ const tab = async (text) => { await page.locator(".subtab", { hasText: text }).f
 
 await demo("Charger la démonstration");
 if (want("idee")) { await open("#/home", 1200); await page.getByText("Premier design avec une IA").first().click(); await wait(1500); await shot("idee"); await page.keyboard.press("Escape"); }
-if (want("atelier")) { await open("#/shop", 2500); await page.getByRole("button", { name: /Je me visse sur/ }).click(); await wait(800); await page.getByRole("button", { name: /arbre/ }).first().click().catch(() => {}); await wait(9000); await shot("atelier"); }
+if (want("atelier")) { await open("#/shop/new", 2500); await page.getByRole("button", { name: /Je me visse sur/ }).click(); await wait(800); await page.getByRole("button", { name: /arbre/ }).first().click().catch(() => {}); await wait(9000); await shot("atelier"); }
 if (want("procedes")) { await open("#/process/impression", 1500); await shot("procedes"); }
 if (want("piece")) {      // the interface at work : groups folded in the panel, the pivot of the turn and its arcs, the automatic rotation with two ways at once
   await open("#/parts/DRV-BASE", 11000); for (const t of ["Interfaces", "Variantes"]) await page.locator(".side:not(.right) .side-section > h3", { hasText: t }).first().click().catch(() => {}); await wait(400);

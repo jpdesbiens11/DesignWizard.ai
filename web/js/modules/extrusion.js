@@ -10,7 +10,6 @@ import { extrusionPrompt } from "../core/prompts.js";
 import { importAny } from "../core/importer.js";
 import { profileToSvgPath } from "../cad/profile.js";
 import { materialOrDefault } from "../cad/materials.js";
-import { shopTabs } from "./shop_tabs.js";
 
 const draft = { name: "", fn: "", length: 120, process: "extrusion_al", constraints: "", inside: [], outside: [] };
 
@@ -76,7 +75,7 @@ function render(main, args) {
     main.append(page);
     page.append(el("div", { class: "page-head" }, el("div", { class: "grow" }, el("h1", null, "Profilés extrudés"), el("p", { class: "muted" }, "Un procédé spécial de l'Atelier, comme le moulage. Un profilé se dessine autour de ce qu'il contient et de ce qu'il porte. Décrivez ces éléments : Claude propose la section, la plateforme l'extrude et vérifie les règles d'extrusion (parois, gorges, cavités, CCD).")),
       has && el("a", { class: "btn", href: "#/extrusion" }, "Retour aux profilés"), el("a", { class: "btn", href: "#/process/extrusion", "data-tip": "Ce que la filière demande au dessin, par matière — et le profilé dessiné seul par l'Atelier" }, "Règles de l'extrusion"), btn("Partir d'un gabarit", () => newPartDialog({ templates: ["heatsink", "cardbox"] }), { icon: "plus" })),
-      shopTabs("extrusion"));
+      null);
     claudeForm(page);
     return null;
   }

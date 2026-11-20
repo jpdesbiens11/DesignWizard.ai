@@ -372,6 +372,16 @@ one chooses and what one gets**. Both panels resize and hide; their width is the
 - **Ctrl + click chooses several, Shift + click a whole run — established use** (file managers). The plain click
   keeps its meaning. A bar appears with what can be done at once, and each batch action is ONE undoable step. One
   rule of selection, pure and tested, for every list.
+- **A breadcrumb says where one stands, and each of its levels is a door — established use** (the address bar of a
+  file explorer). A click on a level goes up to it; its chevron lists what is beside it, with a search. A row of
+  tabs that mixes ways of creating, tools and references is not navigation.
+- **One step up to what the screen depends on, always at the same place — established use for the gesture** (the
+  "parent folder"), **house choice for the rule**: one step at a time, drawn as the pictogram of where it leads;
+  several levels at once is what the menus are for. A pure function says, for each screen, what it depends on; the
+  button settles by itself at the head of the panel.
+- **Work tabs to keep several objects at hand — established use** (the tabs of an editor): a tab kept on purpose
+  stays; what one only looks at goes in a passing tab that the next one replaces. Addresses, never copies: one
+  document in memory.
 - **A picker one tries several times settles in a margin, not over what one is judging — house choice.** The look
   palette takes the right margin and stays there until it is closed; the tab that was there then comes back.
 

@@ -40,7 +40,7 @@ export function partStudio(main, args, cfg) {
     renderLeft();
     view.append(el("div", { class: "page" }, el("div", { class: "empty" }, el("h2", null, cfg.emptyTitle || "Aucune pièce pour l'instant"),
       el("p", null, cfg.emptyText || "Commencez par l'intention de la pièce (Atelier), ou partez d'un gabarit paramétrique."),
-      el("div", { class: "form-actions", style: { justifyContent: "center" } }, el("a", { class: "btn btn-primary", href: "#/shop" }, icon("wizard"), "Démarrer par l'intention"),
+      el("div", { class: "form-actions", style: { justifyContent: "center" } }, el("a", { class: "btn btn-primary", href: "#/shop/new" }, icon("wizard"), "Démarrer par l'intention"),
         btn("Partir d'un gabarit", () => newPartDialog(cfg), { icon: "plus" })))));
     return null;
   }
@@ -239,5 +239,5 @@ export function newPartDialog(cfg = {}) {
       const spec = store.part(id);
       go(`#/${spec.family === "pcb" ? "pcb" : spec.family === "extrusion" ? "extrusion" : "parts"}/${encodeURIComponent(id)}`);
     } }, el("h3", null, icon(t.icon), " ", t.title), el("p", { class: "muted", style: { margin: 0 } }, t.text)))),
-    el("div", { class: "form-actions" }, el("a", { class: "btn btn-primary", href: "#/shop", onClick: () => m.close() }, icon("wizard"), "Plutôt démarrer par l'intention"))], { wide: true });
+    el("div", { class: "form-actions" }, el("a", { class: "btn btn-primary", href: "#/shop/new", onClick: () => m.close() }, icon("wizard"), "Plutôt démarrer par l'intention"))], { wide: true });
 }

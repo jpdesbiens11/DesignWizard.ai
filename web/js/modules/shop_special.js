@@ -11,13 +11,12 @@ import { LASER_FAMILIES, laserProfile, AM_PROCESSES, AM_MATERIALS, printProcess,
 import { MOLD_RULES } from "../core/shop_mold.js";
 import { MOLDS } from "../core/mold_plan.js";
 import { EXTRUSION_RULES } from "../core/shop_extrusion.js";
-import { shopTabs } from "./shop_tabs.js";
 import { canFold, foldSides, FOLD_RULES, foldBrief, FOLD_T } from "../core/shop_folded.js";
 import { FOLD_SIDES } from "../cad/family_folded.js";
 
 const n = (v) => String(Math.round(v * 1000) / 1000).replace(".", ","), range = (a) => `${n(a[0])} à ${n(a[1])}`;
 const chip = (text, tip) => el("span", { class: "chip", "data-tip": tip, style: { maxWidth: "none", whiteSpace: "normal" } }, text);      // a figure is read whole : no ellipsis here
-const design = (materialId, form, label, process) => btn(label, () => { app.shopPreset = { material: materialId, form, ...(process ? { process } : {}) }; go("#/shop"); }, { small: true, icon: "wizard", tip: "Ouvre « Intention d'abord » avec cette matière et ce procédé : la pièce se dessine autour de ses interfaces" });
+const design = (materialId, form, label, process) => btn(label, () => { app.shopPreset = { material: materialId, form, ...(process ? { process } : {}) }; go("#/shop/new"); }, { small: true, icon: "wizard", tip: "Ouvre « Pas à pas » avec cette matière et ce procédé : la pièce se dessine autour de ses interfaces" });
 const bullets = (lines) => el("ul", { class: "decisions" }, lines.map((x) => el("li", null, x)));
 const basis = (text) => el("p", { class: "muted small", style: { margin: ".3rem 0 0" } }, el("b", null, "D'où viennent ces valeurs : "), text);
 
@@ -97,10 +96,10 @@ function printing(page) {
 function folding(page) {
   const mats = MATERIALS.filter((m) => canFold(m.id));
   page.append(el("div", { class: "grid", style: WIDE }, el("section", { class: "card" }, el("h2", null, FOLD_RULES.label), el("div", { class: "atelier-chips" }, FOLD_RULES.chips.map(([text, tip]) => chip(text, tip))), bullets(FOLD_RULES.notes), basis(FOLD_RULES.basis)),
-    el("section", { class: "card" }, el("h2", null, "Ce que la plateforme en fait"), bullets(["Dans « Intention d'abord », cochez les côtés de la base à relever, ou placez une interface sur un côté : la pièce s'écrit seule, avec son bloc « folded ».",
+    el("section", { class: "card" }, el("h2", null, "Ce que la plateforme en fait"), bullets(["Dans « Pas à pas », cochez les côtés de la base à relever, ou placez une interface sur un côté : la pièce s'écrit seule, avec son bloc « folded ».",
       "Le noyau construit la base, les plis avec leur vrai rayon et les bords ; les trous et les interfaces se posent sur la base ou sur un bord.", "Le DFx mesure le rayon, la hauteur de chaque bord, la distance de chaque trou au pli et au bord libre, le dégagement des angles — avec un correctif en un clic.",
       "L'onglet « Développé » de la pièce montre le flan à plat et ses lignes de pliage ; le DXF les met sur des calques séparés (CUT, BEND, NOTES).", "La gamme enchaîne la découpe du flan, les plis un à un et l'ébavurage ; le flan développé est le brut à commander."]),
-      el("p", { class: "small muted", style: { margin: ".5rem 0 .2rem" } }, "Matières qui se plient :"), el("div", { class: "form-actions", style: { justifyContent: "flex-start", flexWrap: "wrap" } }, mats.map((m) => btn(m.name, () => { app.shopPreset = { material: m.id, form: "sheet", folds: { sides: ["-X", "+X"] } }; go("#/shop"); }, { small: true, icon: "wizard", tip: "Ouvre « Intention d'abord » avec cette tôle et deux bords pliés" }))))),
+      el("p", { class: "small muted", style: { margin: ".5rem 0 .2rem" } }, "Matières qui se plient :"), el("div", { class: "form-actions", style: { justifyContent: "flex-start", flexWrap: "wrap" } }, mats.map((m) => btn(m.name, () => { app.shopPreset = { material: m.id, form: "sheet", folds: { sides: ["-X", "+X"] } }; go("#/shop/new"); }, { small: true, icon: "wizard", tip: "Ouvre « Pas à pas » avec cette tôle et deux bords pliés" }))))),
     sources((s) => s.id.startsWith("pliage")), el("p", { class: "muted" }, "Format du bloc « folded », développé et limites : docs/TOLERIE.md."));
 }
 function moulding(page) {
@@ -109,7 +108,7 @@ function moulding(page) {
     el("div", { class: "atelier-chips" }, chip(`Paroi ${range(R.wall)} mm`, "La plage de chaque matière prime : elle est dans sa fiche"), chip(`Nominale ${n(R.nominal)} mm`), chip(`Draft ${R.draft[0]}° dehors, ${R.draft[1]}° sur les cores`), chip(`Nervure ${Math.round(R.rib * 100)} % de la paroi`),
       chip(`Bossage ${n(R.boss)} × le trou`), chip(`Rayon intérieur ${n(R.inner)} × la paroi`), chip(R.thread === "insert" ? "Filets : inserts" : "Filets : taraudés après coulée"), chip(MOLDS[key].risers ? "Risers" : MOLDS[key].overflows ? "Overflows, vents" : "Ejector pins")), el("p", { class: "small", style: { margin: ".4rem 0 .2rem" } }, MOLDS[key].how), bullets(R.notes), ...(R.basis ? [basis(R.basis)] : []),
     el("div", { class: "form-actions", style: { justifyContent: "flex-start" } }, design(SAMPLE[key], "molded", `Concevoir en ${material(SAMPLE[key]).name}`, key))))),
-    el("p", { class: "muted" }, "La pièce moulée se dessine seule dans « Intention d'abord » : coque, couvercle assorti ou platine nervurée, avec son draft réel. Son onglet « Mold » montre ensuite le gate, le parting line, les slides, les risers et ce qu'ils laissent sur la pièce. Règles et sources : docs/MOULAGE.md."));
+    el("p", { class: "muted" }, "La pièce moulée se dessine seule dans « Pas à pas » : coque, couvercle assorti ou platine nervurée, avec son draft réel. Son onglet « Mold » montre ensuite le gate, le parting line, les slides, les risers et ce qu'ils laissent sur la pièce. Règles et sources : docs/MOULAGE.md."));
 }
 function extrusion(page) {
   const SAMPLE = { extrusion_al: "AL6063-T5", extrusion_plastic: "PVC-U" };
@@ -117,7 +116,7 @@ function extrusion(page) {
     el("div", { class: "atelier-chips" }, chip(`Paroi ${n(R.wall(80))} à ${n(R.wall(200))} mm selon la taille`, "Elle grandit avec le cercle circonscrit de la section"), chip(`Rainure ≥ ${n(R.groove)} mm de fond`), chip(`Jeu de glissière ${n(R.side)} mm par côté`), chip(`Canaux de vis M3 à M5`, "Ouverts en C dans les angles : les flasques s'y vissent sans taraudage")), bullets(R.notes),
     el("div", { class: "form-actions", style: { justifyContent: "flex-start" } }, design(SAMPLE[key], "profile", `Concevoir en ${material(SAMPLE[key]).name}`))))),
     el("div", { class: "form-actions", style: { justifyContent: "flex-start" } }, el("a", { class: "btn btn-primary", href: "#/extrusion" }, icon("extrusion"), "Ouvrir le studio des profilés")),
-    el("p", { class: "muted" }, "Le profilé se dessine seul dans « Intention d'abord » autour de ce qu'il contient ; le studio des profilés montre la section, ses mesures et les règles de filière. Règles et sources : docs/EXTRUSION.md."));
+    el("p", { class: "muted" }, "Le profilé se dessine seul dans « Pas à pas » autour de ce qu'il contient ; le studio des profilés montre la section, ses mesures et les règles de filière. Règles et sources : docs/EXTRUSION.md."));
 }
 
 function render(main, args) {
@@ -126,7 +125,7 @@ function render(main, args) {
   const ai = kind === "laser" || kind === "impression" || kind === "pliage";
   page.append(el("div", { class: "page-head" }, el("div", { class: "grow" }, el("h1", null, "Procédés spéciaux"),
     el("p", { class: "muted" }, "Cinq procédés où la matière décide du dessin. Chacun dit ici ce qu'il demande, matière par matière ; l'Atelier l'applique quand la pièce naît, et le DFx le vérifie ensuite.")),
-    ai ? btn("Copier la fiche pour une IA", async () => toast((await copyText(kind === "pliage" ? foldBrief() : processBrief(kind, MATERIALS))) ? "Fiche copiée : collez-la à l'IA avec la pièce (.dwiz) à faire ou à revoir ; sa réponse revient par « Entrevue avec Claude »." : "Copie impossible.", "success", 6000), { icon: "copy", tip: "Les règles du procédé, matière par matière, avec la consigne : à confier à une IA comme à un technicien" }) : null), shopTabs("process"),
+    ai ? btn("Copier la fiche pour une IA", async () => toast((await copyText(kind === "pliage" ? foldBrief() : processBrief(kind, MATERIALS))) ? "Fiche copiée : collez-la à l'IA avec la pièce (.dwiz) à faire ou à revoir ; sa réponse revient par la porte « Avec l'IA » de l'Atelier." : "Copie impossible.", "success", 6000), { icon: "copy", tip: "Les règles du procédé, matière par matière, avec la consigne : à confier à une IA comme à un technicien" }) : null), null,
     el("div", { class: "stock-grid", style: { marginBottom: "1rem" } }, KINDS.map(([k, ic, label, text]) => el("a", { class: "stock-card" + (k === kind ? " on" : ""), href: `#/process/${k}`, "aria-current": k === kind ? "page" : null, style: { textDecoration: "none" } }, icon(ic), el("b", null, label), el("small", null, text)))));
   ({ laser, pliage: folding, impression: printing, moulage: moulding, extrusion })[kind](page);
   return null;

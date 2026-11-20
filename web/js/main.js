@@ -24,6 +24,7 @@ import "./modules/drawings.js";
 import "./modules/review.js";
 import "./modules/mvp.js";
 import "./modules/library.js";
+import "./modules/levels_bar.js";
 import "./modules/busbar.js";
 import "./modules/flex.js";
 import "./modules/labels.js";

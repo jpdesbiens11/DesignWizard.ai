@@ -19,3 +19,31 @@
 @media (max-width: 1280px) { .tab.nav-group:not(.active) .nav-name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; } .topbar { gap: .35rem; padding: 0 .6rem; } }
 @media (max-width: 1180px) { .top-tools > #kernel-chip { display: none; } .brand-name small { display: none; } }
 @media (prefers-reduced-motion: reduce) { .menu.nav-pop { animation: none; } }
+
+/* ---- the breadcrumb and the work tabs, under the top bar (modules/levels_bar.js, core/shop_levels.js, core/work_tabs.js) ---- */
+.levels { position: sticky; top: var(--topbar-h); z-index: 18; background: var(--surface); } .levels[hidden] { display: none; }
+.levels-row { display: flex; align-items: center; gap: .45rem; min-height: 2.15rem; padding: .16rem 1rem; border-bottom: 1.2px solid color-mix(in srgb, var(--graphite) 14%, transparent); } .levels-row > .grow { flex: 1; }
+.levels-crumbs { display: flex; align-items: center; gap: .1rem; min-width: 0; overflow: hidden; }
+.crumb { display: inline-flex; align-items: center; min-width: 0; border: 1.4px solid transparent; border-radius: var(--r-hand); white-space: nowrap; }
+.crumb-go { display: inline-flex; align-items: center; gap: .35rem; min-width: 0; padding: .14rem .45rem; border-radius: var(--r-hand); color: var(--ink); font-size: .88rem; text-decoration: none; } a.crumb-go:hover { background: var(--surface-2); }
+.crumb-name { overflow: hidden; text-overflow: ellipsis; } .crumb small { color: var(--muted); font-size: .74rem; font-weight: 400; } .crumb .sk-icon { flex: none; width: 1rem; height: 1rem; color: var(--g, currentColor); }
+.crumb-lv { flex: none; display: inline-grid; place-items: center; width: 1.15rem; height: 1.15rem; border-radius: 50%; background: var(--graphite); color: var(--surface); font: 700 .66rem var(--label-font, sans-serif); font-style: normal; }
+.crumb.on { background: color-mix(in srgb, var(--acc) 20%, var(--surface)); border-color: color-mix(in srgb, var(--graphite) 35%, transparent); font-weight: 650; }
+.crumb.root { gap: .35rem; padding: .14rem .3rem; color: var(--muted); font-size: .86rem; } .crumb.root .crumb-name { max-width: 15rem; }
+.crumb-drop { flex: none; display: inline-grid; place-items: center; width: 1.5rem; height: 1.5rem; padding: 0; border: 0; border-left: 1.2px solid color-mix(in srgb, var(--graphite) 18%, transparent); border-radius: 0 var(--r-hand) var(--r-hand) 0; background: none; color: var(--ink); cursor: pointer; }
+.crumb-drop:hover, .crumb-drop[aria-expanded="true"] { background: var(--surface-2); } .crumb-drop .sk-icon { width: .8rem; height: .8rem; color: currentColor; }
+.crumb-sep { flex: none; display: inline-grid; color: var(--muted); } .crumb-sep .sk-icon { width: .75rem; height: .75rem; }
+.levels-up kbd, .wizard-nav kbd { margin-left: .2rem; padding: 0 .28rem; border: 1.2px solid color-mix(in srgb, currentColor 40%, transparent); border-radius: 4px; font: 600 .66rem var(--label-font, monospace); opacity: .8; }
+.levels-tabs { display: flex; align-items: flex-end; gap: .2rem; padding: .22rem 1rem 0; background: var(--surface-2); border-bottom: 1.4px solid color-mix(in srgb, var(--graphite) 22%, transparent); overflow-x: auto; scrollbar-width: none; }
+.wtab { flex: none; display: inline-flex; align-items: center; max-width: 16rem; margin-bottom: -1.4px; border: 1.4px solid color-mix(in srgb, var(--graphite) 18%, transparent); border-bottom: 0; border-top: 3px solid var(--g, transparent); border-radius: 8px 8px 0 0; background: color-mix(in srgb, var(--surface) 55%, transparent); color: var(--muted); font-size: .84rem; text-decoration: none; white-space: nowrap; }
+.wtab.fixed { gap: .4rem; padding: .22rem .6rem .28rem; } .wtab-go { display: inline-flex; align-items: center; gap: .4rem; min-width: 0; padding: .22rem .2rem .28rem .6rem; color: inherit; text-decoration: none; } .wtab-go span { overflow: hidden; text-overflow: ellipsis; }
+.wtab .sk-icon { flex: none; width: .95rem; height: .95rem; color: var(--g, currentColor); } .wtab:hover { color: var(--ink); background: var(--surface); }
+.wtab.on { background: var(--surface); color: var(--ink); font-weight: 650; border-color: color-mix(in srgb, var(--graphite) 40%, transparent); border-top-color: var(--g, var(--acc)); } .wtab.passing .wtab-go { font-style: italic; }
+.wtab-x { flex: none; display: inline-grid; place-items: center; width: 1.3rem; height: 1.3rem; margin-right: .2rem; padding: 0; border: 0; border-radius: 50%; background: none; color: inherit; cursor: pointer; opacity: .6; } .wtab-x:hover { opacity: 1; background: var(--surface-2); } .wtab-x .sk-icon { width: .7rem; height: .7rem; color: currentColor; }
+.levels-hint { margin: 0 0 .32rem .6rem; font-size: .76rem; white-space: nowrap; } .levels-hint .sk-icon { width: .8rem; height: .8rem; vertical-align: -2px; }
+.tab-add { flex: none; opacity: .5; } .tab-add:hover, .tab-add:focus-visible, .pick-opt.on .tab-add, .floor-row:hover .tab-add { opacity: 1; } .tab-add .sk-icon { width: .9rem; height: .9rem; }
+.pick-foot { display: flex; align-items: center; gap: .5rem; padding: .4rem .55rem; border-top: 1.2px dashed var(--line); }
+@media (max-width: 1100px) { .crumb.root, .levels-hint, .levels-up kbd { display: none; } }
+/* the step up (core/stairs_ui.js) : the pictogram of where it leads, a small mark that says « up », the same place on every screen */
+.stair-btn { position: relative; flex: none; } .stair-btn .sk-icon { color: var(--g, currentColor); } .stair-btn.with-label .sk-icon { color: currentColor; }
+.stair-btn::after { content: "↑"; position: absolute; top: -6px; right: -6px; width: 14px; height: 14px; border-radius: 50%; background: var(--graphite); color: var(--surface); font: 800 10px/14px system-ui, sans-serif; text-align: center; box-shadow: 0 0 0 1.5px var(--surface); }

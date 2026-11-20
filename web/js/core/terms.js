@@ -22,6 +22,7 @@ import { RULE_TITLES } from "../analysis/dfx_titles.js";
 import { MODELS } from "../analysis/physics/index.js";
 import { SENSOR_KINDS, ROSETTE } from "../analysis/fea/sensors.js";
 import { PALETTES } from "../analysis/fea/palette.js";
+import { NATURES as PART_NATURES } from "./shop_levels.js";
 
 export const TERM_GROUPS = [
   { id: "process", label: "Procédés", hint: "comment la pièce se fabrique", icon: "cast", color: "#ee8a32" },
@@ -71,6 +72,7 @@ export function glossary() {
   const rows = [], add = (group, en, fr, note = "") => { if (en && fr && !rows.some((r) => r.group === group && r.en.toLowerCase() === String(en).toLowerCase())) rows.push({ group, en: String(en), fr: String(fr), note }); };
   const all = (group, table, note) => { for (const v of Object.values(table)) add(group, v.label, v.fr, typeof note === "function" ? note(v) : note || ""); };
   all("process", PROCESSES); all("process", AM_PROCESSES, "impression 3D"); add("process", "Sheet metal bending", "tôlerie pliée", "laser, puis presse plieuse"); add("process", "Press brake", "presse plieuse"); add("process", "Heat treatment", "traitement thermique");
+  all("process", PART_NATURES.filter((n) => n.key !== "other"), "nature de pièce : un groupe de l'Atelier");
   for (const [en, fr, note] of MOLD_TERMS) add("mold", en, fr, note);
   for (const [k, g] of Object.entries(GATES)) add("mold", g.label, GATE_FR[k], "type de gate");
   all("operation", SHOP_VERBS, "verbe d'atelier"); for (const [en, fr] of FEATURES) add("operation", en, fr, "forme");

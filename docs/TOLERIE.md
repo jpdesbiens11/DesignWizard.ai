@@ -108,7 +108,7 @@ pliage ne sont alors que des rappels, puisque rien ne décrit ses plis.
 
 ## 5. L'Atelier
 
-Dans « Intention d'abord », avec une tôle métallique (aluminium 5052-H32, inox, acier, cuivre) et la matière première
+Dans « Pas à pas » (Atelier → Nouvelle pièce), avec une tôle métallique (aluminium 5052-H32, inox, acier, cuivre) et la matière première
 « Tôle ou feuille » :
 
 - **cochez les côtés** de la base à relever, ou
@@ -129,7 +129,7 @@ L'écran **Procédés spéciaux → Tôlerie pliée** montre les règles, ce qui
 - **Rapport** : la pièce figure dans la section « Procédés spéciaux ».
 - **Aller-retour IA** : le bloc `folded` est dans le fichier `.dwiz` de la pièce et dans la référence du langage que
   reçoit l'IA ; la consigne « Affiner avec Claude » porte les règles de pliage. La pièce modifiée revient par
-  « Entrevue avec Claude », avec l'aperçu des changements et la validation habituels.
+  la porte « Avec l'IA » de l'Atelier, avec l'aperçu des changements et la validation habituels.
 - **Démonstration** : `DRV-FOOT`, une patte de fixation en aluminium 5052-H32 de 1,5 mm à un pli — une variante murale,
   présente dans le projet mais pas dans l'assemblage.
 

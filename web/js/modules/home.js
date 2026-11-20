@@ -29,9 +29,9 @@ const STEPS = [
 
 /* The technology bricks, from the intent to the open exchange: [number, name, what it brings, where it lives]. */
 const BRICKS = [
-  [0, "Intention", "À quoi sert la pièce, ses efforts, son milieu, la quantité.", "#/shop"],
+  [0, "Intention", "À quoi sert la pièce, ses efforts, son milieu, la quantité.", "#/shop/new"],
   [1, "Interfaces", "Le contrat avec les pièces voisines, écrit avant la pièce.", "#/interfaces/registre"],
-  [2, "Matière & procédé", "Matière première du commerce, opérations, gamme.", "#/shop"],
+  [2, "Matière & procédé", "Matière première du commerce, opérations, gamme.", "#/shop/new"],
   [3, "Pièce", "Le solide exact et ses paramètres, dans le format .dwiz.", "#/parts"],
   [4, "Artéfacts & commande", "STEP, DXF, STL, PDF, FeatureScript — et le dossier de commande.", "#/parts"],
   [5, "Physique & simulation", "21 modèles à la main, puis des éléments finis simplifiés recoupés par eux.", "#/physics"],
