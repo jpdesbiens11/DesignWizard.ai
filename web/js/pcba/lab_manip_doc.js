@@ -9,6 +9,7 @@
 
 import { labOf, testKey, expectedText, SAFETY } from "./lab_plan.js";
 import { manipSteps, manipState, placedPoints, readingSays, readUnit } from "./lab_manip.js";
+import { plainStep, plainReading, screenToBench, whyDifferent, WORDS } from "./lab_plain.js";
 import { eng } from "./lab_bench.js";
 
 const KIND = { safety: "Sécurité", set: "Régler l'appareil", connect: "Brancher sur la carte", guard: "Vérifier avant d'alimenter", power: "Mise sous tension", read: "Relever", off: "Couper" };
@@ -43,10 +44,13 @@ export function manipBlocks(board, R, sheet) {
   out.push({ type: "h1", text: `${sheet.id ? `${sheet.id} — ` : ""}${sheet.title}` });
   out.push({ type: "kv", rows: [["Bloc", sheet.block || "—"], ["Nature", sheet.nature ? `${sheet.nature.label} — ${sheet.nature.fr}` : "—"], ["Matériel", (sheet.gear || []).map((g) => g.label).join(", ") || "—"], ["Durée", `${sheet.minutes || 15} min au laboratoire`], ["Étapes", `${steps.length} — ${st.done} faite${st.done > 1 ? "s" : ""}${st.stopped ? " — ESSAI ARRÊTÉ sur un relevé hors plage" : st.finished ? " — essai terminé" : ""}`]] });
   out.push({ type: "h2", text: "Comprendre" }); p(`Pourquoi cet essai. ${sheet.why}`); p(`À quoi s'attendre. ${typeof sheet.expect === "string" ? sheet.expect : ""}`);
+  { const map = screenToBench(sheet); out.push({ type: "h2", text: "L'écran du Labo et le vrai banc" }); p("L'écran est une simulation : il connaît chaque fil, à chaque instant. Le banc est une vraie carte, lue avec un appareil à la fois.", "muted");
+    if (map.length) out.push({ type: "table", head: ["À l'écran du Labo", "Au vrai banc"], widths: [50, 50], rows: map.map((m) => [m.screen, m.bench]) }); out.push({ type: "list", items: whyDifferent(sheet).map((w) => `${w.title}. ${w.text}`) }); }
   out.push({ type: "h2", text: "Faire" }); p("Une étape à la fois, dans l'ordre : chaque étape s'ouvre quand celles d'avant sont faites. Un relevé hors de sa plage arrête l'essai — on coupe, on refait la mesure une fois, on compare les pièces à la nomenclature. On ne corrige jamais un relevé.", "muted");
   st.steps.forEach((s, i) => {
     const tick = L.ticks.find((t) => t.test === key && t.step === s.id), note = L.notes.find((n) => n.test === key && n.step === s.id);
     out.push({ type: "h3", text: `${i + 1}. ${KIND[s.kind] || ""} — ${s.title}` });
+    { const plain = `${plainStep(s)}${s.needs === "reading" ? ` ${plainReading(sheet.rows[s.row])}` : ""}`; if (plain.trim()) p(`En clair. ${plain}`); }
     if (s.instrument) p(`Appareil : ${s.instrument}${s.gear && s.gear.kind === "supply" ? ` — ${s.gear.v !== null && s.gear.v !== undefined ? `${String(s.gear.v).replace(".", ",")} V` : "tension de la note"}${s.gear.ilim ? `, limite ${eng(s.gear.ilim, "A")}` : ""}, sortie ${s.gear.on ? "ACTIVE" : "COUPÉE"}` : s.gear && s.gear.kind === "generator" ? `, sortie ${s.gear.on ? "ACTIVE" : "COUPÉE"}` : ""}.`, "muted");
     p(s.text); if (s.list) out.push({ type: "list", items: s.list }); if (s.why) p(`Pourquoi. ${s.why}`, "note");
     const fig = stepFigure(R, placedPoints(R, s)); if (fig) out.push({ type: "figure", ...fig });
@@ -68,7 +72,8 @@ export function manipDoc(board, R, sheets, o = {}) {
     { type: "p", text: "Vide, c'est la procédure à emporter au banc : une case par relevé, des lignes pour les notes. Rempli — ce qui a été coché, relevé et noté dans l'outil s'y retrouve —, c'est le compte rendu de l'essai.", style: "muted" },
     { type: "kv", rows: [["Carte", `${board.id} — ${board.name || ""}`], ["Révision", board.revision || "A"], ["Projet", (o.project && o.project.name) || "—"], ["Fait par", o.author || "—"], ["Date", date.toISOString().slice(0, 10)], ["Essais", String(sheets.length)]] },
     { type: "h2", text: "Sécurité" }, { type: "list", items: SAFETY },
-    { type: "h2", text: "Les lettres des cordons" }, { type: "table", head: ["Lettre", "Cordon"], widths: [16, 84], rows: [["+ / −", "les cordons rouge et noir de l'alimentation"], ["R / N", "les pointes rouge et noire du multimètre"], ["S / M", "la sonde de l'oscilloscope et sa pince de masse"], ["G", "le point chaud du générateur"], ["C", "la charge, ou le composant d'essai"]] },
+    { type: "h2", text: "Les lettres des cordons" }, { type: "table", head: ["Lettre", "Cordon"], widths: [16, 84], rows: [["+ / −", "les cordons rouge et noir de l'alimentation"], ["R / N", "les pointes rouge et noire du multimètre"], ["S / M", "la sonde de l'oscilloscope et sa pince de masse — la pince ne va que sur la masse"], ["S2", "la sonde de la voie 2 de l'oscilloscope"], ["S−", "la pointe − d'une sonde différentielle — pour une tension entre deux points dont aucun n'est la masse"], ["G / G−", "le point chaud du générateur et son retour"], ["C", "la charge, ou le composant d'essai"]] },
+    { type: "h2", text: "Les mots du banc" }, { type: "table", head: ["Mot", "Ce que c'est"], widths: [26, 74], rows: WORDS.map((w) => [`${w.word} — ${w.en}`, w.says]) },
     { type: "p", text: "Les valeurs attendues viennent d'une simulation, où chaque circuit intégré est un comportement TYPIQUE : la fiche technique du composant monté fait foi. Les règles de sécurité de votre établissement passent avant ce cahier.", style: "muted" });
   for (const s of sheets) { out.push({ type: "pagebreak" }); out.push(...manipBlocks(board, R, s)); }
   const tag = one ? `-${String(sheets[0].id || [sheets[0].blockId, sheets[0].test].filter(Boolean).join("-")).toLowerCase()}` : "";      // a test of the plan has its number ; one opened from its block is named by its block and its test

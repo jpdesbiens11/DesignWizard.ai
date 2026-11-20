@@ -15,6 +15,8 @@ import { BLOCKS, BLOCK_CATEGORIES } from "../pcba/blocks.js";
 import { NATURES, blockTests, eng } from "../pcba/lab_bench.js";
 import { testSheet, boardSheets, boardSheet, sheetJobs, jobSheet, expectedText, gapText, labPlanDoc, labGuide, labOf, setReading, setSkip, skipped, verdict, labStatus, testKey } from "../pcba/lab_plan.js";
 import { labBoard, scope, bode } from "./elab_view.js";
+import { screenToBench } from "../pcba/lab_plain.js";
+import { benchTable, whyList } from "./elab_plain.js";
 import { openManip } from "./elab_manip.js";
 import { manipDoc } from "../pcba/lab_manip_doc.js";
 import { readUnit as unitOf } from "../pcba/lab_manip.js";
@@ -82,8 +84,10 @@ function render(main, args) {
   }
   function centre() {
     const R = st.sheet && st.sheet.result; clear(scopes); clear(bar); S1 = S2 = BD = null; if (!R) return;
-    if (R.kind === "tran") { S1 = scope({ ch: 1, label: R.ch1.label, color: "#ffd60a" }); S2 = scope({ ch: 2, label: R.ch2.label, color: "#5ac8fa" }); scopes.append(S1.node, S2.node); }
-    else if (R.kind === "ac") { BD = bode(); scopes.append(BD.node); }
+    const scoped = st.sheet.gearIds.includes("scope"), map = scoped ? [] : screenToBench(st.sheet), endOf = (ch) => (map.find((m) => m.ch === ch && m.value) || {}).value || null;      // a test done with a multimeter : the END of each curve is the number it shows
+    const bench = (text) => { const b = btn("Pourquoi ?", () => { st.tab = "sheet"; renderRight(); const x = right.querySelector('[data-box="bench"]'); if (x) { x.scrollIntoView({ block: "start" }); nudge(x); } }, { small: true, icon: "info", tip: "Ce que l'écran montre, ce que l'on fait au vrai banc, et pourquoi les deux diffèrent" }); return el("p", { class: "atelier-hint lab-bench-note", "data-bench-note": scoped ? "scope" : "meter" }, icon("sensor"), el("span", { class: "grow" }, text), b); };
+    if (R.kind === "tran") { S1 = scope({ ch: 1, label: R.ch1.label, color: "#ffd60a", end: endOf(1) }); S2 = scope({ ch: 2, label: R.ch2.label, color: "#5ac8fa", end: endOf(2) }); scopes.append(S1.node, S2.node, bench(scoped ? " Au vrai banc, l'oscilloscope montre ces mêmes courbes : une sonde par voie, posée où la fiche le dit." : " Au vrai banc, cet essai se fait au multimètre : pas de courbe — UN chiffre par courbe, sa fin (l'anneau blanc, à droite).")); }
+    else if (R.kind === "ac") { BD = bode(); scopes.append(BD.node, bench(" Au vrai banc, cette courbe se refait point par point : une fréquence, une mesure, puis la suivante.")); }
     else scopes.append(el("p", { class: "atelier-hint lab-none" }, icon("info"), " Essai hors tension : rien ne circule, rien à simuler. La fiche, à droite, dit où poser les pointes du multimètre."));
     if (R.kind === "none") return;
     const play = btn(st.playing ? "Pause" : "Rejouer", () => { st.playing = !st.playing; centre(); }, { small: true, icon: st.playing ? "minus" : "play", tip: "Espace : arrêter ou relancer la lecture" }); play.dataset.play = "";
@@ -157,6 +161,7 @@ function render(main, args) {
     if (st.tab === "sheet") {
       body.append(el("p", { class: "lab-nature", style: `--dom:${s.nature.color}` }, naturePic(s.nature.id), el("span", null, el("b", null, `${s.nature.label} — ${s.nature.fr}`), el("small", null, `${s.block} · ${s.gear.map((g) => g.label).join(", ")} · ${s.minutes} min au laboratoire`))));
       sec("Comprendre", "pourquoi, à quoi s'attendre", el("p", { class: "lab-why" }, el("b", null, "Pourquoi cet essai. "), s.why), el("p", { class: "lab-why" }, el("b", null, "À quoi s'attendre. "), s.expect), note.map((n) => el("p", { class: "lab-note" }, icon("sparkle"), " ", n.text)));
+      sec("L'écran et le vrai banc", "ce qui change", el("p", { class: "muted small" }, "L'écran est une simulation : il connaît chaque fil, à chaque instant. Le banc est une vraie carte, lue avec un appareil à la fois."), benchTable(s), el("p", { class: "ft-label" }, "Pourquoi ce n'est pas pareil"), whyList(s)).dataset.box = "bench";
       if (s.setup.length) sec("Le montage", `${s.setup.length} branchement(s)`, el("ul", { class: "lab-list" }, s.setup.map((t) => el("li", null, t))));
       if (s.settings.length) sec("Les réglages", `${s.settings.length}`, el("ul", { class: "lab-list" }, s.settings.map((t) => el("li", null, t))));
       sec("Les étapes", `${s.steps.length}`, el("ol", { class: "lab-list" }, s.steps.map((t) => el("li", null, t))));

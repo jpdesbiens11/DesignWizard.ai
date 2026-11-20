@@ -68,7 +68,7 @@ export function labBoard(host) {
 
 const css = (name, d) => (getComputedStyle(document.documentElement).getPropertyValue(name) || d).trim() || d;
 /** An oscilloscope : one trace, its grid of ten divisions by eight, a cursor. → { draw(t, y, q, o), node }
-    o : { label, ac (the trace is shown around its mean), color } ; q : how far the cursor is, 0..1 */
+    o : { label, ac (the trace is shown around its mean), color, end (what a multimeter reads at the end of the curve, written there) } ; q : how far the cursor is, 0..1 */
 export function scope(o = {}) {
   const canvas = el("canvas", { class: "lab-scope", width: 520, height: 300, role: "img", "aria-label": `Oscilloscope — ${o.label || ""}` }), read = el("div", { class: "lab-read" }), node = el("div", { class: "lab-scope-box", "data-scope": o.ch || "" }, el("div", { class: "lab-scope-head" }, el("b", { style: `color:${o.color}` }, `CH${o.ch}`), el("span", null, o.label || ""), read), canvas);
   return { node, draw(t, y, q, s = {}) {
@@ -77,6 +77,7 @@ export function scope(o = {}) {
     g.strokeStyle = "rgba(160,200,180,.5)"; g.beginPath(); g.moveTo(0, H / 2); g.lineTo(W, H / 2); g.moveTo(W / 2, 0); g.lineTo(W / 2, H); g.stroke();
     const upto = Math.max(1, Math.round(q * (n - 1))), step = Math.max(1, Math.floor(n / (W * 2))), line = (k0, k1, alpha, w) => { g.globalAlpha = alpha; g.lineWidth = w; g.strokeStyle = o.color; g.beginPath(); for (let k = k0; k <= k1; k += step) { const X = xOf(k), Y = Math.max(-4, Math.min(H + 4, yOf(y[k]))); if (k === k0) g.moveTo(X, Y); else g.lineTo(X, Y); } g.stroke(); g.globalAlpha = 1; };
     line(0, n - 1, 0.28, 1.4); g.shadowColor = o.color; g.shadowBlur = 8; line(0, upto, 1, 2.2); g.shadowBlur = 0;
+    if (o.end) { const xe = Math.min(W - 9, xOf(n - 1)), ye = Math.max(9, Math.min(H - 9, yOf(y[n - 1]))); g.strokeStyle = "#fff"; g.lineWidth = 2; g.beginPath(); g.arc(xe, ye, 7, 0, 2 * Math.PI); g.stroke(); g.font = "600 15px sans-serif"; g.textAlign = "right"; g.fillStyle = "#fff"; g.fillText(`au multimètre : ${o.end}`, xe - 12, ye > 34 ? ye - 12 : ye + 26); g.textAlign = "left"; }      // a test done with a multimeter : what it reads is the END of the curve
     const X = xOf(upto), Y = Math.max(4, Math.min(H - 4, yOf(y[upto]))); g.fillStyle = "#fff"; g.beginPath(); g.arc(X, Y, 4, 0, 2 * Math.PI); g.fill(); g.strokeStyle = "rgba(255,255,255,.35)"; g.lineWidth = 1; g.beginPath(); g.moveTo(X, 0); g.lineTo(X, H); g.stroke();
     read.textContent = `${eng(vdiv, "V")}/div · ${eng(tdiv, "s")}/div${s.ac ? " · AC" : ""} — ${eng(y[upto], "V").replace("-", "−")} à ${eng(t[upto] - t[0], "s")}`;
   } };

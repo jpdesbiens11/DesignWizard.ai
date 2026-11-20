@@ -8,7 +8,10 @@
    stops the test and says what to do ; a supervisor may let it pass, by name — written in the notebook of the board.
    What it follows : a step-by-step procedure (one step, one action, « Précédent » / « Suivant »), a modal dialog (focus kept
    inside, Échap closes), the browser's own full screen (a button, and F). Every tick, reading and note is one step of the
-   store : Ctrl + Z takes it back. Nothing is decided here : the steps and their state come from pcba/lab_manip.js. */
+   store : Ctrl + Z takes it back. Nothing is decided here : the steps and their state come from pcba/lab_manip.js.
+   SAID PLAINLY (demande de JP : « expliquer comme à un enfant de 16 ans ») : under its title each step says, in one or two sentences,
+   what one is doing (« En clair ») ; the words of the bench it uses unfold below ; each point says what its signal is ; and
+   « Écran et banc » shows how what the Labo drew maps to what one does here, and why the two differ (pcba/lab_plain.js). */
 
 import { el, icon, btn, badge } from "../core/dom.js";
 import { store } from "../core/store.js";
@@ -17,7 +20,9 @@ import { LIBRARY } from "../pcba/library.js";
 import { eng } from "../pcba/lab_bench.js";
 import { labOf, setReading, setTick, setPass, setNote, expectedText } from "../pcba/lab_plan.js";
 import { manipSteps, manipState, lockReason, placedPoints, readingSays, readUnit } from "../pcba/lab_manip.js";
+import { plainStep, plainReading, signalSays, wordsIn } from "../pcba/lab_plain.js";
 import { labBoard } from "./elab_view.js";
+import { benchTable, whyList, wordList } from "./elab_plain.js";
 import { gearPic } from "./elab_gear.js";
 
 const KIND = { safety: ["Sécurité", "#b45309"], set: ["Régler l'appareil", "#2563eb"], connect: ["Brancher sur la carte", "#7c3aed"], guard: ["Vérifier avant d'alimenter", "#b45309"], power: ["Mise sous tension", "#dc2626"], read: ["Relever", "#0891b2"], off: ["Couper", "#475569"] };
@@ -28,14 +33,15 @@ const typing = (e) => /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName || "");
 export function openManip(o) {
   const id = o.boardId, key = o.key, sheet = o.sheet, steps = manipSteps(sheet), board = () => store.board(id), opener = document.activeElement, R = resolveBoard(board(), LIBRARY);
   const dots = el("div", { class: "manip-dots", role: "list", "aria-label": "Les étapes de l'essai" }), count = el("small", { "data-manip-count": "" }), boardHost = el("div", { class: "manip-board" }), legend = el("div", { class: "manip-legend", "aria-live": "polite" }), card = el("div", { class: "manip-card" });
+  const why = btn("Écran et banc", () => { explain = !explain; draw(true); }, { small: true, icon: "info", tip: "Ce que l'écran du Labo a montré, ce que vous faites ici, et pourquoi les deux diffèrent — avec les mots du banc expliqués" }); why.dataset.manipWhy = "";
   const full = btn("Plein écran", () => toggleFull(), { small: true, icon: "fit", tip: "Plein écran (F) — Échap en sort" }), whole = btn("Toute la carte", () => { wide = !wide; draw(); }, { small: true, icon: "eye", tip: "Voir toute la carte, ou revenir au point de l'étape" });
   const root = el("div", { class: "manip", role: "dialog", "aria-modal": "true", "aria-label": `Manipulation en labo — ${sheet.title}`, "data-manip-screen": key },
-    el("div", { class: "manip-head" }, icon("sensor"), el("div", { class: "grow" }, el("h2", null, `${sheet.id ? `${sheet.id} — ` : ""}${sheet.title}`), el("small", null, `${sheet.block} · ${sheet.gear.map((g) => g.label).join(", ")} · `, count)), dots, whole, (() => { const b = btn("PDF", () => o.pdf && o.pdf(false), { small: true, icon: "pdf", tip: "La procédure de cet essai sur papier : une image de la carte par étape, une case par relevé — remplie de ce qui est déjà coché et noté, c'est le compte rendu" }); b.dataset.manipPdf = "one"; return b; })(), (() => { const b = btn("Tout le plan", () => o.pdf && o.pdf(true), { small: true, icon: "pdf", tip: "Le même cahier pour TOUS les essais de la carte (long : chaque essai est simulé d'abord)" }); b.dataset.manipPdf = "all"; return b; })(), full, btn("Fermer", () => close(), { small: true, icon: "close", tip: "Fermer (Échap) : ce qui est coché et relevé reste dans le carnet de la carte" })),
+    el("div", { class: "manip-head" }, icon("sensor"), el("div", { class: "grow" }, el("h2", null, `${sheet.id ? `${sheet.id} — ` : ""}${sheet.title}`), el("small", null, `${sheet.block} · ${sheet.gear.map((g) => g.label).join(", ")} · `, count)), dots, why, whole, (() => { const b = btn("PDF", () => o.pdf && o.pdf(false), { small: true, icon: "pdf", tip: "La procédure de cet essai sur papier : une image de la carte par étape, une case par relevé — remplie de ce qui est déjà coché et noté, c'est le compte rendu" }); b.dataset.manipPdf = "one"; return b; })(), (() => { const b = btn("Tout le plan", () => o.pdf && o.pdf(true), { small: true, icon: "pdf", tip: "Le même cahier pour TOUS les essais de la carte (long : chaque essai est simulé d'abord)" }); b.dataset.manipPdf = "all"; return b; })(), full, btn("Fermer", () => close(), { small: true, icon: "close", tip: "Fermer (Échap) : ce qui est coché et relevé reste dans le carnet de la carte" })),
     el("div", { class: "manip-body" }, el("div", { class: "manip-left" }, boardHost, legend), card));
   document.body.append(root);
-  const pcb = labBoard(boardHost); let shown = -1, state = null, passOpen = false, bilan = false, wide = false, alive = true, silent = false, down = false, pending = false;
+  const pcb = labBoard(boardHost); let shown = -1, state = null, passOpen = false, bilan = false, wide = false, alive = true, silent = false, down = false, pending = false, explain = false, wordsOpen = false;
   const now = () => new Date().toISOString(), write = (label, fn, quiet = false) => { silent = quiet; try { store.updateBoard(id, (b) => { b.lab = fn(b); }, label); } finally { silent = false; } };
-  const goTo = (i) => { shown = Math.max(0, Math.min(steps.length - 1, i)); passOpen = false; bilan = false; wide = false; draw(true); };
+  const goTo = (i) => { shown = Math.max(0, Math.min(steps.length - 1, i)); passOpen = false; bilan = false; wide = false; explain = false; draw(true); card.scrollTop = 0; };
   const toggleFull = () => { try { if (document.fullscreenElement) document.exitFullscreen(); else if (root.requestFullscreen) root.requestFullscreen().catch(() => {}); } catch (e) { /* the window stays as it is : the screen already covers the page */ } };
 
   function action(s, row) {
@@ -71,20 +77,27 @@ export function openManip(o) {
     count.textContent = `étape ${shown + 1} sur ${steps.length} — ${state.done} faite${state.done > 1 ? "s" : ""}${state.stopped ? " — ESSAI ARRÊTÉ" : ""}`;
     dots.replaceChildren(...state.steps.map((x, i) => el("button", { class: `manip-dot ${x.state}${state.stopped === x.id ? " stop" : ""}${i === shown ? " cur" : ""}`, type: "button", role: "listitem", "data-dot": x.id, "aria-current": i === shown ? "step" : null, "aria-label": `Étape ${i + 1} : ${x.title} — ${x.state === "done" ? "faite" : x.state === "now" ? "à faire" : "verrouillée"}`, "data-tip": `${i + 1}. ${x.title}`, onClick: () => goTo(i) }, x.state === "done" ? "✓" : String(i + 1))));
     pcb.show(R, on.length ? { focus: new Set(on.map((p) => p.ref)) } : {}); pcb.mark(pp.points, wide ? null : pp.box); whole.hidden = !on.length; whole.lastChild.textContent = wide ? "Revenir au point" : "Toute la carte";
-    legend.replaceChildren(...(pp.points.length ? pp.points.map((p) => el("span", { class: "lead", "data-lead": p.lead }, el("i", { style: `background:${p.color}` }, p.label), el("span", null, `${p.word} → ${p.signal}`), el("small", null, p.at ? `${p.ref}, broche ${p.pin}` : "ce point n'est pas sur la carte : suivez le signal sur le schéma"))) : [el("span", null, icon("info"), " Cette étape se fait sur l'appareil : rien à toucher sur la carte.")]));
+    legend.replaceChildren(...(pp.points.length ? pp.points.map((p) => el("span", { class: "lead", "data-lead": p.lead }, el("i", { style: `background:${p.color}` }, p.label), el("span", null, `${p.word} → ${p.signal}`), el("em", null, signalSays(p.signal)), el("small", null, p.at ? `${p.ref}, broche ${p.pin}` : "ce point n'est pas sur la carte : suivez le signal sur le schéma"))) : [el("span", null, icon("info"), " Cette étape se fait sur l'appareil : rien à toucher sur la carte.")]));
     if (bilan && state.finished) { legend.replaceChildren(el("span", null, icon("check"), " Essai terminé : la carte est hors tension, décâblée.")); pcb.mark([], null); card.replaceChildren(...summary().filter(Boolean)); if (focus) card.querySelector("h3").focus(); return; }
-    const K = KIND[s.kind] || KIND.set, note = (labOf(board()).notes || []).find((n) => n.test === key && n.step === s.id), area = el("textarea", { "data-manip-note": s.id, placeholder: "Ce que vous observez, ce qui surprend, ce qui a été changé…", onChange: (e) => write(`Labo : note — ${s.title}`, (b) => setNote(b, key, s.id, e.target.value), true) });      // a note changes nothing else on the screen : it is kept without redrawing area.value = note ? note.text : "";
+    if (explain) { card.replaceChildren(el("span", { class: "manip-kind", style: "--dom:#0f766e" }, "Comprendre"), el("h3", { tabindex: -1 }, "L'écran du Labo et le vrai banc"),
+      el("p", { class: "manip-plain" }, "L'écran est une simulation : il connaît chaque fil, à chaque instant. Le banc est une vraie carte, que l'on lit avec un appareil à la fois. Voici, pour cet essai, comment passer de l'un à l'autre."),
+      benchTable(sheet), el("h4", null, "Pourquoi ce n'est pas pareil"), whyList(sheet), el("h4", null, "Les mots du banc"), wordList(),
+      el("div", { class: "manip-nav" }, el("span", { class: "grow" }), btn("Revenir à l'étape", () => { explain = false; draw(true); }, { primary: true, icon: "undo" }))); card.scrollTop = 0; if (focus) card.querySelector("h3").focus(); return; }
+    const K = KIND[s.kind] || KIND.set, words = wordsIn([s.title, s.text, ...(s.list || []), s.why].join(" ")), lex = words.length ? el("details", { class: "manip-words", "data-manip-words": String(words.length) }, el("summary", null, `Les mots de cette étape (${words.length})`), wordList(words)) : null, note = (labOf(board()).notes || []).find((n) => n.test === key && n.step === s.id), area = el("textarea", { "data-manip-note": s.id, placeholder: "Ce que vous observez, ce qui surprend, ce qui a été changé…", onChange: (e) => write(`Labo : note — ${s.title}`, (b) => setNote(b, key, s.id, e.target.value), true) });      // a note changes nothing else on the screen : it is kept without redrawing area.value = note ? note.text : "";
     const last = shown === steps.length - 1, next = last ? btn("Voir le bilan", () => { bilan = true; draw(true); }, { primary: state.finished, icon: "check", disabled: !state.finished, tip: state.finished ? "" : "Le bilan s'ouvre quand toutes les étapes sont faites" }) : btn("Suivant", () => goTo(shown + 1), { primary: s.state === "done", icon: "chevron-right", tip: "Flèche droite — lire la suite est permis ; la faire attend son tour" });
     next.dataset.manipNext = "";
+    if (lex) { lex.open = wordsOpen; lex.addEventListener("toggle", () => { wordsOpen = lex.open; }); }
     card.replaceChildren(...[el("span", { class: "manip-kind", style: `--dom:${K[1]}` }, `${shown + 1}. ${K[0]}`), el("h3", { tabindex: -1 }, s.title),
+      el("p", { class: "manip-plain", "data-manip-plain": s.id }, el("b", null, "En clair. "), `${plainStep(s)}${row ? ` ${plainReading(row)}` : ""}`),
       s.instrument ? el("div", { class: "manip-gear" }, gearPic(s.gear, s.instrument), el("span", null, el("small", null, "Appareil"), el("b", null, s.instrument))) : null,
-      el("p", { class: "manip-text" }, s.text), s.list ? el("ul", { class: "manip-list" }, s.list.map((t) => el("li", null, t))) : null, s.why ? el("p", { class: "manip-why" }, el("b", null, "Pourquoi. "), s.why) : null,
+      el("p", { class: "manip-text" }, s.text), s.list ? el("ul", { class: "manip-list" }, s.list.map((t) => el("li", null, t))) : null, s.why ? el("p", { class: "manip-why" }, el("b", null, "Pourquoi. "), s.why) : null, lex,
+      shown === 0 ? (() => { const b = btn("L'écran et le banc : ce qui change", () => { explain = true; draw(true); }, { small: true, icon: "info", tip: "À lire une fois avant de commencer : comment ce que l'écran du Labo a tracé devient ce que vous faites ici" }); b.dataset.manipWhyFirst = ""; return el("div", null, b); })() : null,
       action(s, row), el("label", { class: "manip-note" }, "Notes de cette étape — elles se dictent aussi (dictée du système)", area),
       el("div", { class: "manip-nav" }, btn("Précédent", () => goTo(shown - 1), { icon: "undo", disabled: shown === 0, tip: "Flèche gauche" }), el("span", { class: "grow" }), next)].filter(Boolean));
     if (focus) { const f = card.querySelector('[data-act="tick"] .btn, [data-manip-read]'), read = card.querySelector("[data-manip-read]"); (s.state === "done" ? next : read && !read.value ? read : f || next).focus(); }
   }
   function onKey(e) {
-    if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); if (passOpen) { passOpen = false; draw(true); } else close(); return; }
+    if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); if (explain) { explain = false; draw(true); } else if (passOpen) { passOpen = false; draw(true); } else close(); return; }
     if (e.key === "Tab") { const f = [...root.querySelectorAll("button, input, textarea, select, [tabindex]")].filter((n) => !n.disabled && !n.hidden && n.tabIndex >= 0); if (!f.length) return; const a = f[0], z = f[f.length - 1]; if (e.shiftKey && document.activeElement === a) { e.preventDefault(); z.focus(); } else if (!e.shiftKey && document.activeElement === z) { e.preventDefault(); a.focus(); } return; }
     if (typing(e) || e.altKey || e.ctrlKey || e.metaKey) return;
     if (e.key === "ArrowRight") { e.preventDefault(); e.stopPropagation(); if (shown < steps.length - 1) goTo(shown + 1); } else if (e.key === "ArrowLeft") { e.preventDefault(); e.stopPropagation(); goTo(shown - 1); } else if (e.key === "f" || e.key === "F") { e.preventDefault(); toggleFull(); }

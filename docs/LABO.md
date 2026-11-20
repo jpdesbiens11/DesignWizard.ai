@@ -198,11 +198,63 @@ quand l'étape la touche — dessinée en vecteurs : l'anneau sur la pastille, l
 broche —, une case « Fait », une case par relevé, des lignes de notes, et deux signatures. **Vide, c'est la
 procédure ; remplie de ce que le carnet de la carte garde** — coches avec leur heure, relevés et leur verdict,
 passages par un superviseur, notes —, **c'est le compte rendu**. « Tout le plan » fait le même cahier pour tous les
-essais de la carte, sous le voile, annulable (228 pages pour les 26 essais de la carte de démonstration).
+essais de la carte, sous le voile, annulable (233 pages pour les 26 essais de la carte de démonstration, à la v0.119.0).
 
 Choix pris d'office (le menu a été fermé deux fois par un message ; ils se changent) : le mode est pensé pour un
 portable ou l'écran du banc ; les étapes sont **verrouillées**, un superviseur passe outre et c'est noté ; le PDF
 est écrit par l'outil.
+
+## 4 ter. Le Labo dit en clair — et le banc relève ce que l'écran trace
+
+Demande de JP (20 novembre 2026, sur une capture du bloc « Microcontrôleur » de la carte RS-485) : « je ne comprends
+pas exactement comment faire les manips pour cette carte comme ingénieur mécanique ou étudiant : une partie est encore
+cryptique, sûrement pour un pro du domaine. Simplifier et expliquer comme à un enfant de 16 ans. Il semble y avoir des
+différences entre les mesures virtuelles du labo et ce qui est demandé dans le labo réel : expliquer pourquoi. »
+
+**Ce qui clochait vraiment.** L'audit des 90 essais des gabarits de blocs a montré que la remarque était fondée :
+
+- dans **47 essais faits au multimètre**, l'écran traçait une courbe — le rail d'alimentation, le plus souvent — que la
+  fiche faisait brancher au multimètre **sans jamais demander de la relever** ;
+- un essai (« Première mise sous tension » du microcontrôleur) demandait un **temps de 938 µs… au multimètre** ;
+- dans les essais à l'oscilloscope qui lisent deux signaux, l'étape pointait la **pince de masse sur le second signal**,
+  et l'essai du moteur pas à pas faisait poser la masse de la sonde sur une sortie du pont : au vrai banc, la pince est
+  reliée à la terre, et c'est un court-circuit.
+
+**La règle, tenue par le générateur des fiches** (`sheetFrom` de `web/js/pcba/lab_plan.js`, donc pour tout essai, d'un
+bloc ou de la carte entière) :
+
+| Ce que l'écran montre | Ce que la fiche demande |
+| --- | --- |
+| une courbe, dans un essai **au multimètre**, qui s'est stabilisée | un relevé « Tension sur X, une fois établie » : **la fin de la courbe** (`end` : la voie) |
+| une courbe qui bouge encore à la fin (une tension montée à la main) | rien : c'est le bouton de l'alimentation ; le multimètre **surveille** un point, la valeur se lit sur l'alimentation |
+| un **temps** ou une **fréquence**, dans un essai sans oscilloscope | la ligne « demande un oscilloscope », **facultative**, rangée en dernier (`scope`) |
+| une tension **entre deux points** (`pair` : la mesure a lu une différence) | au multimètre : la pointe rouge sur l'un, la noire sur l'autre |
+| une tension entre deux points **vivants**, à l'oscilloscope (`float`) | une sonde différentielle, ou deux sondes et leur différence — **jamais** la pince de masse |
+
+Un seul multimètre, une mesure à la fois : les étapes « poser les pointes » d'avance ont disparu ; **chaque relevé dit
+où vont les pointes** (la noire sur la masse d'abord), et le montre sur la carte. Dans un essai à l'oscilloscope, deux
+signaux prennent deux sondes (S et S2), la pince (M) restant sur la masse ou là où une source de l'essai a déjà son retour.
+
+**Dit en clair** (`web/js/pcba/lab_plain.js`, pur ; `web/js/modules/elab_plain.js`) :
+
+- **« En clair »**, sous le titre de chaque étape : une ou deux phrases, sans mot du métier, avec l'image de l'eau
+  quand elle aide — la tension est une pression, le courant un débit, la limite de courant un robinet de sécurité ;
+- **« Les mots de cette étape »** : les mots du banc que l'étape emploie se déplient — quinze mots, chacun avec son nom
+  du métier en anglais et une phrase ;
+- **chaque point** de la légende dit ce qu'est son signal (« NRST — la remise à zéro : tant que ce fil reste bas, la
+  puce attend sans rien faire ») ;
+- **« Écran et banc »** (bouton du haut, et sur la première étape) : la correspondance — ce que le Labo a tracé, ce que
+  l'on fait au banc pour chaque chose — puis **pourquoi ce n'est pas pareil**, en raisons courtes : des courbes à l'écran
+  et un chiffre au banc ; l'écran rejoue au ralenti ; le courant partout à l'écran et à un seul endroit au banc ; le
+  vrai chiffre un peu plus haut (le courant de repos n'est pas simulé) ; un temps très court ne se lit pas au
+  multimètre ; le programme de la puce ne tourne pas ; des puces « typiques » ; une carte parfaite.
+
+Dans le Labo même : sous les deux oscilloscopes, une ligne dit comment l'essai se fait au vrai banc, et un **anneau
+blanc au bout de chaque courbe** porte ce que le multimètre y lit ; la fiche a son groupe « L'écran et le vrai banc ».
+Le PDF des manipulations porte la phrase « En clair » de chaque étape, la correspondance et les mots du banc.
+
+Ce qui n'est pas fait : le plan de test en Word / PDF n'a pas ce groupe (il a les nouveaux relevés) ; l'image de l'eau
+est une image d'enseignement écrite de mémoire, sans source relue ; aucun débutant n'a encore lu ces phrases au banc.
 
 ## 5. Avec une IA
 

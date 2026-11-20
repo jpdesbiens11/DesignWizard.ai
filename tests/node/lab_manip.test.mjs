@@ -122,7 +122,7 @@ test("on paper : the procedure of a test with a picture of the board per step �
   assert.ok(calls.some(([k, a]) => k === "text" && /^[A-Z]+\d+ · /.test(a[2])), "the pin is written beside its lead"); assert.ok(calls.filter(([k]) => k === "rect").length > 10, "the parts and the pads around are drawn");
   /* empty : boxes to tick, a box per reading, lines for the notes */
   let blocks = manipBlocks(b, R, s), text = JSON.stringify(blocks); assert.equal(blocks.filter((x) => x.type === "h3").length, S.length, "one heading per step"); assert.equal(blocks.filter((x) => x.type === "figure").length, S.filter((x) => stepFigure(R, placedPoints(R, x))).length);
-  assert.equal(blocks.filter((x) => x.type === "table").length, s.rows.length, "one box per reading"); assert.ok(text.includes("[     ]  Fait.") && text.includes("Notes : ____") && !text.includes("[ X ]")); assert.ok(blocks.some((x) => x.type === "signatures"));
+  assert.equal(blocks.filter((x) => x.type === "table" && x.head[0] === "Relevé").length, s.rows.length, "one box per reading"); assert.ok(text.includes("[     ]  Fait.") && text.includes("Notes : ____") && !text.includes("[ X ]")); assert.ok(blocks.some((x) => x.type === "signatures"));
   /* filled : what the notebook of the board holds is on the page */
   for (const id of ["safety", "set-supply-0"]) b = { ...b, lab: setTick(b, key, id, true, "2026-11-20T10:02:00.000Z") }; b = { ...b, lab: setNote(b, key, "safety", "Bracelet vérifié au testeur.") };
   const first = S.find((x) => x.needs === "reading"), row = s.rows[first.row]; b = { ...b, lab: setReading(b, key, row.label, row.band.high * 3 + 1) }; b = { ...b, lab: setPass(b, key, first.id, "A. Tremblay", "mesure refaite", "2026-11-20T10:30:00.000Z") };
