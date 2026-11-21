@@ -212,6 +212,94 @@ sont des ressorts… le pourtour est gravé au laser ». Choix de JP, par menu :
   pas sans elles ; les bornes du module ; le fil des plages LV jusqu'à la carte ; l'isolation entre les plages LV et le
   cuivre vue par l'écran Isolation ; un essai de l'écrasement.
 
+## Itération 7 — le contact HV élastique, le marquage laser, et ce que l'estampage permet
+
+Choix de JP, par menu (21 novembre) : **« Contact HV élastique »** — redimensionner les lames HV pour qu'elles restent
+élastiques jusqu'à la butée, et comparer avec la version plastique. Puis, dans le même message : « est-ce vraiment possible
+d'estamper ces formes ? elles ne sont pas marquées au laser autour de chaque contact — fais-le, et donne-moi ton avis sur
+le contact ».
+
+- **La clé : c'est la butée qui fixe l'écart, pas le ressort.** Deux CORE pressés se posent sur leurs butées : la lame ne
+  voit que la tolérance de sa propre hauteur libre, de la butée et de la planéité des faces. L'outil le compte désormais :
+  le modèle « Spring contact · to its stop » prend une **tolérance ± sur la course** (`tol`) et vérifie l'effort à la course
+  la plus courte et l'élasticité à la plus longue (aussi dans le classeur Excel). Le projet la prend à **± 0,05 mm** (exemple).
+- **Le contact HV élastique** : la même tôle (CuBe 0,25 mm), les mêmes 10 lames de 2,5 mm, **des lames plus longues**
+  (7 → 9,5 mm) et **moins de course** (0,30 → 0,15 mm). La couronne passe à Ø 30,9 mm, sa butée de cuivre à Ø 33–36 mm ; les
+  contacts HV s'écartent (± 24 mm du milieu), les îlots LV montent et descendent (± 18,5 mm).
+
+  | Contact HV, à 180 A | Élastique (itération 7) | Plastique (itération 6) |
+  |---|---|---|
+  | Lames | 10 × 9,5 × 2,5 × 0,25 mm | 10 × 7 × 2,5 × 0,25 mm |
+  | Course (± 0,05) | 0,15 mm — de 0,10 à 0,20 | 0,30 mm — de 0,25 à 0,35 |
+  | Course élastique δy | 0,23 mm : **élastique au pire des cotes** | 0,12 mm : plastifie toujours |
+  | Effort à la butée | 14,3 N par lame, **143 N** par contact (9,6 N par lame au plus court) | 42 N par lame, 421 N par contact |
+  | Déformation permanente | **0** | 0,12 mm |
+  | Résistance (points + lames) | **41 µΩ** (11 + 30) | 28 µΩ (7 + 22) |
+  | Pertes par contact | 1,3 W | 0,9 W |
+  | Densité dans une lame | 14,4 A/mm² | 14,4 A/mm² |
+
+  **Ce qu'on paie pour rester élastique** : trois fois moins d'effort, 45 % de résistance en plus — surtout la résistance des
+  lames, plus longues. **Ce qu'on gagne** : une couronne qui se reprend (démontage, réparation, reprise en usine), un effort
+  connu à chaque pose, et 3 fois moins d'effort à tenir pour serrer le module (≈ 0,3 kN au lieu de ≈ 0,85 kN pour 2 contacts).
+  La version plastique reste là pour comparer : **variante « Plastique — itération 6 »** de la pièce `BM-SPRING-HV`, et son
+  calcul gardé dans le projet à côté de celui de la version élastique.
+- **Le contact LV** suit la même fenêtre : lames de 5,5 mm (au lieu de 4), course 0,10 ± 0,05 mm, élastique au plus long
+  (0,15 contre δy 0,19), 0,63 N par lame au plus court. L'effort minimal pris pour l'or est **0,5 N par lame — une valeur
+  d'usage, à confirmer** avec le fabricant de la couronne.
+- **Le marquage laser**, maintenant gravé dans la pièce : à côté de chaque cercle, dans un coin libre de la jambe, ce qu'est
+  le contact — **HV1 +, HV2 +, RS485 A, RS485 B** sur la jambe +, **HV1 −, HV2 −, RS485 A, RS485 B** sur la jambe −, lisibles de
+  l'extérieur, jamais dans la zone de contact. Une **nouvelle opération du langage de pièce, `mark`** (marquage laser) — une
+  police à un trait **fabriquée par l'outil** (`cad/stroke_font.js` : capitales, chiffres, + − . /), aucune police de
+  fabricant ; les traits sont unis à plat puis gravés d'un seul coup (`cad/features.js`). Dans Onshape, le marquage reste à
+  faire d'après le dessin (le FeatureScript le dit).
+- **Vérifié** : les pièces se construisent (le busbar en ≈ 2,4 s avec ses 8 marquages) ; rien ne traverse rien dans le CORE ;
+  avec le CORE suivant au pas, les butées de cuivre se touchent, les crêtes n'entrent que de 0,15 mm (HV) et 0,10 mm (LV),
+  chacune dans sa plage ; chaque étiquette est sur le cuivre de la jambe, à l'écart de tout cercle ; la variante plastique
+  se construit ; les calculs gardés sont ceux du modèle.
+
+### Est-ce vraiment estampable ? (retour DFM demandé par JP)
+
+**La couronne de lames : oui, c'est une pièce d'estampage classique** — des ponts de lame (« lanced bridges ») entre deux
+anneaux, sur un outil à suivre : percer les fenêtres entre les lames et le trou du centre, frapper le bombé, découper le
+contour. Ce qui compte :
+
+1. **Le bombé allonge peu la lame** : ses deux bouts sont tenus, la matière ne peut pas venir des anneaux, mais le bombé ne
+   l'allonge que de 0,18 % (HV élastique), 0,87 % (HV plastique), 1,1 % (LV). C'est faisable.
+2. **Former avant de durcir** : le cuivre-béryllium se met en forme dans un état formable (recuit ou quart dur), puis se
+   durcit par revenu ; l'état « TH04 » des valeurs du modèle vient après la mise en forme. Une bande durcie en usine
+   (« mill hardened ») s'estampe telle quelle, avec moins d'allongement. Les valeurs du modèle (E 131 GPa, Re 1000 MPa) sont
+   **typiques, non lues** sur une fiche de bande.
+3. **Les fenêtres entre les lames** : 0,42 mm au plus étroit pour une tôle de 0,25 (≈ 1,7 t) en HV, 0,57 mm pour 0,1 (5,7 t) en
+   LV — au-dessus de la largeur de poinçon d'usage (≈ 1 à 1,5 t). La lame la plus étroite fait 10 t. Faisable.
+4. **La tolérance du bombé est le vrai sujet** : ± 0,05 mm demande une frappe de calibrage après le revenu (le revenu bouge
+   un peu les cotes), ou un tri. **À ± 0,1 mm, le HV élastique sortirait de sa course élastique au pire des cotes** — alors
+   allonger encore les lames (≈ 10,5 mm) ou réduire la course nominale.
+5. **Le revêtement** : argent (HV) ou or (LV) sur une sous-couche de nickel, après le revenu ; des couronnes en vrac
+   s'emmêlent au tonneau — revêtir en bande avant la découpe finale, ou sur support.
+6. **La fixation** : souder au laser à travers l'argent est difficile (il réfléchit) et la chaleur adoucit le CuBe durci —
+   souder l'anneau extérieur seulement, loin des lames, avant le revêtement ; **mieux : sertir l'anneau extérieur sous la
+   rondelle de butée** (une seule pièce de plus qui fait butée et retenue).
+7. **Santé** : la poussière de cuivre-béryllium est toxique — estampage, revenu, revêtement et soudure chez un fabricant
+   équipé ; pas d'usinage ni de ponçage en atelier.
+8. **Une autre voie** : un ruban de contact à lamelles du commerce (« louvered contact band », plusieurs fabricants) dans
+   une gorge — cotes et effort donnés par sa fiche. Ou un alliage plus conducteur (un CuBe « haute conductivité » ou un
+   CuNiSi) : moins de limite élastique, moins de résistance — à comparer dans le modèle, valeurs à lire sur leurs fiches.
+
+**Les butées de cuivre** : elles fixent l'écart entre deux CORE, donc leur hauteur (0,35 mm) et leur planéité se tolèrent
+serré (± 0,02 mm, exemple). Le plus simple : **une rondelle de cuivre** soudée ou brasée sur la jambe avant le laminage. Un
+anneau repoussé dans la jambe (demi-cisaillé) est possible, mais laisse un creux au dos, côté papier ; usiner la jambe pour
+faire saillir l'anneau l'amincirait.
+
+**Les îlots LV** : la plage de cuivre surmoulée dans l'insert en PA66-GF30 (avec une languette pour le fil), l'insert
+emmanché ou collé dans le trou de la jambe. Le rebord de l'insert est tenu **0,02 mm sous les butées de cuivre** : ce sont
+elles qui portent l'effort du module, le plastique ne flue pas sous la charge.
+
+**Le marquage laser sur cuivre nu** : le cuivre renvoie l'infrarouge — un laser vert, ou une source à impulsions courtes,
+marque mieux. Quelques microns suffisent à lire ; les 0,05 mm dessinés sont pour la vue. Jamais dans une zone de contact.
+
+**Pas fait** : le sertissage sous la rondelle de butée (dessiné : la couronne posée, la butée séparée sur la jambe) ; l'essai
+d'écrasement et de résistance d'une couronne réelle ; l'effort qui presse le module ; le fil des plages LV.
+
 ## Ce qu'il contient
 
 | Élément | Ce que c'est | Où |
@@ -222,7 +310,7 @@ sont des ressorts… le pourtour est gravé au laser ». Choix de JP, par menu :
 | Flex en boîte du CORE | `BM-FLEX-BOX` : la section centrale sous le CORE (8 CTN, B−), deux panneaux pleine largeur aux petits bouts, le X− continue dans la carte (rigid-flex), le rabat X+ prend B+ | Pièces |
 | Support du bas des cellules | `BM-HOLDER-BASE` : le support du bas avec un fond sous les cellules, deux fenêtres de soudure − par cellule, et ses 8 rondelles thermiques moulées en deuxième injection (itération 5 ; les rondelles séparées `BM-PUCK` de l'itération 4 sont dedans) | Pièces |
 | Support du haut des cellules | `BM-HOLDER` : une épine entre les rangées, deux barres aux bouts, une poche par cellule, cinq noyautages | Pièces |
-| Ressorts de contact HV et LV | `BM-SPRING-HV`, `BM-SPRING-LV` : une couronne de lames-ponts en cuivre-béryllium, deux de chaque par CORE, sur la jambe + (itération 6) | Pièces |
+| Ressorts de contact HV et LV | `BM-SPRING-HV`, `BM-SPRING-LV` : une couronne de lames-ponts en cuivre-béryllium, deux de chaque par CORE, sur la jambe + (itération 6) ; élastiques jusqu'à la butée, la version plastique gardée en variante (itération 7) | Pièces |
 | CORE 1S8P | `BM-CORE-ASM` : 8 cellules en deux rangées de 4, le support du haut, le support du bas et ses rondelles, le busbar laminé, le flex en boîte, la carte dessus, 4 ressorts de contact | Assemblage |
 | BM 8s8p - 21700 | `BM-8S8P-ASM` : 8 CORE côte à côte, tous dans le même sens | Assemblage |
 

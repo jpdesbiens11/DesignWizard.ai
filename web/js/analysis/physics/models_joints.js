@@ -145,39 +145,43 @@ const springStop = { id: "spring_stop", domain: "joints", sketch: "spring", titl
   inputs: [num("n", "Nombre de lames de la couronne", "", 12, 1, 48, 1, GEO), num("l", "Portée d'une lame, entre ses deux pieds", "mm", 8, 1, 40, 0.5, GEO),
     num("w", "Largeur d'une lame", "mm", 2.5, 0.2, 10, 0.1, GEO), num("t", "Épaisseur d'une lame", "mm", 0.25, 0.05, 1.5, 0.01, GEO),
     num("lift", "Bombé libre d'une lame, au-dessus de son pied", "mm", 0.5, 0.05, 5, 0.05, GEO), num("hs", "Hauteur de la butée, au-dessus du pied des lames", "mm", 0.35, 0, 5, 0.05, GEO),
+    num("tol", "Tolérance sur la course (±) : bombé, butée, planéité", "mm", 0, 0, 1, 0.01, GEO),
     num("E", "Module d'Young des lames", "GPa", 131, 10, 400, 1, MAT), num("Re", "Limite élastique des lames", "MPa", 1000, 50, 3000, 10, MAT), num("rhoB", "Résistivité des lames", "nΩ·m", 78, 10, 2000, 1, MAT),
     opt("plating", "Revêtement des points de contact", "Ag", Object.entries(PLATINGS).map(([k, p]) => ({ value: k, label: `${p.fr} (${p.label})` })), PLC),
     num("I", "Courant porté par ce contact", "A", 180, 0, 5000, 1, PLC), num("Fmin", "Effort minimal par lame (percer les films)", "N", 1, 0.05, 50, 0.1, CRIT), num("Jmax", "Densité de courant repère dans une lame", "A/mm²", 15, 1, 100, 1, CRIT)],
   outputs: [out("F", "Effort total du contact à la butée", "N"), out("Fb", "Effort d'une lame à la butée", "N"), out("set", "Déformation permanente après démontage", "mm"), out("R", "Résistance du contact (points + lames)", "µΩ"),
     out("ds", "Course imposée par la butée", "mm"), out("dy", "Course élastique d'une lame", "mm"), out("k", "Raideur d'une lame", "N/mm"), out("Fy", "Effort de première plastification", "N"), out("Fp", "Effort de ruine (trois rotules)", "N"),
-    out("Rc", "Résistance des points de contact (Holm)", "µΩ"), out("Rb", "Résistance des lames", "µΩ"), out("dU", "Chute de tension", "mV"), out("P", "Pertes", "W"), out("iMax", "Courant estimé admissible", "A"), out("J", "Densité de courant dans une lame", "A/mm²")],
+    out("Rc", "Résistance des points de contact (Holm)", "µΩ"), out("Rb", "Résistance des lames", "µΩ"), out("dU", "Chute de tension", "mV"), out("P", "Pertes", "W"), out("iMax", "Courant estimé admissible", "A"), out("J", "Densité de courant dans une lame", "A/mm²"),
+    out("dsMax", "Course la plus longue (tolérance comprise)", "mm"), out("FbMin", "Effort d'une lame à la course la plus courte", "N")],
   assumptions: ["Une lame est une bande encastrée à ses deux pieds, poussée en son milieu : k = 192 E I / l³ avec I = w t³ / 12 ; le moment F l / 8 est le même aux pieds et au milieu.",
     "Première plastification quand σ = 12 E t δ / l² atteint Re : δy = Re l² / (12 E t). Charge de ruine des trois rotules plastiques : Fp = 1,5 Fy (section rectangulaire).",
     "Au-delà de δy, l'outil prend F = Fp − 0,5 Fy (δy / δ)² : même effort et même pente que la droite élastique en δy, et Fp à l'infini — une forme choisie, pas une solution exacte.",
     "Démontée, la lame revient de F / k : la déformation permanente est δ − F / k. Pas d'écrouissage, pas de fluage ni de relaxation à chaud (une lame en alliage de cuivre perd de l'effort avec le temps et la température).",
-    "Un point de contact par lame, au sommet de son arche ; résistance de Holm ρ / (2 a) avec a = √(F / (π H)) ; le courant entre au sommet et se partage entre les deux demi-portées."],
+    "Un point de contact par lame, au sommet de son arche ; résistance de Holm ρ / (2 a) avec a = √(F / (π H)) ; le courant entre au sommet et se partage entre les deux demi-portées.",
+    "La butée fixe l'écart entre les deux faces : la course ne dépend que du bombé, de la butée et de la planéité. Sa tolérance ± se vérifie aux deux bouts — l'effort minimal à la course la plus courte, l'élasticité à la plus longue."],
   validity: "Lames minces (t ≤ l / 10), plates avant cambrage, faces d'en face planes et rigides ; un ordre de grandeur pour dimensionner, à recaler par un essai d'écrasement et de résistance sur une couronne réelle.",
   reference: "Roark's Formulas for Stress and Strain — poutre bi-encastrée chargée en son milieu ; Neal, The Plastic Methods of Structural Analysis (rotules plastiques, Mp = 1,5 My) ; Holm, Electric Contacts (résistance de constriction)",
   fill: { t: "h" },
   compute(i) {
     const S = sheet(), P = PLATINGS[i.plating] || PLATINGS.Ag, nb = Math.max(1, Math.round(i.n)), E = i.E * 1e3, Ib = i.w * i.t ** 3 / 12, k = 192 * E * Ib / i.l ** 3;
-    const dy = i.Re * i.l * i.l / (12 * E * i.t), Fy = k * dy, Fp = 1.5 * Fy, ds = Math.max(0, i.lift - i.hs);
-    const Fb = ds <= 0 ? 0 : ds <= dy ? k * ds : Fp - 0.5 * Fy * (dy / ds) ** 2, set = ds > dy ? ds - Fb / k : 0, F = nb * Fb;
+    const dy = i.Re * i.l * i.l / (12 * E * i.t), Fy = k * dy, Fp = 1.5 * Fy, ds = Math.max(0, i.lift - i.hs), tol = Math.max(0, i.tol || 0), dsMax = ds + tol, dsMin = Math.max(0, ds - tol);
+    const curve = (d) => (d <= 0 ? 0 : d <= dy ? k * d : Fp - 0.5 * Fy * (dy / d) ** 2), Fb = curve(ds), FbMin = curve(dsMin), set = ds > dy ? ds - Fb / k : 0, F = nb * Fb;
     const a = Math.sqrt(Math.max(Fb, 1e-9) / (PI * P.H)), rPoint = P.rho / (2 * a), Rc = rPoint / nb, Rb = (i.rhoB * 1e-9 * (i.l / 2) * 1e-3 / (i.w * i.t * 1e-6)) / 2 / nb, R = Rc + Rb;
     const iMax = 0.1 * P.soften / rPoint * nb * 0.8, J = i.I / nb / 2 / (i.w * i.t), sig = Math.min(i.Re, 12 * E * i.t * Math.min(ds, dy) / i.l ** 2);
     S.step(`Raideur d'une lame bi-encastrée : k = 192 E I / l³ = 192 × ${n(E)} × ${n(Ib)} / ${n(i.l)}³ = ${n(k)} N/mm (I = w t³ / 12 = ${n(Ib)} mm⁴).`);
     S.step(`Course élastique : δy = Re l² / (12 E t) = ${n(i.Re)} × ${n(i.l)}² / (12 × ${n(E)} × ${n(i.t)}) = ${n(dy)} mm ; effort de première plastification Fy = k δy = ${n(Fy)} N, de ruine Fp = 1,5 Fy = ${n(Fp)} N.`);
     S.step(`Course imposée par la butée : δ = bombé − butée = ${n(i.lift)} − ${n(i.hs)} = ${n(ds)} mm ; ${ds <= dy ? `élastique : F = k δ = ${n(Fb)} N par lame, contrainte ${n(sig)} MPa` : `au-delà de δy : F = Fp − 0,5 Fy (δy / δ)² = ${n(Fb)} N par lame ; démontée, la lame garde ${n(set, 3)} mm de déformation`}.`);
     S.step(`Effort total à la butée : F = n Fb = ${nb} × ${n(Fb)} = ${n(F)} N — l'effort que la butée ne prend pas : le reste de la compression du module passe par la butée.`);
+    if (tol > 0) S.step(`Tolérance ± ${n(tol)} mm : la course va de ${n(dsMin)} à ${n(dsMax)} mm ; à la plus courte, ${n(FbMin)} N par lame ; à la plus longue, ${dsMax <= dy ? `toujours élastique (${n(dsMax / dy * 100)} % de δy)` : "la lame plastifie"}.`);
     S.step(`Résistance : points (Holm, ${P.fr.toLowerCase()}) a = √(F / (π H)) = ${n(a * 1e6)} µm, ρ / (2 a) = ${n(rPoint * 1e6)} µΩ par point, ${n(Rc * 1e6)} µΩ pour ${nb} ; lames ${n(Rb * 1e6)} µΩ (deux demi-portées en parallèle) ; total R = ${n(R * 1e6)} µΩ.`);
     S.step(`Au courant de ${n(i.I)} A : chute ΔU = R I = ${n(R * i.I * 1e3)} mV, pertes P = R I² = ${n(R * i.I * i.I)} W ; densité dans une demi-lame J = I / (2 n w t) = ${n(J)} A/mm².`);
     if (ds <= 0) S.warn("Le bombé ne dépasse pas la butée : les lames ne touchent pas la face d'en face, le contact ne passe que par la butée.");
     if (i.t > i.l / 10) S.warn("Lame épaisse (t > l / 10) : la flexion simple ne suffit plus, le cisaillement compte.");
-    S.check("Effort par lame vs effort minimal", Fb, i.Fmin, "N", { min: true, note: Fb < i.Fmin ? "Trop peu d'effort pour percer les films d'oxyde : plus de bombé, une lame plus épaisse, ou de l'or." : "" });
+    S.check("Effort par lame vs effort minimal", FbMin, i.Fmin, "N", { min: true, note: FbMin < i.Fmin ? "Trop peu d'effort pour percer les films d'oxyde : plus de bombé, une lame plus épaisse, ou de l'or." : "" });
     S.check("Courant vs courant estimé admissible (Holm)", i.I, iMax, "A");
-    S.check("Course à la butée vs course élastique", ds, dy, "mm", { soft: true, note: ds > dy ? `Les lames plastifient à la première pose et gardent ${n(set, 3)} mm : voulu si la couronne doit se mettre en place une fois pour toutes, à éviter si elle doit se reprendre.` : "" });
+    S.check("Course à la butée vs course élastique", dsMax, dy, "mm", { soft: true, note: dsMax > dy ? `Les lames plastifient à la première pose${set > 0 ? ` et gardent ${n(set, 3)} mm` : " au pire des cotes"} : voulu si la couronne doit se mettre en place une fois pour toutes, à éviter si elle doit se reprendre.` : "" });
     S.check("Densité de courant dans une lame vs repère", J, i.Jmax, "A/mm²", { soft: true, note: J > i.Jmax ? "Lames chargées : plus de lames, plus larges, ou un alliage plus conducteur." : "" });
-    return S.set({ F, Fb, set, R: R * 1e6, ds, dy, k, Fy, Fp, Rc: Rc * 1e6, Rb: Rb * 1e6, dU: R * i.I * 1e3, P: R * i.I * i.I, iMax, J });
+    return S.set({ F, Fb, set, R: R * 1e6, ds, dy, k, Fy, Fp, Rc: Rc * 1e6, Rb: Rb * 1e6, dU: R * i.I * 1e3, P: R * i.I * i.I, iMax, J, dsMax, FbMin });
   } };
 
 export const JOINTS = [bolt, pressfit, pin, springStop];

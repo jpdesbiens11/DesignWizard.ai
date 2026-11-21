@@ -7,6 +7,7 @@ import { v3, FACES, PLANES, faceKey, facePoint } from "./vec.js";
 import { normalizeProfile, profileBBox, profileArea, profilePerimeter, flattenLoop } from "./profile.js";
 import { KernelError } from "./occ.js";
 import { THREADS } from "./standards.js";
+import { textStrokes, unmarkable, MARK_CHARS } from "./stroke_font.js";
 
 export class FeatureError extends Error {
   constructor(msg, feature) { super(msg); this.feature = feature; }
@@ -180,6 +181,25 @@ const OPS = {
     const a = f.from, b = f.to;
     if (!a || !b) throw new FeatureError("slot : « from » et « to » requis.", f);
     OPS.pocket(K, st, { ...f, op: "pocket", slot: [a[0], a[1], b[0], b[1], pos(f.w, "slot w", f)], profile: undefined });
+  },
+  /** Laser marking : a text engraved in a face with the single-stroke font of the tool (cad/stroke_font.js) — each stroke a groove w wide and
+      depth deep (square ends, drawn half a width longer : the joints stay full). at : the centre of the text, in the face plane ; dir : the reading direction there,
+      as one sees the face from outside (on +Y, reading to the right is toward −X). */
+  mark(K, st, f) {
+    const face = faceKey(f.face || "+Z"), F = FACES[face], body = f.body || st.main, level = faceLevel(K, st, f, face, body), text = String(f.text ?? "").trim(), bad = unmarkable(text);
+    if (!text) throw new FeatureError("mark : « text » est vide.", f);
+    if (bad.length) throw new FeatureError(`mark : « ${bad.join(" ")} » ne se marque pas — la police à un trait de l'outil : ${MARK_CHARS}.`, f);
+    const h = pos(f.h ?? 2, "mark h", f), w = pos(f.w ?? 0.25, "mark w", f), depth = pos(f.depth ?? 0.05, "mark depth", f), at = (f.at || [0, 0]).map((x, k) => num(x, `mark at[${k}]`, f)), dir = (f.dir || [1, 0]).map((x, k) => num(x, `mark dir[${k}]`, f));
+    const u = [0, 0, 0], v = [0, 0, 0]; u[F.plane[0]] = 1; v[F.plane[1]] = 1;
+    const over = 0.2, o = v3.mul(F.n.map(Math.abs), level + over * F.n[F.axis]);
+    const D = [0, 0, 0]; D[F.plane[0]] = dir[0]; D[F.plane[1]] = dir[1]; const U = v3.cross(F.n, D), up = [U[F.plane[0]], U[F.plane[1]]];      // up, as one sees the face from outside
+    const tools = textStrokes(text, { h, at, dir, up }).filter(([a, b, c, d]) => Math.hypot(c - a, d - b) > 1e-6)
+      .map(([a, b, c, d]) => { const L = Math.hypot(c - a, d - b), t = [(c - a) / L * w / 2, (d - b) / L * w / 2], q = [-t[1], t[0]];      // a stroke : a bar w wide, w / 2 longer at each end so that the joints stay full (square ends : planar faces, light booleans)
+        const poly = [[a - t[0] + q[0], b - t[1] + q[1]], [c + t[0] + q[0], d + t[1] + q[1]], [c + t[0] - q[0], d + t[1] - q[1]], [a - t[0] - q[0], b - t[1] - q[1]]];
+        return K.faceOfProfile(normalizeProfile({ poly }), { o, u, v }); });
+    const flat = tools.length > 1 ? K.unify(K.fuse(tools[0], tools.slice(1))) : tools[0];      // the strokes joined flat first : one tool, light to cut
+    apply(K, st, f, K.prism(flat, v3.mul(F.n, -(depth + over))), "cut");
+    (st.facts.marks || (st.facts.marks = [])).push({ text, face, at, h, depth, source: f.id });
   },
   boss(K, st, f) {
     const face = faceKey(f.face || "+Z"), F = FACES[face], body = f.body || st.main, level = faceLevel(K, st, f, face, body);

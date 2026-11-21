@@ -33,7 +33,7 @@ Functions: min max abs sqrt floor ceil round sin cos tan (degrees) hypot clamp(v
   "pcb": { ... },                       // section 7 (family pcb)
   "notes": ["Drawing note 1", "..."],   // notes printed on the 2D drawing
   "finish": "Anodised black 10 µm",
-  "look": { "color": "#3d86e6", "opacity": 0.6 },   // optional: the colour of the part ON SCREEN, to tell parts apart (not a finish; leave it out and the part shows the colour of its material)
+  "look": { "color": "#3d86e6", "opacity": 0.6 },   // optional: how the part looks ON SCREEN, to tell parts apart (not a finish; leave it out and the part shows the colour of its material). Also: "pattern": "camo-forest" | "camo-jungle" | "camo-desert" | "camo-snow" | "camo-urban" | "camo-navy" (instead of a plain colour), "sheen": "matte" | "gloss" | "metallic"
   "interview": { "questions": [ {"q": "...", "a": "..."} ], "assumptions": ["..."] }   // what was asked and assumed
 }
 
@@ -44,7 +44,7 @@ Functions: min max abs sqrt floor ceil round sin cos tan (degrees) hypot clamp(v
   "half": { "expr": "L/2" }                       // derived (read-only)
 }
 A parameter may keep other values beside the one that counts: "alts": [150, 200] in its definition — close cousins of the part; only "value" is used.
-A part may name its cousins: "variants": [{ "name": "Long, no window", "off": ["window"], "params": { "L": 200 } }] — "off" lists the ids of the features put aside ("suppressed"), "params" the values; applying one sets both.
+A part may name its cousins: "variants": [{ "name": "Long, no window", "off": ["window"], "params": { "L": 200 } }] — "off" lists the ids of the features put aside ("suppressed"), "params" the values; applying one sets both. "variantOn" names the variant in use: it follows the tree (what is put on or off, a parameter changed belongs to it).
 Give every dimension a human would want to tune as a parameter (5 to 15 of them), with a label and sensible min / max.
 Use the parameters everywhere else instead of raw numbers.
 
@@ -121,6 +121,7 @@ Common fields: "op", optional "id", "name", "body" (default "main"), "mode": "ad
       // "tip": top diameter — makes a POINTED boss (a cone from "d" at the foot to "tip" at the top: an embossed contact or welding projection)
 - {"op":"coil", "d":6, "di":4, "r":40, "r1":60, "h":120, "turns":8, "at":[x,y,z], "axis":"Z"}   // a tube wound in a helix (cooling coil, spring): "at" = centre of the base, "r" = radius of the centre line there, "r1" at the top (a cone when it differs), "d" = tube diameter, "di" = its bore (0 or absent: solid); the pitch h / turns must exceed d
 - {"op":"arch", "face":"+Z", "at":POS, "l":6, "w":2, "h":0.6, "t":0.3, "dir":[0,1]}   // a spring blade formed in a strip: an arch of span l along dir (in the face plane), w wide, rising by h; t = blade thickness (hollow under it)
+- {"op":"mark", "face":"+Y", "at":[x,z], "text":"HV1 +", "h":2, "w":0.25, "depth":0.05, "dir":[-1,0], "start":y}   // laser marking: a text engraved in a face, single-stroke font of the tool (A-Z, 0-9, + - . /); "at" = centre of the text, "dir" = reading direction in the face plane
 - {"op":"shell", "t":2.5, "open":["+Z"]}                              // hollow the part, removing the listed faces
 - {"op":"tub", "size":[L,W,H], "wall":2.5, "rc":4, "rf":4, "draft":1}   // moulded shell open on +Z: one wall everywhere, outside radii rc (corners) and rf (floor), real draft in degrees (the rim keeps L x W, the floor is narrower)
 - {"op":"draft", "angle":1, "pull":"+Z", "neutral":z}                    // lean the faces of the body that run along the pull; do it before the fillets
@@ -245,6 +246,7 @@ A .dwiz document is accepted as an answer in place of the JSON object; both are 
 | `AL6063-T5` | Aluminium 6063-T5 (extrusion) | 2.7 | conducteur |
 | `AL5052-H32` | Aluminium 5052-H32 (sheet) | 2.68 | conducteur |
 | `CU-C110` | Copper C110 (ETP) | 8.89 | conducteur |
+| `CUBE-C17200` | Copper beryllium C17200 (TH04) | 8.25 | conducteur |
 | `BRASS-360` | Brass C360 | 8.5 | conducteur |
 | `SS-304` | Stainless steel 304 | 8 | conducteur |
 | `STEEL-1018` | Steel 1018 (zinc plated) | 7.87 | conducteur |

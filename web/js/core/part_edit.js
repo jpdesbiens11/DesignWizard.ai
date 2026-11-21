@@ -44,7 +44,7 @@ export const FEATURE_FORMS = {
   finish: [["note", "Finition", "text"]],
 };
 export const FEATURE_LABEL = { ...Object.fromEntries(Object.entries(SHOP_VERBS).map(([k, v]) => [k, v.label])), box: "Box", cylinder: "Cylinder", coil: "Coil (helical tube)", extrude: "Extrude", revolve: "Revolve", hole: "Hole", pocket: "Pocket", pad: "Pad", slot: "Slot",
-  boss: "Boss", arch: "Arch (spring blade)", shell: "Shell", fillet: "Fillet", chamfer: "Chamfer", interfaces: "— interface geometry —" };
+  boss: "Boss", arch: "Arch (spring blade)", mark: "Laser marking", shell: "Shell", fillet: "Fillet", chamfer: "Chamfer", interfaces: "— interface geometry —" };
 export const FEATURE_DEFAULT = {
   box: { op: "box", size: [20, 20, 10], at: [0, 0, 0] }, cylinder: { op: "cylinder", d: 10, h: 10, at: [0, 0, 0], axis: "Z" }, coil: { op: "coil", d: 4, di: 3, r: 15, h: 40, turns: 6, at: [0, 0, 0], axis: "Z" },
   extrude: { op: "extrude", profile: { rect: [0, 0, 30, 20], r: 2 }, plane: "XY", at: 0, length: 10 }, hole: { op: "hole", face: "+Z", at: [10, 10], d: 5, depth: "through" },

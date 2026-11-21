@@ -353,6 +353,13 @@ ordre ; ce qui est fait se raye ici.
    d'un CORE au suivant 51,25 mm ; modèle analytique `spring_stop` (élasto-plastique : courbe au-delà de l'élastique choisie par l'outil, dite) —
    le contact HV passe en plastique, c'est voulu. Reste : l'effort qui presse le module (plaques de bout), le fil des plages LV à la carte,
    l'isolation des îlots LV dans l'écran Isolation, un essai d'écrasement.
+   **Itération 7 (v0.139.0)**, choix de JP par menu : **« Contact HV élastique »** — la butée fixe l'écart, la lame n'absorbe que ± 0,05 mm
+   (tolérance `tol` du modèle `spring_stop`, Excel compris) ; lames HV de 9,5 mm dans la même tôle, course 0,15 mm, élastiques au pire des cotes ;
+   la couronne plastique gardée en variante (« Plastique — itération 6 ») et son calcul à côté. Même message de JP : « est-ce vraiment
+   estampable ? … marque-les au laser… ton avis sur le contact » — **marquage laser** gravé à côté de chaque contact, des deux côtés, par une
+   nouvelle opération du langage de pièce, **`mark`** (police à un trait fabriquée par l'outil, `cad/stroke_font.js`) ; retour DFM (estampage
+   de la couronne, revenu, calibrage du bombé, revêtement, fixation, butées, îlots, marquage) dans `docs/BM_MODULE.md` et les notes des pièces.
+   Reste : sertir la couronne sous sa rondelle de butée ; un essai d'écrasement et de résistance d'une couronne réelle.
    Reste : les languettes de soudure minces, le heat staking du flex (la plaque − est entre les deux), la nuance du silicone 2K, la lamination
    d'une pièce pliée, l'évent au fond de la P45B (à demander), les bornes du module, le boîtier, le BMS central, l'échauffement du module fermé.
 21. ~~**Logiciel : pas à pas, simulation en direct, code visible, chargement**~~ — fait (v0.124.0 ; demande de JP du 20

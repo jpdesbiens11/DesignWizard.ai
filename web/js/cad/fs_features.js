@@ -56,6 +56,7 @@ const EMIT = {
   },
   boss(G, f) { emitBoss(G, f, null, G.next()); },
   coil(G, f) { throw new Skip("serpentin (coil) : à faire dans Onshape — une hélice sur un cylindre ou un cône, puis un balayage du tube le long d'elle"); },
+  mark(G, f) { throw new Skip(`marquage laser « ${f.text} » : à marquer d'après le dessin — dans Onshape, un texte d'esquisse enlevé de ${f.depth ?? 0.05} mm`); },
   arch(G, f) { throw new Skip("lame en pont (arch) : à former dans Onshape — une esquisse en arc sur le chant, extrudée sur la largeur de la lame"); },
   shell(G, f) {
     const N = G.next(), body = G.bodyQ(f.body), t = pos(G.S(f.t, "shell t"), "shell t");

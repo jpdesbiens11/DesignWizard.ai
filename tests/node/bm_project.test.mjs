@@ -3,6 +3,7 @@
    Iteration 4 : the two L in one laminated busbar ; the flex delivered flat, folded into a box ; a thermistor under the centre of each cell,
    through its thermal washer. Iteration 5 : the bottom holder with a floor under the cells and its washers molded in (2K). Iteration 6 : the
    4 contacts between two CORE — springs on the + leg pressed to their stops, lands on the − leg, the LV contacts on insulated islands.
+   Iteration 7 : the HV blades stay elastic at the longest travel of the tolerance window ; the plastic crown kept as a variant, to compare.
      node --test tests/node/bm_project.test.mjs */
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -11,7 +12,9 @@ import { bmProject, busbarSizing, CORE_X, CORE_Y, CORE_PITCH, BB_T, I_CORE, STAC
 import { coreBox, FLEX_T, FLEX_X0, NTC_H } from "../../web/js/demo/demo_bm_box.js";
 import { INS_T, WRAP_T } from "../../web/js/demo/demo_bm_lam.js";
 import { coreHolder, coreBase } from "../../web/js/demo/demo_bm_holder.js";
-import { STOP_H, SPRINGS, contactLayout } from "../../web/js/demo/demo_bm_contacts.js";
+import { STOP_H, TOL, SPRINGS, ELASTIC, PLASTIC, MARK, contactLayout } from "../../web/js/demo/demo_bm_contacts.js";
+import { textWidth } from "../../web/js/cad/stroke_font.js";
+import { applyVariant, variantNow } from "../../web/js/core/variants.js";
 import { run, defaults } from "../../web/js/analysis/physics/index.js";
 import { cell } from "../../web/js/cad/elec_library.js";
 import { buildPart, validateSpec } from "../../web/js/cad/build.js";
@@ -125,25 +128,44 @@ test("the cell holders : one solid at the top, the bottom one with its floor and
 });
 
 test("the 4 contacts between two CORE : springs on the + leg, lands on the − leg ; pressed, the stops touch and only the crests go in, by the travel the model takes", async () => {
-  const { K, p, core, placed } = await placedCore(), L = contactLayout(CORE_X, 70.15);
+  const { K, p, core, placed, built } = await placedCore(), L = contactLayout(CORE_X, 70.15);
   assert.deepEqual(L.map((c) => [c.id, c.kind]), [["HV1", "hv"], ["HV2", "hv"], ["LVA", "lv"], ["LVB", "lv"]]); assert.deepEqual(L.filter((c) => c.kind === "lv").map((c) => c.net), ["RS485_A", "RS485_B"]);
   const lam = p.parts.find((x) => x.id === "BM-BB-LAM"), f = (re) => lam.features.filter((x) => re.test(x.id)).map((x) => x.id);
   assert.deepEqual(f(/^butee_[a-z0-9]+$/), ["butee_hv1", "butee_hv2"], "a copper stop around each HV spring"); assert.equal(f(/^gravure_[a-z0-9]+$/).length, 8, "an engraved circle around each contact, on both legs");
   assert.equal(f(/^ilot_[a-z0-9]+$/).length, 4, "an insulating island for each LV contact, on both legs"); assert.equal(lam.bodies.isolant_lv.kind, "insulator"); assert.deepEqual(["lv_a_p", "lv_a_m"].map((n) => lam.bodies[n].net), ["RS485_A", "RS485_A"]);
   for (const s of ["BM-SPRING-HV", "BM-SPRING-LV"]) { const sp = p.parts.find((x) => x.id === s); assert.equal(sp.material, "CUBE-C17200"); assert.equal(sp.features.filter((x) => x.op === "arch").length, SPRINGS[s === "BM-SPRING-HV" ? "hv" : "lv"].n); }
-  assert.deepEqual(core.instances.filter((i) => /^BM-SPRING/.test(i.part)).map((i) => [i.id, i.placement.t]), [["hv1", [0, 0, 0]], ["hv2", [52, 0, 0]], ["lva", [0, 0, 0]], ["lvb", [0, 0, -26]]]);
+  assert.deepEqual(core.instances.filter((i) => /^BM-SPRING/.test(i.part)).map((i) => [i.id, i.placement.t]), [["hv1", [0, 0, 0]], ["hv2", [48, 0, 0]], ["lva", [0, 0, 0]], ["lvb", [0, 0, -37]]]);
+  for (const c of L.filter((x) => x.kind === "hv")) assert.ok(c.x - SPRINGS.hv.groove - 0.2 > 3 && c.x + SPRINGS.hv.groove + 0.2 < CORE_X - 3, `${c.id} : the engraved circle stays on the leg`);
+  const gap = Math.hypot(L[2].x - L[0].x, L[2].z - L[0].z) - (SPRINGS.hv.groove + SPRINGS.lv.groove + 0.4); assert.ok(gap > 0.3, `between the circles of HV 1 and RS-485 A : ${gap.toFixed(2)} mm`);
+  /* the laser marking beside each contact, on both legs : what it is, in a free corner — clear of every circle, on the copper of the leg */
+  const marks = lam.features.filter((x) => x.op === "mark");
+  assert.deepEqual(marks.map((m) => `${m.face} ${m.text}`).sort(), ["+Y HV1 +", "+Y HV2 +", "+Y RS485 A", "+Y RS485 B", "-Y HV1 −", "-Y HV2 −", "-Y RS485 A", "-Y RS485 B"]);
+  for (const m of marks) {
+    const w = textWidth(m.text, m.h) / 2 + m.w, hh = m.h / 2 + m.w, [x, z] = m.at; assert.deepEqual(m.dir, [m.face === "+Y" ? -1 : 1, 0], `${m.text} : read the right way from outside`);
+    assert.ok(x - w > 3 && x + w < CORE_X - 3 && z - hh > 5 && z + hh < 70.15 - 5, `${m.face} ${m.text} : on the leg`);
+    for (const c of L) { const r = (c.kind === "hv" ? SPRINGS.hv.groove : SPRINGS.lv.groove) + 0.2, dx = Math.max(Math.abs(x - c.x) - w, 0), dz = Math.max(Math.abs(z - c.z) - hh, 0); assert.ok(Math.hypot(dx, dz) > r + 0.5, `${m.face} ${m.text} clear of ${c.id}`); }
+  }
+  assert.equal(MARK.depth, 0.05); assert.ok(built.get("BM-BB-LAM").facts.marks.length === 8, "the kernel marked them all");
   /* the next CORE, placed at the pitch : what of this CORE goes into it */
   const next = placed.map((P) => ({ ...P, bodies: P.bodies.map((b) => ({ name: b.name, shape: K.transform(b.shape, M([0, CORE_PITCH, 0])) })) })), into = [];
   for (const A of placed) for (const B of next) for (const x of A.bodies) for (const y of B.bodies) { const c = K.common(x.shape, y.shape), v = K.props(c).volume; if (v > 1e-4) into.push({ what: `${A.id} × ${B.id}/${y.name}`, bb: K.bbox(c) }); }
   assert.deepEqual(into.map((x) => x.what).sort(), ["hv1 × bb/moins", "hv2 × bb/moins", "lva × bb/lv_a_m", "lvb × bb/lv_b_m"], "only the crests, each on its own land : A on A, B on B, HV on the copper");
   const face = CORE_Y + INS_T + BB_T + STOP_H;
   for (const x of into) { const s = SPRINGS[/^hv/.test(x.what) ? "hv" : "lv"]; near(x.bb[1], face, `${x.what} : from the face of the next CORE`, 1e-3); near(x.bb[4], face - STOP_H + s.lift, `${x.what} : the crest goes in by lift − stop`, 1e-3); }
-  /* the calculations kept in the project : the same crowns, pressed by the same travel */
-  const hv = p.physics.find((r) => r.id === "phy-bm-hv"), lv = p.physics.find((r) => r.id === "phy-bm-lv");
-  assert.deepEqual([hv.part, lv.part], ["BM-SPRING-HV", "BM-SPRING-LV"]); near(hv.inputs.lift - hv.inputs.hs, SPRINGS.hv.lift - STOP_H, "the travel of the HV blade", 1e-9);
-  assert.equal(hv.verdict, "warn", "the HV blade passes its elastic travel — wanted, and said"); assert.ok(hv.values.set > 0.05 && hv.values.Fb > 30, `set ${hv.values.set}, force per blade ${hv.values.Fb}`);
-  assert.equal(lv.verdict, "ok", "the LV blade stays elastic"); assert.equal(lv.values.set, 0); assert.equal(run("spring_stop", { ...defaults("spring_stop"), ...lv.inputs }).values.F, lv.values.F);
+  /* the calculations kept in the project : the same crowns, pressed by the same travel, ± the same tolerance */
+  const hv = p.physics.find((r) => r.id === "phy-bm-hv"), pl = p.physics.find((r) => r.id === "phy-bm-hv-plastic"), lv = p.physics.find((r) => r.id === "phy-bm-lv");
+  assert.deepEqual([hv.part, pl.part, lv.part], ["BM-SPRING-HV", "BM-SPRING-HV", "BM-SPRING-LV"]); near(hv.inputs.lift - hv.inputs.hs, SPRINGS.hv.lift - STOP_H, "the travel of the HV blade", 1e-9);
+  for (const r of [hv, pl, lv]) { assert.equal(r.inputs.tol, TOL); assert.deepEqual(run("spring_stop", { ...defaults("spring_stop"), ...r.inputs }).values, r.values, `${r.id} : the kept values are the model's`); }
+  assert.equal(hv.verdict, "ok", "iteration 7 : the HV blade stays elastic"); assert.equal(hv.values.set, 0); assert.ok(hv.values.dsMax <= hv.values.dy, `elastic at the longest travel : ${hv.values.dsMax} ≤ ${hv.values.dy}`);
+  assert.equal(pl.verdict, "warn", "the plastic crown of iteration 6 passes its elastic travel — kept to compare, and said"); assert.ok(pl.values.set > 0.05);
+  assert.ok(pl.values.F > 2 * hv.values.F && pl.values.R < hv.values.R, "the price of staying elastic : less force, more resistance");
+  assert.ok(hv.values.FbMin >= hv.inputs.Fmin && lv.values.FbMin >= lv.inputs.Fmin, "enough force at the shortest travel");
+  assert.equal(lv.verdict, "ok", "the LV blade stays elastic"); assert.equal(lv.values.set, 0); assert.ok(lv.values.dsMax <= lv.values.dy);
   assert.ok(hv.values.iMax > hv.inputs.I, "the current of a HV contact under what the Holm estimate allows");
+  /* the plastic crown, as a variant of the part : it builds, its crest stands higher */
+  const spring = p.parts.find((x) => x.id === "BM-SPRING-HV"); assert.equal(variantNow(spring), ELASTIC); assert.deepEqual(spring.variants.map((v) => v.name), [ELASTIC, PLASTIC]);
+  const plastic = { ...spring, ...applyVariant(spring, spring.variants[1]) }, bp = buildPart(K, plastic); assert.deepEqual(bp.log.filter((l) => l.level === "error"), []);
+  near(K.bbox(bp.bodies[0].shape)[4] - K.bbox(placed.find((x) => x.id === "hv1").bodies[0].shape)[4], SPRINGS.hv.plastic.lift - SPRINGS.hv.lift, "the plastic crest stands higher", 1e-3);
 });
 
 test("the module : 8 CORE side by side, the same way round ; 136 parts (17 per CORE) — and no joint between two copies by the same face", () => {
