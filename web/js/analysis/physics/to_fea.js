@@ -45,7 +45,7 @@ const MAKERS = {
 };
 /** Which analytical models the simulation can replay. */
 export const STUDY_MODELS = Object.keys(MAKERS);
-const WHY_NOT = { beam_simple_point: "Des appuis simples (une ligne sous chaque bout) ne se posent pas encore d'office dans la simulation.", beam_simple_udl: "Des appuis simples (une ligne sous chaque bout) ne se posent pas encore d'office dans la simulation.",
+const WHY_NOT = { spring_stop: "Le solveur de la simulation est élastique et linéaire : ni la plastification d'une lame, ni le contact qui s'établit à la butée ne s'y calculent.", beam_simple_point: "Des appuis simples (une ligne sous chaque bout) ne se posent pas encore d'office dans la simulation.", beam_simple_udl: "Des appuis simples (une ligne sous chaque bout) ne se posent pas encore d'office dans la simulation.",
   column_buckling: "La simulation est statique et linéaire : elle ne cherche pas la charge de flambement.", shaft_torsion: "La simulation n'applique pas encore de couple.", thermal_mismatch: "Une pièce de la simulation n'a qu'un matériau : deux matériaux assemblés se simulent comme un assemblage." };
 
 /** The simplified model of an analytical model, with its load case.

@@ -362,7 +362,7 @@ button.dw-view-label { pointer-events: auto; cursor: pointer; min-height: 24px; 
 .ctx-title { padding: .25rem .55rem .1rem; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
 
 /* the preview / code switch of the top bar, and the code that takes the place of the screen */
-.seg { display: inline-flex; border: 1.5px solid color-mix(in srgb, var(--graphite) 25%, transparent); border-radius: 9px; overflow: hidden; flex: none; }
+.seg { display: inline-flex; border: 1.5px solid color-mix(in srgb, var(--graphite) 25%, transparent); border-radius: 9px; overflow: hidden; flex: none; } .seg[hidden] { display: none; }
 .seg-btn { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 1.85rem; border: 0; background: none; color: var(--muted); cursor: pointer; }
 .seg-btn + .seg-btn { border-left: 1.5px solid color-mix(in srgb, var(--graphite) 18%, transparent); }
 .seg-btn.on { background: color-mix(in srgb, var(--acc) 22%, transparent); color: var(--ink); }

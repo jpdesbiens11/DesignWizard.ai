@@ -40,8 +40,8 @@ Trois façons de rejouer un exemple :
 
 ## Où l'on en est
 
-**18 des 24 modèles** ont au moins un exemple publié rejoué — 27 cas, dont 25 lus sur la page de leur source.
-Sans cas : `junction_temperature`, `heatsink_natural`, `heatsink_forced`, `lumped_mass`, `pcb_trace`, `adiabatic_pulse`.
+**18 des 25 modèles** ont au moins un exemple publié rejoué — 27 cas, dont 25 lus sur la page de leur source.
+Sans cas : `spring_stop`, `junction_temperature`, `heatsink_natural`, `heatsink_forced`, `lumped_mass`, `pcb_trace`, `adiabatic_pulse`.
 
 ## Structure
 
@@ -148,6 +148,10 @@ Sans cas : `junction_temperature`, `heatsink_natural`, `heatsink_forced`, `lumpe
 | Axe en double cisaillement, 200 lb *(rejoué à l'envers)* | [Engineering LibreTexts, « Strength of Materials » (Lord, Richardson, Davison, Dillard)](https://eng.libretexts.org/Bookshelves/Mechanical_Engineering/Strength_of_Materials/02%3A_Stress) — chap. 2 Stress, Example 2.4 · page lue | Cisaillement moyen | 3 ksi | 20,69 MPa | 0,0 % | ± 1 % |
 
 - **Ce que ces cas ne couvrent pas** : Le matage des pièces n'est pas comparé.
+
+### Spring contact · to its stop — Contact à lames pressé jusqu'à sa butée
+
+**Aucun cas.** Aucun exemple publié n'a encore été rejoué. La partie élastique est la poutre bi-encastrée chargée en son milieu ; au-delà, la courbe qui rejoint la charge de ruine est une forme choisie par l'outil, pas une solution exacte ; la résistance de contact est l'estimation de Holm. Un essai d'écrasement sur une couronne réelle doit la recaler.
 
 ## Fluides
 
@@ -290,7 +294,7 @@ Les exemples en unités impériales sont convertis : 1 in = 25,4 mm ; 1 lbf = 4,
 
 ## Ce qui n'est pas fait
 
-- 6 modèles n'ont aucun cas (voir plus haut) ; la plaque n'est recoupée que par ses coefficients.
+- 7 modèles n'ont aucun cas (voir plus haut) ; la plaque n'est recoupée que par ses coefficients.
 - Aucun cas ne vient d'un **essai** : ce sont des exemples de manuels, résolus par leurs auteurs avec les mêmes théories.
 - Les sources sont des pages publiques ; les manuels cités par les modèles (Roark, Shigley, Incropera, White) n'ont pas été ouverts.
 - La simulation n'a que quatre cas, tous sur des barreaux : voir `docs/SIMULATION.md` pour ses recoupements internes.

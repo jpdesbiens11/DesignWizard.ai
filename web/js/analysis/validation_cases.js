@@ -145,4 +145,5 @@ export const NONE = {
   lumped_mass: "Aucun exemple publié n'a encore été rejoué.",
   pcb_trace: "La norme IPC-2221 n'est pas en lecture libre, et aucun exemple publié n'a encore été rejoué.",
   adiabatic_pulse: "Aucun exemple publié n'a encore été rejoué.",
+  spring_stop: "Aucun exemple publié n'a encore été rejoué. La partie élastique est la poutre bi-encastrée chargée en son milieu ; au-delà, la courbe qui rejoint la charge de ruine est une forme choisie par l'outil, pas une solution exacte ; la résistance de contact est l'estimation de Holm. Un essai d'écrasement sur une couronne réelle doit la recaler.",
 };

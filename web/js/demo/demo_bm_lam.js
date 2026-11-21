@@ -60,6 +60,7 @@ export function coreLaminate(o) {
   for (const c of cells) for (const [s, k] of [["-", "a"], ["+", "b"]]) features.push(
     ...(fb ? [] : [cyl(`fenetre_${c.n}${k}`, `Fenêtre du papier — soudure − ${k} de ${c.n}`, "aramide", [`${c.x} ${s} wo`, c.y, "-ins - 0.5"], "wn", "ins + 1", "cut")]),
     cyl(`bossage_${c.n}${k}`, fb ? `Bossage de soudure − ${k} de ${c.n}, par la fenêtre du fond` : `Bossage de soudure − ${k} de ${c.n}`, "moins", [`${c.x} ${s} wo`, c.y, `-${under}`], "pj", under));
+  if (o.contacts) { Object.assign(bodies, o.contacts.bodies); features.push(...o.contacts.features); }      // iteration 6 : the stops, the engraved circles, the LV islands (demo_bm_contacts.js)
   const taps = o.taps || {};      // the windows of the film where the flex takes the voltage of the CORE : B+ on the top, B− under it
   if (taps.top) features.push(box("fenetre_bplus", "Fenêtre de l'enveloppe — prise B+", "enveloppe", [taps.top[0] - 2.5, taps.top[1] - 2.5, "H + ins + t - 0.5"], [5, 5, "w + 1"], "cut"));
   if (taps.bottom) features.push(box("fenetre_bmoins", "Fenêtre de l'enveloppe — prise B−", "enveloppe", [taps.bottom[0] - 2.5, taps.bottom[1] - 2, `-(${under} + t + w) - 0.5`], [5, 4, "w + 1"], "cut"));
@@ -72,5 +73,7 @@ export function coreLaminate(o) {
       fb ? "Sous les cellules, le fond du support du bas isole les godets : la plaque − est dessous, ses bossages de soudure montent par les fenêtres du fond, à 7 mm du centre ; au centre, un trou de 6 mm laisse passer la rondelle thermique (exemples)."
         : "Sous chaque cellule, un trou de 6 mm pour sa CTN, que ferme sa rondelle thermique ; les soudures − se font de part et d'autre, à 6,5 mm du centre (exemples).",
       "Le contact série reste pressé, face contre face : l'enveloppe laisse nues les faces extérieures des jambes. Le chant du cuivre aux petits bouts n'est pas couvert — les plis du flex passent juste à côté.",
-      "Pièce pliée sur trois faces : laminée sur un gabarit en forme, ou pliée après lamination — à voir avec un fabricant de busbars laminés ; le CORE y glisse par un petit bout."] };
+      "Pièce pliée sur trois faces : laminée sur un gabarit en forme, ou pliée après lamination — à voir avec un fabricant de busbars laminés ; le CORE y glisse par un petit bout.",
+      ...(o.contacts ? ["Contacts entre deux CORE : sur la jambe +, deux ressorts HV entourés d'une butée de cuivre et deux ressorts LV sur des plages isolées ; sur la jambe −, des plages planes. Chaque contact est entouré d'un cercle gravé au laser ; le texte gravé (HV 1, HV 2, RS-485 A, RS-485 B, + ou −) n'est pas dessiné, il est écrit ici.",
+        "Les plages LV sont des îlots : une plage de cuivre dans un insert isolant en PA66-GF30, posé dans un trou de la jambe ; le rebord de l'insert, côté +, fait butée — isolant contre isolant."] : [])] };
 }

@@ -7,6 +7,7 @@ export const MATERIALS = [
   { id: "AL6063-T5", name: "Aluminium 6063-T5 (extrusion)", cls: "metal", rho: 2.70, conductive: true, color: "#c4ced4", k: 209, E: 69, processes: ["extrusion_al", "cnc_milling"] },
   { id: "AL5052-H32", name: "Aluminium 5052-H32 (sheet)", cls: "metal", rho: 2.68, conductive: true, color: "#b4c0c8", k: 138, E: 70, rMinT: 1.0, processes: ["sheet_metal", "laser_cut"] },
   { id: "CU-C110", name: "Copper C110 (ETP)", cls: "metal", rho: 8.89, conductive: true, color: "#c8763f", k: 388, E: 117, rMinT: 1.0, rhoE: 1.724e-8, processes: ["sheet_metal", "laser_cut", "cnc_milling"] },
+  { id: "CUBE-C17200", name: "Copper beryllium C17200 (TH04)", cls: "metal", rho: 8.25, conductive: true, color: "#d39b5c", k: 105, E: 131, rMinT: 1.0, rhoE: 7.8e-8, processes: ["sheet_metal", "laser_cut"] },
   { id: "BRASS-360", name: "Brass C360", cls: "metal", rho: 8.50, conductive: true, color: "#c9a94f", k: 115, E: 97, processes: ["cnc_turning", "cnc_milling"] },
   { id: "SS-304", name: "Stainless steel 304", cls: "metal", rho: 8.00, conductive: true, color: "#9aa3aa", k: 16, E: 193, rMinT: 1.0, processes: ["sheet_metal", "cnc_milling", "cnc_turning", "laser_cut"] },
   { id: "STEEL-1018", name: "Steel 1018 (zinc plated)", cls: "metal", rho: 7.87, conductive: true, color: "#8d949a", k: 52, E: 205, rMinT: 1.0, processes: ["sheet_metal", "cnc_milling", "cnc_turning", "laser_cut"] },

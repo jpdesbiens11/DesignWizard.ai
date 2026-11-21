@@ -16,6 +16,7 @@ const TABLE = {
   "ZAMAK-3": { E: 86, nu: 0.30, Re: 221, Rm: 283, fatigue: 48, cte: 27.4, k: 113, cp: 419, rho: 6600, rhoE: 6.4e-8, alphaE: 0.0030 },      // creeps under sustained load above 50 °C
   "AL-A356-T6": { E: 72, nu: 0.33, Re: 165, Rm: 228, fatigue: 60, cte: 21.5, k: 151, cp: 963, rho: 2680, rhoE: 4.4e-8, alphaE: 0.0030 },   // sand cast ; permanent mould: Re about 185
   "CU-C110": { E: 117, nu: 0.34, Re: 250, Rm: 290, fatigue: 90, cte: 17.0, k: 388, cp: 385, rho: 8890, rhoE: 1.724e-8, alphaE: 0.00393 },   // H02 (half hard); annealed: Re ~ 70
+  "CUBE-C17200": { E: 131, nu: 0.3, Re: 1000, Rm: 1200, fatigue: 280, cte: 17.0, k: 105, cp: 420, rho: 8250, rhoE: 7.8e-8, alphaE: 0.0017 },   // spring temper, precipitation hardened (TH04) ; 22 % IACS — typical, written from practice
   "BRASS-360": { E: 97, nu: 0.34, Re: 310, Rm: 400, fatigue: 140, cte: 20.5, k: 115, cp: 380, rho: 8500, rhoE: 6.6e-8, alphaE: 0.0015 },
   "SS-304": { E: 193, nu: 0.29, Re: 215, Rm: 505, fatigue: 240, cte: 17.3, k: 16, cp: 500, rho: 8000, rhoE: 7.2e-7, alphaE: 0.00094 },
   "STEEL-1018": { E: 205, nu: 0.29, Re: 370, Rm: 440, fatigue: 200, cte: 11.7, k: 52, cp: 486, rho: 7870, rhoE: 1.59e-7, alphaE: 0.0045 },

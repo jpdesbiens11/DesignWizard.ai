@@ -49,4 +49,22 @@ const pin = {
   flags: [{ label: "Épaisseur portante (≥ d / 2)", f: 'IF({t}<{d}/2,"NON : le matage et la flexion de la goupille dominent","Oui")' }],
 };
 
-export const XL_JOINTS = { bolted_joint: bolt, press_fit: pressfit, dowel_pin: pin };
+/* the crown of spring blades pressed to its stop : elastic to δy, then F = Fp − 0.5 Fy (δy / δ)² ; Holm for the points (the plating's
+   resistivity, hardness and softening voltage, from the table of the platings) */
+const PLAT = (key) => { const m = { rho: [1.6e-8, 1.15e-7, 3.5e-8, 7e-8], H: [0.9e9, 0.07e9, 1.8e9, 3e9], soften: [0.09, 0.07, 0.08, 0.22] }[key];
+  return `IF({plating}="Sn",${m[1]},IF({plating}="Au",${m[2]},IF({plating}="Ni",${m[3]},${m[0]})))`; };
+const springStop = {
+  helpers: [{ key: "nb", label: "Nombre de lames retenu", unit: "", f: "MAX(1,ROUND({n},0))" }, { key: "E", label: "Module d'Young", unit: "MPa", f: "{E}*1000" }, { key: "I", label: "Moment quadratique d'une lame w t³ / 12", unit: "mm⁴", f: "{w}*{t}^3/12" },
+    { key: "rho", label: "Résistivité du revêtement", unit: "Ω·m", f: PLAT("rho") }, { key: "H", label: "Dureté du revêtement", unit: "Pa", f: PLAT("H") }, { key: "soften", label: "Tension de ramollissement", unit: "V", f: PLAT("soften") },
+    { key: "a", label: "Rayon d'un point de contact (Holm)", unit: "m", f: "SQRT(MAX({o:Fb},0.000000001)/(PI()*{h:H}))" }, { key: "rp", label: "Résistance d'un point ρ / (2 a)", unit: "Ω", f: "{h:rho}/(2*{h:a})" }],
+  outputs: { k: "192*{h:E}*{h:I}/{l}^3", dy: "{Re}*{l}^2/(12*{h:E}*{t})", Fy: "{o:k}*{o:dy}", Fp: "1.5*{o:Fy}", ds: "MAX(0,{lift}-{hs})",
+    Fb: "IF({o:ds}<=0,0,IF({o:ds}<={o:dy},{o:k}*{o:ds},{o:Fp}-0.5*{o:Fy}*({o:dy}/{o:ds})^2))", F: "{h:nb}*{o:Fb}", set: "IF({o:ds}>{o:dy},{o:ds}-{o:Fb}/{o:k},0)",
+    Rc: "{h:rp}/{h:nb}*1000000", Rb: "{rhoB}*0.000000001*({l}/2)*0.001/({w}*{t}*0.000001)/2/{h:nb}*1000000", R: "{o:Rc}+{o:Rb}", dU: "{o:R}/1000000*{I}*1000", P: "{o:R}/1000000*{I}^2",
+    iMax: "0.1*{h:soften}/{h:rp}*{h:nb}*0.8", J: "{I}/{h:nb}/2/({w}*{t})" },
+  checks: [{ label: "Effort par lame vs effort minimal", unit: "N", value: "{o:Fb}", limit: "{Fmin}", min: true }, { label: "Courant vs courant estimé admissible (Holm)", unit: "A", value: "{I}", limit: "{o:iMax}" },
+    { label: "Course à la butée vs course élastique", unit: "mm", value: "{o:ds}", limit: "{o:dy}", soft: true }, { label: "Densité de courant dans une lame vs repère", unit: "A/mm²", value: "{o:J}", limit: "{Jmax}", soft: true }],
+  flags: [{ label: "Les lames touchent la face d'en face", f: 'IF({lift}<={hs},"NON : le bombé ne dépasse pas la butée, le contact ne passe que par la butée","Oui")' },
+    { label: "Lames minces (t ≤ l / 10)", f: 'IF({t}>{l}/10,"NON : lame épaisse, le cisaillement compte","Oui")' }],
+};
+
+export const XL_JOINTS = { bolted_joint: bolt, press_fit: pressfit, dowel_pin: pin, spring_stop: springStop };

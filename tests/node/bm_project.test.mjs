@@ -1,7 +1,8 @@
 /* The project « BM 8s8p - 21700 » (demande de JP, 21 novembre 2026) : the parts of the CORE 1S8P, the CORE, and the module of 8 CORE.
    Iteration 2 : the Molicel P45B from its sheet, the copper sized for 360 A (8 × 45 A). Iteration 3 : the cell holder, top and bottom.
    Iteration 4 : the two L in one laminated busbar ; the flex delivered flat, folded into a box ; a thermistor under the centre of each cell,
-   through its thermal washer. Iteration 5 : the bottom holder with a floor under the cells and its washers molded in (2K).
+   through its thermal washer. Iteration 5 : the bottom holder with a floor under the cells and its washers molded in (2K). Iteration 6 : the
+   4 contacts between two CORE — springs on the + leg pressed to their stops, lands on the − leg, the LV contacts on insulated islands.
      node --test tests/node/bm_project.test.mjs */
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -10,6 +11,8 @@ import { bmProject, busbarSizing, CORE_X, CORE_Y, CORE_PITCH, BB_T, I_CORE, STAC
 import { coreBox, FLEX_T, FLEX_X0, NTC_H } from "../../web/js/demo/demo_bm_box.js";
 import { INS_T, WRAP_T } from "../../web/js/demo/demo_bm_lam.js";
 import { coreHolder, coreBase } from "../../web/js/demo/demo_bm_holder.js";
+import { STOP_H, SPRINGS, contactLayout } from "../../web/js/demo/demo_bm_contacts.js";
+import { run, defaults } from "../../web/js/analysis/physics/index.js";
 import { cell } from "../../web/js/cad/elec_library.js";
 import { buildPart, validateSpec } from "../../web/js/cad/build.js";
 import { checkPart } from "../../web/js/analysis/dfx_rules.js";
@@ -48,20 +51,21 @@ test("the copper is sized for 360 A by the model of the tool : below the ambient
 test("the parts of the CORE : each one builds, the top of a CORE is the size of its board", async () => {
   near(CORE_X, 4 * 21.7 + 6, "length"); near(CORE_Y, 2 * 21.7 + 3, "width");
   const { K, p, built } = await placedCore(), board = p.boards[0]; assert.deepEqual(board.board.size, [CORE_X, CORE_Y]); assert.equal(board.part, "CORE-1S8P-PCBA-PCB");
-  assert.deepEqual(p.parts.map((x) => x.id), ["BM-CELL-21700", "BM-BB-LAM", "BM-FLEX-BOX", "BM-HOLDER", "BM-HOLDER-BASE", "CORE-1S8P-PCBA-PCB"]);
+  assert.deepEqual(p.parts.map((x) => x.id), ["BM-CELL-21700", "BM-BB-LAM", "BM-FLEX-BOX", "BM-HOLDER", "BM-HOLDER-BASE", "BM-SPRING-HV", "BM-SPRING-LV", "CORE-1S8P-PCBA-PCB"]);
   for (const s of p.parts) { assert.deepEqual(validateSpec(s).errors, [], s.id); assert.deepEqual(built.get(s.id).log.filter((l) => l.level === "error"), [], s.id); }
   near(BELOW, FLOOR_T + BB_T + WRAP_T, "under the cans : the floor, the copper, the film");
 });
 
 test("the laminated busbar : the two L of a CORE in one part — two conductors, the paper toward the cells, a thin film outside ; the legs press the next CORE", async () => {
   const { K, p, built } = await placedCore(), lam = p.parts.find((x) => x.id === "BM-BB-LAM"), b = built.get("BM-BB-LAM"), body = (n) => b.bodies.find((x) => x.name === n);
-  assert.deepEqual(b.bodies.map((x) => x.name).sort(), ["aramide", "enveloppe", "moins", "plus"]);
+  assert.deepEqual(b.bodies.map((x) => x.name).sort(), ["aramide", "enveloppe", "isolant_lv", "lv_a_m", "lv_a_p", "lv_b_m", "lv_b_p", "moins", "plus"]);
   assert.equal(lam.bodies.plus.kind, "conductor"); assert.equal(lam.bodies.moins.kind, "conductor"); assert.equal(lam.bodies.aramide.material, "NOMEX-410"); assert.equal(lam.bodies.enveloppe.material, "PET-FILM");
   const plus = K.bbox(body("plus").shape), moins = K.bbox(body("moins").shape);
-  near(plus[4], CORE_Y + INS_T + BB_T, "the + leg, outer face", 1e-3); near(moins[1], -(INS_T + BB_T), "the − leg, outer face", 1e-3);
-  near(CORE_PITCH, CORE_Y + 2 * (INS_T + BB_T), "pitch", 1e-9); near(plus[4], CORE_PITCH + moins[1], "the next CORE : its − leg touches this + leg", 1e-3);
+  near(plus[4], CORE_Y + INS_T + BB_T + STOP_H, "the + leg, outer face, and its stops", 1e-3); near(moins[1], -(INS_T + BB_T), "the − leg, outer face", 1e-3);
+  near(CORE_PITCH, CORE_Y + 2 * (INS_T + BB_T) + STOP_H, "pitch", 1e-9); near(plus[4], CORE_PITCH + moins[1], "the next CORE : its − leg rests on the stops of this + leg", 1e-3);
   near(plus[0], 3, "the copper leaves the 3 mm of the short ends to the flex", 1e-3); near(plus[3], CORE_X - 3, "both ends", 1e-3);
-  for (const pair of [["plus", "moins"], ["plus", "aramide"], ["moins", "aramide"], ["plus", "enveloppe"], ["moins", "enveloppe"]]) assert.ok(K.props(K.common(body(pair[0]).shape, body(pair[1]).shape)).volume < 1e-6, `${pair} : no overlap inside the laminate`);
+  const names = b.bodies.map((x) => x.name);
+  for (const pair of names.flatMap((x, i) => names.slice(i + 1).map((y) => [x, y]))) assert.ok(K.props(K.common(body(pair[0]).shape, body(pair[1]).shape)).volume < 1e-6, `${pair} : no overlap inside the laminate`);
   const feats = (re) => lam.features.filter((f) => re.test(f.id)).length;
   assert.equal(feats(/^fenetre_c\d\d$/), 8, "a window of the paper over each + cap"); assert.equal(feats(/^bossage_c\d\d$/), 8, "a weld boss in each");
   assert.equal(feats(/^trou_c\d\d$/), 8, "a hole under the centre of each cell"); assert.equal(feats(/^bossage_c\d\d[ab]$/), 16, "two − welds per cell, beside the hole");
@@ -90,8 +94,8 @@ test("the flex in a box : flat central section under the CORE, two full-width pa
   near(FLEX_X0, 8, "the central section starts 8 mm from the end of the CORE");
 });
 
-test("the CORE : nothing goes through anything — busbar, flex, washers, holders, board, cells", async () => {
-  const { K, placed } = await placedCore(), hits = [], mine = new Set(["BM-BB-LAM", "BM-FLEX-BOX", "BM-HOLDER", "BM-HOLDER-BASE", "CORE-1S8P-PCBA-PCB"]);
+test("the CORE : nothing goes through anything — busbar, flex, washers, holders, board, cells, springs", async () => {
+  const { K, placed } = await placedCore(), hits = [], mine = new Set(["BM-BB-LAM", "BM-FLEX-BOX", "BM-HOLDER", "BM-HOLDER-BASE", "CORE-1S8P-PCBA-PCB", "BM-SPRING-HV", "BM-SPRING-LV"]);
   for (let a = 0; a < placed.length; a++) for (let b = a + 1; b < placed.length; b++) {
     const A = placed[a], B = placed[b]; if (!mine.has(A.part) && !mine.has(B.part)) continue;
     for (const x of A.bodies) for (const y of B.bodies) { const v = K.props(K.common(x.shape, y.shape)).volume; if (v > 1e-3) hits.push(`${A.id}/${x.name} × ${B.id}/${y.name} : ${v.toFixed(3)} mm³`); }
@@ -120,14 +124,36 @@ test("the cell holders : one solid at the top, the bottom one with its floor and
   assert.equal(coreBase({ X: CORE_X, Y: CORE_Y, grid: 21.7, gap: 3, h: 8, floor: 1.5, below: 1.3, washer: { d: 5 } }).params.rh.value, 2.8);
 });
 
-test("the module : 8 CORE side by side, the same way round ; 104 parts (13 per CORE) — and no joint between two copies by the same face", () => {
+test("the 4 contacts between two CORE : springs on the + leg, lands on the − leg ; pressed, the stops touch and only the crests go in, by the travel the model takes", async () => {
+  const { K, p, core, placed } = await placedCore(), L = contactLayout(CORE_X, 70.15);
+  assert.deepEqual(L.map((c) => [c.id, c.kind]), [["HV1", "hv"], ["HV2", "hv"], ["LVA", "lv"], ["LVB", "lv"]]); assert.deepEqual(L.filter((c) => c.kind === "lv").map((c) => c.net), ["RS485_A", "RS485_B"]);
+  const lam = p.parts.find((x) => x.id === "BM-BB-LAM"), f = (re) => lam.features.filter((x) => re.test(x.id)).map((x) => x.id);
+  assert.deepEqual(f(/^butee_[a-z0-9]+$/), ["butee_hv1", "butee_hv2"], "a copper stop around each HV spring"); assert.equal(f(/^gravure_[a-z0-9]+$/).length, 8, "an engraved circle around each contact, on both legs");
+  assert.equal(f(/^ilot_[a-z0-9]+$/).length, 4, "an insulating island for each LV contact, on both legs"); assert.equal(lam.bodies.isolant_lv.kind, "insulator"); assert.deepEqual(["lv_a_p", "lv_a_m"].map((n) => lam.bodies[n].net), ["RS485_A", "RS485_A"]);
+  for (const s of ["BM-SPRING-HV", "BM-SPRING-LV"]) { const sp = p.parts.find((x) => x.id === s); assert.equal(sp.material, "CUBE-C17200"); assert.equal(sp.features.filter((x) => x.op === "arch").length, SPRINGS[s === "BM-SPRING-HV" ? "hv" : "lv"].n); }
+  assert.deepEqual(core.instances.filter((i) => /^BM-SPRING/.test(i.part)).map((i) => [i.id, i.placement.t]), [["hv1", [0, 0, 0]], ["hv2", [52, 0, 0]], ["lva", [0, 0, 0]], ["lvb", [0, 0, -26]]]);
+  /* the next CORE, placed at the pitch : what of this CORE goes into it */
+  const next = placed.map((P) => ({ ...P, bodies: P.bodies.map((b) => ({ name: b.name, shape: K.transform(b.shape, M([0, CORE_PITCH, 0])) })) })), into = [];
+  for (const A of placed) for (const B of next) for (const x of A.bodies) for (const y of B.bodies) { const c = K.common(x.shape, y.shape), v = K.props(c).volume; if (v > 1e-4) into.push({ what: `${A.id} × ${B.id}/${y.name}`, bb: K.bbox(c) }); }
+  assert.deepEqual(into.map((x) => x.what).sort(), ["hv1 × bb/moins", "hv2 × bb/moins", "lva × bb/lv_a_m", "lvb × bb/lv_b_m"], "only the crests, each on its own land : A on A, B on B, HV on the copper");
+  const face = CORE_Y + INS_T + BB_T + STOP_H;
+  for (const x of into) { const s = SPRINGS[/^hv/.test(x.what) ? "hv" : "lv"]; near(x.bb[1], face, `${x.what} : from the face of the next CORE`, 1e-3); near(x.bb[4], face - STOP_H + s.lift, `${x.what} : the crest goes in by lift − stop`, 1e-3); }
+  /* the calculations kept in the project : the same crowns, pressed by the same travel */
+  const hv = p.physics.find((r) => r.id === "phy-bm-hv"), lv = p.physics.find((r) => r.id === "phy-bm-lv");
+  assert.deepEqual([hv.part, lv.part], ["BM-SPRING-HV", "BM-SPRING-LV"]); near(hv.inputs.lift - hv.inputs.hs, SPRINGS.hv.lift - STOP_H, "the travel of the HV blade", 1e-9);
+  assert.equal(hv.verdict, "warn", "the HV blade passes its elastic travel — wanted, and said"); assert.ok(hv.values.set > 0.05 && hv.values.Fb > 30, `set ${hv.values.set}, force per blade ${hv.values.Fb}`);
+  assert.equal(lv.verdict, "ok", "the LV blade stays elastic"); assert.equal(lv.values.set, 0); assert.equal(run("spring_stop", { ...defaults("spring_stop"), ...lv.inputs }).values.F, lv.values.F);
+  assert.ok(hv.values.iMax > hv.inputs.I, "the current of a HV contact under what the Holm estimate allows");
+});
+
+test("the module : 8 CORE side by side, the same way round ; 136 parts (17 per CORE) — and no joint between two copies by the same face", () => {
   const p = bmProject(), core = p.assemblies.find((a) => a.id === "BM-CORE-ASM"), mod = p.assemblies.find((a) => a.id === "BM-8S8P-ASM");
   const cells = core.instances.filter((i) => i.part === "BM-CELL-21700").map((i) => i.placement.t);
   assert.equal(cells.length, 8); assert.deepEqual([...new Set(cells.map((t) => t[1]))], ROWS); assert.deepEqual([...new Set(cells.map((t) => +t[0].toFixed(2)))], [13.85, 35.55, 57.25, 78.95]);
-  near(CORE_PITCH, 50.9, "46.4 + 2 × (0.25 + 2.0)", 1e-9);
+  near(CORE_PITCH, 51.25, "46.4 + 2 × (0.25 + 2.0) + 0.35", 1e-9);
   assert.equal(mod.instances.length, 8); assert.ok(mod.instances.every((i, k) => i.asm === "BM-CORE-ASM" && Math.abs(i.placement.t[1] - k * CORE_PITCH) < 1e-9 && i.placement.r.every((v) => v === 0)));
   const find = (id) => p.assemblies.find((a) => a.id === id), flat = flatAsm(mod, find), counts = partCounts(mod, find);
-  assert.equal(flat.instances.length, 104); assert.equal(counts.get("BM-CELL-21700"), 64); assert.equal(counts.get("BM-BB-LAM"), 8);
+  assert.equal(flat.instances.length, 136); assert.equal(counts.get("BM-SPRING-HV"), 16); assert.equal(counts.get("BM-SPRING-LV"), 16); assert.equal(counts.get("BM-CELL-21700"), 64); assert.equal(counts.get("BM-BB-LAM"), 8);
   assert.equal(counts.get("BM-FLEX-BOX"), 8); assert.equal(counts.get("BM-HOLDER"), 8); assert.equal(counts.get("BM-HOLDER-BASE"), 8); assert.equal(counts.get("CORE-1S8P-PCBA-PCB"), 8);
   const built = Object.fromEntries(p.parts.map((x) => [x.id, { interfaces: x.interfaces || [] }])), loose = { ...flat, instances: flat.instances.map(({ group, ...i }) => i) };
   assert.deepEqual(candidates(loose, built).filter((c) => c.a.iface === c.b.iface && built[flat.instances.find((i) => i.id === c.a.inst).part] === built[flat.instances.find((i) => i.id === c.b.inst).part]), []);
@@ -138,5 +164,5 @@ test("wired : the example on the home page, the English of its drawings, the .dw
   assert.deepEqual(wordsLeft(p.drawing.words, texts), []); assert.deepEqual(wordsUnused(p), []);
   const back = fromDwiz(toDwiz(p)); assert.equal(back.assemblies.length, 2); assert.equal(back.boards[0].id, "CORE-1S8P-PCBA"); assert.equal(back.physics[0].model, "busbar");
   assert.match(read("web/js/modules/home.js"), /"data-example": "bm"/);
-  for (const re of [/50,9/, /support de cellules/i, /busbar laminé/i, /flex en boîte/i, /rondelle/i, /2K/, /Itération 5/]) assert.match(read("docs/BM_MODULE.md"), re);
+  for (const re of [/51,25/, /Itération 6/, /couronne de lames/i, /butée/, /support de cellules/i, /busbar laminé/i, /flex en boîte/i, /rondelle/i, /2K/, /Itération 5/]) assert.match(read("docs/BM_MODULE.md"), re);
 });

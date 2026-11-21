@@ -346,6 +346,13 @@ ordre ; ce qui est fait se raye ici.
    `docs/BM_MODULE.md`. **Itération 5 (v0.136.0)**, choix de JP par menu : le « 8 » = **une pièce laminée par CORE** (confirmé) ; **le support et
    les rondelles en un** (`coreBase`, `BM-HOLDER-BASE` : un fond de 1,5 mm sous les cellules qui isole les godets, deux fenêtres de soudure −
    par cellule, 8 rondelles thermiques moulées en deuxième injection, corps de la même pièce ; le laminé n'a plus de papier sous les cellules).
+   **Itération 6 (v0.138.0)**, demande de JP (« simuler les 4 interfaces LV et HV sur les surfaces des busbars verticaux… jusqu'aux butées ») ;
+   choix par menu : **LV = le signal RS-485 en daisy chain, HV = la puissance du CORE**, ressort en **couronne de lames** : sur la jambe +,
+   2 ressorts HV et 2 ressorts LV en CuBe (`demo/demo_bm_contacts.js`, `BM-SPRING-HV` / `BM-SPRING-LV`), butée de cuivre (HV) ou rebord isolant
+   de l'îlot (LV) ; sur la jambe −, des plages planes ; un cercle gravé autour de chaque contact (le texte gravé est écrit, pas dessiné) ; pas
+   d'un CORE au suivant 51,25 mm ; modèle analytique `spring_stop` (élasto-plastique : courbe au-delà de l'élastique choisie par l'outil, dite) —
+   le contact HV passe en plastique, c'est voulu. Reste : l'effort qui presse le module (plaques de bout), le fil des plages LV à la carte,
+   l'isolation des îlots LV dans l'écran Isolation, un essai d'écrasement.
    Reste : les languettes de soudure minces, le heat staking du flex (la plaque − est entre les deux), la nuance du silicone 2K, la lamination
    d'une pièce pliée, l'évent au fond de la P45B (à demander), les bornes du module, le boîtier, le BMS central, l'échauffement du module fermé.
 21. ~~**Logiciel : pas à pas, simulation en direct, code visible, chargement**~~ — fait (v0.124.0 ; demande de JP du 20

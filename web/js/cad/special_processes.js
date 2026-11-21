@@ -67,7 +67,7 @@ export const LASER_FAMILIES = {
     instead: "usiner (fraisage, détourage à la fraise) ou découper au couteau ou au jet d'eau", edge: "—", watch: [],
     basis: "Interdiction du PVC et du PTFE, gaz dégagés par le PVC : lus chez deux fabricants de machines." },
 };
-const LASER_OF = { "SS-304": "steel", "SS-316L": "steel", "SS-17-4PH": "steel", "STEEL-1018": "steel", "AL6061-T6": "aluminium", "AL5052-H32": "aluminium", "AL6063-T5": "aluminium", "CU-C110": "copper", "BRASS-360": "copper",
+const LASER_OF = { "SS-304": "steel", "SS-316L": "steel", "SS-17-4PH": "steel", "STEEL-1018": "steel", "AL6061-T6": "aluminium", "AL5052-H32": "aluminium", "AL6063-T5": "aluminium", "CU-C110": "copper", "CUBE-C17200": "copper", "BRASS-360": "copper",
   "TI-6AL-4V": "titanium", FR4: "laminate", "FR4-CTI600": "laminate", "NOMEX-410": "aramid", "PET-FILM": "film", "PI-FILM": "film", PMMA: "acrylic", POM: "plastic", PA12: "plastic", PA11: "plastic", ABS: "plastic", PC: "caution", "PC-ABS": "caution", "PVC-U": "forbidden" };
 
 /** How a material behaves under the laser : { key, ...family } — null when the library does not know it. */

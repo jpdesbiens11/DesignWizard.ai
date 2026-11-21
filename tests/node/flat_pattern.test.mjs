@@ -66,4 +66,5 @@ test("wired : the switch « Plié · À plat » in the four studios, the news, t
   for (const f of ["web/js/modules/part_studio.js", "web/js/modules/flex_tree.js", "web/js/modules/flex.js", "web/js/modules/busbar.js"]) assert.match(read(f), /flatToggle\(vp,/, f);
   assert.match(read("web/js/modules/flat_view.js"), /"data-flat-toggle"/); assert.match(read("web/js/core/whats_new.js"), /\[data-flat-toggle\]/);
   assert.match(read("docs/ELECTRIQUE.md"), /À plat/);
+  assert.match(read("web/css/app.css"), /\.seg\[hidden\] \{ display: none; \}/, "a part that does not unfold has no switch : the hidden switch stays hidden, whatever its display");
 });

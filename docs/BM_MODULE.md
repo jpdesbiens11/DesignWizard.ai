@@ -161,6 +161,57 @@ Choix de JP, par menu (21 novembre) : la lecture du « 8 » est confirmée — *
 - **Pas fait** : le heat staking du flex au support — la plaque − est entre les deux, les plots devraient la traverser par
   des trous de plus dans le cuivre ; ce sont les rondelles qui posent le flex.
 
+## Itération 6 — les 4 contacts entre deux CORE, pressés jusqu'à leurs butées
+
+Demande de JP (21 novembre) : « simuler les 4 interfaces LV et HV sur les surfaces des busbars verticaux, forme circulaire
+planaire, qui peuvent se déplacer sous la pression au bout des cores… jusqu'à ce qu'on arrive à des butées sur ces mêmes
+busbars à la périphérie des contacts… le contact négatif est seulement un rond gravé avec écriture… tous les contacts +
+sont des ressorts… le pourtour est gravé au laser ». Choix de JP, par menu : **LV = le signal RS-485 en daisy chain**,
+**HV = la puissance du CORE, + d'un côté, − de l'autre** ; le ressort : **une couronne de lames**.
+
+- **Lu ainsi** : sur chaque joint entre deux CORE, 4 contacts ronds — **2 HV** (les 360 A du CORE, 180 A chacun) et
+  **2 LV** (RS-485 A et B). Sur la jambe + (+Y) d'un CORE, les **ressorts** ; sur la jambe − (−Y) du CORE suivant, des
+  **plages planes**. Tout le module garde une seule variante de CORE : chaque CORE porte ses ressorts d'un côté et ses
+  plages de l'autre (`demo/demo_bm_contacts.js`).
+- **Le ressort : une couronne de lames-ponts** en cuivre-béryllium C17200 durci, estampée — deux anneaux plats tiennent
+  les deux bouts de chaque lame, la lame bombée entre les deux. HV : 10 lames de 7 × 2,5 × 0,25 mm, argentées, Ø 26 mm,
+  levée libre 0,65 mm (`BM-SPRING-HV`). LV : 4 lames de 4 × 1 × 0,1 mm, dorées, Ø 12,6 mm, levée libre 0,43 mm
+  (`BM-SPRING-LV`). Exemples. Les couronnes sont dessinées **libres, telles qu'estampées**.
+- **Les butées, à la périphérie** : autour de chaque ressort HV, un **anneau de cuivre** de 0,35 mm (Ø 28–32 mm) sur la
+  jambe + ; autour de chaque ressort LV, le **rebord isolant de son insert**, à la même hauteur. Pressés jusqu'aux butées,
+  deux CORE sont à **0,35 mm** l'un de l'autre : le pas d'un CORE au suivant passe à **51,25 mm**.
+- **Les gravures au laser** : un cercle gravé (0,4 mm de large, 0,05 mm de profondeur, exemple) autour de chaque contact,
+  sur les deux jambes ; côté −, la plage HV n'est que ce cercle sur le cuivre nu. Le **texte gravé** (HV 1, HV 2,
+  RS-485 A, RS-485 B, + ou −) est écrit dans la note du busbar : l'outil ne dessine pas de texte gravé.
+- **Les contacts LV sont des îlots** : une plage de cuivre (net RS485_A ou RS485_B) dans un insert isolant en PA66-GF30,
+  posé dans un trou de Ø 17,4 mm de la jambe, sur le papier aramide. Le ressort LV de A ne touche que la plage A du CORE
+  suivant, et B que B ; la butée LV est isolant contre isolant. Le fil qui monte le signal de la plage à la carte n'est
+  **pas dessiné** (une queue du flex, ou un fil — à décider).
+- **Le calcul : un nouveau modèle analytique**, « Spring contact · to its stop » (`spring_stop`, domaine Assemblages) :
+  une lame tenue aux deux bouts et poussée au centre (k = 192 E I / l³), la flèche où sa fibre extrême atteint la limite
+  élastique, puis, au-delà, **une courbe élasto-plastique choisie par l'outil** — l'effort tend vers 1,5 fois celui de la
+  première plastification (rotule d'une section rectangulaire) ; la déformation permanente une fois relâchée ; la
+  résistance de Holm des points de contact et celle des lames ; le courant qu'un point supporte. Les deux couronnes sont
+  gardées dans le projet, avec leur calcul :
+  - **Contact HV** : la lame descend de 0,30 mm pour 0,12 mm de course élastique — elle **passe en plastique, c'est
+    voulu** (la demande de JP), et le verdict est « à vérifier ». À la butée : environ 42 N par lame, 420 N par contact,
+    0,12 mm de déformation permanente, 28 µΩ par contact. Remonté, il redonne le même effort à la butée, en élastique
+    (la relaxation n'est pas comptée).
+  - **Contact LV** : 0,08 mm de descente pour 0,10 mm de course élastique — **élastique jusqu'à la butée**, 2,6 N par lame.
+- **Ce que le noyau 3D vérifie** : toutes les pièces se construisent ; dans le CORE, rien ne traverse rien ; avec le CORE
+  suivant posé au pas, **les butées se touchent et seules les crêtes des lames entrent** dans la plage d'en face — de
+  0,30 mm (HV, dans le cuivre de la jambe −) et de 0,08 mm (LV, chacune dans SA plage) : la course que le modèle prend.
+- **Ce qui change ailleurs** : le CORE compte **17 pièces** (4 couronnes de plus), le module **136**.
+- **Retour DFM** : le **cuivre-béryllium** donne la meilleure tenue de ressort parmi les alliages de cuivre courants, mais
+  l'usinage, le ponçage et la découpe laser dégagent des **poussières toxiques** — estampage, durcissement, revêtement et
+  soudure chez un fabricant équipé ; un bronze au phosphore ou un cuivre-nickel-silicium sont des voies sans béryllium,
+  moins raides (à comparer dans le modèle). Une lame qui passe en plastique **perd de l'effort avec le temps** (relaxation
+  en température, non comptée) : un essai d'écrasement et de vieillissement fait foi. Les butées de cuivre conduisent
+  aussi : en parallèle des lames, elles ajoutent un contact dont la résistance n'est pas calculée.
+- **Pas fait** : l'effort qui presse le module (les plaques de bout, le boîtier) — 8 contacts × environ 420 N ne se tient
+  pas sans elles ; les bornes du module ; le fil des plages LV jusqu'à la carte ; l'isolation entre les plages LV et le
+  cuivre vue par l'écran Isolation ; un essai de l'écrasement.
+
 ## Ce qu'il contient
 
 | Élément | Ce que c'est | Où |
@@ -171,7 +222,8 @@ Choix de JP, par menu (21 novembre) : la lecture du « 8 » est confirmée — *
 | Flex en boîte du CORE | `BM-FLEX-BOX` : la section centrale sous le CORE (8 CTN, B−), deux panneaux pleine largeur aux petits bouts, le X− continue dans la carte (rigid-flex), le rabat X+ prend B+ | Pièces |
 | Support du bas des cellules | `BM-HOLDER-BASE` : le support du bas avec un fond sous les cellules, deux fenêtres de soudure − par cellule, et ses 8 rondelles thermiques moulées en deuxième injection (itération 5 ; les rondelles séparées `BM-PUCK` de l'itération 4 sont dedans) | Pièces |
 | Support du haut des cellules | `BM-HOLDER` : une épine entre les rangées, deux barres aux bouts, une poche par cellule, cinq noyautages | Pièces |
-| CORE 1S8P | `BM-CORE-ASM` : 8 cellules en deux rangées de 4, le support du haut, le support du bas et ses rondelles, le busbar laminé, le flex en boîte, la carte dessus | Assemblage |
+| Ressorts de contact HV et LV | `BM-SPRING-HV`, `BM-SPRING-LV` : une couronne de lames-ponts en cuivre-béryllium, deux de chaque par CORE, sur la jambe + (itération 6) | Pièces |
+| CORE 1S8P | `BM-CORE-ASM` : 8 cellules en deux rangées de 4, le support du haut, le support du bas et ses rondelles, le busbar laminé, le flex en boîte, la carte dessus, 4 ressorts de contact | Assemblage |
 | BM 8s8p - 21700 | `BM-8S8P-ASM` : 8 CORE côte à côte, tous dans le même sens | Assemblage |
 
 ## La géométrie, telle que dessinée
@@ -183,7 +235,8 @@ Choix de JP, par menu (21 novembre) : la lecture du « 8 » est confirmée — *
   3 mm aux deux bouts et entre les rangées — la taille de la carte.
 - **La série** : la jambe + d'un CORE presse la jambe − du CORE suivant, face contre face (itération 1 : 49,4 mm d'un CORE
   au suivant avec 1 mm de cuivre ; itération 2 : 51,4 mm avec 2 mm ; itération 4 : 50,9 mm, le papier aramide de 0,25 mm
-  remplaçant l'isolant de 0,5 mm).
+  remplaçant l'isolant de 0,5 mm ; itération 6 : 51,25 mm — les deux jambes ne se touchent plus, ce sont les butées des
+  contacts qui portent).
 - La jambe + s'arrête à 5 mm du bas, la jambe − à 5 mm du haut : aucune des deux ne frôle la plaque de l'autre polarité
   de son propre CORE (exemple, paramètre `z0`).
 

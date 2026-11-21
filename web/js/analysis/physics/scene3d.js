@@ -95,6 +95,11 @@ const SCENES = {
   trace(G, i) { const L = P(i.L, 50), w = P(i.w, 1), tcu = P(i.tcu, 35) / 1000, shown = Math.max(tcu, 0.12 * w), bw = Math.max(8 * w, 6), inner = i.layer === "internal";
     G.box([L / 2, 0, -0.8], [L, bw, 1.6], C.board, inner ? 0.55 : 1); G.box([L / 2, 0, inner ? -0.8 : shown / 2], [L, w, shown], C.second); G.arrow([0, 0, inner ? -0.8 : shown], [1, 0, 0], C.current);
     G.label([L / 2, 0, shown], `piste ${G.q(w, "mm")} · cuivre ${G.q(P(i.tcu, 35), "µm")}${shown > tcu ? " (épaissi à l'écran)" : ""} · couche ${inner ? "interne" : "externe"}`); G.label([0, 0, -1.6], `I = ${n1(P(i.I, 0))} A`); },
+  spring(G, i) { const n = Math.max(2, Math.min(48, Math.round(P(i.n, 12)))), l = P(i.l, 8), t = P(i.t, 0.25), w = P(i.w, 2.5), lift = P(i.lift, 0.5), hs = Math.min(P(i.hs, 0.35), lift), R = Math.max(l, n * w * 1.5 / (2 * Math.PI)), out = R + l / 2 + 2;
+    G.box([0, 0, -0.5], [2 * out + 4, 2 * out + 4, 1], C.second); G.cyl([0, 0, 0], [0, 0, hs], out, C.wall, 0.35);
+    for (let k = 0; k < n; k++) { const q = 2 * Math.PI * k / n, c = Math.cos(q), s = Math.sin(q), at = (r, z) => [r * c, r * s, z], r0 = R - l / 2, r1 = R + l / 2; G.cyl(at(r0, t / 2), at(R, lift), Math.max(t, w / 4) / 2, C.second); G.cyl(at(R, lift), at(r1, t / 2), Math.max(t, w / 4) / 2, C.second); }
+    G.box([0, 0, hs + 0.5], [2 * out + 4, 2 * out + 4, 1], C.second, 0.3); G.arrow([0, 0, hs + 1 + 2 * l], [0, 0, -1]); G.arrow([-out - 4, 0, 0], [1, 0, 0], C.current);
+    G.label([0, -out, hs], `${n} lames ${G.dims([l, w, t])} · levée ${G.q(lift, "mm")} → butée ${G.q(hs, "mm")}`); G.label([-out - 4, 0, 0], `I = ${n1(P(i.I, 0))} A`); },
   pulse(G, i) { const r = Math.sqrt(P(i.A, 2.5) / Math.PI), L = 14 * r; G.cyl([0, 0, 0], [L, 0, 0], r, C.second); G.arrow([0, 0, 0], [1, 0, 0], C.current); G.arrow([L + 5 * r, 0, 0], [1, 0, 0], C.current); G.gem([L / 2, 0, r], C.hot);
     G.label([L / 2, 0, -r], `section ${G.q(P(i.A, 2.5), "mm²")} (${G.dia(2 * r)} équivalent)`); G.label([0, 0, r], `I = ${n1(P(i.I, 0))} A pendant ${n1(P(i.time, 0))} s`); },
 };

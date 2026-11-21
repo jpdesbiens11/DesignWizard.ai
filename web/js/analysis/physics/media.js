@@ -61,6 +61,7 @@ export const MODEL_MEDIA = {
   dowel_pin: [S("mat", "Matériau des pièces", "AL6061-T6", { Re_p: "Re" })], pipe_flow: FLOW, orifice_flow: FLOW,
   conduction_stack: [S("mat1", "Couche 1", "AL6061-T6", { k1: "k" }), S("mat2", "Couche 2", "FR4", { k2: "k" }), S("mat3", "Couche 3", "SS-304", { k3: "k" }), S("mat_tim", "Interface thermique", "THERMAL-PAD", { tim_k: "k" })],
   heatsink_natural: [S("mat", "Matériau du dissipateur", "AL6063-T5", { k: "k" })], heatsink_forced: [S("mat", "Matériau du dissipateur", "AL6063-T5", { k: "k" })], lumped_mass: [S("mat", "Matériau de la masse", "AL6061-T6", { cp: "cp", k: "k", rho: "rho" })],
+  spring_stop: [S("mat", "Alliage des lames", "CUBE-C17200", { E: "E", Re: "Re", rhoB: "rhoE_n" })],
   busbar: [S("mat", "Matériau du conducteur", "CU-C110", { rho20: "rhoE_n", alpha: "alphaE" })], adiabatic_pulse: [S("mat", "Matériau du conducteur", "CU-C110", { rho20: "rhoE_n", alpha: "alphaE", rho: "rho", cp: "cp", Tmelt: "Tmelt" })],
 };
 export const mediaSlots = (modelId) => MODEL_MEDIA[modelId] || [];
