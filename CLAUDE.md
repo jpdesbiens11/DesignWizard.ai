@@ -333,8 +333,11 @@ ordre ; ce qui est fait se raye ici.
    ver. 0.2 : 45 A en décharge, 9 A en charge, p. 3), d'où 360 A par CORE et 2,0 mm de cuivre (calcul « Busbar » gardé dans le projet,
    sous 60 °C et 2,5 A/mm²) ; la P45B entre dans la bibliothèque (`21700-P45B`) ; **le flex plié en G** (`demo/demo_bm_flex.js`, par
    `core/flex_tree.js`) : 4 doigts par petit bout dans les jeux de 3 mm, une CTN sous chaque cellule sous le busbar −, B+ et B−,
-   vérifié sans interférence. Reste : les fenêtres de soudure, le joint du flex avec la carte, le support de cellules, les bornes du
-   module, le boîtier, le BMS central, l'échauffement dans le module fermé (Simulation).
+   vérifié sans interférence. **Itération 3 (v0.134.0)**, choix de JP par menu : **le support de cellules** (`demo/demo_bm_holder.js`,
+   `BM-HOLDER`) — moulé, deux par CORE (en haut et en bas) ; les cellules d'une rangée se touchent presque (0,15 mm), donc une épine
+   entre les rangées et ses dents, une barre à chaque bout qui laisse 1,2 mm au flex, une poche de 21,8 mm par cellule, des noyautages (parois de
+   1,5 mm : aucune erreur DFx, un avertissement d'uniformité) ; vérifié sans interférence ; hauteur et matière en exemple. Reste : les fenêtres de soudure, le joint du flex avec la carte, la dépouille et la
+   tenue du support, les bornes du module, le boîtier, le BMS central, l'échauffement dans le module fermé (Simulation).
 21. ~~**Logiciel : pas à pas, simulation en direct, code visible, chargement**~~ — fait (v0.124.0 ; demande de JP du 20
    novembre, sur l'écran `#/sw`) : sept étapes, entrées et sorties dites sur chaque tuile, la fiche du CPU au centre avec
    un lien par page, le guide dans le volet, l'essai de démarrage et la mémoire, la simulation en direct, le code à l'écran,

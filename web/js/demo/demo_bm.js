@@ -20,6 +20,7 @@ import { LIBRARY } from "../pcba/library.js";
 import { WORDS_BM } from "./demo_bm_words.js";
 import { run, sessionDefaults } from "../analysis/physics/index.js";
 import { coreFlex, FLEX_T, ADH } from "./demo_bm_flex.js";
+import { coreHolder } from "./demo_bm_holder.js";
 
 /* Iteration 2 (JP, 21 novembre : « garder les L pressés » ; « le max de courant continu des 21700 P45B de Molicel, en décharge et en charge,
    la valeur la plus élevée — on est en 8s8p avec 8 CORE » ; then the flex in G). The cell is the Molicel INR-21700-P45B of the library, its
@@ -28,7 +29,7 @@ import { coreFlex, FLEX_T, ADH } from "./demo_bm_flex.js";
 const C = cell("21700-P45B"), D = 21.7, H = C.L, GAP = 3;
 export const CORE_X = 4 * D + 2 * GAP, CORE_Y = 2 * D + GAP;      // 92.8 × 46.4 : the top of a CORE, and the size of its board
 export const I_CORE = 8 * C.discharge[1];      // 360 A : the 8 cells in parallel, each at its largest continuous current
-export const BB_T = 2.0, ISO_T = 0.5;      // the copper, sized for I_CORE (the calculation is kept in the project) ; the insulating sheet (example)
+export const BB_T = 2.0, ISO_T = 0.5, HOLDER_H = 8;      // the copper, sized for I_CORE (the calculation is kept in the project) ; the insulating sheet (example)
 export const CORE_PITCH = CORE_Y + 2 * (ISO_T + BB_T);      // one CORE to the next : 51.4 mm — the + leg of one on the − leg of the next
 const BB_W = CORE_X - 2 * GAP;      // 86.8 : the busbars stop at the gaps of 3 mm of the short ends, where the flex comes down
 const P = (value, label, o = {}) => ({ value, unit: "mm", label, step: 0.1, group: "CORE", ...o });
@@ -63,6 +64,7 @@ function coreAssembly(pcbPart, flexPart) {
   return { dw: "assembly/1", id: "BM-CORE-ASM", name: "CORE 1S8P",
     instances: [...cells, { id: "bbp", part: BB_POS.id, fixed: true, placement: at([0, 0, 0]) }, { id: "bbn", part: BB_NEG.id, fixed: true, placement: at([0, 0, 0]) },
       { id: "isop", part: ISO.id, fixed: true, placement: at([0, CORE_Y, 0]) }, { id: "ison", part: ISO.id, fixed: true, placement: at([0, -ISO_T, 0]) },
+      { id: "supH", part: "BM-HOLDER", fixed: true, placement: at([0, 0, H - HOLDER_H]) }, { id: "supB", part: "BM-HOLDER", fixed: true, placement: at([0, 0, 0]) },
       { id: "flex", part: flexPart, fixed: true, placement: at([coreFlexAt(), 0, H + BB_T + ADH]) },
       { id: "carte", part: pcbPart, fixed: true, placement: at([0, 0, H + BB_T + ADH + FLEX_T]) }],
     mates: [] };
@@ -87,7 +89,7 @@ export function bmProject() {
   const p = { dw: "project/1", id: "bm-8s8p-21700", name: "BM 8s8p - 21700", author: "DesignWizard.ai",
     description: "Module de batterie 8s8p en cellules 21700 : 8 CORE 1S8P en série, côte à côte, chacun avec sa carte de mesure posée dessus. Première itération de l'architecture du projet, à itérer.",
     parts: [CELL, BB_POS, BB_NEG, ISO].map((x) => JSON.parse(JSON.stringify(x))), assemblies: [], boards: [coreBoard()], drawing: { words: WORDS_BM }, physics: [busbarSizing()], log: [] };
-  const flex = coreFlex({ X: CORE_X, Y: CORE_Y, H, t: BB_T, grid: D, gap: GAP, rows: [D / 2, D + GAP + D / 2] }).part; p.parts.push(flex);
+  const flex = coreFlex({ X: CORE_X, Y: CORE_Y, H, t: BB_T, grid: D, gap: GAP, rows: [D / 2, D + GAP + D / 2] }).part; p.parts.push(flex, coreHolder({ X: CORE_X, Y: CORE_Y, grid: D, gap: GAP, h: HOLDER_H }));
   syncTwins(p, LIBRARY);
   const board = p.boards[0], twin = p.parts.find((x) => x.id === board.part);
   twin.name = "Carte de CORE 1S8P"; twin.function = "La carte de mesure du CORE, posée sur le busbar + : 8 températures, la tension du CORE, l'équilibrage, RS-485 isolé.";

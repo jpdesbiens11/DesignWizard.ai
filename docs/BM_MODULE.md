@@ -45,6 +45,36 @@ de la Molicel P45B, en charge et en décharge, la valeur la plus élevée**, en 
 - **La carte** monte de l'épaisseur du flex et de l'adhésif. La fiche de la cellule recommande une barrière isolante entre
   cellule et PCBA (p. 13) : le polyimide du flex en tient lieu sous la carte — à confirmer, il ne couvre pas les bords.
 
+## Itération 3 — le support de cellules
+
+Choix de JP, par menu (21 novembre) : **le support de cellules**.
+
+- **Ce que la géométrie laisse** : dans une rangée, les cellules se suivent au pas de 21,7 mm et une P45B fait 21,55 mm au
+  plus — il reste **0,15 mm entre deux cellules** : aucune paroi ne passe entre elles. Le support les tient là où il y a de
+  la place : **une épine** dans le jeu de 3 mm entre les deux rangées, dont les **dents** s'avancent entre les cellules de
+  chaque rangée, et **une barre** dans chaque jeu de 3 mm des petits bouts. Sur les grands côtés, l'isolant de flanc et la
+  jambe du busbar tiennent les cellules.
+- **Une poche autour de chaque cellule**, Ø 21,8 mm : **0,125 mm de jeu au rayon** sur la plus grosse P45B que la fiche
+  permet (Ø 21,55 mm). Les dents **tiennent** la cellule, elles ne la pincent pas : la tenue par frottement ou par collage
+  est à choisir.
+- **Moulable, d'après les règles de l'outil** : le premier jet avait deux défauts que le bilan DFx a relevés — la pointe des
+  dents tombait à 0,12 mm, et là où quatre cellules se rencontrent l'épine faisait un bloc d'environ 11 mm (retassures).
+  Les dents s'arrêtent donc à **4 mm de l'axe de la rangée** (pointe de 1,4 mm, au-dessus du minimum de 1,2 mm du PC/ABS
+  que l'outil retient), et un **noyautage** traverse chaque bloc — Ø 8 mm entre quatre cellules, Ø 5,2 mm à chaque bout —
+  en laissant des parois de 1,5 mm. Bilan : **aucune erreur ; un avertissement** (MLD-08, parois non uniformes, 1,9:1 pour
+  1,5:1 conseillé) — les dents s'épaississent vers l'épine (2,3 mm en médiane, 4,4 mm pour les 10 % les plus épaisses,
+  mesurés sur le maillage) : à évider à une prochaine itération.
+- **Le flex garde son passage** : chaque barre s'arrête à 1,2 mm du bout du CORE ; les doigts du flex descendent à 0,8 mm
+  du bout, 0,2 mm d'épaisseur — le noyau 3D vérifie qu'ils ne touchent pas la barre.
+- **Deux supports identiques par CORE** (`BM-HOLDER`) : l'un en haut des cellules, contre le busbar +, l'autre en bas,
+  contre le busbar −, 8 mm de haut chacun (exemple). Une seule pièce, d'un seul tenant (≈ 4,9 cm³, ≈ 5,6 g en PC/ABS) ;
+  **moulée par injection**, PC/ABS d'une nuance V-0 à choisir (exemple, aucune fiche de matière lue). Le module compte
+  désormais **128 pièces**, dont 16 supports.
+- **Vérifié par le noyau 3D** : la pièce se construit sans erreur, d'un seul solide ; dans le CORE, les deux supports ne
+  traversent ni cellule, ni busbar, ni isolant, ni flex, ni carte.
+- **Pas encore dessiné** : la dépouille, les détrompeurs, les congés, l'emboîtement d'un CORE au suivant ; **non analysé** :
+  la tenue mécanique (aucun calcul de vibration ni de choc).
+
 ## Ce qu'il contient
 
 | Élément | Ce que c'est | Où |
@@ -54,7 +84,9 @@ de la Molicel P45B, en charge et en décharge, la valeur la plus élevée**, en 
 | Busbar + du CORE | `BM-BB-POS` : la plaque sur les bornes +, sous la carte, et une jambe qui descend le long du grand côté +Y | Pièces |
 | Busbar − du CORE | `BM-BB-NEG` : la plaque sous les fonds des cellules et une jambe qui monte le long du grand côté −Y | Pièces |
 | Isolant de flanc du CORE | `BM-ISO-SIDE` : une feuille entre chaque jambe et les godets des cellules | Pièces |
-| CORE 1S8P | `BM-CORE-ASM` : 8 cellules en deux rangées de 4, les deux busbars, deux isolants, la carte dessus | Assemblage |
+| Flex en G du CORE | `BM-FLEX-G` : son cœur sous la carte, 8 doigts pliés en G jusqu'aux CTN, B+ et B− | Pièces |
+| Support de cellules du CORE | `BM-HOLDER` : une épine entre les rangées, deux barres aux bouts, une poche par cellule, cinq noyautages ; deux par CORE | Pièces |
+| CORE 1S8P | `BM-CORE-ASM` : 8 cellules en deux rangées de 4, les deux busbars, deux isolants, deux supports, le flex, la carte dessus | Assemblage |
 | BM 8s8p - 21700 | `BM-8S8P-ASM` : 8 CORE côte à côte, tous dans le même sens | Assemblage |
 
 ## La géométrie, telle que dessinée
@@ -76,10 +108,11 @@ des jambes (5 mm), la largeur des doigts du flex (5 mm), l'adhésif (0,1 mm). Le
 modèle simple. Les pièces sont posées à leur place (« fixe »), sans accouplements : les soudures cellule ↔ busbar et les
 CTN ↔ busbar ne sont pas encore des interfaces appariées, d'où les « interfaces sans jumelle » que l'écran signale.
 
-**Pas encore dessiné** : les fenêtres de soudure laser ; le joint soudé du flex avec la carte (J-FLEX-12) ; un support de
-cellules ; les bornes du module (B+ au bout du dernier CORE, B− au bout du premier) ; le boîtier longitudinal ; le BMS
+**Pas encore dessiné** : les fenêtres de soudure laser ; le joint soudé du flex avec la carte (J-FLEX-12) ; la
+dépouille et les nervures du support de cellules ; les bornes du module (B+ au bout du dernier CORE, B− au bout du premier) ; le boîtier longitudinal ; le BMS
 central, ses connecteurs et le faisceau RS-485.
 
 **Non vérifié** : l'échauffement réel du cuivre dans le module fermé (le modèle est une barre seule à l'air libre) ; la
 chaleur des cellules elles-mêmes à 45 A (la fiche donne ≤ 8 mΩ à 1 kHz à l'expédition, pas la résistance en courant
-continu) ; la tenue des plis du flex à l'assemblage ; l'isolation entre CORE ; la conformité de quoi que ce soit.
+continu) ; la tenue des plis du flex à l'assemblage ; la tenue des cellules dans leur support
+(vibration, choc) ; l'isolation entre CORE ; la conformité de quoi que ce soit.
