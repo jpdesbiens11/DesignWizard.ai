@@ -14,6 +14,7 @@ import "./modules/shop.js";
 import "./modules/shop_special.js";
 import "./modules/interfaces.js";
 import "./modules/parts.js";
+import "./modules/fab.js";
 import "./modules/extrusion.js";
 import "./modules/pcb.js";
 import "./modules/pcba.js";

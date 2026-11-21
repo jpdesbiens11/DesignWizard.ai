@@ -27,6 +27,41 @@ mots, et à garder ce qui s'y dit.
   signatures), texte brut pour un courriel, copie dans le presse-papiers. La gamme de fabrication part aussi dans le
   dossier de commande de la pièce ; celle de la carte, dans son dossier de fabrication.
 
+## L'atelier de fab — la gamme jouée, étape par étape
+
+Le dernier écran du groupe **Mécanique**, « Atelier de fab » (`#/fab/<pièce>`), joue la gamme de fabrication d'une
+pièce comme on la ferait voir à un stagiaire ou à un fournisseur : de la réception du brut au conditionnement. Il
+s'ouvre sur la **gamme par défaut** (choix de JP), le bouton « IA » à sa place habituelle, en tête du volet de gauche.
+
+- **Chaque phase a son poste**, dessiné par l'outil : scie à ruban pour le débit d'une barre, table de découpe laser
+  pour un flan, moule ouvert pour une pièce moulée ou coulée, plateau d'impression, filière d'extrusion, étau sous la
+  broche pour un posage de fraisage, mandrin à trois mors pour le tour, presse plieuse, établi d'ébavurage, bac de
+  traitement, marbre de contrôle, carton. **La pièce est tournée vers l'outil** — la face usinée regarde la broche (en
+  haut), ou la tourelle du tour (vers +X) — et posée sur le montage, sans qu'aucun mors n'entre dans la matière. Avant
+  le pliage, une tôle se voit **à plat** (le flan développé de la vue « Plié · À plat »).
+- **La pièce après chaque phase** : celle que l'onglet « Gamme » montre déjà (les opérations suivantes retirées), avec
+  son encombrement et sa masse, dits dans le volet de droite et sur la diapositive.
+- **Jouer la gamme** enchaîne les étapes ; ← et → passent de l'une à l'autre.
+- **L'ordre est celui de l'atelier** : les étapes se glissent dans le flux (ou se déplacent par leurs flèches) ; l'ordre
+  est gardé dans la pièce (`plan order=[…]`), la gamme le suit partout — l'onglet « Gamme », ses documents, le dossier de
+  commande — et se renumérote de dix en dix. Le guide dit ce qu'un ordre dérange : brut qui n'est pas en tête,
+  ébavurage ou traitement avant le dernier usinage, contrôle trop tôt, conditionnement qui n'est pas le dernier. « Revenir
+  à l'ordre de l'outil » efface l'ordre gardé, en une étape annulable.
+- **Partager avec le fournisseur** : un **diaporama** `.pptx` — une page de titre, une diapositive par phase avec l'image
+  de l'étape, son poste, sa prise de pièce, ses opérations et ses outils, ses contrôles, les mesures après la phase, et
+  un **cadre « Réponse du fournisseur »** —, un **film** `.webm` des étapes, le titre de chaque étape incrusté, et la gamme
+  en Word, PDF ou texte, avec ses images. Tous portent la marque et la note de confidentialité du projet.
+- **La réponse du fournisseur** se tape, phase par phase, dans le volet de droite (`plan comments`), à côté de la note
+  de l'atelier ; elle repart dans le diaporama suivant et voyage dans le `.dwiz`.
+
+```dwiz
+plan order=[stock, "setup:-Z", "setup:+Z", deburr, check, pack] comments={stock: "Barre de 50 en stock, deux semaines."}
+```
+
+Les montages sont des **montages de PRINCIPE**, fabriqués par l'outil : aucune machine, aucun montage, aucune marque
+de fabricant ; l'atelier choisit les siens, et l'écran, le diaporama et le film le disent. Ce n'est pas une simulation
+d'usinage : ni trajectoire d'outil, ni enlèvement de matière en continu, ni efforts de coupe.
+
 ## Ce qui est gardé, et où
 
 La gamme elle-même n'est **pas** enregistrée : elle se recalcule du modèle, donc elle ne peut pas le contredire. Ce
@@ -65,6 +100,9 @@ avant les cartes ». La réponse revient, l'écran liste les changements, l'huma
 - L'état de la pièce après une phase vient de l'arbre de construction : une forme faite en plusieurs phases chez
   l'atelier apparaît dans la phase de son opération.
 - Ces gammes n'ont pas encore été relues par un atelier ni par un assembleur.
+- L'atelier de fab montre **une image par étape** : la caméra ne vole pas d'un poste à l'autre, l'outil ne bouge pas ;
+  le film enchaîne les images. Le diaporama n'a pas été ouvert dans PowerPoint — il a été relu par python-pptx et
+  rendu par LibreOffice. Le film est en WebM (VP9 ou VP8, selon ce que le navigateur enregistre).
 
 ## Dans le code
 
@@ -76,4 +114,9 @@ avant les cartes ». La réponse revient, l'écran liste les changements, l'huma
 | `web/js/pcba/assembly_plan.js` | `boardAssemblyPlan(board, lib)` : gamme d'assemblage d'une carte |
 | `web/js/modules/plan_view.js` | l'écran commun : phases, notes, points, sorties, bouton IA |
 | `web/js/modules/part_gamme.js`, `asm_gamme.js`, `pcba_out.js` | les trois onglets |
+| `web/js/core/fab_scene.js` | l'atelier de fab : `stationKind`, `placeFor` (la pièce tournée vers l'outil), `fixtureOf`, `sceneOf` |
+| `web/js/core/fab_flow.js` | l'ordre de l'atelier : `flowKeys`, `moveKey`, `dropKey`, `orderIssues`, `stepMeasures` |
+| `web/js/core/pptx.js` | un diaporama `.pptx` écrit à la main (16:9, marque, note, pages) |
+| `web/js/modules/fab.js`, `fab_out.js` | l'écran de l'atelier ; le diaporama et le film |
+| `tests/node/fab_shop.test.mjs` | postes, placement sans interférence, ordre gardé et suivi, diaporama, branchements |
 | `tests/node/plans.test.mjs` | les trois gammes, leurs textes et leurs documents |

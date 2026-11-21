@@ -16,7 +16,7 @@ test("the register is whole : every line has its group, its nature, its level of
 });
 
 test("the tools and the documents a line points at exist", () => {
-  const keys = new Set(["creepage", "drawings", "physics", "fea", "dfx", "shop", "interfaces", "assembly", "pcba", "flex", "library", "busbar", "mvp", "plm", "parts", "report", "onshape", "review", "labels", "render", "media", "elab", "sw", "swreq", "swarch", "swtest", "swrel", "history", "eco", "help"]), file = { swreq: "sw_req", swarch: "sw", swtest: "sw_verify", swrel: "sw" };      // the steps of the V live in a few modules
+  const keys = new Set(["creepage", "drawings", "physics", "fea", "dfx", "shop", "interfaces", "assembly", "pcba", "flex", "library", "busbar", "mvp", "plm", "parts", "report", "onshape", "review", "labels", "render", "media", "elab", "sw", "swreq", "swarch", "swtest", "swrel", "history", "eco", "fab", "help"]), file = { swreq: "sw_req", swarch: "sw", swtest: "sw_verify", swrel: "sw" };      // the steps of the V live in a few modules
   for (const m of METHODS) { if (m.where) assert.ok(keys.has(m.where.slice(2).split("/")[0]), `${m.id} → ${m.where}`); if (m.doc) assert.ok(existsSync(new URL(`../../${m.doc}`, import.meta.url)), `${m.id} → ${m.doc}`); }
   for (const k of keys) assert.ok(existsSync(new URL(`../../web/js/modules/${file[k] || k}.js`, import.meta.url)), `module ${k}`);
 });

@@ -24,7 +24,8 @@ export function shot(viewer, caption, phase, width = 95) {
 export const planAiHelp = (plan) => ({ context: `${planText(plan)}\n\n${planKeys(plan)}`,
   help: ["La gamme donnée pour référence est calculée par l'outil à partir de l'artéfact : on ne la renvoie pas. Pour la changer, change ce qui la produit (opérations, matière première, interfaces, ordre).",
     `Pour l'annoter : sous « plan », « notes » porte une note par phase (clé de phase = texte de la note) et chaque ligne « point » un point à discuter avec ${PLAN_KINDS[plan.kind].audience}.`,
-    ...(plan.kind === "assemblage" ? ["« plan order=[…] » fixe l'ordre de montage : la liste des identifiants des pièces posées (i1, i2…), toutes présentes une seule fois."] : [])] });
+    ...(plan.kind === "assemblage" ? ["« plan order=[…] » fixe l'ordre de montage : la liste des identifiants des pièces posées (i1, i2…), toutes présentes une seule fois."] : []),
+    ...(plan.kind === "fabrication" ? ["« plan order=[…] » fixe l'ordre des phases de l'atelier : la liste de leurs clés (stock, setup:+Z, deburr…) ; « comments » porte la réponse du fournisseur, phase par phase — ne l'invente pas : c'est la sienne."] : [])] });
 
 /* the routing of a board reads as a board does — mil, then inches ; the others in inches */
 const sayOf = (plan) => (plan.kind === "carte" ? boardProse : inUnits), docOf = (plan, d) => (plan.kind === "carte" ? boardDoc(d) : docUnits(d, getUnits()));

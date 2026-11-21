@@ -12,7 +12,7 @@ export const DWIZ_VERSION = 1;
 export const DWIZ_EXT = "dwiz";
 
 /* The annotated routing sheet of a part, an assembly or a board : what was said about each phase, what is left to see. */
-const PLAN = { kids: { notes: {}, points: { word: "point", scalar: true } } };
+const PLAN = { kids: { notes: {}, comments: {}, points: { word: "point", scalar: true } } };      // comments : what the supplier answers, phase by phase (the fabrication shop)
 const part = {
   fr: "Pièce", en: "Part", module: "Atelier (Shop)", brick: "B3",
   sections: [

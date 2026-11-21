@@ -101,6 +101,9 @@ export function processPlan(spec, built, opts = {}) {
   const chars = characteristics(spec, scope);
   phase("check", "Contrôle", "Métrologie", [], { force: true, checks: [...chars.map((c) => `${c.text} — ${c.control}`), "Aspect : pas de bavure, pas de choc, pas de rayure sur les faces fonctionnelles"] });
   phase("pack", "Marquage et conditionnement", "Expédition", [], { force: true, checks: [`Identifier : ${spec.id}, révision ${spec.revision || "A"}`, "Protéger les faces d'appui et les filetages ; emballer pièce par pièce"] });
+  /* the order the shop chose (core/fab_flow.js) : the phases it names come in that order, the others keep theirs after them */
+  const order = spec.plan && Array.isArray(spec.plan.order) ? spec.plan.order : null;
+  if (order && order.length) { const at = (k) => { const i = order.indexOf(k); return i < 0 ? order.length : i; }; phases.sort((a, b) => at(a.key) - at(b.key)); }
   const m = material(spec.material), st = r.stock, qty = (opts.order && opts.order.quantity) || (spec.order && spec.order.quantity) || (spec.intent && spec.intent.quantity) || null;
   return finishPlan({ kind: "fabrication", id: spec.id, name: spec.name || "", revision: spec.revision || "A",
     facts: [...variantFacts(opts.variant === undefined ? variantNow(spec) : opts.variant), ["Matériau", m ? m.name : spec.material || "à définir"], ["Procédé", PROCESSES[proc] ? processName(proc) : proc || "à définir"], ["Matière première", st ? st.label : RAW[proc] || (spec.extrusion ? RAW.extrusion_al : spec.pcb ? RAW.pcb : "à définir")], ...(spec.finish ? [["Finition", spec.finish]] : []), ...(qty ? [["Quantité", String(qty)]] : []),

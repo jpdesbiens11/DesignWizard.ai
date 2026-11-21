@@ -38,6 +38,7 @@ export function stairOf(key, args, project) {
     case "media": return { hash: "#/physics", icon: "physics", color: null, label: "Physique", tip: "Revenir aux modèles analytiques, qui lisent cette base" };
     case "drawings": return a[0] === "asm" ? toAsm(asm(a[1]), "L'assemblage dessiné") : toPart(part(a[0]) || parts.find((p) => !p.step), "La pièce dessinée");
     case "dfx": return a[0] === "points" ? toPart(part(a[1]), "La pièce vérifiée") : null;
+    case "fab": return toPart(part(a[0]) || parts.find((p) => !p.step && !p.purchased), "La pièce que l'atelier fabrique");
     case "creepage": { const b = a[0] === "board" ? boards.find((x) => x.id === a[1]) : null; return b ? { hash: `#/pcba/${enc(b.id)}`, icon: "chip", color: "#16a34a", label: b.name || b.id, tip: "La carte analysée : l'ouvrir dans le PCBA" } : toAsm(asm(a[0]) || asms[0], "L'assemblage analysé"); }      // a board analysed alone hangs from its PCBA
     case "render": return toAsm(asm(a[0]) || asms[0], "Le produit photographié");
     case "labels": return toAsm(asm(a[0]) || asms[0], "Le produit étiqueté");
@@ -59,6 +60,7 @@ export function downOf(key, args, project) {
     for (const b of boards.filter((x) => x.part === p.id)) B(b, "le PCBA monté sur cette carte");
     if (!p.step) out.push({ hash: `#/drawings/${enc(p.id)}`, icon: "drawing", color: null, label: "Dessin", tip: `Descendre d'un niveau : le dessin de « ${p.name || p.id} »` });
     out.push({ hash: `#/fea/${enc(p.id)}`, icon: "physics", color: null, label: "Simulation", tip: `Descendre d'un niveau : la simulation de « ${p.name || p.id} »` });
+    if (!p.step && out.length < 4) out.push({ hash: `#/fab/${enc(p.id)}`, icon: "mill", color: null, label: "Atelier de fab", tip: `Descendre d'un niveau : la gamme de « ${p.name || p.id} » jouée à l'atelier` });
   } else if (lv && lv.assembly) { const x = lv.assembly, name = x.name || x.id;
     for (const s of [...new Set((x.instances || []).map((i) => i.asm).filter(Boolean))].map((id) => asms.find((y) => y.id === id)).filter(Boolean)) out.push({ hash: asmHash(s), icon: "assembly", color: "#475569", label: s.name || s.id, tip: `Descendre d'un niveau : le sous-assemblage « ${s.name || s.id} »` });
     out.push({ hash: `#/creepage/${enc(x.id)}`, icon: "creepage", color: null, label: "Isolation", tip: `Descendre d'un niveau : l'isolation de « ${name} »` }, { hash: `#/drawings/asm/${enc(x.id)}`, icon: "drawing", color: null, label: "Dessin", tip: `Descendre d'un niveau : le dessin d'ensemble de « ${name} »` });
@@ -85,6 +87,7 @@ export function aiTargetOf(key, args, project) {
     case "fea": return C(part(a[0]) || asm(a[0]) || parts[0]) || all;
     case "drawings": return (a[0] === "asm" ? D("assembly", asm(a[1])) : D("part", part(a[0]) || parts.find((p) => !p.step))) || all;
     case "physics": return P(part(a[1])) || all;
+    case "fab": return P(part(a[0]) || parts.find((p) => !p.step && !p.purchased)) || all;
     case "dfx": return (a[0] === "points" ? P(part(a[1])) : null) || all;
     case "creepage": return (a[0] === "board" ? I("board", boards.find((b) => b.id === a[1])) : I("assembly", asm(a[0]) || asms[0])) || all;
     case "render": case "labels": return A(asm(a[0]) || asms[0]) || all;
