@@ -67,10 +67,13 @@ test("magnifier : an icon is not an artefact", () => {
   assert.equal(isArtefact(400, 300), true); assert.equal(isArtefact(LOUPE.least[0], LOUPE.least[1]), true);
 });
 
-test("wiring : the drawings zoom, the top bar has its magnifier, the styles are there", () => {
+test("wiring : the drawings zoom, the magnifier is beside the zoom of each view — not in the top bar —, the styles are there", () => {
   const app = read("web/js/core/app.js"), css = read("web/css/app.css"), drawings = read("web/js/modules/drawings.js");
   assert.match(drawings, /zoomPane\(center\)/, "the centre of the drawing screen zooms");
-  assert.match(app, /loupeButton\(\), guideButton\(\)/); assert.match(app, /installLoupe\(\);/);
+  assert.doesNotMatch(app, /loupeButton/, "demande de JP : « enlever la loupe du menu du haut, ça n'a pas d'affaire là »");
+  assert.match(app, /newsButton\(\), guideButton\(\)/); assert.match(app, /installLoupe\(\);/, "the lens itself is installed once");
+  assert.match(read("web/js/core/view_bar.js"), /loupeButton\(\{ compact: true \}\)/, "the bar of a view carries it");
+  assert.match(read("web/js/core/viewport.js"), /loupeButton\(\)\);/, "a 3D view carries it in its toolbar");
   assert.match(css, /\.zoom-host \.sheet-view \{ width: calc\(var\(--zoom, 1\) \* 100%\); max-width: none;/);
   assert.match(css, /\.loupe \{ position: fixed;[^}]*pointer-events: none;/, "the pointer works through the lens");
   assert.match(read("web/js/modules/help.js"), /Ctrl \+ molette sur un dessin/);

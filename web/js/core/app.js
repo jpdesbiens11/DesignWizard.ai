@@ -9,7 +9,7 @@ import { session, signOut } from "./access.js";
 import { THEMES, currentTheme, applyTheme, SCALES, currentScale, applyScale } from "./theme.js";
 import { toDwiz } from "./dwiz.js";
 import { dwizFileName } from "./dwiz_names.js";
-import { mountPanes } from "./panes.js";
+import { mountPanes, mountBottom } from "./panes.js";
 import { guideBox, guideCount, guideSummary } from "./guide.js";
 import { projectIssues, issuesHere } from "./guide_checks.js";
 import { firstStepHere } from "./first_steps.js";
@@ -20,11 +20,11 @@ import { installStepper } from "./stepper.js";
 import { installFolds } from "./fold.js";
 import { installStairs } from "./stairs_ui.js";
 import { installPanelKeep } from "./panel_keep.js";
-import { installLoupe, loupeButton } from "./loupe.js";
+import { installLoupe } from "./loupe.js";
 import { installUpdateCheck, updateButton } from "./update_check.js";
 import { installWhatsNew, newsButton } from "./whats_new_ui.js";
 
-export const APP_VERSION = "0.124.0";
+export const APP_VERSION = "0.125.0";
 /** What every document of the open project carries beside its content : approval names, organisation, confidentiality note, extraction stamp (core/brand.js). */
 export const docMeta = (when = new Date()) => docIdentity(store.project, when, APP_VERSION);
 const modules = new Map();
@@ -76,7 +76,7 @@ function guideButton() {
 /* the borders of the side panels of a studio : put when a screen draws its studio, again when it rebuilds it */
 let panesWatch = null;
 function studioPanes(main, key) {
-  const put = () => main.querySelectorAll(".studio").forEach((s) => mountPanes(s, key));      // wherever the studio stands in the page : under a header of its own too (the PCBA)
+  const put = () => { main.querySelectorAll(".studio").forEach((s) => mountPanes(s, key)); main.querySelectorAll(".bottom-pane").forEach((b) => mountBottom(b)); };      // wherever the studio stands in the page : under a header of its own too (the PCBA) ; and the panel at the bottom of a centre
   let due = false; const soon = () => { if (due) return; due = true; requestAnimationFrame(() => { due = false; put(); }); };
   if (panesWatch) panesWatch.disconnect();
   put(); if (typeof MutationObserver !== "undefined") { panesWatch = new MutationObserver(soon); panesWatch.observe(main, { childList: true, subtree: true }); }
@@ -112,7 +112,7 @@ function topbar() {
     btn("", () => store.redo() || toast("Rien à rétablir."), { icon: "redo", small: true, tip: "Rétablir (Ctrl+Y)" }),
     menuButton("Onshape", "onshape", onshapeMenu), menuButton("Projet", "folder", projectMenu),
     menuButton("", session.account && session.account.admin ? "admin" : "user", accountMenu, session.account ? `Compte : ${session.account.email}` : "Compte Google, Drive et thème"),
-    updateButton(), newsButton(), loupeButton(), guideButton(), el("a", { class: "btn btn-small", href: "#/help", "data-tip": "Aide, raccourcis et guide des collaborateurs" }, icon("help")));
+    updateButton(), newsButton(), guideButton(), el("a", { class: "btn btn-small", href: "#/help", "data-tip": "Aide, raccourcis et guide des collaborateurs" }, icon("help")));
   return el("header", { class: "topbar" },
     el("a", { class: "brand", href: "#/home", "aria-label": "DesignWizard.ai, accueil" }, icon("logo", "brand-logo"),
       el("span", { class: "brand-name" }, el("b", null, "DesignWizard", el("i", null, ".ai")), el("small", null, "by DynamiteAgile™"))),
@@ -220,7 +220,7 @@ export async function start() {
   installBoardNames();       // the names of the trade for a board, mapped on everything that is drawn (core/board_names.js)
   installStairs({ ai: (key) => app.aiLoop && app.aiLoop(key) });       // the step up of every screen, and its « IA » button : one pictogram at the head of the left panel, towards what the screen is made from
   installPanelKeep();    // a panel drawn anew keeps its place, and the cursor its field
-  installLoupe();        // the magnifier of the top bar : a lens over drawings, boards, diagrams and 3D views
+  installLoupe();        // the magnifier : a lens over drawings, boards, diagrams and 3D views — its buttons are beside the zoom of each view (core/view_bar.js)
   installUpdateCheck({ running: APP_VERSION, save: () => (store.saveState === "dirty" ? store.saveNow() : Promise.resolve()) });      // a page kept open says when a newer version is published, and offers to load it
   store.on("error", (e) => toast(e.message, "error", 8000));
   await store.init();

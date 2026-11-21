@@ -39,7 +39,7 @@ test("version : the four places where it is written say the same", () => {
 
 test("wiring : the top bar carries the update button, the application watches, the browser remembers every file", () => {
   const app = read("web/js/core/app.js");
-  assert.match(app, /updateButton\(\), newsButton\(\), loupeButton\(\)/); assert.match(app, /installUpdateCheck\(\{ running: APP_VERSION, save:/);
+  assert.match(app, /updateButton\(\), newsButton\(\), guideButton\(\)/); assert.match(app, /installUpdateCheck\(\{ running: APP_VERSION, save:/);
   assert.match(read("web/js/boot.js"), /setResourceTimingBufferSize\(3000\)/);
   assert.match(read("web/js/core/update_check.js"), /fetch\(`version\.json\?t=\$\{last\}`, \{ cache: "no-store" \}\)/);
 });

@@ -5,6 +5,7 @@
    in frequency, the transfer function as a Bode plot. The numbers come from pcba/lab_bench.js ; nothing is decided here. */
 
 import { el, svg } from "../core/dom.js";
+import { viewBar } from "../core/view_bar.js";
 import { eng } from "../pcba/lab_bench.js";
 import { channelSetting, timeBase } from "../pcba/lab_plan.js";
 
@@ -31,7 +32,11 @@ export function labBoard(host) {
       g.append(svg("circle", { cx: x, cy: y, r: 2.6 * u, class: "lab-mark-halo", "stroke-width": 1.5 * u }), svg("circle", { cx: x, cy: y, r: 2.6 * u, class: "lab-mark-ring", stroke: p.color, "stroke-width": 0.8 * u }), svg("line", { x1: x + d[0] * 2.6 * u, y1: y + d[1] * 2.6 * u, x2: bx, y2: by, class: "lab-mark-lead", "stroke-width": 0.5 * u }),
         svg("circle", { cx: bx, cy: by, r: 3.1 * u, fill: p.color, class: "lab-mark-dot", "stroke-width": 0.5 * u }), svg("text", { x: bx, y: by + 1.25 * u, "text-anchor": "middle", "font-size": 3.6 * u, class: "lab-mark-letter" }, p.label),
         svg("text", { x: bx + (d[0] >= 0 ? 4 : -4) * u, y: by + 0.9 * u, "text-anchor": d[0] >= 0 ? "start" : "end", "font-size": 2.5 * u, "stroke-width": 0.55 * u, class: "lab-mark-pin" }, `${p.ref} · ${p.pin}`)); marks.append(g); }); }
-  const setVb = () => { root.setAttribute("viewBox", vb.join(" ")); drawMarks(); };
+  /* the bar of the view (core/view_bar.js) : − % + , « Ajuster », the magnifier ; 100 % is the board fitted in the window */
+  const zoomBy = (k) => { if (!vb) return; const w = vb[2] * k, h = vb[3] * k; vb = [vb[0] + (vb[2] - w) / 2, vb[1] + (vb[3] - h) / 2, w, h]; setVb(); };
+  const bar = viewBar({ label: "la carte du banc", zoomOut: () => zoomBy(1.25), zoomIn: () => zoomBy(1 / 1.25), fit: () => { if (vb0) { vb = [...vb0]; setVb(); } }, text: () => (vb && vb0 ? `${Math.round((100 * vb0[2]) / vb[2])} %` : "100 %"), fitTip: "Ajuster à la fenêtre : toute la carte se voit" });
+  bar.node.classList.add("view-float"); host.append(bar.node);
+  const setVb = () => { root.setAttribute("viewBox", vb.join(" ")); drawMarks(); bar.update(); };
   root.addEventListener("wheel", (e) => { if (!vb) return; e.preventDefault(); const r = root.getBoundingClientRect(), k = e.deltaY > 0 ? 1.2 : 1 / 1.2, fx = (e.clientX - r.left) / r.width, fy = (e.clientY - r.top) / r.height, w = vb[2] * k, h = vb[3] * k; vb = [vb[0] + (vb[2] - w) * fx, vb[1] + (vb[3] - h) * fy, w, h]; setVb(); }, { passive: false });
   root.addEventListener("pointerdown", (e) => { if (!vb) return; root.setPointerCapture(e.pointerId); drag = { x: e.clientX, y: e.clientY, vb: [...vb] }; });
   root.addEventListener("pointermove", (e) => { if (!drag) return; const r = root.getBoundingClientRect(), k = Math.max(drag.vb[2] / r.width, drag.vb[3] / r.height); vb = [drag.vb[0] - (e.clientX - drag.x) * k, drag.vb[1] - (e.clientY - drag.y) * k, vb[2], vb[3]]; setVb(); });

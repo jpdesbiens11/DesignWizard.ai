@@ -466,10 +466,26 @@ reste en place pendant le défilement et revient quand la feuille est retracée 
 l'écran. Les vues 3D et la vue d'une carte zoomaient déjà à la molette. Code : `web/js/core/zoom_pane.js`
 (`zoomPane(centre)` ; un écran qui montre des feuilles l'appelle une fois).
 
-**Loupe.** Un bouton de la barre du haut l'allume et l'éteint. Allumée, une lentille ronde suit le pointeur sur tout
-artéfact — dessin, carte, schéma, vue 3D — et montre ce qui est dessous plus gros, du facteur d'un **court curseur**
-qui apparaît à côté du bouton (× 1,5 à × 8, gardé d'une visite à l'autre). Le pointeur agit au travers : on clique,
-on tourne, on fait défiler comme avant. Échap la range.
+**Une seule barre pour toute vue qui zoome** (v0.125.0, demande de JP : « redimensionner la vue des blocs aussi, pan,
+zoom, ajuster à la fenêtre, loupe. Enlever la loupe dans le menu du top… ça n'a pas d'affaire là »). En haut à droite
+d'une feuille de dessin, de la vue d'une carte (PCBA et Labo) et des tuiles du Logiciel : **− · le pourcentage · + ·
+Ajuster · Loupe**. Le pourcentage ramène à la taille réelle (100 %) — sur une feuille, à la largeur —, « Ajuster »
+fait tout tenir dans la fenêtre. Une vue 3D garde sa barre d'outils, où la loupe a pris sa place à côté de la photo de
+la vue. Usage suivi : les contrôles de zoom des outils de dessin et de schéma (moins, pourcentage, plus, ajuster), la
+loupe d'une visionneuse de documents. Code : `web/js/core/view_bar.js` (`viewBar`, et les moitiés pures `fitView` /
+`zoomView` : le point sous le pointeur reste sous le pointeur) ; une vue qui zoome donne ses fonctions, la barre ne
+dessine rien d'autre.
+
+**Les tuiles du Logiciel** se déplacent et se zooment comme la vue d'une carte : la molette zoome autour du pointeur
+(15 % à 400 %), un glisser du fond déplace la page (un clic sans glisser ne choisit rien), un glisser d'une tuile la
+déplace, comme avant. La page s'ouvre **ajustée** et le reste quand la fenêtre change de taille, tant qu'on ne l'a pas
+zoomée ni déplacée.
+
+**Loupe.** Le bouton à loupe de la barre d'une vue l'allume et l'éteint — elle n'est plus dans la barre du haut.
+Allumée, une lentille ronde suit le pointeur sur tout artéfact — dessin, carte, schéma, vue 3D — et montre ce qui est
+dessous plus gros, du facteur d'un **court curseur** qui apparaît à côté du bouton (× 1,5 à × 8, gardé d'une visite à
+l'autre). Le pointeur agit au travers : on clique, on tourne, on fait défiler comme avant. Échap la range ; elle se
+range aussi quand on quitte l'écran.
 
 - Un artéfact **vectoriel** (SVG : dessin, carte, schéma) est retracé à l'échelle : il reste net.
 - Une vue **peinte en pixels** (les vues 3D) est agrandie telle quelle : pour voir plus, le zoom de la vue fait mieux.
@@ -480,6 +496,25 @@ on tourne, on fait défiler comme avant. Échap la range.
 Code : `web/js/core/loupe.js` ; moitiés pures testées (`tests/node/zoom.test.mjs`), le reste vérifié dans Chromium sur
 un dessin, la vue d'une carte, le rendu marketing et les vues 3D de la Simulation et de l'Assemblage. Pas essayé sur
 Firefox, Safari ni un écran tactile.
+
+## Le panneau du bas : sa bordure se glisse, son bouton le replie
+
+*Demande de JP (21 novembre 2026) : « une façon de redimensionner le panneau de mesure du bas central ».*
+
+Sous la vue du **Logiciel** (le banc : transport, chronogramme) et du **Labo** (les deux oscilloscopes), le panneau du
+bas a une **bordure en haut**, qui s'allume au survol : on la **glisse vers le haut** pour le grandir, la vue du dessus
+cède la place — elle garde toujours 140 px. Son bouton **▾** replie le panneau (les commandes qui sont au-dessus de son
+contenu restent, comme le transport du banc) ; **▴** le déplie ; un double clic sur la bordure fait de même ; au
+clavier, Tab atteint la bordure, ↑ ↓ changent la hauteur de 24 px, Entrée replie. Glisser presque jusqu'en bas le
+replie aussi. La hauteur et l'état sont **gardés pour chaque écran** dans le navigateur (`dw.bottom`).
+
+Usage suivi : le panneau du bas d'un outil de développement ou d'un simulateur (console, chronogrammes) — une bordure
+qui se glisse, un repli. Code : `mountBottom` de `web/js/core/panes.js` (`clampBottom`, `readBottom`, `writeBottom`,
+purs et testés : `tests/node/view_bar.test.mjs`), posé par `core/app.js` sur tout `.bottom-pane` d'un écran. **Un
+nouvel écran n'a rien à déclarer** : un `div.bottom-pane` (avec `data-bottom` : le nom sous lequel sa hauteur est
+gardée), la partie qui change de hauteur dans un `.bottom-body`, et une vue au-dessus qui cède (`flex: 1 ; min-height:
+0`). Essayé dans Chromium (une bordure glissée de 100 px grandit le chronogramme de 240 à 340 px, et les tuiles cèdent
+autant) ; pas au toucher.
 
 ## Tourner une vue : le pivot se voit, et la vue peut tourner seule
 

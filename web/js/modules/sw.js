@@ -39,8 +39,8 @@ function render(main, args) {
   const st = { step: STEPS.some((s) => s.key === args[0]) ? args[0] : null, sel: null, k: 0, file: "bms/README.md", alive: true };
   if (!st.step) st.step = nextStep(design(), design() ? cpuOf(design()) : null);
   const change = (label, fn) => store.commit(label, (p) => { p.software = p.software || []; if (!p.software[0]) return; fn(p.software[0]); });
-  const host = el("div", { class: "sw-host" }), pageHost = el("div", { class: "sw-pagehost" }), replay = el("div", { class: "lab-bar sw-bar" }), liveBox = el("div", { class: "sw-livebox" }), empty = el("div", { class: "page", hidden: true });
-  view.append(empty, pageHost, host, liveBox, replay);
+  const host = el("div", { class: "sw-host" }), pageHost = el("div", { class: "sw-pagehost" }), replay = el("div", { class: "lab-bar sw-bar" }), liveBox = el("div", { class: "sw-livebox bottom-pane", "data-bottom": "sw" }), liveHost = el("div", { class: "sw-livehost" }), empty = el("div", { class: "page", hidden: true });
+  liveBox.append(liveHost); view.append(empty, pageHost, host, liveBox, replay);      // the panel of the bottom : its height is dragged at its top edge (core/panes.js mountBottom)
   const canvas = swCanvas(host, { rank: rankOf,
     onPick: (s) => { st.sel = s; paint(); renderRight(); },
     onMove: (id, x, y) => change(`Logiciel : ${id} déplacé`, (d) => { const o = d.objects.find((q) => q.id === id); if (o) { o.x = x; o.y = y; } }),
@@ -127,7 +127,7 @@ function render(main, args) {
     if (!d) { stopBench(); clear(empty); empty.append(el("div", { class: "empty" }, el("h2", null, "Le logiciel du BMS, par objets"), el("p", null, "Chaque chose que le CPU doit gérer est une tuile posée sur la page : elle connaît ses entrées, ses sorties, leurs plages. Vous reliez les tuiles ; l'outil écrit le C — une bibliothèque, des modules, leur structure de fichiers —, le fait tourner devant vous, et dit comment le charger dans le CPU."),
       (() => { const b = btn("Partir de l'exemple", () => store.commit("Logiciel : exemple posé", (p) => { p.software = [demoDesign()]; }), { primary: true, icon: "play" }); b.dataset.swDemo = ""; return b; })())); renderLeft(); clear(right); setGuide([]); return; }
     if (st.step === "live" && !errs.length) ensureBench(); else stopBench();
-    clear(liveBox); if (st.step === "live") { if (bench) liveBox.append(bench.bar, el("div", { class: "sw-lanes-box" }, el("p", { class: "muted small" }, "Chronogramme — les dernières secondes : une ligne par décision (rouge quand elle vaut 1) et par mesure."), bench.chart)); else liveBox.append(el("p", { class: "form-error", "data-sw-live-blocked": "" }, `Le banc attend un logiciel sans erreur : ${errs[0] ? errs[0].text : ""}`)); }
+    clear(liveHost); if (st.step === "live") { if (bench) liveHost.append(bench.bar, el("div", { class: "sw-lanes-box bottom-body" }, el("p", { class: "muted small" }, "Chronogramme — les dernières secondes : une ligne par décision (rouge quand elle vaut 1) et par mesure."), bench.chart)); else liveHost.append(el("p", { class: "form-error", "data-sw-live-blocked": "" }, `Le banc attend un logiciel sans erreur : ${errs[0] ? errs[0].text : ""}`)); }
     if (!onCanvas) pageHost.replaceChildren(centre(d));
     renderLeft(); renderRight(); renderReplay(); paint(); setGuide(guide()); setStatus(ready(d, cpuOf(d)) ? "Logiciel prêt à écrire" : "Logiciel : à régler", ready(d, cpuOf(d)) ? "done" : "");
   }

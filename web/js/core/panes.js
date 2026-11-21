@@ -85,3 +85,42 @@ export function mountPanes(studio, key, store) {
   if (typeof window !== "undefined") { window.addEventListener("keydown", onKey); window.addEventListener("dw:scale", onScale); }
   apply(false);
 }
+
+/* ---------- the panel at the bottom of a centre (demande de JP : « redimensionner le panneau de mesure du bas central ») ----------
+   What a centre shows under its view — the oscilloscopes of the Labo, the chronogram of the software — takes the height one drags its top
+   edge to, and folds away with the button on that edge (also : a double click, or Enter, on the edge ; ↑ ↓ to change it from the keyboard).
+   The height is kept in the browser, one per screen (`data-bottom`). A screen has nothing to declare but its structure : a `.bottom-pane`
+   whose part that grows is its `.bottom-body` ; what is outside the body (a bar of controls) stays when the panel is folded.
+   What it follows : the bottom panel of a development tool or a simulator, a splitter one drags. */
+export const BOTTOM = { min: 90, start: 240, view: 140, key: "dw.bottom", step: 24 };
+/** A height a bottom panel may take : not under its smallest, and leaving `BOTTOM.view` to the view above it. room : the height of the centre. */
+export const clampBottom = (h, room = Infinity) => Math.round(Math.max(BOTTOM.min, Math.min(Math.max(BOTTOM.min, room - BOTTOM.view), Number.isFinite(h) && h > 0 ? h : BOTTOM.start)));
+/** What the browser kept for a screen. → { h, off } */
+export function readBottom(text, key) { let p = null; try { const all = JSON.parse(text || "{}"); p = all && typeof all === "object" && !Array.isArray(all) ? all[key] : null; } catch (e) { p = null; } p = p && typeof p === "object" ? p : {}; return { h: clampBottom(p.h), off: !!p.off }; }
+export function writeBottom(text, key, state) { let all = {}; try { const j = JSON.parse(text || "{}"); if (j && typeof j === "object" && !Array.isArray(j)) all = j; } catch (e) { all = {}; } return JSON.stringify({ ...all, [key]: { h: state.h, off: !!state.off } }); }
+
+/** Puts the edge on a bottom panel (once). The panel must be laid out in a column whose other part shrinks (flex : 1 ; min-height : 0). */
+export function mountBottom(box, store) {
+  if (!box || box.dataset.bottomOn) return; box.dataset.bottomOn = "1";
+  const key = box.dataset.bottom || "*", keep = store || (typeof localStorage !== "undefined" ? localStorage : null), get = () => { try { return keep ? keep.getItem(BOTTOM.key) : ""; } catch (e) { return ""; } };
+  let st = readBottom(get(), key);
+  const h = document.createElement("div"), b = document.createElement("button");
+  h.className = "hsplit"; h.tabIndex = 0; h.setAttribute("role", "separator"); h.setAttribute("aria-orientation", "horizontal"); h.setAttribute("aria-valuemin", String(BOTTOM.min));
+  h.setAttribute("aria-label", "Bordure du panneau du bas : glisser pour le grandir, double clic pour le replier"); b.type = "button"; b.className = "hsplit-btn"; h.append(b); box.prepend(h);
+  const room = () => { const p = box.parentElement; return p ? p.getBoundingClientRect().height : Infinity; };
+  const apply = (save) => { box.style.setProperty("--bottom-h", `${st.h}px`); box.classList.toggle("folded", st.off); b.textContent = st.off ? "▴" : "▾";
+    b.setAttribute("aria-label", st.off ? "Déplier le panneau du bas" : "Replier le panneau du bas"); b.dataset.tip = `${st.off ? "Déplier" : "Replier"} le panneau du bas — glisser la bordure pour le grandir : la hauteur est gardée pour cet écran`; h.setAttribute("aria-valuenow", String(st.off ? 0 : st.h));
+    if (save && keep) { try { keep.setItem(BOTTOM.key, writeBottom(get(), key, st)); } catch (e) { /* a private window keeps nothing */ } } };
+  const toggle = () => { st = { ...st, off: !st.off }; apply(true); };
+  b.addEventListener("click", (e) => { e.stopPropagation(); toggle(); }); b.addEventListener("pointerdown", (e) => e.stopPropagation());
+  h.addEventListener("dblclick", toggle);
+  h.addEventListener("keydown", (e) => { if (e.key === "ArrowUp" || e.key === "ArrowDown") { st = { off: false, h: clampBottom((st.off ? BOTTOM.min : st.h) + (e.key === "ArrowUp" ? BOTTOM.step : -BOTTOM.step), room()) }; apply(true); e.preventDefault(); } else if (e.key === "Enter" || e.key === " ") { toggle(); e.preventDefault(); } });
+  h.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0) return; h.setPointerCapture(e.pointerId); h.classList.add("drag"); document.documentElement.classList.add("resizing-v"); e.preventDefault();
+    const y0 = e.clientY, h0 = st.off ? 0 : st.h;      // the edge follows the pointer from where it was taken : no jump
+    const move = (ev) => { const want = h0 + (y0 - ev.clientY); st = want < BOTTOM.min / 2 ? { ...st, off: true } : { off: false, h: clampBottom(want, room()) }; apply(false); };
+    const up = () => { h.classList.remove("drag"); document.documentElement.classList.remove("resizing-v"); h.removeEventListener("pointermove", move); h.removeEventListener("pointerup", up); h.removeEventListener("pointercancel", up); apply(true); };
+    h.addEventListener("pointermove", move); h.addEventListener("pointerup", up); h.addEventListener("pointercancel", up);
+  });
+  apply(false);
+}

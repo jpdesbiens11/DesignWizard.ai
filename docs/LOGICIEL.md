@@ -100,7 +100,10 @@ anglais, une phrase). L'adresse garde l'étape (`#/sw/live`). Le **guide** est d
   quand la valeur sort de sa plage vraisemblable) ; une demande est un interrupteur ; un contact **suit sa bobine**, ou
   est **coincé ouvert**, ou **soudé fermé**. Sous la page : **Marche / Pause / Un pas / Redémarrer**, la vitesse (temps
   réel, 5 ou 20 fois plus lent), un **chronogramme** des dernières secondes ; à gauche, le journal de ce qui a basculé.
-  Usages suivis : le transport d'un simulateur, le chronogramme d'un analyseur logique.
+  Usages suivis : le transport d'un simulateur, le chronogramme d'un analyseur logique. Depuis la v0.125.0, ce panneau
+  du bas **se grandit** par sa bordure du haut et **se replie** par son bouton ▾ (le transport reste), et la page des
+  tuiles **se zoome et se déplace** : molette autour du pointeur, glisser du fond, barre « − % + · Ajuster · Loupe » en
+  haut à droite ; elle s'ouvre ajustée à la fenêtre (`docs/ERGONOMIE.md`).
 - **Code** — chaque fichier du paquet s'ouvre au centre, avec ses numéros de ligne ; le README d'abord.
 - **Chargement** (`web/js/sw/sw_load.js`) — sept gestes, du paquet au CPU, dits pour quelqu'un qui apprend ; pour le
   TMS570LS1224, ce que **le fabricant publie** sur chacun, ses mots entre guillemets, avec la page lue : la sonde sur la
@@ -138,5 +141,5 @@ La machine à états comme une tuile que l'on ouvre (précharge, marche, charge,
 (liaison RS-485 — le pilote existe, `docs/LIAISON_SERIE.md` —, CAN) et Veiller (watchdog, autotest) ; les tensions de
 cellules reçues de l'électronique de cellules par la liaison (l'exemple lit une cellule sur une voie analogique, pour
 le banc) ; les broches lues sur la carte (`sw/hwsw.js`) plutôt que tapées ; le banc du pack (`sw/plant.js`,
-`sw/bms_hw.js`) et les pannes injectées ; la couverture ; le zoom de la page (elle défile, la loupe l'agrandit) ; le
+`sw/bms_hw.js`) et les pannes injectées ; la couverture ; le
 journal de l'aller-retour IA (la réponse s'applique en une étape annulable, avec aperçu, mais n'entre pas au journal).

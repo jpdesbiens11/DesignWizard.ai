@@ -1,6 +1,7 @@
 /* DesignWizard.ai — the 3D viewport shared by every studio: the viewer plus its toolbar
    (standard views, fit, x-ray, section, exploded view, measure, picture) and a busy veil. */
 
+import { loupeButton } from "./loupe.js";
 import { el, btn, icon, download, toast, copyText, modal } from "./dom.js";
 import { busyVeil } from "./busy.js";
 import { Viewer } from "./viewer.js";
@@ -67,7 +68,7 @@ export function createViewport(host, opts = {}) {
     explode.addEventListener("input", () => viewer.setExplode(+explode.value * (opts.explodeScale ? opts.explodeScale() : 60)));
     group(icon("explode"), explode);
   }
-  group(vbtn("", "Enregistrer une image PNG de la vue", () => download(`${opts.name ? opts.name() : "vue"}.png`, dataUrlBlob(viewer.snapshot())), "camera"));
+  group(vbtn("", "Enregistrer une image PNG de la vue", () => download(`${opts.name ? opts.name() : "vue"}.png`, dataUrlBlob(viewer.snapshot())), "camera"), loupeButton());      // the magnifier, beside what the view does — no longer in the top bar
 
   function onKey(e) {
     const k = e.key.toLowerCase();

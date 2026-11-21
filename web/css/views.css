@@ -1,0 +1,11 @@
+/* DesignWizard.ai — what every view at the centre of a page shares : the bar of its zoom and the panel at its bottom. */
+/* the bar of a view that zooms (core/view_bar.js) : − % + · Ajuster · Loupe — floating in the corner of a board or a page of tiles */
+.view-bar { gap: .1rem; } .view-bar .view-sep { width: 1px; align-self: stretch; margin: .35rem .2rem; background: color-mix(in srgb, var(--graphite) 25%, transparent); } .view-bar .loupe-btn { width: 1.9rem; height: 1.9rem; }
+.view-float { position: absolute; top: .5rem; right: .6rem; z-index: 6; }
+/* the panel at the bottom of a centre (core/panes.js mountBottom) : its top edge is dragged, its button folds it */
+.bottom-pane { position: relative; flex: none; } .bottom-pane .bottom-body { height: var(--bottom-h, 240px); overflow: auto; } .bottom-pane.folded .bottom-body { display: none; }
+.hsplit { position: absolute; left: 0; right: 0; top: -6px; height: 11px; z-index: 6; cursor: row-resize; touch-action: none; outline: none; }
+.hsplit::after { content: ""; position: absolute; left: 0; right: 0; top: 4px; height: 3px; border-radius: 2px; background: transparent; transition: background .15s; pointer-events: none; }
+.hsplit:hover::after, .hsplit.drag::after, .hsplit:focus-visible::after { background: var(--acc); }
+.hsplit-btn { position: absolute; left: 50%; top: -6px; translate: -50% 0; width: 46px; height: 20px; padding: 0; border: 1.4px solid var(--graphite); border-radius: 8px; background: var(--surface); color: var(--graphite); font: 700 .8rem/1 var(--font); cursor: pointer; opacity: .85; }
+.hsplit:hover .hsplit-btn, .hsplit-btn:focus-visible, .bottom-pane.folded .hsplit-btn { opacity: 1; } .hsplit-btn:hover, .hsplit-btn:focus-visible { background: var(--acc); color: var(--on-acc); } html.resizing-v, html.resizing-v * { cursor: row-resize !important; user-select: none; }

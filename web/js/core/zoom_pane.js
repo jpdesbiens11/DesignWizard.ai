@@ -2,8 +2,11 @@
    the centre and stayed so : a note in small type could not be read without the PDF. A centre that holds sheets now zooms : Ctrl +
    wheel (or a pinch) about the pointer, the buttons − and + of a small bar, a click on the percentage to fit the width again ; once
    larger than the centre, the sheet is dragged, or scrolled. The zoom is kept for the visit of the screen.
-   A 3D view and the view of a board already zoom with the wheel ; the magnifier (core/loupe.js) works on all of them.
+   A 3D view and the view of a board already zoom with the wheel ; the magnifier (core/loupe.js) works on all of them — its button is in the
+   bar of each view (core/view_bar.js : − % + · Ajuster · Loupe), the same for a sheet.
    The first half is pure ; zoomPane() touches the page. */
+
+import { viewBar } from "./view_bar.js";
 
 export const ZOOM = { min: 0.5, max: 8, steps: [0.5, 0.67, 0.8, 1, 1.25, 1.5, 2, 3, 4, 6, 8] };      // 1 : the sheet fitted to the width of the centre
 export const clampZoom = (z) => Math.min(ZOOM.max, Math.max(ZOOM.min, Number.isFinite(z) ? z : 1));
@@ -22,26 +25,16 @@ export const scrollBack = (rect, p, at) => ({ dx: rect.left + p.u * rect.width -
 export const zoomText = (z) => `${Math.round(clampZoom(z) * 100)} %`;
 
 /* ---------- the page ---------- */
-const NS = "http://www.w3.org/2000/svg";
-function glyph(d) {
-  const s = document.createElementNS(NS, "svg"), p = document.createElementNS(NS, "path");
-  s.setAttribute("viewBox", "0 0 16 16"); s.setAttribute("width", "15"); s.setAttribute("height", "15"); s.setAttribute("aria-hidden", "true");
-  p.setAttribute("d", d); p.setAttribute("fill", "none"); p.setAttribute("stroke", "currentColor"); p.setAttribute("stroke-width", "1.8"); p.setAttribute("stroke-linecap", "round"); s.append(p);
-  return s;
-}
 
 /** Makes the sheets of a centre zoom. host : what scrolls (the centre) ; o : { items : the selector of a sheet (« .sheet-view ») }.
     → { get(), set(z, about?), fit() } ; the bar puts itself back each time the centre is drawn anew. */
 export function zoomPane(host, o = {}) {
   const items = o.items || ".sheet-view";
   let z = 1;
-  const bar = document.createElement("div"); bar.className = "zoom-bar"; bar.setAttribute("role", "group"); bar.setAttribute("aria-label", "Zoom de la feuille");
-  const mk = (label, tip, d, run) => { const b = document.createElement("button"); b.type = "button"; b.className = "icon-btn"; b.setAttribute("aria-label", label); b.setAttribute("data-tip", tip); b.append(glyph(d)); b.addEventListener("click", run); return b; };
-  const pct = document.createElement("button"); pct.type = "button"; pct.className = "zoom-pct"; pct.setAttribute("data-tip", "Ajuster à la largeur (100 %). Ctrl + molette : zoom autour du pointeur ; glisser : déplacer la feuille");
-  const pill = document.createElement("div"); pill.className = "zoom-pill";
-  pill.append(mk("Réduire", "Réduire", "M3.5 8h9", () => set(zoomStep(z, -1))), pct, mk("Agrandir", "Agrandir", "M3.5 8h9M8 3.5v9", () => set(zoomStep(z, 1))));
-  bar.append(pill); pct.addEventListener("click", () => fit());
-  const paint = () => { host.style.setProperty("--zoom", String(z)); host.classList.toggle("zoomed", z > 1.001); host.classList.toggle("zoomed-out", z < 0.999); pct.textContent = zoomText(z); pct.setAttribute("aria-label", `Zoom ${zoomText(z)} — ajuster à la largeur`); };
+  const bar = document.createElement("div"); bar.className = "zoom-bar";
+  const vb = viewBar({ label: "la feuille", zoomOut: () => set(zoomStep(z, -1)), zoomIn: () => set(zoomStep(z, 1)), fit: () => fit(), text: () => zoomText(z), fitTip: "Ajuster à la largeur (100 %). Ctrl + molette : zoom autour du pointeur ; glisser : déplacer la feuille" });
+  bar.append(vb.node);
+  const paint = () => { host.style.setProperty("--zoom", String(z)); host.classList.toggle("zoomed", z > 1.001); host.classList.toggle("zoomed-out", z < 0.999); vb.update(); };
   /* about : { x, y } on the page — the point that stays where it is ; the middle of the centre without it. The sheet under that
      point is followed : what is between the sheets (their titles, the margins) does not zoom */
   function set(next, about) {

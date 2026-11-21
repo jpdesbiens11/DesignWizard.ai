@@ -3,6 +3,7 @@
    designer zoom, pan, pick a net, drag a zone or a part. Board millimetres, Y up. */
 
 import { el, svg } from "../core/dom.js";
+import { viewBar } from "../core/view_bar.js";
 import { boardProse } from "../pcba/board_units.js";
 
 export const LAYER_STYLE = { bottom: ["#2f6fc8", 0.8], in2: ["#3fa36b", 0.55], in1: ["#c89b2f", 0.55], top: ["#c8402f", 0.85], mask_bottom: ["#1f7a4d", 0.35], mask_top: ["#1f7a4d", 0.35], paste_bottom: ["#8a8f98", 0.8], paste_top: ["#8a8f98", 0.8],
@@ -39,10 +40,14 @@ export function boardView(host) {
   host.classList.add("pcba-view");
   const root = svg("svg", { class: "pv-svg", preserveAspectRatio: "xMidYMid meet" }), world = svg("g", { transform: "scale(1,-1)" });
   root.append(world); host.append(root);
-  let scene = null, vb = null, drag = null;
-  const setVb = () => root.setAttribute("viewBox", `${vb[0]} ${vb[1]} ${vb[2]} ${vb[3]}`);
+  let scene = null, vb = null, drag = null, vbFit = null;
+  /* the bar of the view (core/view_bar.js) : − % + , « Ajuster », the magnifier ; 100 % is the board fitted in the window */
+  const zoomBy = (k) => { if (!vb) return; const cx = vb[0] + vb[2] / 2, cy = vb[1] + vb[3] / 2, w = Math.min(600, Math.max(4, vb[2] * k)), s = w / vb[2]; vb = [cx - w / 2, cy - (vb[3] * s) / 2, w, vb[3] * s]; setVb(); };
+  const bar = viewBar({ label: "la carte", zoomOut: () => zoomBy(1.25), zoomIn: () => zoomBy(1 / 1.25), fit: () => fit(), text: () => (vb && vbFit ? `${Math.round((100 * vbFit[2]) / vb[2])} %` : "100 %"), fitTip: "Ajuster à la fenêtre : toute la carte se voit" });
+  bar.node.classList.add("view-float"); host.append(bar.node);
+  const setVb = () => { root.setAttribute("viewBox", `${vb[0]} ${vb[1]} ${vb[2]} ${vb[3]}`); bar.update(); };
   const toBoard = (e) => { const r = root.getBoundingClientRect(), k = Math.max(vb[2] / r.width, vb[3] / r.height), ox = (r.width * k - vb[2]) / 2, oy = (r.height * k - vb[3]) / 2; return [vb[0] - ox + (e.clientX - r.left) * k, -(vb[1] - oy + (e.clientY - r.top) * k)]; };
-  const fit = () => { if (!scene) return; const b = scene.R.bbox, m = 4; vb = [b[0] - m, -b[3] - m, b[2] - b[0] + 2 * m, b[3] - b[1] + 2 * m]; setVb(); };
+  const fit = () => { if (!scene) return; const b = scene.R.bbox, m = 4; vb = [b[0] - m, -b[3] - m, b[2] - b[0] + 2 * m, b[3] - b[1] + 2 * m]; vbFit = [...vb]; setVb(); };
   root.addEventListener("wheel", (e) => { if (!vb) return; e.preventDefault(); const p = toBoard(e), k = e.deltaY > 0 ? 1.2 : 1 / 1.2, w = Math.min(600, Math.max(4, vb[2] * k)), s = w / vb[2]; vb = [p[0] - (p[0] - vb[0]) * s, -p[1] - (-p[1] - vb[1]) * s, w, vb[3] * s]; setVb(); }, { passive: false });
   root.addEventListener("pointerdown", (e) => {
     if (!scene) return;
@@ -100,7 +105,7 @@ export function boardView(host) {
   const pen = svg("g", { class: "pv-pen" });
   const sketch = (items) => { while (pen.firstChild) pen.removeChild(pen.firstChild); for (const it of items || []) pen.append(it.pts ? svg("polyline", { points: pts(it.pts), fill: "none", stroke: it.color, "stroke-width": it.w, "stroke-linecap": "round", "stroke-linejoin": "round", opacity: 0.85 }) : svg("circle", { cx: it.at[0], cy: it.at[1], r: it.d / 2, fill: it.color, opacity: 0.85 })); };
   const focus = (at, span = 24) => { if (!at) return; vb = [at[0] - span / 2, -at[1] - span / 2, span, span]; setVb(); };
-  return { show, fit, focus, sketch, destroy: () => { root.remove(); host.classList.remove("pcba-view"); }, node: root };
+  return { show, fit, focus, sketch, destroy: () => { root.remove(); bar.node.remove(); host.classList.remove("pcba-view"); }, node: root };
 }
 
 /** The layer list with its eyes. onChange(Set). */

@@ -7,10 +7,14 @@
    What enters and what leaves is SAID on the tile (demande de JP : « ce n'est pas clair quels sont les entrées et les sorties des blocs ») : a
    line « ENTRÉES … SORTIES » under its head, an input drawn as an arrowhead that points INTO the tile, an output as a dot that leaves it,
    each with its unit ; the number in the head is the rank of the object in the step. values() refreshes what the outputs are worth without
-   redrawing — a live simulation calls it many times a second. */
+   redrawing — a live simulation calls it many times a second.
+   The page PANS and ZOOMS (demande de JP : « pouvoir redimensionner la vue des blocs aussi, pan, zoom, ajuster à la fenêtre, loupe ») as the
+   board views of the tool do : the wheel zooms about the pointer, a drag of the background pans, and the bar of the view (core/view_bar.js)
+   gives − % + , « Ajuster » and the magnifier. The view first fits the tiles in the window, and fits them again while it was not moved. */
 
 import { KINDS, NATURES, portsOf } from "../sw/sw_objects.js";
 import { liveWires, split } from "../sw/sw_design.js";
+import { viewBar, fitView, zoomView } from "../core/view_bar.js";
 
 const NS = "http://www.w3.org/2000/svg", W = 190, HEAD = 26, CAP = 15, ROW = 20;
 const S = (tag, attrs = {}, ...kids) => { const n = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs || {})) { if (v === null || v === undefined || v === false) continue; if (k.startsWith("on")) n.addEventListener(k.slice(2).toLowerCase(), v); else n.setAttribute(k, v); } for (const c of kids.flat()) if (c !== null && c !== undefined) n.append(c); return n; };
@@ -24,12 +28,29 @@ const show = (v, unit) => (v === undefined ? "" : unit === "0/1" ? String(v) : `
     → { draw(design, R, k, sel), values(get : ref → value), destroy() } */
 export function swCanvas(host, o = {}) {
   const svg = S("svg", { class: "sw-canvas", role: "group", "aria-label": "Les objets du logiciel et leurs fils" }); host.append(svg);
-  let pending = null, last = null;
+  let pending = null, last = null, cb = { w: 900, h: 520 };
+  /* the view : z pixels per unit of the page, (x, y) the corner shown ; moved : the user zoomed or panned — no refit on a resize */
+  const vw = { x: 0, y: 0, z: 1, moved: false, fitted: false }, ZMIN = 0.15, ZMAX = 4, size = () => [Math.max(1, host.clientWidth), Math.max(1, host.clientHeight)];
+  const apply = () => { const [W, H] = size(); svg.setAttribute("viewBox", `${vw.x} ${vw.y} ${W / vw.z} ${H / vw.z}`); svg.style.width = `${W}px`; svg.style.height = `${H}px`; bar.update(); };
+  const fit = (user) => { const [W, H] = size(); Object.assign(vw, fitView(W, H, cb, 24, 1.4, ZMIN), { moved: false, fitted: !user ? vw.fitted : true }); apply(); };
+  const zoomAt = (k, px, py) => { const [W, H] = size(); Object.assign(vw, zoomView(vw, k, px ?? W / 2, py ?? H / 2, ZMIN, ZMAX), { moved: true }); apply(); };
+  const bar = viewBar({ label: "les tuiles du logiciel", zoomOut: () => zoomAt(1 / 1.25), zoomIn: () => zoomAt(1.25), fit: () => fit(true), actual: () => zoomAt(1 / vw.z), text: () => `${Math.round(vw.z * 100)} %`, fitTip: "Ajuster à la fenêtre : toutes les tuiles se voient" });
+  bar.node.classList.add("sw-viewbar"); host.append(bar.node);
+  svg.addEventListener("wheel", (e) => { e.preventDefault(); const r = host.getBoundingClientRect(); zoomAt(Math.exp(-Math.max(-240, Math.min(240, e.deltaY)) * 0.0022), e.clientX - r.left, e.clientY - r.top); }, { passive: false });
+  /* a drag of the background pans ; a click on it (no move) chooses nothing */
+  let pan = null;
+  svg.addEventListener("pointerdown", (e) => { if (e.button !== 0 || !(e.target === svg || (e.target.classList && e.target.classList.contains("sw-back")))) return; pan = { x: e.clientX, y: e.clientY, vx: vw.x, vy: vw.y, on: false, id: e.pointerId }; });
+  svg.addEventListener("pointermove", (e) => { if (!pan || e.pointerId !== pan.id) return; const dx = e.clientX - pan.x, dy = e.clientY - pan.y; if (!pan.on) { if (Math.hypot(dx, dy) < 4) return; pan.on = true; host.classList.add("panning"); try { svg.setPointerCapture(e.pointerId); } catch (err) { /* the pointer is gone */ } }
+    vw.x = pan.vx - dx / vw.z; vw.y = pan.vy - dy / vw.z; vw.moved = true; apply(); });
+  const drop = (e) => { if (!pan || (e && e.pointerId !== pan.id)) return; const moved = pan.on; pan = null; host.classList.remove("panning"); if (!moved) { pending = null; if (o.onPick) o.onPick(null); } };
+  svg.addEventListener("pointerup", drop); svg.addEventListener("pointercancel", drop);
+  const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => { if (!vw.moved) fit(false); else apply(); }) : null; if (ro) ro.observe(host);
   const onKey = (e) => { if (e.key === "Escape" && pending) { pending = null; if (last) draw(...last); } }; svg.addEventListener("keydown", onKey);
   function draw(d, R, k, sel) {
     last = [d, R, k, sel]; svg.replaceChildren(); const objs = (d.objects || []).filter((x) => KINDS[x.kind]), O = Object.fromEntries(objs.map((x) => [x.id, x])), wires = liveWires({ ...d, objects: objs.map((x) => ({ ...x, off: false })) });
-    const boxes = objs.map(tileBox), wx = Math.max(900, ...boxes.map((b) => b.x + b.w + 60)), hy = Math.max(520, ...boxes.map((b) => b.y + b.h + 40)); svg.setAttribute("viewBox", `0 0 ${wx} ${hy}`); svg.style.width = `${wx}px`; svg.style.height = `${hy}px`;      // at its true size : a tile one can read ; the centre scrolls, the magnifier of the top bar enlarges
-    svg.append(S("rect", { x: 0, y: 0, width: wx, height: hy, class: "sw-back", onClick: () => { pending = null; if (o.onPick) o.onPick(null); } }));
+    const boxes = objs.map(tileBox), wx = Math.max(400, ...boxes.map((b) => b.x + b.w + 60)), hy = Math.max(300, ...boxes.map((b) => b.y + b.h + 40)); cb = { w: wx, h: hy };
+    if (!vw.fitted && host.clientWidth > 1) { fit(false); vw.fitted = true; } else apply();      // the first time : the whole page in the window
+    svg.append(S("rect", { x: -5000, y: -5000, width: wx + 10000, height: hy + 10000, class: "sw-back" }));
     const val = (ref) => (R && R.ports[ref] ? R.ports[ref][Math.min(k || 0, R.ports[ref].length - 1)] : undefined), rank = o.rank ? o.rank(d) : {};
     /* the wires first : the tiles are drawn over their ends */
     for (const w of wires) { const [a, ap] = split(w.from), [b, bp] = split(w.to), p = portAt(O[a], "out", ap), q = portAt(O[b], "in", bp), dx = Math.max(40, Math.abs(q.x - p.x) / 2), hot = val(w.from) === 1 && portsOf(O[a]).out.find((x) => x.key === ap).unit === "0/1", off = O[a].off || O[b].off;
@@ -62,5 +83,5 @@ export function swCanvas(host, o = {}) {
     for (const w of svg.querySelectorAll(".sw-wire[data-bool]")) w.classList.toggle("hot", get(w.getAttribute("data-from")) === 1);
     for (const p of svg.querySelectorAll(".sw-dot[data-bool]")) p.classList.toggle("hot", get(p.getAttribute("data-port")) === 1);
   }
-  return { draw, values, destroy() { svg.removeEventListener("keydown", onKey); svg.remove(); }, get pending() { return pending; } };
+  return { draw, values, fit: () => fit(true), get zoom() { return vw.z; }, destroy() { svg.removeEventListener("keydown", onKey); if (ro) ro.disconnect(); svg.remove(); bar.node.remove(); }, get pending() { return pending; } };
 }
