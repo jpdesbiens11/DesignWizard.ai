@@ -74,7 +74,7 @@ test("wiring : the Simulation reads its case from the project, writes each chang
   assert.match(f, /takeCase\(st, caseOf\(store\.project, id\)\); loadGeometry\(\);/, "and when another part is chosen");
   assert.match(f, /const saveCase = \(\) => \{ if \(alive && st\.target\) store\.commit\(`Cas de charge : \$\{st\.target\.id\}`, \(x\) => \{ withCase\(x, st\.target\.id, st\); \}\); \};/);
   assert.match(f, /const outdate = \(\) => \{ if \(last\) last\.stale = true; st\.view = "model"; saveCase\(\); \};/, "whatever changes the case goes through here");
-  assert.match(f, /store\.on\("change", \(e\) => \{ if \(!alive \|\| !e \|\| !e\.undo \|\| !geo\) return;/); assert.match(f, /return \(\) => \{ alive = false; unsee\(\);/);
+  assert.match(f, /store\.on\("change", \(e\) => \{ if \(!alive \|\| !e \|\| !\(e\.undo \|\| e\.external\) \|\| !geo\) return;/); assert.match(f, /return \(\) => \{ alive = false; unsee\(\);/);
   assert.match(f, /if \(!\(st\.fixed\.length \|\| st\.loads\.length \|\| st\.power\.length \|\| st\.fixedT\.length\)/, "a first case is invented only when nothing is set");
   assert.equal((r.match(/o\.saveCase\(\); o\.repaint\(\);/g) || []).length, 2, "the safety factor aimed at is kept too");
   assert.doesNotMatch(read("web/js/analysis/fea/case_store.js"), /from "/, "the store of the cases imports nothing");

@@ -81,7 +81,7 @@ test("the guide : no rule of the project is a tip, an empty rule is to enter, wh
 test("wiring : a screen in the menu Produit, a step up, the dialogue IA leads here, the screen is a studio with a map that zooms", () => {
   assert.match(read("web/js/core/app.js"), /keys: \["dfx", "review", "report", "history", "eco"\]/); assert.match(read("web/js/core/app.js"), /go\("#\/eco"\)/);
   assert.match(read("web/js/core/stairs.js"), /case "eco": return \{ hash: "#\/review"/); assert.match(read("web/js/main.js"), /import "\.\/modules\/eco\.js";/);
-  assert.match(read("web/js/modules/ai_loop.js"), /Tout le contexte \(\.zip\)/); assert.match(read("web/js/modules/ai_loop.js"), /ecoKey: t\.key/);
+  assert.match(read("web/js/modules/ai_loop.js"), /Tout le contexte \(\.zip\)/); assert.match(read("web/js/modules/ai_loop.js"), /ecoKey: t\.host \|\| t\.key/);
   const s = read("web/js/modules/eco.js"); assert.match(s, /class: "studio" \}, left, view, right/); assert.match(s, /stampText\(x\.name, x\.text\)/, "every file carries the note of the platform");
   assert.match(read("web/js/modules/eco_map.js"), /svgView\(host/); assert.match(read("web/js/modules/history_tree.js"), /svgView\(host/, "the tree of the history pans and zooms the same way");
   assert.match(read("web/index.html"), /href="css\/eco\.css"/);
