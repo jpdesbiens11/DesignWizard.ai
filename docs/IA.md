@@ -120,8 +120,12 @@ menu : une réponse peut **modifier et créer**.
 - **Le journal revient à avant une réponse**, même après d'autres changements (`project.aiJournal`, `revertEntry`) :
   ce qu'elle a créé est retiré, ce qu'elle a modifié est remis comme avant — en une étape annulable. Une pièce créée
   qu'un autre assemblage a montée depuis est **gardée**, et c'est dit. Le journal garde les vingt dernières réponses.
-- Pas encore : les cartes (PCBA), les dessins et les cas de simulation dans une même réponse — ils gardent leur
-  aller-retour propre, par le bouton « IA » de leur écran ; c'est la suite du point 2 de la feuille de route.
+- **Cartes et feuilles de dessin dans la même réponse** (v0.144.0) : une réponse peut porter, à côté des pièces et des
+  assemblages, des **cartes** (`board/1`, rangées « Électronique ▸ PCBA » ; une carte dont un bloc n'est pas dans la
+  bibliothèque est écartée, et c'est dit) et des **feuilles de dessin** (`drawing/1`, rangées « Mécanique ▸ Dessins »),
+  relues comme la boucle commune les relit — une feuille peut appartenir à une pièce que la même réponse crée :
+  l'application pose les pièces d'abord, puis les assemblages, les cartes et les feuilles. Le journal garde tout, le
+  cartouche du projet compris. Les cas de simulation gardent leur aller-retour par le bouton « IA » de leur écran.
 - Essayé dans Chromium (23 vérifications : consigne, dossier, réponse en fichier et en .zip, aperçu, application,
   Ctrl + Z, journal, texte collé, réponse illisible). Aucune vraie réponse d'assistant n'a été essayée ici : les
   réponses d'essai sont faites à partir du projet lui-même.
@@ -142,7 +146,10 @@ faire des allers-retours avec l'IA… de pouvoir revenir en arrière si l'IA n'a
   l'étape même qui l'applique** (`journalChange`, un crochet du magasin). Le journal se lit dans la boîte de
   dialogue de la boucle et sur la page « Créer avec l'IA » ; « Revenir à avant » retire ce qu'une réponse a créé,
   remet ce qu'elle a modifié **ou retiré**, même après d'autres changements. Le journal ne part jamais chez un
-  assistant.
+  assistant. **Les écrans qui ont leur propre aller-retour** — circuit flexible, circuit ramifié, étiquettes, séance
+  photo, Labo — y entrent aussi (v0.144.0, `applyAnswer` de `web/js/modules/ai_loop.js`) : même marque « Brouillon IA »,
+  même entrée au journal, dans l'étape même. Les révisions et l'équipe n'importent pas de réponse d'IA : une révision
+  gelée ne change plus, un miroir d'équipe vient d'une personne.
 - **Dessins, Simulation, Isolation : ce que l'écran montre, pas la pièce derrière** (v0.141.0, `web/js/core/ai_more.js`,
   pur et testé). Chacun part comme un petit document de son genre, avec le numéro de ce à quoi il appartient :
   - **la feuille de dessin** (`drawing/1`) d'une pièce ou d'un assemblage : le cartouche du projet (dessiné par, vérifié,

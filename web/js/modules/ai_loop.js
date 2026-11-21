@@ -24,6 +24,10 @@ store.hooks.push((p) => { if (applying) markDrafts(p, applying); });
 /* …and enters the journal of the AI answers, inside that same step : « Revenir à avant » can then undo this answer even after other changes (core/ai_door.js) */
 let journaling = null;
 store.hooks.push((p) => { if (journaling) journalChange(journaling.before, p, { ask: journaling.ask }); });
+/** An answer applied by a screen that has its own round trip (flex, labels, photo, Labo…) : the same marks as the common loop — « Brouillon IA » on what
+    it touches, and an entry in the journal, which « Revenir à avant » undoes even after other changes — inside the very step that applies it.
+    own : the keys of the artefacts (« part:<id> », « assembly:<id> », « board:<id> ») ; ask : what the entry says ; fn : the change, ONE step of the store. */
+export function applyAnswer(own, ask, fn) { applying = own; journaling = { before: snapshotLists(store.project), ask: ask || "" }; try { return fn(); } finally { applying = null; journaling = null; } }
 /** The whole project, without its review ledger : the notes travel in the request, the ledger stays here. */
 const shed = (d) => { delete d.review; delete d.mvp; delete d.team; delete d.talk; delete d.plm; delete d.aiJournal; delete d.history; return d; };      // the ledgers — review states, MVP iterations — stay here
 

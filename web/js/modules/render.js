@@ -15,6 +15,7 @@ import { rasterLabel } from "../core/label_raster.js";
 import { labelPatch } from "../core/labels.js";
 import { toDwiz } from "../core/dwiz.js";
 import { aiRead, aiDiff } from "../core/ai_loop.js";
+import { applyAnswer } from "./ai_loop.js";
 import { guideBox, nudge } from "../core/guide.js";
 import { busyVeil, underVeil } from "../core/busy.js";
 import { setGroups, setColors, SETS } from "../core/photo_sets.js";
@@ -103,7 +104,7 @@ function render(main, args) {
   }
   function reimport() {
     const area = el("textarea", { rows: 9, placeholder: "Collez la réponse de l'assistant : elle contient l'assemblage dans un bloc ```dwiz." }), out = el("div"); let next = null;
-    const ok = btn("Appliquer ces changements", () => { if (!next) return; st.free = null; store.updateAssembly(id, (a) => { a.render = next; }, "Séance photo mise à jour par l'IA"); m.close(); toast("Séance photo réécrite depuis la réponse de l'IA.", "success"); }, { primary: true, icon: "check", disabled: true });
+    const ok = btn("Appliquer ces changements", () => { if (!next) return; st.free = null; applyAnswer([`assembly:${id}`], `Séance photo de ${id} réimportée depuis une IA`, () => store.updateAssembly(id, (a) => { a.render = next; }, "Séance photo mise à jour par l'IA")); m.close(); toast("Séance photo réécrite depuis la réponse de l'IA.", "success"); }, { primary: true, icon: "check", disabled: true });
     area.addEventListener("input", () => { next = null; ok.disabled = true; out.replaceChildren(); if (!area.value.trim()) return;
       try { const doc = aiRead(area.value); if (!doc || !doc.render) throw new Error("La réponse ne contient pas de bloc « render »."); const d = tidyRender(doc.render), diff = aiDiff(tidyRender(R()), d);
         out.append(el("p", null, diff.length ? `${diff.length} changement(s) :` : "Aucun changement dans la séance photo."), el("ul", { class: "decisions" }, diff.slice(0, 30).map((x) => el("li", null, `${x.path} — ${x.text}`))), guideBox(renderGuide({ render: d }, [...new Set(asm().instances.map((i) => i.part))]).filter((x) => x.level !== "tip"), { title: "Ce que cette réponse laisse à régler" }) || "");

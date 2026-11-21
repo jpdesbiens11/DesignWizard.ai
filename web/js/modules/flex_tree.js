@@ -13,6 +13,7 @@ import { createViewport, showBuilt } from "../core/viewport.js";
 import { flatToggle } from "./flat_view.js";
 import { toDwiz } from "../core/dwiz.js";
 import { aiRead, aiDiff } from "../core/ai_loop.js";
+import { applyAnswer } from "./ai_loop.js";
 import { guideBox, needField, nudge } from "../core/guide.js";
 import { WELD_PROCESSES } from "../cad/interfaces_elec.js";
 import { BEND_RATIO } from "../core/flex.js";
@@ -120,7 +121,7 @@ export function renderTree(ctx) {
   /* the round trip with an AI : what comes back is shown before it is applied, in one undoable step */
   function reimport() {
     const area = el("textarea", { rows: 9, placeholder: "Collez la réponse de l'assistant : elle contient la pièce dans un bloc ```dwiz." }), out = el("div"); let next = null;
-    const ok = btn("Appliquer ces changements", () => { if (!next) return; store.updatePart(id, (x) => rewrite(x, next), `${id} : circuit mis à jour par l'IA`); m.close(); toast("Circuit réécrit depuis la définition revenue de l'IA.", "success"); }, { primary: true, icon: "check", disabled: true });
+    const ok = btn("Appliquer ces changements", () => { if (!next) return; applyAnswer([`part:${id}`], `Circuit ramifié ${id} réimporté depuis une IA`, () => store.updatePart(id, (x) => rewrite(x, next), `${id} : circuit mis à jour par l'IA`)); m.close(); toast("Circuit réécrit depuis la définition revenue de l'IA.", "success"); }, { primary: true, icon: "check", disabled: true });
     area.addEventListener("input", () => { next = null; ok.disabled = true; out.replaceChildren(); if (!area.value.trim()) return;
       try { const doc = aiRead(area.value); if (!doc || !isTree(doc.flex)) throw new Error("La réponse ne contient pas de circuit ramifié : un bloc « flex » avec son « core » et ses lignes « branch »."); const d = tidyTree(doc.flex), diff = aiDiff(def(), d);
         out.append(el("p", null, diff.length ? `${diff.length} changement(s) :` : "Aucun changement dans la définition."), el("ul", { class: "decisions" }, diff.slice(0, 30).map((x) => el("li", null, `${x.path} — ${x.text}`))), guideBox(treeGuide(d), { title: "Ce que le circuit revenu demande" }) || el("p", { class: "guide-ok small" }, icon("check"), " Le circuit revenu est dans les règles."));

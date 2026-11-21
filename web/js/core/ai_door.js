@@ -16,6 +16,8 @@ import { aiDiff } from "./ai_loop.js";
 import { natureOf } from "./shop_levels.js";
 import { validateSpec } from "../cad/build.js";
 import { LANGUAGE_REFERENCE } from "../cad/language_doc.js";
+import { BLOCKS } from "../pcba/blocks.js";
+import { moreKey, moreCheck, moreApply } from "./ai_more.js";
 
 /** What one may ask for. */
 export const SCOPES = [
@@ -46,11 +48,14 @@ export function doorPrompt(project, o = {}) {
   L.push("", "RÉPONSE ATTENDUE — à la fin de l'entrevue, UN SEUL objet JSON dans un bloc de code, puis la liste courte de ce qui reste à vérifier par un humain :", "```json",
     S.key === "assembly" ? `{ "parts": [ { …pièce complète… }, … ],\n  "assemblies": [ { "dw": "assembly/1", "id": "ASM-…", "name": "…", "instances": [ { "id": "i1", "part": "<id d'une pièce>", "fixed": true }, { "id": "i2", "part": "…" } ] } ] }`
       : S.key === "parts" ? `{ "parts": [ { …pièce complète… }, { …pièce complète… } ] }` : `{ "parts": [ { …pièce complète… } ] }`, "```",
+    "", "Si je t'ai aussi confié une carte électronique (« dw »: \"board/1\") ou la feuille d'un dessin (« dw »: \"drawing/1\"), renvoie-la ENTIÈRE, avec son \"id\", dans \"boards\" ou \"drawings\" du même objet : la plateforme les relit comme les pièces.",
     "", "LANGAGE D'UNE PIÈCE (à respecter à la lettre) :", "", LANGUAGE_REFERENCE);
   return L.join("\n");
 }
 
 const isAsm = (o) => String(o.dw || "").startsWith("assembly/") || (Array.isArray(o.instances) && !o.features);
+const isBoard = (o) => String(o.dw || "").startsWith("board/") || (Array.isArray(o.blocks) && Array.isArray(o.nets) && !!o.board);      // a PCBA (pcba/model.js)
+const isSheet = (o) => String(o.dw || "") === "drawing/1";      // the sheet of a drawing (core/ai_more.js)
 const isPart = (o) => String(o.dw || "").startsWith("part/") || !!(o.features || o.stock || o.extrusion || o.pcb || o.busbar || o.flex || o.folded || o.process);
 function parseText(text) {
   const t = String(text || ""), dw = findDwiz(t);
@@ -59,15 +64,17 @@ function parseText(text) {
   for (const raw of [...fenced, t]) { try { const v = JSON.parse(raw.trim()); if (v && typeof v === "object") return [v]; } catch { /* the next candidate */ } }
   throw new Error("ni .dwiz ni JSON : la réponse doit contenir l'objet complet, dans un bloc de code");
 }
-/** What an answer holds. texts : [{ name, text }] (a pasted text, or the files of a folder). → { docs: [{ kind: "part" | "assembly", doc, from }], errors: [{ from, message }] } */
+/** What an answer holds. texts : [{ name, text }] (a pasted text, or the files of a folder). → { docs: [{ kind: "part" | "assembly" | "board" | "drawing", doc, from }], errors: [{ from, message }] } */
 export function readAnswer(texts) {
   const docs = [], errors = [];
   const take = (o, from) => {
     if (Array.isArray(o)) { for (const x of o) take(x, from); return; }
     if (!o || typeof o !== "object") return;
-    if (Array.isArray(o.parts) || Array.isArray(o.assemblies)) { for (const p of o.parts || []) take(p, from); for (const a of o.assemblies || []) take(a, from); return; }
+    if (isSheet(o)) { docs.push({ kind: "drawing", doc: o, from }); return; }
+    if (isBoard(o)) { docs.push({ kind: "board", doc: o, from }); return; }      // before the lists : a board has « parts » of its own — its components
+    if (Array.isArray(o.parts) || Array.isArray(o.assemblies) || Array.isArray(o.boards) || Array.isArray(o.drawings)) { for (const k of ["parts", "assemblies", "boards", "drawings"]) for (const x of o[k] || []) take(x, from); return; }
     if (isAsm(o)) docs.push({ kind: "assembly", doc: o, from }); else if (isPart(o)) docs.push({ kind: "part", doc: o, from });
-    else errors.push({ from, message: `« ${o.id || o.name || "objet"} » : ni une pièce ni un assemblage` });
+    else errors.push({ from, message: `« ${o.id || o.name || "objet"} » : ni une pièce, ni un assemblage, ni une carte, ni une feuille de dessin` });
   };
   for (const f of texts || []) { if (!f || !String(f.text || "").trim()) continue; try { take(parseText(f.text), f.name || "réponse"); } catch (e) { errors.push({ from: f.name || "réponse", message: e.message }); } }
   return { docs, errors };
@@ -100,6 +107,28 @@ export function planAnswer(project, docs) {
     const diff = aiDiff(old, doc).length;
     rows.push({ kind: "assembly", id: doc.id, name, action: diff ? "modify" : "same", where: "Mécanique ▸ Assemblage", detail: diff ? `Modifié : ${diff} changement${diff > 1 ? "s" : ""} · ${detail}` : "Identique à l'assemblage du projet", changes: diff, doc: diff ? doc : null });
   }
+  /* boards : a PCBA whole, by its id — its blocks must be templates of the library */
+  const boardIds = new Set();
+  for (const d of (docs || []).filter((x) => x.kind === "board")) {
+    const doc = { functions: [], blocks: [], parts: [], nets: [], tracks: [], vias: [], planes: [], ...d.doc, dw: String(d.doc.dw || "").startsWith("board/") ? d.doc.dw : "board/1", id: cleanId(d.doc.id) || `PCBA-${String((P.boards || []).length + boardIds.size + 1).padStart(3, "0")}` }, name = doc.name || doc.id;
+    const unknown = [...new Set((doc.blocks || []).map((b) => b && b.template).filter((t) => !BLOCKS[t]))];
+    if (boardIds.has(doc.id)) { rows.push({ kind: "board", id: doc.id, name, action: "skip", where: "écartée", detail: "", why: `la carte ${doc.id} est donnée deux fois dans la réponse`, doc: null }); continue; }
+    if (unknown.length || !doc.board || typeof doc.board !== "object") { rows.push({ kind: "board", id: doc.id, name, action: "skip", where: "écartée", detail: "", why: unknown.length ? `bloc${unknown.length > 1 ? "s" : ""} inconnu${unknown.length > 1 ? "s" : ""} de la bibliothèque : ${unknown.join(", ")}` : "pas de contour de carte (« board »)", doc: null }); continue; }
+    boardIds.add(doc.id);
+    const old = (P.boards || []).find((b) => b.id === doc.id), detail = `${doc.blocks.length} bloc${doc.blocks.length > 1 ? "s" : ""} · ${doc.parts.length} composant${doc.parts.length > 1 ? "s" : ""} · ${doc.nets.length} net${doc.nets.length > 1 ? "s" : ""}`;
+    if (!old) { rows.push({ kind: "board", id: doc.id, name, action: "create", where: "Électronique ▸ PCBA", detail: `Carte nouvelle · ${detail}`, doc }); continue; }
+    const diff = aiDiff(old, doc).length;
+    rows.push({ kind: "board", id: doc.id, name, action: diff ? "modify" : "same", where: "Électronique ▸ PCBA", detail: diff ? `Modifiée : ${diff} changement${diff > 1 ? "s" : ""} · ${detail}` : "Identique à la carte du projet", changes: diff, doc: diff ? doc : null });
+  }
+  /* drawing sheets : the sheet of a part or an assembly — of the project, or created by this same answer — checked as the common loop checks it */
+  const ahead = { ...P, parts: [...(P.parts || []), ...rows.filter((r) => r.kind === "part" && r.action === "create").map((r) => r.doc)], assemblies: [...(P.assemblies || []), ...rows.filter((r) => r.kind === "assembly" && r.action === "create").map((r) => r.doc)] };
+  for (const d of (docs || []).filter((x) => x.kind === "drawing")) {
+    const of = d.doc.of === "assembly" ? "assembly" : "part", key = `drawing:${of}:${d.doc.id}`, k = moreKey(key, ahead), id = `${d.doc.id} · feuille`, name = `Feuille de dessin de ${d.doc.title || d.doc.id}`;
+    if (!k) { rows.push({ kind: "drawing", id, name, action: "skip", where: "écartée", detail: "", why: `ni le projet ni la réponse n'ont ${of === "part" ? "la pièce" : "l'assemblage"} ${d.doc.id}`, doc: null }); continue; }
+    const blocks = moreCheck(ahead, key, d.doc).filter((n) => n.severity === "block");
+    if (blocks.length) { rows.push({ kind: "drawing", id, name, action: "skip", where: "écartée", detail: "", why: blocks.map((b) => b.text).join(" "), doc: null }); continue; }
+    rows.push({ kind: "drawing", id, name, of, target: d.doc.id, action: "modify", where: "Mécanique ▸ Dessins", detail: "Cartouche du projet, notes, coupe, classes de cotes, vues de détail de ce dessin", doc: d.doc });
+  }
   return rows;
 }
 /** How a plan reads in one line : « 3 créations, 1 modification, 1 écart ». */
@@ -126,16 +155,16 @@ export function journalChange(before, project, o = {}) {
   project.aiJournal = [entry, ...(project.aiJournal || before.journal || [])].slice(0, KEEP);
   return entry;
 }
-/** Apply a plan to a project — to be called INSIDE one step of the store. → the entry written in the journal (project.aiJournal) */
+/** Apply a plan to a project — to be called INSIDE one step of the store : the parts first, then the assemblies, the boards, and the drawing sheets
+    (a sheet may belong to a part this answer creates). → the entry written in the journal (project.aiJournal) — what appeared, what changed, the title block included */
 export function applyPlan(project, rows, o = {}) {
-  const entry = { id: `ai-${Date.now().toString(36)}`, when: o.when || new Date().toISOString(), ask: String(o.ask || "").slice(0, 300), created: [], modified: [] };
-  for (const r of rows || []) {
-    if (!r.doc || (r.action !== "create" && r.action !== "modify")) continue;
+  const before = snapshotLists(project), go = (rows || []).filter((r) => r.doc && (r.action === "create" || r.action === "modify")), order = ["part", "assembly", "board", "drawing"];
+  for (const r of [...go].sort((a, b) => order.indexOf(a.kind) - order.indexOf(b.kind))) {
+    if (r.kind === "drawing") { moreApply(project, `drawing:${r.of}:${r.target}`, JSON.parse(JSON.stringify(r.doc))); continue; }
     const list = (project[LIST[r.kind]] = project[LIST[r.kind]] || []), i = list.findIndex((x) => x.id === r.id), doc = JSON.parse(JSON.stringify(r.doc));
-    if (i >= 0) { entry.modified.push({ kind: r.kind, id: r.id, before: list[i] }); list[i] = doc; } else { entry.created.push({ kind: r.kind, id: r.id }); list.push(doc); }
+    if (i >= 0) list[i] = doc; else list.push(doc);
   }
-  project.aiJournal = [entry, ...(project.aiJournal || [])].slice(0, KEEP);
-  return entry;
+  return journalChange(before, project, o) || { id: `ai-${Date.now().toString(36)}`, when: o.when || new Date().toISOString(), ask: String(o.ask || "").slice(0, 300), created: [], modified: [], removed: [] };
 }
 /** Go back to before an answer — to be called inside one step of the store. What it created goes, unless something else came to use it since
     (an assembly that mounts it) ; what it changed gets back what it was. → { removed, restored, kept: [{ id, why }] } */

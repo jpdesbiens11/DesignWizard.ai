@@ -14,6 +14,7 @@ import { openInstances } from "../core/asm_levels.js";
 import { showLabels } from "../core/label_raster.js";
 import { toDwiz } from "../core/dwiz.js";
 import { aiRead, aiDiff } from "../core/ai_loop.js";
+import { applyAnswer } from "./ai_loop.js";
 import { guideBox, needField, nudge } from "../core/guide.js";
 import { matInvRigid, matDir, matPoint } from "../cad/vec.js";
 import { LABEL_KINDS, LABEL_ARTS, LABEL_SHAPES, IMAGE_LIMIT, blankLabel, brandSticker, nextLabelId, isWrapped, surfaceAt, labelFrame, moveLabel, labelSvg, labelGuide, labelRows, labelsCsv, tidyLabel } from "../core/labels.js";
@@ -91,7 +92,7 @@ function render(main, args) {
     catch (e) { setStatus(e.message, "error"); } }
   function reimport() {
     const area = el("textarea", { rows: 9, placeholder: "Collez la réponse de l'assistant : elle contient l'assemblage dans un bloc ```dwiz." }), out = el("div"); let next = null;
-    const ok = btn("Appliquer ces changements", () => { if (!next) return; change("Étiquettes mises à jour par l'IA", (L, a) => { a.labels = next; }); m.close(); toast("Étiquettes réécrites depuis la réponse de l'IA.", "success"); }, { primary: true, icon: "check", disabled: true });
+    const ok = btn("Appliquer ces changements", () => { if (!next) return; applyAnswer([`assembly:${id}`], `Étiquettes de ${id} réimportées depuis une IA`, () => change("Étiquettes mises à jour par l'IA", (L, a) => { a.labels = next; })); m.close(); toast("Étiquettes réécrites depuis la réponse de l'IA.", "success"); }, { primary: true, icon: "check", disabled: true });
     area.addEventListener("input", () => { next = null; ok.disabled = true; out.replaceChildren(); if (!area.value.trim()) return;
       try { const doc = aiRead(area.value); if (!doc || !Array.isArray(doc.labels)) throw new Error("La réponse ne contient pas de lignes « label »."); const old = labels(), L = doc.labels.map((l, k) => { const before = old.find((q) => q.id === l.id); return tidyLabel({ ...l, inst: before ? before.inst : null, on: before ? before.on : null }, k); }), diff = aiDiff(old, L);
         out.append(el("p", null, diff.length ? `${diff.length} changement(s) :` : "Aucun changement dans les étiquettes."), el("ul", { class: "decisions" }, diff.slice(0, 30).map((x) => el("li", null, `${x.path} — ${x.text}`))), guideBox(labelGuide(L, asm().instances.map((i) => i.id)), { title: "Ce que les étiquettes revenues demandent" }) || el("span"));

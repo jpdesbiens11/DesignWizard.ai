@@ -25,6 +25,7 @@ import { docx } from "../core/docx.js";
 import { pdfDoc } from "../core/pdfdoc.js";
 import { toDwiz } from "../core/dwiz.js";
 import { aiRead, aiDiff } from "../core/ai_loop.js";
+import { applyAnswer } from "./ai_loop.js";
 import { guideBox, nudge } from "../core/guide.js";
 import { busyVeil, pageVeil, underVeil } from "../core/busy.js";
 import { demoBoard } from "../demo/demo_pcba.js";
@@ -127,7 +128,7 @@ function render(main, args) {
     "", s ? `ESSAI — ${s.block} : ${s.title} (${key()})\nPourquoi : ${s.why}\nÀ quoi s'attendre : ${s.expect}\nMontage :\n- ${s.setup.join("\n- ")}\nRelevés attendus :\n- ${s.rows.map((r) => `${r.label} : ${expectedText(r)} (${r.ceiling ? "plafond : " : "plage "}${r.band.text})`).join("\n- ")}` : "", "", toDwiz(b).trimEnd()].join("\n"); };
   function reimport() {
     const area = el("textarea", { rows: 9, placeholder: "Collez la réponse de l'assistant : elle contient la carte dans un bloc ```dwiz." }), out = el("div"); let next = null;
-    const ok = btn("Appliquer ces changements", () => { if (!next) return; store.updateBoard(id, (b) => { b.lab = next; }, "Labo : notes de l'IA"); m.close(); toast("Notes et mises de côté reprises de la réponse de l'IA.", "success"); }, { primary: true, icon: "check", disabled: true });
+    const ok = btn("Appliquer ces changements", () => { if (!next) return; applyAnswer([`board:${id}`], `Labo de ${id} : notes et mises de côté reprises d'une IA`, () => store.updateBoard(id, (b) => { b.lab = next; }, "Labo : notes de l'IA")); m.close(); toast("Notes et mises de côté reprises de la réponse de l'IA.", "success"); }, { primary: true, icon: "check", disabled: true });
     area.addEventListener("input", () => { next = null; ok.disabled = true; out.replaceChildren(); if (!area.value.trim()) return;
       try { const doc = aiRead(area.value); if (!doc || !doc.lab) throw new Error("La réponse ne contient pas de bloc « lab »."); const mine = labOf(board()), theirs = labOf(doc), d = { ...theirs, readings: mine.readings, ticks: mine.ticks, passes: mine.passes, notes: [...theirs.notes.filter((n) => !n.step), ...mine.notes.filter((n) => n.step)] }, diff = aiDiff(mine, d);      // what was read, ticked, let pass and noted at the bench is the lab's : an answer cannot rewrite it
         out.append(el("p", null, diff.length ? `${diff.length} changement(s) :` : "Aucun changement."), el("ul", { class: "decisions" }, diff.slice(0, 30).map((x) => el("li", null, `${x.path} — ${x.text}`)))); if (diff.length) { next = d; ok.disabled = false; }

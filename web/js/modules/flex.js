@@ -13,6 +13,7 @@ import { flatToggle } from "./flat_view.js";
 import { importPart } from "../core/importer.js";
 import { toDwiz } from "../core/dwiz.js";
 import { aiRead, aiDiff } from "../core/ai_loop.js";
+import { applyAnswer } from "./ai_loop.js";
 import { CONNECTORS } from "../cad/elec_library.js";
 import { WELD_PROCESSES } from "../cad/interfaces_elec.js";
 import { locate } from "../core/busbar.js";
@@ -87,7 +88,7 @@ function render(main, args) {
   /* the round trip with an AI : the definition goes out with a short request ; what comes back is shown before it is applied, in one undoable step */
   function reimport() {
     const area = el("textarea", { rows: 9, placeholder: "Collez la réponse de l'assistant : elle contient la pièce dans un bloc ```dwiz." }), out = el("div"); let next = null;
-    const ok = btn("Appliquer ces changements", () => { if (!next) return; store.updatePart(id, (x) => rewrite(x, next), `${id} : circuit mis à jour par l'IA`); m.close(); toast("Circuit réécrit depuis la définition revenue de l'IA.", "success"); }, { primary: true, icon: "check", disabled: true });
+    const ok = btn("Appliquer ces changements", () => { if (!next) return; applyAnswer([`part:${id}`], `Circuit flexible ${id} réimporté depuis une IA`, () => store.updatePart(id, (x) => rewrite(x, next), `${id} : circuit mis à jour par l'IA`)); m.close(); toast("Circuit réécrit depuis la définition revenue de l'IA.", "success"); }, { primary: true, icon: "check", disabled: true });
     area.addEventListener("input", () => { next = null; ok.disabled = true; out.replaceChildren(); if (!area.value.trim()) return;
       try { const doc = aiRead(area.value); if (!doc || !doc.flex) throw new Error("La réponse ne contient pas de bloc « flex »."); const d = { ...blankFlex(), ...doc.flex }, c = flexChecks(d), diff = aiDiff(def(), d);
         out.append(el("p", null, diff.length ? `${diff.length} changement(s) :` : "Aucun changement dans la définition."), el("ul", { class: "decisions" }, diff.slice(0, 30).map((x) => el("li", null, `${x.path} — ${x.text}`))), ...c.notes.map((n) => el("p", { class: n.level === "bad" ? "form-error" : "atelier-hint", style: { fontSize: ".82rem" } }, n.text)));

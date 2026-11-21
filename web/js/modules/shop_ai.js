@@ -76,7 +76,9 @@ export function aiDoor(main) {
     st.rows = null; st.files = []; st.pasted = ""; st.errors = []; st.skipped = []; draw3(); drawLog(); advise();
   }
   const doneBox = () => el("div", { class: "ai-done", "data-door": "done" }, el("b", null, icon("check"), `Appliqué — ${st.done.length} artéfact${st.done.length > 1 ? "s" : ""}. Ouvrez-les pour les relire :`),
-    st.done.map((d) => { const doc = d.kind === "assembly" ? store.assembly(d.id) : store.part(d.id); return doc ? el("a", { class: "ai-open", href: d.kind === "assembly" ? asmHash(doc) : partHash(doc) }, icon(d.kind === "assembly" ? "assembly" : "part"), doc.name || doc.id, el("small", null, `${d.id} · ${d.what}`)) : null; }),
+    st.done.map((d) => { if (d.kind === "sheet") return el("a", { class: "ai-open", href: "#/drawings" }, icon("drawing"), "Cartouche des dessins", el("small", null, `projet · ${d.what}`));
+      if (d.kind === "board") { const b = store.board(d.id); return b ? el("a", { class: "ai-open", href: `#/pcba/${encodeURIComponent(b.id)}` }, icon("chip"), b.name || b.id, el("small", null, `${d.id} · ${d.what}`)) : null; }
+      const doc = d.kind === "assembly" ? store.assembly(d.id) : store.part(d.id); return doc ? el("a", { class: "ai-open", href: d.kind === "assembly" ? asmHash(doc) : partHash(doc) }, icon(d.kind === "assembly" ? "assembly" : "part"), doc.name || doc.id, el("small", null, `${d.id} · ${d.what}`)) : null; }),
     el("small", { class: "muted" }, "Ctrl + Z défait toute la réponse tant que rien d'autre n'a changé ; le journal, plus bas, y revient même après."));
   function draw3() {
     const input = el("input", { type: "file", multiple: true, accept: ".dwiz,.json,.zip,.txt,.md", hidden: true, onChange: (e) => { if (e.target.files.length) read(e.target.files); } });
@@ -92,8 +94,8 @@ export function aiDoor(main) {
     if (st.rows) {
       kids.push(el("p", { class: "ai-label", "data-door": "plan" }, `Ce que la réponse ferait — ${planWords(st.rows)}`),
         ...st.rows.map((r) => el("div", { class: `ai-art ${r.action}`, style: { "--g": COLOR[r.action] || (r.nature ? r.nature.color : "#475569") }, "data-art": r.id },
-          el("span", { class: "s", "aria-hidden": "true" }, MARK[r.action]), el("span", { class: "n" }, icon(r.kind === "assembly" ? "assembly" : r.nature ? r.nature.icon : "part"), r.name, el("small", null, r.id)), el("span", { class: "w" }, r.where),
-          el("small", { class: "d" }, r.action === "skip" ? `Écarté${r.kind === "part" ? "e" : ""} — ${r.why}` : r.detail))),
+          el("span", { class: "s", "aria-hidden": "true" }, MARK[r.action]), el("span", { class: "n" }, icon(r.kind === "assembly" ? "assembly" : r.kind === "board" ? "chip" : r.kind === "drawing" ? "drawing" : r.nature ? r.nature.icon : "part"), r.name, el("small", null, r.id)), el("span", { class: "w" }, r.where),
+          el("small", { class: "d" }, r.action === "skip" ? `Écarté${r.kind === "assembly" ? "" : "e"} — ${r.why}` : r.detail))),
         el("div", { class: "form-actions ai-apply" }, btn("Tout refuser", () => { st.rows = null; st.files = []; st.errors = []; st.skipped = []; draw3(); advise(); }, { tip: "Ne rien appliquer : le projet reste tel qu'il est" }),
           el("span", { class: "grow" }), btn("Appliquer — une étape annulable", apply, { primary: true, icon: "check", disabled: !planApplies(st.rows), tip: planApplies(st.rows) ? "Créer et modifier ce que l'aperçu annonce, d'un seul coup" : "Rien à appliquer dans cette réponse" })));
     }

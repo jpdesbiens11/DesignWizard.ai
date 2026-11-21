@@ -27,7 +27,7 @@ test("an answer is read whatever its shape : .dwiz, JSON in a code block, a proj
   assert.deepEqual(a.docs.map((d) => `${d.kind}:${d.doc.id}`), ["part:NEW-1", "assembly:ASM-N"]); assert.equal(a.errors.length, 0); assert.equal(a.docs[0].from, "r.md");
   const b = readAnswer([{ name: "p.dwiz", text: toDwiz(part) }, { name: "a.json", text: JSON.stringify(asm) }, { name: "vide.txt", text: "  " }]); assert.deepEqual(b.docs.map((d) => d.kind), ["part", "assembly"]); assert.equal(b.docs[0].doc.id, "NEW-1");
   assert.deepEqual(readAnswer([{ name: "l.json", text: JSON.stringify([part, { ...part, id: "NEW-2" }]) }]).docs.map((d) => d.doc.id), ["NEW-1", "NEW-2"]);
-  const bad = readAnswer([{ name: "bla.txt", text: "Je n'ai pas compris la demande." }, { name: "o.json", text: JSON.stringify({ hello: 1 }) }]); assert.equal(bad.docs.length, 0); assert.equal(bad.errors.length, 2); assert.match(bad.errors[0].message, /ni \.dwiz ni JSON/); assert.match(bad.errors[1].message, /ni une pièce ni un assemblage/);
+  const bad = readAnswer([{ name: "bla.txt", text: "Je n'ai pas compris la demande." }, { name: "o.json", text: JSON.stringify({ hello: 1 }) }]); assert.equal(bad.docs.length, 0); assert.equal(bad.errors.length, 2); assert.match(bad.errors[0].message, /ni \.dwiz ni JSON/); assert.match(bad.errors[1].message, /ni une pièce, ni un assemblage, ni une carte, ni une feuille de dessin/);
   assert.deepEqual(readAnswer(null), { docs: [], errors: [] });
 });
 test("the plan says what would be created, changed, left as it is or set aside — and where each thing goes", () => {
