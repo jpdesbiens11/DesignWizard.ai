@@ -11,7 +11,7 @@
 
 import { BLOCKS, blockParams } from "./blocks.js";
 import { blockCircuit } from "./lab_devices.js";
-import { transient } from "./lab_mna.js";
+import { transient, measure } from "./lab_mna.js";
 import { tranResult, eng } from "./lab_bench.js";
 
 const NODE_KEYS = ["a", "b", "k", "o", "p", "n"];
@@ -53,7 +53,8 @@ function makeBoardBench(board, env = {}) {
   const B = { board, C, els, log, at, tree, env, built: { parts: C.parts, nets: (board.nets || []).map((n) => ({ name: n.name })), ports: {} },
     supply(net, v, o = {}) { const id = `PS_${net}`, mid = `${id}_o`; els.push({ t: "V", id, a: mid, b: "0", v: o.wave || v }, { t: "R", id: `${id}:r`, a: mid, b: at(net), r: o.rs ?? 0.05 }); log.push({ instr: "supply", to: net, v: typeof v === "number" ? v : null, ilim: o.ilim || null, note: o.note || "", ref: "GND" }); return id; },
     sink(net, i, o = {}) { const id = `LOAD_${net}`; els.push({ t: "I", id, a: at(net), b: "0", i }); log.push({ instr: "load", to: net, i: typeof i === "number" ? i : null, wave: typeof i === "number" ? null : i, toRef: "GND", note: o.note || "" }); return id; },
-    probe(ch, net, o = {}) { log.push({ instr: "scope", ch, to: net, ref: "GND", ac: !!o.ac, note: o.note || "" }); return { at: net, ref: null, label: o.label || net, ac: !!o.ac }; } };
+    probe(ch, net, o = {}) { log.push({ instr: "scope", ch, to: net, ref: "GND", ac: !!o.ac, note: o.note || "" }); return { at: net, ref: null, label: o.label || net, ac: !!o.ac }; },
+    press(pin, note) { log.push({ instr: "press", to: pin, note: note || "" }); }, cell(pin, note) { log.push({ instr: "cell", to: pin, note: note || "" }); } };
   return B;
 }
 const fr = (x, d = 3) => String(+(+x).toPrecision(d)).replace(".", ",");
@@ -84,13 +85,33 @@ const TESTS = [
       return { run: { kind: "tran", tEnd: t3, steps: 9000, from: "zero" }, ch1: B.probe(1, first.net, { label: `Entrée ${first.net}` }), ch2: B.probe(2, last.net, { label: last.net }),
         meas: [...reg.map((r) => ({ label: `Tension d'entrée quand ${r.net} s'établit (à la montée)`, unit: "V", tol: 0.15, read: (R) => up(R, r) })), ...reg.map((r) => ({ label: `Tension d'entrée quand ${r.net} lâche (à la descente)`, unit: "V", tol: 0.15, read: (R) => down(R, r) }))] }; } },
 ];
-/** The tests of a whole board : none when nothing feeds it from outside or when it makes no rail of its own. */
-export function boardTests(board) { const T = powerTree(board); return T.inputs.length && T.rails.length ? TESTS : []; }
+/* a board that lives on its own cell (pcba/blocks_power.js : battery) : no supply of the bench — the cell feeds every block, and the one at the
+   bench presses every button at once ; the LEDs share the cell, whose voltage sags by its internal resistance (a typical value, said) */
+const partsOf = (board, tpl, local) => { const ids = new Set((board.blocks || []).filter((b) => b.template === tpl).map((b) => b.id)); return (board.parts || []).filter((p) => ids.has(p.block) && p.local === local).map((p) => p.ref); };
+const CELL = [{ id: "cell", nature: "function", title: "La carte entière sur sa pile, tous les boutons à la fois", gear: ["dmm"],
+  why: "Chaque bloc a été essayé seul, sur l'alimentation du banc. Ici, c'est la pile de la carte qui alimente tout, et l'on appuie sur tous les boutons à la fois : les DEL se partagent la pile, dont la tension baisse un peu plus.",
+  expect: (R) => `Boutons relâchés : aucune DEL allumée, la pile à environ 3 V. Tous les boutons appuyés : toutes les DEL allumées, chacune à un peu moins de son courant prévu ; la pile perd quelques centièmes de volt. Les 10 Ω de résistance interne de la pile sont une valeur typique : la vôtre peut en avoir le double, surtout si elle a servi.`,
+  learn: "Une source n'est jamais parfaite : plus on lui demande de courant, plus sa tension baisse. Une pile bouton s'en ressent vite — c'est pourquoi cette carte ne consomme que pendant l'appui.",
+  env: () => ({ press: (t) => t > 1e-3 }),
+  wire(B) { const bat = partsOf(B.board, "battery", "BT")[0], rail = (B.tree.rails.find((r) => r.by && (B.board.blocks || []).some((b) => b.id === r.by && b.template === "battery")) || B.tree.rails[0] || {}).net || "+3V", leds = partsOf(B.board, "push_led", "D"), keys = partsOf(B.board, "push_led", "SW");
+    if (bat) B.cell(`${bat}.+`, "une pile CR2032 neuve"); keys.forEach((k) => B.press(`${k}.A`));
+    return { run: { kind: "tran", tEnd: 2e-3, steps: 400 }, ch1: B.probe(1, rail, { label: "Pile" }), ch2: B.probe(2, rail, { label: "Pile, tous les boutons appuyés" }),
+      meas: [{ label: "Tension de la pile, boutons relâchés", unit: "V", before: true, read: (R) => measure(R.sub(R.v(rail), 0.2, 0.45)).mean, design: 3, tol: 0.1 }, { label: "Tension de la pile, tous les boutons appuyés", unit: "V", read: (R) => R.m(rail, 0.8).mean, design: 3 - 10 * 2e-3 * leds.length, tol: 0.1 },
+        ...leds.map((d) => { const x = ledLeg(B.board, d); return x ? { label: `Tension aux bornes de ${x.r} — le courant de ${d} est U ÷ ${x.ohms} Ω`, unit: "V", read: (R) => R.md(x.a, x.b, 0.8).mean, design: x.i * x.ohms, tol: 0.2 } : null; }).filter(Boolean)] }; } }];
+/** The resistor in series with an LED of a push_led block : its reference, its two nets on the board, its value and the current it was designed for —
+    with no supply on the bench, the current of an LED is read as the voltage across its resistor. */
+function ledLeg(board, ref) {
+  const p = (board.parts || []).find((x) => x.ref === ref), b = p && (board.blocks || []).find((x) => x.id === p.block), T = b && BLOCKS[b.template]; if (!T) return null;
+  const r = (board.parts || []).find((x) => x.block === b.id && x.local === "R"), net = (pin) => ((board.nets || []).find((n) => (n.pins || []).includes(pin)) || {}).name, calc = T.build(blockParams(T, b.params || {})).calc || [], c = (re) => Number((calc.find((x) => re.test(x.label)) || {}).value);
+  return r && net(`${r.ref}.1`) && net(`${r.ref}.2`) ? { r: r.ref, a: net(`${r.ref}.1`), b: net(`${r.ref}.2`), ohms: c(/Résistance de la DEL/), i: c(/Courant de la DEL/) } : null;
+}
+/** The tests of a whole board : none when nothing feeds it from outside or when it makes no rail of its own ; a board on its own cell has its own. */
+export function boardTests(board) { const T = powerTree(board); return T.inputs.length && T.rails.length ? TESTS : (board.blocks || []).some((b) => b.template === "battery") ? CELL : []; }
 /** Runs a test of the whole board. → the same result as a test of a block (pcba/lab_bench.js runTest), its parts named by their reference
     and its nets by their name on the board ; board : true. */
 export function runBoardTest(board, testId, o = {}) {
   const test = boardTests(board).find((x) => x.id === testId); if (!test) return { ok: false, kind: "none", error: "Essai inconnu." };
-  const B = makeBoardBench(board, o.env || {}), plan = test.wire(B), sim = transient({ els: B.els }, plan.run), out = tranResult(B, plan, test, {}, sim);
+  const B = makeBoardBench(board, o.env || (test.env ? test.env() : {})), plan = test.wire(B), sim = transient({ els: B.els }, plan.run), out = tranResult(B, plan, test, {}, sim);
   return { ...out, board: true, tree: B.tree, notes: [...B.C.notes, "Carte entière : le programme du microcontrôleur ne tourne pas, ses broches ne commandent rien ; le courant de repos des circuits intégrés n'est pas simulé."] };
 }
 export { eng };

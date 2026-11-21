@@ -204,6 +204,27 @@ Choix pris d'office (le menu a été fermé deux fois par un message ; ils se ch
 portable ou l'écran du banc ; les étapes sont **verrouillées**, un superviseur passe outre et c'est noté ; le PDF
 est écrit par l'outil.
 
+### La première carte : mettre la pile, appuyer, relâcher
+
+Point 4 de la suite convenue (JP, 21 novembre 2026 : « une pile, deux boutons, une DEL rouge et une DEL jaune »). L'exemple
+**première carte** (PCBA et Labo) est la carte la plus simple : une pile bouton CR2032 et deux boutons qui allument chacun
+leur DEL — S1 la rouge, S2 la jaune. Rien à programmer : on y apprend le circuit, les mesures, et l'ordre qui protège une
+carte. Deux blocs sont nés pour elle, chacun avec ses essais :
+
+| Bloc | Essai | Ce qu'il montre |
+|---|---|---|
+| **Pile** (`battery`) | « La pile, à vide puis en charge » | 3 V à vide, environ 2,95 V sous 5 mA : la chute dans la résistance interne de la pile (10 Ω, une valeur **typique** d'une pile neuve, pas lue sur une fiche — d'où une plage large) |
+| **Bouton et témoin** (`push_led`) | « Appui : la DEL s'allume » | le bouton en série avec la résistance et la DEL : relâché, rien ne passe ; appuyé, environ 2 mA (560 Ω pour la rouge, 510 Ω pour la jaune, Vf typiques 1,9 V et 2,0 V) |
+| **Carte entière** | « La carte entière sur sa pile, tous les boutons à la fois » | la pile au repos, puis tous les boutons appuyés : les DEL se partagent la pile, dont la tension baisse ; le courant de chaque DEL se lit sur la tension de sa résistance (I = U ÷ R) — il n'y a pas d'alimentation dont lire l'afficheur |
+
+La manipulation en labo apprend un **geste à la main** (`do`), pointé sur la carte comme un branchement : « Appuyer sur
+le bouton — et le tenir » avant les relevés qui le demandent, « Relâcher le bouton » à la fin (la DEL doit s'éteindre).
+Sur une carte qui vit sur sa pile, la pile est **hors de son support** pendant la recherche de court-circuit, se met en
+place ensuite (« Mettre la pile en place, le + vers le haut » — c'est la mise sous tension), et se retire à la fin. Un
+relevé fait au repos (`before`) passe avant l'appui. Quand l'essai d'un bloc prend une alimentation de laboratoire à la
+place de la pile, sa note dit de retirer la pile d'abord. Le banc écrit ces gestes dans son journal (`B.press`,
+`B.cell` de `web/js/pcba/lab_bench.js`) ; la simulation appuie sur le bouton par `env.press` de l'essai.
+
 ## 4 ter. Le Labo dit en clair — et le banc relève ce que l'écran trace
 
 Demande de JP (20 novembre 2026, sur une capture du bloc « Microcontrôleur » de la carte RS-485) : « je ne comprends

@@ -278,6 +278,14 @@ dans l'analyse d'un assemblage : un assemblage sans paire renvoie à la carte.
 Le résumé de l'analyse est gardé sur la carte (`board.isolation` : conditions, niveaux, résultats), repris par le
 guide du projet et par le rapport. Tests : `tests/node/board_iso.test.mjs`.
 
+## Première carte (exemple du Labo)
+
+Le bouton **Exemple : première carte** du PCBA (et du Labo vide) ajoute la carte la plus simple : une pile bouton CR2032,
+deux boutons et deux DEL — chaque bouton allume la sienne, sans microcontrôleur. Elle est bâtie par
+`tools/gen_demo_first.mjs` (50 × 34 mm, deux couches, routée, ERC et DRC sans erreur) avec les blocs **Pile** (`battery`)
+et **Bouton et témoin** (`push_led`) et des points de test sur la pile et la masse. Ses essais et sa manipulation : voir
+`docs/LABO.md` (« La première carte »).
+
 ## Carte de CORE (exemple, architecture du projet)
 
 L'exemple « carte de CORE » (bouton **Exemple : carte de CORE** du PCBA) suit l'architecture donnée par le projet le

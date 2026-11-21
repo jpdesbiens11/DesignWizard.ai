@@ -168,4 +168,19 @@ const buzzer = { id: "buzzer", name: "Avertisseur sonore", category: "Signaler",
     return b.out();
   } };
 
-export const IO_BLOCKS = [din, opto_in, amp, comparator, hall_current, temp_analog, encoder_in, relay, hbridge, stepper, button, buzzer];
+/* a button that lights its LED by itself — no microcontroller : the switch closes the circuit of the LED. The first board of a beginner
+   (point 4 of the roadmap). The forward voltage of an LED by its colour is the one the Labo uses (pcba/lab_devices.js : LED_VF). */
+const VF = { rouge: 1.9, verte: 2.1, jaune: 2.0, orange: 2.0, bleue: 3.0, blanche: 3.0 };
+const push_led = { id: "push_led", name: "Bouton et témoin", category: "Signaler", function: "Allumer la DEL {color} tant que l'on appuie sur le bouton {name}", desc: "Bouton-poussoir, résistance et DEL en série : l'appui ferme le circuit.",
+  params: { v: P("Tension de la pile", "V", 3, 1.8, 12), i: P("Courant de la DEL", "mA", 2, 0.5, 20), color: P("Couleur", "", "rouge", null, null, { text: true }), name: P("Nom du bouton", "", "S", null, null, { text: true }) },
+  build(p) {
+    const b = builder(), c = String(p.color || "rouge").toLowerCase(), vf = VF[Object.keys(VF).find((k) => c.startsWith(k.slice(0, 4)))] ?? 2, r = eSeries(Math.max(10, (p.v - vf) / (p.i / 1000)), "E24"), i = (p.v - vf) / r;
+    b.part("SW", "SW-TACT-6", "", `Bouton ${p.name || ""}`.trim()).part("R", "R-0603", ohm(r), "Fixe le courant de la DEL", { near: "SW" }).part("D", "LED-0603", c, `Témoin ${c}`, { near: "R" });
+    b.net("VDD", ["SW.A"], pw(p.v, i)).net("LIT", ["SW.B", "R.1"]).net("A", ["R.2", "D.A"]).net("GND", ["D.K"], GND);
+    b.port("VDD", "VDD", "power_in", railName(p.v)).port("GND", "GND", "gnd", "GND");
+    b.calc("Résistance de la DEL", r, "Ω", `R = (V − Vf) / I = (${fr(p.v)} − ${fr(vf)}) / ${fr(p.i)} mA = ${ohm((p.v - vf) / (p.i / 1000))} → ${ohm(r)} (série E24) : ${fr(i * 1000)} mA. Vf = ${fr(vf)} V : tension typique d'une DEL ${c}, la fiche de la DEL fait foi.`);
+    b.calc("Courant de la DEL", i, "A", `I = (${fr(p.v)} − ${fr(vf)}) / ${ohm(r)} = ${fr(i * 1000)} mA, seulement tant que le bouton est enfoncé.`);
+    b.note("Bouton accessible carte montée ; la DEL à côté de son bouton, pour que l'on voie lequel allume quoi.");
+    return b.out();
+  } };
+export const IO_BLOCKS = [din, opto_in, amp, comparator, hall_current, temp_analog, encoder_in, relay, hbridge, stepper, button, buzzer, push_led];

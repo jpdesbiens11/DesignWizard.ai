@@ -18,6 +18,7 @@ import { inheritFromPart } from "../pcba/twin.js";
 import { demoBoard } from "../demo/demo_pcba.js";
 import { rs485Board, RS485_BOARD_ID } from "../demo/demo_rs485.js";
 import { coreBoard, CORE_BOARD_ID } from "../demo/demo_core.js";
+import { firstBoard, FIRST_BOARD_ID } from "../demo/demo_first.js";
 import { DESIGN_STEPS } from "./pcba_steps.js";
 import { boardProse } from "../pcba/board_units.js";
 import { boardChecksGuide } from "../pcba/guide.js";
@@ -56,6 +57,9 @@ function createFrom(doc) { const id = store.addBoard(doc); ui.step = null; go(`#
 /* the RS-485 example : one copy per project — a second click opens the one that is there */
 const openRs485 = () => { if (store.board(RS485_BOARD_ID)) { ui.step = null; go(`#/pcba/${encodeURIComponent(RS485_BOARD_ID)}`); } else createFrom(rs485Board()); };
 const rs485Button = (small) => { const b = btn(small ? "Exemple RS-485" : "Exemple : nœud RS-485", openRs485, { small, icon: "cloud", tip: "Une carte d'exemple complète : la liaison RS-485 du bornier au microcontrôleur — terminaison, polarisation, protection, pistes — avec ses essais du Labo, sa fiche d'interface matériel / logiciel et son pilote C" }); b.dataset.example = "rs485"; return b; };
+/* the first board of the Labo (point 4 of the roadmap) : a coin cell, two buttons, a red and a yellow LED — one copy per project */
+const openFirst = () => { if (store.board(FIRST_BOARD_ID)) { ui.step = null; go(`#/pcba/${encodeURIComponent(FIRST_BOARD_ID)}`); } else createFrom(firstBoard()); };
+const firstButton = (small) => { const b = btn(small ? "Première carte" : "Exemple : première carte", openFirst, { small, icon: "cloud", tip: "La carte la plus simple : une pile bouton, deux boutons, une DEL rouge et une DEL jaune — rien à programmer ; ses essais au Labo, pas à pas, pour un débutant" }); b.dataset.firstExample = ""; return b; };
 /* the CORE board example (architecture de JP, 21 novembre 2026) : one copy per project, like the RS-485 one */
 const openCore = () => { if (store.board(CORE_BOARD_ID)) { ui.step = null; go(`#/pcba/${encodeURIComponent(CORE_BOARD_ID)}`); } else createFrom(coreBoard()); };
 const coreButton = (small) => { const b = btn(small ? "Exemple CORE" : "Exemple : carte de CORE", openCore, { small, icon: "cloud", tip: "La carte posée sur le dessus d'un CORE de 8 cellules 21700 en parallèle : 8 températures par le flex, la tension du CORE, l'équilibrage passif et le RS-485 isolé vers le BMS central — de ses fonctions à son cuivre routé" }); b.dataset.coreExample = ""; return b; };
@@ -65,7 +69,7 @@ function emptyState(main) {
     el("p", null, "Une carte se conçoit ici à partir de ses fonctions : chaque fonction reçoit un bloc de circuit éprouvé, pris dans la bibliothèque du métier ; l'outil en tire les composants, les nets, l'implantation, le routage, les vérifications et le dossier de fabrication."),
     el("div", { class: "form-actions", style: { justifyContent: "center" } },
       btn("Carte de démonstration", () => createFrom(demoBoard(!!store.part("DRV-CTRL-PCB"))), { primary: true, icon: "sparkle", tip: "Une carte de contrôle complète, de ses fonctions à ses Gerber" }),
-      rs485Button(false), coreButton(false),
+      firstButton(false), rs485Button(false), coreButton(false),
       btn("Nouvelle carte", async () => { const name = await promptBox("Nouvelle carte", "Nom de la carte", "Carte de contrôle"); if (name) createFrom(emptyBoard("PCBA-001", name)); }, { icon: "plus" }),
       ...pcbs.map((p) => btn(`À partir de ${p.id}`, () => { const b = emptyBoard(`${p.id}A`, p.name || p.id); inheritFromPart(b, p); createFrom(b); }, { icon: "pcb", tip: "Reprend le contour, l'épaisseur et les trous de fixation de cette pièce" }))))));
 }
@@ -90,7 +94,7 @@ function render(main, args) {
       store.boards.length > 1 ? el("select", { "aria-label": "Carte", onChange: (e) => { ui.ref = ui.net = ui.fn = null; go(`#/pcba/${encodeURIComponent(e.target.value)}`); } }, store.boards.map((b) => el("option", { value: b.id, selected: b.id === id }, `${b.id} — ${b.name || ""}`))) : el("b", null, `${board.id} — ${board.name || ""}`),
       badge(`rév. ${board.revision || "A"}`), el("span", { class: "grow" }),
       el("a", { class: "btn btn-small", href: `#/elab/${encodeURIComponent(id)}`, "data-lab": "", "data-tip": "Laboratoire : essayer cette carte sur un banc simulé — pistes qui s'allument, oscilloscopes — et sortir son plan de test fonctionnel" }, icon("sensor"), "Labo"),
-      rs485Button(true), coreButton(true), btn("", () => createFrom(emptyBoard("PCBA-001", "Nouvelle carte")), { small: true, icon: "plus", tip: "Nouvelle carte" }),
+      firstButton(true), rs485Button(true), coreButton(true), btn("", () => createFrom(emptyBoard("PCBA-001", "Nouvelle carte")), { small: true, icon: "plus", tip: "Nouvelle carte" }),
       btn("", async () => { if (await confirmBox("Retirer la carte", `Retirer ${board.id} du projet ?`, "Retirer", true)) { store.removeBoard(id); go("#/pcba"); } }, { small: true, icon: "trash", tip: "Retirer cette carte du projet" })));
     head.append(flowDiagram(ctx, nav));
     const bar = el("div", { class: "pcba-classic" }, el("span", { class: "muted small" }, "Vues classiques :"));

@@ -32,7 +32,7 @@ export const WORDS = [
 ];
 /** The words a text uses. */
 export const wordsIn = (text) => WORDS.filter((w) => w.re.test(String(text || "")));
-const SIGNALS = [[/^(GND|0|AGND|PGND)$/i, "la masse : le point zéro de la carte"], [/RST|RESET/i, "la remise à zéro : tant que ce fil reste bas, la puce attend sans rien faire"], [/^\+?\d+V\d*(_IN)?$|^V(DD|CC|IN|M|BUS|BAT|ISO)\w*$|^VDDA$/i, "un fil d'alimentation : il apporte l'énergie"], [/^VREF/i, "une tension de référence : une valeur fixe, qui sert de règle pour mesurer"],
+const SIGNALS = [[/^SW\d*\./i, "le bouton : on appuie dessus avec le doigt"], [/^BT\d*\./i, "la pile : la source de la carte"], [/^(GND|0|AGND|PGND)$/i, "la masse : le point zéro de la carte"], [/RST|RESET/i, "la remise à zéro : tant que ce fil reste bas, la puce attend sans rien faire"], [/^\+?\d+V\d*(_IN)?$|^V(DD|CC|IN|M|BUS|BAT|ISO)\w*$|^VDDA$/i, "un fil d'alimentation : il apporte l'énergie"], [/^VREF/i, "une tension de référence : une valeur fixe, qui sert de règle pour mesurer"],
   [/^V?OUT|_OUT$/i, "la sortie du circuit : ce qu'il fournit"], [/^IN$|_IN$|^AIN/i, "l'entrée du circuit : ce qu'on lui donne"], [/TXD?$|^DI$|MOSI/i, "les données qui partent"], [/RXD?$|^RO$|MISO/i, "les données qui arrivent"], [/^DE$|_DE$/i, "le fil par lequel la puce dit « c'est moi qui parle »"],
   [/^(A|B)$|RS485|CAN|LIN$/i, "un des fils du bus : la ligne sur laquelle les cartes se parlent"], [/SCL|SDA|SCK|CLK/i, "un fil d'horloge ou de données d'un bus entre puces"], [/LED/i, "le fil qui allume le témoin"], [/PWM/i, "une commande en créneaux : allumé, éteint, très vite"], [/^J\.|^P\d/i, "une broche du connecteur"]];
 /** What a signal name stands for, in a few words. */
@@ -51,6 +51,10 @@ export function plainStep(step) {
   if (step.kind === "connect") return "Vous posez les pointes de mesure aux endroits entourés. Elles ne changent rien au circuit : elles regardent.";
   if (step.kind === "guard" && id === "guard") return "Dernière vérification avant d'envoyer l'électricité : le multimètre ne doit PAS biper entre le + et le −. S'il bipe sans arrêt, quelque chose se touche — on n'allume pas.";
   if (step.kind === "guard") return "Vous relisez tout, comme un pilote relit sa liste avant de décoller. Une seconde paire d'yeux vaut de l'or.";
+  if (step.kind === "power" && id === "cell-in") return "Ici, pas d'alimentation de laboratoire : la pile de la carte est la source. La glisser dans son support, c'est « allumer ». Regardez le « + » avant de pousser.";
+  if (step.kind === "do" && id === "release") return "Vous lâchez le bouton : le circuit s'ouvre, la DEL doit s'éteindre tout de suite.";
+  if (step.kind === "do") return "Un geste à la main, pas un appareil : vous appuyez sur le bouton montré et vous le gardez enfoncé. Tant qu'il est enfoncé, le circuit est fermé et le courant passe.";
+  if (step.kind === "off" && id === "off" && /pile/i.test(step.title || "")) return "Vous retirez la pile : la carte n'a plus de source. Une pile bouton se range, hors de portée des enfants.";
   if (step.kind === "power") return "Vous ouvrez le robinet. Regardez le chiffre du courant pendant la première seconde : c'est lui qui dit si tout va bien. S'il reste bloqué au maximum, vous coupez.";
   if (step.kind === "read") return `${g === "scope" ? "Cette mesure va trop vite pour un multimètre : elle se lit sur l'écran de l'oscilloscope. " : g === "supply" ? "Rien à brancher : le chiffre est déjà sur l'afficheur de l'alimentation. " : ""}Vous lisez un chiffre et vous l'écrivez tel quel. Dans la fourchette : on continue. Hors de la fourchette : on coupe, et on cherche — on ne « corrige » jamais un chiffre.`;
   if (step.kind === "off") return "Vous fermez le robinet AVANT de retirer les cordons, puis vous laissez la carte se vider : un condensateur reste chargé un moment.";

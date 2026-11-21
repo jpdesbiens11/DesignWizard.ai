@@ -135,5 +135,19 @@ const balance = { id: "balance", name: "Équilibrage passif", category: "Command
     return b.out();
   } };
 
-export const POWER_BLOCKS = [conn_power, input_protection, buck, ldo, half_bridge, load_switch, balance];
+/* a coin cell on the board itself (point 4 of the roadmap : « une pile, deux boutons, une DEL rouge et une DEL jaune ») : no supply from outside.
+   Its internal resistance is a TYPICAL value of a new coin cell, not read on a datasheet — said in the calculation and in its test. */
+const battery = { id: "battery", name: "Pile", category: "Alimenter", function: "Alimenter la carte par une pile bouton {v} V", desc: "Support de pile bouton CR2032 : la carte n'a besoin d'aucune alimentation extérieure.",
+  params: { v: P("Tension nominale", "V", 3, 3, 3), i: P("Courant demandé au plus", "mA", 4, 0.1, 20) },
+  build(p) {
+    const b = builder(), i = p.i / 1000, drop = i * 10;
+    b.part("BT", "BAT-CR2032", "CR2032", "Pile bouton 3 V");
+    b.net("VBAT", ["BT.+"], pw(p.v, i)).net("GND", ["BT.-"], { class: "ground" });
+    b.port("VBAT", "VBAT", "power_out", railName(p.v)).port("GND", "GND", "gnd", "GND");
+    b.calc("Chute dans la pile", drop, "V", `ΔU = I × r = ${String(p.i).replace(".", ",")} mA × 10 Ω = ${String(+(drop * 1000).toFixed(1)).replace(".", ",")} mV — 10 Ω : résistance interne typique d'une pile bouton neuve, une valeur d'usage, pas lue sur une fiche ; elle monte quand la pile s'use ou a froid.`);
+    b.note("Une pile bouton supporte mal un courant continu de plusieurs milliampères : la carte ne doit consommer que pendant un appui. La fiche du fabricant de la pile fait foi.");
+    b.note("Le support est détrompé : la pile ne s'y met que dans un sens — le + vers le haut.");
+    return b.out();
+  } };
+export const POWER_BLOCKS = [conn_power, input_protection, buck, ldo, half_bridge, load_switch, balance, battery];
 export { farad };

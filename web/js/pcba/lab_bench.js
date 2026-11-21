@@ -56,6 +56,10 @@ function makeBench(tpl, P, env = {}) {
     pull(name, r, v) { const mid = `PU_${name}`; els.push({ t: "V", id: `${mid}:v`, a: mid, b: "0", v }, { t: "R", id: `${mid}:r`, a: mid, b: at(name), r }); log.push({ instr: "wire", to: name, r, pull: v, note: "rappel au banc (la carte n'en porte pas sur ce bloc)" }); },
     /** A line held low by the bench when low(t) says so (an open-drain driver : a bus master, a sensor output). */
     od(name, low, note) { els.push({ t: "SW", id: `OD_${name}`, a: at(name), b: "0", ron: 25, roff: 1e9, on: (s, t) => !!low(t) }); log.push({ instr: "logic", to: name, note: note || "" }); },
+    /** A button the one at the bench presses and holds (`env.press` of the test says when, in the simulation). name : a pin of the switch (« SW.A »). */
+    press(name, note) { log.push({ instr: "press", to: name, note: note || "" }); },
+    /** The cell of the board itself feeds the circuit (no supply of the bench) : it goes in its holder once the board is checked. name : its + pin. */
+    cell(name, note) { log.push({ instr: "cell", to: name, note: note || "" }); },
     probe(ch, name, o = {}) { log.push({ instr: "scope", ch, to: name, ref: o.ref || "GND", ac: !!o.ac, note: o.note || "" }); return { at: name, ref: o.ref || null, label: o.label || name, ac: !!o.ac }; },
     hasPull(name) { const n = at(name); return els.some((e) => e.t === "R" && (e.a === n || e.b === n) && e.r < 5e4); },
   };
@@ -273,10 +277,29 @@ T.button = [{ id: "bounce", nature: "dynamic", title: "Rebonds du bouton et anti
   env: () => ({ press: (t) => t > 2e-3 && t < 0.016 && !((t > 2.15e-3 && t < 2.5e-3) || (t > 2.7e-3 && t < 2.95e-3) || (t > 3.2e-3 && t < 3.35e-3)) }),
   wire(B) { const vdd = B.P.vdd || 3.3; B.power({ ilim: 0.02 }); return { run: { kind: "tran", tEnd: 0.03, steps: 6000 }, ch1: B.probe(1, "KEY", { label: "Au ras du bouton" }), ch2: B.probe(2, "OUT", { label: "Après le filtre" }), meas: [{ label: "Rebonds visibles au ras du bouton", unit: "", read: (R) => { const s = R.sub(R.v("KEY"), 0.07, 0.3); let n = 0; for (let k = 1; k < s.length; k++) if (s[k - 1] < 0.12 && s[k] >= 0.12) n++; return n; }, design: 3, exact: true }, { label: "Hauteur des sursauts", unit: "V", read: (R) => measure(R.sub(R.v("KEY"), 0.071, 0.3)).max }, { label: "Fronts après le filtre, à l'appui", unit: "", read: (R) => { const s = R.sub(R.v("OUT"), 0, 0.3); let n = 0; for (let k = 1; k < s.length; k++) if ((s[k - 1] < vdd / 2) !== (s[k] < vdd / 2)) n++; return n; }, design: 1, exact: true }, mean("Niveau au repos", "OUT", "V", { from: 0.95, design: vdd })] }; } }];
 
+/* the first board of a beginner (point 4 of the roadmap) : a coin cell, and buttons that light their LED */
+T.battery = [{ id: "loaded", nature: "dynamic", title: "La pile, à vide puis en charge", gear: ["load", "scope"],
+  why: "Une pile n'est pas une source parfaite : dès qu'elle débite, sa tension baisse, à cause de sa résistance interne. Une pile bouton en a beaucoup — c'est pour cela qu'elle n'allume qu'une DEL ou deux, et pas longtemps.",
+  expect: "Avant l'échelon : environ 3 V. Quand la charge tire 5 mA : la tension baisse d'un coup d'environ 0,05 V, et reste plus basse tant que la pile débite. En couplage AC, la voie 1 montre cette petite marche, agrandie.",
+  learn: "On juge une pile EN CHARGE : à vide, même une pile presque vide affiche presque sa tension nominale. Résistance interne ≈ (tension à vide − tension en charge) ÷ courant. Les 10 Ω du Labo sont une valeur typique d'une pile bouton neuve, pas celle d'une fiche : la vôtre peut s'en écarter du simple au double.",
+  wire(B) { B.cell("BT.+", "une pile CR2032 neuve"); B.sink("VBAT", { kind: "step", low: 0, high: 0.005, delay: 1e-3, rise: 1e-5 }, { note: "de 0 à 5 mA — à défaut d'une charge électronique : une résistance de 560 Ω que l'on pose entre le + et la masse" });
+    return { run: { kind: "tran", tEnd: 2e-3, steps: 400 }, ch1: B.probe(1, "VBAT", { label: "Pile (AC)", ac: true }), ch2: B.probe(2, "VBAT", { label: "Pile" }),
+      meas: [{ label: "Tension à vide", unit: "V", read: (R) => measure(R.sub(R.v("VBAT"), 0.2, 0.45)).mean, design: 3, tol: 0.1 }, mean("Tension sous 5 mA", "VBAT", "V", { from: 0.8, design: 2.95, tol: 0.1 }),
+        { label: "Chute à l'appel de courant", unit: "V", read: (R) => measure(R.sub(R.v("VBAT"), 0.2, 0.45)).mean - measure(R.sub(R.v("VBAT"), 0.8, 1)).mean, design: 0.05, tol: 1 }] }; } }];
+T.push_led = [{ id: "press", nature: "static", title: "Appui : la DEL s'allume", gear: ["supply", "dmm"],
+  why: "Sur cette carte, le bouton ferme lui-même le circuit de la DEL : sans appui, aucun courant ne passe. On vérifie que l'appui l'allume au courant prévu — c'est la résistance en série qui le fixe.",
+  expect: (R) => `Bouton relâché : DEL éteinte, aucun courant. Bouton appuyé : DEL ${R.P.color || "rouge"} allumée, environ ${fr(R.P.i || 2)} mA ; la résistance prend ce que la DEL laisse de la tension.`,
+  learn: "Le courant d'une DEL se lit sur la tension aux bornes de sa résistance : I = U ÷ R. Une DEL montée à l'envers ne s'allume pas — rien ne brûle, elle bloque le courant. Relâchez le bouton à la fin : la DEL doit s'éteindre.",
+  env: () => ({ press: (t) => t > 0.4e-3 }),
+  wire(B) { B.supply("VDD", B.volts("VDD") || B.P.v || 3, { ilim: 0.02, note: "à la place de la pile : si la carte en porte une, retirez-la d'abord de son support" }); B.press("SW.A");
+    return { run: steady, ch1: B.probe(1, "LIT", { label: "Après le bouton" }), ch2: B.probe(2, "A", { label: "Anode de la DEL" }),
+      meas: [{ label: "Courant de la DEL, bouton appuyé", unit: "A", read: (R) => R.im("D", 0.6).mean, design: (B.calc(/Courant de la DEL/) || { value: (B.P.i || 2) * 1e-3 }).value, tol: 0.15 },
+        mean("Tension aux bornes de la DEL", "A", "V"), { label: "Tension aux bornes de la résistance", unit: "V", read: (R) => R.md("LIT", "A", 0.6).mean }] }; } }];
+
 /** The tests of a block. → [{ id, nature, title, gear, why, expect, learn, noSim }] — the ones written for it, and the first power-up when it takes a supply. */
 export function blockTests(tpl) {
   const t = BLOCKS[tpl]; if (!t) return []; const mine = T[tpl] || []; if (mine.some((x) => x.nature === "power" || x.noSim)) return mine;
-  const P = blockParams(t), built = t.build(P), fed = Object.values(built.ports).some((p) => p.dir === "power_in"); return fed && !["led"].includes(tpl) ? [powerUp({ ilim: 0.1 }), ...mine] : mine;
+  const P = blockParams(t), built = t.build(P), fed = Object.values(built.ports).some((p) => p.dir === "power_in"); return fed && !["led", "push_led"].includes(tpl) ? [powerUp({ ilim: 0.1 }), ...mine] : mine;
 }
 /** Every template that has a test of its own, beside the power-up. */
 export const testedBlocks = () => Object.keys(BLOCKS).filter((k) => (T[k] || []).length > 0);
@@ -313,4 +336,4 @@ export function tranResult(B, plan, test, P, sim) {
   return { ok: sim.ok, kind: "tran", test, P, t: cut(sim.t), ch1: c1, ch2: c2, measures: readAll(plan.meas, R), expect: typeof test.expect === "function" ? test.expect(R) : test.expect, log: B.log, notes: B.C.notes, states, activity, nets, step, frames: Math.ceil((n - k0) / step), built: B.built, bench: B, sim };
 }
 /* each measure also says WHICH signals it read (`at`) : the names it asked the result for — what a screen needs to point at the board ; `pair` : it read the DIFFERENCE between two of them */
-function readAll(meas, R) { return (meas || []).map((m) => { let value = NaN, pair = false; const seen = [], T = { ...R, ...(R.v ? { v: (n) => (seen.push(n), R.v(n)), m: (n, f) => (seen.push(n), R.m(n, f)), md: (a, b, f) => (seen.push(a, b), (pair = true), R.md(a, b, f)), diff: (a, b) => (seen.push(a, b), (pair = true), R.diff(a, b)) } : {}) }; try { value = m.read(T); } catch (e) { value = NaN; } const design = m.design ?? null; const under = typeof m.under === "function" ? m.under(value, R) : m.under; return { label: m.label, unit: m.unit, value, design, exact: !!m.exact, at: [...new Set(seen.map(String))], ...(Number.isFinite(under) ? { under } : {}), ...(m.swing ? { swing: true } : {}), ...(m.idle ? { idle: true } : {}), ...(m.needs ? { needs: m.needs } : {}), ...(m.tol ? { tol: m.tol } : {}), ...(pair ? { pair: true } : {}), gap: design !== null && design !== 0 && Number.isFinite(value) ? (value - design) / Math.abs(design) : null }; }); }
+function readAll(meas, R) { return (meas || []).map((m) => { let value = NaN, pair = false; const seen = [], T = { ...R, ...(R.v ? { v: (n) => (seen.push(n), R.v(n)), m: (n, f) => (seen.push(n), R.m(n, f)), md: (a, b, f) => (seen.push(a, b), (pair = true), R.md(a, b, f)), diff: (a, b) => (seen.push(a, b), (pair = true), R.diff(a, b)) } : {}) }; try { value = m.read(T); } catch (e) { value = NaN; } const design = m.design ?? null; const under = typeof m.under === "function" ? m.under(value, R) : m.under; return { label: m.label, unit: m.unit, value, design, exact: !!m.exact, at: [...new Set(seen.map(String))], ...(Number.isFinite(under) ? { under } : {}), ...(m.swing ? { swing: true } : {}), ...(m.idle ? { idle: true } : {}), ...(m.needs ? { needs: m.needs } : {}), ...(m.tol ? { tol: m.tol } : {}), ...(m.before ? { before: true } : {}), ...(pair ? { pair: true } : {}), gap: design !== null && design !== 0 && Number.isFinite(value) ? (value - design) / Math.abs(design) : null }; }); }

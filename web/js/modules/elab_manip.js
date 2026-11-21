@@ -25,7 +25,7 @@ import { labBoard } from "./elab_view.js";
 import { benchTable, whyList, wordList } from "./elab_plain.js";
 import { gearPic } from "./elab_gear.js";
 
-const KIND = { safety: ["Sécurité", "#b45309"], set: ["Régler l'appareil", "#2563eb"], connect: ["Brancher sur la carte", "#7c3aed"], guard: ["Vérifier avant d'alimenter", "#b45309"], power: ["Mise sous tension", "#dc2626"], read: ["Relever", "#0891b2"], off: ["Couper", "#475569"] };
+const KIND = { safety: ["Sécurité", "#b45309"], set: ["Régler l'appareil", "#2563eb"], connect: ["Brancher sur la carte", "#7c3aed"], guard: ["Vérifier avant d'alimenter", "#b45309"], power: ["Mise sous tension", "#dc2626"], do: ["Geste à la main", "#0d9488"], read: ["Relever", "#0891b2"], off: ["Couper", "#475569"] };
 const hour = (iso) => { const d = iso ? new Date(iso) : null; return d && !Number.isNaN(d.getTime()) ? d.toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" }) : ""; };
 const typing = (e) => /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName || "");
 

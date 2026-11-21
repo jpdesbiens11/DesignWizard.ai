@@ -12,7 +12,7 @@ import { manipSteps, manipState, placedPoints, readingSays, readUnit } from "./l
 import { plainStep, plainReading, screenToBench, whyDifferent, WORDS } from "./lab_plain.js";
 import { eng } from "./lab_bench.js";
 
-const KIND = { safety: "Sécurité", set: "Régler l'appareil", connect: "Brancher sur la carte", guard: "Vérifier avant d'alimenter", power: "Mise sous tension", read: "Relever", off: "Couper" };
+const KIND = { safety: "Sécurité", set: "Régler l'appareil", connect: "Brancher sur la carte", guard: "Vérifier avant d'alimenter", power: "Mise sous tension", do: "Geste à la main", read: "Relever", off: "Couper" };
 const hour = (iso) => { const d = iso ? new Date(iso) : null; return d && !Number.isNaN(d.getTime()) ? `${String(d.getHours()).padStart(2, "0")} h ${String(d.getMinutes()).padStart(2, "0")}` : ""; };      // the hour of the bench : local time, as on the screen
 /** The picture of a step : the part of the board around its points, the parts that are there, the pads, and the marks.
     R : the resolved board ; pp : placedPoints(R, step). → { draw(sheet, x, y, w, h), width, height, caption } or null when the step touches nothing on the board */
