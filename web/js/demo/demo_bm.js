@@ -9,7 +9,7 @@
    each leg and the cells. Then the module : 8 CORE in series, side by side along Y.
    Iterated with JP : 2 — the P45B read, the copper sized, the flex in G ; 3 — the cell holder ; 4 — the two L in one laminated busbar,
    the flex delivered flat and folded into a box, a thermistor under the centre of each cell through its washer (demo_bm_lam.js,
-   demo_bm_box.js). Thicknesses, windows and holes are EXAMPLES (said on each part) ; the casing, the central BMS and the connectors are
+   demo_bm_box.js) ; 5 — the bottom holder with a floor and its washers molded in (demo_bm_holder.js, coreBase). Thicknesses, windows and holes are EXAMPLES (said on each part) ; the casing, the central BMS and the connectors are
    not drawn yet.
    Frame of a CORE : X along a row of 4 (92.8 mm), Y across the two rows (46.4 mm), Z up ; the cells stand on z = 0. Every part of the
    CORE is drawn in that frame, so its place in the CORE is the origin (the cells and the board excepted). */
@@ -21,9 +21,9 @@ import { syncTwins } from "../pcba/twin.js";
 import { LIBRARY } from "../pcba/library.js";
 import { WORDS_BM } from "./demo_bm_words.js";
 import { run, sessionDefaults } from "../analysis/physics/index.js";
-import { coreBox, corePuck, FLEX_T, FLEX_X0, NTC_H } from "./demo_bm_box.js";
+import { coreBox, FLEX_T, FLEX_X0, NTC_H } from "./demo_bm_box.js";
 import { coreLaminate, INS_T, WRAP_T } from "./demo_bm_lam.js";
-import { coreHolder } from "./demo_bm_holder.js";
+import { coreHolder, coreBase } from "./demo_bm_holder.js";
 
 /* Iteration 2 (JP, 21 novembre : « garder les L pressés » ; « le max de courant continu des 21700 P45B de Molicel, en décharge et en charge,
    la valeur la plus élevée — on est en 8s8p avec 8 CORE » ; then the flex in G). The cell is the Molicel INR-21700-P45B of the library, its
@@ -35,7 +35,9 @@ export const I_CORE = 8 * C.discharge[1];      // 360 A : the 8 cells in paralle
 export const BB_T = 2.0, HOLDER_H = 8;      // the copper, sized for I_CORE (the calculation is kept in the project) ; the height of a cell holder (example)
 export const CORE_PITCH = CORE_Y + 2 * (INS_T + BB_T);      // one CORE to the next : 50.9 mm — the + leg of one on the − leg of the next
 const BB_W = CORE_X - 2 * GAP;      // 86.8 : the busbar stops at the gaps of 3 mm of the short ends, where the panels of the flex rise
-export const STACK = INS_T + BB_T + WRAP_T;      // paper, copper, film : above the + terminals and under the cans
+export const STACK = INS_T + BB_T + WRAP_T;      // paper, copper, film : above the + terminals
+export const FLOOR_T = 1.5;      // the floor of the bottom holder, under the cans (example ; the PC/ABS walls of the tool : 1.2 to 3.5 mm)
+export const BELOW = FLOOR_T + BB_T + WRAP_T;      // floor, copper, film : under the cans
 
 const CELL = { ...cellPart(C, { id: "BM-CELL-21700" }), name: "Cellule 21700 du CORE" };
 CELL.notes = [...CELL.notes, "Dans le CORE, la grille reste à 21,7 mm par cellule (la taille de la carte) : une P45B fait 21,55 mm au plus, il reste au moins 0,15 mm entre deux cellules."];
@@ -43,18 +45,15 @@ CELL.notes = [...CELL.notes, "Dans le CORE, la grille reste à 21,7 mm par cellu
 const at = (t) => ({ t, r: [0, 0, 0] });
 const ROWS = [D / 2, D + GAP + D / 2], cellAt = (i, j) => [GAP + D / 2 + i * D, ROWS[j]];
 /** Iteration 4 (JP, 21 novembre : the two L in one laminated busbar ; the flex delivered flat, folded into a box around CORE and busbar ; a
-    thermistor under the centre of each cell, through a washer). The CORE : 8 cells, two cell holders, the laminated busbar, the flex in a box,
-    8 washers, its board on top — each at its place, the frame of the CORE at the origin. */
+    thermistor under the centre of each cell, through a washer). Iteration 5 (JP, par menu : « support + rondelles en un ») : the bottom holder
+    has a floor under the cells and its 8 washers molded in. The CORE : 8 cells, the top holder, the bottom holder with its washers, the
+    laminated busbar, the flex in a box, its board on top — each at its place, the frame of the CORE at the origin. */
 function coreAssembly(pcbPart, box) {
-  const cells = [], pucks = [];
-  for (let j = 0; j < 2; j++) for (let i = 0; i < 4; i++) {
-    const [x, y] = cellAt(i, j);
-    cells.push({ id: `c${j + 1}${i + 1}`, part: CELL.id, fixed: true, placement: at([x, y, 0]) });
-    pucks.push({ id: `r${j + 1}${i + 1}`, part: "BM-PUCK", fixed: true, placement: at([x, y, box.z + FLEX_T + NTC_H]) });
-  }
+  const cells = [];
+  for (let j = 0; j < 2; j++) for (let i = 0; i < 4; i++) { const [x, y] = cellAt(i, j); cells.push({ id: `c${j + 1}${i + 1}`, part: CELL.id, fixed: true, placement: at([x, y, 0]) }); }
   return { dw: "assembly/1", id: "BM-CORE-ASM", name: "CORE 1S8P",
-    instances: [...cells, { id: "supH", part: "BM-HOLDER", fixed: true, placement: at([0, 0, H - HOLDER_H]) }, { id: "supB", part: "BM-HOLDER", fixed: true, placement: at([0, 0, 0]) },
-      { id: "bb", part: "BM-BB-LAM", fixed: true, placement: at([0, 0, 0]) }, { id: "flex", part: box.part.id, fixed: true, placement: at([FLEX_X0, 0, box.z]) }, ...pucks,
+    instances: [...cells, { id: "supH", part: "BM-HOLDER", fixed: true, placement: at([0, 0, H - HOLDER_H]) }, { id: "supB", part: "BM-HOLDER-BASE", fixed: true, placement: at([0, 0, 0]) },
+      { id: "bb", part: "BM-BB-LAM", fixed: true, placement: at([0, 0, 0]) }, { id: "flex", part: box.part.id, fixed: true, placement: at([FLEX_X0, 0, box.z]) },
       { id: "carte", part: pcbPart, fixed: true, placement: at([0, 0, H + STACK + FLEX_T]) }],
     mates: [] };
 }
@@ -75,10 +74,10 @@ export function busbarSizing() {
 /** The project, new each time : the CORE board with its mechanical twin, the parts of the CORE, the CORE and the module. */
 export function bmProject() {
   const p = { dw: "project/1", id: "bm-8s8p-21700", name: "BM 8s8p - 21700", author: "DesignWizard.ai",
-    description: "Module de batterie 8s8p en cellules 21700 : 8 CORE 1S8P en série, côte à côte, chacun avec sa carte de mesure posée dessus. Quatrième itération de l'architecture du projet, à itérer.",
+    description: "Module de batterie 8s8p en cellules 21700 : 8 CORE 1S8P en série, côte à côte, chacun avec sa carte de mesure posée dessus. Cinquième itération de l'architecture du projet, à itérer.",
     parts: [JSON.parse(JSON.stringify(CELL))], assemblies: [], boards: [coreBoard()], drawing: { words: WORDS_BM }, physics: [busbarSizing()], log: [] };
-  const o = { X: CORE_X, Y: CORE_Y, H, t: BB_T, ins: INS_T, w: WRAP_T, e: GAP, grid: D, gap: GAP, rows: ROWS }, box = coreBox(o);
-  p.parts.push(coreLaminate({ ...o, taps: box.taps }), box.part, corePuck({ d: 5, h: STACK - NTC_H }), coreHolder({ X: CORE_X, Y: CORE_Y, grid: D, gap: GAP, h: HOLDER_H }));
+  const o = { X: CORE_X, Y: CORE_Y, H, t: BB_T, ins: INS_T, w: WRAP_T, floor: FLOOR_T, e: GAP, grid: D, gap: GAP, rows: ROWS }, box = coreBox(o), hold = { X: CORE_X, Y: CORE_Y, grid: D, gap: GAP, h: HOLDER_H };
+  p.parts.push(coreLaminate({ ...o, taps: box.taps }), box.part, coreHolder(hold), coreBase({ ...hold, floor: FLOOR_T, below: BB_T + WRAP_T - NTC_H, washer: { d: 5 } }));
   syncTwins(p, LIBRARY);
   const board = p.boards[0], twin = p.parts.find((x) => x.id === board.part);
   twin.name = "Carte de CORE 1S8P"; twin.function = "La carte de mesure du CORE, posée sur le busbar laminé : 8 températures, la tension du CORE, l'équilibrage, RS-485 isolé.";

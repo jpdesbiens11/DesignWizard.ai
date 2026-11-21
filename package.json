@@ -1,6 +1,6 @@
 {
   "name": "designwizard-ai",
-  "version": "0.135.0",
+  "version": "0.136.0",
   "private": true,
   "description": "DesignWizard.ai by DynamiteAgile - from interfaces to parts, assemblies, PCB, isolation, DFx and drawings. No dependency: this file only tells Node that the sources are ES modules and names the test command.",
   "type": "module",

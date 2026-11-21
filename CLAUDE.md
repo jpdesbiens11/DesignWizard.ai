@@ -342,7 +342,10 @@ ordre ; ce qui est fait se raye ici.
    confirmer : sinon un Z par liaison) ; **le flex livré à plat, replié en boîte** (`demo/demo_bm_box.js`, `BM-FLEX-BOX` : section centrale sous
    le CORE, panneaux pleine largeur aux petits bouts, rigid-flex jusqu'à la carte posée sur le busbar) ; **une CTN sous le centre de chaque
    cellule** par sa rondelle thermique (`BM-PUCK`) ; la brique du flex porte des points sur son cœur (`spots`, `tabW`) ; retour DFM dans
-   `docs/BM_MODULE.md`. Reste : les languettes de soudure minces, l'union support + rondelles (heat staking, fond du support), la lamination
+   `docs/BM_MODULE.md`. **Itération 5 (v0.136.0)**, choix de JP par menu : le « 8 » = **une pièce laminée par CORE** (confirmé) ; **le support et
+   les rondelles en un** (`coreBase`, `BM-HOLDER-BASE` : un fond de 1,5 mm sous les cellules qui isole les godets, deux fenêtres de soudure −
+   par cellule, 8 rondelles thermiques moulées en deuxième injection, corps de la même pièce ; le laminé n'a plus de papier sous les cellules).
+   Reste : les languettes de soudure minces, le heat staking du flex (la plaque − est entre les deux), la nuance du silicone 2K, la lamination
    d'une pièce pliée, l'évent au fond de la P45B (à demander), les bornes du module, le boîtier, le BMS central, l'échauffement du module fermé.
 21. ~~**Logiciel : pas à pas, simulation en direct, code visible, chargement**~~ — fait (v0.124.0 ; demande de JP du 20
    novembre, sur l'écran `#/sw`) : sept étapes, entrées et sorties dites sur chaque tuile, la fiche du CPU au centre avec

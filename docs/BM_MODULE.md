@@ -136,6 +136,31 @@ les choix conseillés, dits ici et faciles à changer.
 - **La mesure** : au centre du fond, la CTN lit la cellule et non le cuivre, qui moyenne tout ; l'éloigner du bord du trou.
   **À demander à Molicel** : la P45B a-t-elle un évent au fond ? La fiche ne le dit pas ; si oui, ni rondelle ni pad dessus.
 
+## Itération 5 — le support du bas et ses rondelles, en une pièce
+
+Choix de JP, par menu (21 novembre) : la lecture du « 8 » est confirmée — **une pièce laminée par CORE** ; ensuite,
+**le support et les rondelles en un**.
+
+- **Le support du bas a maintenant un fond** (`BM-HOLDER-BASE`, `coreBase` de `demo/demo_bm_holder.js`) : 1,5 mm de PC/ABS
+  sous les cellules (exemple ; l'outil retient 1,2 à 3,5 mm pour ce matériau). Le fond **isole les godets de la plaque −** :
+  le papier aramide n'est plus utile sous les cellules, le busbar laminé ne le porte plus que sur les bornes + et les
+  flancs. La plaque − est sous le fond ; **deux fenêtres de soudure par cellule** (Ø 6 mm, à 7 mm du centre) laissent monter
+  ses bossages jusqu'au godet.
+- **Les rondelles sont des corps du support** : une pièce, deux matières — le support en PC/ABS et ses 8 rondelles en
+  silicone chargé, souple et conducteur de chaleur, **moulées en deuxième injection (2K)**. Chaque rondelle (Ø 5 × 2,8 mm)
+  part du fond de sa cellule, traverse le trou de la plaque − et repose sur sa CTN, sur le flex. Elle **centre aussi le busbar
+  laminé** à la pose. Le surmoulage d'un silicone sur un thermoplastique est un procédé établi, mais la nuance, sa
+  conductivité et son adhérence au PC/ABS sont à valider avec un mouleur : aucune fiche de matière n'a été lue.
+- **Le support du haut** reste sans fond (`BM-HOLDER`) : en haut, le papier du laminé isole la plaque + des bords sertis.
+- **Vérifié par le noyau 3D** : les pièces se construisent ; le support du bas est d'un seul tenant ; les rondelles
+  remplissent leur logement sans traverser le support ; rien ne traverse rien dans le CORE. **Bilan DFx du support du bas** :
+  aucune erreur ; un avertissement (MLD-08, parois non uniformes, 2,4:1 — le fond de 1,5 mm contre les dents, jusqu'à
+  3,5 mm mesurés sur le maillage). Entre une rondelle et une fenêtre de soudure, 1,5 mm de fond.
+- **Ce qui change ailleurs** : la pile sous les cellules passe à 3,6 mm (fond, cuivre, film) ; les panneaux du flex en boîte
+  s'allongent d'autant. Le CORE compte **13 pièces**, le module **104**.
+- **Pas fait** : le heat staking du flex au support — la plaque − est entre les deux, les plots devraient la traverser par
+  des trous de plus dans le cuivre ; ce sont les rondelles qui posent le flex.
+
 ## Ce qu'il contient
 
 | Élément | Ce que c'est | Où |
@@ -144,9 +169,9 @@ les choix conseillés, dits ici et faciles à changer.
 | Cellule 21700 du CORE | `BM-CELL-21700`, l'enveloppe la plus grande publiée pour une 21700 (Ø 21,7 × 70,8 mm), bornes soudables | Pièces |
 | Busbar laminé du CORE | `BM-BB-LAM` : le conducteur + (bornes +, flanc +Y) et le conducteur − (fonds, flanc −Y) en une pièce, papier aramide côté cellules, film PET dehors, fenêtres et bossages de soudure, un trou sous chaque cellule | Pièces |
 | Flex en boîte du CORE | `BM-FLEX-BOX` : la section centrale sous le CORE (8 CTN, B−), deux panneaux pleine largeur aux petits bouts, le X− continue dans la carte (rigid-flex), le rabat X+ prend B+ | Pièces |
-| Rondelle thermique d'une CTN | `BM-PUCK` : un disque de pad thermique dans le trou de la plaque −, entre la CTN et le godet ; huit par CORE | Pièces |
-| Support de cellules du CORE | `BM-HOLDER` : une épine entre les rangées, deux barres aux bouts, une poche par cellule, cinq noyautages ; deux par CORE | Pièces |
-| CORE 1S8P | `BM-CORE-ASM` : 8 cellules en deux rangées de 4, deux supports, le busbar laminé, le flex en boîte, 8 rondelles, la carte dessus | Assemblage |
+| Support du bas des cellules | `BM-HOLDER-BASE` : le support du bas avec un fond sous les cellules, deux fenêtres de soudure − par cellule, et ses 8 rondelles thermiques moulées en deuxième injection (itération 5 ; les rondelles séparées `BM-PUCK` de l'itération 4 sont dedans) | Pièces |
+| Support du haut des cellules | `BM-HOLDER` : une épine entre les rangées, deux barres aux bouts, une poche par cellule, cinq noyautages | Pièces |
+| CORE 1S8P | `BM-CORE-ASM` : 8 cellules en deux rangées de 4, le support du haut, le support du bas et ses rondelles, le busbar laminé, le flex en boîte, la carte dessus | Assemblage |
 | BM 8s8p - 21700 | `BM-8S8P-ASM` : 8 CORE côte à côte, tous dans le même sens | Assemblage |
 
 ## La géométrie, telle que dessinée
