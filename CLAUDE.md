@@ -296,7 +296,18 @@ ordre ; ce qui est fait se raye ici.
    idéale sur le 12 V, veille CAN, régulateur, mesure pack ouvert, précharge, puis un régulateur pris sur le bus APRÈS
    les contactors. Dix fiches techniques publiques d'un seul fabricant ont été lues, chaque valeur à sa page ; les nombres
    de circuits sont des estimations. **Rien n'est dans l'outil** : le menu « laquelle construire » a été fermé par un autre
-   message — à reprendre avec la bibliothèque pour un BMS (point 6), l'option 1 d'abord, sauf avis contraire de JP.
+   message. **Remplacé par l'architecture de JP (21 novembre, « suis ces consignes ») — c'est elle qui fait foi** : un
+   **CORE** = 8 cellules 21700 en deux rangées de 4, cellules d'une rangée jointives, 3 mm aux deux bouts de chaque rangée
+   et entre les deux rangées ; une seule tension par CORE (3,2–4,2 V, valeurs du projet pour une Molicel P45B, fiche non
+   lue) — lu comme 8 cellules **en parallèle** (1S8P ; « 8s1p » lu comme « 8 températures, 1 tension ») ; **une petite carte
+   par CORE, posée sur son dessus et de sa taille** (92,8 × 46,4 mm à l'enveloppe Ø 21,7 mm), qui mesure les 8 températures
+   (une CTN sous la carte au-dessus de chaque cellule) et la tension du CORE, et répond par **RS-485 isolé** (chaque carte
+   est à son propre potentiel : au 4e CORE, le mode commun −7…+12 V est dépassé) au **BMS central** d'un **boîtier
+   longitudinal** où les CORE se posent côte à côte, avec les connecteurs du véhicule et les busbars LV et HV ; le BMS
+   central interroge les cartes (« mesurez maintenant » diffusé, puis une réponse par carte), juge et agit — contactors,
+   état envoyé au véhicule : **normal, dératé, urgence, arrêt (contactors ouverts)**. La proposition révision B, privée et
+   hors du dépôt, le dit avec quatre choix conseillés — CORE tête-bêche, côté bus alimenté par le faisceau, équilibrage
+   passif, la carte de CORE d'abord dans le PCBA — à confirmer par JP.
 21. ~~**Logiciel : pas à pas, simulation en direct, code visible, chargement**~~ — fait (v0.124.0 ; demande de JP du 20
    novembre, sur l'écran `#/sw`) : sept étapes, entrées et sorties dites sur chaque tuile, la fiche du CPU au centre avec
    un lien par page, le guide dans le volet, l'essai de démarrage et la mémoire, la simulation en direct, le code à l'écran,
