@@ -322,6 +322,14 @@ ordre ; ce qui est fait se raye ici.
    matériel / logiciel suit les signaux à travers la barrière. **Reste** : le flex plié en G dans le module flex (8 CTN sur
    deux rabats), le CORE mécanique et le boîtier, le BMS central et sa machine à états, la barrière vue par l'Isolation
    (GND et GND_ISO y sont au même potentiel), le choix et la lecture des vraies références de composants.
+   **Projet « BM 8s8p - 21700 »** (demande de JP, 21 novembre : « créer un nouveau projet… tout mettre ce qui a trait au core
+   1s8p dedans… un assembly des 8 cores… après on itérera ensemble ») : **fait (v0.132.0)**, première itération — accueil, carte
+   « BM 8s8p - 21700 » (`web/js/demo/demo_bm.js`, `docs/BM_MODULE.md`) : la carte de CORE et son jumeau, la cellule, un busbar +
+   (plaque sur les bornes +, jambe sur le flanc +Y) et un busbar − (plaque sous les fonds, jambe sur le flanc −Y), deux
+   isolants de flanc, le CORE (`BM-CORE-ASM`) et le module de 8 CORE au pas de 49,4 mm (`BM-8S8P-ASM`). **Tout ce qui touche au
+   CORE et au module va désormais dans ce projet.** Les épaisseurs sont des exemples ; la lecture des « busbars en U insérés par
+   le dessus » est à confirmer par JP ; reste le flex en G, les fenêtres de soudure, le support de cellules, les bornes du
+   module, le boîtier, le BMS central.
 21. ~~**Logiciel : pas à pas, simulation en direct, code visible, chargement**~~ — fait (v0.124.0 ; demande de JP du 20
    novembre, sur l'écran `#/sw`) : sept étapes, entrées et sorties dites sur chaque tuile, la fiche du CPU au centre avec
    un lien par page, le guide dans le volet, l'essai de démarrage et la mémoire, la simulation en direct, le code à l'écran,
