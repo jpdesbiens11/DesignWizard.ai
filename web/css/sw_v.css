@@ -42,3 +42,7 @@
 .sw-release li.ok .sk-icon { color: #16a34a; } .sw-release li.ko .sk-icon { color: #d97706; }
 /* the title of a step is one word : it is never cut inside ; the pictograms of the head go to a second row when there is no room */
 .swv-page .side-head { flex-wrap: wrap; row-gap: .3rem; } .swv-page .side-head h2 { flex: 1 0 auto; display: block; white-space: nowrap; overflow-wrap: normal; }
+/* the documents of the software : a row — the name, Word, PDF (modules/sw_docs_ui.js) */
+.sw-doc-row { display: flex; align-items: center; gap: .35rem; flex-wrap: wrap; margin-top: .45rem; }
+.sw-doc-row .sw-doc-name { flex: 1 1 8rem; font-size: .84rem; font-weight: 600; color: var(--ink, inherit); min-width: 0; }
+.side-section .sw-doc-row + .sw-doc-row { border-top: 1px dashed var(--line); padding-top: .45rem; }

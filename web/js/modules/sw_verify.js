@@ -16,6 +16,7 @@ import { reqsOf, trace, reqGuide, TRACE_STATES, REQ_KINDS } from "../sw/sw_req.j
 import { testsOf, addTest, copyTest, setTest, runAll, modelCoverage, testGuide, pinScales, pointsText, parsePoints, outputsOf, expectText, OPS } from "../sw/sw_test.js";
 import { stdAsks } from "../sw/sw_std.js";
 import { vBand, stepCard, swShell, vHash } from "./sw_vband.js";
+import { docRow } from "./sw_docs_ui.js";
 
 function render(main, args) {
   clear(main);
@@ -31,7 +32,7 @@ function render(main, args) {
     left.append(el("div", { class: "side-head" }, el("h2", null, "Vérification")));
     if (d) left.append(el("div", { class: "side-actions" }, el("div", { class: "side-actions-row" },
       (() => { const b = btn("Lancer les essais", () => { run = runAll(d); draw(); toast(`${run.passed} réussi${run.passed > 1 ? "s" : ""}, ${run.failed} en échec${run.empty ? `, ${run.empty} qui n'attendent rien` : ""} — sur le modèle.`, run.failed ? "error" : "success", 5000); }, { primary: true, small: true, icon: "play", tip: "Les essais tournent aussi seuls à chaque changement" }); b.dataset.swRun = ""; return b; })(),
-      btn("Nouvel essai", () => { let t = null; change("nouvel essai", (x) => { t = addTest(x, { name: "Nouvel essai", reqs: [] }); }); if (t) pick(t.id); }, { small: true, icon: "plus", tip: "Il part du scénario du banc ; dites ce que vous attendez" }))));
+      btn("Nouvel essai", () => { let t = null; change("nouvel essai", (x) => { t = addTest(x, { name: "Nouvel essai", reqs: [] }); }); if (t) pick(t.id); }, { small: true, icon: "plus", tip: "Il part du scénario du banc ; dites ce que vous attendez" })), docRow(d, "svr")));
     const scroll = el("div", { class: "side-scroll" }); left.append(scroll);
     scroll.append(stepCard(d, cpu, "verify", "", run, () => {}));
     if (!d) return;

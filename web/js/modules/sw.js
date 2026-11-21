@@ -20,13 +20,14 @@ import { guideBox, nudge } from "../core/guide.js";
 import { zip } from "../core/zip.js";
 import { KINDS, NATURES } from "../sw/sw_objects.js";
 import { demoDesign, problems, unsure, ready, simulate, events, wireCheck, order, split } from "../sw/sw_design.js";
-import { cFiles } from "../sw/sw_c.js";
+import { vPackage } from "../sw/sw_docs.js";
 import { cpuOf, cpuList } from "../sw/sw_cpu.js";
 import { stepStates, kindShape, rankOf, vstepOf, vOfPage } from "../sw/sw_steps.js";
 import { runAll } from "../sw/sw_test.js";
 import { STANDARDS, stdOf, levelOf, stdAsks } from "../sw/sw_std.js";
 import { vBand, stepCard, swShell, vHash } from "./sw_vband.js";
 import { releaseList } from "./sw_release.js";
+import { docsSection } from "./sw_docs_ui.js";
 import { swCanvas } from "./sw_canvas.js";
 import { swBench } from "./sw_bench.js";
 import { sheet, aiText, reimport } from "./sw_sheet.js";
@@ -56,7 +57,7 @@ function render(main, args, vkey) {
       change(`Logiciel : fil ${from} → ${to}`, (x) => { x.wires = x.wires.filter((w) => w.to !== to); x.wires.push({ from, to, ...(loops ? { delay: true } : {}) }); });
       toast(loops ? "Ce fil ferme une boucle : il porte la valeur du pas d'avant, comme le font les schémas-blocs. Un clic sur le fil pour le voir." : c.level ? c.text : "Fil posé.", loops || c.level ? "info" : "success", loops || c.level ? 7000 : 2200); } });
   let R = null, bench = null, journalHost = null, run = null;
-  const files = () => { const d = design(); return d ? cFiles(d, { cpu: cpuOf(d) }) : []; };
+  const files = () => { const d = design(); return d ? vPackage(d, cpuOf(d)) : []; };      // the C, and the requirements and the verification beside it (doc/)
   const valuesAt = () => (R ? Object.fromEntries(Object.entries(R.ports).map(([r, y]) => [r, y[Math.min(st.k, y.length - 1)]])) : null);
   const guide = () => { const d = design(); return d ? problems(d, cpuOf(d)).map((p) => ({ level: LEVEL[p.level] || "tip", text: p.text, field: "sw", go: p.obj ? () => pick(p.obj, p.field) : null })) : []; };
   /* choose an object from a list : the page shows it, its sheet opens, the value asked blinks under the pointer */
@@ -104,7 +105,7 @@ function render(main, args, vkey) {
         F.filter((f) => f.name === "bms/README.md").map((f) => el("button", { class: "nav-item" + (cur0 && f.name === cur0.name ? " active" : ""), type: "button", "data-sw-file": f.name, onClick: () => { st.file = f.name; all(); } }, icon("info"), el("span", { class: "grow" }, "README.md — à lire d'abord"))),
         Object.entries(FOLDERS).map(([dir, [c, what]]) => { const mine = F.filter((f) => f.name.startsWith(`bms/${dir}/`)); return mine.length ? [el("p", { class: "ft-label rd-group", style: `--dom:${c}` }, `${dir}/ — ${what}`), mine.map((f) => el("button", { class: "nav-item" + (cur0 && f.name === cur0.name ? " active" : ""), type: "button", "data-sw-file": f.name, onClick: () => { st.file = f.name; all(); } }, icon("code"), el("span", { class: "grow" }, f.name.replace(`bms/${dir}/`, "")), el("small", null, `${f.text.split("\n").length} l.`)))] : null; })));
     }
-    if (st.step === "load") scroll.append(releaseList(d, cpu, run, (k, page) => { location.hash = vHash(k, page); }));
+    if (st.step === "load") scroll.append(releaseList(d, cpu, run, (k, page) => { location.hash = vHash(k, page); }), docsSection(d));
     if (st.step === "load") scroll.append(el("div", { class: "side-section", "data-box": "pack", "data-fold-note": "" }, el("h3", null, "Le paquet"), el("p", { class: "muted small" }, "Tout ce qui est décrit au centre est aussi écrit dans le paquet, en anglais : doc/LOADING.md."),
       btn("Lire doc/LOADING.md", () => { st.file = "bms/doc/LOADING.md"; open("code"); }, { small: true, icon: "code" })));
     const g = guideBox(guide(), { title: "Ce que le logiciel demande", quiet: "Rien à signaler : le paquet peut être écrit." }); if (g) scroll.append(el("div", { class: "side-section", "data-box": "guide", "data-fold-note": "le guide" }, el("h3", null, "À régler — le guide"), g));

@@ -38,6 +38,11 @@ function layout(doc, pagesOf, total) {
   const need = (h) => { if (y + h > BOTTOM) next(); };
   const lines = (text, width, o) => sheet.wrapText(safe(text), width, o);
   const write = (text, o = {}) => { const size = o.size || 3.3, lh = size * 1.42, x = M + (o.indent || 0); for (const l of lines(text, CW - (o.indent || 0), { size, font: o.font })) { need(lh); sheet.text(o.align === "center" ? W / 2 : x, y, l, { size, font: o.font, color: o.color || INK, baseline: "top", align: o.align }); y += lh; } y += o.after ?? 1.6; };
+  const TS = 2.75, TLH = TS * 1.36, TPAD = 1.1;
+  const colsOf = (head, rows, widths) => { const n = (head || rows[0] || []).length, sum = (widths || []).reduce((s, w) => s + w, 0) || n; return Array.from({ length: n }, (_, i) => CW * ((widths && widths[i]) || 1) / sum); };
+  const tall = (cells, isHead, cols, o = {}) => Math.max(isHead ? 0 : o.height || 0, Math.max(1, ...cells.map((c, i) => { const x = cellOf(c); return lines(x.text, cols[i] - 2 * TPAD, { size: TS, font: isHead || x.bold || (o.firstCol && i === 0) ? "bold" : "sans" }).length; })) * TLH + 2 * TPAD);
+  /** The height a table needs on its page before it may start : its heading and its first row. */
+  const tableTop = (b) => { if (!b || b.type !== "table" || !b.rows || !b.rows.length) return 0; const cols = colsOf(b.head, b.rows, b.widths), o = b.rowHeight ? { height: b.rowHeight } : {}; return (b.head ? tall(b.head, true, cols, o) : 0) + tall(b.rows[0], false, cols, o); };
   const table = (head, rows, widths, o = {}) => {
     const n = (head || rows[0] || []).length, sum = (widths || []).reduce((s, w) => s + w, 0) || n, cols = Array.from({ length: n }, (_, i) => CW * ((widths && widths[i]) || 1) / sum), size = 2.75, lh = size * 1.36, pad = 1.1;
     const row = (cells, isHead) => {
@@ -50,11 +55,12 @@ function layout(doc, pagesOf, total) {
         x += cols[i]; });
       y += h;
     };
+    if (head && rows.length && y + tall(head, true, cols, o) + tall(rows[0], false, cols, o) > BOTTOM && y > TOP + 1) next();      // a heading never stays alone at the foot of a page : it goes with its first row
     if (head) row(head, true);
     for (const r of rows) row(r, false);
     y += 3;
   };
-  const heading = (b) => { const size = { h1: 5, h2: 4, h3: 3.5 }[b.type], lh = size * 1.3; if (b.type === "h1" && y > TOP + 12) y += 3; need(lh + 12); seen.set(b, page); y += b.type === "h1" ? 2 : 1; sheet.text(M, y, safe(b.text), { size, font: "bold", color: HEADC, baseline: "top" }); y += lh; if (b.type === "h1") { sheet.line(M, y, W - M, y, { w: 0.3, color: HEADC }); y += 1; } y += 1.6; };
+  const heading = (b, after = 0) => { const size = { h1: 5, h2: 4, h3: 3.5 }[b.type], lh = size * 1.3; if (b.type === "h1" && y > TOP + 12) y += 3; need(lh + 12 + Math.min(after, BOTTOM - TOP - lh - 30)); seen.set(b, page); y += b.type === "h1" ? 2 : 1; sheet.text(M, y, safe(b.text), { size, font: "bold", color: HEADC, baseline: "top" }); y += lh; if (b.type === "h1") { sheet.line(M, y, W - M, y, { w: 0.3, color: HEADC }); y += 1; } y += 1.6; };
 
   // title page : what the document is, who stands behind it, what changed
   furniture(); y = 62; write(doc.title, { size: 8.5, font: "bold", color: HEADC, after: 2 }); write(doc.subtitle || "", { size: 5, color: MUTED, after: 10 });
@@ -64,8 +70,8 @@ function layout(doc, pagesOf, total) {
   const log = doc.revisions && doc.revisions.length ? doc.revisions : [{ rev: doc.revision || "A", reason: "Émission du document", sections: "Toutes", by: doc.author || (who[0] && who[0].name) || "", date }];
   y += 4; write("Journal des révisions", { size: 3.6, font: "bold", color: HEADC, after: 1.2 }); table(["Rév.", "Motif de la révision", "Sections touchées", "Nom", "Date"], log.slice(-8).map((r) => [{ text: r.rev || "", bold: true }, r.reason || "", r.sections || "Toutes", r.by || "", r.date || ""]), [9, 42, 19, 14, 16]);
   next();
-  for (const b of doc.blocks) {
-    if (/^h[123]$/.test(b.type)) heading(b);
+  doc.blocks.forEach((b, i) => {
+    if (/^h[123]$/.test(b.type)) heading(b, tableTop(doc.blocks[i + 1]));      // a heading keeps with the start of the table under it
     else if (b.type === "p") write(b.runs ? b.runs.map((r) => r.text).join("") : b.text, { color: b.style === "muted" ? MUTED : b.style === "warn" ? "#A14A00" : INK, font: b.style === "note" ? "italic" : b.style === "warn" ? "bold" : "sans" });
     else if (b.type === "list") { const wide = b.ordered && b.items.length > 9 ? 1.9 : 0; b.items.forEach((it, i) => { const x = cellOf(it), ind = 4 + wide + 4 * (x.level || 0), size = 3.2, lh = size * 1.42, ls = lines(x.text, CW - ind, { size }); need(lh); sheet.text(M + ind - 3.4 - wide, y, b.ordered ? `${i + 1}.` : "•", { size, color: INK, baseline: "top" }); for (const l of ls) { need(lh); sheet.text(M + ind, y, l, { size, color: INK, baseline: "top" }); y += lh; } y += 0.5; }); y += 1.6; }
     else if (b.type === "table") { if (b.rowHeight) need(b.rowHeight + 7); table(b.head, b.rows, b.widths, b.rowHeight ? { height: b.rowHeight } : {}); if (b.caption) { y -= 1.5; write(b.caption, { size: 2.7, font: "italic", color: MUTED, align: "center", after: 3 }); } }
@@ -82,7 +88,7 @@ function layout(doc, pagesOf, total) {
       else write("Figure disponible dans la version Word du rapport.", { size: 2.9, font: "italic", color: MUTED, align: "center", after: 1 });
       if (b.caption) write(b.caption, { size: 2.7, font: "italic", color: MUTED, align: "center", after: 3.5 });
     }
-  }
+  });
   return { sheet, pages: page, seen };
 }
 

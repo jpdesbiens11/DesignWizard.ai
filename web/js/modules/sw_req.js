@@ -18,6 +18,7 @@ import { runAll, testsOf } from "../sw/sw_test.js";
 import { stdAsks } from "../sw/sw_std.js";
 import { vBand, stepCard, swShell, vHash } from "./sw_vband.js";
 import { traceMap } from "./sw_trace_map.js";
+import { docRow } from "./sw_docs_ui.js";
 
 function render(main) {
   clear(main);
@@ -30,7 +31,7 @@ function render(main) {
   function drawLeft(d, T) {
     clear(left); const cpu = d ? cpuOf(d) : null;
     left.append(el("div", { class: "side-head" }, el("h2", null, "Exigences")));
-    if (d) left.append(el("div", { class: "side-actions" }, (() => { const b = btn("Nouvelle exigence", () => { let r = null; change("nouvelle exigence", (x) => { r = addReq(x, { text: "" }); }); if (r) { st.sel = { req: r.id }; draw(); const f = right.querySelector("[data-req-text]"); if (f) f.focus(); } }, { primary: true, small: true, icon: "plus" }); b.dataset.reqAdd = ""; return b; })()));
+    if (d) left.append(el("div", { class: "side-actions" }, (() => { const b = btn("Nouvelle exigence", () => { let r = null; change("nouvelle exigence", (x) => { r = addReq(x, { text: "" }); }); if (r) { st.sel = { req: r.id }; draw(); const f = right.querySelector("[data-req-text]"); if (f) f.focus(); } }, { primary: true, small: true, icon: "plus" }); b.dataset.reqAdd = ""; return b; })(), docRow(d, "srs")));
     const scroll = el("div", { class: "side-scroll" }); left.append(scroll);
     scroll.append(stepCard(d, cpu, "req", "", run, () => {}));
     if (!d) return;

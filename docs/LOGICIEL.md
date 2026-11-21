@@ -172,9 +172,22 @@ un outil de couverture : le modèle ne la donne pas. Les cinq essais de l'exempl
 exigences prouvées, les preuves signées ; chacune dit l'étape où la régler. C'est la liste de l'outil : elle ne remplace
 ni la revue de conception ni l'autorité qui accepte un logiciel. Le rapport de revue porte une section par logiciel.
 
-Non fait ici, et dit : l'essai d'intégration sur la carte et l'essai sur le CPU ; un document de spécification ou un
-rapport d'essais en Word / PDF ; les exigences, les essais et la trace dans le paquet C ; l'aller-retour IA d'une
-exigence ou d'un essai. **Aucune prétention de conformité ni de certification** : une norme se tient par un processus,
+**Les deux documents du logiciel** (v0.129.0, `sw/sw_docs.js`, `modules/sw_docs_ui.js`). La **spécification des
+exigences** (`<id>-SRS`) : la référence suivie, chaque exigence avec son genre, sa preuve, ses tuiles et son état — un
+exemple le dit sur sa ligne —, ce que l'outil a trouvé dans les phrases, ce que fait chaque tuile (les exigences de bas
+niveau), la trace jusqu'aux fichiers C et aux essais. Le **rapport de vérification** (`<id>-SVR`) : où et quand les
+essais ont tourné (sur le modèle, avec la version de l'outil), le bilan, la matrice de traçabilité, chaque essai avec son
+scénario dans l'unité de ses broches, ce que l'on attendait et ce qui a été trouvé, la couverture du modèle, ce que la
+référence demande au code, la liste de livraison. Word et PDF, au gabarit des documents de la plateforme (cartouche,
+page de titre, approbations, note de confidentialité). La spécification est en tête du volet des Exigences, le rapport
+en tête de celui de la Vérification, les deux dans la Livraison. **Le paquet C en porte la même matière**, en ASCII :
+`doc/REQUIREMENTS.md` (exigence ↔ tuiles ↔ fichiers ↔ essais) et `doc/VERIFICATION.md` (chaque essai, son scénario,
+ses attendus, la couverture du modèle) ; il compile toujours dos à dos. Le plan de ces documents suit l'usage du métier,
+écrit de mémoire : aucun gabarit d'une norme n'a été lu, et ils ne tiennent pas lieu des données du cycle de vie qu'une
+norme demande.
+
+Non fait ici, et dit : l'essai d'intégration sur la carte et l'essai sur le CPU ; l'aller-retour IA d'une exigence ou
+d'un essai. **Aucune prétention de conformité ni de certification** : une norme se tient par un processus,
 des revues indépendantes et une autorité ; l'outil aide à tenir les traces que ce processus demande.
 
 ## 5. Ce qui est vérifié, ce qui ne l'est pas
@@ -199,7 +212,9 @@ et par un vrai débutant.
 Le cycle en V (v0.128.0) : 12 essais Node (`tests/node/sw_v.test.mjs`) — les niveaux et ce que les pages lues en
 disent, la relecture des exigences, la trace dans les deux sens, les cinq essais de l'exemple qui réussissent et un
 attendu hors fenêtre qui échoue, la couverture du modèle, le scénario écrit en mV et relu à l'identique, la liste de
-livraison (l'exemple n'est pas prêt ; tout confirmé, il l'est), les sept étapes, les marches du V.
+livraison (l'exemple n'est pas prêt ; tout confirmé, il l'est), les sept étapes, les marches du V. Les deux documents
+(v0.129.0) : 5 essais Node (`tests/node/sw_docs.test.mjs`) — chaque exigence et chaque essai de l'exemple y sont, un
+essai qui échoue se lit dans le rapport, le PDF et le Word s'écrivent, le paquet reste en ASCII et compile dos à dos.
 
 ## 6. Reste
 
