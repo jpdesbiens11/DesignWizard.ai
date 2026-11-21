@@ -4,7 +4,10 @@
    the core is the layer under a rigid board, and its branches run to the measuring points of the product.
    def = { name, t, cu, r, layers, gap, core: { L, W }, rigid: { side: "over" | "under", t } | null,
            branches: [{ id, edge: "+X" | "-X" | "+Y" | "-Y", at (along that edge, mm), w, legs: [{ L, bend: 90 | -90 }],
-                        end: "temp" | "volt" | "slot" | "free", net, on, tracks, side }] }
+                        end: "temp" | "volt" | "slot" | "free", net, on, tracks, side, tabW (the width of a voltage tab) }],
+           spots: [{ id, x, y (on the core, from its corner), end: "temp" | "volt", net, on, side }] (optional) }
+   A spot sits on the core itself, on the face toward what it watches (side +1 : the top) : a thermistor pressed on its target through
+   a pad, or a voltage tab — the flex that lies flat under a block of cells and reads each one by its centre.
    The first leg of a branch leaves the core flat ; bend +90 folds toward Z+, −90 toward Z−. Kept in the part (spec.flex),
    which is written again from it. Pure : no kernel, no DOM. The strip of a branch : core/busbar.js (legs, section). */
 
@@ -79,10 +82,19 @@ export function treeChecks(def) {
     (byEdge[b.edge] = byEdge[b.edge] || []).push(b);
   }
   for (const list of Object.values(byEdge)) { list.sort((a, b) => a.at - b.at); for (let i = 1; i < list.length; i++) if (list[i].at - list[i].w / 2 < list[i - 1].at + list[i - 1].w / 2 + 1 - 1e-9) say("bad", `${list[i - 1].id} et ${list[i].id} se touchent sur le bord ${list[i].edge} : au moins 1 mm entre deux branches.`, list[i].id, "at"); }
-  if (new Set(def.branches.map((b) => b.id)).size !== def.branches.length) say("bad", "Deux branches portent le même repère.");
+  const spots = def.spots || [];
+  for (const p of spots) {
+    const K = SENSOR_KINDS[p.end], hx = K ? K.size[0] / 2 : 0, hy = K ? K.size[1] / 2 : 0;
+    if (!K) { say("bad", `${p.id} : un point du cœur est une sonde (temp) ou une prise (volt).`, p.id, "end"); continue; }
+    if (p.x - hx < -1e-9 || p.x + hx > c.L + 1e-9 || p.y - hy < -1e-9 || p.y + hy > c.W + 1e-9) say("bad", `${p.id} : il sort du cœur (${fr(c.L)} × ${fr(c.W)} mm).`, p.id, "x");
+    if (p.end === "volt" && !p.net) say("todo", `${p.id} : dites quel potentiel cette prise ramène.`, p.id, "net");
+  }
+  spots.forEach((p, i) => spots.slice(i + 1).forEach((q) => { if (Math.hypot(p.x - q.x, p.y - q.y) < 3 - 1e-9) say("bad", `${p.id} et ${q.id} sont à moins de 3 mm l'un de l'autre sur le cœur.`, q.id, "x"); }));
+  const ids = [...def.branches.map((b) => b.id), ...spots.map((p) => p.id)];
+  if (new Set(ids).size !== ids.length) say("bad", "Deux branches ou points portent le même repère.");
   if (def.branches.filter((b) => b.end === "volt").length > 1) say("check", "Des prises de tension amènent des potentiels différents sur le cœur : l'espace entre pistes et les lignes de fuite se jugent dans l'écran Isolation, sur l'assemblage.");
   if (def.rigid && !(def.rigid.t > 0)) say("bad", "Donnez l'épaisseur de la carte rigide.", null, "rigid");
-  const total = rows.reduce((a, r) => a + r.tracks, 0);
+  const total = rows.reduce((a, r) => a + r.tracks, 0) + spots.reduce((a, p) => a + (p.end === "temp" ? 2 : 1), 0);
   return { rows, tracks: total, notes, ok: !notes.some((n) => n.level === "bad") };
 }
 
@@ -103,24 +115,33 @@ export function treePart(def, id, before = null) {
     if (b.end === "temp") { const front = tipSpot(def, b, 3, side), back = tipSpot(def, b, 3, -side), comp = `ts_${body}`; bodies[comp] = { material: "GENERIC-COMPONENT", kind: "insulator", label: `Sonde ${b.id}` };
       features.push({ op: "box", id: comp, name: `${K.label} de ${b.id}`, body: comp, ...boxOn(back, K.size[0], K.size[1], K.size[2]) });      // the component stands on the back : the face that touches stays flat
       interfaces.push({ id: b.id, type: "planar", name: `${K.label} ${b.id} — contact thermique`, key: b.key || `${key}_${body}`, partner: on, side: "A", face: front.face, level: front.level, at: front.at, params: { w: Math.min(4, b.w), h: Math.min(4, b.w) } }); }
-    else if (b.end === "volt") { const front = tipSpot(def, b, 3, side), tab = `vs_${body}`, h = K.size[2]; bodies[tab] = { material: "CU-C110", net, kind: "conductor", label: `Prise ${b.id} ${net}` };
-      features.push({ op: "box", id: tab, name: `${K.label} de ${b.id}`, body: tab, ...boxOn(front, 4, Math.max(1, b.w - 1), h) });
+    else if (b.end === "volt") { const front = tipSpot(def, b, 3, side), tab = `vs_${body}`, h = K.size[2], tw2 = b.tabW > 0 ? Math.min(b.tabW, Math.max(1, b.w - 1)) : Math.max(1, b.w - 1); bodies[tab] = { material: "CU-C110", net, kind: "conductor", label: `Prise ${b.id} ${net}` };
+      features.push({ op: "box", id: tab, name: `${K.label} de ${b.id}`, body: tab, ...boxOn(front, 4, tw2, h) });
       interfaces.push({ id: b.id, type: "weld", name: `${K.label} ${b.id}${b.net ? ` — ${b.net}` : ""}`, key: b.key || `${key}_${body}`, partner: on, side: "A", face: front.face, level: r2(front.level + (front.face[0] === "+" ? h : -h)), at: front.at, ...(front.along ? { rot: 90 } : {}),
-        params: { process: b.process || "laser", w: 4, h: Math.max(1, b.w - 1), n: 1, t: h, wire: 0.3, wireMat: "Al", i: 0 } }); }
+        params: { process: b.process || "laser", w: 4, h: tw2, n: 1, t: h, wire: 0.3, wireMat: "Al", i: 0 } }); }
     else if (b.end === "slot") { const back = tipSpot(def, b, 3, -side), front = tipSpot(def, b, 3, side), st = `raid_${body}`, tk = r2(Math.max(0.05, 0.3 - def.t)); bodies[st] = { material: "FR4", kind: "insulator", label: `Raidisseur ${b.id}` };
       features.push({ op: "box", id: st, name: `Raidisseur de la languette ${b.id}`, body: st, ...boxOn(back, 6, b.w, tk) });
       interfaces.push({ id: b.id, type: "rail", name: `Languette ${b.id} dans sa fente clipsée`, key: b.key || `${key}_${body}`, partner: on, side: "A", face: front.face, level: front.level, at: front.at, ...(front.along ? {} : { rot: 90 }), params: { t: 0.3, depth: 5, length: b.w } }); }
     else { const front = tipSpot(def, b, 2.5, side); interfaces.push({ id: b.id, type: "planar", name: `Plages de ${b.id}`, key: b.key || `${key}_${body}`, partner: on, side: "A", face: front.face, level: front.level, at: front.at, params: { w: Math.min(4, b.w), h: Math.min(4, b.w) } }); }
     void k;
   });
+  for (const p of def.spots || []) {      // a spot : on the face toward its target, the component itself pressed on it (through a pad)
+    const K = SENSOR_KINDS[p.end]; if (!K) continue;
+    const top = p.side !== -1, body = `sp_${slug(p.id)}`, [sx, sy, h] = K.size, z = top ? def.t : -h, level = top ? r2(def.t + h) : r2(-h), net = p.net || p.id;
+    bodies[body] = p.end === "temp" ? { material: "GENERIC-COMPONENT", kind: "insulator", label: `Sonde ${p.id}` } : { material: "CU-C110", net, kind: "conductor", label: `Prise ${p.id} ${net}` };
+    features.push({ op: "box", id: body, name: `${K.label} ${p.id}`, body, size: [sx, sy, h], at: [r2(p.x - sx / 2), r2(p.y - sy / 2), z] });
+    interfaces.push(p.end === "temp" ? { id: p.id, type: "planar", name: `${K.label} ${p.id} — contact thermique`, key: p.key || `${key}_${slug(p.id)}`, partner: p.on || "Ce qu'elle surveille", side: "A", face: top ? "+Z" : "-Z", level, at: [p.x, p.y], params: { w: 4, h: 4 } }
+      : { id: p.id, type: "weld", name: `${K.label} ${p.id}${p.net ? ` — ${p.net}` : ""}`, key: p.key || `${key}_${slug(p.id)}`, partner: p.on || "Busbar ou borne de cellule", side: "A", face: top ? "+Z" : "-Z", level, at: [p.x, p.y], params: { process: p.process || "laser", w: sx, h: sy, n: 1, t: h, wire: 0.3, wireMat: "Al", i: 0 } });
+  }
   const up = !rigid || rigid.side === "over";
   interfaces.unshift({ id: "IF1", type: "planar", name: rigid ? `Carte rigide — ${rigid.side === "under" ? "sous" : "sur"} le cœur du circuit` : "Cœur du circuit — pose sur la carte", key: `${key}_coeur`, partner: "Carte ou support", side: "A", face: up ? "+Z" : "-Z", level: up ? r2(def.t + (rigid ? rigid.t : 0)) : -rigid.t, at: [r2(c.L / 2), r2(c.W / 2)], params: { w: c.L, h: c.W } });
-  const mine = new Set(["IF1", ...def.branches.map((b) => b.id)]), kept = ((before && before.interfaces) || []).filter((i) => !mine.has(i.id) && !/^(B|TS|VS)\d+$/.test(i.id));
+  const mine = new Set(["IF1", ...def.branches.map((b) => b.id), ...(def.spots || []).map((p) => p.id)]), kept = ((before && before.interfaces) || []).filter((i) => !mine.has(i.id) && !/^(B|TS|VS)\d+$/.test(i.id));
   const folds = def.branches.reduce((a, b) => a + b.legs.length - 1, 0);
   return { ...(before ? { revision: before.revision, characteristics: before.characteristics, ...(before.look ? { look: before.look } : {}) } : {}), dw: "part/1", id, name: def.name || "Circuit flexible ramifié", function: `Relie ${def.branches.length} point(s) de mesure ou de raccordement à un cœur de ${fr(c.L)} × ${fr(c.W)} mm`,
     family: "flex", process: "purchased", material: "PI-FILM", elec: { kind: "insulator" }, flex: JSON.parse(JSON.stringify(def)), bodies, params: {}, features: [...features, { op: "interfaces" }], interfaces: [...interfaces, ...kept],
     notes: [`Polyimide de ${fr(def.t)} mm, cuivre de ${fr(def.cu * 1000)} µm, ${def.layers === 1 ? "simple face" : "double face"} ; cœur de ${fr(c.L)} × ${fr(c.W)} mm, ${def.branches.length} branche(s), ${ch.tracks} piste(s), ${folds} pli(s).`,
       ...def.branches.map((b) => `${b.id} : ${EDGES[b.edge] ? EDGES[b.edge].fr : b.edge}, ${fr(b.w)} mm de large, ${b.legs.map((g, i) => `${i ? (g.bend > 0 ? "pli Z+ puis " : "pli Z− puis ") : ""}${fr(g.L)} mm`).join(", ")} → ${(ENDS[b.end] || ENDS.free).label.toLowerCase()}${b.end === "volt" && b.net ? ` ${b.net}` : ""}${b.on ? ` (${b.on})` : ""}.`),
+      ...((def.spots || []).length ? [`${def.spots.length} point(s) sur le cœur : ${def.spots.map((p) => `${p.id} (${(SENSOR_KINDS[p.end] || { label: p.end }).label.toLowerCase()}${p.end === "volt" && p.net ? ` ${p.net}` : ""})`).join(", ")}.`] : []),
       ...(folds ? [`Plis à 90°, rayon intérieur ${fr(def.r)} mm (au moins ${BEND_RATIO[def.layers] || 12} × l'épaisseur pour une pose statique) ; aucun composant ni trou métallisé dans un pli.`] : []),
       ...(rigid ? [`Carte rigide de ${fr(rigid.t)} mm montrée ${rigid.side === "under" ? "sous" : "sur"} le cœur : un corps de cette pièce, pour la place qu'elle prend — sa définition est celle de la carte.`] : []),
       "Géométrie de principe : une bande de cuivre par branche tient lieu de ses pistes ; le routage sur le cœur, les fenêtres du vernis et les plages ne sont pas dessinés."] };
@@ -147,6 +168,8 @@ export function tidyTree(raw) {
   d.core = { L: num((d.core || {}).L, 50), W: num((d.core || {}).W, 30) }; d.rigid = d.rigid && typeof d.rigid === "object" ? { side: d.rigid.side === "under" ? "under" : "over", t: num(d.rigid.t, 1.6) } : null;
   d.branches = (Array.isArray(d.branches) ? d.branches : []).filter((b) => b && typeof b === "object").map((b, k) => ({ ...b, id: String(b.id || `B${k + 1}`), edge: EDGES[b.edge] ? b.edge : "+X", at: num(b.at, 5), w: num(b.w, 4), end: ENDS[b.end] ? b.end : "free",
     legs: (Array.isArray(b.legs) && b.legs.length ? b.legs : [{ L: 20 }]).map((g, i) => (i ? { L: num((g || {}).L, 10), bend: num((g || {}).bend, 90) < 0 ? -90 : 90 } : { L: num((g || {}).L, 20) })) }));
+  if (Array.isArray(d.spots)) d.spots = d.spots.filter((p) => p && typeof p === "object").map((p, k) => ({ ...p, id: String(p.id || `S${k + 1}`), x: num(p.x, 5), y: num(p.y, 5), end: p.end === "volt" ? "volt" : "temp", side: p.side === -1 ? -1 : 1 }));
+  else delete d.spots;
   return d;
 }
 /** Writes a flexible circuit, whichever its kind : a single strip, or a core and its branches. */

@@ -325,6 +325,14 @@ flex name="Carte de mesure" t=0.2 cu=0.035 r=2 layers=1 gap=0.3 core={L: 70, W: 
   plus proche, à cet endroit, avec le bout voulu ; ← → glissent la branche choisie le long de son bord, ↑ ↓ allongent
   sa dernière partie, Tab passe à la suivante, Suppr la retire.
 
+- **Des points sur le cœur** (`spots`, v0.135.0) : une sonde (`temp`) ou une prise (`volt`) posée sur le cœur lui-même, à
+  l'endroit voulu (`x`, `y` depuis son coin), sur la face tournée vers ce qu'elle surveille (`side` : +1 le dessus). Une
+  sonde y est pressée sur sa cible à travers un pad ; c'est le flex posé à plat sous un bloc de cellules, qui lit chacune
+  par son centre (exemple : le flex en boîte du projet « BM 8s8p - 21700 »). Deux points sont à 3 mm l'un de l'autre au
+  moins. **La patte d'une prise** peut être plus étroite que sa branche (`tabW`) : un panneau pleine largeur prend son
+  potentiel par une patte de 4 mm. L'écran montre les points et les pattes ; il ne les édite pas encore (la définition, ou
+  l'aller-retour IA, les écrit).
+
 Une pièce, **un conducteur par branche** (une bande de cuivre tient lieu de ses pistes, au potentiel de la prise), plus
 ce qui est au bout et la carte : l'écran Isolation les lit tels quels.
 

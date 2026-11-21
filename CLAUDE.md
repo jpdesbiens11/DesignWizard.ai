@@ -336,8 +336,14 @@ ordre ; ce qui est fait se raye ici.
    vérifié sans interférence. **Itération 3 (v0.134.0)**, choix de JP par menu : **le support de cellules** (`demo/demo_bm_holder.js`,
    `BM-HOLDER`) — moulé, deux par CORE (en haut et en bas) ; les cellules d'une rangée se touchent presque (0,15 mm), donc une épine
    entre les rangées et ses dents, une barre à chaque bout qui laisse 1,2 mm au flex, une poche de 21,8 mm par cellule, des noyautages (parois de
-   1,5 mm : aucune erreur DFx, un avertissement d'uniformité) ; vérifié sans interférence ; hauteur et matière en exemple. Reste : les fenêtres de soudure, le joint du flex avec la carte, la dépouille et la
-   tenue du support, les bornes du module, le boîtier, le BMS central, l'échauffement dans le module fermé (Simulation).
+   1,5 mm : aucune erreur DFx, un avertissement d'uniformité) ; vérifié sans interférence ; hauteur et matière en exemple. **Itération 4 (v0.135.0)**, consignes de JP du 21 novembre (le menu n'a pas pu
+   s'afficher deux fois : choix conseillés, annoncés) : **les deux L d'un CORE en un busbar laminé** (`demo/demo_bm_lam.js`, `BM-BB-LAM` : deux
+   conducteurs, papier aramide côté cellules, film PET dehors, fenêtre et bossage par calotte +, trou sous chaque cellule — lecture du « 8 » à
+   confirmer : sinon un Z par liaison) ; **le flex livré à plat, replié en boîte** (`demo/demo_bm_box.js`, `BM-FLEX-BOX` : section centrale sous
+   le CORE, panneaux pleine largeur aux petits bouts, rigid-flex jusqu'à la carte posée sur le busbar) ; **une CTN sous le centre de chaque
+   cellule** par sa rondelle thermique (`BM-PUCK`) ; la brique du flex porte des points sur son cœur (`spots`, `tabW`) ; retour DFM dans
+   `docs/BM_MODULE.md`. Reste : les languettes de soudure minces, l'union support + rondelles (heat staking, fond du support), la lamination
+   d'une pièce pliée, l'évent au fond de la P45B (à demander), les bornes du module, le boîtier, le BMS central, l'échauffement du module fermé.
 21. ~~**Logiciel : pas à pas, simulation en direct, code visible, chargement**~~ — fait (v0.124.0 ; demande de JP du 20
    novembre, sur l'écran `#/sw`) : sept étapes, entrées et sorties dites sur chaque tuile, la fiche du CPU au centre avec
    un lien par page, le guide dans le volet, l'essai de démarrage et la mémoire, la simulation en direct, le code à l'écran,

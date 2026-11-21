@@ -1,4 +1,4 @@
-# BM 8s8p - 21700 — le module de batterie, première itération
+# BM 8s8p - 21700 — le module de batterie, itéré avec JP
 
 Demande de JP (21 novembre 2026) : « créer un nouveau projet pour ces pièces et assembly qui s'appelle BM 8s8p - 21700 et
 tout mettre ce qui a trait au core 1s8p dedans… commencer un assembly des 8 cores pour voir où on en est et après on
@@ -75,44 +75,107 @@ Choix de JP, par menu (21 novembre) : **le support de cellules**.
 - **Pas encore dessiné** : la dépouille, les détrompeurs, les congés, l'emboîtement d'un CORE au suivant ; **non analysé** :
   la tenue mécanique (aucun calcul de vibration ni de choc).
 
+## Itération 4 — le busbar laminé, le flex en boîte, une CTN sous chaque cellule
+
+Consignes de JP (21 novembre) : « 2 busbars en L pourraient être joints dans un busbar laminé en forme de 8, en multicouche
+avec Nomex entre les conducteurs et une enveloppe isolante mince externe, pour assembler une seule pièce sur la ligne » ;
+« même stratégie PCBA + PCB flex, mais il arriverait en feuille avec des pré-plis pour le rabattre en forme de boîte en
+déposant le core + busbar sur la section centrale, puis l'assemblage PCB serait replié jusqu'à ce que le PCB rigide soit
+déposé sur le top des busbars » ; « joindre les panneaux verticaux du flex même si les traces ne font pas la largeur » ;
+des CTN sous le centre des cellules, par des rondelles. Le menu des choix n'a pas pu s'afficher deux fois : construit avec
+les choix conseillés, dits ici et faciles à changer.
+
+- **Lecture retenue du « 8 »** : les deux L d'un même CORE — le + (sur les bornes +, puis le flanc +Y) et le − (sous les
+  fonds, puis le flanc −Y) — deviennent **une seule pièce laminée** (`BM-BB-LAM`, `demo/demo_bm_lam.js`) : deux conducteurs
+  de cuivre, du **papier aramide** (0,25 mm, exemple) entre le cuivre et les cellules, une **enveloppe en film PET** (0,1 mm,
+  exemple) dehors. Le contact série reste celui que JP a gardé à l'itération 2 : la jambe + d'un CORE presse la jambe − du
+  suivant ; l'enveloppe laisse ces faces nues. Le CORE et son busbar forment un bloc, posé d'un geste sur le flex.
+  **Autre lecture possible**, à dire si c'est elle : un « Z » par liaison série (le dessus du CORE k, la cloison et le dessous
+  du CORE k+1 dans le même cuivre) — il supprimerait les contacts pressés à 360 A, mais une pièce enjamberait deux CORE.
+- **Un défaut des itérations 1 à 3 corrigé** : la plaque + reposait sur tout le dessus des cellules. Sur une vraie 21700, le
+  bord serti autour de la calotte + est le godet, au −. Le papier passe maintenant entre les deux, avec une **fenêtre au droit
+  de chaque calotte** et un **bossage de soudure** dedans. La fiche de la P45B (p. 2) ne cote ni la calotte ni le bord serti :
+  fenêtre de 8 mm en exemple.
+- **Une CTN sous le centre de chaque cellule** : la plaque − est percée d'un trou de 6 mm sous chaque cellule ; les soudures −
+  se font de part et d'autre, à 6,5 mm du centre (exemples). La CTN est sur le flex, dans le trou ; sa **rondelle thermique**
+  (`BM-PUCK`, pad silicone chargé, Ø 5 × 1,55 mm, exemple) la presse contre le godet. Posée sur la CTN quand le flex est à plat,
+  la rondelle est centrée par le trou quand le CORE descend.
+- **Le flex en boîte** (`BM-FLEX-BOX`, `demo/demo_bm_box.js`) : livré à plat, avec ses pré-plis. Sa **section centrale** est
+  sous le CORE, sur l'enveloppe du busbar, et porte les 8 CTN et la prise B−. **Deux panneaux pleine largeur** (44 mm) se
+  relèvent aux petits bouts, dans les jeux de 3 mm — les grands côtés sont aux jambes du busbar, qui pressent le CORE voisin.
+  Le panneau X− se rabat sur le dessus et continue dans la carte rigide (un **rigid-flex** : le joint flex-carte de
+  l'itération 2 disparaît) ; le rabat X+ prend B+ par une fenêtre de l'enveloppe. La carte rigide est posée sur le busbar.
+- **La brique du flex s'étend** (`core/flex_tree.js`) : des **points sur le cœur** (`spots`), sonde ou prise posée sur la face
+  tournée vers ce qu'elle surveille, et une **patte de prise de largeur choisie** (`tabW`) sur une branche large. L'écran du
+  flex les montre, il ne les édite pas encore.
+- **Vérifié par le noyau 3D** : toutes les pièces se construisent ; dans le CORE, rien ne traverse rien — busbar, flex,
+  rondelles, supports, carte, cellules. Pas d'un CORE au suivant : **50,9 mm** (46,4 + 2 × (0,25 + 2,0)). Le module compte
+  **168 pièces** (21 par CORE).
+
+### Retour DFM (demandé par JP)
+
+- **Le busbar laminé** : une pièce de moins à poser, et le papier remplace les isolants de flanc. Mais un laminé plié sur trois
+  faces se lamine sur un gabarit en forme, ou se plie après lamination avec de grands rayons : **à voir avec un fabricant**.
+  La brique de laminé de l'outil (`core/busbar_lam.js`) ne fait que des laminés plats.
+- **La soudure** : on ne soude pas au laser 2 mm de cuivre sur une calotte. Il faut une languette mince par cellule, ou un
+  bossage formé dans une zone amincie, qui reprend aussi la tolérance de hauteur (± 0,15 mm, fiche p. 2) et la dilatation : la
+  fiche demande de ne pas forcer sur les bornes et de ne pas forcer ni tourner la borne + (§ 7.4.1 et 7.4.3, p. 12). Les
+  bossages dessinés montrent la place, pas la manière.
+- **Le flex en boîte** : excellent pour la fabrication. Tout se pose à plat en un seul passage SMT, CTN comprises ; le CORE se
+  dépose d'un geste ; un rigid-flex supprime le joint flex-carte. Prévoir des dégagements aux coins et aucun cuivre dans un
+  coin, croiser les plis à 90° ; le pré-pliage se valide avec le fournisseur du flex (la règle de rayon de l'outil, 6 fois
+  l'épaisseur, est une règle de pouce non vérifiée). La carte rigide sur le busbar demande une couche isolante dessous — la
+  fiche recommande une barrière plastique entre cellule et PCBA (§ 8.3, p. 13) : l'enveloppe en tient lieu ici, à confirmer.
+- **Les rondelles et le support** : les combiner se fait, dans cet ordre de préférence — (1) poser les rondelles sur le flex
+  à plat (c'est ce qui est dessiné : flex et rondelles forment un sous-ensemble, que le trou centre) ; (2) fixer le flex au
+  support du bas par **heat staking** (des plots du support fondus à travers des trous du flex) ; (3) intégrer les rondelles
+  au support demande un **fond** au support, sous les cellules, avec des fenêtres pour les soudures − : possible, mais plus de
+  matière et une soudure à travers le support. **Surmouler le flex dans du PC/ABS est à éviter** : la matière injectée est
+  plus chaude que le point de fusion des soudures sans plomb (ordre de grandeur courant, non relu ici) ; pour encapsuler une
+  CTN, mieux vaut un moulage basse pression en hot-melt, que l'outil ne décrit pas encore.
+- **La mesure** : au centre du fond, la CTN lit la cellule et non le cuivre, qui moyenne tout ; l'éloigner du bord du trou.
+  **À demander à Molicel** : la P45B a-t-elle un évent au fond ? La fiche ne le dit pas ; si oui, ni rondelle ni pad dessus.
+
 ## Ce qu'il contient
 
 | Élément | Ce que c'est | Où |
 |---|---|---|
 | Carte de CORE 1S8P | la carte du PCBA (`CORE-1S8P-PCBA`, 92,8 × 46,4 mm) et son jumeau mécanique `CORE-1S8P-PCBA-PCB` | Électronique › PCBA ; Pièces |
 | Cellule 21700 du CORE | `BM-CELL-21700`, l'enveloppe la plus grande publiée pour une 21700 (Ø 21,7 × 70,8 mm), bornes soudables | Pièces |
-| Busbar + du CORE | `BM-BB-POS` : la plaque sur les bornes +, sous la carte, et une jambe qui descend le long du grand côté +Y | Pièces |
-| Busbar − du CORE | `BM-BB-NEG` : la plaque sous les fonds des cellules et une jambe qui monte le long du grand côté −Y | Pièces |
-| Isolant de flanc du CORE | `BM-ISO-SIDE` : une feuille entre chaque jambe et les godets des cellules | Pièces |
-| Flex en G du CORE | `BM-FLEX-G` : son cœur sous la carte, 8 doigts pliés en G jusqu'aux CTN, B+ et B− | Pièces |
+| Busbar laminé du CORE | `BM-BB-LAM` : le conducteur + (bornes +, flanc +Y) et le conducteur − (fonds, flanc −Y) en une pièce, papier aramide côté cellules, film PET dehors, fenêtres et bossages de soudure, un trou sous chaque cellule | Pièces |
+| Flex en boîte du CORE | `BM-FLEX-BOX` : la section centrale sous le CORE (8 CTN, B−), deux panneaux pleine largeur aux petits bouts, le X− continue dans la carte (rigid-flex), le rabat X+ prend B+ | Pièces |
+| Rondelle thermique d'une CTN | `BM-PUCK` : un disque de pad thermique dans le trou de la plaque −, entre la CTN et le godet ; huit par CORE | Pièces |
 | Support de cellules du CORE | `BM-HOLDER` : une épine entre les rangées, deux barres aux bouts, une poche par cellule, cinq noyautages ; deux par CORE | Pièces |
-| CORE 1S8P | `BM-CORE-ASM` : 8 cellules en deux rangées de 4, les deux busbars, deux isolants, deux supports, le flex, la carte dessus | Assemblage |
+| CORE 1S8P | `BM-CORE-ASM` : 8 cellules en deux rangées de 4, deux supports, le busbar laminé, le flex en boîte, 8 rondelles, la carte dessus | Assemblage |
 | BM 8s8p - 21700 | `BM-8S8P-ASM` : 8 CORE côte à côte, tous dans le même sens | Assemblage |
 
 ## La géométrie, telle que dessinée
 
 - **Repère d'un CORE** : X le long d'une rangée de 4 (92,8 mm), Y en travers des deux rangées (46,4 mm), Z vers le haut ;
-  les cellules sont posées sur z = 0. Les busbars et les isolants sont dessinés dans ce repère : leur place dans le CORE
+  les cellules sont posées sur z = 0. Le busbar laminé est dessiné dans ce repère : leur place dans le CORE
   est l'origine, ce qui les rend faciles à reprendre.
 - **Le dessus d'un CORE** = 4 × 21,7 + 2 × 3 = 92,8 mm par 2 × 21,7 + 3 = 46,4 mm : les cellules d'une rangée se touchent,
   3 mm aux deux bouts et entre les rangées — la taille de la carte.
 - **La série** : la jambe + d'un CORE presse la jambe − du CORE suivant, face contre face (itération 1 : 49,4 mm d'un CORE
-  au suivant avec 1 mm de cuivre ; itération 2 : 51,4 mm avec 2 mm).
+  au suivant avec 1 mm de cuivre ; itération 2 : 51,4 mm avec 2 mm ; itération 4 : 50,9 mm, le papier aramide de 0,25 mm
+  remplaçant l'isolant de 0,5 mm).
 - La jambe + s'arrête à 5 mm du bas, la jambe − à 5 mm du haut : aucune des deux ne frôle la plaque de l'autre polarité
   de son propre CORE (exemple, paramètre `z0`).
 
 ## Ce qui est un exemple, et ce qui n'est pas dessiné
 
-**Exemples, à itérer** (dits sur chaque pièce, en paramètres) : l'isolant de flanc (0,5 mm de papier aramide), le retrait
-des jambes (5 mm), la largeur des doigts du flex (5 mm), l'adhésif (0,1 mm). Le cuivre (2,0 mm) est dimensionné, par un
+**Exemples, à itérer** (dits sur chaque pièce, en paramètres) : le papier aramide (0,25 mm), l'enveloppe (0,1 mm), le retrait
+des jambes (5 mm), les fenêtres, les bossages et les trous du busbar, la rondelle thermique, la hauteur et la matière du
+support. Le cuivre (2,0 mm) est dimensionné, par un
 modèle simple. Les pièces sont posées à leur place (« fixe »), sans accouplements : les soudures cellule ↔ busbar et les
 CTN ↔ busbar ne sont pas encore des interfaces appariées, d'où les « interfaces sans jumelle » que l'écran signale.
 
-**Pas encore dessiné** : les fenêtres de soudure laser ; le joint soudé du flex avec la carte (J-FLEX-12) ; la
-dépouille et les nervures du support de cellules ; les bornes du module (B+ au bout du dernier CORE, B− au bout du premier) ; le boîtier longitudinal ; le BMS
+**Pas encore dessiné** : les languettes de soudure minces (les bossages en tiennent la place) ; le chant du cuivre aux
+petits bouts, nu ; la dépouille du support de cellules ; les bornes du module (B+ au bout du dernier CORE, B− au bout du premier) ; le boîtier longitudinal ; le BMS
 central, ses connecteurs et le faisceau RS-485.
 
 **Non vérifié** : l'échauffement réel du cuivre dans le module fermé (le modèle est une barre seule à l'air libre) ; la
 chaleur des cellules elles-mêmes à 45 A (la fiche donne ≤ 8 mΩ à 1 kHz à l'expédition, pas la résistance en courant
-continu) ; la tenue des plis du flex à l'assemblage ; la tenue des cellules dans leur support
+continu) ; la tenue des plis du flex à l'assemblage ; la lamination d'une pièce pliée sur trois faces ; la mesure par
+la rondelle (aucun essai) ; la tenue des cellules dans leur support
 (vibration, choc) ; l'isolation entre CORE ; la conformité de quoi que ce soit.

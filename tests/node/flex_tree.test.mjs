@@ -3,7 +3,7 @@
    its frames, its checks, the list it gives the guide, and the solids the kernel makes of it. */
 import test from "node:test";
 import assert from "node:assert/strict";
-import { EDGES, ENDS, blankTree, exampleTree, isTree, tracksOf, widthNeeded, branchFrame, tipSpot, treeChecks, treeGuide, whereOn, centerLine, treePart, writeFlex, addBranch } from "../../web/js/core/flex_tree.js";
+import { EDGES, ENDS, blankTree, exampleTree, isTree, tracksOf, widthNeeded, branchFrame, tipSpot, treeChecks, treeGuide, whereOn, centerLine, treePart, writeFlex, addBranch, tidyTree } from "../../web/js/core/flex_tree.js";
 import { blankFlex, flexPart } from "../../web/js/core/flex.js";
 import { toDwiz, fromDwiz } from "../../web/js/core/dwiz.js";
 import { aiRead, aiDiff } from "../../web/js/core/ai_loop.js";
@@ -109,4 +109,26 @@ test("the kernel builds the core, the branches, their ends and the board", async
   assert.deepEqual(under.log.filter((l) => l.level === "error"), []);
   const zs = (b) => { const x = b.bodies.find((q) => q.name === "carte").bbox; return [Math.round(x[2] * 100) / 100, Math.round(x[5] * 100) / 100]; };
   assert.deepEqual(zs(ex), [0.2, 1.8], "over the core"); assert.deepEqual(zs(under), [-1.6, 0], "under the core");
+});
+
+test("spots on the core : a thermistor or a tab on the face toward what it watches — checked, counted, kept by tidying, built by the kernel", async () => {
+  const d = { ...blankTree(), core: { L: 50, W: 30 }, rigid: null, branches: [], spots: [{ id: "T1", x: 10, y: 10, end: "temp", on: "Cellule" }, { id: "VN", x: 30, y: 15, end: "volt", net: "B-" }] };
+  const ch = treeChecks(d); assert.ok(ch.ok, JSON.stringify(ch.notes)); assert.equal(ch.tracks, 3, "a thermistor has two tracks, a tap one");
+  const p = treePart(d, "FX-S"), ts = p.features.find((f) => f.id === "sp_t1"), vn = p.features.find((f) => f.id === "sp_vn");
+  assert.deepEqual(ts.at, [9.2, 9.6, d.t], "the thermistor stands on the top face, centred on its spot"); assert.equal(p.bodies.sp_vn.net, "B-"); assert.equal(vn.size[2], 0.1);
+  const it = p.interfaces.find((i) => i.id === "T1"); assert.equal(it.face, "+Z"); assert.equal(it.level, d.t + 0.8, "the contact is the top of the thermistor (pressed through a pad)");
+  assert.equal(p.interfaces.find((i) => i.id === "VN").type, "weld"); assert.ok(p.notes.some((n) => /2 point\(s\) sur le cœur/.test(n)));
+  const out = treeChecks({ ...d, spots: [{ id: "T1", x: 49.9, y: 10, end: "temp" }, { id: "T2", x: 20, y: 10, end: "temp" }, { id: "T3", x: 21, y: 10, end: "temp" }, { id: "V", x: 5, y: 5, end: "volt" }] });
+  assert.ok(out.notes.some((n) => n.id === "T1" && /sort du cœur/.test(n.text))); assert.ok(out.notes.some((n) => n.id === "T3" && /moins de 3 mm/.test(n.text))); assert.ok(out.notes.some((n) => n.level === "todo" && n.id === "V"));
+  assert.ok(treeChecks({ ...d, branches: [{ id: "T1", edge: "+X", at: 10, w: 4, legs: [{ L: 10 }], end: "free" }] }).notes.some((n) => /même repère/.test(n.text)), "a spot and a branch never share a name");
+  const back = tidyTree({ ...d, spots: [{ id: "", x: "12", y: 3, end: "nope", side: 7 }] }); assert.deepEqual(back.spots[0], { id: "S1", x: 12, y: 3, end: "temp", side: 1 });
+  assert.equal("spots" in tidyTree(blankTree()), false, "a definition without spots stays without");
+  const K = await kernel(), b = buildPart(K, p); assert.deepEqual(b.log.filter((l) => l.level === "error"), []); assert.ok(b.bodies.some((x) => x.name === "sp_t1") && b.bodies.some((x) => x.name === "sp_vn"));
+});
+
+test("a voltage tab can be narrower than its branch : a full-width panel takes its potential by a tab of 4 mm", () => {
+  const d = one("+X", [{ L: 10 }, { L: 8, bend: 90 }], { end: "volt", net: "B+", w: 40, at: 20, tabW: 4 }); d.core = { L: 50, W: 44 };
+  const p = treePart(d, "FX-T"), tab = p.features.find((f) => f.id === "vs_b1"), wide = treePart({ ...d, branches: [{ ...d.branches[0], tabW: undefined }] }, "FX-W").features.find((f) => f.id === "vs_b1");
+  assert.equal(Math.min(...tab.size), 0.1); assert.ok(tab.size.includes(4), JSON.stringify(tab.size)); assert.ok(wide.size.includes(39), "without it, the tab takes the width of the branch less 1 mm");
+  assert.equal(p.interfaces.find((i) => i.id === "B1").params.h, 4);
 });
