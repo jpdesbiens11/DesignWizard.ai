@@ -13,6 +13,7 @@ const MCU_PORTS = { SWDIO: ["SWDIO", "SWDIO", "bidir"], SWCLK: ["SWCLK", "SWCLK"
   UART_TX: ["PA9", "UART_TX", "out"], UART_RX: ["PA10", "UART_RX", "in"], RS485_DE: ["PB1", "RS485_DE", "out"], AIN0: ["PA0", "AIN0", "in"], AIN1: ["PA1", "AIN1", "in"], AIN2: ["PA2", "AIN2", "in"], AIN3: ["PA3", "AIN3", "in"],
   PWM_H: ["PA8", "PWM_H", "out"], PWM_L: ["PA7", "PWM_L", "out"], LED: ["PA15", "LED_STATUS", "out"], DOUT0: ["PB3", "DOUT0", "out"], DOUT1: ["PB4", "DOUT1", "out"], DOUT2: ["PB5", "DOUT2", "out"], IMU_INT: ["PB0", "IMU_INT", "in"],
   AIN4: ["PA4", "AIN4", "in"], AIN5: ["PA5", "AIN5", "in"], AIN6: ["PA6", "AIN6", "in"], SPI_CS: ["PB12", "SPI_CS", "out"], SPI_SCK: ["PB13", "SPI_SCK", "out"], SPI_MISO: ["PB14", "SPI_MISO", "in"], SPI_MOSI: ["PB15", "SPI_MOSI", "out"],
+  AIN7: ["PA7", "AIN7", "in"], AIN8: ["PB0", "AIN8", "in"],      // PA7 and PB0 also carry PWM_L and IMU_INT : a board uses one function per pin
   UART2_TX: ["PB10", "UART2_TX", "out"], UART2_RX: ["PB11", "UART2_RX", "in"], PWM_A: ["PB8", "PWM_A", "out"], PWM_B: ["PB9", "PWM_B", "out"], DIN0: ["PC13", "DIN0", "in"], DIN1: ["PC14", "DIN1", "in"], DIN2: ["PC15", "DIN2", "in"], DOUT3: ["PB2", "DOUT3", "out"] };
 const ONLY48 = /^(PB2|PB[89]|PB1[0-5]|PC1[3-5])$/;                 // pins the 32-lead package does not have
 
@@ -67,7 +68,7 @@ const can = { id: "can", name: "Interface CAN", category: "Communiquer", functio
    with the page it was read on ; the bias is sized for the supply of the block, less 5 %. */
 const yes = (def) => ({ options: def ? [1, 0] : [0, 1], labels: def ? ["oui", "non"] : ["non", "oui"] });
 const rs485 = { id: "rs485", name: "Interface RS-485", category: "Communiquer", function: "Communiquer en RS-485 demi-duplex", desc: "Émetteur-récepteur, terminaison, polarisation du bus au repos, protection des lignes, bornier du bus.",
-  params: { term: P("Terminaison de ligne", "", 1, 0, 1, yes(1)), bias: P("Polarisation du bus au repos (failsafe)", "", 0, 0, 1, yes(0)), prot: P("Protection des lignes", "", 1, 0, 1, yes(1)), conn: P("Bornier du bus sur la carte", "", 1, 0, 1, yes(1)), nodes: P("Nœuds sur le bus", "", 8, 2, 256), vdd: P("Alimentation", "V", 3.3, 3, 5) },
+  params: { term: P("Terminaison de ligne", "", 1, 0, 1, yes(1)), bias: P("Polarisation du bus au repos (failsafe)", "", 0, 0, 1, yes(0)), prot: P("Protection des lignes", "", 1, 0, 1, yes(1)), conn: P("Bornier du bus sur la carte", "", 1, 0, 1, yes(1)), nodes: P("Nœuds sur le bus", "", 8, 2, 256), iso: P("Côté bus isolé (alimenté par le faisceau)", "", 0, 0, 1, yes(0)), vdd: P("Alimentation", "V", 3.3, 3, 5) },
   build(p) {
     const b = builder(), term = +p.term === 1, bias = +p.bias === 1, prot = +p.prot !== 0, conn = +p.conn !== 0, bus = { voltage: 12 }, LA = prot ? "BUS_A" : "A", LB = prot ? "BUS_B" : "B", nodes = Math.max(2, +p.nodes || 8);
     b.part("U", "U-RS485-SOIC8", "", "Traduit l'UART en paire différentielle").part("C", "C-0603", "100 nF", "Découplage", { near: "U" }).part("RDE", "R-0603", "10 kΩ", "Tient l'émetteur coupé tant que le microcontrôleur n'a pas démarré", { near: "U" });
@@ -83,7 +84,9 @@ const rs485 = { id: "rs485", name: "Interface RS-485", category: "Communiquer", 
       b.calc("Charges unitaires laissées au bus", +N.left.toFixed(1), "", `12 kΩ × (1 / 375 Ω − 1 / RB) : ce qui reste des ${RS485.unitLoads} charges unitaires une fois la polarisation posée — ${nodes} nœuds comptés à 1/8 de charge chacun en prennent ${fr(nodes / 8)} (à vérifier sur la fiche du composant monté).`);
       if (term) b.calc("Terminaison de ce bout", N.rt2Std, "Ω", `RT ∥ 2 × RB = 120 Ω donne ${fr(N.rt2, 4)} Ω, valeur normalisée ${fr(N.rt2Std)} Ω : la polarisation compte dans l'impédance vue par le câble.`); }
     if (conn) { b.part("J", "J-TB-3-5.08", "", "Bornier du bus : 1 = A (D1), 2 = B (D0), 3 = commun", { edge: true }); b.net(LA, ["J.1"]).net(LB, ["J.2"]).net("GND", ["J.3"]); }
-    b.port("VCC", "VCC", "power_in", railName(p.vdd)).port("GND", "GND", "gnd", "GND").port("DI", "DI", "in", "UART_TX").port("RO", "RO", "out", "UART_RX").port("DE", "DE", "in", "RS485_DE").port("A", LA, "bidir", "RS485_A").port("B", LB, "bidir", "RS485_B");
+    const iso = +p.iso === 1, I = (s) => (iso ? `ISO_${s}` : s);      // isolated : the transceiver lives on the bus side, behind an isolator, powered by the harness
+    b.port("VCC", "VCC", "power_in", iso ? `${railName(p.vdd)}_ISO` : railName(p.vdd)).port("GND", "GND", "gnd", iso ? "GND_ISO" : "GND").port("DI", "DI", "in", I("UART_TX")).port("RO", "RO", "out", I("UART_RX")).port("DE", "DE", "in", I("RS485_DE")).port("A", LA, "bidir", "RS485_A").port("B", LB, "bidir", "RS485_B");
+    if (iso) b.note("Côté bus isolé : l'émetteur-récepteur, sa protection et son bornier sont sur la masse du bus (GND_ISO), alimentés par le faisceau ; la barrière est celle de l'isolateur qui le relie au microcontrôleur.");
     b.note("A et B routées ensemble, côte à côte et de même longueur, sur la couche du dessus, au-dessus d'un plan de masse continu — sans via si possible.").note("Écrêteur et résistances série au plus près du bornier ; l'émetteur-récepteur près du bornier lui aussi : la dérivation (stub) reste courte.")
       .note("Terminaison seulement aux deux bouts du câble ; polarisation à UN seul endroit du bus — d'habitude chez le maître.").note("Noms : la broche A du circuit monte quand DI est à 1 ; c'est la ligne D1 de MODBUS (« B » dans la norme), et la broche B est D0. Vérifier sur la fiche du composant monté avant de croiser deux fils.");
     return b.out();

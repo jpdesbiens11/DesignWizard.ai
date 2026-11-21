@@ -33,4 +33,5 @@ export const MORE_PARTS = [
   { id: "BAT-CR2032", kind: "connector", prefix: "BT", name: "Support de pile CR2032", package: "BAT-CR2032", pins: ["+:power_out", "-:passive"], desc: "Pile bouton 3 V, 220 mAh", ratings: { V: 3 }, price: 0.5, polar: true },
   { id: "J-USB-C", kind: "connector", name: "Embase USB-C (USB 2.0)", package: "USB-C-2.0", pins: ["GND@A1", "VBUS:passive@A4", "SBU2:nc@B8", "CC1:passive@A5", "DN:bidir@B7", "DP:bidir@A6", "DN:bidir@A7", "DP:bidir@B6", "SBU1:nc@A8", "CC2:passive@B5", "VBUS:passive@B4", "GND@B1", "SHELL:passive@S1", "SHELL:passive@S2", "SHELL:passive@S3", "SHELL:passive@S4"], desc: "16 contacts, 3 A sur VBUS, blindage traversant", ratings: { I: 3, V: 20 }, price: 0.6 },
   ...[2, 3, 4, 5, 6, 8].map((n) => J(`J-WTB-${n}`, `Connecteur fil à carte ${n} contacts, pas 2,0`, `WTB-${n}-2.0`, 0.12 + 0.03 * n, 2, 100)),
+  ...Array.from({ length: 19 }, (_, k) => k + 2).map((n) => J(`J-FLEX-${n}`, `Joint de circuit flexible ${n} pistes, pas 1,0 (pastilles soudées)`, `FLEXJ-${n}-1.0`, 0, 0.5, 50)),      // no part to buy : the flex itself is soldered there
 ];

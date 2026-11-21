@@ -21,12 +21,20 @@ const SIGNALS = [
 /** The RS-485 links of a board. → [{ block, name, ref (the transceiver), params, pins: [{ sw, signal, dir, net, mcu ("U2.PA9" or ""), text }], bus: [{ line, net, at ("J2.1"), parts }], calc, notes, problems: [text] }] */
 export function rs485Links(board) {
   const parts = board.parts || [], nets = board.nets || [], byRef = new Map(parts.map((p) => [p.ref, p])), netOf = (pin) => nets.find((n) => (n.pins || []).includes(pin)) || null, isMcu = (ref) => /^U-MCU/.test((byRef.get(ref) || {}).comp || "");
+  /* a digital isolator between the microcontroller and the transceiver (an isolated bus side) : each channel is followed across the barrier */
+  const ISO_PAIR = { INA: "OUTA", INB: "OUTB", INC: "OUTC", OUTD: "IND", OUTA: "INA", OUTB: "INB", OUTC: "INC", IND: "OUTD" }, isIso = (ref) => /^U-ISO/.test((byRef.get(ref) || {}).comp || "");
+  const mcuPin = (n) => (n ? (n.pins || []).find((x) => isMcu(x.split(".")[0])) : "") || "";
+  const toMcu = (n) => { const m = mcuPin(n); if (m || !n) return { m, via: "" };
+    for (const x of n.pins || []) { const [r, k] = x.split("."); if (!isIso(r) || !ISO_PAIR[k]) continue; const n2 = netOf(`${r}.${ISO_PAIR[k]}`), m2 = mcuPin(n2); if (m2) return { m: m2, via: `${r}.${k} ↔ ${r}.${ISO_PAIR[k]}` }; }
+    return { m: "", via: "" }; };
   return (board.blocks || []).filter((b) => b.template === "rs485").map((b) => {
     const mine = parts.filter((p) => p.block === b.id), local = (id) => (mine.find((p) => p.local === id) || {}).ref || "", U = local("U"), J = local("J"), problems = [];
-    const pins = SIGNALS.map((s) => { const n = U ? netOf(`${U}.${s.pin}`) : null, m = n ? (n.pins || []).find((x) => isMcu(x.split(".")[0])) : ""; if (!m) problems.push(`${s.pin} (${s.sw}) n'est relié à aucune broche d'un microcontrôleur de la carte.`); return { sw: s.sw, signal: s.pin, dir: s.dir, net: n ? n.name : "", mcu: m || "", text: s.text }; });
-    const line = (name, chip, k) => { const inner = U ? netOf(`${U}.${chip}`) : null, at = J ? `${J}.${k}` : "", outer = at ? netOf(at) : inner, on = outer ? (outer.pins || []).map((x) => x.split(".")[0]).filter((r) => r !== U && r !== J) : []; return { line: name, net: outer ? outer.name : "", at, parts: [...new Set(on)].map((r) => { const p = byRef.get(r) || {}; return `${r}${p.value ? ` (${p.value})` : ""}`; }) }; };
-    const bus = [line("A — D1 dans MODBUS", "A", 1), line("B — D0 dans MODBUS", "B", 2)]; if (J) bus.push({ line: "Commun", net: (netOf(`${J}.3`) || {}).name || "", at: `${J}.3`, parts: [] });
-    if (!U) problems.push("L'émetteur-récepteur du bloc n'est pas sur la carte."); if (!J) problems.push("Pas de bornier dans ce bloc : le bus sort par un autre connecteur de la carte — nommez-y D1, D0 et le commun.");
+    const pins = SIGNALS.map((s) => { const n = U ? netOf(`${U}.${s.pin}`) : null, { m, via } = toMcu(n); if (!m) problems.push(`${s.pin} (${s.sw}) n'est relié à aucune broche d'un microcontrôleur de la carte.`);
+      return { sw: s.sw, signal: s.pin, dir: s.dir, net: n ? n.name : "", mcu: m || "", via, text: via ? `${s.text} Il traverse la barrière d'isolation : ${via}.` : s.text }; });
+    const busNet = (port) => (b.connect && b.connect[port] ? nets.find((n) => n.name === b.connect[port]) : null), plugs = (n) => (n ? (n.pins || []).filter((x) => /^J-/.test((byRef.get(x.split(".")[0]) || {}).comp || "")) : []);      // no terminal block in the block : the bus leaves by the connectors on its nets
+    const line = (name, chip, k, port) => { const inner = U ? netOf(`${U}.${chip}`) : null, at = J ? `${J}.${k}` : plugs(busNet(port)).join(", "), outer = J ? netOf(`${J}.${k}`) : busNet(port) || inner, on = outer ? (outer.pins || []).map((x) => x.split(".")[0]).filter((r) => r !== U && r !== J) : []; return { line: name, net: outer ? outer.name : "", at, parts: [...new Set(on)].map((r) => { const p = byRef.get(r) || {}; return `${r}${p.value ? ` (${p.value})` : ""}`; }) }; };
+    const bus = [line("A — D1 dans MODBUS", "A", 1, "A"), line("B — D0 dans MODBUS", "B", 2, "B")]; if (J) bus.push({ line: "Commun", net: (netOf(`${J}.3`) || {}).name || "", at: `${J}.3`, parts: [] });
+    if (!U) problems.push("L'émetteur-récepteur du bloc n'est pas sur la carte."); if (!J && !bus[0].at) problems.push("Pas de bornier dans ce bloc ni de connecteur sur ses lignes : le bus ne sort pas de la carte.");
     return { block: b.id, name: b.name || "Interface RS-485", ref: U, params: b.params || {}, pins, bus, problems };
   });
 }

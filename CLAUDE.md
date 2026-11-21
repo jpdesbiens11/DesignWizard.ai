@@ -315,6 +315,13 @@ ordre ; ce qui est fait se raye ici.
    chaque carte (une résistance commandée, sur ordre du BMS central ; la tension se mesure équilibrage coupé) ; **l'outil
    construit d'abord la carte de CORE dans le PCBA** (contour, blocs, essais au Labo, isolation, son flex), puis le CORE et le
    boîtier, puis le BMS central et sa machine à états. La proposition, révision C, privée et hors du dépôt, le dit.
+   **Fait (v0.130.0)** : la carte de CORE dans le PCBA — l'exemple « carte de CORE » (`tools/gen_demo_core.mjs`,
+   `demo/demo_core.js`), de la taille du dessus du CORE ; blocs nouveaux ou étendus, chacun avec ses essais au Labo :
+   « Équilibrage passif » (`balance`), CTN déportée sur un flex (`ntc`, `remote`), joint de flex (`conn_wire`, `flex`),
+   isolateur qui porte la liaison série (`iso_digital`, `uart`), RS-485 côté bus isolé (`rs485`, `iso`) ; la fiche
+   matériel / logiciel suit les signaux à travers la barrière. **Reste** : le flex plié en G dans le module flex (8 CTN sur
+   deux rabats), le CORE mécanique et le boîtier, le BMS central et sa machine à états, la barrière vue par l'Isolation
+   (GND et GND_ISO y sont au même potentiel), le choix et la lecture des vraies références de composants.
 21. ~~**Logiciel : pas à pas, simulation en direct, code visible, chargement**~~ — fait (v0.124.0 ; demande de JP du 20
    novembre, sur l'écran `#/sw`) : sept étapes, entrées et sorties dites sur chaque tuile, la fiche du CPU au centre avec
    un lien par page, le guide dans le volet, l'essai de démarrage et la mémoire, la simulation en direct, le code à l'écran,
@@ -338,6 +345,12 @@ ordre ; ce qui est fait se raye ici.
    dans le menu du top ») : les tuiles du Logiciel se zooment et se déplacent, une même barre sur les tuiles, les cartes
    et les dessins, la loupe à côté du zoom de chaque vue, le panneau du bas du Logiciel et du Labo à grandir et à replier.
    Reste : l'essai au toucher (pincement) ; d'autres panneaux du bas s'il en naît.
+26. **Branches visuelles de l'historique** (demande de JP, 21 novembre : « faire des branches visuellement en parallèle et
+   pouvoir les merger ensemble au MAIN (la branche du centre)… des designs différents en équipe en parallèle… une pièce qui
+   n'est pas dans une variante apparaît en grisé et désactivée, mais on peut l'activer ») : les branches dessinées côte à
+   côte, **MAIN au centre et nommée**, la fusion d'une branche dans MAIN (artéfact par artéfact, avec l'aperçu de ce qui
+   change et ce que cela dérange), le travail d'équipe en parallèle ; dans une variante, une pièce absente se montre grisée
+   et désactivée, et s'active pour la replacer. À planifier par menu avant de construire.
 23. ~~**Marges gauche et droite, partout**~~ — fait (v0.123.0 ; demande de JP du 20 novembre, sur une capture du PCBA) :
    le PCBA et le volet de droite du Logiciel n'avaient pas de bordure ; tout `.studio` en reçoit, où qu'il soit. Reste :
    l'essai au toucher ; les pages sans volet (Atelier, DFx, Revue…) n'ont rien à cacher.

@@ -29,7 +29,8 @@ export function blockParams(template, given = {}) {
 }
 /** The sentence of the function, with the parameters written in : "Abaisser 24 V vers 5 V, 1 A". */
 export function blockSentence(template, params) {
-  return String(template.function).replace(/\{(\w+)\}/g, (_, k) => (params[k] === undefined ? "" : typeof params[k] === "number" ? String(params[k]).replace(".", ",") : String(params[k])));
+  const f = typeof template.function === "function" ? template.function(params) : template.function;      // a sentence that changes with a parameter
+  return String(f).replace(/\{(\w+)\}/g, (_, k) => (params[k] === undefined ? "" : typeof params[k] === "number" ? String(params[k]).replace(".", ",") : String(params[k])));
 }
 /** Builds a template : { parts, nets, ports, calc, notes }, or throws with a French message. */
 export function buildBlock(templateId, given = {}) {

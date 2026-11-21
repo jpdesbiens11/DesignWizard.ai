@@ -24,7 +24,7 @@ L'écran dessine le parcours en haut de page ; chaque case dit où en est la car
 
 Une **fonction** dit le besoin (« abaisser 24 V vers 5 V, 1 A »), son type (principale, contrainte, technique) et ses
 critères avec leur flexibilité (F0 impératif … F3 libre). Un **bloc** est le petit circuit éprouvé qui la remplit. Les
-44 blocs fournis couvrent la plupart des sous-circuits d'une carte de commande mécatronique basse tension :
+45 blocs fournis couvrent la plupart des sous-circuits d'une carte de commande mécatronique basse tension :
 
 - **Raccorder** : bornier d'alimentation, connecteur d'entrées-sorties, liaison carte à carte, embase USB-C,
   connecteur fil à carte ;
@@ -52,7 +52,7 @@ Chaque bloc **se dimensionne lui-même et l'écrit** comme un calcul à la main 
 du régulateur (séries E6 / E96), résistance de la DEL, shunt et sa puissance, calibre du fusible, échauffement du
 régulateur linéaire — qui change de boîtier quand il chaufferait trop.
 
-La **bibliothèque** tient 106 composants génériques (passifs, diodes, transistors, circuits intégrés, capteurs,
+La **bibliothèque** tient 206 composants génériques (passifs, diodes, transistors, circuits intégrés, capteurs,
 relais, connecteurs) sur 65 empreintes : des *classes* de composants au brochage usuel, sans marque ni référence. La
 référence exacte se saisit dans la nomenclature ; sa fiche technique fait foi. La bibliothèque **s'enrichit** : un
 composant se crée à partir d'un nom de boîtier et d'une liste de broches, et se range dans la carte (`library`).
@@ -277,6 +277,39 @@ dans l'analyse d'un assemblage : un assemblage sans paire renvoie à la carte.
 
 Le résumé de l'analyse est gardé sur la carte (`board.isolation` : conditions, niveaux, résultats), repris par le
 guide du projet et par le rapport. Tests : `tests/node/board_iso.test.mjs`.
+
+## Carte de CORE (exemple, architecture du projet)
+
+L'exemple « carte de CORE » (bouton **Exemple : carte de CORE** du PCBA) suit l'architecture donnée par le projet le
+21 novembre 2026 : un **CORE** est un bloc de 8 cellules 21700 **en parallèle** (1S8P), en deux rangées de 4 ; une
+petite carte, **de la taille du dessus du CORE** (92,8 × 46,4 mm), mesure ses 8 températures et sa tension, purge le
+bloc sur ordre, et répond au **BMS central** du boîtier par RS-485. Tous les CORE sont posés dans le même sens : **une
+seule variante de carte**.
+
+| Fonction | Ce qui la tient sur la carte |
+|---|---|
+| S'alimenter sur le CORE | B+ et B− arrivent par le **joint du circuit flexible** (`J-FLEX-12`, pas de 1 mm, pastilles soudées), régulateur linéaire 4,2 V → 3,0 V |
+| 8 températures | 8 ponts de CTN **déportées** (bloc « CTN », réglage « CTN déportée sur un flex ») : la CTN est sur un rabat du flex, sous les cellules ; le pont et son filtre restent sur la carte |
+| La tension du CORE | bloc « Mesure de tension », sur la 9e entrée analogique du microcontrôleur (AIN0…AIN8) |
+| Équilibrage passif | bloc « Équilibrage passif » : deux résistances de purge en parallèle, R = 2 V / I (série E24, au-dessus), un MOSFET canal N sur une sortie du microcontrôleur ; 100 mA à 4,2 V par défaut — un exemple |
+| Répondre au BMS central | isolateur numérique qui porte la liaison série (réglage « liaison série » : TX et DE vers le bus, RX en retour), transceiver RS-485 **côté bus** (réglage « Côté bus isolé »), deux borniers en chaîne `RS485_A, RS485_B, +5V_ISO, GND_ISO` : **le côté bus est alimenté par le faisceau**, depuis le BMS central |
+| Programmer et essayer | SWD, points de test |
+
+Le Labo essaie chaque bloc : le pont d'une CTN déportée donne la même courbe que celui d'une CTN posée sur la carte, et
+la purge relève son courant (92 mA attendus à 4,2 V avec deux 91 Ω), le drain en marche et coupé. La fiche
+d'interface matériel / logiciel (étape « Revue ») suit chaque signal **à travers la barrière** : TX, RX et DE sont lus
+sur les broches du microcontrôleur, côté logique, et la fiche dit par quel canal de l'isolateur chacun passe.
+
+La carte a **4 couches sans plan** : un plan de masse passerait sous la barrière d'isolation. Elle est bâtie par
+`tools/gen_demo_core.mjs` (73 composants, 51 nets, tout routé, contrôles électrique et de layout sans erreur) ; essais :
+`tests/node/core_board.test.mjs`.
+
+**Ce qui n'est pas fait, et qui est dit.** Les composants sont génériques : aucune référence de microcontrôleur,
+d'isolateur ni de transceiver n'est choisie, et aucune fiche n'a été lue pour eux. L'Isolation ne regarde pas encore la
+barrière : GND et GND_ISO y sont tous deux au potentiel 0. Le circuit flexible plié en G (le dessus, deux côtés, deux
+rabats de 4 CTN), le CORE mécanique et le boîtier ne sont pas encore construits ; le BMS central et sa machine à
+états non plus. Les tensions du CORE (3,2–4,2 V) sont des valeurs du projet ; la fiche de la cellule n'a pas été lue.
+Rien n'a tourné sur une vraie carte.
 
 ## 9. Ce qui est vérifié, ce qui ne l'est pas
 

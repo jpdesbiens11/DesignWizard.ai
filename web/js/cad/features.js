@@ -341,6 +341,9 @@ export function newState() {
   return { bodies: new Map(), order: [], log: [], main: "main", facts: { holes: [], pockets: [], bosses: [], fillets: [], chamfers: [], shells: [], extrudes: [], revolves: [], drafts: [] } };
 }
 
+/** The words of a failure : an exception of the kernel itself carries no message (a number, or an abort) — it is said as such. */
+export const whyOf = (e) => (e && e.message ? e.message : typeof e === "number" ? "le noyau CAO a refusé cette géométrie (erreur interne)" : String(e));
+
 /** Run a list of evaluated features on the state. A failing feature is reported and skipped (the part still builds). */
 export function runFeatures(K, st, features, strict = false) {
   for (const f of features || []) {
@@ -352,7 +355,7 @@ export function runFeatures(K, st, features, strict = false) {
       op(K, st, f);
     } catch (e) {
       if (strict) throw e;
-      st.log.push({ level: "error", feature: f.id, op: f.op, msg: `Feature « ${f.id || f.op} » : ${e.message}` });
+      st.log.push({ level: "error", feature: f.id, op: f.op, msg: `Feature « ${f.id || f.op} » : ${whyOf(e)}` });
     }
   }
   return st;

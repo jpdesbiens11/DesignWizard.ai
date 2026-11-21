@@ -45,7 +45,7 @@ C'est une image du fonctionnement, pas une carte thermique : un composant rouge 
 
 ## 2. Les essais
 
-Chaque bloc de la bibliothèque (44 gabarits, `web/js/pcba/blocks.js`) a ses essais (90 en tout,
+Chaque bloc de la bibliothèque (45 gabarits, `web/js/pcba/blocks.js`) a ses essais (92 en tout,
 `web/js/pcba/lab_bench.js`). Un essai a une **nature**, qui dit avec quoi on le regarde :
 
 | Nature | En français | Ce que l'on regarde |
@@ -310,7 +310,7 @@ sur la carte est laissé de côté, et c'est dit.
 
 - **Vérifié par les tests** (`tests/node/lab.test.mjs`) : le solveur contre des réponses exactes (pont diviseur,
   constante de temps RC, coupure RC, bobine RL, résonance RLC, diode, gain et saturation d'un amplificateur) ; les 90
-  essais des 44 blocs tournent et donnent des mesures finies ; les blocs de la carte de démonstration reliés entre eux
+  essais des 45 blocs tournent et donnent des mesures finies ; les blocs de la carte de démonstration reliés entre eux
   donnent ses trois rails, et le régulateur tient sa sortie à la moitié de sa tension d'entrée nominale ; les valeurs clés rejoignent le calcul de conception
   du bloc (ou l'écart est expliqué) ; les fiches, le document Word et PDF, les plages, les relevés et leur verdict,
   l'aller-retour `.dwiz` du bloc `lab`.

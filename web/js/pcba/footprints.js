@@ -102,6 +102,7 @@ const FAMILIES = [
   [/^TB-(\d+)-3\.5$/, (n) => pins(n, 1, 3.5, 2.0, 1.1, [n * 3.5, 7.0, 8.5], [n * 3.5 + 0.5, 7.5])],
   [/^WTB-(\d+)-2\.0$/, (n) => pins(n, 1, 2.0, 1.25, 0.75, [n * 2.0 + 1.9, 4.5, 6.0], [n * 2.0 + 2.4, 5.0])],       // wire-to-board, 2 mm pitch
   [/^SIP-(\d+)$/, (n) => pins(n, 1, 2.54, 1.7, 1.0, [n * 2.54 + 1.5, 6.0, 10.0], [n * 2.54 + 2.0, 6.5])],          // single-in-line module
+  [/^FLEXJ-(\d+)-1\.0$/, (n) => ({ pads: Array.from({ length: n }, (_, i) => pad(i + 1, (i - (n - 1) / 2) * 1.0, 0, 0.6, 2.0)), body: [n * 1.0 + 1.0, 3.0, 0.2], courtyard: [n * 1.0 + 1.6, 3.6] })],      // the soldered joint of a flex tail, 1 mm pitch
 ];
 
 /** The series a land pattern name belongs to : « MINIFIT-8 » → { id: "molex-minifit", n: 8, S } ; null for any other name. */
@@ -114,5 +115,5 @@ export function footprint(name) {
   return P ? modelFootprint(P.S, P.n) : null;
 }
 /** Package names a user can pick ; the families are shown with « N » for the pin count. */
-export const packageList = () => [...Object.keys(FIXED), "HDR-1xN-2.54", "HDR-2xN-2.54", "HDR-2xN-1.27", "TB-N-5.08", "TB-N-3.5", "WTB-N-2.0", "SIP-N", ...Object.keys(SERIES_PACKAGES).map((p) => `${p}-N`)];
+export const packageList = () => [...Object.keys(FIXED), "HDR-1xN-2.54", "HDR-2xN-2.54", "HDR-2xN-1.27", "TB-N-5.08", "TB-N-3.5", "WTB-N-2.0", "SIP-N", "FLEXJ-N-1.0", ...Object.keys(SERIES_PACKAGES).map((p) => `${p}-N`)];
 export const PACKAGES = FIXED;

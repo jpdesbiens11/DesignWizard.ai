@@ -49,7 +49,7 @@ export function partStudio(main, args, cfg) {
   let gest = null;                                                // the mouse and the keys on the model (part_gestures.js)
   const vp = createViewport(view, { select: false, name: () => st.spec.id, onPick: (h, e) => gest.onPick(h, e), onHover: (h, e) => { gest.onHover(h, e); onHover(h); }, onMenu: (h, e) => gest.onMenu(h, e), onKey: (e) => gest.onKey(e) });
   const pins = mountPins(vp, { key: () => `part:${id}` });      // the messages pinned on this part
-  const info = el("span", { class: "chip" }, "—"), hover = el("span", { class: "chip hidden" }, ""), stage = el("span", { class: "chip stage hidden" }, "");
+  const info = el("span", { class: "chip", "data-build-info": "" }, "—"), hover = el("span", { class: "chip hidden" }, ""), stage = el("span", { class: "chip stage hidden" }, "");
   const picked = el("span", { class: "chip picked hidden" }, "");
   vp.setStatus(info, stage, picked, hover);
   const bFrames = btn("", () => { st.showFrames = !st.showFrames; bFrames.classList.toggle("on", st.showFrames); overlays(); }, { small: true, icon: "interfaces", tip: "Afficher les repères des interfaces" });
@@ -83,6 +83,7 @@ export function partStudio(main, args, cfg) {
       info.textContent = `${fmtMass(built.mass)} · ${fmtDims([bb[3] - bb[0], bb[4] - bb[1], bb[5] - bb[2]], 1)} · ${fmtLen(built.volume / 1000, 1, "cm³")} · ${built.ms} ms`;
       info.className = "chip" + (errs ? " bad" : "");
       if (errs) info.textContent = `${errs} erreur(s) de construction · ` + info.textContent;
+      if (errs) info.dataset.tip = built.log.find((l) => l.level === "error").msg; else delete info.dataset.tip;                // the first error, under the pointer
       setStatus(errs ? `${st.spec.id} : ${errs} erreur(s)` : `${st.spec.id} construit en ${built.ms} ms`, errs ? "bad" : "done");
       vp.setBusy("");
       if (!overrides) { st.findings = await runDfx(st.spec, built); if (token !== st.token) return; }

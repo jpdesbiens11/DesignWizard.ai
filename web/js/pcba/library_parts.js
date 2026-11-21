@@ -17,7 +17,7 @@ const MCU48 = ["VDD", "PC13", "PC14", "PC15", "OSC_IN", "OSC_OUT", "NRST", "VSSA
 const MCU32 = ["VDD", "OSC_IN", "OSC_OUT", "NRST", "VDDA", "PA0", "PA1", "PA2", "PA3", "PA4", "PA5", "PA6", "PA7", "PB0", "PB1", "VSS", "VDD", "PA8", "PA9", "PA10", "PA11", "PA12", "SWDIO", "SWCLK", "PA15", "PB3", "PB4", "PB5", "PB6", "PB7", "BOOT0", "VSS"];
 
 export const PARTS = [
-  R("0402", 0.063, 50, 0.01), R("0603", 0.1, 75, 0.01), R("0805", 0.125, 150, 0.02), R("1206", 0.25, 200, 0.03),
+  R("0402", 0.063, 50, 0.01), R("0603", 0.1, 75, 0.01), R("0805", 0.125, 150, 0.02), R("1206", 0.25, 200, 0.03), R("2512", 1, 200, 0.08),
   { ...R("2512", 2, 200, 0.45), id: "R-SHUNT-2512", name: "Résistance de mesure 2512", desc: "Shunt métallique 1 %, 2 W, faible coefficient de température" },
   C("0402", 25, 0.01), C("0603", 50, 0.02), C("0805", 50, 0.04), C("1206", 100, 0.1), C("1210", 100, 0.35),
   CE(6.3, 63, 0.35), CE(8, 63, 0.5), CE(10, 100, 0.9),

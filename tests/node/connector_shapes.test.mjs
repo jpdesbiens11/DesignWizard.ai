@@ -2,9 +2,9 @@
    the envelope) and as plain solids for the preview — and the maker's STEP put in its place. */
 import test from "node:test";
 import assert from "node:assert/strict";
-import { CONNECTORS, CONNECTOR_KINDS } from "../../web/js/cad/elec_library.js";
+import { CONNECTORS, CONNECTOR_KINDS, CELLS } from "../../web/js/cad/elec_library.js";
 import { connectorSolids, connectorSolidsAt, connectorFeatures, shapeConstants, SHAPE_WORDS, TONES } from "../../web/js/core/connector_shapes.js";
-import { connectorPart, connectorEnvelope, poleNets, defaultPoles, useMakerModel, dropMakerModel } from "../../web/js/core/elec_parts.js";
+import { connectorPart, connectorEnvelope, poleNets, defaultPoles, useMakerModel, dropMakerModel, cellPart } from "../../web/js/core/elec_parts.js";
 import { SERIES } from "../../web/js/cad/connector_series.js";
 import { buildPart, validateSpec } from "../../web/js/cad/build.js";
 import { evaluate as evalExpr } from "../../web/js/cad/expr.js";
@@ -58,4 +58,19 @@ test("the maker's STEP takes the place of the indicative shape, and gives it bac
   useMakerModel(s, step, "hvp800-3p.stp"); assert.equal(s.step.file, "hvp800-3p.stp"); assert.deepEqual(s.indicative.features, was.features, "the indicative shape waits aside, once");
   dropMakerModel(s); assert.equal(s.step, undefined); assert.equal(s.indicative, undefined); assert.deepEqual(s.features, was.features); assert.deepEqual(s.params, was.params); assert.deepEqual(s.bodies, was.bodies); assert.equal(s.library.model, undefined);
   assert.deepEqual(dropMakerModel(JSON.parse(JSON.stringify(was))), was, "nothing to take out of a part that has no model");
+});
+
+test("every part of the trade builds — every series at both ends of its range of poles and at 14, on a board and on a wall, and every cell (bug of JP, 21 novembre : a Mini-Fit Jr. of 14 poles)", async () => {
+  const K = await kernel(), bad = []; let n = 0;
+  for (const c of CONNECTORS) {
+    const nums = String(c.pos || "").match(/\d+/g), lo = nums ? +nums[0] : 1, hi = nums ? +nums[nums.length - 1] : 12;
+    for (const poles of new Set([defaultPoles(c), lo, hi, Math.min(hi, 14)])) for (const mount of ["board", "panel"]) {
+      const s = connectorPart(c, { id: "CN-X", poles, mount }), b = buildPart(K, s), errs = b.log.filter((l) => l.level === "error"); n++;
+      if (errs.length || !b.bodies.length) bad.push(`${c.id} ${poles} ${mount} : ${errs.map((e) => e.msg).join(" ; ") || "no body"}`);
+      if (K.flush) K.flush();
+    }
+  }
+  for (const cell of CELLS) { const b = buildPart(K, cellPart(cell, { id: "CELL-X" })), errs = b.log.filter((l) => l.level === "error"); n++; if (errs.length || !b.bodies.length) bad.push(`${cell.id} : ${errs.map((e) => e.msg).join(" ; ")}`); }
+  assert.deepEqual(bad, []); assert.ok(n > 150, `${n} builds`);
+  const mf = connectorPart(fam("molex-minifit"), { id: "CN-14", poles: 14 }); assert.equal(mf.features.length, 32, "the part of the bug : its 32 features, all built");
 });

@@ -16,8 +16,8 @@ import { clearanceViolations } from "./pcba_fixture.mjs";
 const board = (list, size) => { const b = emptyBoard("T-1", "Carte d'essai"); for (const [t, p, o] of list) addBlock(b, t, p || {}, o || {}); if (size) { b.board.size = size; b.board.r = 2; b.board.layers = 4; b.board.holes = [[4, 4], [size[0] - 4, 4], [4, size[1] - 4], [size[0] - 4, size[1] - 4]].map((at) => ({ at, d: 3.2, land: 6 })); b.planes = [{ net: "GND", layer: "in1" }, { net: "+3V3", layer: "in2" }]; } return b; };
 const netOf = (b, pin) => (b.nets.find((n) => n.pins.includes(pin)) || {}).name;
 
-test("catalogue: 44 templates, each one builds from parts the library knows and writes its own sizing", () => {
-  const ids = Object.keys(BLOCKS); assert.equal(ids.length, 44);
+test("catalogue: 45 templates, each one builds from parts the library knows and writes its own sizing", () => {
+  const ids = Object.keys(BLOCKS); assert.equal(ids.length, 45);
   for (const id of ids) {
     const t = BLOCKS[id], o = buildBlock(id, {}); assert.ok(BLOCK_CATEGORIES.includes(t.category), `${id} : ${t.category}`); assert.ok(t.name && t.desc && !/\{/.test(blockSentence(t, o.params)), id);
     for (const p of o.parts) { const def = LIBRARY[p.comp]; assert.ok(def, `${id} : ${p.comp}`); assert.ok(p.role, `${id}.${p.id} has a role`); }

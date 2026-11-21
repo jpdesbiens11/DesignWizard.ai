@@ -7,12 +7,15 @@ import { railName } from "./netnames.js";
 const pw = (v, i) => ({ class: Math.abs(v) >= 60 ? "hv" : "power", voltage: v, current: i }), GND = { class: "ground" };
 
 const ntc = { id: "ntc", name: "Mesure de température par CTN", category: "Mesurer", function: "Mesurer la température (CTN 10 kΩ), filtre à {fc} Hz", desc: "Pont diviseur avec une CTN, filtre RC avant le convertisseur.",
-  params: { vref: P("Tension de référence", "V", 3.3, 1.8, 5), rp: P("Résistance du pont", "kΩ", 10, 1, 100), fc: P("Fréquence de coupure", "Hz", 100, 1, 10000) },
+  params: { vref: P("Tension de référence", "V", 3.3, 1.8, 5), rp: P("Résistance du pont", "kΩ", 10, 1, 100), fc: P("Fréquence de coupure", "Hz", 100, 1, 10000),
+    remote: P("CTN déportée sur un flex, par son joint", "", 0, 0, 1, { options: [0, 1], labels: ["non", "oui"] }) },
   build(p) {
-    const b = builder(), rp = p.rp * 1e3, c = eSeries(1 / (2 * Math.PI * 1e3 * p.fc), "E6"), fc = 1 / (2 * Math.PI * 1e3 * c), v25 = p.vref * 1e4 / (1e4 + rp);
-    b.part("RT", "NTC-0603", "10 kΩ B 3950", "Sonde de température").part("RP", "R-0603", `${ohm(rp)} 1 %`, "Haut du pont diviseur", { near: "RT" }).part("RF", "R-0603", "1 kΩ", "Filtre anti-repliement", { near: "RT" }).part("CF", "C-0603", farad(c), "Filtre anti-repliement", { near: "RF" });
-    b.net("VREF", ["RP.1"], pw(p.vref, 0.001)).net("DIV", ["RP.2", "RT.1", "RF.1"]).net("OUT", ["RF.2", "CF.1"]).net("GND", ["RT.2", "CF.2"], GND);
+    const b = builder(), rp = p.rp * 1e3, c = eSeries(1 / (2 * Math.PI * 1e3 * p.fc), "E6"), fc = 1 / (2 * Math.PI * 1e3 * c), v25 = p.vref * 1e4 / (1e4 + rp), remote = +p.remote === 1;
+    if (!remote) b.part("RT", "NTC-0603", "10 kΩ B 3950", "Sonde de température");
+    b.part("RP", "R-0603", `${ohm(rp)} 1 %`, "Haut du pont diviseur", remote ? {} : { near: "RT" }).part("RF", "R-0603", "1 kΩ", "Filtre anti-repliement", { near: "RT" }).part("CF", "C-0603", farad(c), "Filtre anti-repliement", { near: "RF" });
+    b.net("VREF", ["RP.1"], pw(p.vref, 0.001)).net("DIV", ["RP.2", ...(remote ? [] : ["RT.1"]), "RF.1"]).net("OUT", ["RF.2", "CF.1"]).net("GND", [...(remote ? [] : ["RT.2"]), "CF.2"], GND);
     b.port("VREF", "VREF", "power_in", railName(p.vref)).port("GND", "GND", "gnd", "GND").port("OUT", "OUT", "out", "AIN", { pool: true });
+    if (remote) { b.port("NTC", "DIV", "bidir", "NTC", { pool: true }); b.note("La CTN est sur le flex : sa piste va du joint au pont ; son retour rejoint la masse au joint, loin des courants de la carte."); }
     b.calc("Tension à 25 °C", v25, "V", `V = Vref × R25 / (R25 + Rp) = ${fr(p.vref)} × 10 kΩ / (10 kΩ + ${ohm(rp)}) = ${fr(v25)} V.`);
     b.calc("Fréquence de coupure", fc, "Hz", `fc = 1 / (2π R C) = 1 / (2π × 1 kΩ × ${farad(c)}) = ${fr(fc)} Hz.`);
     b.note("CTN contre la pièce dont on mesure la température, loin des sources de chaleur parasites.");

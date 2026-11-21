@@ -116,5 +116,24 @@ const load_switch = { id: "load_switch", name: "Commande de charge côté bas", 
     return b.out();
   } };
 
-export const POWER_BLOCKS = [conn_power, input_protection, buck, ldo, half_bridge, load_switch];
+/* Passive balancing of one cell block (choix de JP, 21 novembre 2026 : « équilibrage passif » sur la carte de chaque CORE) : on
+   command of the central BMS, a MOSFET puts two resistors across the cells ; a block a little more charged than the others gives its
+   extra charge away as heat. Sized from the current asked at the full voltage : R = V / I, P = V² / R, shared by two resistors. The
+   voltage of the block is measured with the balancing off : its current flows in the same leads. */
+const balance = { id: "balance", name: "Équilibrage passif", category: "Commander", function: "Équilibrer le cell block : {i} mA à {v} V", desc: "MOSFET N côté bas, deux résistances de purge, résistance de grille et rappel qui tient la purge coupée au démarrage.",
+  params: { v: P("Tension pleine du cell block", "V", 4.2, 2.5, 5), i: P("Courant d'équilibrage", "mA", 100, 10, 300) },
+  build(p) {
+    const b = builder(), i = p.i / 1000, r1 = eSeries(2 * p.v / i, "E24", "up"), req = r1 / 2, iReal = p.v / req, pw1 = (p.v * p.v / req) / 2, big = pw1 > 0.25 * 0.5, pkg = big ? "R-2512" : "R-1206";
+    b.part("Q", "Q-NMOS-SOT23-P", "", "Ferme la purge sur ordre du BMS central").part("RB1", pkg, `${ohm(r1)} 1 %`, "Purge du cell block", { near: "Q" }).part("RB2", pkg, `${ohm(r1)} 1 %`, "Purge du cell block", { near: "RB1" });
+    b.part("RG", "R-0603", "100 Ω", "Limite le courant de grille", { near: "Q" }).part("RPD", "R-0603", "100 kΩ", "Purge coupée tant que le microcontrôleur démarre", { near: "Q" });
+    b.net("VCELL", ["RB1.1", "RB2.1"], pw(p.v, iReal)).net("BLEED", ["RB1.2", "RB2.2", "Q.D"], pw(p.v, iReal)).net("GATE", ["RG.2", "Q.G", "RPD.1"]).net("IN", ["RG.1"]).net("GND", ["Q.S", "RPD.2"], { ...GND, current: iReal });
+    b.port("VCELL", "VCELL", "power_in", railName(p.v)).port("IN", "IN", "in", "DOUT", { pool: true }).port("GND", "GND", "gnd", "GND");      // a logic output of the microcontroller
+    b.calc("Résistances de purge", r1, "Ω", `Deux en parallèle : R = 2 × V / I = 2 × ${fr(p.v)} V / ${fr(p.i)} mA = ${ohm(2 * p.v / i)}, valeur normalisée au-dessus : ${ohm(r1)} chacune, ${ohm(req)} ensemble.`);
+    b.calc("Courant de purge à pleine tension", +(iReal * 1000).toFixed(1), "mA", `I = V / R = ${fr(p.v)} V / ${ohm(req)} = ${fr(iReal * 1000)} mA.`);
+    b.calc("Puissance dans chaque résistance", +pw1.toFixed(3), "W", `P = V² / R / 2 = ${fr(p.v)}² / ${ohm(req)} / 2 = ${fr(pw1, 3)} W : boîtier ${big ? "2512" : "1206"}, à moins de la moitié de sa puissance nominale (valeur typique : la fiche du composant monté fait foi).`);
+    b.note("Les résistances de purge chauffent : loin des CTN et du microcontrôleur, au-dessus d'une large surface de cuivre.").note("Mesurer la tension du cell block purge coupée : son courant passe dans les mêmes fils.");
+    return b.out();
+  } };
+
+export const POWER_BLOCKS = [conn_power, input_protection, buck, ldo, half_bridge, load_switch, balance];
 export { farad };

@@ -6,7 +6,7 @@ import { builder, P, eSeries, fr, ohm, henry } from "./blocks_util.js";
 import { railName, netClass } from "./netnames.js";
 
 const pw = (v, i) => ({ class: Math.abs(v) >= 60 ? "hv" : "power", voltage: v, current: i }), GND = { class: "ground" };
-const dec = (b, ref = "U", id = "C") => b.part(id, "C-0603", "100 nF", "Découplage", { near: ref });
+const dec = (b, ref = "U", id = "C", pin) => b.part(id, "C-0603", "100 nF", "Découplage", pin ? { near: ref, pin } : { near: ref });      // pin : the supply pin it decouples, which the placement puts it against
 
 const usb_c = { id: "usb_c", name: "Embase USB-C", category: "Raccorder", function: "Raccorder un hôte USB (appareil, {i} A)", desc: "Embase USB-C en appareil : résistances d'identification, protection ESD, fusible réarmable, blindage.",
   params: { i: P("Courant demandé à l'hôte", "A", 0.5, 0.1, 3) },
@@ -63,13 +63,15 @@ const dcdc_iso = { id: "dcdc_iso", name: "Alimentation isolée 1 W", category: "
   } };
 
 const iso_digital = { id: "iso_digital", name: "Isolation de signaux numériques", category: "Communiquer", function: "Isoler une liaison numérique (3 voies aller, 1 retour)", desc: "Isolateur numérique 4 voies au boîtier large, un découplage par côté.",
-  params: { v1: P("Alimentation côté logique", "V", 3.3, 2.5, 5), v2: P("Alimentation côté isolé", "V", 5, 2.5, 5) },
+  params: { v1: P("Alimentation côté logique", "V", 3.3, 2.5, 5), v2: P("Alimentation côté isolé", "V", 5, 2.5, 5), uart: P("Liaison série RS-485 (TX, DE, RX) au lieu de SPI", "", 0, 0, 1, { options: [0, 1], labels: ["non", "oui"] }) },
   build(p) {
-    const b = builder(), fwd = [["A", "SPI_SCK"], ["B", "SPI_MOSI"], ["C", "SPI_CS"]];
-    b.part("U", "U-ISO-SOIC16W", "", "Franchit la barrière d'isolement"); dec(b, "U", "C1"); dec(b, "U", "C2");
+    const b = builder(), uart = +p.uart === 1, fwd = uart ? [["A", "UART_TX"], ["B", "RS485_DE"]] : [["A", "SPI_SCK"], ["B", "SPI_MOSI"], ["C", "SPI_CS"]];
+    b.part("U", "U-ISO-SOIC16W", "", "Franchit la barrière d'isolement", uart ? { nc: ["OUTC"] } : {}); dec(b, "U", "C1", "1"); dec(b, "U", "C2", "16");
     b.net("VDD1", ["U.VDD1", "U.EN1", "C1.1"], pw(p.v1, 0.01)).net("GND1", ["U.GND1", "C1.2"], GND).net("VDD2", ["U.VDD2", "U.EN2", "C2.1"], pw(p.v2, 0.01)).net("GND2", ["U.GND2", "C2.2"], GND);
     for (const [k, s] of fwd) b.net(`IN${k}`, [`U.IN${k}`]).net(`OUT${k}`, [`U.OUT${k}`]).port(`IN${k}`, `IN${k}`, "in", s).port(`OUT${k}`, `OUT${k}`, "out", `ISO_${s}`);
-    b.net("IND", ["U.IND"]).net("OUTD", ["U.OUTD"]).port("IND", "IND", "in", "ISO_SPI_MISO").port("OUTD", "OUTD", "out", "SPI_MISO");
+    const back = uart ? "UART_RX" : "SPI_MISO";
+    b.net("IND", ["U.IND"]).net("OUTD", ["U.OUTD"]).port("IND", "IND", "in", `ISO_${back}`).port("OUTD", "OUTD", "out", back);
+    if (uart) b.net("GND1", ["U.INC"]);      // the third forward channel is not used : its input tied low, its output left open
     b.port("VDD1", "VDD1", "power_in", railName(p.v1)).port("GND1", "GND1", "gnd", "GND").port("VDD2", "VDD2", "power_in", `${railName(p.v2)}_ISO`).port("GND2", "GND2", "gnd", "GND_ISO");
     b.calc("Ligne de fuite", 8, "mm", "Boîtier large : 8 mm entre les deux rangées de broches. La carte ne doit pas faire moins — voir l'analyse d'isolation de l'assemblage.");
     b.note("Fente ou zone sans cuivre sous le boîtier, sur toutes les couches.");
@@ -168,13 +170,13 @@ const vref = { id: "vref", name: "Référence de tension", category: "Alimenter"
   } };
 
 const WTB = [2, 3, 4, 5, 6, 8];
-const conn_wire = { id: "conn_wire", name: "Connecteur fil à carte", category: "Raccorder", function: "Raccorder un faisceau : {signals}", desc: "Connecteur détrompé au pas de 2 mm, une broche par signal.",
-  params: { signals: P("Signaux, dans l'ordre des broches", "", "+5V,GND,AIN3", null, null, { text: true }) },
+const conn_wire = { id: "conn_wire", name: "Connecteur fil à carte", category: "Raccorder", function: (p) => (+p.flex ? "Raccorder le circuit flexible : {signals}" : "Raccorder un faisceau : {signals}"), desc: "Connecteur détrompé au pas de 2 mm, une broche par signal ; ou le joint soudé d'un circuit flexible.",
+  params: { signals: P("Signaux, dans l'ordre des broches", "", "+5V,GND,AIN3", null, null, { text: true }), flex: P("Joint d'un circuit flexible (pastilles soudées)", "", 0, 0, 1, { options: [0, 1], labels: ["non", "oui"] }) },
   build(p) {
-    const b = builder(), sig = String(p.signals || "").split(",").map((s) => s.trim().toUpperCase()), n = WTB.find((x) => x >= sig.length) || 8, nc = [];
-    b.part("J", `J-WTB-${n}`, "", "Liaison vers le faisceau", { edge: true });
+    const b = builder(), sig = String(p.signals || "").split(",").map((s) => s.trim().toUpperCase()), flex = +p.flex === 1, n = flex ? Math.min(20, Math.max(2, sig.length)) : WTB.find((x) => x >= sig.length) || 8, nc = [];
+    if (flex) b.part("J", `J-FLEX-${n}`, "", "Joint du circuit flexible, soudé sous la carte", { edge: true }); else b.part("J", `J-WTB-${n}`, "", "Liaison vers le faisceau", { edge: true });
     for (let i = 1; i <= n; i++) { const s = sig[i - 1]; if (!s || s === "NC") { nc.push(String(i)); continue; } b.net(`P${i}`, [`J.${i}`], { class: netClass(s), voltage: /^\+(\d+)V/.test(s) ? +/^\+(\d+)V/.exec(s)[1] : 0 }).port(`P${i}`, `P${i}`, "bidir", s); }
-    const out = b.out(); out.parts[0].nc = nc; out.notes.push("Connecteur détrompé au bord de la carte ; 2 A par contact au plus.");
+    const out = b.out(); out.parts[0].nc = nc; out.notes.push(flex ? "Joint du flex au bord de la carte, pastilles au pas de 1 mm ; 0,5 A par piste au plus." : "Connecteur détrompé au bord de la carte ; 2 A par contact au plus.");
     return out;
   } };
 

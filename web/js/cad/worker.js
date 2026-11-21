@@ -34,12 +34,19 @@ function shapeOf(partId, body) {
   return c.bodies.length === 1 ? c.bodies[0].shape : K.compound(c.bodies.map((b) => b.shape));
 }
 
+/** Can the kernel still make a unit cube ? When it cannot, every feature of every part fails at once (a kernel that ran out of memory, or
+    aborted) : the build is not the part's fault. */
+function healthy() {
+  try { const v = K.props(K.box([0, 0, 0], [1, 1, 1])).volume; K.flush(); return Math.abs(v - 1) < 1e-9; } catch (e) { return false; }
+}
+
 const COMMANDS = {
   ping: () => ({ ready: !!K }),
   /** Build a part and return its meshes. args: {spec, overrides, deflection, key} */
   build({ spec, overrides, deflection, key }) {
     const partId = key || spec.id;
     const built = buildPart(K, spec, { overrides });
+    if (!built.bodies.length && built.log.some((l) => l.level === "error") && !healthy()) return { result: { sick: true, log: built.log.slice(0, 3) } };   // the kernel itself has failed : the page starts a fresh one (client.js)
     const transfer = [], bodies = [];
     for (const b of built.bodies) {
       const m = K.tessellate(b.shape, deflection);
