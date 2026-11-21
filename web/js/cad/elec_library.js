@@ -91,6 +91,15 @@ export const ELEC_STANDARDS = [
 export const CELLS = [
   { id: "18650", name: "Cellule Li-ion 18650", iec: "INR19/66", d: 18.6, L: 65.2, dNom: 18.4, LNom: 65.0, mass: [45, 49], capacity: [2.5, 3.5], vNom: 3.6, vMax: 4.2, vMin: 2.5, discharge: [10, 35], std: "IEC 62133-2, IEC 61960-3, UN 38.3", seen: "read" },
   { id: "21700", name: "Cellule Li-ion 21700", iec: "INR22/71", d: 21.7, L: 70.8, dNom: 21.4, LNom: 70.0, mass: [69, 70], capacity: [4.2, 4.9], vNom: 3.6, vMax: 4.2, vMin: 2.5, discharge: [10, 45], std: "IEC 62133-2, IEC 61960-3, UN 38.3", seen: "read" },
+  /* A cell of one maker, its sheet read page by page (Molicel, « Cell Specifications of INR-21700-P45B », INR21700P45B-01, ver. 0.2) :
+     p. 2 Ø 21,40 ± 0,15 × 70,00 ± 0,15 mm, 70,0 g au plus ; p. 3 4,5 Ah typ. / 4,35 Ah min., 3,6 V nominal, 4,20 ± 0,05 V en fin de charge, 2,5 V
+     en fin de décharge, ≤ 8 mΩ (1 kHz, à l'expédition), 9 A en charge continue au plus, 45 A en décharge continue au plus, ambiante 0–60 °C en
+     charge et −40–60 °C en décharge, surface de la cellule 0–70 °C et −40–80 °C ; p. 8 conformité (manuel d'épreuves de l'ONU, RoHS, UL 1642,
+     IEC 62133) ; p. 13 conception d'un pack (barrière isolante entre cellule et PCBA recommandée). The envelope is the largest the tolerance allows. */
+  { id: "21700-P45B", maker: "Molicel", model: "INR-21700-P45B", name: "Cellule Li-ion 21700 Molicel INR-21700-P45B", iec: "INR22/71", d: 21.55, L: 70.15, dNom: 21.4, LNom: 70.0, mass: [70, 70],
+    capacity: [4.35, 4.5], vNom: 3.6, vMax: 4.2, vMin: 2.5, discharge: [45, 45], charge: 9, rAc: 8, envDis: [-40, 60], envChg: [0, 60], skinDis: [-40, 80], skinChg: [0, 70],
+    std: "Manuel d'épreuves et de critères de l'ONU (transport), RoHS, UL 1642, IEC 62133", seen: "read",
+    sheet: { title: "Cell Specifications of INR-21700-P45B", ref: "INR21700P45B-01", ver: "0.2", pages: "p. 2 (dimensions, masse), p. 3 (caractéristiques), p. 8 (conformité), p. 13 (conception d'un pack)" } },
 ];
 
 export const connector = (id) => CONNECTORS.find((c) => c.id === id) || null;

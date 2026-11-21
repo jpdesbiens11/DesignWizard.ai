@@ -18,7 +18,8 @@ test("the library names real families : each with its maker, its current, how it
   assert.deepEqual([connector("te-hva280").a, connector("te-hva280").v, connector("te-hva280").hvil], [40, 600, true]); assert.deepEqual([connector("amass-xt60").a, connector("amass-xt60").v], [35, 80]); assert.equal(connector("staubli-mc4").v, 1000);
   const hv = pickConnectors({ domain: "hv", amps: 200, volts: 800, hvil: true }); assert.ok(hv.length >= 4 && hv.every((c) => c.a >= 200 && c.v >= 800 && c.hvil)); assert.ok(hv[0].a <= hv.at(-1).a, "the smallest that does the job first");
   assert.ok(pickConnectors({ domain: "lv", sealed: true }).every((c) => c.sealed)); assert.ok(ELEC_STANDARDS.some((s) => s.id === "USCAR-37") && ELEC_STANDARDS.some((s) => s.id === "IEC 60664-1"));
-  assert.deepEqual(CELLS.map((c) => [c.id, c.iec, c.d, c.L]), [["18650", "INR19/66", 18.6, 65.2], ["21700", "INR22/71", 21.7, 70.8]]);
+  assert.deepEqual(CELLS.map((c) => [c.id, c.iec, c.d, c.L]), [["18650", "INR19/66", 18.6, 65.2], ["21700", "INR22/71", 21.7, 70.8], ["21700-P45B", "INR22/71", 21.55, 70.15]]);
+  const p45 = CELLS.find((c) => c.sheet); assert.equal(p45.maker, "Molicel"); assert.ok(p45.d <= 21.7 && p45.L <= 70.8, "a cell of a maker stays within the envelope of its format");
 });
 
 test("a high-voltage connector becomes a part : flange, body, one conductor per pole with its net, a wall interface and an external one", async () => {

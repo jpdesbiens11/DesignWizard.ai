@@ -328,8 +328,13 @@ ordre ; ce qui est fait se raye ici.
    (plaque sur les bornes +, jambe sur le flanc +Y) et un busbar − (plaque sous les fonds, jambe sur le flanc −Y), deux
    isolants de flanc, le CORE (`BM-CORE-ASM`) et le module de 8 CORE au pas de 49,4 mm (`BM-8S8P-ASM`). **Tout ce qui touche au
    CORE et au module va désormais dans ce projet.** Les épaisseurs sont des exemples ; la lecture des « busbars en U insérés par
-   le dessus » est à confirmer par JP ; reste le flex en G, les fenêtres de soudure, le support de cellules, les bornes du
-   module, le boîtier, le BMS central.
+   le dessus » est à confirmer par JP. **Itération 2 (v0.133.0)**, choix de JP par menu : **garder les L pressés** ; le cuivre pour
+   **le courant continu maximal de la Molicel P45B, charge ou décharge, la plus grande valeur**, en 8s8p — fiche lue (INR21700P45B-01
+   ver. 0.2 : 45 A en décharge, 9 A en charge, p. 3), d'où 360 A par CORE et 2,0 mm de cuivre (calcul « Busbar » gardé dans le projet,
+   sous 60 °C et 2,5 A/mm²) ; la P45B entre dans la bibliothèque (`21700-P45B`) ; **le flex plié en G** (`demo/demo_bm_flex.js`, par
+   `core/flex_tree.js`) : 4 doigts par petit bout dans les jeux de 3 mm, une CTN sous chaque cellule sous le busbar −, B+ et B−,
+   vérifié sans interférence. Reste : les fenêtres de soudure, le joint du flex avec la carte, le support de cellules, les bornes du
+   module, le boîtier, le BMS central, l'échauffement dans le module fermé (Simulation).
 21. ~~**Logiciel : pas à pas, simulation en direct, code visible, chargement**~~ — fait (v0.124.0 ; demande de JP du 20
    novembre, sur l'écran `#/sw`) : sept étapes, entrées et sorties dites sur chaque tuile, la fiche du CPU au centre avec
    un lien par page, le guide dans le volet, l'essai de démarrage et la mémoire, la simulation en direct, le code à l'écran,

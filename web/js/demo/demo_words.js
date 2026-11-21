@@ -286,21 +286,3 @@ export const WORDS_ROCKET = {
 /* the busbar reference of the isolation training is written in English already : only the name of the project changes */
 export const WORDS_HVB = Object.fromEntries([...["Housing floor", "Insulator base", "Busbar HV+", "Busbar HV-", "Terminal LV sense", "Cover", "HV busbar demo"].map((t) => [t, t]),
   ["DEMO-HVB — busbars 800 V (référence creepage)", "DEMO-HVB — 800 V busbars (creepage reference)"]]);
-
-/* BM 8s8p - 21700 (demo_bm.js) : the battery module of the project, first iteration. */
-export const WORDS_BM = {
-  "BM 8s8p - 21700": "BM 8s8p - 21700", "CORE 1S8P": "CORE 1S8P", "Carte de CORE 1S8P": "CORE 1S8P board", "Jumeau mécanique de la carte CORE-1S8P-PCBA.": "Mechanical twin of board CORE-1S8P-PCBA.",
-  "Cellule 21700 du CORE": "CORE 21700 cell", "Borne +": "Positive terminal", "Borne − (fond du godet)": "Negative terminal (can bottom)",
-  "Diamètre (le plus grand publié)": "Diameter (largest published)", "Longueur (la plus grande publiée)": "Length (largest published)",
-  "Désignation IEC 61960-3 : INR22/71 ; « 21700 » est le nom d'usage. Masse 69 à 70 g, décharge continue 10 à 45 A selon le modèle.": "IEC 61960-3 designation: INR22/71; 21700 is the common name. Mass 69 to 70 g, continuous discharge 10 to 45 A depending on the model.",
-  "Essais : IEC 62133-2, IEC 61960-3, UN 38.3. Le godet est au potentiel négatif : l'isoler de ses voisins.": "Tests: IEC 62133-2, IEC 61960-3, UN 38.3. The can is at negative potential: insulate it from its neighbours.",
-  "Polarité interne non modélisée : la cellule est un seul conducteur pour l'analyse d'isolement.": "Internal polarity not modelled: the cell is a single conductor for the insulation analysis.",
-  "Cellule prévue par le projet : une 21700 de type Molicel P45B, 3,2 à 4,2 V par CORE (valeurs du projet) — la fiche de la cellule n'a pas été lue ; l'enveloppe est la plus grande publiée pour une 21700.": "Cell planned by the project: a 21700 of the Molicel P45B type, 3.2 to 4.2 V per CORE (project values) - the cell data sheet was not read; the envelope is the largest published for a 21700.",
-  "Busbar + du CORE": "CORE positive busbar", "Busbar − du CORE": "CORE negative busbar", "Isolant de flanc du CORE": "CORE side insulator",
-  "Longueur du CORE (une rangée de 4)": "CORE length (one row of 4)", "Largeur du CORE (deux rangées)": "CORE width (two rows)", "Hauteur d'une cellule": "Cell height",
-  "Épaisseur du cuivre (exemple)": "Copper thickness (example)", "Épaisseur de l'isolant de flanc (exemple)": "Side insulator thickness (example)", "Retrait de la jambe, en bas ou en haut (exemple)": "Leg setback, bottom or top (example)",
-  "Première itération, à itérer avec le projet : les épaisseurs et la hauteur des jambes sont des exemples.": "First iteration, to be iterated with the project: thicknesses and leg heights are examples.",
-  "Les fenêtres de soudure laser sur les bornes + et le passage du flex ne sont pas encore dessinés.": "Laser weld windows on the positive terminals and the flex passage are not drawn yet.",
-  "Les fenêtres de soudure laser sur les fonds des cellules et les rabats du flex qui passent dessous ne sont pas encore dessinés.": "Laser weld windows on the cell bottoms and the flex flaps passing underneath are not drawn yet.",
-  "Papier aramide d'exemple ; le choix de l'isolant (matière, épaisseur, rigidité) reste à faire.": "Example aramid paper; the choice of insulator (material, thickness, stiffness) is still open.",
-};

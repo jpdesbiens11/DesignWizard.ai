@@ -125,6 +125,7 @@ export function candidates(asm, built, withRejected = false) {
   for (let i = 0; i < free.length; i++) for (let j = i + 1; j < free.length; j++) {
     const x = free[i], y = free[j];
     if (x.inst === y.inst || (x.group && x.group === y.group)) continue;      // two parts of one sub-assembly are joined in the sub-assembly, not here
+    if (x.part === y.part && x.iface.id === y.iface.id && (x.iface.side === "B") === (y.iface.side === "B")) continue;      // the same face of two copies of one part (a flex in each CORE) : not a joint
     const c = compatible(x.iface, y.iface);
     if (!c.ok) continue;
     const [a, b] = x.iface.side === "B" ? [y, x] : [x, y];              // side A first
