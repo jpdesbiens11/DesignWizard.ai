@@ -36,15 +36,18 @@ import "./modules/labels.js";
 import "./modules/render.js";
 import "./modules/team.js";
 import "./modules/plm.js";
+import "./modules/history.js";
 import "./modules/report.js";
 import "./modules/onshape.js";
 import "./modules/help.js";
 import "./modules/start.js";
 import { connect, saveToDrive, openFromDrive } from "./modules/account.js";
 import { gate } from "./core/gate.js";
+import { installHistoryAuto } from "./core/history_auto.js";
 import { session } from "./core/access.js";
 
 store.hooks.push(linkHook);
+installHistoryAuto();      // a restore point is posed by itself after every answer of an AI that is applied (core/history_auto.js)
 const followAll = (p) => { for (const x of p.parts || []) followVariant(x); for (const a of p.assemblies || []) followAsmVariant(a); };
 store.hooks.push(followAll); store.loaders.push(followAll);      // the variant in use of a part or of an assembly is alive : it follows its tree, in the step that changes it (core/variants.js)
 store.hooks.push((p, extra) => { if (extra && extra.board) syncTwins(p, LIBRARY, extra.board); });      // the mechanical twin of a board follows it, in the step that changes it (pcba/twin.js)

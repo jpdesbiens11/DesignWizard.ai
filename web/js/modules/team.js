@@ -16,6 +16,7 @@ import { loadPicker, pickFile, appIdOf, pickerMessage } from "../google/picker.j
 import { connect } from "./account.js";
 import { teamOf, newTeamId, joinTeam, forkMirror, stampLocal, mergeMirror, resolveConflict, post, setDone, inbox, threads, artefacts, labelOf, cleanHandle, HANDLE } from "../core/team.js";
 import { parseMirror, linksOf, linkMirror, readMirrors, applyMirrors, bringsSomething } from "../core/team_sync.js";
+import { withoutHistory } from "../core/history.js";
 
 const KEY = "dw.handle";
 const remembered = () => { try { return localStorage.getItem(KEY) || ""; } catch (e) { return ""; } };
@@ -67,7 +68,7 @@ function render(main, args) {
   const st = { on: focus || "project", drive: null, busy: false, looked: false };
   const me = () => (store.project.team && store.project.team.owner) || "";
   /* my mirror, as the file the others read : stamped with what I changed since the last time */
-  const myMirror = () => { act("Miroir mis à jour", (p) => { stampLocal(p, me(), new Date()); }); return toDwiz(store.project); };
+  const myMirror = () => { act("Miroir mis à jour", (p) => { stampLocal(p, me(), new Date()); }); return toDwiz(withoutHistory(store.project)); };      // each member keeps his own history : the mirror carries the product
   /* … and where the others read it, when it is in my Drive : saved there, and my entry says which file it is */
   async function pushMine() {
     myMirror();

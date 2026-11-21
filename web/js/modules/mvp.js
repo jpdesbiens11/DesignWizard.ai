@@ -15,7 +15,7 @@ import { trlScale, trlReferences } from "./mvp_trl.js";
 const pct = (x) => `${Math.round(x * 100)} %`, day = (s) => String(s || "").slice(0, 10);
 const STATE_TONE = { open: "info", frozen: "warn", reviewed: "warn", closed: "ok" };
 /** The design alone, as text : the ledgers stay here, the package carries the facts the platform computed from them. */
-const designText = (p) => { const d = JSON.parse(JSON.stringify(p)); delete d.review; delete d.mvp; delete d.log; return toDwiz(d); };
+const designText = (p) => { const d = JSON.parse(JSON.stringify(p)); delete d.review; delete d.mvp; delete d.log; delete d.history; return toDwiz(d); };
 const act = (label, fn) => { try { store.commit(label, fn); return true; } catch (e) { toast(e.message, "error", 6000); return false; } };
 
 function pasteAnswer(n) {

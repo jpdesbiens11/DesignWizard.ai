@@ -14,6 +14,7 @@ import { dwizFileName } from "../core/dwiz_names.js";
 import { SCOPES, doorPrompt, readAnswer, planAnswer, planWords, planApplies, applyPlan } from "../core/ai_door.js";
 import { journalBox } from "./ai_journal.js";
 import { partHash, asmHash } from "../core/shop_levels.js";
+import { withoutHistory } from "../core/history.js";
 
 const st = { ask: "", scope: "assembly", context: true, questions: true, pasted: "", files: [], rows: null, errors: [], skipped: [], done: null };
 const MARK = { create: "+", modify: "~", same: "=", skip: "!" }, COLOR = { create: null, modify: "#0f766e", same: "#64748b", skip: "#b91c1c" };
@@ -48,7 +49,7 @@ export function aiDoor(main) {
   /* 2 — the instruction proposed */
   function draw2() {
     const text = prompt(), lines = text.split("\n"), cut = lines.findIndex((l) => l.startsWith("LANGAGE D'UNE PIÈCE")), head = (cut > 0 ? lines.slice(0, cut) : lines.slice(0, 24)).join("\n").trim();
-    const folder = () => { const files = [{ name: "consigne.md", bytes: stampText("consigne.md", text) }, { name: dwizFileName(p), bytes: stampText(dwizFileName(p), toDwiz(p)) }];
+    const folder = () => { const files = [{ name: "consigne.md", bytes: stampText("consigne.md", text) }, { name: dwizFileName(p), bytes: stampText(dwizFileName(p), toDwiz(withoutHistory(p))) }];
       download(`${(p.name || "projet").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 40) || "projet"}_pour_IA.zip`, new Blob([zip(files)], { type: "application/zip" }), "application/zip"); toast("Dossier téléchargé : la consigne et le projet (.dwiz). Donnez les deux à l'IA.", "success", 5000); };
     c2.replaceChildren(el("h2", null, el("span", { class: "step-no" }, "2"), "La consigne proposée", el("small", { class: "floor-sub" }, "à donner à votre assistant")),
       el("pre", { class: "ai-prompt", tabindex: "0", "aria-label": "La consigne proposée" }, head, el("span", { class: "muted" }, `\n\n… puis le langage d'une pièce (${lines.length - (cut > 0 ? cut : 24)} lignes), joint à la consigne.`)),

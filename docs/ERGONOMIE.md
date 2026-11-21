@@ -684,7 +684,7 @@ visuels ou flip down, par groupes de modules de conception, par discipline ». L
 1366 px, les onglets étaient coupés sans que rien ne le dise.
 
 La barre porte l'accueil et **trois groupes** : **Mécanique** (Atelier, Pièces, Assemblage, Dessins, Physique,
-Simulation), **Électronique** (PCB, PCBA, Labo, Isolation), **Produit** (DFx, Revue, Rapport). Un clic sur un groupe
+Simulation), **Électronique** (PCB, PCBA, Labo, Isolation), **Produit** (DFx, Revue, Rapport, Historique). Un clic sur un groupe
 fait basculer un panneau de tuiles numérotées, dans l'ordre où l'on conçoit — chacune avec son pictogramme, son nom
 et une ligne qui dit ce qu'elle fait. Le groupe de l'écran ouvert est allumé et le nomme : « Électronique · Labo ».
 

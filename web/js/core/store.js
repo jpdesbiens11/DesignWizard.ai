@@ -8,6 +8,9 @@ import { dropInstances } from "./asm_levels.js";
 const LS_INDEX = "dw.projects", LS_PREFIX = "dw.project.", LS_LAST = "dw.last";
 const HEADERS = { "Content-Type": "application/json", "X-DW-Request": "1" };
 const clone = (o) => JSON.parse(JSON.stringify(o));
+/* What an undo step keeps : the project WITHOUT its history (core/history.js) — the restore points are not undone by Ctrl + Z, and a long
+   history is not copied sixty times. */
+const bare = (p) => JSON.stringify(p && p.history ? { ...p, history: undefined } : p);
 const now = () => new Date().toISOString();
 
 class Store {
@@ -124,10 +127,10 @@ class Store {
   commit(label, fn, extra = {}) {
     const p = this.project;
     if (!p) throw new Error("Aucun projet ouvert.");
-    const before = JSON.stringify(p);
+    const before = bare(p);
     fn(p);
     for (const hook of this.hooks) hook(p, extra);              // e.g. linked interfaces adapt in the same undo step
-    const after = JSON.stringify(p);
+    const after = bare(p);
     if (after === before) return false;
     this.undoStack.push({ label, snap: before });
     if (this.undoStack.length > 60) this.undoStack.shift();
@@ -143,12 +146,19 @@ class Store {
   _swap(from, to, verb) {
     const step = from.pop();
     if (!step) return null;
-    to.push({ label: step.label, snap: JSON.stringify(this.project) });
-    const id = this.project.id;
+    to.push({ label: step.label, snap: bare(this.project) });
+    const id = this.project.id, history = this.project.history;
     this.project = JSON.parse(step.snap); this.project.id = id;
+    if (history) this.project.history = history;              // the restore points stay where they are
     this.touch();
     this.emit("change", { label: `${verb} : ${step.label}`, undo: true });
     return step.label;
+  }
+
+  /** Change the HISTORY of the project (core/history.js : a point posed, a branch set aside) — saved, but not an undo step. */
+  writeHistory(label, fn) {
+    const p = this.project; if (!p) throw new Error("Aucun projet ouvert.");
+    const r = fn(p); this.touch(); this.emit("change", { label, history: true }); return r;
   }
 
   /* ---------- parts ---------- */

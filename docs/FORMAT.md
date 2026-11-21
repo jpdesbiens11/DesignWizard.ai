@@ -146,6 +146,11 @@ Une pièce, un assemblage et une carte portent aussi, sous `plan`, ce que l'huma
 par phase (`notes`), des points à discuter (`point`), l'ordre de montage (`order`) ; la gamme elle-même se recalcule
 du modèle. Voir [GAMMES.md](GAMMES.md).
 
+Un projet porte aussi son **historique**, sous `history` : `v`, `head` (le point « vous êtes ici »), `objects`
+(chaque artéfact rangé une fois, en texte JSON, sous l'empreinte de son contenu) et `points` (pour chacun : `id`, `n`,
+`parent`, `at`, `kind` — `manual`, `ai` ou `before` —, `label`, `note`, `journal`, `context` et `tree`, la liste
+« artéfact → empreinte »). Il ne part ni vers une IA ni dans un miroir d'équipe. Voir [HISTORIQUE.md](HISTORIQUE.md).
+
 **Ajouter un genre ou un mot** se fait dans un seul fichier, `web/js/core/dwiz_names.js` : l'ordre des sections, et
 pour chaque liste le mot de ses lignes et les valeurs écrites sans leur nom. Le lecteur et l'écrivain
 (`web/js/core/dwiz.js`) sont génériques et ne changent pas.

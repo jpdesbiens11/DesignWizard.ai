@@ -26,6 +26,7 @@ import { mvpRows, trlReached } from "../core/mvp.js";
 import { trlLevel } from "../core/trl.js";
 import { teamRows } from "../core/team.js";
 import { plmRows } from "../core/plm.js";
+import { historyRows } from "../core/history.js";
 import { specialRows } from "../cad/special_processes.js";
 import { PROCESSES, materialOrDefault, processName } from "../cad/materials.js";
 import { INTERFACE_TYPES } from "../cad/interfaces.js";
@@ -208,6 +209,10 @@ function render(main) {
         el("p", { class: "muted" }, `Miroir de @${store.project.team.owner}. Chaque membre garde le projet entier chez lui ; les miroirs se fusionnent par artéfact. Tenu dans l'écran Équipe.`),
         table(["Membre", "Depuis", "Son miroir, lu le", "Messages"], tr.members), tr.open.length ? table(["Date", "De", "Sujet", "Message encore ouvert"], tr.open) : el("p", { class: "muted" }, "Aucun message ouvert.")));
     }
+    const hist = historyRows(store.project);
+    if (hist.length) doc.append(el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, "Historique de conception"),
+      el("p", { class: "muted" }, "Chaque point garde la définition complète du produit à un moment ; revenir à un point puis continuer ouvre une branche. Un point se pose à la main, ou tout seul après une réponse d'IA appliquée. Tenu dans l'écran Historique."),
+      table(["Point", "Posé le", "Genre", "Nom", "Après", "Itération MVP", "Révisions", "Branche"], hist)));
     const iters = mvpRows(store.project);
     if (iters.length) doc.append(el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, "Itérations MVP ", badge(trlReached(store.project) ? `TRL ${trlReached(store.project)} atteint` : "aucun niveau atteint", trlReached(store.project) ? "ok" : "neutral")),
       el("p", { class: "muted" }, `Cible du projet : TRL ${(store.project.mvp || {}).target || 6}. Chaque itération est gelée, passée en revue puis close par une décision ; la convergence est la part de ce qui a bougé depuis l'itération gelée précédente. Tenu dans l'écran Itérations MVP.`),
