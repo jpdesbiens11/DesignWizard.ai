@@ -305,9 +305,16 @@ ordre ; ce qui est fait se raye ici.
    est à son propre potentiel : au 4e CORE, le mode commun −7…+12 V est dépassé) au **BMS central** d'un **boîtier
    longitudinal** où les CORE se posent côte à côte, avec les connecteurs du véhicule et les busbars LV et HV ; le BMS
    central interroge les cartes (« mesurez maintenant » diffusé, puis une réponse par carte), juge et agit — contactors,
-   état envoyé au véhicule : **normal, dératé, urgence, arrêt (contactors ouverts)**. La proposition révision B, privée et
-   hors du dépôt, le dit avec quatre choix conseillés — CORE tête-bêche, côté bus alimenté par le faisceau, équilibrage
-   passif, la carte de CORE d'abord dans le PCBA — à confirmer par JP.
+   état envoyé au véhicule : **normal, dératé, urgence, arrêt (contactors ouverts)**. **Choix de JP, par menu, le même
+   jour** : **tous les CORE dans le même sens, une seule variante de carte** — le busbar du dessus, soudé au laser sous la
+   carte, descend le long d'un grand côté (celui des 4 cellules) et rejoint le CORE voisin par sa surface sur cette face :
+   des **busbars en U insérés par le dessus**, des « briques d'énergie 2 × 4 » qui se relient côte à côte ; **sous la carte
+   rigide, un flex joint** qui se replie à l'assemblage **en G** — le dessus, deux côtés, et **deux rabats sous les cellules
+   qui portent les 8 CTN** (lu : il descend par les deux petits bouts, dans les jeux de 3 mm, 4 CTN par rabat, et ramène B−) ;
+   **le côté bus de chaque RS-485 isolé est alimenté par le faisceau** depuis le BMS central ; **équilibrage passif** sur
+   chaque carte (une résistance commandée, sur ordre du BMS central ; la tension se mesure équilibrage coupé) ; **l'outil
+   construit d'abord la carte de CORE dans le PCBA** (contour, blocs, essais au Labo, isolation, son flex), puis le CORE et le
+   boîtier, puis le BMS central et sa machine à états. La proposition, révision C, privée et hors du dépôt, le dit.
 21. ~~**Logiciel : pas à pas, simulation en direct, code visible, chargement**~~ — fait (v0.124.0 ; demande de JP du 20
    novembre, sur l'écran `#/sw`) : sept étapes, entrées et sorties dites sur chaque tuile, la fiche du CPU au centre avec
    un lien par page, le guide dans le volet, l'essai de démarrage et la mémoire, la simulation en direct, le code à l'écran,
