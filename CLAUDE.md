@@ -363,6 +363,8 @@ ordre ; ce qui est fait se raye ici.
    **Itération 8 (v0.140.0)**, choix de JP par menu : **« Couronne sertie »** — la butée HV devient une rondelle de cuivre à part
    (`BM-STOP-HV`, `stopPart`), sa lèvre sur l'anneau extérieur de la couronne, fixée à la jambe par son bord ; butée 0,6 mm, pas 51,5 mm,
    plage LV relevée de 0,25 mm (`LV_UP`) ; le noyau vérifie que la couronne est prise. Reste : un essai de sertissage.
+   **JP, 21 novembre, par menu : « Reviens à la plateforme et on fera l'exemple bonifié du CORE à la fin »** — la suite reprend dans
+   l'ordre des points (2, puis 4, 5…) ; le projet BM (plaques de bout, fil des plages LV, isolation des îlots, boîtier) revient en dernier.
    Reste : les languettes de soudure minces, le heat staking du flex (la plaque − est entre les deux), la nuance du silicone 2K, la lamination
    d'une pièce pliée, l'évent au fond de la P45B (à demander), les bornes du module, le boîtier, le BMS central, l'échauffement du module fermé.
 21. ~~**Logiciel : pas à pas, simulation en direct, code visible, chargement**~~ — fait (v0.124.0 ; demande de JP du 20
