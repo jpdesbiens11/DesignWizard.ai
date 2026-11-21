@@ -105,7 +105,7 @@ test("the screen offers a board or an assembly ; the stairs, the guide, the repo
   assert.match(scr, /refine\(st\.scene, r0, r0\.a, r0\.b\)/); assert.match(scr, /pathNets\(st\.scene, far, r\.a, r\.b\)/); assert.match(scr, /focusPair\(key\)/); assert.match(read("web/js/core/viewer.js"), /focus\(p, span = 20\)/);
   const b = { ...demoBoard(false), id: "B1", name: "Carte" }, p = { id: "p", name: "P", parts: [], assemblies: [{ id: "TOP", name: "Top", instances: [], mates: [] }], boards: [b] };
   assert.equal(stairOf("creepage", ["board", "B1"], p).hash, "#/pcba/B1"); assert.ok(downOf("pcba", ["B1"], p).some((d) => d.hash === "#/creepage/board/B1" && /la carte seule/.test(d.tip)), "a step down from the PCBA, and the same step up");
-  assert.equal(stairOf("creepage", ["TOP"], p).hash, "#/assembly/TOP"); assert.equal(aiTargetOf("creepage", ["board", "B1"], p).key, "board:B1"); assert.equal(aiTargetOf("creepage", ["TOP"], p).key, "assembly:TOP");
+  assert.equal(stairOf("creepage", ["TOP"], p).hash, "#/assembly/TOP"); assert.equal(aiTargetOf("creepage", ["board", "B1"], p).key, "iso:board:B1"); assert.equal(aiTargetOf("creepage", ["TOP"], p).key, "iso:assembly:TOP");
   /* the guide : a board never analysed asks for nothing ; one analysed says its pairs in fault and its stale results */
   assert.deepEqual(boardIsolationGuide(b), []); assert.ok(boardLevelNames(b).some((l) => l.name === "24 V"));
   const bad = { ...b, isolation: { results: [{ a: "24 V", b: "0 V", ok: false, clr: 0.29, clrReq: 0.5, crp: 0.32, crpReq: 0.5 }, { a: "5 V", b: "0 V", ok: true }] } }, g = boardIsolationGuide(bad);

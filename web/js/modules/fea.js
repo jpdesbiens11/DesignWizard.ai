@@ -434,7 +434,8 @@ function render(main, args) {
   vp.setStatus(info);                                    // whatever stops the first mesh is said in the view, before the switch of views exists
   loadGeometry();
   /* Ctrl + Z, Ctrl + Y : the case comes back as the project has it now ; anything else that was undone is built again */
-  const unsee = store.on("change", (e) => { if (!alive || !e || !e.undo || !geo) return; const kept = takeCase({}, caseOf(store.project, st.target.id)), moved = !sameCase(kept, st), rebuilt = shape() !== built;
+  /* …and the same when an AI answer is applied to the case (e.external : core/ai_more.js) */
+  const unsee = store.on("change", (e) => { if (!alive || !e || !(e.undo || e.external) || !geo) return; const kept = takeCase({}, caseOf(store.project, st.target.id)), moved = !sameCase(kept, st), rebuilt = shape() !== built;
     if (!moved && !rebuilt) { if (sig() !== caseSig) drawLeft(); return; }
     if (moved && !rebuilt && sameSolve(kept, st)) { st.sensors = kept.sensors; drawLeft(); showSensors(); if (last) drawRight(); return; }      // only the instruments came back : the result stands
     if (moved) { takeCase(st, kept); st.sel = null; }

@@ -131,9 +131,10 @@ ordre ; ce qui est fait se raye ici.
    Fait : la porte « Avec l'IA » de l'Atelier crée et modifie pièces et assemblages, avec l'aperçu et le journal
    (`core/ai_door.js`, v0.109.0) ; un bouton « IA » en tête du volet de gauche de TOUS les studios, sur ce que l'écran
    montre (`aiTargetOf` de `core/stairs.js`), et un seul journal pour la boucle commune et la porte (`journalChange`,
-   `modules/ai_journal.js`, v0.110.0). Reste : la feuille d'un dessin, un cas de charge, un réglage d'isolation comme
-   artéfacts de la boucle ; ramener au journal les écrans qui ont leur propre aller-retour (flex, étiquettes, photo, Labo,
-   révisions, équipe) ; les cartes et les dessins dans une réponse de la porte.
+   `modules/ai_journal.js`, v0.110.0) ; ~~la feuille d'un dessin, un cas de charge, un réglage d'isolation comme artéfacts de la
+   boucle~~ — fait (v0.141.0, `core/ai_more.js` : `drawing/1`, `loadcase/1`, `isolation/1` ; les écrans Dessins, Simulation et
+   Isolation les confient ; le journal garde aussi les cas et le cartouche). Reste : ramener au journal les écrans qui ont leur
+   propre aller-retour (flex, étiquettes, photo, Labo, révisions, équipe) ; les cartes et les dessins dans une réponse de la porte.
 3. ~~**Cas de validation référencés**~~ — fait (v0.111.0) : 27 exemples publiés rejoués (23 par les modèles analytiques,
    4 par le solveur), 18 modèles sur 24 couverts, chaque source relue sur sa page ; l'écran dit la source, ce qu'elle
    imprime, ce que l'outil trouve, l'écart, et ce que les cas ne couvrent pas. Reste : un exemple publié pour les six

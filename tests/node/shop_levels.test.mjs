@@ -81,8 +81,10 @@ test("the step up of every screen leads to what the screen is made from — one 
 test("every functional screen hands its artefact to an AI — the part, the assembly or the board it shows, the project otherwise", () => {
   const T = (k, a) => (aiTargetOf(k, a, P) || {}).key;
   assert.equal(T("parts", ["PLATE"]), "part:PLATE"); assert.equal(T("busbar", ["BB1"]), "part:BB1"); assert.equal(T("pcb", []), "part:PCB1"); assert.equal(T("assembly", ["SUB"]), "assembly:SUB");
-  assert.equal(T("fea", ["PLATE"]), "part:PLATE"); assert.equal(T("fea", ["ASM"]), "assembly:ASM"); assert.equal(T("fea", []), "part:BASE"); assert.equal(T("drawings", ["BB1"]), "part:BB1"); assert.equal(T("drawings", ["asm", "ASM"]), "assembly:ASM");
-  assert.equal(T("pcba", ["BRD"]), "board:BRD"); assert.equal(T("elab", []), "board:BRD"); for (const k of ["creepage", "render", "labels"]) assert.equal(T(k, ["ASM"]), "assembly:ASM", k);
+  /* the Simulation, the Dessins and the Isolation hand over what they show : the load case, the drawing sheet, the isolation settings (core/ai_more.js) */
+  assert.equal(T("fea", ["PLATE"]), "case:PLATE"); assert.equal(T("fea", ["ASM"]), "case:ASM"); assert.equal(T("fea", []), "case:BASE"); assert.equal(T("drawings", ["BB1"]), "drawing:part:BB1"); assert.equal(T("drawings", ["asm", "ASM"]), "drawing:assembly:ASM");
+  assert.equal(T("pcba", ["BRD"]), "board:BRD"); assert.equal(T("elab", []), "board:BRD"); assert.equal(T("creepage", ["ASM"]), "iso:assembly:ASM"); for (const k of ["render", "labels"]) assert.equal(T(k, ["ASM"]), "assembly:ASM", k);
+  assert.match(aiTargetOf("drawings", ["BB1"], P).label, /la feuille de dessin de/); assert.match(aiTargetOf("fea", ["PLATE"], P).label, /le cas de charge de « Plaque »/);
   assert.equal(T("physics", ["beam", "PLATE"]), "part:PLATE"); assert.equal(T("physics", ["beam"]), "project"); assert.equal(T("dfx", ["points", "PLATE"]), "part:PLATE"); assert.equal(T("dfx", []), "project"); assert.equal(T("shop", []), "project"); assert.equal(aiTargetOf("parts", [], null), null);
   assert.match(aiTargetOf("parts", ["PLATE"], P).label, /la pièce « Plaque »/); assert.match(aiTargetOf("review", [], P).label, /tout le projet/);
   const app = readFileSync(new URL("../../web/js/core/app.js", import.meta.url), "utf8"), nav = [...app.matchAll(/keys: \[([^\]]+)\]/g)].flatMap((m) => m[1].split(",").map((x) => x.trim().replace(/"/g, "")));

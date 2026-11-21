@@ -109,9 +109,9 @@ export function planWords(rows) {
 }
 export const planApplies = (rows) => (rows || []).some((r) => r.action === "create" || r.action === "modify");
 
-const LIST = { part: "parts", assembly: "assemblies", board: "boards" }, KEEP = 20;
+const LIST = { part: "parts", assembly: "assemblies", board: "boards", case: "cases" }, KEEP = 20;      // the load cases of the Simulation are a list by id too ; the title block of the drawings is one object (« sheet »)
 /** What a project holds, artefact by artefact — taken BEFORE a change, to tell afterwards what the change did (the common AI loop : modules/ai_loop.js). */
-export function snapshotLists(project) { const out = { journal: (project && project.aiJournal) || [] }; for (const [kind, key] of Object.entries(LIST)) out[kind] = new Map(((project && project[key]) || []).map((x) => [x.id, JSON.stringify(x)])); return out; }
+export function snapshotLists(project) { const out = { journal: (project && project.aiJournal) || [] }; for (const [kind, key] of Object.entries(LIST)) out[kind] = new Map(((project && project[key]) || []).map((x) => [x.id, JSON.stringify(x)])); out.sheet = JSON.stringify((project && project.drawing) ?? null); return out; }
 /** The journal entry of a change made between a snapshot and now : what appeared, what changed, what went. Written in project.aiJournal ; null when nothing changed.
     To be called inside the step that makes the change (a hook of the store). */
 export function journalChange(before, project, o = {}) {
@@ -121,6 +121,7 @@ export function journalChange(before, project, o = {}) {
     for (const x of now) { seen.add(x.id); const was = before[kind].get(x.id); if (was === undefined) entry.created.push({ kind, id: x.id }); else if (was !== JSON.stringify(x)) entry.modified.push({ kind, id: x.id, before: JSON.parse(was) }); }
     for (const [id, was] of before[kind]) if (!seen.has(id)) entry.removed.push({ kind, id, before: JSON.parse(was) });
   }
+  if (before.sheet !== undefined && before.sheet !== JSON.stringify(project.drawing ?? null)) entry.modified.push({ kind: "sheet", id: "cartouche", before: JSON.parse(before.sheet) });
   if (!entry.created.length && !entry.modified.length && !entry.removed.length) return null;
   project.aiJournal = [entry, ...(project.aiJournal || before.journal || [])].slice(0, KEEP);
   return entry;
@@ -144,13 +145,15 @@ export function revertEntry(project, entryId) {
   const mine = new Set(e.created.filter((c) => c.kind === "assembly").map((c) => c.id));
   for (const c of e.created.filter((x) => x.kind === "assembly")) { project.assemblies = (project.assemblies || []).filter((a) => a.id !== c.id); out.removed.push(c.id); }
   for (const c of e.created.filter((x) => x.kind === "board")) { project.boards = (project.boards || []).filter((b) => b.id !== c.id); out.removed.push(c.id); }
+  for (const c of e.created.filter((x) => x.kind === "case")) { project.cases = (project.cases || []).filter((b) => b.id !== c.id); out.removed.push(`cas de ${c.id}`); }
   for (const r of e.removed || []) { const list = (project[LIST[r.kind]] = project[LIST[r.kind]] || []); if (!list.some((x) => x.id === r.id)) { list.push(JSON.parse(JSON.stringify(r.before))); out.restored.push(r.id); } }      // what the answer took away comes back
   for (const c of e.created.filter((x) => x.kind === "part")) {
     const user = (project.assemblies || []).find((a) => !mine.has(a.id) && (a.instances || []).some((i) => i.part === c.id));
     if (user) { out.kept.push({ id: c.id, why: `montée dans ${user.id}` }); continue; }
     project.parts = (project.parts || []).filter((p) => p.id !== c.id); out.removed.push(c.id);
   }
-  for (const m of e.modified) { const list = project[LIST[m.kind]] || [], i = list.findIndex((x) => x.id === m.id); if (i >= 0) { list[i] = JSON.parse(JSON.stringify(m.before)); out.restored.push(m.id); } }
+  for (const m of e.modified.filter((x) => x.kind === "sheet")) { if (m.before === null || m.before === undefined) delete project.drawing; else project.drawing = JSON.parse(JSON.stringify(m.before)); out.restored.push("cartouche"); }
+  for (const m of e.modified.filter((x) => x.kind !== "sheet")) { const list = project[LIST[m.kind]] || [], i = list.findIndex((x) => x.id === m.id); if (i >= 0) { list[i] = JSON.parse(JSON.stringify(m.before)); out.restored.push(m.id); } }
   project.aiJournal = J.filter((x) => x.id !== entryId);
   return out;
 }

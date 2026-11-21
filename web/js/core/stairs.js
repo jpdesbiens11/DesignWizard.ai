@@ -74,16 +74,19 @@ export function aiTargetOf(key, args, project) {
   const a = args || [], parts = project.parts || [], asms = project.assemblies || [], boards = project.boards || [];
   const P = (p) => (p ? { key: `part:${p.id}`, label: `la pièce « ${p.name || p.id} »` } : null), A = (x) => (x ? { key: `assembly:${x.id}`, label: `l'assemblage « ${x.name || x.id} »` } : null), B = (b) => (b ? { key: `board:${b.id}`, label: `la carte « ${b.name || b.id} »` } : null);
   const part = (id) => (id ? parts.find((p) => p.id === id) : null) || null, asm = (id) => (id ? asms.find((x) => x.id === id) : null) || null, all = { key: "project", label: `tout le projet « ${project.name || "sans nom"} »` };
+  /* the Dessins, Simulation and Isolation screens hand over what they show — the sheet, the load case, the isolation settings — not the part behind (core/ai_more.js) */
+  const nm = (x) => `« ${x.name || x.id} »`, D = (of, x) => (x ? { key: `drawing:${of}:${x.id}`, label: `la feuille de dessin de ${nm(x)}` } : null),
+    C = (x) => (x ? { key: `case:${x.id}`, label: `le cas de charge de ${nm(x)}` } : null), I = (of, x) => (x ? { key: `iso:${of}:${x.id}`, label: `l'isolation de ${nm(x)}` } : null);
   const lv = levelsOf(key, a, project);
   if (lv && lv.part) return P(lv.part);
   if (lv && lv.assembly) return A(lv.assembly);
   switch (key) {
     case "pcba": case "elab": return B(boards.find((b) => b.id === a[0]) || boards[0]) || all;
-    case "fea": return P(part(a[0])) || A(asm(a[0])) || P(parts[0]) || all;
-    case "drawings": return (a[0] === "asm" ? A(asm(a[1])) : P(part(a[0]) || parts.find((p) => !p.step))) || all;
+    case "fea": return C(part(a[0]) || asm(a[0]) || parts[0]) || all;
+    case "drawings": return (a[0] === "asm" ? D("assembly", asm(a[1])) : D("part", part(a[0]) || parts.find((p) => !p.step))) || all;
     case "physics": return P(part(a[1])) || all;
     case "dfx": return (a[0] === "points" ? P(part(a[1])) : null) || all;
-    case "creepage": if (a[0] === "board") return B(boards.find((b) => b.id === a[1])) || all;      // falls through : an assembly
+    case "creepage": return (a[0] === "board" ? I("board", boards.find((b) => b.id === a[1])) : I("assembly", asm(a[0]) || asms[0])) || all;
     case "render": case "labels": return A(asm(a[0]) || asms[0]) || all;
     default: return all;
   }

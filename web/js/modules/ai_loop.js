@@ -16,6 +16,7 @@ import { isSub, holds } from "../core/asm_levels.js";
 import { snapshotLists, journalChange } from "../core/ai_door.js";
 import { aiTargetOf, addressOf } from "../core/stairs.js";
 import { journalBox } from "./ai_journal.js";
+import { moreKey, moreDoc, moreCheck, moreApply, moreLabel, MORE_HELP } from "../core/ai_more.js";
 
 /* What an answer changes goes back to « Brouillon IA » in the review ledger, inside the very step that applies it. */
 let applying = null;
@@ -67,6 +68,14 @@ export function aiTargets() {
       apply: (d) => store.commit("Projet mis à jour par l'IA", (x) => { const before = JSON.parse(JSON.stringify(x)); replace(x, adoptIteration(before, restoreSteps(d, p))); markDrafts(x, changedKeys(before, x)); }) }) });
   return out;
 }
+/** The drawing sheet, the load case or the isolation settings of the screen (core/ai_more.js) : a target of its own, written in one step of the store,
+    the screen told by `external` that the project changed under it (the Simulation keeps its case in hand). host : what the context package is built around. */
+export function moreTarget(key) {
+  const p = store.project, k = moreKey(key, p); if (!k) return null;
+  const what = moreLabel(p, k), Up = what.charAt(0).toUpperCase() + what.slice(1);
+  return { key, host: `${k.of}:${k.id}`, label: Up, open: async () => ({ doc: moreDoc(store.project, key), title: `Confier ${what} à l'IA`, help: MORE_HELP[k.kind],
+    check: (d) => moreCheck(store.project, key, d), apply: (d) => store.commit(`${Up} : réponse de l'IA appliquée`, (x) => moreApply(x, key, d), { external: true }) }) };
+}
 /** Key of the artefact the current screen shows. */
 export function currentAiTarget() { const { key, args } = addressOf(location.hash), t = aiTargetOf(key, args, store.project); return t ? t.key : "project"; }      // one rule for every screen : core/stairs.js
 
@@ -115,10 +124,10 @@ export function openAiLoop(opts) {
     more : { help: [lines], context: text } — what the calling screen adds (a routing sheet given for reference…). */
 export async function openAiLoopFor(key, more = {}) {
   if (!store.project) { toast("Ouvrez d'abord un projet.", "info"); return null; }
-  const targets = aiTargets(), t = targets.find((x) => x.key === key) || targets[targets.length - 1], o = await t.open();
+  const extra = moreTarget(key), targets = extra ? [extra, ...aiTargets()] : aiTargets(), t = targets.find((x) => x.key === key) || targets[targets.length - 1], o = await t.open();
   const apply = o.apply, own = t.key === "project" ? null : [t.key];           // the project marks its own changes, artefact by artefact
   let dlg = null;
-  dlg = openAiLoop({ ...o, ecoKey: t.key, from: addressOf(location.hash).key, apply: (d) => { applying = own; journaling = { before: snapshotLists(store.project), ask: dlg ? dlg.ask.value : "" }; try { return apply(d); } finally { applying = null; journaling = null; } }, help: [...(o.help || []), ...(more.help || [])], context: more.context || "", targets, target: t.key });
+  dlg = openAiLoop({ ...o, ecoKey: t.host || t.key, from: addressOf(location.hash).key, apply: (d) => { applying = own; journaling = { before: snapshotLists(store.project), ask: dlg ? dlg.ask.value : "" }; try { return apply(d); } finally { applying = null; journaling = null; } }, help: [...(o.help || []), ...(more.help || [])], context: more.context || "", targets, target: t.key });
   if (more.ask && dlg) dlg.ask.value = more.ask;                                // the note of the review becomes the request
   return dlg;
 }

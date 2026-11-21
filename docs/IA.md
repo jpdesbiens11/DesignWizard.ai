@@ -143,10 +143,26 @@ faire des allers-retours avec l'IA… de pouvoir revenir en arrière si l'IA n'a
   dialogue de la boucle et sur la page « Créer avec l'IA » ; « Revenir à avant » retire ce qu'une réponse a créé,
   remet ce qu'elle a modifié **ou retiré**, même après d'autres changements. Le journal ne part jamais chez un
   assistant.
-- Pas encore — c'est la suite : la **feuille d'un dessin** (cartouche, notes, vues), un **cas de charge**, un réglage
-  d'**isolation** comme artéfacts à part entière de la boucle (aujourd'hui, depuis ces écrans, c'est la pièce ou
-  l'assemblage qui part) ; les écrans qui ont leur propre aller-retour (circuit flexible, étiquettes, studio photo,
-  Labo, révisions, équipe) ne passent pas encore par le journal.
+- **Dessins, Simulation, Isolation : ce que l'écran montre, pas la pièce derrière** (v0.141.0, `web/js/core/ai_more.js`,
+  pur et testé). Chacun part comme un petit document de son genre, avec le numéro de ce à quoi il appartient :
+  - **la feuille de dessin** (`drawing/1`) d'une pièce ou d'un assemblage : le cartouche du projet (dessiné par, vérifié,
+    approuvé, statut, organisation, note de confidentialité, projection, arêtes cachées, nomenclature à plat ou par
+    niveau — il vaut pour **toutes** les feuilles du projet, et la consigne le dit), **l'anglais de chaque texte que le
+    dessin écrit** (ceux qui n'en ont pas encore arrivent vides, à remplir), la coupe, les classes de cotes (SC, CSC,
+    REF) et les notes. Les vues, l'échelle et le format sont calculés : ils ne se confient pas ;
+  - **le cas de charge** (`loadcase/1`) d'une pièce ou d'un assemblage : le cas en cours et les autres, par leur nom —
+    appuis, efforts, puissances, convection, zones, instruments. Une réponse appliquée **remet l'écran Simulation à
+    jour** (il ne relisait son cas qu'après une annulation) ; les simulations gardées ne sont pas refaites, et c'est dit ;
+  - **les réglages d'isolation** (`isolation/1`) d'un assemblage — potentiels et tensions, degré de pollution, altitude,
+    catégorie de surtension, champ, niveau de chaque paire, rôles des corps — ou d'une carte (ses potentiels viennent du
+    PCBA : ils ne se changent pas ici). Les résultats de la dernière analyse sont **retirés** quand les réglages
+    changent : ils ne valent plus ; on relance « Analyser ».
+  Chaque réponse est relue avant d'être appliquée (un genre de cas, une projection, un niveau d'isolation qui n'existent
+  pas l'arrêtent), montrée changement par changement, appliquée en **une étape annulable**, et **entre au journal** — qui
+  garde maintenant aussi les cas de charge et le cartouche : « Revenir à avant » les défait. Le menu « Artéfact » de la
+  boîte de dialogue mène toujours à la pièce, à l'assemblage, à la carte ou au projet entier.
+- Pas encore : les écrans qui ont leur propre aller-retour (circuit flexible, étiquettes, studio photo, Labo, révisions,
+  équipe) ne passent pas encore par le journal ; les cartes et les dessins dans une réponse de la porte de l'Atelier.
 - Essayé dans Chromium (19 vérifications : le bouton sur douze écrans avec la bonne cible, l'ouverture de la boucle,
   une réponse appliquée, le journal, le retour à avant après un autre changement).
 
