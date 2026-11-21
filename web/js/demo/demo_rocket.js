@@ -8,6 +8,7 @@
    nor the motor, nor the flight. Materials the library lacks are said in the notes of each part. */
 
 import { WORDS_ROCKET } from "./demo_words.js";
+import { withPaths } from "./demo_paths.js";
 
 const cyl = (d, h, at, axis = "Z", extra = {}) => ({ op: "cylinder", d, h, at, axis, ...extra });
 const box = (size, at, extra = {}) => ({ op: "box", size, at, ...extra });
@@ -213,7 +214,7 @@ const BUILD = [
 export const DEMO_ROCKET = {
   dw: "project/1", id: "demo-fusee", name: "Fusée à moteur hybride (exemple)", author: "DesignWizard.ai",
   description: "Une fusée-sonde de 8 po de diamètre et d'environ 12 pi de long, à moteur hybride : bloc de combustible en polyuréthane, réservoir de protoxyde d'azote, vanne principale, tuyère refroidie par un serpentin hélicoïdal, carte de commande et faisceau, parachute, quatre ailerons fixes. Un exercice de CAO : géométrie de principe, ni dimensionnée ni validée.",
-  parts: PARTS,
+  parts: withPaths(PARTS),      // a disc drilled and tapped, a tube turned and bored : tool paths written by an AI for the fabrication shop (demo_paths.js)
   assemblies: [{ dw: "assembly/1", id: "FUS-ASM", name: "Fusée hybride — assemblage général",
     instances: BUILD.map(([id, p], k) => ({ id, part: p.id, ...(k ? {} : { fixed: true, placement: { t: [0, 0, 0], r: [0, 0, 0] } }) })),
     mates: BUILD.slice(1).map(([id, , mine, to, theirs, o], k) => ({ id: `M${k + 1}`, a: { inst: id, iface: mine }, b: { inst: to, iface: theirs }, linked: true, by: "key", ...(o || {}) })),

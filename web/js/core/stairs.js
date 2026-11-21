@@ -9,6 +9,7 @@
    Pure : no page. */
 
 import { levelsOf, natureOf, partHash, asmHash } from "./shop_levels.js";
+import { fabPlayable } from "./fab_path.js";
 
 const enc = encodeURIComponent;
 /** The step up from a screen. key, args : its address (`#/key/args…`) ; project.
@@ -60,7 +61,7 @@ export function downOf(key, args, project) {
     for (const b of boards.filter((x) => x.part === p.id)) B(b, "le PCBA monté sur cette carte");
     if (!p.step) out.push({ hash: `#/drawings/${enc(p.id)}`, icon: "drawing", color: null, label: "Dessin", tip: `Descendre d'un niveau : le dessin de « ${p.name || p.id} »` });
     out.push({ hash: `#/fea/${enc(p.id)}`, icon: "physics", color: null, label: "Simulation", tip: `Descendre d'un niveau : la simulation de « ${p.name || p.id} »` });
-    if (!p.step && out.length < 4) out.push({ hash: `#/fab/${enc(p.id)}`, icon: "mill", color: null, label: "Atelier de fab", tip: `Descendre d'un niveau : la gamme de « ${p.name || p.id} » jouée à l'atelier` });
+    if (fabPlayable(p).ok && out.length < 4) out.push({ hash: `#/fab/${enc(p.id)}`, icon: "mill", color: null, label: "Atelier de fab", tip: `Descendre d'un niveau : la gamme de « ${p.name || p.id} » jouée à l'atelier` });
   } else if (lv && lv.assembly) { const x = lv.assembly, name = x.name || x.id;
     for (const s of [...new Set((x.instances || []).map((i) => i.asm).filter(Boolean))].map((id) => asms.find((y) => y.id === id)).filter(Boolean)) out.push({ hash: asmHash(s), icon: "assembly", color: "#475569", label: s.name || s.id, tip: `Descendre d'un niveau : le sous-assemblage « ${s.name || s.id} »` });
     out.push({ hash: `#/creepage/${enc(x.id)}`, icon: "creepage", color: null, label: "Isolation", tip: `Descendre d'un niveau : l'isolation de « ${name} »` }, { hash: `#/drawings/asm/${enc(x.id)}`, icon: "drawing", color: null, label: "Dessin", tip: `Descendre d'un niveau : le dessin d'ensemble de « ${name} »` });

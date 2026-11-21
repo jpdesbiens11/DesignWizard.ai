@@ -33,6 +33,43 @@ Le dernier écran du groupe **Mécanique**, « Atelier de fab » (`#/fab/<pièce
 pièce comme on la ferait voir à un stagiaire ou à un fournisseur : de la réception du brut au conditionnement. Il
 s'ouvre sur la **gamme par défaut** (choix de JP), le bouton « IA » à sa place habituelle, en tête du volet de gauche.
 
+**Ce qui se joue, et ce qui ne se joue pas** (JP, 21 novembre : « seules les pièces machinées et moulées, extrudées,
+stampées ou découpées au laser peuvent être animées… tu ne devrais pas rendre une démo de la gamme qui est fausse ») :
+les pièces **usinées** (fraisage, tournage), **moulées ou coulées**, **extrudées**, **embouties** (tôlerie) ou
+**découpées au laser**. Une carte nue, un circuit flexible, une pièce achetée ou laminée (un busbar laminé), une
+impression 3D ne se jouent pas : la marge de gauche les nomme, avec la raison, et leur gamme écrite reste dans l'onglet
+« Gamme » de la pièce ; la marche vers le bas d'une pièce ne propose l'atelier que pour une pièce qu'il joue
+(`fabPlayable` de `web/js/core/fab_path.js`).
+
+**L'outil qui usine, le long d'un parcours écrit par une IA** (même message : « voir l'outil d'usinage bouger
+seulement pour les pièces usinées ou sur-usinées après moulage métallique… simuler un parcours d'usinage avec les
+allers-retours IA… et mentionner la possibilité pour forcer les gens à le demander à Claude ») : l'outil ne bouge que
+dans une phase d'usinage — les posages d'une pièce usinée ou extrudée, les reprises d'une pièce coulée (`toolMoves`).
+L'outil **n'écrit pas** le parcours : il est demandé à Claude, ou à l'IA de son choix, par « Demander le parcours à
+Claude », qui ouvre l'aller-retour de la pièce avec la demande déjà écrite (la phase, ses opérations, les perçages de sa
+face, la boîte de la pièce, le repère, le format). La réponse revient comme toute réponse : un aperçu, la validation,
+une étape annulable, le journal. Le parcours se range dans la pièce :
+
+```dwiz
+plan paths={"setup:-Z": [{tool: drill, d: 3.3, by: "Claude (IA)", note: "…", gcode: "G21 G90\nG0 X10 Y10 Z-30\nG83 X10 Y10 Z6 R-2 Q2\nG80"}]}
+```
+
+Une passe : un outil (`center`, `drill`, `tap`, `reamer`, `endmill`, `facemill`, `chamfer`, `boring`, `turning`), son
+diamètre, et son parcours — un G-code simple (G0, G1, G2 / G3 dans le plan XY avec I et J, cycles de perçage G81 à G85
+avec R, en mm et en absolu) ou une liste de positions `[g, x, y, z]` —, **dans le repère de la pièce**, le point étant
+le bout de l'outil. L'écran le lit (ce qu'il ne lit pas est dit : pouces, incrémental, un code inconnu), le vérifie
+contre la pièce d'avant la phase — un outil qui descend dans l'étau, un rapide qui entre dans la matière, un repère qui
+n'est pas celui de la pièce — et l'anime : la pièce d'avant la phase, l'outil le long du parcours (le travail dans sa
+couleur, les rapides en pointillé), puis la pièce d'après. « Jouer la gamme » et le film usinent là où un parcours est
+écrit ; le diaporama dit qui l'a écrit. Trois exemples, écrits par une IA pour la démonstration : le dissipateur du
+variateur (pointage, perçage et taraudage par-dessous ; la note dit pourquoi le taraudage n'a que 4 mm utiles), le
+disque de la fusée (perçages débouchants), la jupe de tuyère (dressage, chariotage et alésage au tour).
+
+**Au tour**, la pièce est couchée dans l'axe du mandrin, le bout travaillé libre ; une face radiale (un perçage en
+travers, un méplat : outil motorisé) est tournée vers le haut. **Une pièce dont toute la forme vient de l'usinage** —
+rien ne reste après le débit — part d'un **brut supposé**, dit comme tel : la boîte de la pièce ; au tour, une barre,
+ou un tube si la pièce est creuse de bout en bout, avec 1 mm de surépaisseur (`blankSpec`).
+
 - **Chaque phase a son poste**, dessiné par l'outil : scie à ruban pour le débit d'une barre, table de découpe laser
   pour un flan, moule ouvert pour une pièce moulée ou coulée, plateau d'impression, filière d'extrusion, étau sous la
   broche pour un posage de fraisage, mandrin à trois mors pour le tour, presse plieuse, établi d'ébavurage, bac de
@@ -60,7 +97,8 @@ plan order=[stock, "setup:-Z", "setup:+Z", deburr, check, pack] comments={stock:
 
 Les montages sont des **montages de PRINCIPE**, fabriqués par l'outil : aucune machine, aucun montage, aucune marque
 de fabricant ; l'atelier choisit les siens, et l'écran, le diaporama et le film le disent. Ce n'est pas une simulation
-d'usinage : ni trajectoire d'outil, ni enlèvement de matière en continu, ni efforts de coupe.
+d'usinage : un parcours d'IA n'est pas un programme de machine — ni vitesses ni avances réelles, ni compensation de
+rayon, ni collision du porte-outil, ni enlèvement de matière en continu, ni efforts de coupe.
 
 ## Ce qui est gardé, et où
 
@@ -100,8 +138,10 @@ avant les cartes ». La réponse revient, l'écran liste les changements, l'huma
 - L'état de la pièce après une phase vient de l'arbre de construction : une forme faite en plusieurs phases chez
   l'atelier apparaît dans la phase de son opération.
 - Ces gammes n'ont pas encore été relues par un atelier ni par un assembleur.
-- L'atelier de fab montre **une image par étape** : la caméra ne vole pas d'un poste à l'autre, l'outil ne bouge pas ;
-  le film enchaîne les images. Le diaporama n'a pas été ouvert dans PowerPoint — il a été relu par python-pptx et
+- L'atelier de fab montre **une image par étape** : la caméra ne vole pas d'un poste à l'autre ; l'outil ne bouge que
+  dans une phase d'usinage dont le parcours a été écrit, et le parcours se lit selon l'usage des commandes numériques
+  (ISO 6983 non lue ; chaque constructeur a ses variantes). Le brut d'une pièce tout usinée est supposé. Les gestes
+  d'un moule, d'une presse plieuse ou d'une filière ne sont pas animés. Le diaporama n'a pas été ouvert dans PowerPoint — il a été relu par python-pptx et
   rendu par LibreOffice. Le film est en WebM (VP9 ou VP8, selon ce que le navigateur enregistre).
 
 ## Dans le code
@@ -117,6 +157,8 @@ avant les cartes ». La réponse revient, l'écran liste les changements, l'huma
 | `web/js/core/fab_scene.js` | l'atelier de fab : `stationKind`, `placeFor` (la pièce tournée vers l'outil), `fixtureOf`, `sceneOf` |
 | `web/js/core/fab_flow.js` | l'ordre de l'atelier : `flowKeys`, `moveKey`, `dropKey`, `orderIssues`, `stepMeasures` |
 | `web/js/core/pptx.js` | un diaporama `.pptx` écrit à la main (16:9, marque, note, pages) |
+| `web/js/core/fab_path.js` | ce que l'atelier joue (`fabPlayable`), où l'outil bouge (`toolMoves`), le G-code lu (`parseGcode`), les passes (`passesOf`), leurs défauts (`pathIssues`), l'animation (`timeline`, `tipAt`), la demande à l'IA (`pathAsk`) |
+| `web/js/demo/demo_paths.js` | les parcours d'exemple, écrits par une IA pour trois pièces des démonstrations |
 | `web/js/modules/fab.js`, `fab_out.js` | l'écran de l'atelier ; le diaporama et le film |
-| `tests/node/fab_shop.test.mjs` | postes, placement sans interférence, ordre gardé et suivi, diaporama, branchements |
+| `tests/node/fab_shop.test.mjs`, `fab_path.test.mjs` | postes, placement sans interférence, ordre gardé et suivi, diaporama, branchements ; ce qui se joue, le G-code lu, les défauts d'un parcours, les exemples propres contre la pièce, le brut supposé |
 | `tests/node/plans.test.mjs` | les trois gammes, leurs textes et leurs documents |

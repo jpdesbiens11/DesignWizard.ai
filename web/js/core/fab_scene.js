@@ -12,6 +12,15 @@ const MOLD = new Set(["injection_molding", "die_casting", "lp_die_casting", "per
 const UP = { "+Z": [[1, 0, 0], [0, 1, 0], [0, 0, 1]], "-Z": [[1, 0, 0], [0, -1, 0], [0, 0, -1]], "+X": [[0, 0, -1], [0, 1, 0], [1, 0, 0]], "-X": [[0, 0, 1], [0, 1, 0], [-1, 0, 0]], "+Y": [[1, 0, 0], [0, 0, -1], [0, 1, 0]], "-Y": [[1, 0, 0], [0, 0, 1], [0, -1, 0]] };
 const SIDE = { "+X": [[1, 0, 0], [0, 1, 0], [0, 0, 1]], "-X": [[-1, 0, 0], [0, -1, 0], [0, 0, 1]], "+Y": [[0, 1, 0], [-1, 0, 0], [0, 0, 1]], "-Y": [[0, -1, 0], [1, 0, 0], [0, 0, 1]], "+Z": [[0, 0, 1], [0, 1, 0], [-1, 0, 0]], "-Z": [[0, 0, -1], [0, 1, 0], [1, 0, 0]] };
 const mul = (R, p) => R.map((r) => r[0] * p[0] + r[1] * p[1] + r[2] * p[2]);
+/* On a lathe the axis of the part (its Z) lies along the spindle (+X), the end being worked free toward the tailstock ; a radial face (a
+   cross hole, a flat : live tooling) is then turned up, about the spindle. */
+const RX = { "-X": [[1, 0, 0], [0, 1, 0], [0, 0, 1]], "+X": [[1, 0, 0], [0, -1, 0], [0, 0, -1]], "+Y": [[1, 0, 0], [0, 0, -1], [0, 1, 0]], "-Y": [[1, 0, 0], [0, 0, 1], [0, -1, 0]] };
+const mm = (A, B) => A.map((r) => [0, 1, 2].map((j) => r[0] * B[0][j] + r[1] * B[1][j] + r[2] * B[2][j]));
+const latheR = (face) => (face === "-Z" ? SIDE["-Z"] : RX[face] ? mm(RX[face], SIDE["+Z"]) : SIDE["+Z"]);
+/** A point of the part in the frame of the station (m : the matrix of placeFor, column-major). */
+export const toStation = (m, p) => [m[0] * p[0] + m[4] * p[1] + m[8] * p[2] + m[12], m[1] * p[0] + m[5] * p[1] + m[9] * p[2] + m[13], m[2] * p[0] + m[6] * p[1] + m[10] * p[2] + m[14]];
+/** A direction of the part in the frame of the station. */
+export const dirToStation = (m, d) => [m[0] * d[0] + m[4] * d[1] + m[8] * d[2], m[1] * d[0] + m[5] * d[1] + m[9] * d[2], m[2] * d[0] + m[6] * d[1] + m[10] * d[2]];
 
 /** What a phase is, in the shop : the kind of station its scene shows. */
 export function stationKind(phase, proc) {
@@ -34,7 +43,7 @@ export const STATIONS = {
     centres it and sets it on z = 0 ; and its box in that frame [x0, y0, z0, x1, y1, z1]. bbox : the box of the part in its own frame. */
 export function placeFor(phase, proc, bbox) {
   const face = String((phase && phase.key) || "").startsWith("setup:") ? String(phase.key).slice(6) : "+Z", lathe = proc === "cnc_turning" && String(phase && phase.key).startsWith("setup:");
-  const R = (lathe ? SIDE : UP)[face] || UP["+Z"], P = [];
+  const R = lathe ? latheR(face) : UP[face] || UP["+Z"], P = [];
   for (const x of [bbox[0], bbox[3]]) for (const y of [bbox[1], bbox[4]]) for (const z of [bbox[2], bbox[5]]) P.push(mul(R, [x, y, z]));
   const lo = [0, 1, 2].map((k) => Math.min(...P.map((p) => p[k]))), hi = [0, 1, 2].map((k) => Math.max(...P.map((p) => p[k]))), t = [-(lo[0] + hi[0]) / 2, -(lo[1] + hi[1]) / 2, -lo[2]];
   const r = (v) => Math.round(v * 1e6) / 1e6, matrix = [R[0][0], R[1][0], R[2][0], 0, R[0][1], R[1][1], R[2][1], 0, R[0][2], R[1][2], R[2][2], 0, t[0], t[1], t[2], 1].map(r);

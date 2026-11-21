@@ -38,7 +38,7 @@ test("the twin follows its board : made at the first placed component, updated w
 test("steps down : the exact reverse of the step up — a board to its PCBA, a PCBA to its Labo, a part to its drawing and its simulation", () => {
   const p = project(); syncTwins(p, LIBRARY);
   const board = downOf("pcb", ["B1-PCB"], p); assert.equal(board[0].hash, "#/pcba/B1"); assert.equal(board[0].icon, "chip"); assert.match(board[0].tip, /Descendre d'un niveau : le PCBA monté sur cette carte/);
-  assert.deepEqual(board.slice(1).map((d) => d.hash), ["#/drawings/B1-PCB", "#/fea/B1-PCB", "#/fab/B1-PCB"]);
+  assert.deepEqual(board.slice(1).map((d) => d.hash), ["#/drawings/B1-PCB", "#/fea/B1-PCB"]);
   assert.deepEqual(downOf("pcba", ["B1"], p).map((d) => d.hash), ["#/elab/B1", "#/creepage/board/B1", "#/swreq"], "the Labo of the board, its isolation alone, and the software that runs on its CPU"); assert.equal(stairOf("swreq", [], p).hash, "#/pcba/B1", "the step up of the software leads back to that board");
   assert.deepEqual(downOf("parts", ["BRKT"], p).map((d) => d.hash), ["#/drawings/BRKT", "#/fea/BRKT", "#/fab/BRKT"], "its drawing, its simulation, its routing played in the fabrication shop");
   assert.deepEqual(downOf("assembly", ["TOP"], p).map((d) => d.hash), ["#/assembly/SUB", "#/creepage/TOP", "#/drawings/asm/TOP"]);

@@ -14,7 +14,7 @@ const picture = (viewer) => ({ bytes: bytesOf(viewer.snapshotJpeg(0.86)), type: 
 /** The measures of a state, in words. */
 export const measureWords = (m) => (m ? [`Encombrement : ${fmtDims(m.size, 1)}`, ...(m.mass ? [`Masse : ${fmtMass(m.mass)}`] : [])] : []);
 
-/** The deck of a routing. o : { plan, spec, viewer, show(i) → Promise (paints step i, returns its measures), title } → downloads the .pptx */
+/** The deck of a routing. o : { plan, spec, viewer, show(i) → Promise (paints step i, returns its measures), scene(i), pathNote(i) → text } → downloads the .pptx */
 export async function fabDeck(o) {
   const { plan, spec, viewer } = o, slides = [], d = (store.project && store.project.drawing) || {}, comments = (spec.plan && spec.plan.comments) || {};
   for (let i = 0; i < plan.phases.length; i++) {
@@ -22,7 +22,7 @@ export async function fabDeck(o) {
     if (i === 0) slides.push({ title: `Gamme de fabrication — ${spec.id}`, sub: `${spec.name || ""} · révision ${spec.revision || "A"}`, image: picture(viewer),
       bullets: [...plan.facts.map(([k, v]) => `${k} : ${v}`), { text: "Les montages sont des montages de PRINCIPE, dessinés par l'outil : l'atelier choisit les siens.", italic: true, bullet: false }] });
     slides.push({ title: `${ph.n} — ${ph.title}`, sub: `${sc.station.label} — ${sc.station.fr}`, image: picture(viewer),
-      bullets: [...(ph.hold ? [{ text: `Prise de pièce : ${ph.hold}`, bold: true }] : []), ...ph.ops.map((op) => `${op.n} ${op.text}${op.tools.length ? ` — ${op.tools.join(", ")}` : ""}`), ...ph.checks.map((c) => `Contrôle : ${c}`), ...measureWords(m).map((t) => ({ text: `Après la phase : ${t}`, bold: true })), ...(ph.note ? [{ text: `Note : ${ph.note}`, italic: true }] : [])],
+      bullets: [...(ph.hold ? [{ text: `Prise de pièce : ${ph.hold}`, bold: true }] : []), ...ph.ops.map((op) => `${op.n} ${op.text}${op.tools.length ? ` — ${op.tools.join(", ")}` : ""}`), ...ph.checks.map((c) => `Contrôle : ${c}`), ...measureWords(m).map((t) => ({ text: `Après la phase : ${t}`, bold: true })), ...(o.pathNote && o.pathNote(i) ? [{ text: o.pathNote(i), italic: true }] : []), ...(ph.note ? [{ text: `Note : ${ph.note}`, italic: true }] : [])],
       box: { label: "Réponse du fournisseur — ce que l'atelier propose, ce qui est convenu :", text: comments[ph.key] || "" } });
   }
   slides.push({ title: "Questions et points à discuter", bullets: [...plan.questions.map((q) => (typeof q === "string" ? q : q.text || q.q || "")), ...plan.points].filter(Boolean).slice(0, 14), box: { label: "Réponses du fournisseur :", text: "" } });
@@ -30,7 +30,8 @@ export async function fabDeck(o) {
   toast(`Diaporama de la gamme : ${slides.length} diapositives, une case de réponse pour le fournisseur sur chacune.`, "success");
 }
 
-/** The film of the steps : each step painted, held a moment, its caption burnt into the picture. o : { viewer, steps, show(i), caption(i), seconds, name } */
+/** The film of the steps : each step painted, held a moment, its caption burnt into the picture ; where a tool path is written, the tool machines.
+    o : { viewer, steps, show(i), play(i) → Promise | null, caption(i), seconds, name } */
 export async function recordFilm(o) {
   const src = o.viewer.canvas, w = src.width, h = src.height, can = document.createElement("canvas"); can.width = w; can.height = h;
   if (typeof MediaRecorder === "undefined" || !can.captureStream) { toast("Ce navigateur n'enregistre pas de vidéo : prenez le diaporama.", "warn"); return; }
@@ -43,7 +44,9 @@ export async function recordFilm(o) {
     g.fillStyle = "rgba(17,24,39,.82)"; g.fillRect(0, h - bh, w, bh); g.fillStyle = "#ffffff"; g.font = `600 ${Math.round(bh * 0.42)}px system-ui, sans-serif`; g.fillText(text, 14, h - bh * 0.36, w - 28);
     g.fillStyle = "rgba(255,255,255,.9)"; g.font = `${Math.round(bh * 0.3)}px system-ui, sans-serif`; g.fillText("DesignWizard.ai™ — montage de principe", 12, bh * 0.55); requestAnimationFrame(frame); };
   rec.start(250); requestAnimationFrame(frame);
-  try { for (let i = 0; i < o.steps; i++) { await o.show(i); text = o.caption(i); await new Promise((r) => setTimeout(r, (o.seconds || 2.2) * 1000)); } }
+  const wait = (s) => new Promise((r) => setTimeout(r, s * 1000));
+  try { for (let i = 0; i < o.steps; i++) { text = o.caption(i); const cut = o.play ? o.play(i) : null;      // a phase whose tool path is written : the tool machines on the film
+      if (cut && (await cut)) { await wait(1); continue; } await o.show(i); text = o.caption(i); await wait(o.seconds || 2.2); } }
   finally { live = false; rec.stop(); }
   await done;
   download(`${o.name}_atelier.webm`, new Blob(chunks, { type: "video/webm" }), "video/webm");

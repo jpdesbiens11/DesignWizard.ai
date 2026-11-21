@@ -26,3 +26,16 @@ export function stepMeasures(built) {
   const b = (built && built.bbox) || null, v = ((built && built.bodies) || []).reduce((s, x) => s + (Number(x.volume) || 0), 0), m = Number(built && built.mass);
   return b ? { size: [b[3] - b[0], b[4] - b[1], b[5] - b[2]].map((x) => Math.round(x * 100) / 100), volume: v > 0 ? Math.round(v) : null, mass: Number.isFinite(m) && m > 0 ? Math.round(m * 10) / 10 : null } : null;
 }
+/** A state with nothing in it : the shape of the part is all made by its machining. */
+export const emptyState = (built) => !built || !built.bbox || !(built.bodies || []).length || built.bbox.every((v) => Math.abs(v) < 1e-9);
+/** The blank a machined part starts from, when its raw stock is not said : the box of the part ; on a lathe, a bar along Z with 1 mm of stock
+    on the radius and on the free end — a tube when the part is hollow from end to end (a cut cylinder along Z as long as the part). An
+    assumption, said on the screen. */
+export function blankSpec(spec, built) {
+  const b = built.bbox, d = [b[3] - b[0], b[4] - b[1], b[5] - b[2]], c = [(b[0] + b[3]) / 2, (b[1] + b[4]) / 2], lathe = spec.process === "cnc_turning", A = 1;
+  const bore = lathe ? Math.max(0, ...(spec.features || []).filter((f) => f && f.op === "cylinder" && f.mode === "cut" && (f.axis || "Z") === "Z" && Number(f.h) >= 0.95 * d[2] && Math.hypot(((f.at || [])[0] || 0) - c[0], ((f.at || [])[1] || 0) - c[1]) < 0.01).map((f) => Number(f.d) - 2 * A)) : 0;
+  const features = lathe ? [{ op: "cylinder", id: "brut", name: bore > 0 ? "Brut supposé (tube)" : "Brut supposé (barre)", d: Math.max(d[0], d[1]) + 2 * A, h: d[2] + A, at: [c[0], c[1], b[2]], axis: "Z" },
+    ...(bore > 0 ? [{ op: "cylinder", id: "brut_creux", name: "Intérieur du tube brut", d: bore, h: d[2] + A + 2, at: [c[0], c[1], b[2] - 1], axis: "Z", mode: "cut" }] : [])]
+    : [{ op: "box", id: "brut", name: "Brut supposé (la boîte de la pièce)", size: d, at: [b[0], b[1], b[2]] }];
+  return { dw: "part/1", id: `${spec.id}-BRUT`, name: `${spec.name || spec.id} — brut`, material: spec.material, process: spec.process, params: {}, features, interfaces: [] };
+}

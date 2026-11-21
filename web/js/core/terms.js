@@ -25,6 +25,7 @@ import { SENSOR_KINDS, ROSETTE } from "../analysis/fea/sensors.js";
 import { PALETTES } from "../analysis/fea/palette.js";
 import { NATURES as PART_NATURES } from "./shop_levels.js";
 import { KINDS as SW_KINDS } from "../sw/sw_objects.js";
+import { FAB_TOOLS } from "./fab_path.js";
 
 export const TERM_GROUPS = [
   { id: "process", label: "Procédés", hint: "comment la pièce se fabrique", icon: "cast", color: "#ee8a32" },
@@ -71,7 +72,7 @@ const FEA_TERMS = [["Uniaxial", "uniaxiale", "une jauge à une grille : une seul
   ["Hot spot / cold spot", "point chaud / point froid", "le maximum et le minimum, marqués dans la vue infrarouge"]];
 
 /** The tables a term comes from : every entry carries `label` (English) and `fr`. For the tests, and for the next brick. */
-export const TERM_TABLES = { SW_KINDS, BATTERY_TERMS, MODEL_WORDS, PROCESSES, INTERFACE_TYPES, ADHESIVES, WELD_PROCESSES, PLATINGS, CONTACT_FORMS, CONTACT_BASES, STOCK_FORMS, SHOP_VERBS, AM_PROCESSES, LASER_FAMILIES, ENDS, INSULATIONS, LABEL_KINDS, FINISHES };
+export const TERM_TABLES = { FAB_TOOLS, SW_KINDS, BATTERY_TERMS, MODEL_WORDS, PROCESSES, INTERFACE_TYPES, ADHESIVES, WELD_PROCESSES, PLATINGS, CONTACT_FORMS, CONTACT_BASES, STOCK_FORMS, SHOP_VERBS, AM_PROCESSES, LASER_FAMILIES, ENDS, INSULATIONS, LABEL_KINDS, FINISHES };
 
 /** The glossary : [{ group, en, fr, note }], in the order of the groups, then of the alphabet. */
 export function glossary() {
@@ -82,6 +83,7 @@ export function glossary() {
   for (const [en, fr, note] of MOLD_TERMS) add("mold", en, fr, note);
   for (const [k, g] of Object.entries(GATES)) add("mold", g.label, GATE_FR[k], "type de gate");
   all("operation", SHOP_VERBS, "verbe d'atelier"); for (const [en, fr] of FEATURES) add("operation", en, fr, "forme");
+  all("operation", FAB_TOOLS, "outil d'un parcours, atelier de fab"); add("operation", "Tool path", "parcours d'outil", "les positions du bout de l'outil, dans le repère de la pièce"); add("operation", "Canned cycle (G81–G85)", "cycle de perçage", "au-dessus du trou, plongée au plan R, travail jusqu'à Z, retour"); add("operation", "Rapid move (G0)", "déplacement rapide", "hors de la matière"); add("operation", "Feed move (G1)", "déplacement de travail", "l'outil coupe"); add("operation", "Live tooling", "outil motorisé", "un outil qui tourne sur un tour : perçage radial, méplat");
   all("stock", STOCK_FORMS); all("stock", LASER_FAMILIES, "matière en feuille, au laser");
   all("interface", INTERFACE_TYPES, "type d'interface"); all("interface", ADHESIVES, "colle"); all("interface", WELD_PROCESSES, "soudage"); add("interface", "Mate", "accouplement"); add("interface", "Dowel pin", "goupille de positionnement"); add("interface", "Heat-set insert", "insert posé à chaud"); add("interface", "Clearance hole", "trou de passage"); add("interface", "Tapped hole", "trou taraudé"); add("interface", "Counterbore", "lamage"); add("interface", "Countersink", "fraisure"); add("interface", "Slip fit / press fit", "ajustement glissant / serré");
   all("electrical", MODEL_WORDS, "modèle de connecteur"); all("electrical", PLATINGS, "revêtement"); all("electrical", CONTACT_FORMS, "forme de contact"); all("electrical", CONTACT_BASES, "matière de contact"); all("electrical", ENDS, "circuit flexible"); all("electrical", INSULATIONS, "isolant de busbar");

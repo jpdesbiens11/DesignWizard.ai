@@ -31,7 +31,9 @@ test("the part is turned so the worked face looks at the tool, centred, set on z
   const box = [0, 0, 0, 160, 110, 42];
   const up = placeFor({ key: "setup:-X" }, "cnc_milling", box); assert.deepEqual(up.box, [-21, -55, 0, 21, 55, 160], "the −X face up : the part stands on its +X face");
   const m = up.matrix, n = [-1, 0, 0], r = [m[0] * n[0] + m[4] * n[1] + m[8] * n[2], m[1] * n[0] + m[5] * n[1] + m[9] * n[2], m[2] * n[0] + m[6] * n[1] + m[10] * n[2]]; assert.deepEqual(r.map(Math.round), [0, 0, 1], "the normal of the worked face points up");
-  assert.deepEqual(placeFor({ key: "setup:+Y" }, "cnc_turning", box).box.slice(0, 3).map(Math.round), [-55, -80, 0], "a lathe : the worked face toward +X");
+  assert.deepEqual(placeFor({ key: "setup:+Z" }, "cnc_turning", box).box.map(Math.round), [-21, -55, 0, 21, 55, 160], "a lathe : the axis of the part (its Z) along the spindle, the +Z end free");
+  assert.deepEqual(placeFor({ key: "setup:free" }, "cnc_turning", box).box, placeFor({ key: "setup:+Z" }, "cnc_turning", box).box, "one set-up on a lathe : the part along the spindle, never across it");
+  const rm = placeFor({ key: "setup:+Y" }, "cnc_turning", box).matrix; assert.deepEqual([rm[4], rm[5], rm[6]].map(Math.round), [0, 0, 1], "a radial face (live tooling) turned up");
   for (const proc of PROCS) for (const key of KEYS) { const s = sceneOf({ key }, proc, box); assert.ok(s.solids.length > 0, `${proc} ${key} has a fixture`);
     for (const x of s.solids.filter((q) => !q.around)) assert.ok(inter(solidBox(x), s.place.box) < 1e-3, `${proc} ${key} : ${x.id} stays out of the part`); }
   const ms = fixtureMeshes(sceneOf({ key: "setup:+Z" }, "cnc_milling", box).solids); assert.ok(ms.every((x) => x.mesh.pos.length > 0 && x.pickable === false && /^fab\//.test(x.id)));
@@ -63,7 +65,7 @@ test("the deck for the supplier : one slide each, its picture, its text, the box
 
 test("wired : the last screen of Mécanique, its stairs and its AI, the news, the register, the routing's AI told of the order", () => {
   assert.match(read("web/js/core/app.js"), /keys: \["shop", "parts", "assembly", "drawings", "physics", "fea", "fab"\]/); assert.match(read("web/js/main.js"), /import "\.\/modules\/fab\.js";/);
-  const p = { parts: [{ id: "P1", name: "Pièce" }], assemblies: [], boards: [] };
+  const p = { parts: [{ id: "P1", name: "Pièce", process: "cnc_milling" }], assemblies: [], boards: [] };
   assert.equal(aiTargetOf("fab", ["P1"], p).key, "part:P1"); assert.match(stairOf("fab", ["P1"], p).hash, /P1/); assert.ok(downOf("parts", ["P1"], p).some((d) => d.hash === "#/fab/P1"));
   assert.ok(NEWS.some((n) => n.where === "#/fab")); assert.equal(methodById("fab-shop").how, "own");
   assert.match(read("web/js/modules/plan_view.js"), /« comments » porte la réponse du fournisseur/);
