@@ -17,3 +17,16 @@
 .hist-branches { list-style: none; margin: 0; padding: 0; } .hist-branches li { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .5rem; padding: .35rem 0; border-bottom: 1px solid var(--line); font-size: .86rem; } .hist-branches li.dropped { opacity: .6; }
 .hist-branches .linklike { background: none; border: 0; padding: 0; font: inherit; font-weight: 600; color: var(--ink-strong); text-decoration: underline; cursor: pointer; text-align: left; }
 .hist-journal { margin: .3rem 0 0; padding-left: 1.2rem; font-size: .82rem; max-height: 16rem; overflow: auto; } .hist-journal li { margin-bottom: .15rem; }
+
+/* named branches : a column per branch, MAIN in the centre and heavier (core/history_branches.js) */
+.hist-lane { stroke-width: 1; stroke-dasharray: 2 5; opacity: .45; } .hist-lane.main { stroke-width: 6; stroke-dasharray: none; opacity: .14; }
+.hist-edge.main { stroke-width: 3.6; } .hist-edge.merge { stroke-width: 2.2; stroke-dasharray: 6 4; fill: none; }
+.hist-dot.main { stroke-width: 2.6; }
+.hist-lane-name text { font: 700 12px var(--font); fill: #fff; letter-spacing: .02em; } .hist-lane-name.main text { font-size: 13px; letter-spacing: .08em; }
+.hist-lane-name.main rect { stroke: var(--ink-strong); stroke-width: 1.5; } .hist-lane-name.small text { font-size: 11px; letter-spacing: .01em; } .hist-lane-name.small.main text { font-size: 11px; }
+.hist-branch-list { list-style: none; margin: .2rem 0 0; padding: 0; } .hist-branch-list > li { padding: .45rem 0 .45rem .6rem; border-left: 4px solid var(--lane, var(--line)); border-bottom: 1px solid var(--line); }
+.hist-branch-list > li.main { background: color-mix(in srgb, var(--lane) 7%, transparent); } .hist-branch-list > li.dropped { opacity: .55; }
+.hist-branch-name { font-weight: 700; color: var(--ink-strong); } .hist-branch-meta { display: block; font-size: .78rem; color: var(--muted); margin: .1rem 0 .3rem; }
+.hist-branch-acts { display: flex; flex-wrap: wrap; gap: .3rem; }
+.hist-merge-group { margin: .6rem 0 .2rem; font-weight: 700; font-size: .86rem; } .hist-merge-group.warn { color: #b45309; } .hist-merge-group.off { color: var(--muted); }
+.hist-offs { list-style: none; margin: .2rem 0; padding: 0; font-size: .84rem; } .hist-offs li { padding: .2rem .5rem; margin: .15rem 0; border-radius: 5px; background: var(--surface-2); color: var(--muted); }

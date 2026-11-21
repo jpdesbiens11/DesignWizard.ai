@@ -80,7 +80,52 @@ garde son historique, le miroir porte le produit. La vue « code » du projet ne
 
 Le rapport de revue a une section « Historique de conception » : une ligne par point.
 
+## 5 bis. Les branches nommées, MAIN au centre, la fusion et l'équipe
+
+Demande de JP (21 novembre 2026) : « faire des branches visuellement en parallèle et de pouvoir les merger ensemble au
+MAIN (la branche du centre)… des designs différents en équipe en parallèle ». Choix cliqués le même jour : **une
+branche se fusionne d'un bloc** ; une pièce que le côté qui l'emporte n'a pas **reste, à Off, grisée, activable**.
+
+- **Chaque point a une branche**, par son nom. Le premier point est sur **MAIN**, la branche principale. Un point
+  continue la branche de son parent quand le parent en est le bout ; revenir à un point qui n'est pas le bout de sa
+  branche et continuer **ouvre une nouvelle branche** — le volet propose de la nommer (« couvercle embouti », « piste
+  de Sam »…), sinon « Branche 2 », « Branche 3 »… Un historique gardé avant les noms les prend par la même règle.
+- **L'arbre** : une colonne par branche, **MAIN au centre** — autant de colonnes à sa gauche qu'à sa droite —, plus
+  épaisse, nommée en tête ; les autres branches s'ouvrent à droite, puis à gauche, dans l'ordre où elles naissent, et
+  leur nom est écrit sur leur dernier point. Un point de fusion reçoit une seconde ligne, en tirets, depuis le bout de
+  la branche qu'il reprend.
+- **Fusionner dans MAIN**, d'un bloc : la base de la branche est le point où elle a quitté MAIN, ou son dernier point
+  déjà fusionné. Ce que la branche a changé depuis passe dans MAIN, **entier** ; ce qu'elle n'a pas touché reste comme
+  MAIN l'a. Quand les deux ont changé le même artéfact, **la branche l'emporte** et l'aperçu nomme ce que MAIN perd.
+  **Rien n'est effacé** : un artéfact que la branche a retiré reste dans MAIN ; une occurrence d'un assemblage que MAIN
+  a et que la version de la branche n'a pas **revient à Off, grisée**, avec ses accouplements, prête à être activée
+  dans l'Assemblage pour la replacer. L'aperçu dit tout cela avant ; la fusion est **une étape annulable** (Ctrl + Z),
+  puis un point « Fusion dans MAIN » se pose sur MAIN. Une branche continue après une fusion ; la suivante ne reprend
+  que ce qui est neuf.
+- **En équipe** : chacun travaille sur sa branche, dans son navigateur ; « Lire le travail d'un coéquipier » lit son
+  fichier de projet (`.dwiz` ou `.json`) et l'ajoute comme **une branche à elle**, partie du **point que les deux
+  fichiers partagent** (leur historique voyage dans le fichier) ; sans point commun, du point d'ici le plus proche de
+  son produit — dit comme tel, à vérifier. Deux fichiers du même produit peuvent écrire un artéfact avec ses clés dans
+  un autre ordre : la comparaison se fait **au contenu**, l'ordre des clés n'est pas un changement. « Vous êtes ici » ne
+  bouge pas.
+
+Ce que l'on suit : les branches d'un client de gestion de versions — une ligne principale toujours là, des branches
+qui en partent et y reviennent par un point de fusion — et sa fusion à trois (base, branche, MAIN), faite ici **par
+artéfact**, sans fusion à l'intérieur d'un artéfact. Cœur : `web/js/core/history.js` (noms : `branchNames`,
+`nextBranch`, `tipOf`, `MAIN`) et `web/js/core/history_branches.js` (`branchList`, `branchLayout`, `baseOf`, `mergePlan`,
+`importPlan`, `importBranch`) ; écran : `modules/history_branches_ui.js`, arbre : `modules/history_tree.js`. Essais :
+`tests/node/history_branches.test.mjs`.
+
+**Ce qui n'est pas fait** : fusionner une branche dans une autre que MAIN ; choisir, artéfact par artéfact, le côté qui
+l'emporte (JP a choisi le bloc) ; une fusion à l'intérieur d'une pièce (deux personnes qui changent deux cotes de la
+même pièce : la version de la branche l'emporte entière) ; renommer une branche ; un miroir d'équipe qui porte les
+branches tout seul (aujourd'hui, le fichier se passe à la main).
+
 ## 6. Ce qui est vérifié, ce qui ne l'est pas
+
+Branches, fusion et import d'un coéquipier : essais `tests/node/history_branches.test.mjs`, et essayés dans Chromium sur
+le Rover (une branche ouverte et nommée, l'aperçu de la fusion, la fusion, l'occurrence revenue à Off, Ctrl + Z ; le
+fichier `.dwiz` d'un coéquipier lu en branche, un seul changement annoncé).
 
 Vérifié par des essais (`tests/node/history.test.mjs`) : le découpage, l'empreinte, un artéfact rangé une fois, le
 retour, la branche, l'abandon et la reprise, la comparaison, le `.dwiz` d'un point et l'aller-retour du format, le point

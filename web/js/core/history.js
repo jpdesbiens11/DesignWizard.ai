@@ -25,7 +25,11 @@ export const POINT_KINDS = {
   manual: { label: "Point posé", fr: "posé à la main", icon: "save", color: "#2563eb" },
   ai: { label: "Après une réponse d'IA", fr: "automatique, après une réponse d'IA appliquée", icon: "sparkle", color: "#7c3aed" },
   before: { label: "Avant un retour", fr: "automatique, avant de revenir à un autre point", icon: "undo", color: "#64748b" },
+  merge: { label: "Fusion dans MAIN", fr: "une branche reprise d'un bloc dans MAIN", icon: "branch", color: "#0f766e" },
+  import: { label: "Branche importée", fr: "le travail d'un coéquipier, lu dans son fichier", icon: "download", color: "#c2410c" },
 };
+/** The branch that is always there, in the centre : where the product is when the branches come back. */
+export const MAIN = "MAIN";
 /** The words of an artefact, by its kind. */
 export const ART_KINDS = { part: { fr: "Pièce", color: "#2563eb" }, assembly: { fr: "Assemblage", color: "#475569" }, board: { fr: "Carte", color: "#16a34a" }, other: { fr: "Registre", color: "#a16207" } };
 const OTHER_FR = { review: "registre de revue", mvp: "itérations MVP", plm: "révisions", team: "équipe", talk: "messages", cases: "cas de charge", aiJournal: "journal de l'IA", name: "nom du produit", description: "description", drawing: "réglages des dessins", sw: "logiciel" };
@@ -68,30 +72,37 @@ export function addPoint(project, o = {}) {
   if (same && o.kind !== "manual") return { point: head, same: true };
   const n = h.points.reduce((m, p) => Math.max(m, p.n || 0), 0) + 1, when = o.when || new Date().toISOString();
   const since = head ? head.at : "", journal = ((project.log || []).filter((x) => x && (!since || String(x.when) > since)).map((x) => ({ when: x.when, text: x.text }))).slice(-KEEP_JOURNAL);
-  const point = { id: `P${n}`, n, parent: h.head, at: when, kind: POINT_KINDS[o.kind] ? o.kind : "manual", label: String(o.label || "").trim().slice(0, 120) || `Point ${n}`,
+  const branch = o.branch || nextBranch(h); if (h.on && branch === h.on) delete h.on;
+  const point = { id: `P${n}`, n, parent: h.head, branch, at: when, kind: POINT_KINDS[o.kind] ? o.kind : "manual", label: String(o.label || "").trim().slice(0, 120) || `Point ${n}`, ...(o.merged ? { merged: o.merged } : {}),
     ...(o.note ? { note: String(o.note).slice(0, 2000) } : {}), ...(o.by ? { by: String(o.by).slice(0, 80) } : {}), ...(o.ai ? { ai: o.ai } : {}), ...(o.context ? { context: o.context } : {}), journal, tree };
   h.points.push(point); h.head = point.id;
   return { point, same };
 }
 /** The product of a point, whole. → an object with every key of the definition (no id, no log, no history) */
-export function rebuild(h, id) {
-  const pt = pointOf(h, id); if (!pt) return null;
+export function rebuild(h, id) { const pt = pointOf(h, id); return pt ? docOf(h.objects, pt.tree) : null; }
+/** A product from a tree and the texts of its artefacts. texts : fingerprint → text */
+export function docOf(texts, tree) {
   const doc = {}, lists = {};
-  for (const [k, f] of pt.tree) {
+  for (const [k, f] of tree) {
     const [kind, ...rest] = k.split(":"), name = rest.join(":");
-    if (kind === "key") doc[name] = JSON.parse(h.objects[f]);
+    if (kind === "key") doc[name] = JSON.parse(texts[f]);
     else if (kind === "list") { doc[name] = lists[name] || []; }
-    else if (LISTS[kind]) (lists[LISTS[kind]] = lists[LISTS[kind]] || []).push(JSON.parse(h.objects[f]));
+    else if (LISTS[kind]) (lists[LISTS[kind]] = lists[LISTS[kind]] || []).push(JSON.parse(texts[f]));
   }
   for (const [k, v] of Object.entries(lists)) doc[k] = v;
   return doc;
 }
+/** The tree of a product, its artefacts stored in the history (each once). → [[key, fingerprint]] */
+export const storedTree = (h, doc) => treeOf(h, cut(doc));
+/** The same, from pieces already cut ([[key, text]]). */
+export const storePieces = (h, pieces) => treeOf(h, pieces);
+/** The definition of the project becomes `doc` ; its id, its log and its history stay. */
+export function putDefinition(project, doc) { for (const k of Object.keys(project)) if (!SKIP.has(k)) delete project[k]; Object.assign(project, doc); return project; }
 /** Go back to a point : the definition of the project becomes that of the point, its history and its log stay, « vous êtes ici » moves there.
     To be called INSIDE one step of the store (the return is undoable ; the history is not). → the point, or null */
 export function restoreInto(project, id) {
   const h = historyOf(project), doc = rebuild(h, id); if (!doc) return null;
-  for (const k of Object.keys(project)) if (!SKIP.has(k)) delete project[k];
-  Object.assign(project, doc); h.head = id;
+  putDefinition(project, doc); h.head = id;
   return pointOf(h, id);
 }
 /** What an artefact is, in words. */
@@ -116,6 +127,32 @@ export function sinceThen(project, id) {
   return diffTrees(pt.tree, pieces.map(([k, t]) => [k, t ? fingerprint(t) : ""]), h.objects, now);
 }
 export const changeCount = (d) => d.added.length + d.removed.length + d.changed.length;
+/* ---------- named branches, MAIN in the centre (demande de JP, 21 novembre 2026 ; core/history_branches.js merges and imports) ----------
+   Every point belongs to a branch, by name. The first point is on MAIN ; a point continues the branch of its parent when the parent is the
+   last point of that branch ; going back to a point that is not the end of its branch and going on opens a NEW branch. A point kept
+   before branches had names takes them by the same rule : the first child of a point continues its branch, another opens « Branche 2 »… */
+/** The branch of every point. → Map(id → name) */
+export function branchNames(h) {
+  const out = new Map(), pts = [...((h && h.points) || [])].sort((a, b) => a.n - b.n), used = new Set(pts.map((p) => p.branch).filter(Boolean)), ends = new Map();      // ends : branch → its last point so far
+  let k = 1; const fresh = () => { let n; do n = `Branche ${++k}`; while (used.has(n)); used.add(n); return n; };
+  for (const p of pts) {
+    const parent = p.parent && out.get(p.parent), name = p.branch || (!p.parent ? MAIN : ends.get(parent) === p.parent ? parent : fresh());
+    out.set(p.id, name); ends.set(name, p.id);
+  }
+  return out;
+}
+/** The last point of a branch. → point | null */
+export function tipOf(h, name) { const names = branchNames(h); return [...((h && h.points) || [])].sort((a, b) => b.n - a.n).find((p) => names.get(p.id) === name) || null; }
+/** The branch the next point goes into : the branch of « vous êtes ici » when it is its last point ; a new one otherwise (its name : `h.on`
+    when one was given and is free, « Branche N » else). */
+export function nextBranch(h) {
+  const head = pointOf(h, h && h.head); if (!head) return MAIN;
+  const names = branchNames(h), b = names.get(head.id), tip = tipOf(h, b);
+  if (tip && tip.id === head.id) return b;
+  const used = new Set(names.values()), want = String((h && h.on) || "").replace(/\s+/g, " ").trim().slice(0, 40);
+  if (want && !used.has(want)) return want;
+  let n = 1, name; do name = `Branche ${++n}`; while (used.has(name)); return name;
+}
 /** The points from the first to this one. → [point] */
 export function pathTo(h, id) { const out = []; const seen = new Set(); for (let p = pointOf(h, id); p && !seen.has(p.id); p = pointOf(h, p.parent)) { seen.add(p.id); out.unshift(p); } return out; }
 export const childrenOf = (h, id) => ((h && h.points) || []).filter((p) => p.parent === id);

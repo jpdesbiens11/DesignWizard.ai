@@ -13,7 +13,9 @@ import { store } from "../core/store.js";
 import { registerModule, setGuide } from "../core/app.js";
 import { guideBox } from "../core/guide.js";
 import { toDwiz } from "../core/dwiz.js";
-import { historyOf, pointOf, addPoint, restoreInto, sinceThen, diffTrees, changeCount, branches, setDropped, weight, pointProject, contextOf, historyGuide, POINT_KINDS, ART_KINDS } from "../core/history.js";
+import { historyOf, pointOf, addPoint, restoreInto, sinceThen, diffTrees, changeCount, setDropped, weight, pointProject, contextOf, historyGuide, POINT_KINDS, ART_KINDS, MAIN, nextBranch, branchNames } from "../core/history.js";
+import { freeName } from "../core/history_branches.js";
+import { branchSection, branchGuide } from "./history_branches_ui.js";
 import { historyTree } from "./history_tree.js";
 
 const VERB = { added: ["ajouté", "#16a34a"], removed: ["retiré", "#dc2626"], changed: ["modifié", "#b45309"] };
@@ -36,14 +38,15 @@ function render(main, args) {
   const left = el("aside", { class: "side" }), view = el("div", { class: "viewport hist-view" }), right = el("aside", { class: "side right" });
   main.append(el("div", { class: "studio" }, left, view, right));
   const host = el("div", { class: "hist-host" }), empty = el("div", { class: "hist-empty" }); view.append(host, empty);
-  const st = { sel: args[0] || null, cmp: "now", name: "", note: "" };
+  const st = { sel: args[0] || null, cmp: "now", name: "", note: "", branch: "" };
   const tree = historyTree(host, { onPick: (id) => { st.sel = id; st.cmp = "now"; mark(); draw(); } });
   const mark = () => { try { history.replaceState(null, "", `#/history${st.sel ? `/${encodeURIComponent(st.sel)}` : ""}`); } catch (e) { /* a page without history */ } };
 
   function pose() {
     const p = store.project, n = (historyOf(p).points || []).length + 1;
-    let r = null; store.writeHistory("Point de restauration posé", (x) => { r = addPoint(x, { kind: "manual", label: st.name.trim() || `Point ${n}`, note: st.note.trim(), by: (x.team && x.team.owner) || "", context: contextOf(x) }); });
-    st.name = ""; st.note = ""; st.sel = r.point.id; mark(); draw();
+    let r = null; store.writeHistory("Point de restauration posé", (x) => { const h = historyOf(x), next = nextBranch(h), fresh = next !== MAIN && ![...branchNames(h).values()].includes(next);
+      r = addPoint(x, { kind: "manual", label: st.name.trim() || `Point ${n}`, note: st.note.trim(), by: (x.team && x.team.owner) || "", context: contextOf(x), branch: fresh ? freeName(h, st.branch.trim() || next) : next }); });
+    st.name = ""; st.note = ""; st.branch = ""; st.sel = r.point.id; mark(); draw();
     toast(r.same ? `${r.point.id} posé — rien n'avait changé depuis le point d'avant : il garde le même produit, sous un autre nom.` : `${r.point.id} posé : la définition complète du produit est gardée, chaque artéfact rangé une seule fois.`, "success", 6000);
   }
   async function goBack(id) {
@@ -62,6 +65,13 @@ function render(main, args) {
   }
   const drop = (tip, on) => { store.writeHistory(on ? "Branche abandonnée" : "Branche reprise", (x) => setDropped(x, tip, on)); draw(); };
 
+  /** Where the next point goes : the branch it continues, or the name of the branch it opens. */
+  function whereNext(h) {
+    const next = nextBranch(h), fresh = next !== MAIN && ![...branchNames(h).values()].includes(next);
+    if (!fresh) return el("p", { class: "small", "data-history-next": next }, "Ce point ira dans ", el("b", null, next === MAIN ? "MAIN" : `« ${next} »`), next === MAIN ? ", la branche principale." : ".");
+    const input = el("input", { type: "text", value: st.branch, placeholder: next, maxlength: "40", "data-history-newbranch": "", onInput: (e) => { st.branch = e.target.value; } });
+    return el("div", null, el("p", { class: "small" }, "Vous êtes revenu à un point qui n'est pas le bout de sa branche : ce point ", el("b", null, "ouvre une nouvelle branche"), ", à côté."), field("Nom de la nouvelle branche", input, "Par exemple : couvercle embouti, piste de Sam, essai alu"));
+  }
   function drawLeft(p, h, head, d) {
     clear(left);
     left.append(el("div", { class: "side-head" }, el("h2", null, "Historique")),
@@ -71,18 +81,12 @@ function render(main, args) {
     const note = el("textarea", { rows: "3", placeholder: "Pourquoi maintenant, ce que l'on essaie ensuite (la dictée du système tape ici)", "data-history-note": "", onInput: (e) => { st.note = e.target.value; } }, st.note);
     body.append(el("div", { class: "side-section", "data-fold-note": "nom et note" }, el("h3", null, "Poser un point"),
       el("p", { class: "muted small" }, "Un point garde TOUT le produit : pièces, assemblages, cartes, logiciel, cas de charge, revues et révisions. Un artéfact qui n'a pas changé n'est pas recopié."),
-      field("Nom du point", name), field("Note", note), el("div", { class: "form-actions" }, btn("Poser le point", pose, { primary: true, icon: "save", cls: "", tip: "Entrée dans le champ du nom fait de même" }))));
+      field("Nom du point", name), field("Note", note), whereNext(h), el("div", { class: "form-actions" }, btn("Poser le point", pose, { primary: true, icon: "save", cls: "", tip: "Entrée dans le champ du nom fait de même" }))));
     const n = changeCount(d);
     body.append(el("div", { class: "side-section", "data-fold-note": head ? `${n} changement${n > 1 ? "s" : ""}` : "aucun point" }, el("h3", null, "Où l'on en est"),
       head ? el("p", { class: "small" }, "Vous êtes ici : ", el("b", null, `${head.id} — ${head.label}`), `, posé le ${when(head.at)}.`) : el("p", { class: "muted small" }, "Aucun point encore : le premier gardera le produit tel qu'il est."),
       head ? (n ? el("div", null, el("p", { class: "small" }, `Depuis, ${n} artéfact${n > 1 ? "s ont" : " a"} changé — aucun point ne les garde encore :`), changeList(d)) : el("p", { class: "muted small" }, "Rien n'a changé depuis : ce point garde le produit tel qu'il est.")) : null));
-    const B = branches(h);
-    if (B.length > 1 || B.some((b) => b.dropped)) body.append(el("div", { class: "side-section", "data-fold-note": `${B.length} branche${B.length > 1 ? "s" : ""}` }, el("h3", null, "Les branches"),
-      el("p", { class: "muted small" }, "Revenir à un point puis continuer ouvre une branche. Une branche abandonnée reste gardée, pâle dans l'arbre ; on peut la reprendre."),
-      el("ul", { class: "hist-branches" }, B.map((b) => { const tip = pointOf(h, b.tip); return el("li", { class: b.dropped ? "dropped" : "" },
-        el("button", { type: "button", class: "linklike", onClick: () => { st.sel = b.tip; mark(); draw(); tree.focus(b.tip); } }, `${b.tip} — ${tip.label}`),
-        el("span", { class: "muted small" }, ` ${b.points.length} point${b.points.length > 1 ? "s" : ""}${b.here ? " · vous êtes sur cette branche" : ""}${b.dropped ? " · abandonnée" : ""}`),
-        b.here ? null : btn(b.dropped ? "Reprendre" : "Abandonner", () => drop(b.tip, !b.dropped), { small: true, tip: b.dropped ? "La branche redevient une branche comme les autres" : "La mettre de côté : elle reste gardée, pâle dans l'arbre" })); }))));
+    body.append(branchSection(h, { changeList, goTo: (id) => goBack(id), drop, pick: (id) => { st.sel = id; mark(); draw(); requestAnimationFrame(() => tree.focus(id)); } }));
     const w = weight(h);
     if (w.points) body.append(el("div", { class: "side-section", "data-fold-note": kb(w.bytes) }, el("h3", null, "Ce que pèse l'historique"),
       el("p", { class: "small" }, `${w.points} point${w.points > 1 ? "s" : ""}, ${w.objects} artéfact${w.objects > 1 ? "s" : ""} rangé${w.objects > 1 ? "s" : ""} une seule fois : ${kb(w.bytes)} de plus dans le fichier du projet.`),
@@ -100,6 +104,7 @@ function render(main, args) {
     const body = el("div", { class: "side-scroll" }); right.append(body);
     body.append(el("div", { class: "side-section", "data-fold-note": K.label }, el("h3", null, "Ce point"),
       el("p", { class: "hist-kindline", style: `--dom:${K.color}` }, el("span", { class: "hist-kind" }, K.label), ` ${K.fr}.`),
+      el("p", { class: "small", "data-history-branch": branchNames(h).get(pt.id) }, "Branche : ", el("b", null, branchNames(h).get(pt.id)), branchNames(h).get(pt.id) === MAIN ? " — la branche principale, au centre de l'arbre." : ".", pt.merged ? ` Fusion : reprend ${pt.merged} d'un bloc.` : "", pt.kind === "import" ? ` Lu dans le fichier d'un coéquipier${pt.from === "closest" ? " ; parti du point le plus proche — à vérifier" : ""}.` : ""),
       el("p", { class: "small" }, `Posé le ${when(pt.at)}${pt.by ? ` par ${pt.by}` : ""}${pt.parent ? `, après ${pt.parent}` : ", premier point"}.${here ? " Vous êtes ici." : ""}${pt.dropped ? " Sa branche est abandonnée." : ""}`),
       pt.note ? el("p", { class: "hist-note" }, pt.note) : null,
       el("p", { class: "small" }, el("b", null, "Itération MVP : "), c.mvp ? `${c.mvp.name}${c.mvp.trl ? ` (TRL ${c.mvp.trl} visé)` : ""} — ${c.mvp.fr}.` : "aucune ouverte."),
@@ -122,9 +127,9 @@ function render(main, args) {
     const none = !(h.points || []).length; empty.hidden = !none; host.hidden = none;
     if (none) empty.replaceChildren(el("h2", null, "Aucun point de restauration"), el("p", null, "Un point garde la définition complète du produit à un moment : on peut y revenir, comparer, repartir dans une autre direction. Un point se pose aussi tout seul après chaque réponse d'IA appliquée."),
       btn("Poser le premier point", pose, { primary: true, icon: "save" }));
-    else tree.draw(h, st.sel, changeCount(d));
+    else tree.draw(h, st.sel, changeCount(d), nextBranch(h));
     drawLeft(p, h, head, d); drawRight(p, h, pointOf(h, st.sel));
-    setGuide(historyGuide(p).map((x) => ({ ...x, go: () => { const f = left.querySelector("[data-history-name]"); if (f) f.focus(); } })));
+    setGuide([...historyGuide(p), ...branchGuide(h)].map((x) => ({ ...x, go: () => { const f = left.querySelector("[data-history-name]"); if (f) f.focus(); } })));
   }
   const off = store.on("change", () => draw());
   draw();
