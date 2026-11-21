@@ -24,6 +24,7 @@ import { lightSide, LIT } from "../core/view_marks.js";
 import { partGestures, PART_KEYS } from "./part_gestures.js";
 import { partPicker, partsSection } from "./part_list.js";
 import { featureRows } from "./part_tree.js";
+import { flatToggle } from "./flat_view.js";
 
 const OP_ICON = { box: "part", cylinder: "part", extrude: "extrusion", revolve: "refresh", hole: "bolt", pocket: "section", pad: "layers", slot: "minus", boss: "bolt", shell: "layers", fillet: "edit", chamfer: "edit", interfaces: "interfaces",
   drill: "drill", tap: "tap", cbore: "drill", csink: "drill", ream: "drill", mill: "mill", groove: "mill", face: "mill", step: "mill", outline: "laser", turn: "lathe", bore: "lathe", break_edges: "deburr", deburr: "deburr", finish: "palette" };
@@ -56,6 +57,7 @@ export function partStudio(main, args, cfg) {
   bFrames.classList.add("on");
   vp.group(bFrames, btn("Trou ici", () => gest.place("hole"), { small: true, icon: "bolt", tip: "Cliquez ensuite une face plane : le trou est créé à cet endroit" }),
     btn("Interface ici", () => gest.place("iface"), { small: true, icon: "plus", tip: "Cliquez ensuite une face plane : l'interface est créée à cet endroit" }));
+  const flat = flatToggle(vp, { spec: () => st.spec, built: () => st.built, tags: ["frame", "dfx", "pin", "face"], repaint: () => { if (st.built) { paint(st.built); overlays(); } } });      // a thin folded part : seen flat (flat_view.js)
 
   const offChange = store.on("change", (c) => {
     const fresh = store.part(id);
@@ -77,7 +79,7 @@ export function partStudio(main, args, cfg) {
       if (token !== st.token) return;
       st.built = built;
       setContext({ spec: st.spec, built });
-      paint(built); if (gest) gest.sel.clear();
+      if (flat.on()) flat.refresh(); else { paint(built); flat.sync(); } if (gest) gest.sel.clear();
       if (first) vp.viewer.view("iso");
       const errs = built.log.filter((l) => l.level === "error").length, warns = built.log.filter((l) => l.level === "warn").length, bb = built.bbox;
       info.textContent = `${fmtMass(built.mass)} · ${fmtDims([bb[3] - bb[0], bb[4] - bb[1], bb[5] - bb[2]], 1)} · ${fmtLen(built.volume / 1000, 1, "cm³")} · ${built.ms} ms`;
@@ -109,7 +111,7 @@ export function partStudio(main, args, cfg) {
   function overlays() {
     const v = vp.viewer;
     v.clearOverlays("frame"); v.clearOverlays("dfx");
-    if (!st.built) return;
+    if (!st.built || flat.on()) return;
     if (st.showFrames) for (const it of st.built.interfaces) {
       v.addFrame(it.frame, it.side === "A" ? "#9b7bff" : "#2ec4b6", "frame");
       v.addLabel(it.frame.o, `${it.id} · ${it.side}`, "frame", "iface", () => editIface(it.id));

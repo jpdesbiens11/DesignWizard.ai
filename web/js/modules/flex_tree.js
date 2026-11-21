@@ -10,6 +10,7 @@ import { go, setStatus, setContext, setGuide } from "../core/app.js";
 import { store } from "../core/store.js";
 import { kernel } from "../cad/client.js";
 import { createViewport, showBuilt } from "../core/viewport.js";
+import { flatToggle } from "./flat_view.js";
 import { toDwiz } from "../core/dwiz.js";
 import { aiRead, aiDiff } from "../core/ai_loop.js";
 import { guideBox, needField, nudge } from "../core/guide.js";
@@ -88,8 +89,10 @@ export function renderTree(ctx) {
     onPick: (h) => { const w = spot(h); if (w && w.branch) choose(w.branch); else if (w) toast("Clic droit sur le cœur : une branche part vers le bord le plus proche, à cet endroit.", "info", 4000); return true; } });
   const info = el("span", { class: "chip" }, "—"), verdict = el("span", { class: "chip" }, "");
   vp.setStatus(info, verdict);
+  const flat = flatToggle(vp, { spec: () => store.part(id), built: () => st.built, tags: ["ft"], onBend: (b) => { if (b.of) choose(b.of); toast(`${b.id} : ${b.label}. Ce pli se change dans la branche ${b.of}, à droite ; la vue reste à plat.`, "info", 5000); },
+    repaint: () => { vp.viewer.clear(); if (st.built) showBuilt(vp.viewer, st.built, { prefix: "ft" }); mark(); } });
   function mark() {
-    const v = vp.viewer, d = def(); v.clearOverlays("ft");
+    const v = vp.viewer, d = def(); v.clearOverlays("ft"); if (flat.on()) return;
     for (const b of d.branches) { if (!EDGES[b.edge] || !b.legs.length) continue; const on = b.id === st.sel, tip = tipSpot(d, b, 0, 1).p;
       v.addLabel(tip, b.end === "volt" && b.net ? `${b.id} ${b.net}` : b.id, "ft", on ? "iface" : "label");
       if (on) { v.addPath(centerLine(d, b), END_COLOR[b.end] || "#ff8a3d", "ft", 0.7); v.addMarker(tip, END_COLOR[b.end] || "#ff8a3d", "ft", 1.2); } }
@@ -98,7 +101,8 @@ export function renderTree(ctx) {
     const token = ++st.token, spec = store.part(id);
     try {
       const built = await kernel.build(spec); if (token !== st.token) return;
-      st.built = built; setContext({ spec, built }); vp.viewer.clear(); showBuilt(vp.viewer, built, { prefix: "ft" }); if (st.first) { vp.viewer.view("iso"); st.first = false; } mark();
+      st.built = built; setContext({ spec, built });
+      if (flat.on()) flat.refresh(); else { vp.viewer.clear(); showBuilt(vp.viewer, built, { prefix: "ft" }); if (st.first) { vp.viewer.view("iso"); st.first = false; } mark(); flat.sync(); }
       const d = spec.flex, c = treeChecks(d), errs = built.log.filter((l) => l.level === "error"), bad = c.notes.filter((n) => n.level === "bad").length, todo = c.notes.filter((n) => n.level === "todo").length, chk = c.notes.filter((n) => n.level === "check").length;
       info.textContent = `${d.branches.length} branche(s) · ${c.tracks} piste(s) · ${d.branches.reduce((a, b) => a + b.legs.length - 1, 0)} pli(s) · ${d.rigid ? `carte ${d.rigid.side === "under" ? "dessous" : "dessus"}` : "sans carte"} · ${fmtMass(built.mass)}`;
       verdict.textContent = errs.length ? "ne se construit pas" : bad ? `${bad} à corriger` : todo ? `${todo} à entrer` : chk ? `${chk} à vérifier` : "dans les règles"; verdict.className = `chip ${errs.length || bad ? "bad" : todo || chk ? "warn" : "done"}`;

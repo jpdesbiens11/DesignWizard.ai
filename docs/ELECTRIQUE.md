@@ -346,6 +346,28 @@ règles du fabricant du circuit font foi.
 **Avec une IA** : même aller-retour que la bande — la définition part avec sa consigne, une ligne `branch` par branche ;
 au retour, la liste des changements et ce que le circuit revenu demande, avant d'appliquer en une étape annulable.
 
+## Voir une pièce mince pliée à plat
+
+Demande de JP (21 novembre) : « voir des pièces minces pliées dans la forme finale de la pièce à plat, et que les lignes des
+plis soient visibles… on verra le flex PCB à plat en changeant la vue de la pièce, et on peut revenir à plier ».
+
+Comme dans les modeleurs mécaniques, la vue 3D d'une pièce mince pliée porte un interrupteur **« Plié · À plat »**, dans la
+barre de la vue, dans quatre studios : Pièces, circuit flexible ramifié, bande flexible, busbar. **À plat**, la pièce dépliée
+remplace la pièce pliée, vue du dessus ; chaque **ligne de pli** est tracée en trait mixte, avec sa note (**UP** ou **DOWN**,
+l'angle, le rayon intérieur), vue de la face du dessus. Les sondes et les prises sont à leur place sur le flan. Un clic sur la
+note d'un pli dit lequel c'est et où il se change : les plis ne s'éditent pas sur le flan, ils s'éditent dans la définition
+(la branche, la jambe) — dans le flex ramifié, le clic choisit la branche. **Plié** revient à la pièce montée.
+
+- **Ce qui se déplie** (`web/js/core/flat_pattern.js`, `flatOf`) : un circuit flexible ramifié — le cœur à sa place, chaque
+  branche sortie de son bord sur sa longueur développée ; une bande flexible et un busbar — une bande le long de X, les trous
+  des bornes là où ils tombent une fois déplié ; une pièce de tôle pliée — le développé que le noyau calcule déjà (l'onglet
+  « Développé » en donne le dessin et le DXF).
+- **La longueur développée** suit la fibre neutre : dans un pli à 90° de rayon intérieur r, la bande d'épaisseur t est aussi
+  longue qu'un quart de cercle de rayon r + k·t. k vaut 0,5 pour un film (il plie autour de son milieu) et la valeur de
+  l'outil pour un métal (0,4) : des **valeurs typiques**, dites à l'écran, que le fabricant corrige.
+- **Pas fait** : le flan à plat n'est pas encore un fichier de fabrication pour le flex (le DXF existe pour la tôle pliée) ;
+  les pistes et le routage du cœur ne sont pas dessinés à plat ; les plis ne se modifient pas d'un geste sur le flan.
+
 ## Limites
 
 - Busbars : plis à 90° dans un seul plan, largeur constante. Le busbar laminé est plat, sans pli ni fenêtre dans ses

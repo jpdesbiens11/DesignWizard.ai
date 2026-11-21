@@ -9,6 +9,7 @@ import { registerModule, go, setStatus, setContext, setGuide, app } from "../cor
 import { store } from "../core/store.js";
 import { kernel } from "../cad/client.js";
 import { createViewport, showBuilt } from "../core/viewport.js";
+import { flatToggle } from "./flat_view.js";
 import { importPart } from "../core/importer.js";
 import { toDwiz } from "../core/dwiz.js";
 import { aiRead, aiDiff } from "../core/ai_loop.js";
@@ -69,12 +70,14 @@ function render(main, args) {
     onPick: (h) => { const w = h && h.normal ? locate(def(), h.local || h.point, h.normal) : null; if (w && item()) place(w); else if (w) toast("Clic droit pour poser un capteur ici ; choisissez-en un à droite pour le déplacer d'un clic.", "info", 4000); return true; } });
   const info = el("span", { class: "chip" }, "—"), verdict = el("span", { class: "chip" }, "");
   vp.setStatus(info, verdict);
-  function mark() { const v = vp.viewer; v.clearOverlays("fx"); if (!st.built) return; for (const it of st.built.interfaces) { const on = it.id === st.sel; v.addLabel(it.frame.o, it.id === "IF1" ? "Queue" : it.id, "fx", on ? "iface" : "label"); if (on) v.addMarker(it.frame.o, "#ff8a3d", "fx", 1.2); } }
+  const flat = flatToggle(vp, { spec: () => store.part(id), built: () => st.built, tags: ["fx"], repaint: () => { vp.viewer.clear(); if (st.built) showBuilt(vp.viewer, st.built, { prefix: "fx" }); mark(); } });
+  function mark() { const v = vp.viewer; v.clearOverlays("fx"); if (!st.built || flat.on()) return; for (const it of st.built.interfaces) { const on = it.id === st.sel; v.addLabel(it.frame.o, it.id === "IF1" ? "Queue" : it.id, "fx", on ? "iface" : "label"); if (on) v.addMarker(it.frame.o, "#ff8a3d", "fx", 1.2); } }
   async function build(first) {
     const token = ++st.token, spec = store.part(id);
     try {
       const built = await kernel.build(spec); if (token !== st.token) return;
-      st.built = built; setContext({ spec, built }); vp.viewer.clear(); showBuilt(vp.viewer, built, { prefix: "fx" }); if (first) vp.viewer.view("iso"); mark();
+      st.built = built; setContext({ spec, built });
+      if (flat.on()) flat.refresh(); else { vp.viewer.clear(); showBuilt(vp.viewer, built, { prefix: "fx" }); if (first) vp.viewer.view("iso"); mark(); flat.sync(); }
       const c = flexChecks(spec.flex), errs = built.log.filter((l) => l.level === "error"), bad = c.notes.filter((n) => n.level === "bad").length, chk = c.notes.filter((n) => n.level === "check").length;
       info.textContent = `${inUnits(`${c.rows.length} pistes sur ${fr(c.used, 1)} mm de ${fr(spec.flex.W, 1)} mm · ${fr(c.length, 0)} mm`)} · ${spec.flex.sensors.length} capteur(s) · ${fmtMass(built.mass)}`;
       verdict.textContent = errs.length ? "ne se construit pas" : bad ? `${bad} à corriger` : chk ? `${chk} à vérifier` : "dans les règles"; verdict.className = `chip ${errs.length || bad ? "bad" : chk ? "warn" : "done"}`; verdict.dataset.tip = [...errs.map((e) => e.msg), ...c.notes.map((n) => n.text)].join(" · ") || "Pistes, plis et queue suivent les règles du métier";

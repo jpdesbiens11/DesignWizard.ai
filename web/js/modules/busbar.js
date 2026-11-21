@@ -9,6 +9,7 @@ import { registerModule, go, setStatus, setContext } from "../core/app.js";
 import { store } from "../core/store.js";
 import { kernel } from "../cad/client.js";
 import { createViewport, showBuilt } from "../core/viewport.js";
+import { flatToggle } from "./flat_view.js";
 import { importPart } from "../core/importer.js";
 import { materialMenu, materialLabel } from "../cad/materials.js";
 import { THREADS } from "../cad/standards.js";
@@ -92,8 +93,9 @@ function render(main, args) {
   vp.group(...P.buttons);
   const info = el("span", { class: "chip" }, "—"), verdict = el("span", { class: "chip" }, "");
   vp.setStatus(info, verdict);
+  const flat = flatToggle(vp, { spec: () => store.part(id), built: () => st.built, tags: ["bb"], repaint: () => { vp.viewer.clear(); if (st.built) showBuilt(vp.viewer, st.built, { prefix: "bb" }); mark(); } });
   function mark() {
-    const v = vp.viewer; v.clearOverlays("bb"); if (!st.built) return;
+    const v = vp.viewer; v.clearOverlays("bb"); if (!st.built || flat.on()) return;
     for (const it of st.built.interfaces) { const on = it.id === st.sel; v.addLabel(it.frame.o, it.id, "bb", on ? "iface" : "label"); if (on) v.addMarker(it.frame.o, "#ff8a3d", "bb", 1.4); }
     for (const h of def().holes || []) { const f = legFace(def(), { leg: h.leg, side: 1 }); if (!f) continue; const p = f.P(h.s, h.y ?? def().W / 2), on = h.id === st.sel; v.addLabel(p, h.id, "bb", on ? "iface" : "label"); if (on) v.addMarker(p, "#ff8a3d", "bb", 1.4); }
   }
@@ -101,7 +103,8 @@ function render(main, args) {
     const token = ++st.token, spec = store.part(id);
     try {
       const built = await kernel.build(spec); if (token !== st.token) return;
-      st.built = built; setContext({ spec, built }); vp.viewer.clear(); showBuilt(vp.viewer, built, { prefix: "bb" }); if (first) vp.viewer.view("iso"); mark();
+      st.built = built; setContext({ spec, built });
+      if (flat.on()) flat.refresh(); else { vp.viewer.clear(); showBuilt(vp.viewer, built, { prefix: "bb" }); if (first) vp.viewer.view("iso"); mark(); flat.sync(); }
       const c = busbarChecks(spec.busbar), errs = built.log.filter((l) => l.level === "error"), bad = c.notes.filter((n) => n.level === "bad").length, chk = c.notes.filter((n) => n.level === "check").length;
       info.textContent = `${inUnits(`${fr(c.S, 1)} mm² · ${fr(c.J)} A/mm² · ${fr(c.length, 1)} mm${c.bends ? ` · développé ≈ ${fr(c.flat, 1)} mm` : ""}`)} · ${fmtMass(built.mass)}`;
       verdict.textContent = errs.length ? "ne se construit pas" : bad ? `${bad} à corriger` : chk ? `${chk} à vérifier` : "dans les règles"; verdict.className = `chip ${errs.length || bad ? "bad" : chk ? "warn" : "done"}`; verdict.dataset.tip = [...errs.map((e) => e.msg), ...c.notes.map((n) => n.text)].join(" · ") || "Section, pliage, bornes et contacts suivent les règles du métier";
