@@ -359,7 +359,10 @@ ordre ; ce qui est fait se raye ici.
    estampable ? … marque-les au laser… ton avis sur le contact » — **marquage laser** gravé à côté de chaque contact, des deux côtés, par une
    nouvelle opération du langage de pièce, **`mark`** (police à un trait fabriquée par l'outil, `cad/stroke_font.js`) ; retour DFM (estampage
    de la couronne, revenu, calibrage du bombé, revêtement, fixation, butées, îlots, marquage) dans `docs/BM_MODULE.md` et les notes des pièces.
-   Reste : sertir la couronne sous sa rondelle de butée ; un essai d'écrasement et de résistance d'une couronne réelle.
+   Reste : un essai d'écrasement et de résistance d'une couronne réelle.
+   **Itération 8 (v0.140.0)**, choix de JP par menu : **« Couronne sertie »** — la butée HV devient une rondelle de cuivre à part
+   (`BM-STOP-HV`, `stopPart`), sa lèvre sur l'anneau extérieur de la couronne, fixée à la jambe par son bord ; butée 0,6 mm, pas 51,5 mm,
+   plage LV relevée de 0,25 mm (`LV_UP`) ; le noyau vérifie que la couronne est prise. Reste : un essai de sertissage.
    Reste : les languettes de soudure minces, le heat staking du flex (la plaque − est entre les deux), la nuance du silicone 2K, la lamination
    d'une pièce pliée, l'évent au fond de la P45B (à demander), les bornes du module, le boîtier, le BMS central, l'échauffement du module fermé.
 21. ~~**Logiciel : pas à pas, simulation en direct, code visible, chargement**~~ — fait (v0.124.0 ; demande de JP du 20

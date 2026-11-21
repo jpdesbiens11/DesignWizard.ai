@@ -300,6 +300,27 @@ marque mieux. Quelques microns suffisent à lire ; les 0,05 mm dessinés sont po
 **Pas fait** : le sertissage sous la rondelle de butée (dessiné : la couronne posée, la butée séparée sur la jambe) ; l'essai
 d'écrasement et de résistance d'une couronne réelle ; l'effort qui presse le module ; le fil des plages LV.
 
+## Itération 8 — la couronne HV sertie sous sa rondelle de butée
+
+Choix de JP, par menu (21 novembre) : **« Couronne sertie »** — tenir la couronne HV sous sa butée plutôt que la souder.
+
+- **Une rondelle de butée à part** (`BM-STOP-HV`, deux par CORE) : du cuivre de 0,6 mm, frappé, argenté. Posée sur la jambe +,
+  sa **lèvre** passe au-dessus de l'anneau extérieur de la couronne, dans un **logement de 0,25 mm** (l'épaisseur de la
+  couronne) ; sa face porte la jambe − du CORE voisin. La couronne n'est que **serrée** : ni soudure à travers l'argent, ni
+  chaleur sur le cuivre-béryllium ; elle se remplace en changeant la rondelle. La rondelle est fixée à la jambe par son
+  **bord extérieur** (points de soudure cuivre sur cuivre, ou brasure), à 2,5 mm de la couronne, après le laminage.
+- **Pourquoi la butée passe de 0,35 à 0,6 mm** : une lèvre qui se frappe demande du cuivre au-dessus d'un anneau de
+  0,25 mm — il en reste 0,35. Le pas d'un CORE au suivant passe à **51,5 mm**. La couronne HV garde la même course
+  (0,15 ± 0,05 mm) : son sommet libre monte à 0,75 mm ; les calculs sont les mêmes. La plage LV côté + monte de 0,25 mm pour que
+  la couronne LV garde sa propre butée de 0,35 mm ; le rebord isolant de l'îlot reste 0,02 mm sous les rondelles.
+- **La jambe + redevient plane** : plus d'anneau de butée dans le cuivre du busbar laminé — seulement les gravures, les
+  marquages et les îlots LV.
+- **Vérifié par le noyau 3D** : rien ne traverse rien dans le CORE (rondelles comprises) ; **la couronne soulevée de 0,05 mm
+  entre dans la lèvre** — elle est prise ; avec le CORE suivant au pas, les rondelles se touchent et seules les crêtes
+  entrent, de 0,15 mm (HV) et 0,10 mm (LV). Le CORE compte **19 pièces**, le module **152**.
+- **Pas fait** : un essai de sertissage (effort de pose, tenue de la lèvre), la tolérance de la rondelle mesurée, la
+  tenue du papier aramide derrière un point de soudure — à voir avec le fabricant du busbar.
+
 ## Ce qu'il contient
 
 | Élément | Ce que c'est | Où |
@@ -311,6 +332,7 @@ d'écrasement et de résistance d'une couronne réelle ; l'effort qui presse le 
 | Support du bas des cellules | `BM-HOLDER-BASE` : le support du bas avec un fond sous les cellules, deux fenêtres de soudure − par cellule, et ses 8 rondelles thermiques moulées en deuxième injection (itération 5 ; les rondelles séparées `BM-PUCK` de l'itération 4 sont dedans) | Pièces |
 | Support du haut des cellules | `BM-HOLDER` : une épine entre les rangées, deux barres aux bouts, une poche par cellule, cinq noyautages | Pièces |
 | Ressorts de contact HV et LV | `BM-SPRING-HV`, `BM-SPRING-LV` : une couronne de lames-ponts en cuivre-béryllium, deux de chaque par CORE, sur la jambe + (itération 6) ; élastiques jusqu'à la butée, la version plastique gardée en variante (itération 7) | Pièces |
+| Rondelle de butée HV | `BM-STOP-HV` : la butée d'un contact HV, qui sertit sa couronne sous sa lèvre (itération 8) | Pièces |
 | CORE 1S8P | `BM-CORE-ASM` : 8 cellules en deux rangées de 4, le support du haut, le support du bas et ses rondelles, le busbar laminé, le flex en boîte, la carte dessus, 4 ressorts de contact | Assemblage |
 | BM 8s8p - 21700 | `BM-8S8P-ASM` : 8 CORE côte à côte, tous dans le même sens | Assemblage |
 
@@ -324,7 +346,7 @@ d'écrasement et de résistance d'une couronne réelle ; l'effort qui presse le 
 - **La série** : la jambe + d'un CORE presse la jambe − du CORE suivant, face contre face (itération 1 : 49,4 mm d'un CORE
   au suivant avec 1 mm de cuivre ; itération 2 : 51,4 mm avec 2 mm ; itération 4 : 50,9 mm, le papier aramide de 0,25 mm
   remplaçant l'isolant de 0,5 mm ; itération 6 : 51,25 mm — les deux jambes ne se touchent plus, ce sont les butées des
-  contacts qui portent).
+  contacts qui portent ; itération 8 : 51,5 mm, les rondelles de butée de 0,6 mm).
 - La jambe + s'arrête à 5 mm du bas, la jambe − à 5 mm du haut : aucune des deux ne frôle la plaque de l'autre polarité
   de son propre CORE (exemple, paramètre `z0`).
 
