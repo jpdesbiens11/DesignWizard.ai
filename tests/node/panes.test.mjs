@@ -49,6 +49,6 @@ test("every side panel of every page can be resized and hidden : a studio gets i
   assert.match(panes, /const sync = \(\) => \{ const now = hasRightPane\(studio\); if \(now === right\) return;/); assert.match(panes, /new MutationObserver\(sync\)\.observe\(studio, \{ attributes: true, attributeFilter: \["class"\], childList: true \}\)/);
   /* a screen that has side panels builds them in a studio — the one structure the borders know */
   const dir = new URL("../../web/js/modules/", import.meta.url), withSides = readdirSync(dir).filter((f) => f.endsWith(".js") && /el\("aside", \{ class: "side/.test(readFileSync(new URL(f, dir), "utf8")));
-  assert.ok(withSides.length >= 13 && withSides.includes("pcba.js") && withSides.includes("sw.js"), `${withSides.length} screens have side panels`);
+  assert.ok(withSides.length >= 13 && withSides.includes("pcba.js") && withSides.includes("sw_vband.js"), `${withSides.length} screens have side panels`);
   for (const f of withSides) assert.match(readFileSync(new URL(f, dir), "utf8"), /class: "studio/, `${f} : its side panels are in a studio`);
 });

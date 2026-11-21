@@ -19,6 +19,8 @@ import "./modules/pcb.js";
 import "./modules/pcba.js";
 import "./modules/elab.js";
 import "./modules/sw.js";
+import "./modules/sw_req.js";
+import "./modules/sw_verify.js";
 import "./modules/assembly.js";
 import "./modules/physics.js";
 import "./modules/media.js";

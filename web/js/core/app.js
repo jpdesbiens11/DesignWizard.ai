@@ -24,7 +24,7 @@ import { installLoupe } from "./loupe.js";
 import { installUpdateCheck, updateButton } from "./update_check.js";
 import { installWhatsNew, newsButton } from "./whats_new_ui.js";
 
-export const APP_VERSION = "0.127.0";
+export const APP_VERSION = "0.128.0";
 /** What every document of the open project carries beside its content : approval names, organisation, confidentiality note, extraction stamp (core/brand.js). */
 export const docMeta = (when = new Date()) => docIdentity(store.project, when, APP_VERSION);
 const modules = new Map();
@@ -32,7 +32,8 @@ const modules = new Map();
    simulation — par discipline ») : each group flips down its screens, from the one where one designs to the one where one simulates */
 export const NAV = [
   { id: "mech", label: "Mécanique", icon: "part", color: "#2563eb", hint: "De l'intention à la simulation", keys: ["shop", "parts", "assembly", "drawings", "physics", "fea"] },
-  { id: "elec", label: "Électronique", icon: "chip", color: "#16a34a", hint: "De la carte au logiciel", keys: ["pcb", "pcba", "elab", "creepage", "sw"] },
+  { id: "elec", label: "Électronique", icon: "chip", color: "#16a34a", hint: "De la carte nue au banc d'essai", keys: ["pcb", "pcba", "elab", "creepage"] },
+  { id: "soft", label: "Logiciel", icon: "code", color: "#0891b2", hint: "Le cycle en V, des exigences au paquet livré", keys: ["swreq", "swarch", "sw", "swsim", "swcode", "swtest", "swrel"] },
   { id: "product", label: "Produit", icon: "report", color: "#7c3aed", hint: "Règles, revue, dossier", keys: ["dfx", "review", "report", "history", "eco"] },
 ];
 const SHOP_SCREENS = new Set(["interfaces", "process", "extrusion", "library", "busbar", "flex"]);      // screens of the Shop : its tab stays lit on them (see modules/shop_tabs.js)

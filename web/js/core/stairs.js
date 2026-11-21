@@ -19,13 +19,18 @@ export function stairOf(key, args, project) {
   const part = (id) => (id ? parts.find((p) => p.id === id) : null) || null, asm = (id) => (id ? asms.find((x) => x.id === id) : null) || null;
   const toPart = (p, what) => { if (!p) return null; const n = natureOf(p), name = p.name || p.id; return { hash: partHash(p), icon: n.icon, color: n.color, label: name, tip: `${what} : ouvrir « ${name} » dans son studio` }; };
   const toAsm = (x, what) => (x ? { hash: asmHash(x), icon: "assembly", color: "#475569", label: x.name || x.id, tip: `${what} : ouvrir « ${x.name || x.id} » dans l'Assemblage` } : null);
+  const SW = (k, icon, label, tip) => ((project.software || []).length ? { hash: `#/${k}`, icon, color: "#0891b2", label, tip: `Monter d'un niveau : ${tip}` } : null);
   const lv = levelsOf(key, a, project);
   if (lv && lv.up) return lv.up.startsWith("#/shop/n/") && lv.nature ? { hash: lv.up, icon: lv.nature.icon, color: lv.nature.color, label: lv.nature.label, tip: `Monter d'un niveau : ${lv.nature.label} (${lv.nature.fr}) — les pièces de cette nature` }
     : { hash: lv.up, icon: "atelier", color: null, label: "Atelier", tip: "Monter d'un niveau : l'Atelier — toutes les pièces du produit" };
   switch (key) {
     case "assembly": { const me = asm(a[0]) || asms[0] || null, parent = me ? asms.find((x) => x.id !== me.id && (x.instances || []).some((i) => i.asm === me.id)) : null; return parent ? toAsm(parent, "Ce sous-assemblage est monté dans un autre") : null; }
     case "elab": { const b = boards.find((x) => x.id === a[0]) || boards[0] || null; return b ? { hash: `#/pcba/${enc(b.id)}`, icon: "chip", color: "#16a34a", label: b.name || b.id, tip: "Ouvrir la carte dans le PCBA" } : null; }
-    case "sw": { const b = boards[0] || null; return b ? { hash: `#/pcba/${enc(b.id)}`, icon: "chip", color: "#16a34a", label: b.name || b.id, tip: "Le logiciel tourne sur le CPU d'une carte : ouvrir la carte dans le PCBA" } : null; }
+    case "swreq": { const b = boards[0] || null; return b ? { hash: `#/pcba/${enc(b.id)}`, icon: "chip", color: "#16a34a", label: b.name || b.id, tip: "Le logiciel tourne sur le CPU d'une carte : ouvrir la carte dans le PCBA" } : null; }
+    case "swarch": case "swtest": return SW("swreq", "report", "Exigences", key === "swtest" ? "Ce que la vérification prouve : les exigences" : "L'architecture répond aux exigences");      // the V : each step hangs from the one it answers
+    case "sw": return SW("swarch", "chip", "Architecture", "La conception se fait dans l'architecture choisie : référence, CPU, cadence");
+    case "swsim": case "swcode": return SW("sw", "part", "Conception", key === "swsim" ? "Ce que la simulation fait tourner : la conception" : "Ce que le code traduit : la conception");
+    case "swrel": return SW("swtest", "check", "Vérification", "On livre ce qui est prouvé : la vérification");
     case "pcba": { const b = boards.find((x) => x.id === a[0]) || boards[0] || null; return b ? toPart(part(b.part), "La carte (PCB) que ce PCBA équipe") : null; }      // the assembled board hangs from its bare board, when it has one
     case "fea": { const p = part(a[0]), x = p ? null : asm(a[0]);
       if (p && p.study && p.study.model) return { hash: `#/physics/${enc(p.study.model)}/${enc(p.id)}`, icon: "physics", color: "#a16207", label: "Modèle analytique", tip: `Ce modèle simplifié est fait à partir d'un modèle analytique : y revenir, avec ses valeurs` }; return p ? toPart(p, "La pièce simulée") : x ? toAsm(x, "L'assemblage simulé") : toPart(parts[0], "La pièce simulée") || toAsm(asms[0], "L'assemblage simulé"); }
@@ -40,6 +45,8 @@ export function stairOf(key, args, project) {
     default: return null;
   }
 }
+/* the V, going down : what each step of the software leads to (the reverse of its step up) */
+const DOWN_SW = { swreq: [["swarch", "chip", "Architecture"], ["swtest", "check", "Vérification"]], swarch: [["sw", "part", "Conception"]], sw: [["swsim", "play", "Simulation"], ["swcode", "code", "Code"]], swtest: [["swrel", "download", "Livraison"]] };
 /** The steps DOWN from a screen (demande de JP : « monter d'un niveau… descendre d'un niveau, plus profond dans la définition ») : what is made FROM what
     the screen shows — the exact reverse of the step up. A board (PCB) leads down to the PCBA mounted on it, a PCBA to its Labo ; a part to its
     simulation and its drawing ; an assembly to its sub-assemblies, its isolation and its drawing. What defines the product comes first ; at most
@@ -55,7 +62,8 @@ export function downOf(key, args, project) {
   } else if (lv && lv.assembly) { const x = lv.assembly, name = x.name || x.id;
     for (const s of [...new Set((x.instances || []).map((i) => i.asm).filter(Boolean))].map((id) => asms.find((y) => y.id === id)).filter(Boolean)) out.push({ hash: asmHash(s), icon: "assembly", color: "#475569", label: s.name || s.id, tip: `Descendre d'un niveau : le sous-assemblage « ${s.name || s.id} »` });
     out.push({ hash: `#/creepage/${enc(x.id)}`, icon: "creepage", color: null, label: "Isolation", tip: `Descendre d'un niveau : l'isolation de « ${name} »` }, { hash: `#/drawings/asm/${enc(x.id)}`, icon: "drawing", color: null, label: "Dessin", tip: `Descendre d'un niveau : le dessin d'ensemble de « ${name} »` });
-  } else if (key === "pcba") { const b = boards.find((x) => x.id === a[0]) || boards[0] || null; if (b) out.push({ hash: `#/elab/${enc(b.id)}`, icon: "sensor", color: "#16a34a", label: "Labo", tip: `Descendre d'un niveau : le Labo de « ${b.name || b.id} » — chaque bloc sur le banc simulé` }, { hash: `#/creepage/board/${enc(b.id)}`, icon: "creepage", color: null, label: "Isolation", tip: `Descendre d'un niveau : l'isolation de « ${b.name || b.id} », la carte seule` }); if (b && b === boards[0]) out.push({ hash: "#/sw", icon: "code", color: "#16a34a", label: "Logiciel", tip: "Descendre d'un niveau : le logiciel qui tourne sur le CPU de la carte — des objets reliés, dont l'outil écrit le C" }); }      // the exact reverse of the step up of « sw », which leads to the first board
+  } else if (DOWN_SW[key] && (project.software || []).length) { for (const [k, icon, label] of DOWN_SW[key]) out.push({ hash: `#/${k}`, icon, color: "#0891b2", label, tip: `Descendre d'un niveau : ${label}` });
+  } else if (key === "pcba") { const b = boards.find((x) => x.id === a[0]) || boards[0] || null; if (b) out.push({ hash: `#/elab/${enc(b.id)}`, icon: "sensor", color: "#16a34a", label: "Labo", tip: `Descendre d'un niveau : le Labo de « ${b.name || b.id} » — chaque bloc sur le banc simulé` }, { hash: `#/creepage/board/${enc(b.id)}`, icon: "creepage", color: null, label: "Isolation", tip: `Descendre d'un niveau : l'isolation de « ${b.name || b.id} », la carte seule` }); if (b && b === boards[0]) out.push({ hash: "#/swreq", icon: "code", color: "#16a34a", label: "Logiciel", tip: "Descendre d'un niveau : le logiciel qui tourne sur le CPU de la carte — son cycle en V, des exigences au paquet livré" }); }      // the exact reverse of the step up of « swreq », which leads to the first board
   return out.slice(0, 4);
 }
 /** What a screen hands to an AI (demande de JP : « un aller-retour avec l'IA sur toutes les pages, sur l'artéfact de la page ») : the artefact the screen

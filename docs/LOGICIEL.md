@@ -5,7 +5,8 @@ adaptés qui se codent tout seuls en librairie, module et structure de fichiers 
 les in/out à gérer, leurs plages et le CPU choisi ». Choix cliqués le même jour : **des tuiles reliées** ; **un
 microcontrôleur de sécurité à double cœur d'abord** ; « EFC » = energy flow counter, nommé par sa fonction.
 
-Écran : `#/sw` (Électronique › Logiciel). Première tranche, v0.121.0 : **une chaîne complète**, du dessin au C compilé.
+Écrans : le groupe **Logiciel** de la barre du haut (depuis la v0.128.0 ; avant, Électronique › Logiciel, `#/sw`).
+Première tranche, v0.121.0 : **une chaîne complète**, du dessin au C compilé. Depuis la v0.128.0, le **cycle en V** (§ 4 ter).
 
 ## 1. L'idée
 
@@ -116,6 +117,66 @@ Studio (Texas Instruments), le 20 novembre 2026. **Pas lu** : les guides d'utili
 **Rien n'a été essayé** : aucun outil n'a été installé ni lancé, rien n'a été chargé dans un CPU. La page du kit dit le CPU
 « IEC 61508 SIL 3 and ISO 26262 ASIL D certified » ; le certificat n'a pas été lu, et la fiche technique ne cite aucune norme.
 
+## 4 ter. Le cycle en V (v0.128.0)
+
+Demande de JP (21 novembre 2026) : « sortir et bonifier la suite d'outils logiciel de l'onglet électronique… la même suite
+d'outils et de genre d'outils que pour la mécanique et l'électronique, tout en favorisant la facilité d'utilisation,
+l'ergonomie, la compréhension rapide des jeunes ingénieurs, et garantir un résultat aux normes et pratiques
+industrielles ». Choix cliqués : **« Cycle en V »** et la référence **« au choix du projet »**.
+
+Le logiciel a son groupe dans la barre du haut, sept écrans dans l'ordre du V ; le V est dessiné au-dessus de chacun
+(`modules/sw_vband.js`), chaque étape dit où elle en est, et les étapes faites l'une pour l'autre sont reliées en
+pointillé — les exigences et la vérification qui les prouve, la conception et la simulation qui l'essaie.
+
+| Étape | Écran | Ce que l'on y fait | Module |
+|---|---|---|---|
+| 1 Exigences | `#/swreq` | une phrase avec « doit », un genre, une preuve, les tuiles qui la réalisent ; la carte de traçabilité | `sw/sw_req.js`, `modules/sw_req.js`, `modules/sw_trace_map.js` |
+| 2 Architecture | `#/swarch` | la référence de sécurité et son niveau, le CPU, la période | `sw/sw_std.js`, `modules/sw.js` |
+| 3 Conception | `#/sw` | les tuiles, les fils, les valeurs (pages « Tuiles » et « Valeurs ») | `sw/sw_design.js` |
+| 4 Simulation | `#/swsim` | le modèle en direct, l'essai de démarrage et la mémoire | `sw/sw_live.js`, `sw/sw_start.js` |
+| 5 Code | `#/swcode` | le C écrit par l'outil, fichier par fichier | `sw/sw_c.js` |
+| 6 Vérification | `#/swtest` | les essais sur le modèle, la matrice, la couverture du modèle | `sw/sw_test.js`, `modules/sw_verify.js` |
+| 7 Livraison | `#/swrel` | la liste de livraison, le paquet, les sept gestes du chargement | `sw/sw_release.js`, `sw/sw_load.js` |
+
+Les anciennes adresses (`#/sw/live`, `#/sw/code`…) mènent à l'étape de leur page. La marche vers le haut suit le V :
+chaque étape monte vers celle à laquelle elle répond (l'Architecture et la Vérification vers les Exigences, la
+Conception vers l'Architecture, la Simulation et le Code vers la Conception, la Livraison vers la Vérification), et les
+Exigences vers la carte dans le PCBA ; la marche vers le bas en est l'inverse exact.
+
+**Exigences** (`sw/sw_req.js`). Cinq genres (Functional, Safety, Performance, Interface, Robustness), trois preuves (essai,
+analyse, revue). L'outil relit chaque phrase — pas de « doit », mot vague, pas de nombre pour une performance ou une
+sécurité, deux « doit » —, d'après des usages du métier écrits de mémoire : aucun guide de rédaction n'a été lu. Chaque
+tuile dit en une phrase ce qu'elle fait : ce sont les **exigences de bas niveau**, tirées du dessin. La **trace** va dans
+les deux sens ; une tuile qu'aucune exigence ne demande est signalée (une fonction que personne n'a demandée). Une
+exigence prouvée par analyse ou par revue se **signe** d'un nom. On / Off, copie née à Off ; les six exigences de
+l'exemple sont des exemples à confirmer.
+
+**Référence** (`sw/sw_std.js`). **RTCA DO-178C** (aéronautique, niveau DAL A à E) ou **ISO 26262** partie 6
+(automobile, ASIL QM, A à D). Ce que l'outil en dit vient de **pages publiques lues le 21 novembre 2026** (Wikipedia,
+CC BY-SA 4.0 : « DO-178C », « DO-178B », « ISO 26262 », « Modified condition/decision coverage », « V-model (software
+development) ») : le nombre d'objectifs par niveau DO-178C et ceux à tenir avec indépendance, les traces dans les deux
+sens, MC/DC au niveau A ; l'ASIL selon gravité, exposition et contrôlabilité, MC/DC « highly recommended » pour ASIL D.
+**Les normes elles-mêmes, payantes, n'ont pas été lues.** Ce que ces pages ne disent pas — la couverture demandée aux
+niveaux B, C, D de DO-178C et A, B, C d'ISO 26262 — n'est pas affirmé, et l'écran le dit.
+
+**Essais** (`sw/sw_test.js`). Un essai est un scénario — ce que lit chaque broche, instant après instant, écrit dans
+l'unité de ce qu'elle mesure (mV pour une voie qui mesure une tension ; écrit et relu à l'identique) — et des attendus : un
+signal qui vaut une valeur à un instant, ou qui passe à une valeur dans une fenêtre (un temps de réponse). Il tourne sur
+le **modèle**, le même pas que le C (l'essai dos à dos tient l'égalité). Un essai qui n'attend rien ne prouve rien. La
+**couverture du modèle** dit, sur l'ensemble des essais, quelle sortie 0 / 1 n'a jamais pris l'une de ses deux valeurs ;
+la **couverture structurelle** que les normes demandent (instructions, décisions, MC/DC) se mesure sur le C compilé, avec
+un outil de couverture : le modèle ne la donne pas. Les cinq essais de l'exemple réussissent.
+
+**Livraison** (`sw/sw_release.js`). Neuf lignes : la référence, le CPU, les exigences (écrites, confirmées, bien
+écrites), l'allocation, la conception sans erreur, les valeurs confirmées, les essais (réussis, confirmés), les
+exigences prouvées, les preuves signées ; chacune dit l'étape où la régler. C'est la liste de l'outil : elle ne remplace
+ni la revue de conception ni l'autorité qui accepte un logiciel. Le rapport de revue porte une section par logiciel.
+
+Non fait ici, et dit : l'essai d'intégration sur la carte et l'essai sur le CPU ; un document de spécification ou un
+rapport d'essais en Word / PDF ; les exigences, les essais et la trace dans le paquet C ; l'aller-retour IA d'une
+exigence ou d'un essai. **Aucune prétention de conformité ni de certification** : une norme se tient par un processus,
+des revues indépendantes et une autorité ; l'outil aide à tenir les traces que ce processus demande.
+
 ## 5. Ce qui est vérifié, ce qui ne l'est pas
 
 Vérifié : 6 essais Node (`tests/node/sw_objects.test.mjs`) — objets, fils, guide, simulation, et le C compilé qui
@@ -134,6 +195,11 @@ pour nombre, la trace du scénario ; le banc ouvre le contactor quand la cellule
 soudé ; l'essai de démarrage trouve une sous-tension qui commande une sortie au repos ; la mémoire égale le `sizeof` du
 compilateur ; 26 vérifications dans Chromium, les sept étapes une à une. Non essayé : au toucher, sur Firefox et Safari,
 et par un vrai débutant.
+
+Le cycle en V (v0.128.0) : 12 essais Node (`tests/node/sw_v.test.mjs`) — les niveaux et ce que les pages lues en
+disent, la relecture des exigences, la trace dans les deux sens, les cinq essais de l'exemple qui réussissent et un
+attendu hors fenêtre qui échoue, la couverture du modèle, le scénario écrit en mV et relu à l'identique, la liste de
+livraison (l'exemple n'est pas prêt ; tout confirmé, il l'est), les sept étapes, les marches du V.
 
 ## 6. Reste
 

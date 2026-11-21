@@ -39,7 +39,7 @@ Total : 60 minutes.
 
 1. Ouvrez l'outil (en ligne ou sur votre poste). Vous êtes sur l'accueil.
 2. Cliquez « Charger la démonstration ». L'assemblage du variateur s'ouvre.
-3. Regardez la barre du haut : trois groupes — « Mécanique », « Électronique », « Produit ». Cliquez-en un : ses écrans se déplient, numérotés dans l'ordre où l'on conçoit. Échap referme.
+3. Regardez la barre du haut : quatre groupes — « Mécanique », « Électronique », « Logiciel », « Produit ». Cliquez-en un : ses écrans se déplient, numérotés dans l'ordre où l'on conçoit. Échap referme.
 4. À droite de la barre, le bouton « Guide » dit ce qui manque ou cloche sur l'écran ouvert ; le point d'interrogation ouvre l'Aide.
 
 **À remarquer.** Sur l'accueil, « Le parcours » liste les écrans dans l'ordre d'une conception.

@@ -98,9 +98,10 @@ test("from the package to the CPU : seven steps, what the maker publishes with w
   const m = METHODS.find((x) => x.id === "sw-load"); assert.ok(m && m.how === "page" && /HALCoGen/.test(m.title) && /n'ont PAS été lus/.test(m.check) && /rien n'a été chargé dans un CPU/.test(m.check), "the register says what was read, and that nothing was tried");
 });
 
-test("the screen : the steps in the left panel, the step in the address, the guide where one is, the pages one reads in the centre", () => {
+test("the screen : the card of the step in the left panel, the page in the address, the guide where one is, the pages one reads in the centre", () => {
   const sw = read("web/js/modules/sw.js"), pages = read("web/js/modules/sw_pages.js");
-  assert.match(sw, /"data-sw-step-btn": s\.key/); assert.match(sw, /history\.replaceState\(null, "", `#\/sw\/\$\{st\.step\}`\)/); assert.match(sw, /STEPS\.some\(\(s\) => s\.key === args\[0\]\)/);
+  assert.match(sw, /stepCard\(d, cpu, V\.key, st\.step, run, open\)/, "the card of the step of the V, at the head of the left panel"); assert.match(sw, /history\.replaceState\(null, "", vHash\(V\.key, st\.step\)\)/, "the page in the address");
+  assert.match(sw, /location\.replace\(vHash\(elsewhere\.key, args\[0\]\)\)/, "an address of before the V leads to its step");
   assert.match(sw, /"À régler — le guide"/, "the guide is in the left panel of every step"); assert.match(sw, /setGuide\(guide\(\)\)/); assert.match(sw, /disabled: !ok/);
   assert.match(pages, /href: `\$\{url\}#page=\$\{m\[1\]\}`/, "a page of the data sheet is a link to it"); assert.match(pages, /"Page de la fiche"/); assert.match(pages, /el\("pre", \{ class: "sw-ln"/, "the code with its line numbers");
   for (const id of ["sw-steps", "sw-live", "sw-load"]) { const n = NEWS.find((x) => x.id === id); assert.ok(n && n.v === "0.124.0" && /^#\/sw/.test(n.where), id); }

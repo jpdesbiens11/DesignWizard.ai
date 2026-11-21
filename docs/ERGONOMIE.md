@@ -677,21 +677,23 @@ Question de JP (18 novembre 2026) : crée-t-on une interface nouvelle, ou s'appu
   l'interface honnête, les mécanismes dont tout écran hérite, l'aller-retour IA (recommandé, jamais supposé). Chaque
   règle y dit si c'est un usage établi ou un choix maison. Voir `skills/README.md`.
 
-## La barre du haut : trois groupes, par discipline
+## La barre du haut : quatre groupes, par discipline
 
 Demande de JP (19 novembre 2026) : « si le menu commence à être peuplé horizontalement, peut-être des drop down
 visuels ou flip down, par groupes de modules de conception, par discipline ». L'essai pilote l'avait montré : à
 1366 px, les onglets étaient coupés sans que rien ne le dise.
 
-La barre porte l'accueil et **trois groupes** : **Mécanique** (Atelier, Pièces, Assemblage, Dessins, Physique,
-Simulation), **Électronique** (PCB, PCBA, Labo, Isolation), **Produit** (DFx, Revue, Rapport, Historique). Un clic sur un groupe
+La barre porte l'accueil et **quatre groupes** : **Mécanique** (Atelier, Pièces, Assemblage, Dessins, Physique,
+Simulation), **Électronique** (PCB, PCBA, Labo, Isolation), **Logiciel** (les sept étapes du cycle en V, depuis la
+v0.128.0 : Exigences, Architecture, Conception, Simulation, Code, Vérification, Livraison), **Produit** (DFx, Revue,
+Rapport, Historique, Écosystème). Un clic sur un groupe
 fait basculer un panneau de tuiles numérotées, dans l'ordre où l'on conçoit — chacune avec son pictogramme, son nom
 et une ligne qui dit ce qu'elle fait. Le groupe de l'écran ouvert est allumé et le nomme : « Électronique · Labo ».
 
 - **Usage suivi** : le bouton de menu du web — le bouton dit qu'il a un panneau et s'il est ouvert (`aria-haspopup`,
   `aria-expanded`), le panneau est un `menu`, les flèches passent d'une tuile à l'autre, Échap ferme et rend le
   curseur au bouton, un clic ailleurs ferme.
-- **Choix maison** : le découpage en trois disciplines et l'ordre des tuiles ; le basculement (« flip ») est un effet,
+- **Choix maison** : le découpage en quatre disciplines et l'ordre des tuiles ; le basculement (« flip ») est un effet,
   coupé quand le système demande moins d'animation.
 - Un nouvel écran s'ajoute à un groupe (`NAV` de `web/js/core/app.js`) ; il n'y a plus d'onglet à plat.
 

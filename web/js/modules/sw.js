@@ -1,15 +1,16 @@
 /* DesignWizard.ai — Logiciel : the software of an embedded BMS, drawn as objects one links, and written by the tool (demande de JP :
    « une approche de design logiciel via des objets visuels adaptés qui se codent tout seuls en librairie, module et structure de
    fichiers pour un CPU de BMS embarqué, sachant les in/out à gérer, leurs plages et le CPU choisi »).
-   STEP BY STEP (demande de JP : « mettre ça pas à pas, comme si la partie logiciel était faite pour un étudiant de 16 ans… tester la routine
-   de démarrage, l'initialisation, la mémoire… une vraie simulation en temps réel… l'important, c'est de voir le package final, puis de savoir
-   comment il serait téléchargé dans le microprocesseur ») : seven steps, numbered at the head of the left panel — CPU, objects, values,
-   start-up, live simulation, code, loading (sw/sw_steps.js). Each says in plain words what it is and what one does, whether it is done —
-   read from the design, never ticked by hand —, and unfolds the words of the trade it uses. The address keeps the step (#/sw/<step>).
-   The same three places as every studio. Left, what one gives and where one is : the steps, the step, what the step lists (the CPUs, the
-   objects to put, the values to read again, the files of the package, the journal of the live run) and what the guide asks. Centre, what
-   one looks at : the tiles and their wires, or a page one reads (the sheet of the CPU, the start-up, a file of the code, the loading).
-   Right, what one sets : the sheet of the object chosen — what enters, what leaves, its values — or, live, the bench.
+   A GROUP OF ITS OWN, in the order of the V (demande de JP, 21 novembre 2026 : « sortir et bonifier la suite d'outils logiciel de l'onglet
+   électronique… la même suite d'outils et de genre d'outils que pour la mécanique et l'électronique » ; choix cliqué : « Cycle en V ») :
+   1 Exigences (modules/sw_req.js), 2 Architecture, 3 Conception, 4 Simulation, 5 Code, 6 Vérification (modules/sw_verify.js), 7 Livraison.
+   This file draws five of them — each a screen of the top bar, the V drawn above (modules/sw_vband.js) — and their pages : the CPU (2),
+   the tiles and the values (3), the live bench and the start-up (4), the files of the code (5), the loading (7). The address keeps the page
+   (#/sw/values, #/swsim/start…) ; an address of before the V (#/sw/live) leads to its step.
+   The same three places as every studio. Left, what one gives and where one is : the card of the step, what the page lists (the CPUs and the
+   reference, the tiles to put, the values to read again, the files of the package, the journal of the live run, the list of delivery) and
+   what the guide asks. Centre, what one looks at : the tiles and their wires, or a page one reads. Right, what one sets : the sheet of the
+   object chosen — what enters, what leaves, its values — or, live, the bench.
    Every change is one step of the store : Ctrl + Z takes it back. The tool calls no assistant : the round trip is a text one copies. */
 
 import { el, clear, icon, btn, toast, download, copyText } from "../core/dom.js";
@@ -21,7 +22,11 @@ import { KINDS, NATURES } from "../sw/sw_objects.js";
 import { demoDesign, problems, unsure, ready, simulate, events, wireCheck, order, split } from "../sw/sw_design.js";
 import { cFiles } from "../sw/sw_c.js";
 import { cpuOf, cpuList } from "../sw/sw_cpu.js";
-import { STEPS, stepOf, stepStates, nextStep, wordsIn, kindShape, rankOf } from "../sw/sw_steps.js";
+import { stepStates, kindShape, rankOf, vstepOf, vOfPage } from "../sw/sw_steps.js";
+import { runAll } from "../sw/sw_test.js";
+import { STANDARDS, stdOf, levelOf, stdAsks } from "../sw/sw_std.js";
+import { vBand, stepCard, swShell, vHash } from "./sw_vband.js";
+import { releaseList } from "./sw_release.js";
 import { swCanvas } from "./sw_canvas.js";
 import { swBench } from "./sw_bench.js";
 import { sheet, aiText, reimport } from "./sw_sheet.js";
@@ -32,12 +37,14 @@ const LEVEL = { error: "error", todo: "todo", check: "warn" }, CANVAS = new Set(
 const tile = (o) => el("button", { class: `cf-tile${o.sel ? " sel" : ""}`, type: "button", "aria-pressed": o.sel === undefined ? null : o.sel ? "true" : "false", "data-tip": o.tip || null, style: `--dom:${o.color}`, onClick: o.run, ...o.data }, o.pic, el("b", null, o.label), o.small ? el("small", null, o.small) : null);
 const fr = (n) => (n === null || n === undefined ? "" : String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " ").replace("-", "−"));
 
-function render(main, args) {
+function render(main, args, vkey) {
   clear(main);
-  const left = el("aside", { class: "side" }), view = el("div", { class: "viewport sw-view" }), right = el("aside", { class: "side right" }), root = el("div", { class: "studio" }, left, view, right); main.append(root);
+  const V = vstepOf(vkey), elsewhere = args[0] && !V.pages.includes(args[0]) && vOfPage(args[0]);
+  if (elsewhere) { location.replace(vHash(elsewhere.key, args[0])); return () => {}; }      // an address of before the V : its step
+  const { head, left, view, right, studio: root } = swShell(main, "sw-view");
   const design = () => (store.project && (store.project.software || [])[0]) || null;
-  const st = { step: STEPS.some((s) => s.key === args[0]) ? args[0] : null, sel: null, k: 0, file: "bms/README.md", alive: true };
-  if (!st.step) st.step = nextStep(design(), design() ? cpuOf(design()) : null);
+  const firstPage = () => { const d = design(); if (V.key !== "design" || !d) return V.pages[0]; const S = stepStates(d, cpuOf(d)); return S.objects.state === "done" && S.values.state === "todo" ? "values" : "objects"; };
+  const st = { step: V.pages.includes(args[0]) ? args[0] : firstPage(), sel: null, k: 0, file: "bms/README.md", alive: true };
   const change = (label, fn) => store.commit(label, (p) => { p.software = p.software || []; if (!p.software[0]) return; fn(p.software[0]); });
   const host = el("div", { class: "sw-host" }), pageHost = el("div", { class: "sw-pagehost" }), replay = el("div", { class: "lab-bar sw-bar" }), liveBox = el("div", { class: "sw-livebox bottom-pane", "data-bottom": "sw" }), liveHost = el("div", { class: "sw-livehost" }), empty = el("div", { class: "page", hidden: true });
   liveBox.append(liveHost); view.append(empty, pageHost, host, liveBox, replay);      // the panel of the bottom : its height is dragged at its top edge (core/panes.js mountBottom)
@@ -48,15 +55,15 @@ function render(main, args) {
       const loops = order({ ...d, wires: [...d.wires.filter((w) => w.to !== to), { from, to }] }).loop.length > 0;
       change(`Logiciel : fil ${from} → ${to}`, (x) => { x.wires = x.wires.filter((w) => w.to !== to); x.wires.push({ from, to, ...(loops ? { delay: true } : {}) }); });
       toast(loops ? "Ce fil ferme une boucle : il porte la valeur du pas d'avant, comme le font les schémas-blocs. Un clic sur le fil pour le voir." : c.level ? c.text : "Fil posé.", loops || c.level ? "info" : "success", loops || c.level ? 7000 : 2200); } });
-  let R = null, bench = null, journalHost = null;
+  let R = null, bench = null, journalHost = null, run = null;
   const files = () => { const d = design(); return d ? cFiles(d, { cpu: cpuOf(d) }) : []; };
   const valuesAt = () => (R ? Object.fromEntries(Object.entries(R.ports).map(([r, y]) => [r, y[Math.min(st.k, y.length - 1)]])) : null);
   const guide = () => { const d = design(); return d ? problems(d, cpuOf(d)).map((p) => ({ level: LEVEL[p.level] || "tip", text: p.text, field: "sw", go: p.obj ? () => pick(p.obj, p.field) : null })) : []; };
   /* choose an object from a list : the page shows it, its sheet opens, the value asked blinks under the pointer */
-  function pick(id, field) { if (!CANVAS.has(st.step) || st.step === "live") { st.step = unsure(design()).some((u) => u.obj === id) ? "values" : "objects"; mark(); }
+  function pick(id, field) { if (V.key !== "design") { location.hash = vHash("design", unsure(design()).some((u) => u.obj === id) ? "values" : "objects"); return; } if (!CANVAS.has(st.step) || st.step === "live") { st.step = unsure(design()).some((u) => u.obj === id) ? "values" : "objects"; mark(); }
     st.sel = { obj: id }; all(); const f = field ? right.querySelector(`[data-sw-param="${field}"]`) : right.querySelector("[data-sw-param].need, [data-sw-param]"); if (f) nudge(f); }
-  const mark = () => { try { history.replaceState(null, "", `#/sw/${st.step}`); } catch (e) { /* a page without history */ } };
-  const open = (key) => { st.step = key; mark(); all(); left.scrollTop = 0; };
+  const mark = () => { try { history.replaceState(null, "", vHash(V.key, st.step)); } catch (e) { /* a page without history */ } };
+  const open = (key) => { if (!V.pages.includes(key)) { location.hash = vHash((vOfPage(key) || V).key, key); return; } st.step = key; mark(); all(); left.scrollTop = 0; };
   const add = (kind) => change(`Logiciel : ${KINDS[kind].label} posé`, (d) => { let n = 1; while (d.objects.some((o) => o.id === `${kind}_${n}`)) n++; const y = Math.max(20, ...d.objects.map((o) => (o.y || 0) + 150)); d.objects.push({ id: `${kind}_${n}`, kind, name: `${KINDS[kind].label} ${n}`, params: {}, sure: [], x: 20, y }); st.sel = { obj: `${kind}_${n}` }; });
 
   /* ---------- the live bench : made when the step opens, gone when it closes ---------- */
@@ -64,24 +71,27 @@ function render(main, args) {
   function ensureBench() { if (bench) return; bench = swBench({ design, onFrame: () => { if (!bench) return; canvas.values(bench.values); for (const td of right.querySelectorAll("[data-ref]")) td.textContent = fr(bench.values(td.dataset.ref)); }, onLog: () => { if (bench && journalHost && journalHost.isConnected) journalHost.replaceChildren(bench.journal()); } }); }
 
   function renderLeft() {
-    clear(left); const d = design(), cpu = d ? cpuOf(d) : null, S = stepStates(d, cpu), cur = stepOf(st.step), prev = STEPS[cur.n - 2], next = STEPS[cur.n];
-    left.append(el("div", { class: "side-head" }, el("h2", null, "Logiciel")));
+    clear(left); const d = design(), cpu = d ? cpuOf(d) : null;
+    left.append(el("div", { class: "side-head" }, el("h2", null, V.title)));
     if (d) { const ok = ready(d, cpu), n = unsure(d).length, zipBtn = btn("Fichiers C (.zip)", () => { const f = files(); download(`${d.id}-c.zip`, zip(f.map((x) => ({ name: x.name, bytes: x.text }))), "application/zip"); toast(`${f.length} fichiers écrits : la bibliothèque, les modules, leur structure, l'essai — et doc/LOADING.md, pour les charger dans le CPU.`, "success", 6000); },
       { primary: true, small: true, icon: "download", disabled: !ok, tip: ok ? "Le paquet : la bibliothèque, les modules, la structure de fichiers, l'essai et la marche à suivre pour le CPU" : n ? `${n} valeur${n > 1 ? "s" : ""} d'exemple à confirmer d'abord — étape 3` : "Le guide dit ce qui manque" }); zipBtn.dataset.swZip = "";
       left.append(el("div", { class: "side-actions" }, zipBtn, btn("Copier pour une IA", async () => toast((await copyText(aiText(d))) ? "Copié : le logiciel, ses objets et la consigne." : "Copie impossible.", "success", 4000), { small: true, icon: "sparkle", tip: "Confier le logiciel à un assistant : objets, fils, CPU, consigne" }), btn("Réimporter…", () => reimport(design, change), { small: true, icon: "wizard", tip: "Aperçu des changements, puis une seule étape annulable" }))); }
     const scroll = el("div", { class: "side-scroll" }); left.append(scroll);
-    scroll.append(el("ol", { class: "sw-steps", "aria-label": "Les sept étapes du logiciel" }, STEPS.map((s) => el("li", null, el("button", { type: "button", class: `sw-step ${S[s.key].state}${s.key === st.step ? " on" : ""}`, "aria-current": s.key === st.step ? "step" : null, "data-sw-step-btn": s.key, style: `--dom:${s.color}`, "data-tip": `${s.n}. ${s.long} — ${S[s.key].text}`, disabled: !d && s.key !== "cpu", onClick: () => open(s.key) },
-      el("span", { class: "sw-step-n" }, S[s.key].state === "done" ? "✓" : String(s.n)), icon(s.icon), el("span", { class: "sw-step-t" }, s.title))))));
-    const words = wordsIn(`${cur.plain} ${cur.do}`);
-    scroll.append(el("div", { class: "side-section sw-stepcard", "data-sw-step": cur.key, "data-fold-note": `étape ${cur.n} sur ${STEPS.length}`, style: `--dom:${cur.color}` }, el("h3", null, `Étape ${cur.n} — ${cur.long}`),
-      el("p", { class: "sw-plain", "data-sw-plain": "" }, el("span", { class: "sw-tag" }, "En clair"), " ", cur.plain), el("p", null, el("span", { class: "sw-tag do" }, "On fait"), " ", cur.do),
-      el("p", { class: `sw-state ${S[cur.key].state}`, "data-sw-state-of": S[cur.key].state }, icon(S[cur.key].state === "done" ? "check" : S[cur.key].state === "todo" ? "warning" : "info"), " ", S[cur.key].text),
-      words.length ? el("details", { class: "sw-words", "data-sw-words": String(words.length) }, el("summary", null, `Les mots de cette étape (${words.length})`), el("dl", null, words.flatMap((w) => [el("dt", null, w.word, el("small", null, ` — ${w.en}`)), el("dd", null, w.says)]))) : null,
-      el("div", { class: "sw-nav" }, prev ? btn(`← ${prev.n}. ${prev.title}`, () => open(prev.key), { small: true, tip: prev.long }) : el("span"), next && d ? (() => { const b = btn(`${next.n}. ${next.title} →`, () => open(next.key), { small: true, primary: S[cur.key].state === "done", tip: next.long }); b.dataset.swNext = next.key; return b; })() : null)));
+    scroll.append(stepCard(d, cpu, V.key, st.step, run, open));
     if (!d) return;
     if (st.step === "cpu") scroll.append(el("div", { class: "side-section", "data-box": "cpu", "data-fold-note": cpu.name }, el("h3", null, "Les CPU que l'outil connaît"),
       el("div", { class: "cf-tiles lab-blocks" }, cpuList().map((c) => tile({ sel: c.key === cpu.key, color: c.lockstep ? "#b45309" : "#64748b", label: c.key === "generic" ? "Générique" : c.name.replace(/^TMS570LS1224 \(|\)$/g, "").split(",")[0], small: c.lockstep ? "TMS570LS1224 · lockstep" : "fiche à remplir", tip: c.says, pic: icon("chip", "lab-cat"), data: { "data-cpu": c.key }, run: () => change(`Logiciel : CPU ${c.name}`, (x) => { x.cpu = c.key; }) }))),
       el("p", { class: "muted small" }, "Sa fiche est au centre : chaque chiffre avec la page de la fiche technique où il a été lu.")));
+    if (st.step === "cpu") { const S = stdOf(d), L = levelOf(d), A = stdAsks(d);
+      const ref = el("select", { "data-sw-std-ref": "", class: S ? "" : "need", onChange: (e) => change(`Logiciel : référence ${e.target.value || "aucune"}`, (x) => { x.std = e.target.value ? { ref: e.target.value, level: "" } : undefined; }) },
+        el("option", { value: "", selected: !S }, "— à choisir —"), Object.values(STANDARDS).map((x) => el("option", { value: x.id, selected: S && S.id === x.id }, `${x.name} — ${x.domain}`)));
+      const lvl = S ? el("select", { "data-sw-std-level": "", class: L ? "" : "need", onChange: (e) => change(`Logiciel : ${S.levelWord} ${e.target.value}`, (x) => { x.std = { ...x.std, level: e.target.value }; }) },
+        el("option", { value: "", selected: !L }, "— à choisir —"), S.levels.map((l) => el("option", { value: l.id, selected: L && L.id === l.id }, `${S.levelWord} ${l.id}${l.fr ? ` — ${l.fr}` : ""}`))) : null;
+      scroll.append(el("div", { class: "side-section", "data-box": "std", "data-fold-note": S ? `${S.name}${L ? ` ${S.levelWord} ${L.id}` : ""}` : "à choisir" }, el("h3", null, "La référence de sécurité"),
+        el("p", { class: "muted small" }, "Au choix du projet : elle dit le niveau d'exigence que le logiciel doit tenir. Ce que l'outil en dit vient de pages publiques ; la norme elle-même n'a pas été lue."),
+        el("label", { class: "field" }, el("span", { class: "field-label" }, "Référence"), ref), lvl ? el("label", { class: "field" }, el("span", { class: "field-label" }, S.levelWord), lvl) : null,
+        el("ul", { class: "small sw-asks" }, A.lines.map((l) => el("li", null, l))),
+        el("label", { class: "field" }, el("span", { class: "field-label" }, "Cadence du pas (ms)"), el("input", { type: "number", min: 1, max: 1000, step: 1, value: String(d.period || 10), "data-sw-period": "", onChange: (e) => { const v = Math.round(Number(e.target.value)); if (v >= 1 && v <= 1000) change(`Logiciel : pas de ${v} ms`, (x) => { x.period = v; }); } })))); }
     if (st.step === "objects") scroll.append(el("div", { class: "side-section", "data-box": "kinds", "data-fold-note": `${Object.keys(KINDS).length} genres` }, el("h3", null, "Poser une tuile"), el("p", { class: "muted small" }, "Chaque tuile dit combien elle a d'entrées (à gauche) et de sorties (à droite)."),
       NATURES.map((N) => [el("p", { class: "ft-label rd-group", style: `--dom:${N.color}` }, `${N.fr} — ${N.label}`), el("div", { class: "cf-tiles lab-blocks" }, Object.entries(KINDS).filter(([, K]) => K.nature === N.id).map(([k, K]) => tile({ color: N.color, label: K.label, small: `${K.fr} · ${kindShape(k)}`, tip: K.text, pic: icon(K.icon, "lab-cat"), data: { "data-kind": k }, run: () => add(k) })))])));
     if (st.step === "values") { const U = unsure(d), objs = d.objects.filter((o) => U.some((u) => u.obj === o.id));
@@ -94,6 +104,7 @@ function render(main, args) {
         F.filter((f) => f.name === "bms/README.md").map((f) => el("button", { class: "nav-item" + (cur0 && f.name === cur0.name ? " active" : ""), type: "button", "data-sw-file": f.name, onClick: () => { st.file = f.name; all(); } }, icon("info"), el("span", { class: "grow" }, "README.md — à lire d'abord"))),
         Object.entries(FOLDERS).map(([dir, [c, what]]) => { const mine = F.filter((f) => f.name.startsWith(`bms/${dir}/`)); return mine.length ? [el("p", { class: "ft-label rd-group", style: `--dom:${c}` }, `${dir}/ — ${what}`), mine.map((f) => el("button", { class: "nav-item" + (cur0 && f.name === cur0.name ? " active" : ""), type: "button", "data-sw-file": f.name, onClick: () => { st.file = f.name; all(); } }, icon("code"), el("span", { class: "grow" }, f.name.replace(`bms/${dir}/`, "")), el("small", null, `${f.text.split("\n").length} l.`)))] : null; })));
     }
+    if (st.step === "load") scroll.append(releaseList(d, cpu, run, (k, page) => { location.hash = vHash(k, page); }));
     if (st.step === "load") scroll.append(el("div", { class: "side-section", "data-box": "pack", "data-fold-note": "" }, el("h3", null, "Le paquet"), el("p", { class: "muted small" }, "Tout ce qui est décrit au centre est aussi écrit dans le paquet, en anglais : doc/LOADING.md."),
       btn("Lire doc/LOADING.md", () => { st.file = "bms/doc/LOADING.md"; open("code"); }, { small: true, icon: "code" })));
     const g = guideBox(guide(), { title: "Ce que le logiciel demande", quiet: "Rien à signaler : le paquet peut être écrit." }); if (g) scroll.append(el("div", { class: "side-section", "data-box": "guide", "data-fold-note": "le guide" }, el("h3", null, "À régler — le guide"), g));
@@ -121,7 +132,8 @@ function render(main, args) {
     const F = files(); return codePage(F, F.find((f) => f.name === st.file) || F[0], FOLDERS); }
 
   function all() {
-    const d = design(); R = d ? simulate(d) : null; if (R && st.k >= R.t.length) st.k = Math.max(0, R.t.length - 1);
+    const d = design(); R = d ? simulate(d) : null; if (R && st.k >= R.t.length) st.k = Math.max(0, R.t.length - 1); run = d ? runAll(d) : null;
+    head.replaceChildren(vBand(d, d ? cpuOf(d) : null, V.key, run, d ? stdAsks(d).lines[0] : "Le logiciel n'existe pas encore."));
     const onCanvas = !!d && CANVAS.has(st.step), showRight = !!d && RIGHT.has(st.step), errs = d ? problems(d, cpuOf(d)).filter((p) => p.level === "error") : [];
     root.classList.toggle("no-right", !showRight); right.hidden = !showRight; empty.hidden = !!d; host.hidden = !onCanvas; pageHost.hidden = !d || onCanvas; replay.hidden = !onCanvas || st.step === "live"; liveBox.hidden = !d || st.step !== "live";
     if (!d) { stopBench(); clear(empty); empty.append(el("div", { class: "empty" }, el("h2", null, "Le logiciel du BMS, par objets"), el("p", null, "Chaque chose que le CPU doit gérer est une tuile posée sur la page : elle connaît ses entrées, ses sorties, leurs plages. Vous reliez les tuiles ; l'outil écrit le C — une bibliothèque, des modules, leur structure de fichiers —, le fait tourner devant vous, et dit comment le charger dans le CPU."),
@@ -135,4 +147,5 @@ function render(main, args) {
   all();
   return () => { st.alive = false; off(); stopBench(); canvas.destroy(); setGuide([]); };
 }
-registerModule({ key: "sw", label: "Logiciel", icon: "code", tip: "Le logiciel embarqué du BMS, pas à pas : des tuiles reliées, un banc en direct, le code que l'outil écrit et la façon de le charger dans le CPU", render });
+/* the five steps of the V this file draws : each a screen of the group Logiciel */
+for (const k of ["arch", "design", "sim", "code", "release"]) { const V = vstepOf(k); registerModule({ key: V.mod, label: V.title, icon: V.icon, tip: `${V.n}. ${V.long} — ${V.en}`, render: (main, args) => render(main, args, k) }); }

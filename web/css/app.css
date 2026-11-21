@@ -352,7 +352,7 @@ button.dw-view-label { pointer-events: auto; cursor: pointer; min-height: 24px; 
 .sheet-view { background: var(--sheet); border: 1.4px solid color-mix(in srgb, var(--graphite) 30%, transparent); box-shadow: var(--shadow-pop); max-width: 100%; height: auto; display: block; }
 
 .wand-text { flex: 1; text-align: left; }
-@media (max-width: 1760px) { .wand { min-width: 0; } .wand-text { display: none; } #save-chip { display: none; } .topbar .chip { max-width: 170px; } }
+@media (max-width: 1960px) { .wand { min-width: 0; } .wand-text { display: none; } #save-chip { display: none; } .topbar .chip { max-width: 170px; } }
 @media (max-width: 1620px) { .top-tools .menu-wrap > .btn > span { display: none; } }
 @media (max-width: 1100px) { .studio { grid-template-columns: var(--left-w, 250px) minmax(0, 1fr); } .studio > .side.right, .studio > .split.right { display: none; } .hero { grid-template-columns: 1fr; } .brand-name small { display: none; } .tab span { display: none; } .tab.active span { display: inline; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }

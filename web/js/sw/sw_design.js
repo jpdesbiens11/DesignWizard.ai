@@ -14,6 +14,7 @@
    A value a kind proposes is an EXAMPLE until the project confirms it (`sure`) : the guide says so, and the files wait. */
 
 import { KINDS, NATURES, cfgOf, portOf, portsOf } from "./sw_objects.js";
+import { DEMO_REQS, DEMO_TESTS } from "./sw_demo_v.js";
 
 const split = (ref) => { const k = String(ref || "").lastIndexOf("."); return k < 0 ? [ref, ""] : [ref.slice(0, k), ref.slice(k + 1)]; };
 const live = (d) => ((d && d.objects) || []).filter((o) => !o.off && KINDS[o.kind]);
@@ -115,6 +116,7 @@ export function demoDesign(cpu = "tms570ls1224_pge") {
     wires: [["adc_cell.counts", "cell_v.counts"], ["cell_v.value", "ov.value"], ["ov.trip", "latch.a"], ["k_pos.fault", "latch.b", 1], ["latch.fault", "k_pos.inhibit"], ["req.level", "k_pos.request"], ["k_fb.level", "k_pos.feedback"], ["k_pos.drive", "k_drv.level"],
       ["adc_i.counts", "i_pack.counts"], ["adc_v.counts", "v_pack.counts"], ["i_pack.value", "efc.i"], ["v_pack.value", "efc.v"]].map(([from, to, delay]) => ({ from, to, ...(delay ? { delay: true } : {}) })),
     /* the bench : the contactor is asked closed, the cell climbs past its limit, the software opens ; 100 A leave the pack all along */
-    scenario: { steps: 120, pins: { adc_cell: { points: [[0, 2420], [300, 2600], [500, 2680], [900, 2420]] }, req: { points: [[0, 0], [50, 1]] }, k_fb: { follows: "k_drv", delay: 20 }, adc_i: { points: [[0, 2047], [100, 2358], [620, 2047]] }, adc_v: { points: [[0, 1986]] } } } };
+    scenario: { steps: 120, pins: { adc_cell: { points: [[0, 2420], [300, 2600], [500, 2680], [900, 2420]] }, req: { points: [[0, 0], [50, 1]] }, k_fb: { follows: "k_drv", delay: 20 }, adc_i: { points: [[0, 2047], [100, 2358], [620, 2047]] }, adc_v: { points: [[0, 1986]] } } },
+    reqs: JSON.parse(JSON.stringify(DEMO_REQS)), tests: JSON.parse(JSON.stringify(DEMO_TESTS)) };      // the requirements and the tests of the example : examples to confirm (sw/sw_demo_v.js)
 }
 export { NATURES, KINDS, split };

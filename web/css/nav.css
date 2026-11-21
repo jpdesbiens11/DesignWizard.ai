@@ -15,9 +15,11 @@
 /* the groups are never covered : they keep their width, and what gives way is the status word of the tools, then the reminder of the wand's shortcut */
 .topbar .tabs { flex: 1 0 auto; } .topbar .top-tools { flex: 0 1 auto; min-width: 0; } .top-tools > * { flex: none; } .top-tools > #kernel-chip { flex: 0 1 auto; min-width: 2.4rem; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media (max-width: 1500px) { .wand kbd { display: none; } }
-/* a narrow window (under 1280 px) : the groups one is not in keep their pictogram and their chevron — their name stays for a screen reader and in the tip — and the status word of the kernel goes ; nothing of the bar is pushed outside the page */
-@media (max-width: 1280px) { .tab.nav-group:not(.active) .nav-name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; } .topbar { gap: .35rem; padding: 0 .6rem; } }
+/* a narrow window (under 1480 px since the fourth group, v0.128.0) : the groups one is not in keep their pictogram and their chevron — their name stays for a screen reader and in the tip — and the status word of the kernel goes ; nothing of the bar is pushed outside the page */
+@media (max-width: 1480px) { .tab.nav-group:not(.active) .nav-name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; } .topbar { gap: .35rem; padding: 0 .6rem; } }
 @media (max-width: 1180px) { .top-tools > #kernel-chip { display: none; } .brand-name small { display: none; } }
+/* four groups since the software has its own (v0.128.0) : under 1220 px the name of the tool gives way to its logo — the link keeps its name for a screen reader */
+@media (max-width: 1220px) { .brand-name { display: none; } .brand { margin-right: 0; } }
 @media (prefers-reduced-motion: reduce) { .menu.nav-pop { animation: none; } }
 
 /* ---- the breadcrumb and the work tabs, under the top bar (modules/levels_bar.js, core/shop_levels.js, core/work_tabs.js) ---- */
