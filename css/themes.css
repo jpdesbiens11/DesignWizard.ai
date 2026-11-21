@@ -1,0 +1,129 @@
+/* DesignWizard.ai — themes. Loaded after css/app.css; the switch is document.documentElement.dataset.theme.
+   A theme only redefines tokens (see :root in app.css and docs/BRAND.md) plus a few details of its own at the end.
+   carnet    « Le.Carnet »  the company theme and the default: its tokens ARE the :root values of app.css;
+   mecanique the drawing office: vellum, ISO-blue ink, hairlines, square corners, dimension-line accents;
+   aero      the hangar and the instrument panel: aluminium, rivet lines, signal orange + sky blue, stencil labels;
+   spatial   mission control at night: dark, amber / cyan telemetry, thin glowing rules. */
+
+html:not([data-theme]), html[data-theme="carnet"] { color-scheme: light; }
+
+html[data-theme="mecanique"] {
+  color-scheme: light;
+  --bg: #f3f6f9; --paper: #f3f6f9; --surface: #ffffff; --surface-2: #e8edf2; --sheet: #ffffff;
+  --ink: #0f2540; --ink-strong: #081a30; --ink-soft: #3a4d66; --muted: #55667c; --line: #c5d0db; --graphite: #1c3350;
+  --grid: rgba(0, 87, 168, .09);
+  --primary: #0057a8; --primary-strong: #003a73; --primary-hover: #004a90; --on-primary: #ffffff;
+  --danger: #b3261e; --warn: #8a5a00; --ok: #17694a; --info: #0057a8; --warn-ink: #6f4a00;
+  --ok-soft: #dff3ea; --warn-soft: #fbefcf; --danger-soft: #fbe4e2; --info-soft: #e1edf8;
+  --violet-ink: #3b2f8f; --teal-ink: #0a564f; --path: #e0352b; --path-ink: #a3211a;
+  --hl-yellow: #f2c230; --hl-orange: #ee8a32; --hl-cyan: #35b3d4; --hl-green: #46b97c; --hl-pink: #e9708f;
+  --hl-violet: #8a7df0; --hl-blue: #3d86e6; --hl-teal: #25ad9f; --hl-red: #e8554b;
+  --on-acc: #081a30; --on-graphite: #ffffff; --note: #eaf2fb; --note-soft: #f6f9fc; --overlay: rgba(8, 26, 48, .45);
+  --r-hand: 3px; --r-card: 4px; --r-field: 3px; --r-small: 3px; --wobble: 0;
+  --shadow-small: 0 0 0 transparent; --shadow-sketch: 0 1px 0 rgba(15, 37, 64, .1);
+  --shadow-pop: 0 2px 8px rgba(15, 37, 64, .14); --shadow-modal: 0 8px 28px rgba(15, 37, 64, .22);
+  --rule-img: linear-gradient(var(--primary), var(--primary)); --sep-img: linear-gradient(var(--line), var(--line));
+  --hand: "Bahnschrift", "DIN Alternate", "Roboto Condensed", "Arial Narrow", var(--font);
+  --label-font: var(--hand); --label-track: .08em;
+  --view-bg: #eef3f8; --view-edge: #1c3350; --view-grid: #b9c9da; --view-part: #9fb0c2; --view-select: #f2c230;
+}
+
+html[data-theme="aero"] {
+  color-scheme: light;
+  --bg: #e6eaee; --paper: #e6eaee; --surface: #f7f9fa; --surface-2: #d9dfe5; --sheet: #ffffff;
+  --ink: #18222d; --ink-strong: #0c141c; --ink-soft: #3b4856; --muted: #4c5967; --line: #b8c2cc; --graphite: #2b3743;
+  --grid: rgba(43, 55, 67, .16);
+  --primary: #0a6cb4; --primary-strong: #074c80; --primary-hover: #085c9a; --on-primary: #ffffff;
+  --danger: #b02a1e; --warn: #855000; --ok: #1d6a46; --info: #085a96; --warn-ink: #6e4300;
+  --ok-soft: #dcefe4; --warn-soft: #f8e9cf; --danger-soft: #f7dfdb; --info-soft: #dbe9f4;
+  --violet-ink: #3c318c; --teal-ink: #0a564f; --path: #e23b1e; --path-ink: #a32812;
+  --hl-yellow: #ffc024; --hl-orange: #ff7a1a; --hl-cyan: #3fc0e6; --hl-green: #52c47e; --hl-pink: #f0718f;
+  --hl-violet: #9184f2; --hl-blue: #46a2ee; --hl-teal: #2bb8a9; --hl-red: #f0584a;
+  --on-acc: #0c141c; --on-graphite: #ffffff; --note: #fff1cf; --note-soft: #f1f4f6; --overlay: rgba(12, 20, 28, .5);
+  --r-hand: 6px; --r-card: 8px; --r-field: 5px; --r-small: 5px; --wobble: 0;
+  --shadow-small: 0 1px 0 rgba(24, 34, 45, .18); --shadow-sketch: 0 1px 2px rgba(24, 34, 45, .18);
+  --shadow-pop: 0 4px 12px rgba(24, 34, 45, .2); --shadow-modal: 0 10px 30px rgba(24, 34, 45, .3);
+  --rule-img: linear-gradient(90deg, var(--hl-orange) 0 96px, var(--graphite) 96px); --sep-img: linear-gradient(var(--line), var(--line));
+  --hand: "Bahnschrift", "DIN Condensed", "Arial Narrow", var(--font);
+  --label-font: "Stencil", "Stencil Std", "Bahnschrift", "Arial Narrow", var(--font); --label-track: .12em;
+  --view-bg: #dfe5ea; --view-edge: #2b3743; --view-grid: #b3bec8; --view-part: #aab6c1; --view-select: #ff7a1a;
+}
+
+html[data-theme="spatial"] {
+  color-scheme: dark;
+  --bg: #070b14; --paper: #070b14; --surface: #0f1726; --surface-2: #19243a; --sheet: #ffffff;
+  --ink: #e7eef7; --ink-strong: #ffffff; --ink-soft: #c2cede; --muted: #9db0c8; --line: #2a3b57; --graphite: #c9d7e8;
+  --grid: rgba(79, 216, 234, .07);
+  --primary: #58c4ff; --primary-strong: #1c7fb8; --primary-hover: #7dd2ff; --on-primary: #04121f;
+  --danger: #ff8f85; --warn: #ffc55c; --ok: #6fe3a6; --info: #8fd0ff; --warn-ink: #ffd27a;
+  --ok-soft: #123026; --warn-soft: #33290f; --danger-soft: #3a1a18; --info-soft: #12283d;
+  --violet-ink: #cbbfff; --teal-ink: #8fe9dc; --path: #ff6b5f; --path-ink: #ffb1aa;
+  --hl-yellow: #ffb84a; --hl-orange: #ff8f4a; --hl-cyan: #4fd8ea; --hl-green: #5fe09a; --hl-pink: #ff7fa8;
+  --hl-violet: #a996ff; --hl-blue: #6aa8ff; --hl-teal: #3fd4c0; --hl-red: #ff6b5f;
+  --on-acc: #07101c; --on-graphite: #07101c; --note: #2a2410; --note-soft: #131c2c; --overlay: rgba(0, 0, 0, .62);
+  --r-hand: 6px; --r-card: 10px; --r-field: 6px; --r-small: 6px; --wobble: 0;
+  --shadow-small: 0 0 0 1px rgba(79, 216, 234, .18); --shadow-sketch: 0 0 0 1px rgba(79, 216, 234, .1), 0 0 14px rgba(79, 216, 234, .08);
+  --shadow-pop: 0 0 0 1px rgba(79, 216, 234, .25), 0 8px 28px rgba(0, 0, 0, .55);
+  --shadow-modal: 0 0 0 1px rgba(79, 216, 234, .35), 0 18px 50px rgba(0, 0, 0, .7);
+  --rule-img: linear-gradient(90deg, transparent, var(--hl-cyan) 18%, var(--hl-yellow) 82%, transparent);
+  --sep-img: linear-gradient(var(--line), var(--line));
+  --hand: "Bahnschrift", "Eurostile", "Segoe UI Semibold", var(--font);
+  --label-font: var(--mono); --label-track: .1em;
+  --view-bg: radial-gradient(circle at 50% 46%, #34486b, #0b1322 78%); --view-edge: #9fd6e6; --view-grid: #1c2c44; --view-part: #7f93ad; --view-select: #ffb84a;
+  --empty-img: url("../img/sketch/empty-spatial.svg");
+  --img-filter: invert(1) hue-rotate(180deg) saturate(1.15); /* pencil drawings (marks) read as chalk on a dark panel */
+}
+
+/* ---------- shared by the three « constructed » themes: no pencil wobble, straight rules ---------- */
+html:is([data-theme="mecanique"], [data-theme="aero"], [data-theme="spatial"]) {
+  & .topbar { background-size: 100% 2px; background-repeat: no-repeat; }
+  & .tab-sep { background-size: 1px 70%; }
+  & :is(a, button):hover > .sk-icon { animation: none; }
+  & .tab:hover .sk-icon { transform: scale(1.1); }
+  & .brand:hover :is(img, .brand-logo), & .side:hover .side-mark { transform: scale(1.05); }
+  & .tab::after { left: .5rem; right: .5rem; bottom: 0; height: 2px; opacity: 1; }
+  & .tab.active::after { height: 3px; opacity: 1; }
+  & .btn:hover:not(:disabled) { transform: translateY(-1px); }
+  & .btn-primary { box-shadow: 0 1px 0 var(--primary-strong); }
+  & .btn-primary:hover:not(:disabled) { box-shadow: 0 2px 0 var(--primary-strong); }
+  & :is(.card.taped, .modal)::before { top: 0; left: 0; width: 100%; height: 3px; transform: none; border-radius: 0; background: var(--acc); }
+  & .hero-title mark { background: linear-gradient(transparent 86%, var(--hl-yellow) 86%); }
+}
+
+/* ---------- mecanique: hairlines and dimension lines ---------- */
+html[data-theme="mecanique"] {
+  & body { background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+      linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 120px 120px, 120px 120px, 24px 24px, 24px 24px; }
+  & :is(.btn, .card, .panel, .table-wrap, .kpi, .finding, .menu, .modal, .wand, .steps li, input, select, textarea) { border-width: 1px; }
+  & main h1 { padding: 0 .5em .12em; background-image: none; animation: none; border-bottom: 1.5px solid var(--primary);
+    border-inline: 1.5px solid var(--primary); }
+  & .side-section > h3 { padding-bottom: .2rem; border-bottom: 1px solid var(--line); }
+  & .nav-item.active { box-shadow: inset 2px 0 0 var(--primary); }
+}
+
+/* ---------- aero: rivet lines, stencil labels ---------- */
+html[data-theme="aero"] {
+  & body { background-image: radial-gradient(circle, var(--grid) 1.1px, transparent 1.6px); background-size: 24px 24px; }
+  & :is(.card, .panel, .kpi, .modal) { background-image: radial-gradient(circle, color-mix(in srgb, var(--graphite) 34%, transparent) 1.1px, transparent 1.6px);
+    background-size: 12px 12px; background-repeat: repeat-x; background-position: 5px 2px; }
+  & :is(table.data th, .field-label, .kpi span, .badge, .subtab) { font-family: var(--label-font); text-transform: uppercase; letter-spacing: .06em; }
+  & main h1 { background-image: linear-gradient(transparent 84%, var(--acc) 84%); text-transform: uppercase; letter-spacing: .03em; }
+  & .topbar { background-size: 100% 3px; }
+}
+
+/* ---------- spatial: glow ---------- */
+html[data-theme="spatial"] {
+  & body { background-image: radial-gradient(1100px 520px at 82% -8%, rgba(88, 196, 255, .1), transparent 70%),
+      linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: auto, 24px 24px, 24px 24px; background-attachment: fixed, scroll, scroll; }
+  & .topbar { box-shadow: 0 1px 18px rgba(79, 216, 234, .16); }
+  & .tab::after { box-shadow: 0 0 8px var(--tab-acc, var(--acc)); }
+  & main h1 { background-image: linear-gradient(transparent 90%, var(--acc) 90%); text-shadow: 0 0 22px color-mix(in srgb, var(--acc) 45%, transparent); }
+  & .hero img:not([src*="hero-spatial"]) { filter: var(--img-filter); }
+  & .hero img[src*="hero-spatial"] { filter: none; }
+  & .sheet-view { box-shadow: 0 0 0 1px var(--line), 0 10px 30px rgba(0, 0, 0, .6); }
+  & .dw-view-label { color: var(--ink); }
+}
+
+@media print { html[data-theme] { color-scheme: light; } }

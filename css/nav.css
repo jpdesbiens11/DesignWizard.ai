@@ -1,0 +1,68 @@
+/* DesignWizard.ai — the top bar by discipline : three groups (Mécanique, Électronique, Produit), each of which flips down its screens as
+   numbered tiles ; the groups keep their width, the tools give way. Markup : core/app.js (NAV). See docs/ERGONOMIE.md. */
+
+.nav-wrap { flex: none; } .tab.nav-group { border: 0; background: none; cursor: pointer; font: inherit; font-size: .93rem; font-weight: 500; } .tab.nav-group .nav-name { display: inline; } .tab.nav-group.active { font-weight: 650; }
+.nav-chev { width: .8rem; height: .8rem; opacity: .6; transition: transform .2s ease; } .nav-group[aria-expanded="true"] .nav-chev { transform: rotate(180deg); }
+.tab:not(.nav-group):not(.active) span { display: none; }
+.menu.nav-pop { left: 0; right: auto; min-width: 330px; padding: .45rem; border-top: 5px solid var(--dom); transform-origin: top center; animation: nav-flip .18s ease; }
+@keyframes nav-flip { from { transform: perspective(600px) rotateX(-40deg); opacity: 0; } to { transform: none; opacity: 1; } }
+.nav-hint { display: flex; align-items: baseline; gap: .45rem; margin: .1rem .3rem .4rem; color: var(--dom); } .nav-hint small { color: var(--muted); font-size: .78rem; } .nav-hint .sk-icon { align-self: center; }
+.nav-tile { display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; gap: .55rem; padding: .42rem .5rem; border-radius: var(--r-small); border-left: 4px solid transparent; color: inherit; text-decoration: none; }
+.nav-tile:hover, .nav-tile:focus-visible { background: color-mix(in srgb, var(--dom) 12%, var(--surface)); border-left-color: var(--dom); outline: none; } .nav-tile.on { background: color-mix(in srgb, var(--dom) 18%, var(--surface)); border-left-color: var(--dom); }
+.nav-step { width: 1.25rem; height: 1.25rem; display: grid; place-items: center; border-radius: 50%; background: var(--dom); color: #fff; font: 700 .7rem var(--label-font, sans-serif); }
+.nav-text { display: grid; min-width: 0; } .nav-text small { color: var(--muted); font-size: .76rem; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 1250px) { .tab.nav-group .nav-name { max-width: 9rem; overflow: hidden; text-overflow: ellipsis; } }
+/* the groups are never covered : they keep their width, and what gives way is the status word of the tools, then the reminder of the wand's shortcut */
+.topbar .tabs { flex: 1 0 auto; } .topbar .top-tools { flex: 0 1 auto; min-width: 0; } .top-tools > * { flex: none; } .top-tools > #kernel-chip { flex: 0 1 auto; min-width: 2.4rem; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 1500px) { .wand kbd { display: none; } }
+/* a narrow window (under 1480 px since the fourth group, v0.128.0) : the groups one is not in keep their pictogram and their chevron — their name stays for a screen reader and in the tip — and the status word of the kernel goes ; nothing of the bar is pushed outside the page */
+@media (max-width: 1480px) { .tab.nav-group:not(.active) .nav-name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; } .topbar { gap: .35rem; padding: 0 .6rem; } }
+@media (max-width: 1180px) { .top-tools > #kernel-chip { display: none; } .brand-name small { display: none; } }
+/* four groups since the software has its own (v0.128.0) : under 1220 px the name of the tool gives way to its logo — the link keeps its name for a screen reader */
+@media (max-width: 1220px) { .brand-name { display: none; } .brand { margin-right: 0; } }
+@media (prefers-reduced-motion: reduce) { .menu.nav-pop { animation: none; } }
+
+/* ---- the breadcrumb and the work tabs, under the top bar (modules/levels_bar.js, core/shop_levels.js, core/work_tabs.js) ---- */
+.levels { position: sticky; top: var(--topbar-h); z-index: 18; background: var(--surface); } .levels[hidden] { display: none; }
+.levels-row { display: flex; align-items: center; gap: .45rem; min-height: 2.15rem; padding: .16rem 1rem; border-bottom: 1.2px solid color-mix(in srgb, var(--graphite) 14%, transparent); } .levels-row > .grow { flex: 1; }
+.levels-crumbs { display: flex; align-items: center; gap: .1rem; min-width: 0; overflow: hidden; }
+.crumb { display: inline-flex; align-items: center; min-width: 0; border: 1.4px solid transparent; border-radius: var(--r-hand); white-space: nowrap; }
+.crumb-go { display: inline-flex; align-items: center; gap: .35rem; min-width: 0; padding: .14rem .45rem; border-radius: var(--r-hand); color: var(--ink); font-size: .88rem; text-decoration: none; } a.crumb-go:hover { background: var(--surface-2); }
+.crumb-name { overflow: hidden; text-overflow: ellipsis; } .crumb small { color: var(--muted); font-size: .74rem; font-weight: 400; } .crumb .sk-icon { flex: none; width: 1rem; height: 1rem; color: var(--g, currentColor); }
+.crumb-lv { flex: none; display: inline-grid; place-items: center; width: 1.15rem; height: 1.15rem; border-radius: 50%; background: var(--graphite); color: var(--surface); font: 700 .66rem var(--label-font, sans-serif); font-style: normal; }
+.crumb.on { background: color-mix(in srgb, var(--acc) 20%, var(--surface)); border-color: color-mix(in srgb, var(--graphite) 35%, transparent); font-weight: 650; }
+.crumb.root { gap: .35rem; padding: .14rem .3rem; color: var(--muted); font-size: .86rem; } .crumb.root .crumb-name { max-width: 15rem; }
+.crumb-drop { flex: none; display: inline-grid; place-items: center; width: 1.5rem; height: 1.5rem; padding: 0; border: 0; border-left: 1.2px solid color-mix(in srgb, var(--graphite) 18%, transparent); border-radius: 0 var(--r-hand) var(--r-hand) 0; background: none; color: var(--ink); cursor: pointer; }
+.crumb-drop:hover, .crumb-drop[aria-expanded="true"] { background: var(--surface-2); } .crumb-drop .sk-icon { width: .8rem; height: .8rem; color: currentColor; }
+.crumb-sep { flex: none; display: inline-grid; color: var(--muted); } .crumb-sep .sk-icon { width: .75rem; height: .75rem; }
+.levels-up kbd, .wizard-nav kbd { margin-left: .2rem; padding: 0 .28rem; border: 1.2px solid color-mix(in srgb, currentColor 40%, transparent); border-radius: 4px; font: 600 .66rem var(--label-font, monospace); opacity: .8; }
+.levels-tabs { display: flex; align-items: flex-end; gap: .2rem; padding: .22rem 1rem 0; background: var(--surface-2); border-bottom: 1.4px solid color-mix(in srgb, var(--graphite) 22%, transparent); overflow-x: auto; scrollbar-width: none; }
+.wtab { flex: none; display: inline-flex; align-items: center; max-width: 16rem; margin-bottom: -1.4px; border: 1.4px solid color-mix(in srgb, var(--graphite) 18%, transparent); border-bottom: 0; border-top: 3px solid var(--g, transparent); border-radius: 8px 8px 0 0; background: color-mix(in srgb, var(--surface) 55%, transparent); color: var(--muted); font-size: .84rem; text-decoration: none; white-space: nowrap; }
+.wtab.fixed { gap: .4rem; padding: .22rem .6rem .28rem; } .wtab-go { display: inline-flex; align-items: center; gap: .4rem; min-width: 0; padding: .22rem .2rem .28rem .6rem; color: inherit; text-decoration: none; } .wtab-go span { overflow: hidden; text-overflow: ellipsis; }
+.wtab .sk-icon { flex: none; width: .95rem; height: .95rem; color: var(--g, currentColor); } .wtab:hover { color: var(--ink); background: var(--surface); }
+.wtab.on { background: var(--surface); color: var(--ink); font-weight: 650; border-color: color-mix(in srgb, var(--graphite) 40%, transparent); border-top-color: var(--g, var(--acc)); } .wtab.passing .wtab-go { font-style: italic; }
+.wtab-x { flex: none; display: inline-grid; place-items: center; width: 1.3rem; height: 1.3rem; margin-right: .2rem; padding: 0; border: 0; border-radius: 50%; background: none; color: inherit; cursor: pointer; opacity: .6; } .wtab-x:hover { opacity: 1; background: var(--surface-2); } .wtab-x .sk-icon { width: .7rem; height: .7rem; color: currentColor; }
+.levels-hint { margin: 0 0 .32rem .6rem; font-size: .76rem; white-space: nowrap; } .levels-hint .sk-icon { width: .8rem; height: .8rem; vertical-align: -2px; }
+.tab-add { flex: none; opacity: .5; } .tab-add:hover, .tab-add:focus-visible, .pick-opt.on .tab-add, .floor-row:hover .tab-add { opacity: 1; } .tab-add .sk-icon { width: .9rem; height: .9rem; }
+.pick-foot { display: flex; align-items: center; gap: .5rem; padding: .4rem .55rem; border-top: 1.2px dashed var(--line); }
+@media (max-width: 1100px) { .crumb.root, .levels-hint, .levels-up kbd { display: none; } }
+/* the step up (core/stairs_ui.js) : the pictogram of where it leads, a small mark that says « up », the same place on every screen */
+.stair-btn { position: relative; flex: none; } .stair-btn .sk-icon { color: var(--g, currentColor); } .stair-btn.with-label .sk-icon { color: currentColor; }
+.stair-btn::after { content: "↑"; position: absolute; top: -6px; right: -6px; width: 14px; height: 14px; border-radius: 50%; background: var(--graphite); color: var(--surface); font: 800 10px/14px system-ui, sans-serif; text-align: center; box-shadow: 0 0 0 1.5px var(--surface); }
+.head-ai { flex: none; gap: .25rem; font-weight: 650; } .head-ai .sk-icon { color: var(--violet-ink, #6d28d9); }
+.stair-downs { display: inline-flex; align-items: center; gap: .3rem; margin-left: auto; } .stair-btn.down::after { content: "↓"; top: auto; bottom: -6px; }
+.board-words { display: grid; grid-template-columns: 1fr 1fr; gap: .35rem; margin-top: .35rem; } .board-word { display: grid; gap: .1rem; font-size: .74rem; color: var(--muted); } .board-word input { min-width: 0; padding: .2rem .35rem; font: inherit; font-size: .84rem; color: var(--ink); } .board-word input.bad { outline: 2px solid var(--danger); }
+/* ---------- what is new (core/whats_new_ui.js) : a mark above the element, a list in a dialog ---------- */
+#news-layer { position: fixed; inset: 0; z-index: 60; pointer-events: none; }
+.new-flag { position: fixed; pointer-events: auto; padding: 0 .38rem; border: 1.5px solid #fff; border-radius: 99px; background: #c026d3; color: #fff; font: 700 .64rem/1.05rem system-ui, sans-serif; letter-spacing: .02em; cursor: pointer; box-shadow: 0 1px 4px rgb(0 0 0 / .3); }
+.new-flag.seen { background: var(--ok); } .new-flag:hover, .new-flag:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+.news-btn[hidden] { display: none; } .news-btn { position: relative; } .news-btn .sk-icon { color: #c026d3; } .news-btn.done .sk-icon { color: var(--ok); }
+.news-count { min-width: 1.05rem; padding: 0 .25rem; border-radius: 99px; background: #c026d3; color: #fff; font: 700 .68rem/1.05rem var(--mono); text-align: center; } .news-count[hidden] { display: none; }
+.news-bar { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: .4rem 0 .6rem; } .news-version h3 { margin: .8rem 0 .3rem; font-size: .82rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.news-line { display: flex; align-items: flex-start; gap: .6rem; padding: .45rem .55rem; border: 1.4px solid var(--line); border-left: 4px solid #c026d3; border-radius: var(--r-card); margin-bottom: .35rem; background: var(--surface); }
+.news-line.seen { border-left-color: var(--ok); } .news-line p { margin: .1rem 0 0; font-size: .86rem; } .news-line .btn { flex: none; } .news-seen { display: grid; justify-items: center; gap: .05rem; font-size: .68rem; color: var(--muted); cursor: pointer; } .news-seen input { width: 1.1rem; height: 1.1rem; }
+
+/* Révisions : the name and the state of a revision as one chip, and the lean design review (modules/plm_review.js) */
+.rev-chip { display: inline-flex; align-items: center; gap: .35rem; padding: .12rem .55rem; border-radius: 99px; border: 1.5px solid var(--dom); background: color-mix(in srgb, var(--dom) 12%, transparent); color: var(--ink); font-size: .85rem; white-space: nowrap; } .rev-chip .sk-icon { width: 1rem; height: 1rem; color: var(--dom); } .rev-chip b { color: var(--dom); } .rev-chip code { background: none; padding: 0; font-weight: 600; } .rev-chip small { color: var(--muted); }
+.rev-legend { display: flex; flex-wrap: wrap; gap: .4rem; margin: .5rem 0 0; } .rev-items { list-style: none; margin: .3rem 0 .6rem; padding: 0; display: grid; gap: .35rem; } .rev-item { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .6rem; padding: .4rem .55rem; border: 1px solid var(--line); border-left: 4px solid var(--line); border-radius: .4rem; } .rev-item > span:first-child, .rev-item > label { flex: 1 1 16rem; } .rev-item small { flex: 1 1 100%; }
+.rev-item.ok { border-left-color: #16a34a; } .rev-item.warn { border-left-color: #d97706; } .rev-item.fail { border-left-color: #dc2626; background: color-mix(in srgb, #dc2626 6%, transparent); } .rev-review textarea, .rev-review input[type=text] { width: 100%; } .rev-problems { font-size: .88rem; min-height: 1.2rem; }

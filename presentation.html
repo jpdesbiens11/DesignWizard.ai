@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self'; script-src 'self'; base-uri 'none'; form-action 'none'">
+  <title>DesignWizard.ai — de l'idée à la pièce commandée</title>
+  <meta name="description" content="Présentation guidée de DesignWizard.ai by DynamiteAgile™ pour les concepteurs, techniciens et ingénieurs en mécatronique : de la conception d'aujourd'hui à l'assemblage prêt à commander, brique par brique.">
+  <meta property="og:title" content="DesignWizard.ai — de l'idée à la pièce commandée">
+  <meta property="og:image" content="img/og.png">
+  <link rel="icon" type="image/svg+xml" href="img/favicon.svg">
+  <link rel="stylesheet" href="css/presentation.css">
+  <script type="module" src="js/presentation.js"></script>
+</head>
+<body>
+<main class="deck" aria-label="Présentation guidée de DesignWizard.ai">
+
+<section class="slide cover" data-stage="debut">
+  <img class="wordmark" src="img/logo/wordmark.svg" alt="DesignWizard.ai by DynamiteAgile™" width="368" height="62">
+  <p class="kicker r">Logiciel libre · conception mécatronique · dans le navigateur</p>
+  <h1 class="r">De l'idée à la pièce commandée.</h1>
+  <p class="lead r">L'atelier où une pièce naît de son <mark>intention</mark> : fabricable, vérifiée, prête à commander — avec l'IA comme technicien.</p>
+  <p class="who r">Pour les concepteurs, techniciens et ingénieurs en mécatronique qui travaillent aujourd'hui avec les outils traditionnels.</p>
+  <img class="hero r" src="img/sketch/hero-carnet.svg" alt="">
+  <p class="keys">→ suivant · ← précédent · F plein écran · N notes · R rejouer</p>
+  <aside class="notes"><ul><li>Une vingtaine de minutes, puis l'outil en direct. Tout ce qui est montré est dans la démo.</li><li>DesignWizard.ai : un logiciel libre (MIT), qui tourne dans le navigateur, sans installation.</li><li>Le fil rouge, en bas de l'écran : on suit une idée jusqu'à la commande des pièces, une brique à la fois.</li></ul></aside>
+</section>
+
+<section class="slide" data-stage="debut">
+  <p class="kicker r">La question</p>
+  <p class="big r">Et si la pièce naissait <mark>fabricable, vérifiée et prête à commander</mark> — avant la première esquisse ?</p>
+  <div class="cards c3">
+    <div class="card n1 r"><h3>L'intention d'abord</h3><p>Les interfaces, la matière, le brut du commerce.</p><small>La pièce existe par ce qu'elle relie.</small></div>
+    <div class="card n2 r"><h3>Le métier dans l'outil</h3><p>Règles d'atelier, physique, isolation : vérifiées en direct.</p><small>Pas au retour du devis.</small></div>
+    <div class="card n3 r"><h3>L'IA comme technicien</h3><p>On confie, on relit l'aperçu, on valide.</p><small>Elle ne décide jamais à votre place.</small></div>
+  </div>
+  <aside class="notes"><ul><li>C'est la question que je vous propose de garder en tête jusqu'à la fin.</li><li>Trois leviers, et tout ce qui suit répond à l'un des trois : partir de l'intention, mettre les règles du métier dans l'outil, se servir de l'IA comme d'un technicien à qui l'on confie une tâche.</li></ul></aside>
+</section>
+
+<section class="slide" data-stage="debut">
+  <p class="kicker r">La conception aujourd'hui</p>
+  <h2 class="r">Six outils autour d'une pièce — et aucun ne sait pourquoi elle existe</h2>
+  <div class="mess">
+    <div class="tool t1 r"><b>La CAO</b>plans, esquisses, cotes : la géométrie, sans l'intention</div>
+    <div class="tool t2 r"><b>Le tableur de calcul</b>flèche, vis, échauffement — refait à chaque changement</div>
+    <div class="tool t3 r"><b>Les normes en PDF</b>lignes de fuite mesurées à la main, à la fin</div>
+    <div class="tool t4 r"><b>La nomenclature</b>un autre tableur, une autre révision</div>
+    <div class="tool t5 r"><b>Le dessin</b>remis en plan, recoté, puis déjà périmé</div>
+    <div class="tool t6 r"><b>Les courriels du fournisseur</b>« pas fabricable tel quel »</div>
+    <div class="core r">la pièce</div>
+  </div>
+  <p class="take r">L'intention — à quoi sert la pièce, à quoi elle se raccorde — reste dans la tête du concepteur.</p>
+  <aside class="notes"><ul><li>Vous connaissez cette table de travail : la CAO au centre, et autour d'elle le tableur, les normes, la nomenclature, le dessin, les courriels.</li><li>Chaque outil est bon dans son rôle. Ce qui manque, c'est le lien : la CAO garde des cotes, pas la raison des cotes.</li><li>Quand quelqu'un d'autre reprend la pièce — ou une IA — il doit redeviner l'intention.</li></ul></aside>
+</section>
+
+<section class="slide" data-stage="debut">
+  <p class="kicker r">Où part le temps</p>
+  <h2 class="r">Chaque tour de boucle coûte des jours</h2>
+  <div class="chain">
+    <span class="step r">esquisser</span><span class="to r">→</span><span class="step r">modéliser</span><span class="to r">→</span><span class="step r">mettre en plan</span><span class="to r">→</span>
+    <span class="step r">demander un prix</span><span class="to r">→</span><span class="step hot r">« pas fabricable »</span><span class="to r">→</span><span class="step r">corriger</span>
+  </div>
+  <p class="back r">↩ et l'on recommence : le modèle, le dessin, le calcul, la nomenclature.</p>
+  <div class="cards c3">
+    <div class="card bad r"><h3>La fabricabilité</h3><p>se découvre chez le fournisseur.</p></div>
+    <div class="card bad r"><h3>L'interface oubliée</h3><p>se découvre au montage.</p></div>
+    <div class="card bad r"><h3>La distance d'isolement</h3><p>se découvre à la revue, ou à l'essai.</p></div>
+  </div>
+  <p class="take r">Rien de tout cela n'est une faute de conception : c'est une vérification qui arrive trop tard.</p>
+  <aside class="notes"><ul><li>Je ne donne pas de chiffre : chacun connaît la durée de ses propres boucles.</li><li>Le point commun des trois cartes : l'information existait, mais elle n'était pas dans l'outil au moment de dessiner.</li><li>L'idée de la suite : ramener ces vérifications au moment où la pièce naît.</li></ul></aside>
+</section>
+
+<section class="slide" data-stage="debut">
+  <p class="kicker r">Ce qui a changé</p>
+  <h2 class="r">Trois choses rendent une autre façon de travailler possible</h2>
+  <div class="cards c3">
+    <div class="card n1 r"><h3>Un noyau CAO dans le navigateur</h3><p>Un vrai modeleur de solides tourne dans une page web : rien à installer, STEP en sortie.</p></div>
+    <div class="card n2 r"><h3>Des ateliers express</h3><p>Découpe laser, impression 3D, usinage : un prototype se commande pièce par pièce, en jours.</p></div>
+    <div class="card n3 r"><h3>Une IA qui sait rédiger</h3><p>Si on lui donne un langage de pièce simple et les règles du métier, elle écrit un premier jet utile.</p></div>
+  </div>
+  <p class="big r">L'IA prépare. <mark>Le concepteur décide.</mark></p>
+  <aside class="notes"><ul><li>Le noyau est OpenCascade, compilé pour le navigateur : les mêmes solides qu'une CAO classique, et un export STEP.</li><li>Les délais affichés dans l'outil sont des délais typiques d'ateliers de prototypage : ils servent à comparer les options, le devis fait foi.</li><li>L'IA est bonne pour le premier jet et pour ne rien oublier. Elle ne connaît pas votre client et ne signe rien.</li></ul></aside>
+</section>
+
+<section class="slide" data-stage="debut">
+  <p class="kicker r">Le principe</p>
+  <h2 class="r">Une pièce existe par ce qu'elle relie : l'interface d'abord</h2>
+  <div class="chain">
+    <span class="step r">pièce A — côté A<br><code>fixation_capot</code></span><span class="to r">⟷</span><span class="step ok r">même clé, mêmes paramètres</span><span class="to r">⟷</span><span class="step r">pièce B — côté B<br><code>fixation_capot</code></span>
+  </div>
+  <ul class="list cards c2">
+    <li class="r">Une interface se décrit par ce qu'elle fait : « je me visse sur… », « je reçois un arbre », « je guide une carte ».</li>
+    <li class="r">Les deux pièces partagent la clé et les paramètres : changer la vis d'un côté change l'autre.</li>
+    <li class="r">L'assemblage se mate tout seul, et dit quand un accouplement est rompu.</li>
+    <li class="r">Le dessin cote d'abord les interfaces ; la revue les suit par leur numéro.</li>
+  </ul>
+  <p class="take r">Dessiner la pièce devient la conséquence de ses interfaces, plus leur point de départ.</p>
+  <aside class="notes"><ul><li>C'est le cœur de l'outil. Une interface a un type (fixation vissée, ajustement, appui plan, glissière, soudure, contact…), une clé et deux côtés.</li><li>La pièce voisine reprend la clé telle quelle : c'est ce qui permet les mates automatiques et la santé des accouplements.</li><li>À retenir : on ne commence plus par une esquisse, on commence par ce que la pièce doit relier.</li></ul></aside>
+</section>
+
+<section class="slide" data-stage="debut">
+  <p class="kicker r">Le parcours</p>
+  <h2 class="r">De l'idée à la commande, une brique à la fois</h2>
+  <div class="map">
+    <div class="brick r"><b>Idée</b><span>une entrevue, un premier design complet</span></div>
+    <div class="brick r"><b>Atelier</b><span>la pièce naît de son intention</span></div>
+    <div class="brick r"><b>Pièce</b><span>le studio, les verbes d'atelier</span></div>
+    <div class="brick r"><b>Procédés spéciaux</b><span>moulage, extrusion, laser, tôle pliée, impression 3D</span></div>
+    <div class="brick r"><b>Électrique</b><span>connecteurs, busbars, cartes</span></div>
+    <div class="brick r"><b>Assemblage</b><span>mates par interface, nomenclature</span></div>
+    <div class="brick r"><b>Physique</b><span>calcul à la main et simulation</span></div>
+    <div class="brick r"><b>Isolation</b><span>lignes de fuite sur tout l'assemblage</span></div>
+    <div class="brick r"><b>DFx et gammes</b><span>fabricable, montable, expliqué</span></div>
+    <div class="brick r"><b>Dessins</b><span>cotés, à jour, à la révision</span></div>
+    <div class="brick r"><b>Revue</b><span>états, itérations, révisions, équipe</span></div>
+    <div class="brick r"><b>Commande</b><span>le dossier de chaque pièce</span></div>
+  </div>
+  <p class="take r">Chaque brique est simple, vérifiable seule, et parle le même fichier texte que les autres.</p>
+  <aside class="notes"><ul><li>C'est le plan de la visite : douze briques, dans l'ordre d'un projet. Le repère en bas de l'écran dit où l'on est.</li><li>On peut entrer par n'importe quelle brique : rien n'oblige à tout prendre.</li></ul></aside>
+</section>
+
+<section class="slide" data-stage="idee">
+  <p class="kicker r">Brique 1 · L'idée</p>
+  <h2 class="r">Une entrevue, et le premier design complet est sur la table</h2>
+  <div class="cols">
+    <figure class="shot r"><img src="img/tour/idee.jpg" alt="Le dialogue « Premier design avec une IA » : description du produit, consigne à copier, fichier à déposer" width="1600" height="1000"><figcaption>Accueil → « Premier design avec une IA… » — cliquer l'image pour l'agrandir.</figcaption></figure>
+    <div class="side">
+      <h3 class="r">Avec les outils d'aujourd'hui</h3><p class="before r">Une page blanche : on ouvre la CAO et l'on esquisse la première pièce, seul.</p>
+      <h3 class="r">Ici</h3>
+      <ul><li class="r">Vous décrivez le produit ; l'assistant de votre choix mène l'entrevue, une question à la fois.</li>
+        <li class="r">Il rend un fichier : pièces, assemblage, carte, calculs — tout arrive en « Brouillon IA ».</li>
+        <li class="r">Vous voyez ce qui sera créé avant de l'accepter, puis vous passez chaque élément en revue.</li></ul>
+      <a class="go r" href="index.html#/home" target="_blank" rel="noopener">Ouvrir dans la démo →</a>
+    </div>
+  </div>
+  <p class="take r">Le premier jet arrive vite ; le travail d'ingénieur commence à la relecture.</p>
+  <aside class="notes"><ul><li>L'assistant est celui que vous avez déjà : l'outil ne se connecte à aucune IA, il fournit la consigne et lit la réponse.</li><li>Tout ce qui vient d'une IA est marqué « Brouillon IA » jusqu'à ce qu'un humain le passe en revue.</li><li>On peut aussi ne jamais utiliser l'IA : la brique suivante part d'une feuille que vous remplissez vous-même.</li></ul></aside>
+</section>
+
+<section class="slide" data-stage="atelier">
+  <p class="kicker r">Brique 2 · L'Atelier</p>
+  <h2 class="r">La pièce naît de son intention — sans esquisse</h2>
+  <div class="cols">
+    <figure class="shot r"><img src="img/tour/atelier.jpg" alt="L'Atelier : l'intention et les interfaces à gauche, la pièce proposée, sa gamme et son délai à droite" width="1600" height="1000"><figcaption>Atelier → Pas à pas : deux interfaces, et la pièce est proposée avec sa gamme.</figcaption></figure>
+    <div class="side">
+      <h3 class="r">Avec les outils d'aujourd'hui</h3><p class="before r">Plan, esquisse, cotes, extrusion… et l'intention reste dans la tête.</p>
+      <h3 class="r">Ici</h3>
+      <ul><li class="r">Vous dites à quoi sert la pièce et à quoi elle se raccorde, par la forme de ses interfaces.</li>
+        <li class="r">Le compagnon prend le brut du commerce — plaque, tôle, rond, cornière — et écrit la pièce : plus petite enveloppe, épaisseur en stock.</li>
+        <li class="r">Tout de suite : gamme de fabrication, verdict DFx, délai de prototype.</li></ul>
+      <a class="go r" href="index.html#/shop" target="_blank" rel="noopener">Ouvrir dans la démo →</a>
+    </div>
+  </div>
+  <p class="take r">Comme un artisan à son établi : d'abord ce que la pièce doit faire, ensuite ce que l'on prend sur l'étagère.</p>
+  <aside class="notes"><ul><li>Démonstration possible en direct : ajouter « je me visse sur… » puis « je reçois un arbre » ; la pièce se reconstruit à chaque geste.</li><li>La liste « Ce que le compagnon a décidé » explique chaque choix en clair : pourquoi cette épaisseur, pourquoi ce brut.</li><li>Aucune IA ici : la synthèse est déterministe. « Affiner avec Claude » est une option.</li></ul></aside>
+</section>
+
+<section class="slide" data-stage="piece">
+  <p class="kicker r">Brique 3 · La pièce</p>
+  <h2 class="r">Un studio qui parle le langage de l'atelier</h2>
+  <div class="cols">
+    <figure class="shot r"><img src="img/tour/piece.jpg" alt="Le studio de pièce : arbre de construction, paramètres à curseurs, et la vue qui tourne seule autour du point saisi, deux sens à la fois" width="1600" height="1000"><figcaption>Pièces : l'arbre de construction, un curseur par paramètre — et la vue qui tourne seule autour du point saisi.</figcaption></figure>
+    <div class="side">
+      <h3 class="r">Avec les outils d'aujourd'hui</h3><p class="before r">Des fonctions génériques ; la fabricabilité se vérifie ailleurs, plus tard.</p>
+      <h3 class="r">Ici</h3>
+      <ul><li class="r">Les mots de l'atelier, en anglais comme le métier les nomme — drill, tap, counterbore — et leur glossaire.</li>
+        <li class="r">Tout se fait à la souris sur le modèle : un clic droit sur une face propose le trou, la poche, l'interface ; la vue tourne autour du point saisi et, tenue deux secondes, tourne seule.</li>
+        <li class="r">Les règles de fabrication tournent en direct, avec un correctif en un clic.</li>
+        <li class="r">SI ou impérial : on lit et l'on tape en millimètres ou en pouces ; le projet reste en millimètres.</li></ul>
+      <a class="go r" href="index.html#/parts" target="_blank" rel="noopener">Ouvrir dans la démo →</a>
+    </div>
+  </div>
+  <p class="take r">La pièce est un fichier texte lisible : ses paramètres, ses interfaces, ses opérations dans l'ordre de l'atelier.</p>
+  <aside class="notes"><ul><li>Chaque paramètre a son curseur : la pièce se reconstruit en direct, les interfaces suivent.</li><li>L'onglet DFx du studio liste les règles enfreintes avec leur limite et le correctif proposé.</li><li>Le fichier « .dwiz » se relit à l'œil et se confie tel quel à une IA.</li><li>L'interface travaille pour vous : chaque groupe d'un volet se replie et le volet reste en place ; les feuilles se zooment, une loupe grossit tout dessin ; une opération longue dit où elle en est et s'annule. En direct : tenir le bouton deux secondes sur la pièce, choisir ▶ puis ▲ — les deux flèches restent allumées.</li><li>Le choix d'unités est celui de la conception : Atelier, assemblage, busbar, circuit flexible, étiquettes, carte, DFx, guide, dessins, gammes. Les calculs, eux, restent en SI.</li></ul></aside>
+</section>
+
+<section class="slide" data-stage="procedes">
+  <p class="kicker r">Brique 4 · Les procédés spéciaux</p>
+  <h2 class="r">Quand la matière décide du dessin</h2>
+  <div class="cols">
+    <figure class="shot r"><img src="img/tour/procedes.jpg" alt="L'écran des procédés spéciaux : les fiches d'impression 3D par procédé" width="1600" height="1000"><figcaption>Atelier → Procédés spéciaux : moulage, extrusion, découpe laser de précision, tôlerie pliée, impression 3D.</figcaption></figure>
+    <div class="side">
+      <h3 class="r">Avec les outils d'aujourd'hui</h3><p class="before r">Les règles du mouleur, du découpeur ou de l'imprimeur arrivent avec le devis.</p>
+      <h3 class="r">Ici</h3>
+      <ul><li class="r">Une pièce moulée ou un profilé se dessine seul autour de ce qu'il contient ; le plan du mold se lit sur la pièce.</li>
+        <li class="r">Laser : chaque matière en feuille a son laser, ses épaisseurs, l'état de son bord.</li>
+        <li class="r">Tôle pliée : le développé à plat et son DXF avec lignes de pliage.</li>
+        <li class="r">Impression 3D, du polyamide au titane : la suite après impression est dans la gamme.</li></ul>
+      <a class="go r" href="index.html#/process" target="_blank" rel="noopener">Ouvrir dans la démo →</a>
+    </div>
+  </div>
+  <p class="take r">Chaque fiche dit d'où viennent ses valeurs — ce qui a été lu, et ce qui ne l'a pas été.</p>
+  <aside class="notes"><ul><li>Papier aramide, carte FR-4, cuivre, titane, alliages de nickel : la matière choisit le procédé et ses limites.</li><li>Les valeurs sont des valeurs typiques de guides publiés : elles donnent sa forme à une pièce, le fournisseur fait foi.</li><li>Le PVC ne passe jamais au laser : l'outil le refuse et dit pourquoi.</li></ul></aside>
+</section>
+
+<section class="slide" data-stage="electrique">
+  <p class="kicker r">Brique 5 · L'électrique de puissance</p>
+  <h2 class="r">Connecteurs, cellules, busbars : des pièces comme les autres</h2>
+  <div class="cols">
+    <figure class="shot r"><img src="img/tour/busbar.jpg" alt="Le studio des busbars : une barre de cuivre pliée, ses branches et ses raccordements" width="1600" height="1000"><figcaption>Atelier → Busbars : branches, plis, bornes et contacts posés à la souris.</figcaption></figure>
+    <div class="side">
+      <h3 class="r">Avec les outils d'aujourd'hui</h3><p class="before r">Le mécanicien et l'électricien travaillent dans deux outils, et se parlent par captures d'écran.</p>
+      <h3 class="r">Ici</h3>
+      <ul><li class="r">Cinquante séries de connecteurs, LV et HV : chacune a son modèle, reconstruit d'après les cotes publiées, et son empreinte de carte.</li>
+        <li class="r">Busbar plié ou laminé, circuit flexible de mesure : section, densité de courant, échauffement estimé.</li>
+        <li class="r">Soudure, contact à lamelles, borne vissée : ce sont des interfaces, elles se matent.</li></ul>
+      <a class="go r" href="index.html#/library" target="_blank" rel="noopener">Ouvrir dans la démo →</a>
+    </div>
+  </div>
+  <p class="take r">Un conducteur porte son potentiel : l'analyse d'isolation le lira plus loin.</p>
+  <aside class="notes"><ul><li>Les fabricants et les séries sont cités comme références de compatibilité ; la fiche du fabricant fait foi.</li><li>Chaque série dit ce qui a été lu : cotes lues, lues en partie, à vérifier. Quand une série est retenue, la spec et le STEP du fabricant prennent le relais.</li><li>Le busbar laminé empile conducteurs, papier isolant et enveloppe ; l'outil vérifie ce que le papier doit tenir.</li></ul></aside>
+</section>
+
+<section class="slide" data-stage="electrique">
+  <p class="kicker r">Brique 5, suite · La carte électronique</p>
+  <h2 class="r">La carte : des fonctions aux fichiers de fabrication</h2>
+  <div class="cols">
+    <figure class="shot r"><img src="img/tour/pcba.jpg" alt="Le module PCBA : le parcours en étapes, la carte routée, la liste des fichiers de fabrication" width="1600" height="1000"><figcaption>PCBA : fonctions, architecture, implantation, vérifications, fabrication.</figcaption></figure>
+    <div class="side">
+      <h3 class="r">Avec les outils d'aujourd'hui</h3><p class="before r">La carte arrive dans la mécanique comme un bloc importé, souvent une révision en retard.</p>
+      <h3 class="r">Ici</h3>
+      <ul><li class="r">Des blocs fonctionnels à la synthèse, au placement et au routage, avec les règles vérifiées — en millimètres, ou en mil et en pouces.</li>
+        <li class="r">Les fichiers de fabrication sortent du même endroit : Gerber, perçage, placement, nomenclature.</li>
+        <li class="r">La carte se fixe par ses interfaces, avec la hauteur de ses composants.</li></ul>
+      <a class="go r" href="index.html#/pcba" target="_blank" rel="noopener">Ouvrir dans la démo →</a>
+    </div>
+  </div>
+  <p class="take r">Mécanique et électronique partagent le même projet, les mêmes interfaces, la même revue.</p>
+  <aside class="notes"><ul><li>Ce module ne remplace pas un outil de routage professionnel : il mène une carte simple jusqu'à ses fichiers, et garde la carte et son boîtier ensemble.</li><li>La gamme d'assemblage de la carte se génère aussi : sérigraphie, pose, refusion, contrôle.</li><li>En impérial, la carte se lit comme le métier la lit : pistes, isolements et perçages en mil, contour en pouces, cuivre en onces. Les fichiers de fabrication partent toujours en millimètres.</li></ul></aside>
+</section>
+
+<section class="slide" data-stage="electrique">
+  <p class="kicker r">Brique 5, suite · Les unités</p>
+  <h2 class="r">La conception dans vos unités, les calculs en SI</h2>
+  <div class="cols">
+    <figure class="shot r"><img src="img/tour/unites.jpg" alt="La carte de contrôle lue dans le système impérial : contour en pouces, rayon, vernis, empilage et classes de nets en mil, cuivre en onces" width="1600" height="1000"><figcaption>La même carte, lue en mil et en pouces.</figcaption></figure>
+    <div class="side">
+      <h3 class="r">Avec les outils d'aujourd'hui</h3><p class="before r">Un réglage d'unités par logiciel, et des conversions à la main entre la mécanique, la carte et le calcul.</p>
+      <h3 class="r">Ici</h3>
+      <ul><li class="r">Un seul choix, SI ou impérial, pour toute la conception : pièces, assemblage, dessins, gammes.</li>
+        <li class="r">La carte se lit comme le métier la lit : mil et pouces, cuivre en onces.</li>
+        <li class="r">Les calculs restent en SI : modèles analytiques, simulation, isolation, note de calcul, classeur.</li></ul>
+      <a class="go r" href="index.html#/pcba" target="_blank" rel="noopener">Ouvrir dans la démo →</a>
+    </div>
+  </div>
+  <p class="take r">On lit dans son système, on calcule en SI — et le fichier du projet ne change pas.</p>
+  <aside class="notes"><ul><li>Le projet reste en millimètres : un collègue qui a choisi l'autre système lit le même fichier.</li><li>Ce qui part à l'atelier ne change pas non plus : Gerber, perçage, STEP et DXF sont en millimètres.</li><li>La grille de la carte reste métrique : un composant se cale sur 0,25 mm, soit 9,84 mil.</li><li>Le bouton « Guide » dit aussi ce que la carte demande encore, depuis n'importe quel écran.</li></ul></aside>
+</section>
+
+<section class="slide" data-stage="assemblage">
+  <p class="kicker r">Brique 6 · L'assemblage</p>
+  <h2 class="r">Les pièces se matent d'elles-mêmes, par leurs interfaces</h2>
+  <div class="cols">
+    <figure class="shot r"><img src="img/tour/assemblage.jpg" alt="L'assemblage du variateur de démonstration : pièces, mates automatiques et joints numérotés" width="1600" height="1000"><figcaption>Assemblage : six pièces, des mates posés par les clés d'interface, des joints numérotés.</figcaption></figure>
+    <div class="side">
+      <h3 class="r">Avec les outils d'aujourd'hui</h3><p class="before r">Des contraintes posées une à une ; l'interface oubliée se voit au montage.</p>
+      <h3 class="r">Ici</h3>
+      <ul><li class="r">Même clé des deux côtés : le mate est automatique, et il suit les modifications.</li>
+        <li class="r">La santé de chaque accouplement : sain, à vérifier, rompu ; les interférences sont détectées.</li>
+        <li class="r">Éclaté, nomenclature, visserie, gamme d'assemblage.</li></ul>
+      <a class="go r" href="index.html#/assembly" target="_blank" rel="noopener">Ouvrir dans la démo →</a>
+    </div>
+  </div>
+  <p class="take r">Une interface libre est une question ouverte : l'assemblage les liste.</p>
+  <aside class="notes"><ul><li>Chaque joint garde un numéro permanent : on en parle en revue comme d'une pièce.</li><li>« Rompu » veut dire : les deux côtés ne sont plus d'accord — un entraxe, une vis, une longueur de prise.</li></ul></aside>
+</section>
+
+<section class="slide" data-stage="assemblage"><p class="kicker r">Brique 6 · L'assemblage</p><h2 class="r">Par modules, et en plusieurs versions</h2>
+  <div class="cols"><figure class="shot r"><img src="img/tour/modules.jpg" alt="Le variateur monté par modules : le dissipateur et son isolant forment un sous-assemblage, sélectionné ; deux variantes gardées dans le volet de gauche" width="1600" height="1000"><figcaption>Un sous-assemblage, porté d'un seul bloc, et deux variantes gardées sous un nom.</figcaption></figure><div class="side"><h3 class="r">Avec les outils d'aujourd'hui</h3><p class="before r">Un produit à plat, ou des configurations refaites à la main d'un fichier à l'autre.</p><h3 class="r">Ici</h3><ul><li class="r">Un assemblage entre dans un autre d'un seul bloc : il s'accouple seul, et la nomenclature se lit par niveaux ou à plat.</li><li class="r">Chaque pièce se met à Off : gardée, mais hors de la vue, de la masse, des dessins et des exports.</li><li class="r">Une variante garde cet état sous un nom ; un clic y revient, et chaque variante a son dessin.</li></ul><a class="go r" href="index.html#/assembly" target="_blank" rel="noopener">Ouvrir dans la démo →</a></div></div>
+  <p class="take r">Une famille de produits tient dans un seul projet, et rien ne se perd d'une version à l'autre.</p><aside class="notes"><ul><li>Le variateur refait avec un sous-assemblage garde sa masse et ses dimensions : vérifié sur la démonstration.</li><li>Un assemblage ne peut pas se contenir lui-même : le dialogue d'ajout le montre grisé, avec la raison.</li><li>Limites dites : le dessin d'ensemble liste les pièces à plat ; le STEP sort à plat.</li></ul></aside></section>
+
+<section class="slide" data-stage="physique">
+  <p class="kicker r">Brique 7 · La physique</p>
+  <h2 class="r">Le calcul à la main et la simulation, côte à côte</h2>
+  <div class="cols">
+    <figure class="shot r"><img src="img/tour/simulation.jpg" alt="La simulation : le maillage du boîtier, ses appuis, sa charge, et l'estimation à la main à droite" width="1600" height="1000"><figcaption>Physique → Simulation : appuis et efforts posés sur les faces, estimation à la main à droite.</figcaption></figure>
+    <div class="side">
+      <h3 class="r">Avec les outils d'aujourd'hui</h3><p class="before r">Un tableur à part, refait à chaque changement ; une simulation réservée au spécialiste.</p>
+      <h3 class="r">Ici</h3>
+      <ul><li class="r">Des modèles analytiques reconnus — poutre, flambement, vis, dissipateur, busbar — préremplis depuis la pièce.</li>
+        <li class="r">Des éléments finis simplifiés, structure et thermique, recoupés par l'estimation à la main.</li>
+        <li class="r">Symétries et plans de coupe : on ne résout qu'un demi ou un quart du modèle.</li></ul>
+      <a class="go r" href="index.html#/physics" target="_blank" rel="noopener">Ouvrir dans la démo →</a>
+    </div>
+  </div>
+  <p class="take r">Un ordre de grandeur juste, tout de suite, vaut mieux qu'un calcul fin trop tard.</p>
+  <aside class="notes"><ul><li>Chaque modèle montre ses formules, ses hypothèses et sa source.</li><li>La simulation est volontairement simple : elle recoupe le calcul à la main et montre où regarder. Ce n'est pas une note de calcul certifiée.</li></ul></aside>
+</section>
+
+<section class="slide" data-stage="physique"><p class="kicker r">Brique 7 · La physique</p><h2 class="r">Comparer des cas sans refaire le modèle</h2>
+  <div class="cols"><figure class="shot r"><img src="img/tour/cas.jpg" alt="La simulation du boîtier : le second cas de charge calculé, la pression doublée à la place de la première, mise à Off ; le résultat dit le cas qu'il a résolu" width="1600" height="1000"><figcaption>Deux cas dans un seul modèle : E2 à On, E1 à Off ; le résultat dit lequel il a calculé.</figcaption></figure><div class="side"><h3 class="r">Avec les outils d'aujourd'hui</h3><p class="before r">Un fichier par cas de charge, et l'on ne sait plus lequel a donné quel résultat.</p><h3 class="r">Ici</h3><ul><li class="r">Chaque appui, effort ou zone se met à Off ou se duplique : on change une valeur, on relance, on compare.</li><li class="r">Chaque résultat dit le cas qu'il a calculé ; les essais se lisent côte à côte.</li><li class="r">Des zones de raffinement là où ça compte ; le cas est gardé dans le projet, chaque changement s'annule.</li></ul><a class="go r" href="index.html#/fea" target="_blank" rel="noopener">Ouvrir dans la démo →</a></div></div>
+  <p class="take r">Un résultat ne se sépare pas du cas qui l'a produit.</p><aside class="notes"><ul><li>Sur la capture : la pression doublée (E2) remplace E1, mis à Off ; Alt + clic passe d'un cas à l'autre.</li><li>Le recoupement dit « discordant » quand le modèle à la main ne convient pas à la pièce : c'est une information, pas une panne.</li><li>Les résultats sont ceux de la séance ; « Ajouter au rapport » en garde un pour la revue.</li></ul></aside></section>
+
+<section class="slide" data-stage="physique">
+  <p class="kicker r">Brique 7, suite · Le calcul à emporter</p>
+  <h2 class="r">Un média, pas une valeur — et le calcul part avec vous</h2>
+  <div class="cols">
+    <figure class="shot r"><img src="img/tour/calcul.jpg" alt="Un modèle analytique : le média choisi et ses propriétés à gauche, le modèle au centre, le résultat et les exports Word, PDF et Excel à droite" width="1600" height="1000"><figcaption>Physique → Modèles analytiques : le média à gauche, le modèle au centre, le résultat à emporter à droite.</figcaption></figure>
+    <div class="side">
+      <h3 class="r">Avec les outils d'aujourd'hui</h3><p class="before r">Un module d'Young tapé de mémoire dans un tableur que personne ne relit.</p>
+      <h3 class="r">Ici</h3>
+      <ul><li class="r">On choisit un média — un aluminium, une eau glycolée, l'air — et ses propriétés suivent, écrites à côté.</li>
+        <li class="r">La note de calcul sort en Word et en PDF, au gabarit des documents du projet.</li>
+        <li class="r">Le classeur Excel est vivant pour les 21 modèles : une case jaune change, résultats, marges et verdict suivent.</li></ul>
+      <a class="go r" href="index.html#/physics" target="_blank" rel="noopener">Ouvrir dans la démo →</a>
+    </div>
+  </div>
+  <p class="take r">Un calcul que l'on peut refaire sans l'outil est un calcul que l'on peut relire.</p>
+  <aside class="notes"><ul><li>Les formules du classeur sont recalculées par les tests, et l'ont été une fois dans LibreOffice : égales à la plateforme. Excel lui-même n'a pas été essayé.</li><li>Trois modèles cherchent une valeur pas à pas : le classeur refait les pas dans une feuille « Solveur », sans macro.</li><li>Les propriétés des médias sont des valeurs typiques ; chaque média dit d'où viennent les siennes.</li><li>Un calcul d'ingénierie s'écrit en SI, quel que soit le choix d'unités de la conception : modèles analytiques, simulation, isolation, note de calcul et classeur.</li><li>Le verdict en haut du classeur lit aussi le domaine de validité : un calcul hors domaine se lit « JUSTE », comme à l'écran.</li></ul></aside>
+</section>
+
+<section class="slide" data-stage="isolation">
+  <p class="kicker r">Brique 8 · L'isolation</p>
+  <h2 class="r">Lignes de fuite et distances dans l'air, sur tout l'assemblage</h2>
+  <div class="cols">
+    <figure class="shot r"><img src="img/tour/isolation.jpg" alt="L'analyse d'isolation : les potentiels, l'assemblage en transparence et le verdict par paire de potentiels" width="1600" height="1000"><figcaption>Isolation : les potentiels à gauche, le verdict de chaque paire à droite.</figcaption></figure>
+    <div class="side">
+      <h3 class="r">Avec les outils d'aujourd'hui</h3><p class="before r">Des distances mesurées à la main sur le dessin, à la fin du projet.</p>
+      <h3 class="r">Ici</h3>
+      <ul><li class="r">Les distances requises selon IEC 60664-1 : tension, pollution, altitude, matériau.</li>
+        <li class="r">Les chemins sont mesurés dans le 3D, entre chaque paire de potentiels.</li>
+        <li class="r">Un verdict par paire, et le chemin le plus court montré sur le modèle.</li></ul>
+      <a class="go r" href="index.html#/creepage" target="_blank" rel="noopener">Ouvrir dans la démo →</a>
+    </div>
+  </div>
+  <p class="take r">Creepage et clearance deviennent une vérification de tous les jours, plus une surprise de fin de projet.</p>
+  <aside class="notes"><ul><li>Chaque pièce dit si elle est conductrice ou isolante et quel potentiel elle porte.</li><li>L'outil calcule ; la conformité se prononce toujours avec la norme en main et l'essai diélectrique.</li></ul></aside>
+</section>
+
+<section class="slide" data-stage="dfx">
+  <p class="kicker r">Brique 9 · DFx</p>
+  <h2 class="r">Fabricable et montable : le bilan de tout le projet</h2>
+  <div class="cols">
+    <figure class="shot r"><img src="img/tour/dfx.jpg" alt="Le bilan DFx du projet : un score et les remarques de chaque pièce et de l'assemblage" width="1600" height="1000"><figcaption>DFx → Bilan du projet ; le livre des règles donne la limite et la source de chacune.</figcaption></figure>
+    <div class="side">
+      <h3 class="r">Avec les outils d'aujourd'hui</h3><p class="before r">La liste de contrôle du bureau d'études, relue à la main avant la revue.</p>
+      <h3 class="r">Ici</h3>
+      <ul><li class="r">Chaque pièce est vérifiée contre les règles de son procédé ; l'assemblage contre les règles de montage.</li>
+        <li class="r">Une remarque donne la valeur, la limite, la raison et le correctif.</li>
+        <li class="r">Le livre des règles s'ouvre : rien n'est caché, chaque règle cite sa source.</li></ul>
+      <a class="go r" href="index.html#/dfx" target="_blank" rel="noopener">Ouvrir dans la démo →</a>
+    </div>
+  </div>
+  <p class="take r">Les règles sont celles d'un atelier, écrites une fois, appliquées à chaque modification.</p>
+  <aside class="notes"><ul><li>Usinage, tôlerie, extrusion, moulage, fonderie, impression, carte, assemblage : un livre par procédé.</li><li>Une règle se discute : elle a un numéro, une limite et une source. C'est aussi un support de formation.</li></ul></aside>
+</section>
+
+<section class="slide" data-stage="dfx">
+  <p class="kicker r">Brique 9, suite · Les gammes</p>
+  <h2 class="r">De quoi parler au fournisseur, opération par opération</h2>
+  <div class="cols">
+    <figure class="shot r"><img src="img/tour/gamme.jpg" alt="La gamme de fabrication du dissipateur extrudé : phases, opérations, outils et contrôles" width="1600" height="1000"><figcaption>Pièces → Gamme : phases, prises de pièce, opérations, outils, contrôles.</figcaption></figure>
+    <div class="side">
+      <h3 class="r">Avec les outils d'aujourd'hui</h3><p class="before r">Le fournisseur reçoit un STEP et un PDF, et devine le reste.</p>
+      <h3 class="r">Ici</h3>
+      <ul><li class="r">La gamme de fabrication pas à pas : brut, posages, opérations, outils, contrôles.</li>
+        <li class="r">Les questions à poser à l'atelier, selon le procédé.</li>
+        <li class="r">La gamme d'assemblage du produit et celle de la carte.</li></ul>
+      <a class="go r" href="index.html#/parts" target="_blank" rel="noopener">Ouvrir dans la démo →</a>
+    </div>
+  </div>
+  <p class="take r">On arrive chez le fournisseur avec une proposition, pas avec une question.</p>
+  <aside class="notes"><ul><li>La gamme sort en Word ou en PDF, avec une colonne de notes pour la discussion ; elle s'enregistre dans l'unité choisie, la taille d'une clé métrique restant ce qu'elle est.</li><li>Elle n'impose rien à l'atelier : elle montre que la pièce a été pensée pour être faite.</li></ul></aside>
+</section>
+
+<section class="slide" data-stage="dessins">
+  <p class="kicker r">Brique 10 · Les dessins</p>
+  <h2 class="r">Le dessin se fait seul — et reste à jour</h2>
+  <div class="cols">
+    <figure class="shot r"><img src="img/tour/dessin.jpg" alt="Le dessin de la base du boîtier : vues, coupe, cotes à bulles, cartouche et notes" width="1600" height="1000"><figcaption>Dessins : format tabloïd, vues, isométrique, cotes à bulles, cartouche, notes.</figcaption></figure>
+    <div class="side">
+      <h3 class="r">Avec les outils d'aujourd'hui</h3><p class="before r">Une mise en plan refaite à la main, qui prend du retard sur le modèle.</p>
+      <h3 class="r">Ici</h3>
+      <ul><li class="r">Vues, isométrique, coupe A-A hachurée, cartouche et notes : placés d'office.</li>
+        <li class="r">Des cotes à bulles numérotées, les tolérances géométriques sur les interfaces, les caractéristiques spéciales.</li>
+        <li class="r">Écrit en anglais, vocabulaire du projet compris ; coté en millimètres ou en pouces ; PDF et DXF, à la révision de la pièce.</li></ul>
+      <a class="go r" href="index.html#/drawings" target="_blank" rel="noopener">Ouvrir dans la démo →</a>
+    </div>
+  </div>
+  <p class="take r">Ce que le dessin cote en premier, ce sont les interfaces : ce que le voisin doit retrouver.</p>
+  <aside class="notes"><ul><li>La cotation suit ASME Y14.5. Les bulles numérotent les cotes pour le rapport de contrôle.</li><li>Le dessin n'est pas un fichier à part : il se régénère depuis la pièce.</li><li>Les cotes se rangent en arbre, par nature ; une classe SC ou CSC donnée à une cote tient d'un système d'unités à l'autre.</li><li>Ce que le projet a tapé en français — titres, finitions, notes, noms des pièces — se dit en anglais sur le dessin : un dialogue le complète, à la main ou par aller-retour IA. Les démonstrations arrivent avec leur anglais, à faire relire par quelqu'un du métier.</li></ul></aside>
+</section>
+
+<section class="slide" data-stage="revue">
+  <p class="kicker r">Brique 11 · La revue</p>
+  <h2 class="r">La revue de conception se tient dans l'outil</h2>
+  <div class="cols">
+    <figure class="shot r"><img src="img/tour/revue.jpg" alt="L'écran de revue : chaque pièce, assemblage et carte avec son état, sa révision et la note du relecteur" width="1600" height="1000"><figcaption>Revue : l'état de chaque élément, ce que l'outil constate, la note du relecteur.</figcaption></figure>
+    <div class="side">
+      <h3 class="r">Avec les outils d'aujourd'hui</h3><p class="before r">Un diaporama préparé la veille, des décisions dans un compte rendu.</p>
+      <h3 class="r">Ici</h3>
+      <ul><li class="r">Chaque élément a son état : Brouillon IA, À réviser, Revu, Modifié depuis la revue.</li>
+        <li class="r">Des itérations gelées, des révisions libérées avec leur numéro, la règle forme · ajustement · fonction.</li>
+        <li class="r">À plusieurs : chacun sa copie du projet, une fusion élément par élément, des messages épinglés sur le 3D.</li></ul>
+      <a class="go r" href="index.html#/review" target="_blank" rel="noopener">Ouvrir dans la démo →</a>
+    </div>
+  </div>
+  <p class="take r">Ce qui a changé depuis la dernière revue se voit ; ce qui n'a pas été relu aussi.</p>
+  <aside class="notes"><ul><li>Une révision libérée est figée : la pièce qui évolue ensuite n'est plus tenue pour compatible avec l'assemblage libéré.</li><li>Le travail à plusieurs se fait sans serveur central : chacun garde son fichier, dans son propre espace.</li></ul></aside>
+</section>
+
+<section class="slide" data-stage="commande">
+  <p class="kicker r">Brique 12 · La commande</p>
+  <h2 class="r">Prête à commander, pièce par pièce</h2>
+  <div class="cols">
+    <figure class="shot r"><img src="img/tour/commande.jpg" alt="L'onglet Artéfacts d'une pièce : verdict de commande, délai de prototype et dossier de commande" width="1600" height="1000"><figcaption>Pièces → Artéfacts : le verdict, le délai, le dossier de commande en un fichier.</figcaption></figure>
+    <div class="side">
+      <h3 class="r">Avec les outils d'aujourd'hui</h3><p class="before r">Rassembler le STEP, le PDF, la quantité, la matière — pour chaque pièce, à chaque révision.</p>
+      <h3 class="r">Ici</h3>
+      <ul><li class="r">Un verdict « prête à commander » et un délai de prototype typique, selon le procédé.</li>
+        <li class="r">Le dossier de commande en un fichier : STEP, dessin PDF, DXF, gamme, demande de prix.</li>
+        <li class="r">Pour le produit entier : le rapport de revue, de l'image à la décision.</li></ul>
+      <a class="go r" href="index.html#/report" target="_blank" rel="noopener">Ouvrir dans la démo →</a>
+    </div>
+  </div>
+  <p class="take r">Concevoir, vérifier, commander, essayer : la boucle se ferme avant de lancer une série.</p>
+  <aside class="notes"><ul><li>C'est la raison d'être de l'outil : raccourcir le chemin entre l'idée et la pièce sur l'établi du laboratoire.</li><li>Le délai affiché est typique ; ce qui bloque une commande est listé en clair.</li></ul></aside>
+</section>
+
+<section class="slide" data-stage="fin">
+  <p class="kicker r">L'IA, partout de la même façon</p>
+  <h2 class="r">On confie une tâche comme à un technicien — et l'on relit avant d'accepter</h2>
+  <div class="chain tight">
+    <span class="step r">1 · exporter l'élément<br>fichier texte + consigne courte</span><span class="to r">→</span><span class="step r">2 · l'assistant de votre choix<br>travaille de son côté</span><span class="to r">→</span>
+    <span class="step r">3 · coller sa réponse<br>l'aperçu dit ce qui change</span><span class="to r">→</span><span class="step ok r">4 · vous validez<br>une étape, annulable</span>
+  </div>
+  <ul class="list cards c2">
+    <li class="r">L'outil ne se connecte à aucune IA : c'est vous qui faites entrer ce que vous avez vérifié.</li>
+    <li class="r">Le même geste pour une pièce, un assemblage, une carte, une revue, une fiche de procédé.</li>
+    <li class="r">Tout ce qui vient d'une IA reste marqué jusqu'à sa relecture.</li>
+    <li class="r">Et tout se fait aussi à la main : l'IA est une option, jamais une dépendance.</li>
+  </ul>
+  <aside class="notes"><ul><li>C'est le même partage des rôles que dans un bureau d'études : on délègue, on vérifie, on signe.</li><li>Le fichier texte de l'outil a été pensé pour cela : court, lisible, sans géométrie cachée.</li></ul></aside>
+</section>
+
+<section class="slide" data-stage="fin">
+  <p class="kicker r">Ce que l'outil ne prétend pas</p>
+  <h2 class="r">Il donne sa forme à une pièce ; il ne la qualifie pas</h2>
+  <div class="cards c2">
+    <div class="card r"><h3>Des valeurs typiques</h3><p>Matières, délais, limites de procédé : des ordres de grandeur publiés. La fiche du fournisseur fait foi.</p></div>
+    <div class="card r"><h3>Une simulation simplifiée</h3><p>Un recoupement du calcul à la main, pas une note de calcul certifiée.</p></div>
+    <div class="card r"><h3>Pas un remplaçant de votre CAO</h3><p>STEP, DXF et FeatureScript ramènent le travail dans vos outils de production.</p></div>
+    <div class="card r"><h3>Un projet jeune</h3><p>Les règles n'ont pas encore été confrontées à beaucoup de vraies commandes : vos retours comptent.</p></div>
+  </div>
+  <p class="take r">Chaque règle cite sa source, et dit ce qui a été vérifié ou non.</p>
+  <aside class="notes"><ul><li>Mieux vaut le dire avant qu'on le demande : c'est un outil d'avant-projet et de prototype, honnête sur ses limites.</li><li>La norme, l'essai et le devis restent les juges.</li></ul></aside>
+</section>
+
+<section class="slide" data-stage="fin">
+  <p class="kicker r">Libre</p>
+  <h2 class="r">Un logiciel libre, et vos fichiers restent les vôtres</h2>
+  <div class="cards c4">
+    <div class="card n1 r"><h3>Licence MIT</h3><p>Le code est ouvert : on l'étudie, on l'adapte, on l'enseigne.</p></div>
+    <div class="card n2 r"><h3>Dans le navigateur</h3><p>Rien à installer ; aucune dépendance, aucun service à payer.</p></div>
+    <div class="card n3 r"><h3>Des fichiers texte</h3><p>Un projet se lit, se compare, se confie à une IA.</p></div>
+    <div class="card n4 r"><h3>Chez vous</h3><p>Sur votre poste, ou dans votre propre espace de stockage. Aucun serveur ne reçoit vos pièces.</p></div>
+  </div>
+  <p class="big r">Une brique à la fois, <mark>vérifiable et réutilisable</mark>.</p>
+  <aside class="notes"><ul><li>L'application est statique : ce sont des pages et des scripts, sans serveur d'application.</li><li>Le stockage en ligne, quand on le choisit, se fait dans le compte de chacun, avec une permission limitée aux fichiers de l'outil.</li></ul></aside>
+</section>
+
+<section class="slide" data-stage="fin">
+  <p class="kicker r">À vous</p>
+  <h2 class="r">Cinq minutes pour vous faire une idée</h2>
+  <div class="cards c3">
+    <div class="card n1 r"><h3>1 · Ouvrir</h3><p>Sur votre poste, sans compte : cloner le dépôt et lancer <code>python designwizard.py</code>.</p><small>La démo en ligne s'ouvre sur approbation : demandez l'accès.</small></div>
+    <div class="card n2 r"><h3>2 · Charger la démonstration</h3><p>Un variateur compact : boîtier moulé, deux cartes, dissipateur extrudé.</p></div>
+    <div class="card n3 r"><h3>3 · Suivre les premiers pas</h3><p>Huit étapes, de la page blanche à la révision libérée ; elles se cochent d'après le projet.</p><small>Les onglets, de gauche à droite, suivent l'ordre de cette présentation.</small></div>
+  </div>
+  <ul class="list cards c3">
+    <li class="r">Quelle étape de votre parcours vous coûte le plus de tours ?</li>
+    <li class="r">Quel procédé, quelle règle, quelle norme manque ?</li>
+    <li class="r">Que faudrait-il pour l'essayer sur une vraie pièce ?</li>
+  </ul>
+  <p class="take r"><a href="vitrine.html">La page du projet</a> · <a href="index.html" target="_blank" rel="noopener">La démo</a> · <a href="https://github.com/jpdesbiens11/DesignWizard.ai" target="_blank" rel="noopener">GitHub</a></p>
+  <aside class="notes"><ul><li>Trois questions pour lancer la discussion. Les réponses décident des prochaines briques.</li><li>Puis la démo en direct : charger le variateur, ouvrir l'Atelier, ajouter une interface, suivre la pièce jusqu'à son dossier de commande.</li></ul></aside>
+</section>
+
+<section class="slide" data-stage="fin" data-annex>
+  <p class="kicker r">Annexe · si la question vient</p>
+  <h2 class="r">Questions probables, réponses courtes</h2>
+  <div class="cards c2">
+    <div class="card r"><h3>« Et mes modèles existants ? »</h3><p>L'outil ne reprend pas une pièce de CAO classique : une pièce y renaît de ses interfaces. Dans l'autre sens, tout sort en STEP.</p></div>
+    <div class="card r"><h3>« Et si je ne veux pas d'IA ? »</h3><p>Tout se fait à la main. L'IA est une option à chaque geste.</p></div>
+    <div class="card r"><h3>« Où vont mes données ? »</h3><p>Nulle part : elles restent sur votre poste ou dans votre propre espace de stockage.</p></div>
+    <div class="card r"><h3>« Jusqu'à quelle complexité ? »</h3><p>Des pièces prismatiques, tournées, en tôle, moulées, extrudées, imprimées ; des assemblages de prototype. Pas de surfaces de style.</p></div>
+  </div>
+  <aside class="notes"><ul><li>À garder pour la période de questions.</li><li>La limite de complexité est celle d'un prototype mécatronique : boîtiers, supports, dissipateurs, busbars, cartes.</li></ul></aside>
+</section>
+
+</main>
+<div class="panel" hidden></div>
+<div class="zoom" hidden></div>
+</body>
+</html>

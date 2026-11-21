@@ -1,0 +1,19 @@
+/* DesignWizard.ai — Historique (modules/history.js, history_tree.js) : the tree of the restore points, the changes, the branches. */
+.hist-view { display: flex; flex-direction: column; min-height: 0; } .hist-view > [hidden] { display: none !important; }
+.hist-host { flex: 1; min-height: 0; overflow: hidden; position: relative; background: var(--paper); } .hist-host.panning { cursor: grabbing; }
+.hist-tree { display: block; user-select: none; } .hist-back { fill: transparent; cursor: grab; }
+.hist-edge { fill: none; stroke-width: 2.4; } .hist-edge.dropped { stroke-dasharray: 4 4; opacity: .35; } .hist-edge.pending { stroke: var(--muted); stroke-dasharray: 3 4; fill: none; stroke-width: 2; }
+.hist-node { cursor: pointer; outline: none; } .hist-node.dropped { opacity: .4; } .hist-node.now { cursor: default; }
+.hist-hit { fill: transparent; stroke: none; } .hist-node:hover .hist-hit { fill: color-mix(in srgb, var(--graphite) 6%, transparent); }
+.hist-node.sel .hist-hit, .hist-node:focus-visible .hist-hit { fill: color-mix(in srgb, var(--acc) 22%, transparent); stroke: var(--graphite); stroke-width: 1.2; }
+.hist-dot { stroke: var(--surface); stroke-width: 2; } .hist-dot.now { fill: var(--surface); stroke: var(--muted); stroke-dasharray: 3 3; stroke-width: 2; }
+.hist-ring { fill: none; stroke: var(--graphite); stroke-width: 2.2; } .hist-glyph { fill: #fff; } .hist-glyph.line { fill: none; stroke: #fff; stroke-width: 1.5; stroke-linecap: round; }
+.hist-label { font: 600 14px var(--font); fill: var(--ink-strong); } .hist-id { font: 700 13px var(--mono, ui-monospace, monospace); fill: var(--muted); } .hist-here { font-weight: 700; fill: #b45309; }
+.hist-sub { font: 400 12px var(--font); fill: var(--muted); }
+.hist-empty { margin: auto; max-width: 34rem; padding: 2rem 1.2rem; text-align: center; } .hist-empty p { color: var(--ink-soft); }
+.hist-changes { list-style: none; margin: .3rem 0 0; padding: 0; font-size: .84rem; } .hist-changes li { padding: .22rem 0 .22rem .55rem; border-left: 3px solid var(--dom, var(--line)); margin-bottom: .2rem; }
+.hist-kind { display: inline-block; font: 700 .66rem/1.5 var(--font); text-transform: uppercase; letter-spacing: .04em; padding: 0 .35rem; margin-right: .35rem; border-radius: 4px; color: #fff; background: var(--dom, var(--muted)); }
+.hist-kindline { font-size: .86rem; } .hist-note { white-space: pre-wrap; font-size: .86rem; padding: .45rem .6rem; border-radius: 6px; background: var(--surface-2); }
+.hist-branches { list-style: none; margin: 0; padding: 0; } .hist-branches li { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .5rem; padding: .35rem 0; border-bottom: 1px solid var(--line); font-size: .86rem; } .hist-branches li.dropped { opacity: .6; }
+.hist-branches .linklike { background: none; border: 0; padding: 0; font: inherit; font-weight: 600; color: var(--ink-strong); text-decoration: underline; cursor: pointer; text-align: left; }
+.hist-journal { margin: .3rem 0 0; padding-left: 1.2rem; font-size: .82rem; max-height: 16rem; overflow: auto; } .hist-journal li { margin-bottom: .15rem; }
