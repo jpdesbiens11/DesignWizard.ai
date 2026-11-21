@@ -12,13 +12,16 @@ import { DIM_CLASSES } from "../draw/dim_model.js";
 import { netsOf } from "../analysis/cc_guide.js";
 import { flatAsm } from "./asm_levels.js";
 import { partTexts, drawingTexts } from "./drawing_words.js";
+import { uosCheck } from "../draw/uos.js";
+import { detailCheck } from "../draw/detail_view.js";
 
 const clone = (x) => JSON.parse(JSON.stringify(x));
 const LIST = { part: "parts", assembly: "assemblies", board: "boards" };
 const find = (p, of, id) => ((p && p[LIST[of]]) || []).find((x) => x.id === id) || null;
 const named = (x) => `« ${x.name || x.id} »`;
 /** The title-block fields of the project's drawings : one block for every sheet of the project. */
-export const SHEET_KEYS = ["projection", "hidden", "drawnBy", "checkedBy", "approvedBy", "status", "organisation", "confidentiality", "asmBom"];
+export const SHEET_KEYS = ["projection", "hidden", "drawnBy", "checkedBy", "approvedBy", "status", "organisation", "confidentiality", "asmBom", "date", "uos", "notesOff"];
+const UOS_VALUES = ["basis", "mm", "inch", "angle", "iso"];
 export const CASE_KINDS = ["structure", "thermal", "thermo"], ROLES = ["conductor", "floating", "insulator", "ignore"];
 
 /** What a key names. → { kind: "drawing" | "case" | "iso", of: "part" | "assembly" | "board", id } or null */
@@ -39,7 +42,7 @@ function drawingDoc(p, k, host) {
   const d = p.drawing || {}, texts = k.of === "part" ? partTexts(host, p) : drawingTexts(p, `assembly:${k.id}`), w = d.words || {};
   return { dw: "drawing/1", id: k.id, of: k.of, title: host.name || host.id, sheet: Object.fromEntries(SHEET_KEYS.filter((x) => d[x] !== undefined).map((x) => [x, d[x]])),
     words: Object.fromEntries(texts.map((t) => [t, w[t] || ""])), notes: [...(host.notes || [])],
-    ...(k.of === "part" ? { section: host.section ?? null, characteristics: { ...(host.characteristics || {}) } } : {}) };
+    ...(k.of === "part" ? { section: host.section ?? null, characteristics: { ...(host.characteristics || {}) }, details: clone(host.details || []) } : {}) };
 }
 function drawingCheck(p, k, d) {
   const out = [], block = (text) => out.push({ severity: "block", text }), warn = (text) => out.push({ severity: "warn", text }), s = d.sheet || {};
@@ -47,7 +50,11 @@ function drawingCheck(p, k, d) {
   if (s.projection !== undefined && !["third", "first"].includes(s.projection)) block(`Projection « ${s.projection} » : « third » (troisième dièdre) ou « first » (premier dièdre).`);
   if (s.asmBom !== undefined && !["flat", ""].includes(s.asmBom)) block(`Nomenclature « ${s.asmBom} » : « flat » (à plat) ou vide (ce niveau).`);
   if (s.hidden !== undefined && typeof s.hidden !== "boolean") block("Arêtes cachées : true ou false.");
-  for (const x of SHEET_KEYS.filter((q) => !["projection", "asmBom", "hidden"].includes(q))) if (s[x] !== undefined && s[x] !== null && typeof s[x] !== "string") block(`Cartouche : « ${x} » est un texte.`);
+  for (const x of SHEET_KEYS.filter((q) => !["projection", "asmBom", "hidden", "uos", "notesOff"].includes(q))) if (s[x] !== undefined && s[x] !== null && typeof s[x] !== "string") block(`Cartouche : « ${x} » est un texte.`);
+  for (const t of uosCheck(s.uos)) block(`Bloc de tolérances : ${t}`);
+  if (s.notesOff !== undefined && s.notesOff !== null && !(Array.isArray(s.notesOff) && s.notesOff.every((n) => typeof n === "string"))) block("« notesOff » : la liste des clés des notes générales mises à Off (standard, material, marks, class1…, rule1…).");
+  const cur = (p.drawing || {}).uos;
+  if (s.uos && UOS_VALUES.some((q) => JSON.stringify((cur || {})[q]) !== JSON.stringify(s.uos[q]))) out.push({ severity: "warn", text: "Le bloc « UNLESS OTHERWISE SPECIFIED » change : ses valeurs restent des exemples jusqu'à ce que le projet les confirme à l'écran — une réponse ne les confirme pas." });
   if (!Array.isArray(d.notes) || d.notes.some((n) => typeof n !== "string")) block("Les notes sont une liste de textes.");
   if (d.words && (typeof d.words !== "object" || Object.values(d.words).some((v) => typeof v !== "string"))) block("L'anglais des textes (« words ») est une table texte → texte.");
   else if (d.words) { const bad = Object.values(d.words).filter((v) => /[àâçéèêëîïôûùüÿœ]/i.test(v)); if (bad.length) warn(`${bad.length} texte(s) anglais portent des accents : « ${bad[0].slice(0, 40)} »… — un dessin s'écrit en anglais.`); }
@@ -56,6 +63,7 @@ function drawingCheck(p, k, d) {
     if (c !== null && c !== undefined && !(typeof c === "object" && ["x", "y", "none"].includes(c.axis) && (c.at === undefined || Number.isFinite(c.at)))) block("Coupe : null (choisie par l'outil), { axis: \"x\" | \"y\", at: nombre } ou { axis: \"none\" }.");
     const ch = d.characteristics || {}; if (typeof ch !== "object") block("Caractéristiques : une table cote → classe.");
     else for (const [dim, v] of Object.entries(ch)) if (!DIM_CLASSES[v]) block(`Cote ${dim} : la classe « ${v} » n'existe pas (${Object.keys(DIM_CLASSES).join(", ")}).`);
+    for (const t of detailCheck(d.details)) block(`Vues de détail : ${t}`);
   }
   if (Object.keys(s).length || Object.keys((p.drawing || {})).some((x) => SHEET_KEYS.includes(x))) out.push({ severity: "info", text: "Le cartouche vaut pour toutes les feuilles du projet ; la coupe, les classes de cotes et les notes ne valent que pour ce dessin." });
   return out;
@@ -63,7 +71,10 @@ function drawingCheck(p, k, d) {
 function drawingApply(p, k, d) {
   const host = find(p, k.of, k.id), w = { ...((p.drawing || {}).words || {}) }, sheet = d.sheet || {};
   p.drawing = { ...(p.drawing || {}) };
-  for (const x of SHEET_KEYS) { const v = sheet[x]; if (v === undefined || v === null || v === "") delete p.drawing[x]; else p.drawing[x] = v; }
+  const cur = p.drawing.uos;
+  for (const x of SHEET_KEYS) { const v = sheet[x]; if (v === undefined || v === null || v === "") { delete p.drawing[x]; continue; }
+    if (x === "uos") { const same = cur && UOS_VALUES.every((q) => JSON.stringify(cur[q]) === JSON.stringify(v[q])); p.drawing.uos = same ? cur : { ...Object.fromEntries(UOS_VALUES.filter((q) => v[q] !== undefined).map((q) => [q, clone(v[q])])), sure: false }; continue; }      // an answer never confirms the values of the block
+    p.drawing[x] = x === "notesOff" ? [...v] : v; }
   for (const [t, v] of Object.entries(d.words || {})) { if (String(v).trim()) w[t] = String(v).trim(); else delete w[t]; }
   if (Object.keys(w).length) p.drawing.words = w; else delete p.drawing.words;
   host.notes = [...(d.notes || [])]; if (!host.notes.length) delete host.notes;
@@ -71,6 +82,7 @@ function drawingApply(p, k, d) {
     if (d.section === null || d.section === undefined) delete host.section; else host.section = clone(d.section);
     const ch = Object.fromEntries(Object.entries(d.characteristics || {}).filter(([, v]) => v && v !== "normal"));
     if (Object.keys(ch).length) host.characteristics = ch; else delete host.characteristics;
+    if (Array.isArray(d.details) && d.details.length) host.details = clone(d.details).map((x) => ({ ...x, id: x.id || `det-${x.letter}` })); else delete host.details;
   }
 }
 
@@ -160,7 +172,8 @@ export function moreApply(project, key, doc) { const k = moreKey(key, project); 
 /** What the request says to the AI, kind by kind. */
 export const MORE_HELP = {
   drawing: ["« sheet » est le cartouche du projet : il vaut pour toutes ses feuilles. « words » donne l'anglais de chaque texte que le dessin écrit : remplissez les vides, en anglais, sans accents.",
-    "« section » : null (l'outil choisit), { \"axis\": \"x\" | \"y\", \"at\": mm } ou { \"axis\": \"none\" } ; « characteristics » : cote → normal | ref | sc | csc. Les vues, l'échelle et le format sont calculés : ils ne se changent pas ici."],
+    "« section » : null (l'outil choisit), { \"axis\": \"x\" | \"y\", \"at\": mm } ou { \"axis\": \"none\" } ; « characteristics » : cote → normal | ref | sc | csc. Les vues, l'échelle et le format sont calculés : ils ne se changent pas ici.",
+    "« sheet.uos » est le bloc « UNLESS OTHERWISE SPECIFIED » : basis (asme | iso2768), mm [X, X.X, X.XX], inch [X.XX, X.XXX], angle (°), iso (classe, ex. mK) ; vos valeurs restent des exemples jusqu'à ce que le projet les confirme. « details » : les vues de détail { letter, view (front | top | right), at [u, v] dans le plan de la vue, r (mm), scale, on }. « sheet.notesOff » : les notes générales mises à Off."],
   case: ["Le cas en cours est au premier niveau ; « others » liste les autres cas, chacun avec son « name ». « kind » : structure, thermal ou thermo.",
     "Gardez les « places » (les faces nommées) que le cas utilise : une condition s'y accroche. Une valeur que vous proposez sans source est un exemple : dites-le dans « name »."],
   iso: ["« params » : degré de pollution (1 à 4), altitude (m), catégorie de surtension (I à IV), champ (A ou B), isolation par défaut (functional, basic, reinforced). « levels » : le niveau d'une paire « A|B » de potentiels.",

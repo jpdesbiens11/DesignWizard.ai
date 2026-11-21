@@ -152,7 +152,9 @@ export const INTERFACE_TYPES = {
       return out;
     },
     hardware(p) { return p.fix && p.fix.screw ? [{ id: `ISO4762-${p.fix.screw}x8`, name: `Socket head cap screw ISO 4762 ${p.fix.screw} × 8`, qty: Math.round(p.fix.n || 2), kind: "screw", size: p.fix.screw, length: 8 }] : []; },
-    gdt: () => ({ symbol: "position", tolerance: 0.3 }),
+    /* a round cutout is a feature of size : its position, diametral ; any other outline is held by the profile of its surface, which
+       locates, orients and sizes it at once relative to A, B and C — the usage of ASME Y14.5 for a non-circular opening */
+    gdt: (p) => (p.shape === "round" ? { symbol: "position", tolerance: 0.3, diameter: true } : { symbol: "profile_surface", tolerance: 0.3 }),
     signature: (p) => (p.shape === "round" ? `d${round2(p.d)}` : `${round2(p.w)}x${round2(p.h)}`),
   },
   rail: {

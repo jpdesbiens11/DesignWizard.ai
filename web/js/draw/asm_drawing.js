@@ -10,6 +10,7 @@
 import { LW, dimLinear, drawBorder, drawTitleBlock, drawNotes, drawTable, drawRevisionTable, viewLabel, TITLE_BLOCK_H } from "./drafting.js";
 import { liveAsm } from "../core/asm_live.js";
 import { bounds, drawView, balloon, notesHeight } from "./part_drawing.js";
+import { uosOf, uosLines, UOS_STD } from "./uos.js";
 import { len, massOf, drawingUnit, inDrawingUnits, inDrawingWords, say } from "./dim_model.js";
 
 const SCALES = [[5, "5:1"], [2, "2:1"], [1, "1:1"], [0.5, "1:2"], [0.4, "1:2.5"], [0.25, "1:4"], [0.2, "1:5"], [0.1, "1:10"], [0.05, "1:20"], [0.02, "1:50"]];
@@ -36,14 +37,15 @@ function composeSheet(sheet, data) {
   const B = { front: bounds(views.front), top: bounds(views.top), right: bounds(views.right), iso: bounds(views.iso) }, third = (o.projection || "third") === "third";
   const parts = rows.filter((r) => r.kind === "part" || r.kind === "assembly"), hw = rows.filter((r) => r.kind === "hardware"), subs = rows.filter((r) => r.kind === "assembly");
   const c = data.count || { parts: liveAsm(asm).instances.length, inSubs: 0, subs: 0, joints: (liveAsm(asm).mates || []).length }, nSubs = subs.reduce((n, r) => n + r.qty, 0);
-  const notes = [`Dimensioning per ASME Y14.5-2018; dimensions in ${drawingUnit() === "in" ? "inches, converted from the millimetre model (1 in = 25.4 mm)" : "millimetres"}; overall dimensions of the assembled product.`,
-    `Balloons refer to the items of the bill of materials; each part${subs.length ? " and each sub-assembly" : ""} is defined by its own drawing, at the revision shown.`,
-    `${c.parts} part(s) placed${subs.length ? `, ${c.inSubs} of them inside ${nSubs} sub-assembl${nSubs > 1 ? "ies" : "y"} listed as one item each` : c.subs ? `, through ${c.subs} sub-assembl${c.subs > 1 ? "ies" : "y"} (every part listed)` : ""}, ${c.joints} joint(s)${hw.length ? `, fasteners and consumables: ${hw.length} line(s) of the bill of materials` : ""}.`,
-    "Assembly sequence, tooling and tightening torques: see the assembly routing.", ...(asm.notes || []).map(say)];
+  const auto = [{ key: "standard", text: `Dimensioning per ASME Y14.5-2018; dimensions in ${drawingUnit() === "in" ? "inches, converted from the millimetre model (1 in = 25.4 mm)" : "millimetres"}; overall dimensions of the assembled product; untoleranced dimensions: see the tolerance block.` },
+    { key: "items", text: `Balloons refer to the items of the bill of materials; each part${subs.length ? " and each sub-assembly" : ""} is defined by its own drawing, at the revision shown.` },
+    { key: "count", text: `${c.parts} part(s) placed${subs.length ? `, ${c.inSubs} of them inside ${nSubs} sub-assembl${nSubs > 1 ? "ies" : "y"} listed as one item each` : c.subs ? `, through ${c.subs} sub-assembl${c.subs > 1 ? "ies" : "y"} (every part listed)` : ""}, ${c.joints} joint(s)${hw.length ? `, fasteners and consumables: ${hw.length} line(s) of the bill of materials` : ""}.` },
+    { key: "routing", text: "Assembly sequence, tooling and tightening torques: see the assembly routing." }], off = new Set(o.notesOff || []), U = o.uos || uosOf(null);
+  const notes = [...auto.filter((n) => !off.has(n.key)).map((n) => n.text), ...(asm.notes || []).map(say)];
   const notesW = 150, nH = Math.min(notesHeight(sheet, notes, notesW), 80), notesY = frame.y + frame.h - nH - 3, colX = frame.x + frame.w - RIGHT_W;
   const revs = o.revisions && o.revisions.length ? o.revisions : [{ rev: asm.revision || "A", description: "Initial release", date: o.date || "", by: o.drawnBy || "" }];
   const revH = (Math.min(revs.length, 4) + 2) * 5, isoBox = { x: frame.x + frame.w - 66, y: frame.y + revH + 3, w: 62, h: 48 };
-  const gap = 32, pad = 30, area = { x: frame.x + 4, y: frame.y + 4, w: colX - frame.x - 10, h: notesY - frame.y - 10 };
+  const gap = 32, pad = 30, area = { x: frame.x + 4, y: frame.y + 4, w: colX - frame.x - 10, h: Math.min(notesY, frame.y + frame.h - TITLE_BLOCK_H - 3) - frame.y - 10 };      // above the notes and above the tolerance block
   let scale = SCALES[SCALES.length - 1];
   for (const sc of SCALES) { const k = sc[0]; if ((B.front.w + B.right.w) * k + gap + 2 * pad <= area.w && (B.front.h + B.top.h) * k + gap + 2 * pad <= area.h) { scale = sc; break; } }
   const s = scale[0], bw = (B.front.w + B.right.w) * s + gap, bh = (B.front.h + B.top.h) * s + gap, fx = area.x + (area.w - bw) / 2, y0 = area.y + (area.h - bh) / 2;
@@ -78,7 +80,7 @@ function composeSheet(sheet, data) {
   drawRevisionTable(sheet, frame.x + frame.w, frame.y, revs.slice(-4), { align: "right" });
   drawTitleBlock(sheet, frame, { title: `${say(asm.name) || asm.id}${o.variant ? ` — VARIANT ${say(o.variant)}` : ""}`, partNumber: asm.id, revision: asm.revision || "A", material: "Assembly", finish: "—", mass: massOf(data.mass || 0),
     scale: scale[1], sheet: "1/1", size: "B (11 × 17)", drawnBy: o.drawnBy || "", checkedBy: o.checkedBy || "", approvedBy: o.approvedBy || "", date: o.date || "", company: o.organisation || "DesignWizard.ai", project: say((project && project.name) || ""),
-    generalTolerance: "ISO 2768-mK", projection: third ? "third" : "first", units: drawingUnit(), status: o.status || "Preliminary" });
-  return { scale: scale[1], notes, items: parts.map((r) => ({ item: r.item, id: r.id, kind: r.kind, view: where[centerKey(r)] || null })), dims: dims.map(([label, value, k]) => ({ n: k, label, value })), bom: shown.length,
+    projection: third ? "third" : "first", units: drawingUnit(), status: o.status || "Preliminary", uos: { lines: uosLines(U, drawingUnit() === "in"), example: !U.sure, std: UOS_STD } });
+  return { scale: scale[1], notes, autoNotes: auto, uos: U, items: parts.map((r) => ({ item: r.item, id: r.id, kind: r.kind, view: where[centerKey(r)] || null })), dims: dims.map(([label, value, k]) => ({ n: k, label, value })), bom: shown.length,
     layout: { notes: { x: frame.x + 4, y: notesY, w: notesW, h: nH }, iso: isoBox, views: { x: fx, y: y0, w: bw, h: bh }, bom: { x: colX, y: frame.y + frame.h - TITLE_BLOCK_H - th, w: RIGHT_W, h: th }, area, frame } };
 }

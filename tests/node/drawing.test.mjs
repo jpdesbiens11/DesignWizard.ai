@@ -45,20 +45,27 @@ test("a part drawing is a tabloid sheet : notes bottom left, isometric view top 
   const svg = new SvgSheet({ width: PAPER.TABLOID[0], height: PAPER.TABLOID[1], title: spec.id }), info = composeDrawing(svg, { spec, built, views, project: DEMO_DRIVE, opts: { date: "2026-01-01" } }), L = info.layout, text = svg.toString(0);
   assert.ok(L.notes.x < L.frame.x + 6 && Math.abs(L.notes.y + L.notes.h - (L.frame.y + L.frame.h)) < 4, "notes in the bottom-left corner");
   assert.ok(L.iso.x + L.iso.w > L.frame.x + L.frame.w - 6 && L.iso.y < L.frame.y + 40 && L.iso.w <= 70, "a small isometric view top right");
-  const block = { x: L.frame.x + L.frame.w - 180, y: L.frame.y + L.frame.h - 48, w: 180, h: 48 };
+  const block = L.block; assert.deepEqual([block.w, block.h, Math.round(block.x + block.w), Math.round(block.y + block.h)], [242, 48, Math.round(L.frame.x + L.frame.w), Math.round(L.frame.y + L.frame.h)], "the title block and, left of it, the tolerance block");
   for (const [name, v] of Object.entries(L.boxes)) assert.ok(clear(v, L.notes) && clear(v, L.stack) && clear(v, block) && v.x >= L.area.x && v.y >= L.area.y && v.x + v.w <= L.area.x + L.area.w && v.y + v.h <= L.area.y + L.area.h, `the ${name} view stays clear of the notes, of the tables of the corner and of the title block`);
   /* the views take the sheet : no micro-view. The base (160 × 110 × 42) is drawn at 1:1,5 — it was 1:2,5 when a column of tables took the right of the sheet */
   assert.equal(info.scale, "1:1.5"); assert.ok(L.views.w * L.views.h > 0.3 * L.area.w * L.area.h, "the block of the views covers a good third of the sheet"); assert.ok(L.stack.w <= 150 && L.stack.x + L.stack.w > L.frame.x + L.frame.w - 1 && L.stack.y === L.frame.y, "the tables keep to the top right corner");
-  /* a geometric tolerance is tied to what it controls : a hexagonal flag on the feature, the same flag in the table, with the tags of its holes */
-  assert.deepEqual(info.gdt.map((g) => g.flag), info.gdt.map((_, i) => `T${i + 1}`)); assert.ok(info.gdt.length >= 4 && info.gdt.every((g) => g.at && g.at.every(Number.isFinite)), "every tolerance has its flag on a view");
-  for (const g of info.gdt) { assert.equal((text.match(new RegExp(`>${g.flag}<`, "g")) || []).length, 2, `${g.flag} : once on the view, once in the table`); if (g.symbol === "position" && g.count > 1) assert.match(g.tags, /^[A-Z]\d+–[A-Z]\d+$/, `${g.flag} names its holes (${g.tags})`); }
-  assert.match(text, /GEOMETRIC TOLERANCES/); assert.match(text, /4× · A1–A4 · /); assert.equal(tagRange(["A1", "A2", "A3", "A4"]), "A1–A4"); assert.equal(tagRange(["A1", "A3"]), "A1, A3"); assert.equal(tagRange(["B2"]), "B2");
-  for (let i = 0; i < info.gdt.length; i++) for (let j = i + 1; j < info.gdt.length; j++) assert.ok(Math.hypot(info.gdt[i].at[0] - info.gdt[j].at[0], info.gdt[i].at[1] - info.gdt[j].at[1]) >= 6.5, `flags ${i + 1} and ${j + 1} do not sit on one another`);
+  /* a geometric tolerance is a feature control frame on the sheet, its leader on the feature it controls — no list of flags any more ;
+     above it, how many features and their tags. A frame stands on white : clear of the views, of the furniture and of the other frames */
+  assert.ok(info.gdt.length >= 4 && info.gdt.every((g) => g.box && g.to && g.to.every(Number.isFinite) && !g.crowded), "every tolerance has its frame on the sheet, on white");
+  assert.ok(!/>T\d<|GEOMETRIC TOLERANCES/.test(text), "no hexagonal flag, no table of tolerances");
+  for (const g of info.gdt) { if (g.symbol === "position" && g.count > 1) assert.match(g.tags, /^[A-Z]\d+–[A-Z]\d+$/, `${g.name} names its holes (${g.tags})`);
+    for (const [name, v] of Object.entries(L.boxes)) assert.ok(clear(g.box, v), `the frame of ${g.name} stays off the ${name} view`);
+    assert.ok(clear(g.box, L.notes) && clear(g.box, block) && clear(g.box, L.iso) && g.box.x >= L.area.x && g.box.x + g.box.w <= L.area.x + L.area.w, `the frame of ${g.name} stays on white, on the sheet`); }
+  for (let i = 0; i < info.gdt.length; i++) for (let j = i + 1; j < info.gdt.length; j++) assert.ok(clear(info.gdt[i].box, info.gdt[j].box), `frames ${i + 1} and ${j + 1} do not sit on one another`);
+  assert.match(text, />4X A1–A4</); assert.ok(info.gdt.some((g) => g.symbol === "profile_surface" && g.datums.join("") === "ABC"), "a rectangular cutout is held by the profile of its surface, relative to A, B and C");
+  assert.equal(tagRange(["A1", "A2", "A3", "A4"]), "A1–A4"); assert.equal(tagRange(["A1", "A3"]), "A1, A3"); assert.equal(tagRange(["B2"]), "B2");
+  /* the tolerance block of the project, beside the title block : examples until the project confirms them */
+  assert.match(text, /UNLESS OTHERWISE SPECIFIED:/); assert.match(text, />X\.X ±0\.2</); assert.match(text, /EXAMPLE VALUES - TO BE CONFIRMED/); assert.match(info.notes[0], /see the tolerance block/);
   /* the long table of the definition dimensions is on a second sheet, with the same frame and title block */
   assert.equal(info.sheets, 2); const pages = svg.toStrings(); assert.equal(pages.length, 2); assert.match(pages[1], /DEFINITION DIMENSIONS — DRV-BASE/); assert.match(pages[0], />1\/2</); assert.match(pages[1], />2\/2</); assert.ok(!pages[0].includes("DEFINITION DIMENSIONS") && pages[1].includes("Hauteur des colonnettes"));
   assert.ok(info.onView.length >= 5 && info.onView.includes("bbox:X"), "overall and pattern dimensions are on the views");
   assert.equal(info.dims.length, dimensionList(spec, built).length);
-  for (const re of [/ASME Y14\.5-2018/, />CSC</, />SC</, /GEOMETRIC TOLERANCES/, /HOLE TABLE/, /B \(11 × 17\)/, /NOTES/]) assert.match(text, re);
+  for (const re of [/ASME Y14\.5-2018/, />CSC</, />SC</, /HOLE TABLE/, /B \(11 × 17\)/, /NOTES/, />Tolerancing</]) assert.match(text, re);
   for (const d of info.dims.filter((x) => info.onView.includes(x.key))) assert.match(text, new RegExp(`>${d.n}<`), `balloon ${d.n} is on the sheet`);
   assert.match(info.notes[0], /ASME Y14\.5/); assert.ok(info.notes.some((n) => /Triangle “CSC”/.test(n)));
   const pdf = new PdfSheet({ width: PAPER.TABLOID[0], height: PAPER.TABLOID[1], title: spec.id }); composeDrawing(pdf, { spec, built, views, project: DEMO_DRIVE, opts: {} }); assert.ok(pdf.toBytes().length > 20000);

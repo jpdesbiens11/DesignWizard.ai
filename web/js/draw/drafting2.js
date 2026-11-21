@@ -142,6 +142,11 @@ export function gdtSymbol(sheet, name, x, y, h, { color = "#000", w } = {}) {
     (a datum may also be { letter: 'A', modifier: 'mmc' }).
     opts: { h: frame height (default 7, text height = h / 2), color, leaderTo: [x, y] optional leader with
     an arrow from the nearest frame end to that point }. Returns { width, height }. */
+/** The width of a feature control frame, without drawing it (the same cells as featureControlFrame). */
+export function fcfWidth(sheet, spec = {}, h = 2 * TEXT_H) {
+  const size = h / 2, pad = h * 0.22, glyph = size * 1.45, gap = size * 0.18, cell = (label, mod) => Math.max(h, pad + sheet.textWidth(label, { size }) + (mod ? gap + glyph : 0) + pad);
+  return h + cell(`${spec.diameter ? "Ø" : ""}${spec.tolerance ?? ""}`, spec.modifier) + (spec.datums || []).reduce((w, d) => { const x = typeof d === "string" ? { letter: d } : d || {}; return w + cell(String(x.letter ?? ""), x.modifier); }, 0);
+}
 export function featureControlFrame(sheet, x, y, spec = {}, opts = {}) {
   const h = opts.h ?? 2 * TEXT_H, color = opts.color ?? "#000";
   const size = h / 2, pad = h * 0.22, glyph = size * 1.45, gap = size * 0.18;
@@ -178,7 +183,7 @@ export function featureControlFrame(sheet, x, y, spec = {}, opts = {}) {
 
   if (opts.leaderTo) {
     // Short horizontal stub from the nearest end of the frame, then straight to the target.
-    const [tx, ty] = opts.leaderTo, fromLeft = Math.abs(tx - x) <= Math.abs(tx - (x + width));
+    const [tx, ty] = opts.leaderTo, fromLeft = opts.side ? opts.side === "left" : Math.abs(tx - x) <= Math.abs(tx - (x + width));
     const sx = fromLeft ? x : x + width, ex = sx + (fromLeft ? -4 : 4), my = y + h / 2;
     sheet.polyline([[sx, my], [ex, my], [tx, ty]], { w: LW.fine, color });
     arrowHead(sheet, [tx, ty], Math.atan2(ty - my, tx - ex) / RAD, { color });

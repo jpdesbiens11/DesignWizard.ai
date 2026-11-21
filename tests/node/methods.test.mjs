@@ -25,9 +25,10 @@ test("what the page says of a standard is what the code says of it", () => {
   // the insulation tables were typed, not checked against the standard : the register may not say more
   const iec = methodById("iec-60664-1"); assert.equal(iec.how, "typed"); assert.match(iec.check, /À vérifier contre votre copie de la norme/);
   assert.match(readFileSync(new URL("../../web/js/analysis/cc_rules.js", import.meta.url), "utf8"), /STATUS « to verify »/);
-  // GD&T : applied from practice, the hexagonal flag is the platform's own marking
+  // GD&T : applied from practice ; where a feature control frame is put on the sheet is the platform's own choice
   const gdt = methodById("asme-y14-5"); assert.equal(gdt.how, "typed"); assert.match(gdt.check, /choix de la plateforme/);
-  assert.match(readFileSync(new URL("../../web/js/draw/part_drawing.js", import.meta.url), "utf8"), /a mark of this drawing, not a symbol of the standard/);
+  assert.match(readFileSync(new URL("../../web/js/draw/part_drawing.js", import.meta.url), "utf8"), /placeLabel\(room, /);
+  assert.equal(methodById("uos-block").how, "usual"); assert.match(methodById("uos-block").check, /n'ont été relues/);
   // folded sheet metal : summaries only
   assert.equal(methodById("dfx-sheet").how, "excerpt"); assert.match(readFileSync(new URL("../../docs/TOLERIE.md", import.meta.url), "utf8"), /aucun guide n'a été lu en entier/);
   // a standard nobody read is never marked « lu » : the only lines marked read are the ones a document was opened for

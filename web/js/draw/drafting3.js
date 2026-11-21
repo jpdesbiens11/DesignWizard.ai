@@ -88,6 +88,17 @@ export function projectionSymbol(sheet, cx, cy, method = "first", { scale = 1, c
 
 export const TITLE_BLOCK_W = 180;
 export const TITLE_BLOCK_H = 48;
+/** The tolerance block « UNLESS OTHERWISE SPECIFIED », left of the title block, as tall as it (draw/uos.js gives its lines). */
+export const TOL_BLOCK_W = 62;
+
+/** The tolerance block : its lines in a box TOL_BLOCK_W × TITLE_BLOCK_H, the first one bold ; example values are said in red under them. */
+export function drawTolBlock(sheet, x, y, lines = [], { example = false } = {}) {
+  sheet.rect(x, y, TOL_BLOCK_W, TITLE_BLOCK_H, { w: LW.frame });
+  const step = Math.min(4.2, (TITLE_BLOCK_H - 12) / Math.max(1, lines.length));      // the bottom 8 mm stay free : the centring mark of the frame comes up there
+  lines.forEach((l, i) => { const f = fitText(sheet, l, TOL_BLOCK_W - 3, i ? 2.2 : 2.3, i ? "sans" : "bold"); sheet.text(x + 1.5, y + 4 + i * step, f.str, { size: f.size, font: i ? "sans" : "bold" }); });
+  if (example) { const f = fitText(sheet, "EXAMPLE VALUES - TO BE CONFIRMED", TOL_BLOCK_W - 3, 2.2, "bold"); sheet.text(x + 1.5, y + 4 + lines.length * step + 0.6, f.str, { size: f.size, font: "bold", color: "#c0392b" }); }
+  return { x, y, w: TOL_BLOCK_W, h: TITLE_BLOCK_H };
+}
 
 /** One labelled field: small grey label top-left, value on the lower line (shrunk to fit). */
 function field(sheet, x, y, w, h, label, value, { font = "sans", size = TEXT_H } = {}) {
@@ -102,8 +113,9 @@ function field(sheet, x, y, w, h, label, value, { font = "sans", size = TEXT_H }
     (the { x, y, w, h } returned by drawBorder). All fields of `data` are optional:
     { title, partNumber, revision, material, finish, mass, scale, sheet: '1/1', size: 'A3', drawnBy,
       checkedBy, approvedBy, date, company: 'DesignWizard.ai', project, generalTolerance: 'ISO 2768-mK',
-      projection: 'first'|'third', units: 'mm', status }
-    Returns the block rectangle { x, y, w, h }. */
+      projection: 'first'|'third', units: 'mm', status, uos: { lines, example } }
+    uos : the tolerance block, drawn left of the title block ; the field of the general tolerances then names the standard.
+    Returns the block rectangle { x, y, w, h } (with `tol`, the rectangle of the tolerance block, when there is one). */
 export function drawTitleBlock(sheet, frame, data = {}) {
   const d = { company: "DesignWizard.ai", generalTolerance: "ISO 2768-mK", projection: "first", units: "mm",
     sheet: "1/1", ...data };
@@ -141,7 +153,8 @@ export function drawTitleBlock(sheet, frame, data = {}) {
   F(150, 0, 30, R, "Date", d.date);
   F(60, R, 60, R, "Material", d.material);
   F(120, R, 60, R, "Finish", d.finish);
-  F(60, 2 * R, 60, R, "General tolerances", d.generalTolerance);
+  const tol = d.uos ? drawTolBlock(sheet, x - TOL_BLOCK_W, y, d.uos.lines, { example: d.uos.example }) : null;
+  F(60, 2 * R, 60, R, tol ? "Tolerancing" : "General tolerances", tol ? d.uos.std || "ASME Y14.5-2018" : d.generalTolerance);
   F(120, 2 * R, 30, R, "Mass", d.mass);
   F(150, 2 * R, 30, R, "Units", d.units);
   F(60, 5 * R, 60, R, "Part No.", d.partNumber, { font: "bold" });
@@ -158,7 +171,7 @@ export function drawTitleBlock(sheet, frame, data = {}) {
     const lineH = size * 1.25, mid = Y(3 * R + 9.2), top = mid - ((lines.length - 1) * lineH) / 2;
     lines.forEach((s, i) => sheet.text(X(62.5), top + i * lineH, s, { size, font: "bold", baseline: "middle" }));
   }
-  return { x, y, w: W, h: H };
+  return tol ? { x, y, w: W, h: H, tol } : { x, y, w: W, h: H };
 }
 
 /* ---- notes --------------------------------------------------------------------------------------------- */

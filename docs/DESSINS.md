@@ -1,7 +1,9 @@
 # Dessins, cotes et révisions
 
 Le dessin d'une pièce ou d'un assemblage se génère depuis le modèle 3D et les interfaces. Il n'est jamais retouché à la
-main : ce qui doit y figurer se décide dans la conception, et dans le volet de gauche de l'écran Dessins.
+main : ce qui doit y figurer se décide dans la conception, et dans les volets de l'écran Dessins — à gauche les cotes
+et leurs classes ; à droite tout ce que la feuille écrit d'autre (cartouche, tolérances générales, vues de détail,
+notes, anglais du dessin).
 
 ## La langue du dessin
 
@@ -33,7 +35,8 @@ dessins du projet ; les écrans, eux, gardent le texte tel qu'il a été tapé.
 **Unités.** Le dessin suit le choix d'unités (`docs/UNITES.md`) : en SI, des millimètres ; dans le système impérial, des
 **pouces** — trois décimales, sans zéro avant le point (`.472`), la note 1 dit que les cotes sont converties du modèle en
 millimètres, la case Units dit « in », la masse ajoute les onces ou les livres. Les clés des cotes restent en
-millimètres : une classe SC ou CSC tient d'un système à l'autre. La tolérance générale reste ISO 2768-mK.
+millimètres : une classe SC ou CSC tient d'un système à l'autre. Le bloc de tolérances générales a ses valeurs en pouces
+(X.XX, X.XXX), les siennes, que le projet entre ou confirme.
 
 ## La feuille
 
@@ -41,9 +44,10 @@ Format **tabloïd** — 11 × 17 po (431,8 × 279,4 mm, ANSI B), paysage — pou
 
 | Zone | Contenu |
 |---|---|
-| **Bande du bas** | à gauche les notes, toujours : la référence à **ASME Y14.5-2018**, la matière et le procédé, le sens des bulles, des drapeaux et des cotes encadrées, la légende des classes en usage, puis les notes propres à la pièce ; à droite le **cartouche** |
+| **Bande du bas** | à gauche les notes : la référence à **ASME Y14.5-2018** et au bloc de tolérances, la matière et le procédé, le sens des bulles, des cadres et des cotes encadrées, la légende des classes en usage — chacune à On ou à Off pour le projet —, puis les notes propres à la pièce ; à droite le **bloc « UNLESS OTHERWISE SPECIFIED »** et le **cartouche** |
 | **Tout le reste** | les trois vues standard — plan, élévation, profil — à la **plus grande échelle qui tient** : elles prennent la feuille. Seules les rangées de cotes dont la pièce a besoin sont gardées libres autour d'elles |
-| **Coin haut à droite** | là où trois vues laissent la feuille vide : le tableau des révisions, une petite vue isométrique (illustrative, hors échelle), le tableau des **tolérances géométriques** et le **tableau des trous** (150 mm de large). La vue de droite passe dessous, ou tout le bloc reste à sa gauche |
+| **Coin haut à droite** | là où trois vues laissent la feuille vide : le tableau des révisions, une petite vue isométrique (illustrative, hors échelle) et le **tableau des trous** (150 mm de large). La vue de droite passe dessous, ou tout le bloc reste à sa gauche |
+| **Le blanc qui reste** | les **cadres de tolérance**, chacun près de sa feature, et les **vues de détail** |
 | **Feuille 2** | pour une pièce, le tableau des **cotes de définition** que la feuille 1 ne montre pas sur une vue, en colonnes, avec le même cadre et le même cartouche (« 1/2 », « 2/2 ») ; pour un assemblage, la **nomenclature** reste au-dessus du cartouche |
 
 Échelles : 10:1, 5:1, 2:1, 1:1, **1:1,5**, 1:2, 1:2,5, 1:4, 1:5, 1:10, 1:20. Le 1:1,5 et le 1:2,5 sont des échelles
@@ -51,22 +55,73 @@ intermédiaires : elles évitent de tomber d'un coup à la moitié quand le 1:1 
 démonstration (160 × 110 × 42 mm) se dessine au 1:1,5 ; elle était au 1:2,5 quand une colonne de tableaux prenait
 toute la droite de la feuille.
 
-## Les tolérances géométriques : un drapeau sur l'élément, le même au tableau
+## Le bloc « UNLESS OTHERWISE SPECIFIED »
 
-Un cadre de tolérance posé loin de la vue ne dit pas ce qu'il contrôle. Chaque tolérance porte donc un **drapeau
-hexagonal** — T1, T2… — distinct de la bulle ronde d'une cote :
+Demande de JP (21 novembre 2026) : « tolérances générales par défaut = bloc du cartouche ASME ». À gauche du cartouche,
+le bloc que portent les dessins nord-américains : l'unité des cotes, la tolérance d'une cote **selon son nombre de
+décimales**, celle d'un angle, et la norme de lecture des symboles. Un seul bloc pour tous les dessins du projet
+(`project.drawing.uos`, `web/js/draw/uos.js`) ; ISO 2768 reste au choix (une classe pour toutes les cotes sans
+tolérance).
 
-- **sur la vue**, le drapeau est relié par une **flèche** à ce qu'il contrôle : pour un motif de trous, un trou du
-  motif (le plus à l'extérieur ; « 4× » au tableau dit les autres) ; pour une surface — planéité d'un plan de joint,
-  d'une plage d'appui — son arête, sur la vue de droite, qui porte le moins de cotes ; pour un passage ou un
-  ajustement, son centre dans la vue qui lui fait face. Deux drapeaux ne se posent pas l'un sur l'autre ;
-- **au tableau « Tolérances géométriques »** du coin, une ligne par drapeau : le drapeau, le **cadre de tolérance**
-  (symbole, zone, modificateur, références), puis ce à quoi il s'applique — le nombre, les **repères des trous**
-  (« A1–A4 », les mêmes qu'au tableau des trous et que sur la vue) et le nom de l'interface.
+| Base | Ce que le bloc écrit (valeurs d'exemple) |
+|---|---|
+| ASME, en millimètres | X ±0,5 · X.X ±0,2 · X.XX ±0,05 · angles ±0,5° |
+| ASME, en pouces | X.XX ±.01 · X.XXX ±.005 · angles ±0,5° |
+| ISO 2768 | la classe du projet (mK proposée) · angles |
 
-C'est la pratique que la norme admet quand les cadres ne tiennent pas sur les vues : un tableau, avec un repérage sans
-équivoque. ASME Y14.5 n'a pas été relue ligne à ligne pour ce point : la forme du drapeau (un hexagone) est un choix de
-la plateforme, dit en note sur chaque dessin.
+Ces valeurs sont des **exemples** : elles ne viennent d'aucune norme (chaque entreprise a les siennes). Dans la marge de
+droite, leurs champs sont en pointillé et le prochain à entrer clignote ; la feuille écrit en rouge « EXAMPLE VALUES -
+TO BE CONFIRMED » sous le bloc ; le guide le dit, et en fait une erreur si le statut dit le dessin émis. Entrer chaque
+valeur, ou « Confirmer ces valeurs », en fait celles du projet. Une réponse d'IA peut proposer d'autres valeurs : elles
+redeviennent des exemples — une réponse ne confirme jamais le bloc.
+
+En millimètres, les cotes s'écrivent sans zéros inutiles : leur nombre de décimales suit la valeur, pas une intention de
+tolérance. Une cote qui demande mieux que le bloc se tolère par son interface (ajustement, cadre de position).
+
+## Les tolérances géométriques : de vrais cadres, sur la feuille
+
+Chaque tolérance que les interfaces donnent est un **cadre de tolérance** (symbole, zone, modificateur, références) posé
+sur la feuille, sa **ligne de repère** sur la feature qu'elle contrôle — il n'y a plus de drapeaux T1, T2… ni de
+tableau :
+
+- pour un **motif de trous**, la flèche va au trou le plus à l'extérieur ; au-dessus du cadre, « 4X » et les **repères
+  des trous** (« A1–A4 », les mêmes qu'au tableau des trous et que sur la vue) ;
+- pour une **surface** — planéité d'un plan de joint, d'une plage d'appui — la flèche va à son arête, sur la vue de
+  droite de préférence ;
+- pour un **passage** : un passage rond reçoit une **position** diamétrale ; un passage d'une autre forme, le **profil
+  de sa surface** par rapport à A, B et C, qui le situe, l'oriente et le dimensionne d'un coup — l'usage d'ASME Y14.5
+  pour une ouverture non circulaire ;
+- pour un ajustement, son centre dans la vue qui lui fait face ; l'ajustement s'écrit sous le cadre.
+
+L'outil pose chaque cadre **là où la feuille est blanche**, au plus près de sa feature (`web/js/draw/sheet_room.js` :
+tout ce qui est tracé sur la feuille est noté sur une grille fine, les vues entières) ; la ligne de repère traverse le
+moins de traits possible. Si aucun blanc n'est trouvé, le cadre est posé quand même et le guide le dit, à vérifier.
+ASME Y14.5 n'a pas été relue ligne à ligne : l'endroit où un cadre est posé est un choix de la plateforme.
+
+## Les vues de détail
+
+Comme dans un modeleur : « **Choisir une zone** » (marge de droite), puis sur une vue de la feuille, appuyez au centre de
+la zone, glissez jusqu'au rayon, relâchez — Échap annule. La zone devient une **vue de détail** : DETAIL D, son échelle
+sous elle, son cercle en trait mixte et sa lettre sur la vue d'origine (`web/js/draw/detail_view.js`). Les lettres
+évitent I, O, Q et celles des références ; l'échelle proposée est la première échelle normalisée au moins deux fois plus
+grande que la feuille, et se change sur la ligne du détail.
+
+**Les vues se replacent seules** : un détail prend le blanc le plus proche de sa vue ; quand il n'y en a pas, la feuille
+essaie à une ou deux échelles plus petites ; sinon, les vues gardent leur échelle et le détail passe sur une feuille à
+part, « DETAIL VIEWS », et le guide le dit. Chaque détail est gardé sur la pièce (`details`), dans le plan de sa vue :
+il suit la pièce et l'échelle de la feuille ; il se met à Off, se copie (la copie naît à Off), se retire — chaque
+changement une étape annulable. Un détail montre les traits de sa vue ; les cotes restent sur les vues et aux tableaux.
+
+## Le cartouche et les textes de la feuille
+
+Dans la marge de droite : le **titre** (le nom de la pièce ou de l'assemblage : le changer ici le change partout), dessiné,
+vérifié, approuvé, statut, **date** (vide : la date du jour), **finition** (celle de la pièce), organisation, note de
+confidentialité, projection, arêtes cachées, coupe A-A, révision. La matière se choisit dans le studio de la pièce ;
+format, unités, masse et échelle sont calculés. Chaque **note générale** que l'outil écrit se met à Off pour tout le
+projet (`project.drawing.notesOff`) ; les notes propres à la pièce restent dessous.
+
+Le bouton « IA » confie la feuille entière (`drawing/1`, `web/js/core/ai_more.js`) : cartouche, bloc de tolérances,
+notes à Off, anglais des textes, coupe, classes de cotes, vues de détail.
 
 ## Chaque cote a sa bulle
 
@@ -179,10 +234,11 @@ porte le nom de la variante. Numéro de pièce, révision et classes de cotes re
 - Sont cotés sur vue : les cotes hors tout, les cotes de détail décrites plus haut et, s'il reste de la place, celles des
   motifs de vis ; le reste est tabulé. Pas de cote d'angle ni de chaîne de cotes ; les trous hors motif, les bossages et
   les profils quelconques gardent leurs cotes au tableau.
-- Les tolérances dimensionnelles viennent des tolérances générales (ISO 2768-mK) et des ajustements des interfaces ;
-  pas de tolérance saisie cote par cote.
-- Une seule coupe, plane, parallèle à une face ; pas de coupe brisée, de demi-coupe ni de vue de détail. Une pièce à
-  plusieurs corps est dessinée sans coupe si le noyau ne parvient pas à la couper. Une seule feuille par dessin. Quand les tableaux débordent, la feuille le dit et
+- Les tolérances dimensionnelles viennent du bloc de tolérances générales et des ajustements des interfaces ; pas de
+  tolérance saisie cote par cote.
+- Une seule coupe, plane, parallèle à une face ; pas de coupe brisée ni de demi-coupe. Une vue de détail montre les
+  traits de sa vue, sans cote ; un dessin d'assemblage n'a pas encore de vue de détail. Une pièce à
+  plusieurs corps est dessinée sans coupe si le noyau ne parvient pas à la couper. Quand les tableaux débordent, la feuille le dit et
   renvoie à la liste des cotes.
 - Le dessin natif envoyé à Onshape reste au format A3 ; seul le PDF est en tabloïd.
 - Un assemblage qui contient des sous-assemblages ([SOUS_ASSEMBLAGES.md](SOUS_ASSEMBLAGES.md)) est dessiné avec toutes ses

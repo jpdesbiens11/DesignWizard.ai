@@ -149,7 +149,10 @@ faire des allers-retours avec l'IA… de pouvoir revenir en arrière si l'IA n'a
     approuvé, statut, organisation, note de confidentialité, projection, arêtes cachées, nomenclature à plat ou par
     niveau — il vaut pour **toutes** les feuilles du projet, et la consigne le dit), **l'anglais de chaque texte que le
     dessin écrit** (ceux qui n'en ont pas encore arrivent vides, à remplir), la coupe, les classes de cotes (SC, CSC,
-    REF) et les notes. Les vues, l'échelle et le format sont calculés : ils ne se confient pas ;
+    REF), les notes, la date, les notes générales mises à Off, le **bloc « UNLESS OTHERWISE SPECIFIED »** (des valeurs
+    qu'une réponse change redeviennent des exemples : une réponse ne confirme jamais le bloc) et les **vues de détail**
+    d'une pièce (lettre, vue, centre et rayon dans le plan de la vue, échelle, On / Off). Les vues, l'échelle et le format
+    sont calculés : ils ne se confient pas ;
   - **le cas de charge** (`loadcase/1`) d'une pièce ou d'un assemblage : le cas en cours et les autres, par leur nom —
     appuis, efforts, puissances, convection, zones, instruments. Une réponse appliquée **remet l'écran Simulation à
     jour** (il ne relisait son cas qu'après une annulation) ; les simulations gardées ne sont pas refaites, et c'est dit ;
