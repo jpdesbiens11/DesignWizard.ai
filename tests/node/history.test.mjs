@@ -102,9 +102,9 @@ test("the store : an undo step does not carry the history, and an undo leaves th
 });
 
 test("wiring : a screen, a place in the menu Produit, a step up, the automatic point, the history kept out of AI requests and mirrors", () => {
-  assert.match(read("web/js/core/app.js"), /keys: \["dfx", "review", "report", "history"\]/);
+  assert.match(read("web/js/core/app.js"), /keys: \["dfx", "review", "report", "history"/);
   assert.match(read("web/js/core/app.js"), /go\("#\/history"\)/);
-  assert.match(read("web/js/core/stairs.js"), /case "history": return \{ hash: "#\/review"/);
+  assert.match(read("web/js/core/stairs.js"), /case "history": (case "eco": )?return \{ hash: "#\/review"/);
   assert.match(read("web/js/main.js"), /import "\.\/modules\/history\.js";/); assert.match(read("web/js/main.js"), /installHistoryAuto\(\);/);
   assert.match(read("web/js/modules/ai_loop.js"), /delete d\.history;/); assert.match(read("web/js/modules/mvp.js"), /delete d\.history;/);
   assert.match(read("web/js/modules/team.js"), /toDwiz\(withoutHistory\(store\.project\)\)/); assert.match(read("web/js/modules/shop_ai.js"), /toDwiz\(withoutHistory\(p\)\)/);

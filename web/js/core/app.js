@@ -24,7 +24,7 @@ import { installLoupe } from "./loupe.js";
 import { installUpdateCheck, updateButton } from "./update_check.js";
 import { installWhatsNew, newsButton } from "./whats_new_ui.js";
 
-export const APP_VERSION = "0.126.0";
+export const APP_VERSION = "0.127.0";
 /** What every document of the open project carries beside its content : approval names, organisation, confidentiality note, extraction stamp (core/brand.js). */
 export const docMeta = (when = new Date()) => docIdentity(store.project, when, APP_VERSION);
 const modules = new Map();
@@ -33,7 +33,7 @@ const modules = new Map();
 export const NAV = [
   { id: "mech", label: "Mécanique", icon: "part", color: "#2563eb", hint: "De l'intention à la simulation", keys: ["shop", "parts", "assembly", "drawings", "physics", "fea"] },
   { id: "elec", label: "Électronique", icon: "chip", color: "#16a34a", hint: "De la carte au logiciel", keys: ["pcb", "pcba", "elab", "creepage", "sw"] },
-  { id: "product", label: "Produit", icon: "report", color: "#7c3aed", hint: "Règles, revue, dossier", keys: ["dfx", "review", "report", "history"] },
+  { id: "product", label: "Produit", icon: "report", color: "#7c3aed", hint: "Règles, revue, dossier", keys: ["dfx", "review", "report", "history", "eco"] },
 ];
 const SHOP_SCREENS = new Set(["interfaces", "process", "extrusion", "library", "busbar", "flex"]);      // screens of the Shop : its tab stays lit on them (see modules/shop_tabs.js)
 export const app = { modules, context: {}, version: APP_VERSION, current: null, cleanup: null, commands: [] };
@@ -153,6 +153,7 @@ async function projectMenu(menu, close) {
     menu.append(item("Équipe et messages…", "link", () => go("#/team"), close));
     menu.append(item("Révisions et numéros…", "lock", () => go("#/plm"), close));
     menu.append(item("Historique et points de restauration…", "history", () => go("#/history"), close));
+    menu.append(item("Écosystème — tout le produit pour une IA…", "branch", () => go("#/eco"), close));
     menu.append(item("Bibliothèque électrique…", "power", () => go("#/library"), close));
     menu.append(item("Busbars et contacts…", "power", () => go("#/busbar"), close));
     menu.append(item("Circuits flexibles…", "chip", () => go("#/flex"), close));

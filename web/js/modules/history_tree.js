@@ -2,9 +2,9 @@
    in the order they were posed (the first at the top), a lane per branch, the first child of a point in its lane, another one in a new lane ;
    the point « vous êtes ici » ringed, as the snapshot manager of a virtual machine shows it ; below it, dashed, what changed since and is
    kept by no point yet. A point is a button : a click or Entrée chooses it, ↑ ↓ go from a point to the next. A branch set aside is drawn pale.
-   The page pans and zooms like every 2D view (core/view_bar.js) : wheel, drag of the background, − % + · Ajuster · Loupe. Draws ; decides nothing. */
+   The page pans and zooms like every 2D view (modules/svg_view.js) : wheel, drag of the background, − % + · Ajuster · Loupe. Draws ; decides nothing. */
 
-import { viewBar, fitView, zoomView } from "../core/view_bar.js";
+import { svgView } from "./svg_view.js";
 import { layout, POINT_KINDS } from "../core/history.js";
 
 const NS = "http://www.w3.org/2000/svg", ROW = 58, LANE = 30, X0 = 26, Y0 = 30, R = 9, TEXT_W = 430;
@@ -14,23 +14,8 @@ const when = (iso) => { const d = new Date(iso); return Number.isNaN(d.getTime()
 
 /** host : where it is drawn ; o : { onPick(id) } → { draw(h, sel, pending), focus(id), destroy() } — pending : how many artefacts changed since « ici » */
 export function historyTree(host, o = {}) {
-  const svg = S("svg", { class: "hist-tree", role: "group", "aria-label": "L'arbre des points de restauration", "data-history-tree": "" }); host.append(svg);
-  const vw = { x: 0, y: 0, z: 1, moved: false }, size = () => [Math.max(1, host.clientWidth), Math.max(1, host.clientHeight)];
-  let box = { w: 600, h: 300 }, order = [];
-  const apply = () => { const [W, H] = size(); svg.setAttribute("viewBox", `${vw.x} ${vw.y} ${W / vw.z} ${H / vw.z}`); svg.style.width = `${W}px`; svg.style.height = `${H}px`; bar.update(); };
-  const fit = () => { const [W, H] = size(); Object.assign(vw, fitView(W, H, box, 20, 1.25, 0.2), { moved: false }); apply(); };
-  const zoomAt = (k, px, py) => { const [W, H] = size(); Object.assign(vw, zoomView(vw, k, px ?? W / 2, py ?? H / 2, 0.2, 4), { moved: true }); apply(); };
-  const bar = viewBar({ label: "l'arbre de l'historique", zoomOut: () => zoomAt(1 / 1.25), zoomIn: () => zoomAt(1.25), fit, actual: () => zoomAt(1 / vw.z), text: () => `${Math.round(vw.z * 100)} %`, fitTip: "Ajuster à la fenêtre : tout l'arbre se voit" });
-  bar.node.classList.add("view-float"); host.append(bar.node);
-  svg.addEventListener("wheel", (e) => { e.preventDefault(); const r = host.getBoundingClientRect(); zoomAt(Math.exp(-Math.max(-240, Math.min(240, e.deltaY)) * 0.0022), e.clientX - r.left, e.clientY - r.top); }, { passive: false });
-  svg.addEventListener("pointerdown", (e) => {
-    if (e.button !== 0 || e.target.closest("[data-point]")) return;
-    const x0 = e.clientX, y0 = e.clientY, v0 = { ...vw }; let moved = false; svg.setPointerCapture(e.pointerId);
-    const move = (ev) => { const dx = ev.clientX - x0, dy = ev.clientY - y0; if (!moved && Math.hypot(dx, dy) < 4) return; moved = true; host.classList.add("panning"); vw.x = v0.x - dx / vw.z; vw.y = v0.y - dy / vw.z; vw.moved = true; apply(); };
-    const up = () => { host.classList.remove("panning"); svg.removeEventListener("pointermove", move); svg.removeEventListener("pointerup", up); svg.removeEventListener("pointercancel", up); };
-    svg.addEventListener("pointermove", move); svg.addEventListener("pointerup", up); svg.addEventListener("pointercancel", up);
-  });
-  const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => { if (!vw.moved) fit(); else apply(); }) : null; if (ro) ro.observe(host);
+  const view = svgView(host, { cls: "hist-tree", label: "l'arbre de l'historique", data: "data-history-tree", fitTip: "Ajuster à la fenêtre : tout l'arbre se voit", grab: "[data-point]" }), svg = view.svg;
+  let order = [];
   const focus = (id) => { const g = svg.querySelector(`[data-point="${CSS.escape(id)}"]`); if (g) g.focus({ preventScroll: true }); };
 
   function draw(h, sel, pending = 0) {
@@ -38,7 +23,7 @@ export function historyTree(host, o = {}) {
     const L = layout(h), byId = new Map(L.rows.map((r) => [r.id, r])), pts = new Map((h.points || []).map((p) => [p.id, p])), head = byId.get(h.head);
     const nowLane = head ? (L.rows.some((r) => r.parent === head.id) ? L.lanes : head.lane) : 0, lanes = L.lanes + (head && nowLane === L.lanes && pending ? 1 : 0);
     const X = (lane) => X0 + lane * LANE, Y = (row) => Y0 + row * ROW, tx = X0 + lanes * LANE + 10;
-    const rows = L.rows.length + (pending ? 1 : 0); box = { w: tx + TEXT_W, h: Y0 + Math.max(1, rows) * ROW };
+    const rows = L.rows.length + (pending ? 1 : 0), box = { w: tx + TEXT_W, h: Y0 + Math.max(1, rows) * ROW };
     const edges = S("g", { class: "hist-edges" }), nodes = S("g", { class: "hist-nodes" }); svg.append(S("rect", { class: "hist-back", x: -5000, y: -5000, width: box.w + 10000, height: box.h + 10000 }), edges, nodes);
     const edge = (a, b, lane, cls) => { const px = X(a.lane), py = Y(a.row), cx = X(lane), cy = Y(b.row);
       edges.append(S("path", { d: px === cx ? `M${px} ${py}V${cy}` : `M${px} ${py}C${px} ${py + ROW * 0.55} ${cx} ${py + ROW * 0.3} ${cx} ${py + ROW * 0.85}V${cy}`, stroke: LANES[lane % LANES.length], class: cls })); };
@@ -65,7 +50,7 @@ export function historyTree(host, o = {}) {
       nodes.append(S("g", { class: "hist-node now", "data-history-now": "" }, S("circle", { class: "hist-dot now", cx: x, cy: y, r: R }),
         S("text", { class: "hist-label", x: tx, y: y - 3 }, "Maintenant"), S("text", { class: "hist-sub", x: tx, y: y + 13 }, `${pending} artéfact${pending > 1 ? "s ont" : " a"} changé depuis le point « ici » — aucun point ne les garde encore`)));
     }
-    if (!vw.moved) fit(); else apply();
+    view.setBox(box.w, box.h);
   }
-  return { draw, focus, fit, destroy: () => { if (ro) ro.disconnect(); bar.node.remove(); svg.remove(); } };
+  return { draw, focus, fit: view.fit, destroy: view.destroy };
 }

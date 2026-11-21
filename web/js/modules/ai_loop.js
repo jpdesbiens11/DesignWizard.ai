@@ -103,7 +103,8 @@ export function openAiLoop(opts) {
     el("p", { class: "muted small" }, "Le même geste partout, comme sur DynamiteAgile : on copie pour l'IA, on travaille avec l'assistant de son choix, on réimporte avec un aperçu. L'artéfact part en texte lisible (.dwiz) ; rien ne quitte votre poste sans votre geste. Au retour, la vérification est un essai à blanc : chaque changement se voit avant d'être importé — une seule étape, annulable."),
     pick, el("h3", null, "1. Votre demande"), ask,
     el("div", { class: "form-actions", style: { justifyContent: "flex-start" } }, btn("Copier pour l'IA", async () => { await copyText(aiBrief(opts.doc, ask.value, opts.help || [], opts.context)); toast("Copié : collez-le dans votre assistant IA.", "success"); }, { primary: true, icon: "copy" }),
-      btn("Télécharger l'artéfact (.dwiz)", () => download(dwizFileName(opts.doc), toDwiz(opts.doc), "text/plain"), { icon: "download" })),
+      btn("Télécharger l'artéfact (.dwiz)", () => download(dwizFileName(opts.doc), toDwiz(opts.doc), "text/plain"), { icon: "download" }),
+      opts.ecoKey ? btn("Tout le contexte (.zip)", () => { m.close(); location.hash = `#/eco/${encodeURIComponent(opts.ecoKey)}${opts.from ? `/${encodeURIComponent(opts.from)}` : ""}`; }, { icon: "branch", tip: "Le paquet d'écosystème : tout le produit, ce qui dépend de quoi, les vérifications, le cadre de conception et une entrevue — pour que l'IA voie les compromis" }) : null),
     el("h3", null, "2. Importer d'une IA"), answer, out,
     el("div", { class: "form-actions" }, go), journalBox({ title: "Journal des réponses d'IA appliquées à ce projet" })), { wide: true });
   go.addEventListener("click", () => { if (!next) return; try { const dr = opts.draft ? opts.draft(next) : null; opts.apply(next); toast(dr && dr.drafts.length ? `Importé : ${dr.drafts.length} élément(s) en « Brouillon IA » à confirmer dans l'arbre fonctionnel${dr.norms.length ? `, ${dr.norms.length} norme(s) à confirmer` : ""}. Ctrl+Z pour revenir en arrière.` : "Changements importés (Ctrl+Z pour revenir en arrière).", "success", 7000); m.close(); } catch (e) { toast(e.message, "error"); } });
@@ -117,7 +118,7 @@ export async function openAiLoopFor(key, more = {}) {
   const targets = aiTargets(), t = targets.find((x) => x.key === key) || targets[targets.length - 1], o = await t.open();
   const apply = o.apply, own = t.key === "project" ? null : [t.key];           // the project marks its own changes, artefact by artefact
   let dlg = null;
-  dlg = openAiLoop({ ...o, apply: (d) => { applying = own; journaling = { before: snapshotLists(store.project), ask: dlg ? dlg.ask.value : "" }; try { return apply(d); } finally { applying = null; journaling = null; } }, help: [...(o.help || []), ...(more.help || [])], context: more.context || "", targets, target: t.key });
+  dlg = openAiLoop({ ...o, ecoKey: t.key, from: addressOf(location.hash).key, apply: (d) => { applying = own; journaling = { before: snapshotLists(store.project), ask: dlg ? dlg.ask.value : "" }; try { return apply(d); } finally { applying = null; journaling = null; } }, help: [...(o.help || []), ...(more.help || [])], context: more.context || "", targets, target: t.key });
   if (more.ask && dlg) dlg.ask.value = more.ask;                                // the note of the review becomes the request
   return dlg;
 }

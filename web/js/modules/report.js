@@ -27,6 +27,7 @@ import { trlLevel } from "../core/trl.js";
 import { teamRows } from "../core/team.js";
 import { plmRows } from "../core/plm.js";
 import { historyRows } from "../core/history.js";
+import { ecoRows, ecoMap } from "../core/eco.js";
 import { specialRows } from "../cad/special_processes.js";
 import { PROCESSES, materialOrDefault, processName } from "../cad/materials.js";
 import { INTERFACE_TYPES } from "../cad/interfaces.js";
@@ -213,6 +214,10 @@ function render(main) {
     if (hist.length) doc.append(el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, "Historique de conception"),
       el("p", { class: "muted" }, "Chaque point garde la définition complète du produit à un moment ; revenir à un point puis continuer ouvre une branche. Un point se pose à la main, ou tout seul après une réponse d'IA appliquée. Tenu dans l'écran Historique."),
       table(["Point", "Posé le", "Genre", "Nom", "Après", "Itération MVP", "Révisions", "Branche"], hist)));
+    const own = ecoRows(store.project), eco = ecoMap(store.project);
+    if (own.length) doc.append(el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, "Cadre de conception — règles du projet"),
+      el("p", { class: "muted" }, `Ce que le projet impose et que l'outil ne vérifie pas ; une règle à Off est gardée mais ne part pas vers une IA. Le produit compte ${eco.nodes.length} artéfacts reliés par ${eco.edges.length} liens de dépendance. Tenu dans l'écran Écosystème.`),
+      table(["Règle", "Texte", "État"], own)));
     const iters = mvpRows(store.project);
     if (iters.length) doc.append(el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, "Itérations MVP ", badge(trlReached(store.project) ? `TRL ${trlReached(store.project)} atteint` : "aucun niveau atteint", trlReached(store.project) ? "ok" : "neutral")),
       el("p", { class: "muted" }, `Cible du projet : TRL ${(store.project.mvp || {}).target || 6}. Chaque itération est gelée, passée en revue puis close par une décision ; la convergence est la part de ce qui a bougé depuis l'itération gelée précédente. Tenu dans l'écran Itérations MVP.`),

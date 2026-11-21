@@ -37,6 +37,7 @@ import "./modules/render.js";
 import "./modules/team.js";
 import "./modules/plm.js";
 import "./modules/history.js";
+import "./modules/eco.js";
 import "./modules/report.js";
 import "./modules/onshape.js";
 import "./modules/help.js";

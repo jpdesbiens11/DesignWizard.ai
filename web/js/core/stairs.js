@@ -36,7 +36,7 @@ export function stairOf(key, args, project) {
     case "creepage": { const b = a[0] === "board" ? boards.find((x) => x.id === a[1]) : null; return b ? { hash: `#/pcba/${enc(b.id)}`, icon: "chip", color: "#16a34a", label: b.name || b.id, tip: "La carte analysée : l'ouvrir dans le PCBA" } : toAsm(asm(a[0]) || asms[0], "L'assemblage analysé"); }      // a board analysed alone hangs from its PCBA
     case "render": return toAsm(asm(a[0]) || asms[0], "Le produit photographié");
     case "labels": return toAsm(asm(a[0]) || asms[0], "Le produit étiqueté");
-    case "mvp": case "team": case "plm": case "history": return { hash: "#/review", icon: "check", color: null, label: "Revue", tip: "Monter d'un niveau : la revue du produit" };
+    case "mvp": case "team": case "plm": case "history": case "eco": return { hash: "#/review", icon: "check", color: null, label: "Revue", tip: "Monter d'un niveau : la revue du produit" };
     default: return null;
   }
 }
