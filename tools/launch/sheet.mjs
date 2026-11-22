@@ -20,7 +20,7 @@ body { font-family: "Inter", "Segoe UI", system-ui, sans-serif; color: var(--ink
 .page { position: relative; width: 8.5in; height: 11in; padding: .42in .5in .34in; overflow: hidden; display: flex; flex-direction: column;
   background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size: .25in .25in; }
 header { display: flex; align-items: center; gap: .14in; }
-header .name { font-family: "Inter Display", "Inter", sans-serif; font-weight: 700; font-size: 19pt; letter-spacing: -.02em; color: var(--ink-strong); line-height: 1; }
+header .name { font-family: "Inter Display", "Inter", sans-serif; font-weight: 700; font-size: 19pt; letter-spacing: -.02em; color: #e0602f; line-height: 1; }
 header .name i { font-style: normal; color: var(--primary); }
 header .by { font-size: 7.5pt; color: var(--muted); margin-top: 3px; }
 header .kicker { margin-left: auto; font-size: 7.5pt; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--primary); border: 1.2px solid var(--primary); border-radius: 999px; padding: 4px 11px; background: var(--surface); }

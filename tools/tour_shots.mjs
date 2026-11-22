@@ -4,12 +4,16 @@
      node tools/tour_shots.mjs http://127.0.0.1:8130 web/img/tour [names, comma separated]
    Each picture is the window of the application, 1600 × 1000, JPEG. Run it again after a release that changes a screen. */
 
-import { createRequire } from "node:module";
+import { createRequire } from "node:module"; import { readFileSync } from "node:fs";
 const { chromium } = createRequire(import.meta.url)("playwright");
 const base = process.argv[2], out = process.argv[3], only = process.argv[4] ? process.argv[4].split(",") : null;
 if (!base || !out) { console.error("usage : node tools/tour_shots.mjs <base url> <output dir> [names]"); process.exit(2); }
 const browser = await chromium.launch(), errors = [];
-const page = await (await browser.newContext({ viewport: { width: 1600, height: 1000 }, deviceScaleFactor: 1 })).newPage();
+const ctx = await browser.newContext({ viewport: { width: 1600, height: 1000 }, deviceScaleFactor: 1 });
+/* a picture for the presentation shows the screens, not the « Nouveau » marks of a review : the review starts at the running version */
+const running = JSON.parse(readFileSync(new URL("../web/version.json", import.meta.url), "utf8")).version;
+await ctx.addInitScript((v) => { try { localStorage.setItem("dw.news.review", JSON.stringify({ base: v, seen: {} })); } catch (e) { /* no storage : the marks stay */ } }, running);
+const page = await ctx.newPage();
 page.on("pageerror", (e) => errors.push(String(e).slice(0, 200)));
 const wait = (ms) => page.waitForTimeout(ms), want = (name) => !only || only.includes(name);
 const shot = async (name) => { await page.screenshot({ path: `${out}/${name}.jpg`, type: "jpeg", quality: 82 }); console.log("shot", name); };
