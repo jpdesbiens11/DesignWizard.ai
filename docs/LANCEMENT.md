@@ -39,7 +39,7 @@ phrase d'ouverture à la marque — et ce que la voix raconte par-dessus, en sep
 ces plans dans un film déjà rendu (son image seule), fait dire les répliques et pose les sous-titres à côté :
 
 ```bash
-NODE_USE_ENV_PROXY=1 node tools/film_teaser.mjs make <voix> fr web/video/designwizard_fr.mp4 <dossier>/teaser_fr.mp4
+NODE_USE_ENV_PROXY=1 node tools/film_teaser.mjs make <voix> fr web/video/designorbit_fr.mp4 <dossier>/teaser_fr.mp4
 ```
 
 Le film donné est celui de la même langue (ce qu'il écrit à l'écran est dans cette langue). **Quand l'image du film

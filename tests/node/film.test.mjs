@@ -83,7 +83,7 @@ test("film — subtitles and script : written from the timeline, and the files o
   assert.equal(blocks[1], `1\n00:00:00.500 --> 00:00:03.900\n${CUES[0].fr}`);
   for (const b of blocks.slice(1)) assert.match(b, /^\d+\n\d\d:\d\d:\d\d\.\d{3} --> \d\d:\d\d:\d\d\.\d{3}\n\S/);
   assert.match(toScript("en"), /^# DesignOrbit\.ai — video narration\n\nLength: 2 min 50 s\./); assert.ok(toScript("fr").includes(`**00:00.5 → 00:03.9** ${CUES[0].fr}`));
-  for (const l of LANGS) { assert.equal(read(`web/video/designwizard_${l}.vtt`), toVtt(l), `web/video/designwizard_${l}.vtt is out of date : render the film again`); assert.equal(read(`docs/film/narration_${l}.md`), toScript(l), `docs/film/narration_${l}.md is out of date : node tools/film_words.mjs`); }
+  for (const l of LANGS) { assert.equal(read(`web/video/designorbit_${l}.vtt`), toVtt(l), `web/video/designorbit_${l}.vtt is out of date : render the film again`); assert.equal(read(`docs/film/narration_${l}.md`), toScript(l), `docs/film/narration_${l}.md is out of date : node tools/film_words.mjs`); }
   /* the storyline : every scene with what it writes on screen, every line of the voice in both languages */
   const story = toStoryline(); assert.equal(read("docs/film/storyline.md"), story, "docs/film/storyline.md is out of date : node tools/film_words.mjs");
   assert.equal((story.match(/^## /gm) || []).length, SCENES.length); for (const c of CUES) assert.ok(story.includes(`| ${c.fr} | ${c.en} |`), c.fr);
@@ -94,7 +94,7 @@ test("film — subtitles and script : written from the timeline, and the files o
 test("film — the files the site publishes : an MP4 of the length of the timeline, ready to play before it is all loaded, and light", () => {
   assert.equal(FILM.seconds, DURATION); assert.deepEqual(FILM.langs, LANGS); assert.equal(filmLength(), "2 min 50"); assert.equal(filmLength(125), "2 min 05");
   assert.equal(filmLang("en-CA"), "en"); assert.equal(filmLang("fr-CA"), "fr"); assert.equal(filmLang("de"), "fr"); assert.equal(filmLang(undefined), "fr");
-  assert.deepEqual(filmFiles("zz"), filmFiles("fr")); assert.equal(filmFiles("en").src, "video/designwizard_en.mp4");
+  assert.deepEqual(filmFiles("zz"), filmFiles("fr")); assert.equal(filmFiles("en").src, "video/designorbit_en.mp4");
   for (const l of LANGS) {
     const f = filmFiles(l, "web/video/"), mp4 = readFileSync(at(f.src)), jpg = readFileSync(at(f.poster)); both(FILM.silent, "silent"); assert.ok(FILM.names[l]);
     assert.equal(mp4.toString("latin1", 4, 8), "ftyp"); assert.ok(statSync(at(f.src)).size < 14e6, `${f.src} : ${(mp4.length / 1e6).toFixed(1)} MB — a film the repository can carry`);
@@ -110,9 +110,9 @@ test("film — where it is shown : the showcase page without a script, the home 
   const page = read("web/vitrine.html"), home = read("web/js/modules/home.js"), css = read("web/css/vitrine.css");
   assert.match(page, /Content-Security-Policy" content="default-src 'none';[^"]*media-src 'self'/);
   const players = page.match(/<video [^>]*>/g) || []; assert.equal(players.length, LANGS.length);
-  for (const v of players) { assert.match(v, /controls/); assert.match(v, /preload="none"/); assert.match(v, /poster="video\/designwizard_(fr|en)\.jpg"/); }      // nothing of a film is loaded before someone asks for it
+  for (const v of players) { assert.match(v, /controls/); assert.match(v, /preload="none"/); assert.match(v, /poster="video\/designorbit_(fr|en)\.jpg"/); }      // nothing of a film is loaded before someone asks for it
   for (const l of LANGS) {
-    assert.ok(page.includes(`<source src="video/designwizard_${l}.mp4" type="video/mp4">`), l); assert.ok(page.includes(SLOGANS.open[l]), `the slogan, ${l}`);
+    assert.ok(page.includes(`<source src="video/designorbit_${l}.mp4" type="video/mp4">`), l); assert.ok(page.includes(SLOGANS.open[l]), `the slogan, ${l}`);
     for (const c of CUES) assert.ok(page.includes(`<li>${c[l]}</li>`), `the page gives the narration as text : « ${c[l]} »`);
   }
   assert.ok(page.includes('href="#film"') && page.includes('id="film"')); assert.match(css, /\bvideo \{[^}]*aspect-ratio: 16 \/ 9/);
@@ -160,7 +160,7 @@ test("film — one state at a time : silent with its narration drawn and a page 
     const players = page.split("<video ").slice(1).map((p) => p.split("</video>")[0]); assert.equal(players.length, LANGS.length);
     players.forEach((p, i) => {
       const own = LANGS[i], mine = p.match(/<track [^>]*>/g) || []; assert.equal(mine.length, LANGS.length, `the ${own} player carries the subtitles of every language`);
-      for (const l of LANGS) assert.ok(p.includes(`<track kind="subtitles" srclang="${l}" label="${FILM.names[l]}" src="video/designwizard_${l}.vtt"${l === own ? " default" : ""}>`), `the ${own} player : its ${l} track${l === own ? ", shown from the start even without the script" : ""}`);
+      for (const l of LANGS) assert.ok(p.includes(`<track kind="subtitles" srclang="${l}" label="${FILM.names[l]}" src="video/designorbit_${l}.vtt"${l === own ? " default" : ""}>`), `the ${own} player : its ${l} track${l === own ? ", shown from the start even without the script" : ""}`);
     });
     assert.equal(tracks.length, LANGS.length * LANGS.length); assert.equal(tracks.filter((t) => /\bdefault\b/.test(t)).length, LANGS.length, "one track on by itself per player : its own language");
     assert.deepEqual(page.match(/<script[^>]*>/gi), ['<script type="module" src="js/vitrine.js">'], "one script, the house's own"); assert.match(csp, /script-src 'self'/); assert.ok(!/unsafe|https?:/.test(csp));

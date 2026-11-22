@@ -163,17 +163,17 @@ class StaticTests(unittest.TestCase):
 
     def test_film_by_pieces(self):
         # a player asks for a film by byte ranges : the whole file when none is asked, the piece when one is
-        film = ROOT / "web/video/designwizard_fr.mp4"
+        film = ROOT / "web/video/designorbit_fr.mp4"
         data = film.read_bytes()
-        status, h, body = req("HEAD", "/video/designwizard_fr.mp4")
+        status, h, body = req("HEAD", "/video/designorbit_fr.mp4")
         self.assertEqual((status, h["Content-Type"], h["Accept-Ranges"], int(h["Content-Length"])), (200, "video/mp4", "bytes", len(data)))
-        status, h, body = req("GET", "/video/designwizard_fr.mp4", headers={"Range": "bytes=4-11"})
+        status, h, body = req("GET", "/video/designorbit_fr.mp4", headers={"Range": "bytes=4-11"})
         self.assertEqual((status, h["Content-Range"], body), (206, f"bytes 4-11/{len(data)}", data[4:12]))
-        status, h, body = req("GET", "/video/designwizard_fr.mp4", headers={"Range": "bytes=-16"})
+        status, h, body = req("GET", "/video/designorbit_fr.mp4", headers={"Range": "bytes=-16"})
         self.assertEqual((status, h["Content-Range"], body), (206, f"bytes {len(data) - 16}-{len(data) - 1}/{len(data)}", data[-16:]))
-        status, h, body = req("GET", "/video/designwizard_fr.mp4", headers={"Range": f"bytes={len(data)}-"})
+        status, h, body = req("GET", "/video/designorbit_fr.mp4", headers={"Range": f"bytes={len(data)}-"})
         self.assertEqual((status, h["Content-Range"], body), (416, f"bytes */{len(data)}", b""))
-        status, h, body = req("GET", "/video/designwizard_fr.vtt")
+        status, h, body = req("GET", "/video/designorbit_fr.vtt")
         self.assertEqual((status, h["Content-Type"]), (200, "text/vtt; charset=utf-8"))
         self.assertTrue(body.startswith(b"WEBVTT"))
 

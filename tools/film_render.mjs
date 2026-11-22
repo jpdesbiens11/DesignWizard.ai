@@ -1,12 +1,12 @@
 /* DesignOrbit.ai — renders the film : the page tools/film/film.html drawn frame by frame, each frame handed to ffmpeg.
    Not part of the application and not run by the tests : it needs Playwright, ffmpeg and the clips shot by tools/film_shots.mjs.
      node tools/film_render.mjs <clips folder> <output folder> [fr] [en] [--no-captions] [--crf n] [--from s] [--to s] [--poster]
-   For each language it writes, in the output folder (web/video for the site) : designwizard_<lang>.mp4 (1280 × 720, H.264, no sound yet),
-   designwizard_<lang>.jpg (the picture shown before the film plays) and designwizard_<lang>.vtt (the narration as subtitles) ; and, in
+   For each language it writes, in the output folder (web/video for the site) : designorbit_<lang>.mp4 (1280 × 720, H.264, no sound yet),
+   designorbit_<lang>.jpg (the picture shown before the film plays) and designorbit_<lang>.vtt (the narration as subtitles) ; and, in
    docs/film, narration_<lang>.md (the script to record).
    --no-captions leaves the subtitles out of the picture, for the day a recorded voice says them ; --crf sets the weight (26 : about 11 MB) ;
    --from and --to render a piece, to look at it ; --poster writes the picture, the subtitles and the narration without drawing the film. The voice is laid over without drawing the film again :
-     ffmpeg -i designwizard_fr_sans-sous-titres.mp4 -i voix_fr.wav -c:v copy -c:a aac -b:a 160k -shortest designwizard_fr.mp4 */
+     ffmpeg -i designorbit_fr_sans-sous-titres.mp4 -i voix_fr.wav -c:v copy -c:a aac -b:a 160k -shortest designorbit_fr.mp4 */
 
 import { createRequire } from "node:module"; import { createServer } from "node:http"; import { spawn } from "node:child_process";
 import { readFile, mkdir, writeFile } from "node:fs/promises"; import { join, resolve, extname, normalize } from "node:path"; import { fileURLToPath } from "node:url";
@@ -33,7 +33,7 @@ for (const lang of langs.length ? langs : LANGS) {
   const page = await (await browser.newContext({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 })).newPage(), errors = [];
   page.on("pageerror", (e) => errors.push(String(e).slice(0, 200)));
   await page.goto(`${base}/tools/film/film.html?lang=${lang}&scale=0.8${captions ? "" : "&captions=0"}`); await page.waitForFunction(() => window.filmReady === true, null, { timeout: 120000 });
-  const part = from > 0 || to < DURATION, still = args.includes("--poster"), file = join(out, `designwizard_${lang}${part ? `_${from}-${to}` : ""}${captions ? "" : "_sans-sous-titres"}.mp4`);
+  const part = from > 0 || to < DURATION, still = args.includes("--poster"), file = join(out, `designorbit_${lang}${part ? `_${from}-${to}` : ""}${captions ? "" : "_sans-sous-titres"}.mp4`);
   const t0 = Date.now(), first = Math.round(from * FPS), last = Math.round(to * FPS);
   if (!still) {
     const ff = spawn("ffmpeg", ["-y", "-loglevel", "error", "-f", "image2pipe", "-framerate", String(FPS), "-c:v", "mjpeg", "-i", "-", "-an", "-c:v", "libx264", "-preset", "slow", "-crf", crf, "-tune", "animation", "-pix_fmt", "yuv420p", "-movflags", "+faststart", "-r", String(FPS), file], { stdio: ["pipe", "inherit", "inherit"] });
@@ -47,8 +47,8 @@ for (const lang of langs.length ? langs : LANGS) {
     ff.stdin.end(); await done;
   }
   if (!part) {
-    await page.evaluate(async (t) => { await window.filmSeek(t); for (const c of [".caption", ".progress"]) document.querySelector(c).style.visibility = "hidden"; }, 21); await page.screenshot({ path: join(out, `designwizard_${lang}.jpg`), type: "jpeg", quality: 86 });      // the name and its slogan : what shows before the film plays
-    await writeFile(join(out, `designwizard_${lang}.vtt`), toVtt(lang)); await mkdir(join(repo, "docs", "film"), { recursive: true }); await writeFile(join(repo, "docs", "film", `narration_${lang}.md`), toScript(lang));
+    await page.evaluate(async (t) => { await window.filmSeek(t); for (const c of [".caption", ".progress"]) document.querySelector(c).style.visibility = "hidden"; }, 21); await page.screenshot({ path: join(out, `designorbit_${lang}.jpg`), type: "jpeg", quality: 86 });      // the name and its slogan : what shows before the film plays
+    await writeFile(join(out, `designorbit_${lang}.vtt`), toVtt(lang)); await mkdir(join(repo, "docs", "film"), { recursive: true }); await writeFile(join(repo, "docs", "film", `narration_${lang}.md`), toScript(lang));
   }
   console.log(`[${lang}] ${still ? "picture, subtitles and narration only" : file} — ${still ? 0 : last - first} frames in ${Math.round((Date.now() - t0) / 1000)} s${errors.length ? ` — page errors : ${errors.join(" || ")}` : ""}`);
   await page.context().close();
