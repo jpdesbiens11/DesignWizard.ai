@@ -25,6 +25,10 @@
    The first half is pure — the geometry of the turn and of the cue ; mountOrbit() draws on the page and moves the camera of
    core/viewer.js. */
 
+import { recordView } from "./view_record.js";
+import { mountAutoDock } from "./auto_dock.js";
+import { shareName, turnSeconds } from "./share.js";
+
 const Z = [0, 0, 1];
 const add = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]], sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]], dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]], norm = (a) => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
@@ -154,7 +158,7 @@ export function mountOrbit(viewer) {
   function place() {
     if (!pivot) return; const [sx, sy] = viewer.toScreen(pivot), r = viewer.el.getBoundingClientRect(), x = sx - r.left, y = sy - r.top;
     svg.style.left = `${x - box / 2}px`; svg.style.top = `${y - box / 2}px`; note.style.left = `${x}px`; note.style.top = `${y + R + 26}px`;
-    if (panel) { panel.style.left = `${Math.max(6, Math.min(r.width - 204, x + R + 20))}px`; panel.style.top = `${Math.max(6, Math.min(r.height - 196, y - 84))}px`; }
+    if (panel && !panel.dataset.placed) { panel.style.left = `${Math.max(6, Math.min(r.width - 204, x + R + 20))}px`; panel.style.top = `${Math.max(6, Math.min(r.height - 196, y - 84))}px`; }
   }
   /* full : the rings and the arcs ; else the pivot alone (and how far the hold has come) */
   function draw(full, progress = 0) {
@@ -203,18 +207,32 @@ export function mountOrbit(viewer) {
     panel = H("div", "dw-auto"); panel.setAttribute("role", "group"); panel.setAttribute("aria-label", "Rotation automatique de la vue");
     const head = H("div", "dw-auto-head"), pad = H("div", "dw-auto-pad"), speeds = H("div", "seg text"); speeds.setAttribute("role", "group"); speeds.setAttribute("aria-label", "Vitesse de rotation");
     const close = H("button", "icon-btn", "×"); close.type = "button"; close.setAttribute("aria-label", "Arrêter la rotation automatique"); close.dataset.tip = "Arrêter et fermer (Échap)"; close.addEventListener("click", endAuto);
-    head.append(H("b", "", "Rotation automatique"), close);
+    const grip = H("span", "dw-auto-grip", "⠿"), dockBtn = H("button", "icon-btn dw-auto-dock", "⇥"); grip.setAttribute("aria-hidden", "true"); dockBtn.type = "button";
+    head.dataset.tip = "Glisser la poignée pour déplacer la rotation dans la vue"; head.append(grip, H("b", "", "Rotation automatique"), dockBtn, close);
     /* one switch per axis : a way goes on or off without touching the other axes, so two or three combine ; ■ stops them all */
     const way = (cls, label, glyph, axis = "", val = 0) => { const b = H("button", `dw-auto-way ${cls}`, glyph); b.type = "button"; b.setAttribute("aria-label", label); b.dataset.tip = axis ? `${label} — se combine avec un autre sens` : label; b.dataset.axis = axis; b.dataset.val = val;
       b.addEventListener("click", () => { Object.assign(auto, autoToggled(auto, axis, val), { last: 0 }); if (axis === "x" && auto.x) auto.sense = cam().up[2] < 0 ? -1 : 1; went = [0, 0, 0]; paint(); draw(true); if (!raf && going()) raf = requestAnimationFrame(spin); }); return b; };
     pad.append(way("rl", "Rouler vers la gauche", "↺", "r", -1), way("up", "Basculer vers le haut", "▲", "y", -1), way("rr", "Rouler vers la droite", "↻", "r", 1), way("left", "Tourner vers la gauche, autour du Z", "◀", "x", -1), way("stop", "Tout arrêter"), way("right", "Tourner vers la droite, autour du Z", "▶", "x", 1), way("down", "Basculer vers le bas", "▼", "y", 1));
     for (const s of AUTO_SPEEDS) { const b = H("button", "seg-btn", s.label); b.type = "button"; b.dataset.speed = s.key; b.dataset.tip = `${s.deg}° par seconde`; b.addEventListener("click", () => { auto.speed = s.key; try { localStorage.setItem(STORE, s.key); } catch (e) { /* kept for this visit */ } paint(); }); speeds.append(b); }
-    panel.append(head, pad, speeds, H("small", "dw-auto-hint", "Un sens, ou deux à la fois : ils se combinent. Échap arrête.")); viewer.el.append(panel);
+    /* the animation (point 17) : what the view shows, recorded until the next click ; or one full turn about Z, recorded, then the rotation stops */
+    const recRow = H("div", "dw-auto-rec"), recBtn = H("button", "chip-btn dw-auto-record"), turnBtn = H("button", "chip-btn dw-auto-turn", "↻ Un tour enregistré"); recBtn.type = "button"; turnBtn.type = "button";
+    recBtn.dataset.tip = "Enregistrer ce que la vue montre, en vidéo WebM, jusqu'au prochain clic — pour une revue de conception"; turnBtn.dataset.tip = "Un tour complet autour du Z, à la vitesse choisie, enregistré en vidéo WebM ; la rotation s'arrête ensuite";
+    recBtn.addEventListener("click", () => (rec ? stopRec() : startRec())); turnBtn.addEventListener("click", oneTurn); recRow.append(recBtn, turnBtn);
+    panel.append(head, pad, speeds, recRow, H("small", "dw-auto-hint", "Un sens, ou deux à la fois : ils se combinent. Échap arrête.")); viewer.el.append(panel); mountAutoDock(panel, head, viewer, dockBtn);
     window.addEventListener("keydown", onKey, true); paint(); draw(true);
   }
   const going = () => !!(auto && (auto.x || auto.y || auto.r));
+  let rec = null, recTick = 0, turnEnd = 0;
+  function paintRec() { const b = panel && panel.querySelector(".dw-auto-record"); if (!b) return; b.textContent = rec ? `■ Arrêter · ${Math.round(rec.seconds())} s` : "● Enregistrer"; b.classList.toggle("on", !!rec); b.setAttribute("aria-pressed", rec ? "true" : "false"); }
+  function startRec() { if (rec) return; rec = recordView(viewer.canvas, { caption: shareName(location.hash), name: location.hash }); if (!rec) return; recTick = setInterval(paintRec, 500); paintRec(); }
+  function stopRec() { clearInterval(recTick); clearTimeout(turnEnd); recTick = 0; turnEnd = 0; const r = rec; rec = null; paintRec(); return r ? r.stop() : null; }
+  function oneTurn() {
+    if (!auto) startAuto();
+    Object.assign(auto, { x: 1, y: 0, r: 0, last: 0 }); auto.sense = cam().up[2] < 0 ? -1 : 1; went = [0, 0, 0]; paint(); draw(true); if (!raf) raf = requestAnimationFrame(spin);
+    startRec(); clearTimeout(turnEnd); turnEnd = setTimeout(() => { if (auto) { auto.x = 0; paint(); } stopRec(); }, turnSeconds(autoSpeed(auto.speed).deg) * 1000 + 250);
+  }
   function paint() {
-    if (!panel) return;
+    if (!panel) return; paintRec();
     for (const b of panel.querySelectorAll(".dw-auto-way[data-axis]")) { if (!b.dataset.axis) continue; const on = auto[b.dataset.axis] === +b.dataset.val; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on ? "true" : "false"); }
     for (const b of panel.querySelectorAll("[data-speed]")) { const on = b.dataset.speed === auto.speed; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on ? "true" : "false"); }
   }
@@ -224,7 +242,7 @@ export function mountOrbit(viewer) {
     apply(auto.x * w * dt, auto.y * w * dt, auto.r * w * dt, auto.sense); draw(true); raf = requestAnimationFrame(spin);
   }
   function onKey(e) { if (e.key === "Escape" && auto) { e.stopPropagation(); endAuto(); } }
-  function endAuto() { if (!auto) return; auto = null; cancelAnimationFrame(raf); raf = 0; window.removeEventListener("keydown", onKey, true); if (panel) { const had = panel.contains(document.activeElement); panel.remove(); panel = null; if (had) viewer.canvas.focus({ preventScroll: true }); } hide(); }      // the keys of the view (F, 0 … 6) work again at once
+  function endAuto() { if (!auto) return; if (rec) stopRec(); auto = null; cancelAnimationFrame(raf); raf = 0; window.removeEventListener("keydown", onKey, true); if (panel) { const had = panel.contains(document.activeElement); panel.remove(); panel = null; if (had) viewer.canvas.focus({ preventScroll: true }); } hide(); }      // the keys of the view (F, 0 … 6) work again at once
 
-  return { edge, hover, step, sized, press, turn, release, stop: () => { clearTimers(); endAuto(); hide(); }, dispose: () => { clearTimers(); clearTimeout(flash); endAuto(); window.removeEventListener("dw:orbit-mode", paintMode); svg.remove(); note.remove(); band.remove(); ctl.remove(); }, auto: () => (auto ? { ...auto } : null), pivot: () => (pivot ? pivot.slice() : null) };
+  return { edge, hover, step, sized, press, turn, release, stop: () => { clearTimers(); endAuto(); hide(); }, dispose: () => { clearTimers(); clearTimeout(flash); endAuto(); window.removeEventListener("dw:orbit-mode", paintMode); svg.remove(); note.remove(); band.remove(); ctl.remove(); }, auto: () => (auto ? { ...auto } : null), pivot: () => (pivot ? pivot.slice() : null), oneTurn, recording: () => !!rec };
 }

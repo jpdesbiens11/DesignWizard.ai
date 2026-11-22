@@ -19,12 +19,13 @@ import { installBoardNames, boardNamePicker } from "./board_names_ui.js";
 import { installStepper } from "./stepper.js";
 import { installFolds } from "./fold.js";
 import { installStairs } from "./stairs_ui.js";
+import { installShare } from "./share_ui.js";
 import { installPanelKeep } from "./panel_keep.js";
 import { installLoupe } from "./loupe.js";
 import { installUpdateCheck, updateButton } from "./update_check.js";
 import { installWhatsNew, newsButton } from "./whats_new_ui.js";
 
-export const APP_VERSION = "0.154.0";
+export const APP_VERSION = "0.155.0";
 /** What every document of the open project carries beside its content : approval names, organisation, confidentiality note, extraction stamp (core/brand.js). */
 export const docMeta = (when = new Date()) => docIdentity(store.project, when, APP_VERSION);
 const modules = new Map();
@@ -222,6 +223,7 @@ export async function start() {
   installWhatsNew({ running: APP_VERSION });       // what a version changed carries a mark on the screen, for as long as its review is open (core/whats_new.js)
   installBoardNames();       // the names of the trade for a board, mapped on everything that is drawn (core/board_names.js)
   installStairs({ ai: (key) => app.aiLoop && app.aiLoop(key) });       // the step up of every screen, and its « IA » button : one pictogram at the head of the left panel, towards what the screen is made from
+  installShare();       // « Partager » on every studio : the link of the element, the files the screen makes, an animation of its 3D view (core/share_ui.js)
   installPanelKeep();    // a panel drawn anew keeps its place, and the cursor its field
   installLoupe();        // the magnifier : a lens over drawings, boards, diagrams and 3D views — its buttons are beside the zoom of each view (core/view_bar.js)
   installUpdateCheck({ running: APP_VERSION, save: () => (store.saveState === "dirty" ? store.saveNow() : Promise.resolve()) });      // a page kept open says when a newer version is published, and offers to load it

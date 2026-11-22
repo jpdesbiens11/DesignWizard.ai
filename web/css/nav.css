@@ -50,6 +50,13 @@
 .stair-btn { position: relative; flex: none; } .stair-btn .sk-icon { color: var(--g, currentColor); } .stair-btn.with-label .sk-icon { color: currentColor; }
 .stair-btn::after { content: "↑"; position: absolute; top: -6px; right: -6px; width: 14px; height: 14px; border-radius: 50%; background: var(--graphite); color: var(--surface); font: 800 10px/14px system-ui, sans-serif; text-align: center; box-shadow: 0 0 0 1.5px var(--surface); }
 .head-ai { flex: none; gap: .25rem; font-weight: 650; } .head-ai .sk-icon { color: var(--violet-ink, #6d28d9); }
+/* « Partager » (core/share_ui.js) : one button after « IA » ; its menu groups the files by nature, a colour each */
+.head-share { flex: none; gap: .25rem; } .head-share .sk-icon { color: var(--accent, #0c66e4); }
+.share-menu { z-index: 60; min-width: 260px; max-width: 360px; max-height: 70vh; overflow: auto; }
+.share-item { align-items: flex-start; text-align: left; } .share-item .grow { display: grid; gap: .05rem; min-width: 0; } .share-item small { color: var(--muted); font-size: .72rem; line-height: 1.25; white-space: normal; }
+.share-item .sk-icon { color: var(--g, var(--ink)); flex: none; margin-top: .1rem; }
+.share-group { display: flex; align-items: baseline; gap: .4rem; padding: .35rem .6rem .1rem; border-top: 1px solid var(--line); border-left: 3px solid var(--g, var(--line)); margin-top: .2rem; }
+.share-group b { font-size: .74rem; color: var(--g, var(--ink)); } .share-group small { color: var(--muted); font-size: .7rem; } .share-none { padding: .4rem .6rem; margin: 0; }
 .stair-downs { display: inline-flex; align-items: center; gap: .3rem; margin-left: auto; } .stair-btn.down::after { content: "↓"; top: auto; bottom: -6px; }
 .board-words { display: grid; grid-template-columns: 1fr 1fr; gap: .35rem; margin-top: .35rem; } .board-word { display: grid; gap: .1rem; font-size: .74rem; color: var(--muted); } .board-word input { min-width: 0; padding: .2rem .35rem; font: inherit; font-size: .84rem; color: var(--ink); } .board-word input.bad { outline: 2px solid var(--danger); }
 /* ---------- what is new (core/whats_new_ui.js) : a mark above the element, a list in a dialog ---------- */

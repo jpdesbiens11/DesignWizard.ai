@@ -16,7 +16,7 @@ const VIEWS = { iso: [-0.62, -0.72, 0.5], front: [0, -1, 0], back: [0, 1, 0], le
 
 export class Viewer {
   constructor(container, opts = {}) {
-    this.el = container;
+    this.el = container; container.dwViewer = this;      // « Partager » finds the view of a screen through its container (core/share_ui.js)
     this.opts = opts;
     this.objects = new Map();          // id -> {group, mesh, edges, def}
     this.overlays = new THREE.Group();

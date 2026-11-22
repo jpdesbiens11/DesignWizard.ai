@@ -737,3 +737,23 @@ publications successives pour le voir) ni sur Firefox et Safari.
 Il mesure des boîtes, pas le sens : un libellé obscur, un ordre d'actions illogique, une couleur mal choisie, une
 fonction introuvable lui échappent. Il ne remplace pas un utilisateur devant l'écran — il lui évite les cailloux.
 Rien n'a été mesuré en dessous de 1366 px de large, ni sur un écran tactile.
+
+## Partager, et l'animation d'une vue (v0.155.0)
+
+Demande de JP (point 17, 20 novembre) : « le menu de rotation automatique se déplace ou se range en onglet de la marge de droite ;
+une animation s'enregistre et se télécharge, pour une revue de conception ; Partager sur chaque artéfact ».
+
+- **Partager** : un bouton en tête du volet de gauche de chaque studio, après « IA » (`core/share_ui.js`, posé une fois). Le menu
+  donne le **lien** de l'élément (il ouvre l'élément dans le projet de qui l'a), puis **les fichiers que l'écran sait déjà faire**,
+  lus de ses propres boutons d'export et **groupés par nature** — 3D, documents, fabrication, données, vidéo — une couleur par groupe,
+  un pictogramme par format (`core/share.js`) ; un clic presse le bouton de l'écran : chaque fichier garde sa fabrication et sa marque.
+  Sur une vue 3D, **une animation d'un tour** s'ajoute. Usage suivi : la feuille de partage des outils de bureau et du web — le lien
+  d'abord, puis les formats. Rien ne part vers un service : les fichiers arrivent sur cet ordinateur, le lien va au presse-papiers.
+- **La rotation automatique** (clic maintenu 2 s) se **déplace par sa poignée** (son titre) ou se **range dans la marge de droite**
+  (⇥, et ⇤ pour la remettre dans la vue) ; sa place est gardée dans ce navigateur (`core/auto_dock.js`). Usage suivi : la palette
+  flottante des outils de bureau, que l'on déplace par sa barre de titre et que l'on ancre dans un panneau latéral.
+- **L'enregistrement** : « ● Enregistrer » filme la vue jusqu'au clic suivant ; « ↻ Un tour enregistré » fait un tour complet autour
+  du Z à la vitesse choisie et le télécharge. La vue est copiée image par image, la marque de la plateforme incrustée en haut, le nom
+  de l'élément en bas ; le fichier est un WebM, par `download()` (`core/view_record.js`).
+- Essayé dans Chromium (menu, déplacement, rangement, tour enregistré et téléchargé) ; pas sur Safari ni Firefox, ni au toucher.
+
