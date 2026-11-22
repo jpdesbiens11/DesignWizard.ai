@@ -142,6 +142,13 @@ plus bas, avec sa version. Une revue de la liste se fait à chaque reprise de s�
    la carte de l'accueil ouvre la branche). **À itérer avec JP** : les capteurs de température (la face − est un contact), les prises de
    tension, la chaîne RS-485 d'un CORE à l'autre, les barres du couvercle du fond, les rampes de la came, les vis et les joints.
 
+4. **BM — concept 3** (JP, 22 novembre, après la came détaillée du concept 2 — « le concept 2 n'est pas correct ») : une 3e branche, partie
+   du concept 1 (MAIN) : cellules PERPENDICULAIRES à l'axe d'insertion du module, comme au concept 1 ; les CORE s'assemblent l'un à l'autre,
+   contacts face à face, − contre +, DANS l'axe d'insertion (comme au concept 1) ; y mettre des contacts haute puissance à lames ; couvercles
+   debout. Commencer SIMPLE, puis complexifier ensemble. Pas de ressorts de produit grand public (2–3 A) : des ressorts fins et compacts,
+   aucune place en longueur. À reprendre dans une nouvelle conversation. La came détaillée et le modèle `face_cam` (v0.173.0, non publiés sur
+   `main`) sont sur la branche de travail.
+
 **Réponses de l'interview** (JP, 22 novembre, par menu — les quatre choix conseillés) : les CORE **en ligne, pressés**, comme des piles D
 dans une lampe — le + de l'un contre le − du suivant, la pile pressée par la poignée du haut, le retour du courant le long du boîtier ; sur la
 face − de chaque CORE, des **bandes à lamelles** (le + reste une plaque rigide à bossage, la butée) ; une **poignée quart de tour à came de

@@ -692,15 +692,30 @@ de la rangée haute). Pas d'un CORE au suivant : 74,85 mm (70,15 + 2 × 1,5 + 1,
 
 **La pile** (`camLayout`, exemples dits) : 20 lamelles par bande, deux bandes par joint — 280 N à pousser, 1 600 A de
 lamelles pour 360 A (une lamelle Stäubli MULTILAM LA-CU : 40 A, 7 N, lue à l'itération 9). La poignée du haut écrase un
-empilage de **rondelles Belleville** (200 N/mm, exemple) d'une course fixe : **413 N** sur la pile, 1,47 fois ce que
+empilage de **rondelles Belleville** (200 N/mm, exemple) d'une course fixe : **378 N** sur la pile, 1,35 fois ce que
 les bandes demandent, quelles que soient les tolérances des 8 CORE.
 
-**La poignée** : quart de tour, **came de face à deux lobes** (efforts équilibrés, l'arbre ne fléchit pas), rampes de 6°
-sur un rayon moyen de 15 mm, plateau de 15° au bout et goupille de butée : course 2,06 mm, 1,28 N·m, **37 N** au bout
-d'un levier de 35 mm, repliable à plat. À μ = 0,1, une rampe de 6° **ne se bloque pas d'elle-même** (tan 6° = 0,105) :
-c'est le plateau de fin de course qui tient — dit sur la came. Un suiveur et une plaque isolante guidés par deux
-goupilles du couvercle ne tournent pas ; une rondelle de butée (PEEK, ou bronze, PTFE) entre la came et le suiveur,
-une seconde entre la came et le couvercle ; clavette DIN 6885 P9/h9 (la note de JP : pas de jeu au retour).
+**La poignée et sa came** (v0.171.0, détaillée en v0.173.0 — JP a renvoyé ses notes « Rotative handle that have a keying
+with a cam » ; par menu, sans préférence : le choix conseillé, « Came détaillée ») : quart de tour, **came de face à deux
+lobes** (efforts équilibrés, l'arbre ne fléchit pas). Chaque lobe est une **rampe hélicoïdale** de 5,5° sur un rayon moyen
+de 15 mm (piste de 11 à 19 mm), 75° de montée puis un **plateau** de fin de course : course 1,89 mm. Les rampes passent sous
+deux **goupilles d'appui** en acier emmanchées dans le couvercle (à 90° et 270°) : la came descend et sa **face plate**
+pousse une **butée à aiguilles** (enveloppe générique Ø15 × Ø32 × 3, aucune série lue), le suiveur, les rondelles, la
+pile. La came **flotte sur sa clavette** (3 × 3, la taille d'usage d'un arbre de 10 mm ; la table DIN 6885 n'a pas été lue ;
+P9 / h9 dans l'arbre, la note de JP) : la poussée va des goupilles d'appui au couvercle, **l'arbre ne porte que le couple**
+— tenu en long par son collet Ø14 sous le couvercle et un **circlip** dessus ; la poignée y est goupillée. Un **ergot** de la
+came bat entre **deux goupilles de butée** : le quart de tour, pas plus. Dessinée en 8 marches par lobe (le noyau ne trace
+pas d'hélice ici) ; la vraie rampe est continue — fraisée en 4 axes, ou frittée puis reprise ; acier 17-4 PH trempé (exemple).
+
+**Le calcul de la came, gardé dans le projet** (sur la branche du concept 2, « Came de face du couvercle du haut ») : un
+nouveau modèle analytique, `face_cam` — la rampe d'une came est le filet déroulé d'une vis de manœuvre à filet carré ;
+couple pour monter T = F (rm tan(α + φ) + μb rb), pour redescendre T = F (rm tan(φ − α) + μb rb), la came tient seule quand
+ce dernier n'est pas négatif (page Wikipédia « Leadscrew », lue). Résultat : **378 N**, 1,15 N·m, **33 N** à la main au bout
+d'un levier de 35 mm pour fermer, 17 N pour ouvrir ; **la rampe tient seule** (pente limite 5,9° à μ = 0,1 sur une butée à
+aiguilles) et le plateau tient aussi — deux raisons pour que la poignée reste fermée. Une rampe de 6° (le premier jet) ne
+tenait pas seule. Validé contre un exemple chiffré publié — le rendement d'une vis à filet carré, 35 % à λ = 10°, μ = 0,30
+(page Engineers Edge « Power Screws Design », lue) ; le modèle trouve 35,1 %. Les frottements (μ ≈ 0,1 sur la rampe
+graissée, μb ≈ 0,005 sur les aiguilles) sont des **valeurs d'usage**, à mesurer ; le levier repliable à plat n'est pas dessiné.
 
 **Le courant** : la borne − du module (plaque rigide à bossages, comme une plaque +) reçoit les bandes du CORE 1 et
 entre par une languette dans le couvercle du fond ; au bout haut, la plaque de pression en cuivre porte deux bandes sur
@@ -708,7 +723,7 @@ la plaque + du CORE 8, et un shunt souple descend par une fenêtre du fond au **
 ramène le + au couvercle du fond. **Le couvercle du fond est actif** : connecteur d'échange et contacteur (enveloppes
 génériques) et la **carte du BMS central à plat** (85 × 62 mm) dans un logement de 95,8 × 69 mm — la question « où mettre
 la carte » est réglée ici. **Le boîtier** : section de 100,8 × 69,7 mm, paroi de 2,5 mm, quatre **lobes Ø10** (la note
-de JP) et leurs trous pour vis EVO PT 40, coupé à 623,3 mm.
+de JP) et leurs trous pour vis EVO PT 40, coupé à 627,3 mm (4 mm de plus en v0.173.0 pour la came détaillée).
 
 **Vérifié par un essai** (`tests/node/bm_concept2.test.mjs`) : toutes les pièces se construisent ; rien ne traverse rien
 (CORE 1, 2 et 8, les deux bouts, le boîtier) ; les bandes d'un CORE sont sur la plaque + du précédent, aussi hautes que
@@ -725,8 +740,9 @@ l'essai : chaque pastille touche sa cellule, la languette et les prises touchent
 rien. Non vérifié : le temps de réponse à travers la pastille, l'usure du flex quand on glisse le CORE.
 
 **Pas encore dessiné, à itérer** : la chaîne RS-485 d'un CORE à l'autre ; les barres du
-couvercle du fond (contacteur → connecteur) ; les rampes de la came (seuls les plateaux sont dessinés) ; les vis, les
-joints d'étanchéité, la nervuration des couvercles ; l'échauffement de la pile couchée.
+couvercle du fond (contacteur → connecteur) ; le levier repliable de la poignée ; les vis, les joints d'étanchéité, la
+nervuration des couvercles ; l'échauffement de la pile couchée. Non calculés : la pression de contact sur la rampe, la tenue
+de la clavette et des goupilles d'appui dans le plastique.
 
 ## Ce qu'il contient
 

@@ -39,7 +39,7 @@ import { casingPart, terminalParts, returnSizing, casingPaths } from "./demo_bm_
 import { topEnd } from "./demo_bm_lid.js";
 import { bottomEnd } from "./demo_bm_bottom.js";
 import { screwHolding, heatCalcs } from "./demo_bm_heat.js";
-import { conceptTwo, camLayout } from "./demo_bm_c2.js";
+import { conceptTwo, camLayout, camCalc } from "./demo_bm_c2.js";
 import { addPoint, restoreInto, putDefinition, withoutHistory } from "../core/history.js";
 
 /** The branch of concept 2 (JP, 22 novembre : « commence un point de sauvegarde du MAIN et fait une branche parallèle (concept 2 - consumer
@@ -153,7 +153,7 @@ function withConceptTwo(p, onBranch) {
     note: "Le module tel que les itérations 1 à 15 l'ont fait : 8 CORE debout côte à côte, busbar laminé à jambes pliées, joints plans pressés par le couvercle du haut à came quart de tour, couvercle du fond à anneau usiné." });
   const doc = JSON.parse(JSON.stringify(withoutHistory(p))), twins = new Set(p.boards.map((b) => b.part)), c2 = conceptTwo({ core: p.boards[0].part, bms: p.boards[1].part });
   doc.parts = [...doc.parts.filter((x) => twins.has(x.id)), ...c2.parts]; doc.assemblies = c2.assemblies;
-  const ids = new Set(doc.parts.map((x) => x.id)); doc.physics = (doc.physics || []).filter((c) => !c.part || ids.has(c.part));
+  const ids = new Set(doc.parts.map((x) => x.id)); doc.physics = [...(doc.physics || []).filter((c) => !c.part || ids.has(c.part)), camCalc()];
   doc.description = `Concept 2 « consumer product interface » : les 8 CORE couchés en ligne, pressés comme des piles dans une lampe — bandes à lamelles sur la face − de chaque CORE, plaque + rigide à bossages ; poignée quart de tour à came double lobe (${camLayout().preload.toFixed(0)} N sur la pile) ; couvercle du fond actif (connecteur, contacteur, carte BMS). Premier jet, à itérer.`;
   delete doc.id; delete doc.log; delete doc.updated; putDefinition(p, doc);
   addPoint(p, { kind: "manual", branch: C2_BRANCH, label: "Concept 2 — premier jet : CORE 2.0 en ligne, poignée à came", when: "2026-11-22T12:30:00.000Z", by: "DesignWizard.ai",

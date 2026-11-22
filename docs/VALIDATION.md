@@ -40,7 +40,7 @@ Trois façons de rejouer un exemple :
 
 ## Où l'on en est
 
-**18 des 27 modèles** ont au moins un exemple publié rejoué — 27 cas, dont 25 lus sur la page de leur source.
+**19 des 28 modèles** ont au moins un exemple publié rejoué — 28 cas, dont 26 lus sur la page de leur source.
 Sans cas : `spring_stop`, `louvre_strip`, `plastic_screw`, `junction_temperature`, `heatsink_natural`, `heatsink_forced`, `lumped_mass`, `pcb_trace`, `adiabatic_pulse`.
 
 ## Structure
@@ -160,6 +160,14 @@ Sans cas : `spring_stop`, `louvre_strip`, `plastic_screw`, `junction_temperature
 ### Screw in plastic · pull-out — Vis autotaraudeuse dans un bossage plastique (arrachement)
 
 **Aucun cas.** Aucun exemple chiffré publié n'a été trouvé en lecture libre : la page qui imprime la formule (Engineers Edge) n'en donne pas, et les guides des fabricants de vis et de plastiques consultés ce jour-là n'ont pas pu être lus. La formule n'est donc pas validée ici.
+
+### Face cam · handle — Came de face tournée par une poignée (course, couple, auto-blocage)
+
+| Cas | Source | Grandeur | La source imprime | L'outil trouve | Écart | Tolérance |
+|---|---|---|---|---|---|---|
+| Rendement d'une vis à filet carré : λ = 10°, μ = 0,30 *(rejoué tel quel)* | [Engineers Edge, « Power Screws Design »](https://engineersedge.com/mechanics_machines/power_screws_design_13982.htm) — paragraphe sur le rendement (efficiency) : « for λ = 10 degrees and µ = 0.05 » puis « µ = 0.30 » · page lue | Rendement de la came | η = 35 percent | 35,06 % | +0,2 % | ± 1,5 % |
+
+- **Ce que ces cas ne couvrent pas** : Seul le rendement de la rampe est comparé (un exemple de vis à filet carré) : la course, le frottement de la butée, le couple de retour et l'auto-blocage n'ont pas de cas chiffré — la formule de la descente et la condition d'auto-blocage sont celles que la page Wikipédia « Leadscrew » imprime, sans exemple.
 
 ## Fluides
 
@@ -281,6 +289,7 @@ chaque cas dit le sien.
 | [Université de Bassorah, génie mécanique, notes de cours « Mechanics of Materials — Chapter Ten : Thick Cylinders »](https://faculty.uobasrah.edu.iq/uploads/teaching/) | page lue | notes de cours publiques, sans licence dite |
 | [Jönköping University, « Applied Mechanics » (M. Cenanovic)](https://mechanics.ju.se/SolidMechanics/) | page lue | CC BY 4.0 |
 | [Engineering LibreTexts, « Strength of Materials » (Lord, Richardson, Davison, Dillard)](https://eng.libretexts.org/Bookshelves/Mechanical_Engineering/Strength_of_Materials/) | page lue | CC BY-NC-SA 4.0 |
+| [Engineers Edge, « Power Screws Design »](https://engineersedge.com/mechanics_machines/) | page lue | © Engineers Edge, LLC — nombres cités avec la référence |
 | [OpenStax, College Physics 2e](https://openstax.org/books/college-physics-2e/pages/) | page lue | CC BY-NC-SA 4.0 |
 | [OpenStax, University Physics, Volume 1](https://openstax.org/books/university-physics-volume-1/pages/) | page lue | CC BY-NC-SA 4.0 |
 | [The Engineering ToolBox (2004), « Orifice, Nozzle, and Venturi Flow Meters: Principles, Calculations & Data »](https://www.engineeringtoolbox.com/) | page lue | page publique, citée comme elle le demande |

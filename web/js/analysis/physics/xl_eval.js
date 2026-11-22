@@ -12,7 +12,7 @@ const half = (x, d = 0) => { const k = 10 ** num(d), v = num(x); return Math.sig
 /** The functions a formula may call. IF is not here : it is lazy. */
 export const XL_FUNCTIONS = {
   PI: () => Math.PI, SQRT: (x) => (num(x) < 0 ? fail("#NUM!") : Math.sqrt(x)), LOG10: (x) => (num(x) <= 0 ? fail("#NUM!") : Math.log10(x)), LN: (x) => (num(x) <= 0 ? fail("#NUM!") : Math.log(x)),
-  EXP: (x) => num(Math.exp(num(x))), TANH: (x) => Math.tanh(num(x)), ABS: (x) => Math.abs(num(x)), ROUND: half, MIN: (...a) => Math.min(...a.map(num)), MAX: (...a) => Math.max(...a.map(num)),
+  EXP: (x) => num(Math.exp(num(x))), TANH: (x) => Math.tanh(num(x)), TAN: (x) => num(Math.tan(num(x))), ATAN: (x) => Math.atan(num(x)), RADIANS: (x) => num(x) * Math.PI / 180, DEGREES: (x) => num(x) * 180 / Math.PI, ABS: (x) => Math.abs(num(x)), ROUND: half, MIN: (...a) => Math.min(...a.map(num)), MAX: (...a) => Math.max(...a.map(num)),
   AND: (...a) => a.map(num).every(Boolean), OR: (...a) => a.map(num).some(Boolean), NOT: (x) => !num(x),
 };
 

@@ -86,4 +86,18 @@ const plasticScrew = {
   checks: [{ label: "Effort par vis vs effort d'arrachement", unit: "N", value: "{F}", limit: "{o:F_pull}", sf: "{sf}" }],
   flags: [{ label: "Prise (≥ 2,5 Dp)", f: 'IF({L}<2.5*{Dp},"NON : le couple de foirage ne plafonne que vers 2,5 Dp","Oui")' }, { label: "Bossage (≈ 2,5 d)", f: 'IF({Db}<2.5*{d},"NON : un bossage mince peut fendre","Oui")' }],
 };
-export const XL_JOINTS = { bolted_joint: bolt, press_fit: pressfit, dowel_pin: pin, spring_stop: springStop, louvre_strip: louvreStrip, plastic_screw: plasticScrew };
+/* the face cam turned by a handle : a square-thread power screw whose lead per radian is rm tan α, plus the collar (thrust bearing) term */
+const ALPHA = "RADIANS({alpha})", PHI = "ATAN({mu})", COLL = "{muB}*{rb}";
+const faceCam = {
+  helpers: [{ key: "nl", label: "Nombre de lobes retenu", unit: "", f: "MAX(1,ROUND({lobes},0))" }, { key: "th", label: "Rotation de la rampe (sans le plateau)", unit: "°", f: "MAX(0,{turn}-{dwell})" },
+    { key: "lev", label: "Levier", unit: "m", f: "{lever}/1000" }],
+  outputs: { s: `RADIANS({h:th})*{rm}*TAN(${ALPHA})`, F: "{F0}+{k}*{o:s}", Fl: "{o:F}/{h:nl}", T_up: `{o:F}*({rm}*TAN(${ALPHA}+${PHI})+${COLL})/1000`, F_up: "{o:T_up}/{h:lev}",
+    T_down: `{o:F}*({rm}*TAN(${PHI}-${ALPHA})+${COLL})/1000`, T_rel: `{o:F}*({mu}*{rm}+${COLL})/1000`, F_rel: "{o:T_rel}/{h:lev}", alphaLock: `DEGREES(${PHI}+ATAN(${COLL}/{rm}))`,
+    eta: `IF({o:T_up}>0,{o:F}*{rm}*TAN(${ALPHA})/1000/{o:T_up}*100,0)` },
+  checks: [{ label: "Effort sur la pile vs effort demandé", unit: "N", value: "{o:F}", limit: "{Freq}", min: true }, { label: "Effort à la main vs effort admis", unit: "N", value: "{o:F_up}", limit: "{Fhand}" },
+    { label: "Pente de la rampe vs pente qui tient seule (le plateau tient la pile)", unit: "°", value: "{alpha}", limit: "{o:alphaLock}", soft: true, when: "{dwell}>0" },
+    { label: "Pente de la rampe vs pente qui tient seule (sans plateau)", unit: "°", value: "{alpha}", limit: "{o:alphaLock}", when: "{dwell}<=0" }],
+  flags: [{ label: "Le plateau laisse une rampe", f: 'IF({dwell}>={turn},"NON : le plateau prend toute la rotation","Oui")' }, { label: "La rampe tient dans un lobe", f: 'IF({turn}>360/{h:nl},"NON : la rotation dépasse ce qu\'un lobe peut porter","Oui")' },
+    { label: "Deux lobes au moins", f: 'IF({h:nl}<2,"NON : un seul lobe fait fléchir l\'arbre","Oui")' }, { label: "Un plateau de fin de course", f: 'IF({dwell}<=0,"NON : la poignée s\'arrête sur la pente","Oui")' }],
+};
+export const XL_JOINTS = { bolted_joint: bolt, press_fit: pressfit, dowel_pin: pin, spring_stop: springStop, louvre_strip: louvreStrip, plastic_screw: plasticScrew, face_cam: faceCam };

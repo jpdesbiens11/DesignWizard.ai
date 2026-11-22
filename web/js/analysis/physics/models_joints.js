@@ -256,4 +256,48 @@ const plasticScrew = { id: "plastic_screw", domain: "joints", sketch: "plasticsc
     return S.set({ Ss, A, F_pull, sf_pull: i.F > 0 ? Math.min(999, F_pull / i.F) : 999, F_max: F_pull / i.sf, L_Dp, Db_d });
   } };
 
-export const JOINTS = [bolt, pressfit, pin, springStop, louvreStrip, plasticScrew];
+/* ---------- a face cam turned by a handle (JP, 22 novembre 2026, his notes « Rotative handle that have a keying with a cam » and his choice by menu :
+   a quarter turn, two lobes) : the ramp of the cam is a wedge — the same mechanics as a square-thread power screw whose lead per radian is
+   rm tan α. Raising : T = F rm tan(α + φ) ; lowering : T = F rm tan(φ − α) ; φ = atan μ — plus the friction of the thrust bearing between the
+   cam and what it pushes, F μb rb (the collar term of a power screw). The ramp holds itself when the lowering torque is not negative. ---------- */
+const CAM = "Came", STACK = "Ce qu'elle presse", FRIC = "Frottement";
+const faceCam = { id: "face_cam", domain: "joints", sketch: "facecam", title: "Face cam turned by a handle (stroke, torque, self-locking)", fr: "Came de face tournée par une poignée (course, couple, auto-blocage)",
+  question: "Un tour de poignée donne-t-il l'effort demandé, la main y suffit-elle, et la poignée reste-t-elle en place sous la charge ?",
+  inputs: [num("rm", "Rayon moyen de la rampe", "mm", 15, 1, 500, 0.5, CAM), num("alpha", "Pente de la rampe α", "°", 5.5, 0.5, 30, 0.5, CAM),
+    num("turn", "Rotation de la poignée", "°", 90, 5, 360, 5, CAM), num("dwell", "Plateau de fin de course (dans la rotation)", "°", 15, 0, 180, 1, CAM),
+    num("lobes", "Nombre de lobes (rampes)", "", 2, 1, 6, 1, CAM), num("lever", "Longueur du levier (axe → main)", "mm", 35, 5, 1000, 1, CAM),
+    num("k", "Raideur de ce que la came écrase (rondelles, ressorts)", "N/mm", 200, 0, 1e6, 10, STACK), num("F0", "Effort déjà là au pied de la rampe", "N", 0, 0, 1e6, 10, STACK),
+    num("Freq", "Effort que la pile demande", "N", 280, 0, 1e6, 10, STACK),
+    num("mu", "Frottement de la rampe μ (goupilles sur la rampe)", "", 0.1, 0.005, 0.8, 0.005, FRIC), num("muB", "Frottement de la butée μb (aiguilles ≈ 0,005 ; PEEK, bronze ≈ 0,1)", "", 0.005, 0, 0.8, 0.005, FRIC),
+    num("rb", "Rayon moyen de la butée rb", "mm", 11, 0, 500, 0.5, FRIC), num("Fhand", "Effort à la main admis", "N", 50, 1, 2000, 5, CRIT)],
+  outputs: [out("s", "Course de la came", "mm"), out("F", "Effort sur la pile en fin de course", "N"), out("Fl", "Effort par lobe", "N"), out("T_up", "Couple au haut de la rampe", "N·m"),
+    out("F_up", "Effort à la main au haut de la rampe", "N"), out("T_down", "Couple pour redescendre la rampe (< 0 : la pile ramène la poignée)", "N·m"),
+    out("T_rel", "Couple pour quitter le plateau", "N·m"), out("F_rel", "Effort à la main pour ouvrir", "N"), out("alphaLock", "Pente la plus forte qui tient seule", "°"), out("eta", "Rendement de la came", "%")],
+  assumptions: ["La rampe est un coin enroulé : course s = θ rm tan α, θ la rotation de la rampe sans le plateau, en radians — la vis de manœuvre à filet carré dont le pas par radian est rm tan α.",
+    "Couple pour monter : T = F rm tan(α + φ) + F μb rb, φ = atan μ ; pour redescendre : T = F rm tan(φ − α) + F μb rb — les formules d'une vis à filet carré avec le frottement de son collet (page Wikipédia « Leadscrew »).",
+    "La rampe tient seule quand le couple pour redescendre n'est pas négatif : α ≤ φ + atan(μb rb / rm). Sinon c'est le plateau de fin de course (pente nulle) qui garde la pile pressée.",
+    "Les lobes se partagent l'effort ; ils ne changent ni la course ni le couple — deux lobes opposés équilibrent la poussée autour de l'arbre.",
+    "L'effort croît le long de la rampe comme la raideur de ce que la came écrase : F = F0 + k s ; on le prend au haut de la rampe, là où il est le plus grand."],
+  validity: "Frottement de Coulomb constant, rampe rigide, contacts au rayon moyen ; ni l'usure, ni la pression de contact sur la rampe, ni la tenue de la clavette ne sont calculées. Les coefficients de frottement sont des valeurs d'usage, à lire sur la fiche de la butée et à mesurer sur la rampe.",
+  reference: "Vis de manœuvre à filet carré et frottement du collet — page Wikipédia « Leadscrew » (lue)",
+  fill: {},
+  compute(i) {
+    const S = sheet(), rad = (d) => d * PI / 180, deg = (r) => r * 180 / PI, nl = Math.max(1, Math.round(i.lobes)), th = Math.max(0, i.turn - i.dwell), phi = Math.atan(i.mu), ta = Math.tan(rad(i.alpha));
+    const s = rad(th) * i.rm * ta, F = i.F0 + i.k * s, coll = i.muB * i.rb, T_up = F * (i.rm * Math.tan(rad(i.alpha) + phi) + coll) / 1000, T_down = F * (i.rm * Math.tan(phi - rad(i.alpha)) + coll) / 1000;
+    const T_rel = F * (i.mu * i.rm + coll) / 1000, alphaLock = deg(phi + Math.atan(coll / i.rm)), lev = i.lever / 1000, eta = T_up > 0 ? F * i.rm * ta / 1000 / T_up * 100 : 0;
+    S.step(`Course : s = θ rm tan α = ${n(th)}° × π/180 × ${n(i.rm)} × tan ${n(i.alpha)}° = ${n(s)} mm (la rotation ${n(i.turn)}°, moins le plateau ${n(i.dwell)}°).`);
+    S.step(`Effort en fin de course : F = F0 + k s = ${n(i.F0)} + ${n(i.k)} × ${n(s)} = ${n(F)} N, soit ${n(F / nl)} N par lobe (${nl} lobe${nl > 1 ? "s" : ""}).`);
+    S.step(`Couple au haut de la rampe : T = F (rm tan(α + φ) + μb rb) = ${n(F)} × (${n(i.rm)} × tan(${n(i.alpha)}° + ${n(deg(phi))}°) + ${n(i.muB)} × ${n(i.rb)}) / 1000 = ${n(T_up)} N·m, soit ${n(T_up / lev)} N au bout d'un levier de ${n(i.lever)} mm.`);
+    S.step(`Pour redescendre : T = F (rm tan(φ − α) + μb rb) = ${n(T_down)} N·m — ${T_down >= 0 ? "positif : la rampe tient seule" : "négatif : sous la charge, la pile ramène la poignée si on la lâche sur la rampe"} ; la pente qui tient seule est ${n(alphaLock)}°.`);
+    S.step(`Pour quitter le plateau (pente nulle) : T = F (μ rm + μb rb) = ${n(T_rel)} N·m, soit ${n(T_rel / lev)} N à la main ; rendement de la came ${n(eta)} %.`);
+    if (i.dwell >= i.turn) S.warn("Le plateau prend toute la rotation : la came ne monte pas.");
+    if (i.turn > 360 / nl) S.warn(`Avec ${nl} lobes, une rampe tient dans ${n(360 / nl)}° : la rotation de ${n(i.turn)}° la dépasse.`);
+    if (nl === 1) S.warn("Un seul lobe : la poussée est d'un seul côté de l'arbre, qui fléchit ; deux lobes opposés l'équilibrent.");
+    if (i.dwell <= 0) S.warn("Sans plateau, la poignée s'arrête sur la pente : c'est le frottement seul qui doit la tenir.");
+    S.check("Effort sur la pile vs effort demandé", F, i.Freq, "N", { min: true, note: F < i.Freq ? "Pas assez d'effort : une rampe plus longue ou plus raide, ou des rondelles plus raides." : "" });
+    S.check("Effort à la main vs effort admis", T_up / lev, i.Fhand, "N", { note: T_up / lev > i.Fhand ? "Trop dur à tourner : un levier plus long, une rampe moins raide, ou une butée à aiguilles." : "" });
+    S.check(`Pente de la rampe vs pente qui tient seule (${i.dwell > 0 ? "le plateau tient la pile" : "sans plateau"})`, i.alpha, alphaLock, "°", { soft: i.dwell > 0, note: i.alpha > alphaLock ? (i.dwell > 0 ? "La rampe ne tient pas seule : le plateau de fin de course garde la pile pressée — ne pas laisser la poignée sur la pente." : "Sans plateau, la poignée revient seule : une pente plus douce, ou un plateau.") : "" });
+    return S.set({ s, F, Fl: F / nl, T_up, F_up: T_up / lev, T_down, T_rel, F_rel: T_rel / lev, alphaLock, eta });
+  } };
+
+export const JOINTS = [bolt, pressfit, pin, springStop, louvreStrip, plasticScrew, faceCam];

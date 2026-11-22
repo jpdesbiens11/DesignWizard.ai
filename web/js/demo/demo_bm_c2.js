@@ -14,6 +14,8 @@
    take up its tolerances ; the + of the stack goes back to the bottom lid by the return busbar under the floor.
    Every size and every force is an EXAMPLE, said on the parts. Frame : X across a row of 4 (92.8 mm), Y along the module, Z up (the two rows). */
 
+import { run, sessionDefaults } from "../analysis/physics/index.js";
+
 const r3 = (v) => Math.round(v * 1000) / 1000, fr = (v) => String(r3(v)).replace(".", ",");
 const box = (id, name, at, size, o = {}) => ({ op: "box", id, name, ...(o.body ? { body: o.body } : {}), at: at.map(r3), size: size.map(r3), ...(o.mode ? { mode: o.mode } : {}) });
 const cylY = (id, name, at, d, h, o = {}) => ({ op: "cylinder", id, name, ...(o.body ? { body: o.body } : {}), at: at.map(r3), d: r3(d), h: r3(h), axis: "Y", ...(o.mode ? { mode: o.mode } : {}) });
@@ -31,24 +33,31 @@ export const C2 = (() => {
   const keel = { x0: r3(channel.x0 - t), x1: r3(channel.x1 + t), z0: r3(channel.z0 - t) };
   const lobe = { d: 10, hole: 3.4, at: [[outer.x0 - 1, outer.z0 - 1], [outer.x1 + 1, outer.z0 - 1], [outer.x1 + 1, outer.z1 + 1], [outer.x0 - 1, outer.z1 + 1]].map((p) => p.map(r3)) };      // Ø10 : JP's note, « garder le 10 mm »
   /* the top end, along Y : the + plate of CORE 8, the bands of the pressure plate, the copper plate, its insulating backing, the Belleville
-     washers, the follower, a thrust washer, the two lobes of the cam, its disc, a second thrust washer — then the end of the casing, the cap,
-     the handle */
+     washers, the follower, a needle thrust bearing, the cam (its flat face on the bearing, its two ramps under the two bearing pins of the cap,
+     its hub on the key of the shaft) — then the collar of the shaft under the cap, the cap, the circlip, the handle pinned on the shaft */
   const yPlus8 = r3(7 * pitch + H + PT), a = r3(yPlus8 + BAND.h);
-  const top = { yPlus8, a, ins: r3(a + 2), disc: r3(a + 5), follower: r3(a + 9), thrust1: r3(a + 12), lobes: r3(a + 13), cam: r3(a + 15), thrust2: r3(a + 19), end: r3(a + 20) };
-  top.cap1 = r3(top.end + 4); top.handle0 = r3(top.cap1 + 0.5); top.handle1 = r3(top.handle0 + 3);
+  const top = { yPlus8, a, ins: r3(a + 2), disc: r3(a + 5), follower: r3(a + 9), bearing: r3(a + 12), cam: r3(a + 15), land: r3(a + 19), hub: r3(a + 20), end: r3(a + 24) };
+  top.collar = r3(top.end - 1.5); top.cap1 = r3(top.end + 4); top.clip = r3(top.cap1 + 0.1); top.handle0 = r3(top.cap1 + 1.5); top.handle1 = r3(top.handle0 + 8);
   const bottom = { term: -5.2, backing: -6, end: -6, wall: -8.5, lid0: -80, inner0: -77.5, tab0: -40 };
   return { D, GAP, X, Z, H, CELL_D, PT, BAND, rows, cols, pitch, plate, bands, bosses, board, cav, outer, t, ret, xm, channel, keel, lobe, top, bottom, axis: [r3(xm), r3(Z / 2)], pins: [[8, r3(Z / 2)], [r3(X - 8), r3(Z / 2)]] };
 })();
 
 /** The stack and its handle, in numbers (examples, said) : what the bands of a joint ask (a lamella of the Stäubli MULTILAM LA-CU : 7 N, 40 A —
-    read in iteration 9), what the Belleville washers give, the stroke of the cam, the torque on the handle, and whether the ramp holds itself.
-    o : { mu (friction of the thrust washer), alpha (ramp, °), rm (mean radius of the ramp), dwell (°), k (stiffness of the washer stack, N/mm), lever } */
+    read in iteration 9), what the Belleville washers give, the stroke of the cam, the torque on the handle, and whether the ramp holds itself —
+    by the analytical model « face_cam » (the mechanics of a square-thread power screw, page Wikipédia « Leadscrew », read), the one the project keeps.
+    o : { mu (ramp on its pins), muB (needle thrust bearing), rb (its mean radius), alpha (ramp, °), rm (mean radius of the ramp), dwell (°), k (washer stack, N/mm), lever } */
+export const CAM = { mu: 0.1, muB: 0.005, rb: 11.75, alpha: 5.5, rm: 15, dwell: 15, turn: 90, lobes: 2, k: 200, lever: 35, Fhand: 50, track: [11, 19], pin: 4, stop: 25, steps: 8 };
 export function camLayout(o = {}) {
-  const { mu = 0.1, alpha = 6, rm = 15, dwell = 15, k = 200, lever = 35 } = o, B = C2.BAND, n = Math.floor(B.l / B.pitch);
-  const perBand = n * 7, joint = 2 * perBand, amps = 2 * n * 40;      // two bands per joint
-  const rad = (d) => (d * Math.PI) / 180, arc = rad(90 - dwell) * rm, stroke = arc * Math.tan(rad(alpha)), preload = k * stroke;
-  const phi = Math.atan(mu), torque = preload * (rm / 1000) * Math.tan(rad(alpha) + phi), selfLock = Math.tan(rad(alpha)) <= mu;
-  return { lamellae: n, perBand, joint, amps, stroke: r3(stroke), preload: r3(preload), torque: r3(torque), hand: r3(torque / (lever / 1000)), selfLock, margin: r3(preload / joint), mu, alpha, rm, dwell, k, lever };
+  const c = { ...CAM, ...o }, B = C2.BAND, n = Math.floor(B.l / B.pitch), perBand = n * 7, joint = 2 * perBand, amps = 2 * n * 40;      // two bands per joint
+  const r = run("face_cam", { ...sessionDefaults("face_cam"), rm: c.rm, alpha: c.alpha, turn: c.turn, dwell: c.dwell, lobes: c.lobes, lever: c.lever, k: c.k, F0: 0, Freq: joint, mu: c.mu, muB: c.muB, rb: c.rb, Fhand: c.Fhand }), v = r.values;
+  return { lamellae: n, perBand, joint, amps, stroke: r3(v.s), preload: r3(v.F), torque: r3(v.T_up), hand: r3(v.F_up), release: r3(v.F_rel), back: r3(v.T_down), alphaLock: r3(v.alphaLock), selfLock: v.T_down >= 0,
+    margin: r3(v.F / joint), verdict: r.verdict, run: r, ...c };
+}
+/** The calculation of the cam, kept in the project (concept 2) : the model « face_cam » with the numbers of the cam drawn. */
+export function camCalc() {
+  const c = camLayout(), r = c.run;
+  return { id: "phy-bm2-cam", name: `Came de face du couvercle du haut — ${Math.round(c.preload)} N sur la pile, ${String(Math.round(c.hand))} N à la main`, model: "face_cam", part: "BM2-CAM", inputs: r.inputs, values: r.values, checks: r.checks, verdict: r.verdict, when: "2026-11-22T16:00:00.000Z",
+    why: `Un quart de tour : ${c.turn - c.dwell}° de rampe à ${fr(c.alpha)}° sur un rayon moyen de ${c.rm} mm, puis ${c.dwell}° de plateau ; deux lobes ; des rondelles Belleville de ${c.k} N/mm (exemple). Les deux joints de bandes demandent ${c.joint} N (${c.lamellae} lamelles × 7 N, deux bandes). Butée à aiguilles (μb ≈ ${fr(c.muB)}, valeur d'usage), rampe acier trempé sur goupilles graissées (μ ≈ ${fr(c.mu)}, valeur d'usage, à mesurer).` };
 }
 
 /* ---------- the CORE 2.0 ---------- */
@@ -183,8 +192,8 @@ function bottomLidParts() {
   return [shell, contactor, connector];
 }
 function topLidParts() {
-  const { plate: P, outer: O, keel: K, axis: [ax, az], pins, top: T, X } = C2, plateBox = (id, name, y, t, mat, o = {}) => part(id, name, { family: o.family || "molded", process: o.process || "injection_molding", material: mat,
-    features: [box("plaque", name, [P.x0, y, P.z0], [P.x1 - P.x0, t, P.z1 - P.z0]), ...(o.holes ? pins.map(([x, z], k) => cylY(`guide_${k + 1}`, `Passage de la goupille ${k + 1}`, [x, r3(y - 0.1), z], 4.4, r3(t + 0.2), { mode: "cut" })) : [])],
+  const { plate: P, outer: O, keel: K, axis: [ax, az], pins: pins0, top: T, X } = C2, plateBox = (id, name, y, t, mat, o = {}) => part(id, name, { family: o.family || "molded", process: o.process || "injection_molding", material: mat,
+    features: [box("plaque", name, [P.x0, y, P.z0], [P.x1 - P.x0, t, P.z1 - P.z0]), ...(o.holes ? pins0.map(([x, z], k) => cylY(`guide_${k + 1}`, `Passage de la goupille ${k + 1}`, [x, r3(y - 0.1), z], 4.4, r3(t + 0.2), { mode: "cut" })) : [])],
     ...(o.bodies ? { bodies: o.bodies } : {}), function: o.fn, notes: o.notes || [] });
   const ring = (id, name, y, od, id0, h, mat, fn) => part(id, name, { family: "purchased", process: "purchased", material: mat, features: [cylY("anneau", name, [ax, y, az], od, h), cylY("alesage", "Alésage", [ax, r3(y - 0.1), az], id0, r3(h + 0.2), { mode: "cut" })], function: fn });
   const press = plateBox("BM2-PRESS-CU", "Plaque de pression, cuivre (contact + du bout haut)", T.a, 2, CU, { family: "sheet_metal", process: "laser_cut", bodies: { main: { material: CU, kind: "conductor", net: "PACK+" } },
@@ -192,26 +201,63 @@ function topLidParts() {
   const ins = plateBox("BM2-PRESS-INS", "Plaque de pression, isolante", T.ins, 3, "PA66-GF30", { holes: true, fn: "Isole la plaque de cuivre ; guidée par les deux goupilles du couvercle, elle ne tourne pas." });
   const disc = ring("BM2-DISC", "Rondelles Belleville (empilage)", T.disc, 40, 20.4, 4, "SS-17-4PH", "Rattrapent les tolérances de la pile : la came les écrase d'une course fixe, elles donnent l'effort.");
   disc.notes = [`Empilage dessiné à sa hauteur posée ; raideur visée ${camLayout().k} N/mm, ${fr(camLayout().preload)} N à la course de la came (exemple — à choisir dans un catalogue de rondelles DIN 2093).`];
-  const follower = plateBox("BM2-FOLLOWER", "Suiveur de came (ne tourne pas)", T.follower, 3, "SS-304", { holes: true, family: "machined", process: "machining", fn: "Reçoit la came par la butée ; guidé par les deux goupilles, il pousse les rondelles sans tourner." });
-  const thrust = ring("BM2-THRUST", "Rondelle de butée (PEEK — ou bronze, PTFE)", 0, 44, 10.4, 1, "PEEK", "Laisse tourner la came sous l'effort ; son frottement décide si la rampe tient seule.");
-  thrust.features[0].at[1] = 0; thrust.features[1].at[1] = -0.1;
-  const cam = part("BM2-CAM", "Came de face à deux lobes, clavetée sur son arbre", { family: "machined", process: "machining", material: "SS-304",
-    features: [box("lobe_1", "Lobe 1 (plateau de fin de course)", [r3(ax - 20), T.lobes, r3(az - 5)], [12, 2, 10]), box("lobe_2", "Lobe 2 (plateau de fin de course)", [r3(ax + 8), T.lobes, r3(az - 5)], [12, 2, 10]),
-      cylY("disque", "Disque", [ax, T.cam, az], 44, 4), cylY("arbre", "Arbre Ø10, claveté", [ax, T.cam, az], 10, r3(T.handle1 - T.cam))],
-    function: "Un quart de tour de la poignée fait monter les deux lobes sur la butée : la pile est pressée ; au plateau, elle tient sans verrou.",
-    notes: [`Deux rampes hélicoïdales à ${camLayout().alpha}° sur un rayon moyen de ${camLayout().rm} mm, un plateau de ${camLayout().dwell}° au bout, une goupille de butée (exemple) : course ${fr(camLayout().stroke)} mm. Les rampes ne sont pas dessinées, seuls les plateaux le sont.`,
-      "Clavette parallèle DIN 6885, ajustement P9/h9 : pas de jeu au retour de la poignée (la note de JP)."] });
-  const cap = part("BM2-CAP", "Couvercle du haut (porte la poignée)", { family: "molded", process: "injection_molding", material: "PA66-GF30",
+  const follower = plateBox("BM2-FOLLOWER", "Suiveur de came (ne tourne pas)", T.follower, 3, "SS-304", { holes: true, family: "machined", process: "machining", fn: "Reçoit la poussée de la came par la butée à aiguilles ; guidé par les deux goupilles, il pousse les rondelles sans tourner." });
+  const c = camLayout(), S = c.stroke, tip = r3(T.land + S), into = r3(T.end + 3), keyTop = r3(T.collar - 0.2), ST = "SS-17-4PH";
+  const at = (r, q) => [r3(ax + r * Math.cos(q * Math.PI / 180)), r3(az + r * Math.sin(q * Math.PI / 180))];
+  const sector = (r0, r1, a0, a1) => { const n = Math.max(2, Math.ceil((a1 - a0) / 3)), pts = []; for (let k = 0; k <= n; k++) pts.push(at(r1, a0 + (a1 - a0) * k / n)); for (let k = n; k >= 0; k--) pts.push(at(r0, a0 + (a1 - a0) * k / n)); return { poly: pts }; };
+  const ramp = (id, name, a0, a1, h) => ({ op: "extrude", id, name, plane: "XZ", at: T.land, length: r3(h), profile: sector(c.track[0], c.track[1], a0, a1) });
+  const rise = c.turn - c.dwell, step = rise / c.steps, lobes = [0, 180];
+  const bearing = part("BM2-NEEDLE", "Butée à aiguilles et ses deux rondelles", { family: "purchased", process: "purchased", material: ST,
+    features: [cylY("rondelle_1", "Rondelle côté suiveur", [ax, T.bearing, az], 32, 0.8), cylY("cage", "Cage à aiguilles", [ax, r3(T.bearing + 0.8), az], 30, 1.4), cylY("rondelle_2", "Rondelle côté came", [ax, r3(T.bearing + 2.2), az], 32, 0.8),
+      cylY("alesage", "Alésage", [ax, r3(T.bearing - 0.1), az], 15, 3.2, { mode: "cut" })],
+    function: "Laisse tourner la came sous la poussée de la pile : son frottement (μb ≈ 0,005, valeur d'usage) ne pèse presque rien dans le couple.",
+    notes: ["Enveloppe générique Ø15 × Ø32 × 3 mm (aucune série lue) : la fiche du fabricant choisi donne la charge et le frottement."] });
+  const cam = part("BM2-CAM", "Came de face à deux lobes, clavetée sur l'arbre", { family: "machined", process: "machining", material: ST,
+    features: [cylY("disque", "Disque — sa face plate sur la butée", [ax, T.cam, az], 44, 4), cylY("moyeu", "Moyeu", [ax, T.land, az], 16, r3(T.hub - T.land)),
+      box("ergot", "Ergot de butée (entre les deux goupilles de butée)", [r3(ax + 15.6), T.cam, r3(az + 2.05)], [12, 4, 6]),
+      ...lobes.flatMap((q0, L) => [...Array.from({ length: c.steps }, (_, k) => ramp(`rampe_${L + 1}_${k + 1}`, `Rampe ${L + 1}, marche ${k + 1}`, q0 + k * step, q0 + (k + 1) * step, S * (k + 0.5) / c.steps)),
+        ramp(`plateau_${L + 1}`, `Plateau ${L + 1} (fin de course)`, q0 + rise, q0 + rise + 25, S)]),
+      cylY("alesage", "Alésage Ø10", [ax, r3(T.cam - 0.1), az], 10, r3(T.hub - T.cam + 0.2), { mode: "cut" }),
+      box("rainure", "Rainure de clavette du moyeu", [r3(ax + 3), r3(T.cam - 0.1), r3(az - 1.5)], [3.4, r3(T.hub - T.cam + 0.2), 3], { mode: "cut" })],
+    function: "Un quart de tour de la poignée : ses deux rampes passent sous les deux goupilles d'appui du couvercle et la came descend de sa course ; sa face plate pousse la butée, le suiveur, les rondelles, la pile. Au plateau, elle tient sans verrou.",
+    notes: [`Deux rampes hélicoïdales à ${fr(c.alpha)}° sur un rayon moyen de ${c.rm} mm (piste de ${c.track[0]} à ${c.track[1]} mm), ${rise}° de montée puis un plateau : course ${fr(S)} mm. Dessinées en ${c.steps} marches (le noyau ne trace pas d'hélice ici) ; la vraie rampe est continue — fraisée en 4 axes, ou frittée puis reprise.`,
+      `Elle FLOTTE sur la clavette : la poussée va des goupilles d'appui au couvercle, l'arbre ne porte que le couple. Ergot entre deux goupilles de butée : ${c.turn}° de rotation, pas plus.`,
+      `Calcul gardé dans le projet (modèle « face_cam ») : ${Math.round(c.preload)} N sur la pile, ${fr(c.torque)} N·m, ${Math.round(c.hand)} N à la main ; la rampe tient seule (pente limite ${fr(c.alphaLock)}°), le plateau aussi.`, "Acier 17-4 PH trempé (exemple) : la rampe et les goupilles frottent."] });
+  const shaft = part("BM2-SHAFT", "Arbre de la poignée (claveté, à collet)", { family: "machined", process: "machining", material: ST,
+    features: [cylY("arbre", "Arbre Ø10", [ax, r3(T.cam + 0.5), az], 10, r3(T.handle1 - T.cam - 0.5)), cylY("collet", "Collet Ø14, sous le couvercle", [ax, T.collar, az], 14, 1.5),
+      box("rainure", "Rainure de clavette", [r3(ax + 3.2), r3(T.cam + 0.4), r3(az - 1.5)], [3, r3(keyTop - T.cam - 0.4), 3], { mode: "cut" }),
+      cylY("gorge", "Gorge du circlip", [ax, T.clip, az], 11, 1, { mode: "cut" }), cylY("fond_gorge", "Fond de gorge Ø9,4", [ax, T.clip, az], 9.4, 1),
+      { op: "cylinder", id: "trou_goupille", name: "Trou de la goupille de la poignée", at: [ax, r3(T.handle0 + 2.5), r3(az - 6)], d: 2.5, h: 12, axis: "Z", mode: "cut" }],
+    function: "Porte le couple de la poignée à la came par la clavette ; tenu en long par son collet sous le couvercle et le circlip dessus.",
+    notes: ["Il ne porte pas la poussée de la pile : la came flotte sur la clavette, les goupilles d'appui reprennent l'effort dans le couvercle."] });
+  const key = part("BM2-KEY", "Clavette parallèle 3 × 3", { family: "purchased", process: "purchased", material: ST,
+    features: [box("clavette", "Clavette", [r3(ax + 3.2), r3(T.cam + 0.5), r3(az - 1.5)], [3, r3(keyTop - T.cam - 0.5), 3])],
+    function: "Fait tourner la came avec l'arbre, sans jeu au retour, et la laisse glisser le long de l'arbre sur sa course.",
+    notes: [`3 × 3 × ${fr(keyTop - T.cam - 0.5)} mm — la taille d'usage d'un arbre de 8 à 10 mm (la table de la norme DIN 6885 n'a pas été lue ici). Ajustement P9 / h9 dans l'arbre (la note de JP), glissant dans le moyeu : la came doit pouvoir descendre de sa course.`] });
+  const clip = part("BM2-CIRCLIP", "Circlip de l'arbre", { family: "purchased", process: "purchased", material: ST,
+    features: [cylY("anneau", "Circlip", [ax, T.clip, az], 17, 1), cylY("alesage", "Alésage", [ax, r3(T.clip - 0.1), az], 9.4, 1.2, { mode: "cut" })],
+    function: "Retient l'arbre contre le couvercle, dehors ; il ne porte que la poignée.", notes: ["Enveloppe générique d'un anneau d'arbre Ø10 (aucune série lue)."] });
+  const xpin = part("BM2-XPIN", "Goupille élastique de la poignée", { family: "purchased", process: "purchased", material: ST,
+    features: [{ op: "cylinder", id: "goupille", name: "Goupille Ø2,5", at: [ax, r3(T.handle0 + 2.5), r3(az - 8)], d: 2.5, h: 16, axis: "Z" }],
+    function: "Lie la poignée à l'arbre.", notes: ["Ø2,5 × 16 mm (exemple)."] });
+  const pins = [...pins0.map(([x, z], k) => ({ id: `guide_${k + 1}`, name: `Goupille de guidage ${k + 1}`, x, z, y0: T.ins })),
+    ...[90, 270].map((q, k) => { const [x, z] = at(c.rm, q); return { id: `appui_${k + 1}`, name: `Goupille d'appui ${k + 1} — la rampe ${k + 1} passe dessous`, x, z, y0: tip }; }),
+    { id: "butee_fin", name: "Goupille de butée — fin du quart de tour", x: r3(ax + c.stop), z: az, y0: r3(T.cam + 0.5) }, { id: "butee_debut", name: "Goupille de butée — début du quart de tour", x: r3(ax - 10.1), z: r3(az + 22.87), y0: r3(T.cam + 0.5) }];
+  const cap = part("BM2-CAP", "Couvercle du haut (porte la poignée et les goupilles de la came)", { family: "molded", process: "injection_molding", material: "PA66-GF30",
+    bodies: { main: { material: "PA66-GF30", label: "Couvercle" }, goupilles: { material: ST, label: "Goupilles emmanchées (acier trempé)" } },
     features: [box("plaque", "Couvercle", [O.x0, T.end, K.z0], [O.x1 - O.x0, 4, O.z1 - K.z0]), cylY("passage", "Passage de l'arbre", [ax, r3(T.end - 0.1), az], 10.4, 4.2, { mode: "cut" }),
-      ...pins.map(([x, z], k) => cylY(`goupille_${k + 1}`, `Goupille anti-rotation ${k + 1}`, [x, T.ins, z], 4, r3(T.end - T.ins)))],
-    function: "Ferme le bout haut ; ses deux goupilles guident la plaque et le suiveur ; il reprend la poussée de la came par la rondelle de butée.",
-    notes: ["Vissé dans les quatre lobes du boîtier (vis à dessiner). Pas d'électronique ici (JP : « haut à poignée »)."] });
-  const handle = part("BM2-HANDLE", "Poignée quart de tour, repliable", { family: "molded", process: "injection_molding", material: "PA66-GF30",
-    features: [box("levier", "Levier", [r3(ax - 35), T.handle0, r3(az - 6)], [70, 3, 12]), cylY("moyeu", "Moyeu sur l'arbre", [ax, r3(T.handle0 - 0.1), az], 10, 3.2, { mode: "cut" })],
-    function: "Un quart de tour : la pile est pressée, la poignée se replie à plat.", notes: [`Effort à la main : ${fr(camLayout().hand)} N au bout du levier de ${camLayout().lever} mm (exemple).`] });
+      ...pins.map((g) => cylY(`logement_${g.id}`, `Logement — ${g.name}`, [g.x, r3(T.end - 0.1), g.z], 4, 3.1, { mode: "cut" })),
+      ...pins.map((g) => cylY(g.id, g.name, [g.x, g.y0, g.z], 4, r3(into - g.y0), { body: "goupilles" }))],
+    function: "Ferme le bout haut ; ses goupilles guident la plaque et le suiveur, portent la poussée de la came (goupilles d'appui) et bornent le quart de tour (goupilles de butée).",
+    notes: ["Vissé dans les quatre lobes du boîtier (vis à dessiner). Pas d'électronique ici (JP : « haut à poignée »).", `Goupilles Ø4 emmanchées de 3 mm (exemple : surmoulées ou emmanchées, à voir avec le mouliste) ; les deux goupilles d'appui portent ${Math.round(c.preload / 2)} N chacune.`] });
+  const handle = part("BM2-HANDLE", "Poignée quart de tour", { family: "molded", process: "injection_molding", material: "PA66-GF30",
+    features: [cylY("moyeu", "Moyeu Ø16", [ax, T.handle0, az], 16, 8), box("levier", "Levier", [r3(ax - 35), r3(T.handle0 + 5), r3(az - 6)], [70, 3, 12]),
+      cylY("alesage", "Alésage de l'arbre", [ax, r3(T.handle0 - 0.1), az], 10, 8.2, { mode: "cut" }),
+      { op: "cylinder", id: "trou_goupille", name: "Trou de la goupille", at: [ax, r3(T.handle0 + 2.5), r3(az - 8.1)], d: 2.5, h: 16.2, axis: "Z", mode: "cut" }],
+    function: "Un quart de tour : la pile est pressée.", notes: [`Effort à la main : ${Math.round(c.hand)} N au bout du levier de ${c.lever} mm pour fermer, ${Math.round(c.release)} N pour ouvrir (modèle « face_cam »). Le levier repliable à plat n'est pas dessiné.`] });
   const strap = part("BM2-STRAP", "Shunt du bout haut", { family: "busbar", process: "purchased", material: CU, bodies: { main: { material: CU, kind: "conductor", net: "PACK+" } },
     features: [box("shunt", "Shunt souple", [30, T.a, -3.5], [r3(X - 60.8), 2, 4.5])], function: "Relie la plaque de pression au busbar de retour, par la fenêtre du fond ; souple, il suit la course de la came." });
-  return [press, ins, disc, follower, thrust, cam, cap, handle, strap];
+  return [press, ins, disc, follower, bearing, cam, shaft, key, clip, xpin, cap, handle, strap];
 }
 
 /** Every part of concept 2, and its assemblies. boards : { core (the twin of the CORE board), bms (the twin of the central BMS board) } */
@@ -222,9 +268,10 @@ export function conceptTwo(boards = {}) {
     ...C2.bands.map(([z0], k) => ({ id: `bande_${k + 1}`, part: "BM2-BAND", fixed: true, placement: at([r3((C2.X - C2.BAND.l) / 2), T.yPlus8, z0]) })),
     { id: "plaque_cu", part: "BM2-PRESS-CU", fixed: true, placement: at([0, 0, 0]) }, { id: "plaque_iso", part: "BM2-PRESS-INS", fixed: true, placement: at([0, 0, 0]) },
     { id: "belleville", part: "BM2-DISC", fixed: true, placement: at([0, 0, 0]) }, { id: "suiveur", part: "BM2-FOLLOWER", fixed: true, placement: at([0, 0, 0]) },
-    { id: "butee_1", part: "BM2-THRUST", fixed: true, placement: at([0, T.thrust1, 0]) }, { id: "came", part: "BM2-CAM", fixed: true, placement: at([0, 0, 0]) },
-    { id: "butee_2", part: "BM2-THRUST", fixed: true, placement: at([0, T.thrust2, 0]) }, { id: "couvercle", part: "BM2-CAP", fixed: true, placement: at([0, 0, 0]) },
-    { id: "poignee", part: "BM2-HANDLE", fixed: true, placement: at([0, 0, 0]) }], mates: [] };
+    { id: "aiguilles", part: "BM2-NEEDLE", fixed: true, placement: at([0, 0, 0]) }, { id: "came", part: "BM2-CAM", fixed: true, placement: at([0, 0, 0]) },
+    { id: "arbre", part: "BM2-SHAFT", fixed: true, placement: at([0, 0, 0]) }, { id: "clavette", part: "BM2-KEY", fixed: true, placement: at([0, 0, 0]) },
+    { id: "couvercle", part: "BM2-CAP", fixed: true, placement: at([0, 0, 0]) }, { id: "circlip", part: "BM2-CIRCLIP", fixed: true, placement: at([0, 0, 0]) },
+    { id: "poignee", part: "BM2-HANDLE", fixed: true, placement: at([0, 0, 0]) }, { id: "goupille_poignee", part: "BM2-XPIN", fixed: true, placement: at([0, 0, 0]) }], mates: [] };
   const lidBot = { dw: "assembly/1", id: "BM2-LID-BOT-ASM", name: "Couvercle du fond actif (concept 2)", instances: [
     { id: "coque", part: "BM2-LID-BOT", fixed: true, placement: at([0, 0, 0]) }, { id: "contacteur", part: "BM2-CONTACTOR", fixed: true, placement: at([0, 0, 0]) },
     { id: "connecteur", part: "BM2-CONNECTOR", fixed: true, placement: at([0, 0, 0]) },

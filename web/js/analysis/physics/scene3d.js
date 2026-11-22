@@ -108,6 +108,12 @@ const SCENES = {
     for (let s = 0; s < ns; s++) { const x0 = -W / 2 + 4 + w / 2 + s * (w + gap); for (let k = 0; k < Math.min(per, 80); k++) { const y = -L / 2 + p / 2 + k * p; for (const dx of [-w / 2 + 1, 0, w / 2 - 1]) G.cyl([x0 + dx, y - 0.3 * p, 0], [x0 + dx, y + 0.3 * p, h], Math.min(0.25, p / 10), C.current); } }
     G.arrow([-W / 2 - 6, 0, 0], [1, 0, 0], C.current); G.arrow([0, 0, h + 4 + L / 4], [0, 0, -1]);
     G.label([0, -L / 2 - 4, 0], `${ns} × ${per} lamelles au pas de ${G.q(p, "mm")} · bandes de ${G.q(L, "mm")}`); G.label([0, 0, h + 2], `hauteur ${G.q(h, "mm")} · I = ${n1(P(i.I, 0))} A`); },
+  facecam(G, i) { const rm = P(i.rm, 15), a = Math.min(30, P(i.alpha, 6)) * Math.PI / 180, nl = Math.max(1, Math.min(6, Math.round(P(i.lobes, 2)))), turn = Math.min(360 / nl, P(i.turn, 90)), dw = Math.min(turn, Math.max(0, i.dwell || 0)), th = (turn - dw) * Math.PI / 180, s = th * rm * Math.tan(a), R = rm + 5, base = 4;
+    G.cyl([0, 0, 0], [0, 0, base], R, C.second); G.cyl([0, 0, base], [0, 0, base + 3 * s + 6], 5, C.dark);
+    for (let L = 0; L < nl; L++) { const q0 = 2 * Math.PI * L / nl; for (let k = 0; k < 10; k++) { const q = q0 + th * (k + 0.5) / 10, h = s * (k + 0.5) / 10; G.cyl([rm * Math.cos(q), rm * Math.sin(q), base], [rm * Math.cos(q), rm * Math.sin(q), base + Math.max(0.05, h)], 1.6, C.second); }
+      const qd = q0 + th + dw * Math.PI / 360; G.cyl([rm * Math.cos(qd), rm * Math.sin(qd), base], [rm * Math.cos(qd), rm * Math.sin(qd), base + s], 2, C.second); G.cyl([rm * Math.cos(qd), rm * Math.sin(qd), base + s], [rm * Math.cos(qd), rm * Math.sin(qd), base + s + 6], 2, C.dark); }
+    G.box([P(i.lever, 35) / 2, 0, base + 3 * s + 7.5], [P(i.lever, 35), 8, 3], C.dark); G.arrow([0, 0, -6], [0, 0, -1]);
+    G.label([0, -R, 0], `${nl} lobe${nl > 1 ? "s" : ""} · rampe ${n1(P(i.alpha, 6))}° au rayon ${G.q(rm, "mm")} · course ${G.q(s, "mm")} (marches à l'écran)`); G.label([P(i.lever, 35), 0, base + 3 * s + 9], `levier ${G.q(P(i.lever, 35), "mm")} · ${n1(turn)}°`); },
   pulse(G, i) { const r = Math.sqrt(P(i.A, 2.5) / Math.PI), L = 14 * r; G.cyl([0, 0, 0], [L, 0, 0], r, C.second); G.arrow([0, 0, 0], [1, 0, 0], C.current); G.arrow([L + 5 * r, 0, 0], [1, 0, 0], C.current); G.gem([L / 2, 0, r], C.hot);
     G.label([L / 2, 0, -r], `section ${G.q(P(i.A, 2.5), "mm²")} (${G.dia(2 * r)} équivalent)`); G.label([0, 0, r], `I = ${n1(P(i.I, 0))} A pendant ${n1(P(i.time, 0))} s`); },
 };

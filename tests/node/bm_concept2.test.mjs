@@ -12,6 +12,9 @@ import { buildPart } from "../../web/js/cad/build.js";
 import { flatAsm } from "../../web/js/core/asm_levels.js";
 import { matFromPlacement } from "../../web/js/cad/vec.js";
 import { kernel } from "./kernel_helper.mjs";
+import { model } from "../../web/js/analysis/physics/index.js";
+import { CASES, GAPS, NONE } from "../../web/js/analysis/validation_cases.js";
+import { runCase } from "../../web/js/analysis/validation.js";
 
 const read = (p) => readFileSync(new URL(`../../${p}`, import.meta.url), "utf8");
 const near = (a, b, msg, tol = 1e-3) => assert.ok(Math.abs(a - b) < tol, `${msg} : ${a} ≠ ${b}`);
@@ -30,8 +33,9 @@ test("the stack in numbers : a CORE is a big cell ; the bands of one press the +
   near(C2.pitch, C2.H + 2 * C2.PT + C2.BAND.h, "the pitch : the cells, the two plates, the bands at their working height");
   assert.ok(C2.BAND.h >= 1.5 && C2.BAND.h <= 1.9, "the working height of the bands read in iteration 9 (1.5–1.9 mm)");
   const c = camLayout(); assert.equal(c.lamellae, 20); assert.equal(c.joint, 280); assert.ok(c.amps >= 360, "the lamellae carry the 360 A of a CORE"); assert.ok(c.preload > c.joint, "the Belleville washers give more than the bands ask");
-  near(c.stroke, (75 * Math.PI) / 180 * 15 * Math.tan((6 * Math.PI) / 180), "the stroke of a quarter turn, its dwell taken off");
-  assert.equal(c.selfLock, false, "at μ = 0.1 a ramp of 6° does not hold itself : the dwell plateau does — said on the cam"); assert.equal(camLayout({ mu: 0.12 }).selfLock, true);
+  near(c.stroke, (75 * Math.PI) / 180 * 15 * Math.tan((5.5 * Math.PI) / 180), "the stroke of a quarter turn, its dwell taken off");
+  assert.equal(c.selfLock, true, "at μ = 0.1, on a needle thrust bearing, a ramp of 5.5° holds itself — and the dwell plateau holds anyway"); assert.ok(c.alpha < c.alphaLock);
+  assert.equal(camLayout({ mu: 0.08 }).selfLock, false, "less friction : only the plateau holds"); assert.equal(camLayout({ alpha: 6 }).selfLock, false);
   assert.ok(c.hand < 60, `the hand turns it : ${c.hand} N at the end of the lever`);
   assert.equal(C2.lobe.d, 10, "JP's note : the lobes of the screws at Ø10");
 });
@@ -60,6 +64,31 @@ test("concept 2 builds, and nothing goes through anything : CORE 1, 2 and 8, the
   K.flush && K.flush();
 });
 
+test("the cam in detail (JP's notes, by menu : « Came détaillée ») : two ramps under two bearing pins, a plateau, a lug between two stop pins, a key, a collar and a circlip, a needle bearing", async () => {
+  const p = bmProject(), c2 = conceptTwo({ core: p.boards[0].part }), c = camLayout(), part = (id) => c2.parts.find((x) => x.id === id), T = C2.top;
+  const cam = part("BM2-CAM"), ramps = cam.features.filter((f) => f.op === "extrude");
+  assert.equal(ramps.length, 2 * (c.steps + 1), "two lobes, each its steps and its plateau"); assert.ok(ramps.every((f) => f.plane === "XZ" && f.at === T.land));
+  const heights = ramps.filter((f) => /^rampe_1_/.test(f.id)).map((f) => f.length); assert.deepEqual(heights, [...heights].sort((a, b) => a - b), "the ramp rises step by step");
+  near(ramps.find((f) => f.id === "plateau_1").length, c.stroke, "the plateau stands at the stroke");
+  const cap = part("BM2-CAP"), pins = cap.features.filter((f) => f.body === "goupilles");
+  assert.equal(pins.length, 6, "two guide pins, two bearing pins, two stop pins — steel, pressed into the plastic cap"); assert.equal(cap.bodies.goupilles.material, "SS-17-4PH");
+  for (const g of pins.filter((f) => /^appui/.test(f.id))) near(g.at[1], T.land + c.stroke, `${g.id} rests on its plateau`, 2e-3);
+  for (const id of ["BM2-NEEDLE", "BM2-SHAFT", "BM2-KEY", "BM2-CIRCLIP", "BM2-XPIN"]) assert.ok(part(id), id); assert.ok(!part("BM2-THRUST"), "the PEEK washers gave way to a needle bearing");
+  assert.match(cam.notes.join(" "), /FLOTTE sur la clavette/); assert.match(part("BM2-KEY").notes[0], /DIN 6885 n'a pas été lue/);
+  const lid = c2.assemblies.find((a) => a.id === "BM2-LID-TOP-ASM"); for (const id of ["aiguilles", "came", "arbre", "clavette", "circlip", "goupille_poignee"]) assert.ok(lid.instances.some((i) => i.id === id), id);
+  const K = await kernel(), b = (id) => K.bbox(buildPart(K, part(id)).bodies[0].shape), lug = b("BM2-CAM"), stop = cap.features.find((f) => f.id === "butee_fin");
+  near(K.bbox(buildPart(K, part("BM2-NEEDLE")).bodies[0].shape)[4], T.cam, "the bearing under the flat face of the cam"); near(b("BM2-FOLLOWER")[4], T.bearing, "the follower under the bearing");
+  assert.ok(lug[3] > stop.at[0], "the lug reaches the radius of the stop pin"); K.flush && K.flush();
+});
+
+test("the calculation of the cam is kept in the project, on the branch of concept 2 : the model « face_cam », read from public pages", () => {
+  const p = bmProject(), c2 = rebuild(p.history, "P2"), k = (c2.physics || []).find((x) => x.id === "phy-bm2-cam");
+  assert.ok(k, "kept on the branch"); assert.equal(k.model, "face_cam"); assert.equal(k.part, "BM2-CAM"); assert.equal(k.verdict, "ok"); assert.ok(!(p.physics || []).some((x) => x.id === "phy-bm2-cam"), "not on MAIN : concept 1 has no such cam");
+  near(k.values.F, camLayout().preload, "the same numbers as the cam drawn", 1e-2); near(k.values.T_up * 1000, k.values.F * (15 * Math.tan((5.5 + Math.atan(0.1) * 180 / Math.PI) * Math.PI / 180) + 0.005 * 11.75), "T = F (rm tan(α + φ) + μb rb) — Wikipédia « Leadscrew »", 1e-6);
+  const m = model("face_cam"); assert.match(m.reference, /Leadscrew/); assert.equal(m.domain, "joints");
+  const v = CASES.filter((x) => x.model === "face_cam"); assert.equal(v.length, 1); const r = runCase(v[0]); assert.ok(r.ok, JSON.stringify(r.rows)); assert.match(GAPS.face_cam, /Seul le rendement/); assert.ok(!NONE.face_cam);
+});
+
 test("eight thermistors, one on the flank of every cell, four up and four down ; the − face holds none", () => {
   const p = bmProject(), c2 = conceptTwo({ core: p.boards[0].part }), flex = c2.parts.find((x) => x.id === "BM2-NTC-FLEX"), ntc = flex.features.filter((f) => f.body === "ntc");
   assert.equal(ntc.length, 8); assert.equal(ntc.filter((f) => /haut/.test(f.id)).length, 4);
@@ -68,5 +97,5 @@ test("eight thermistors, one on the flank of every cell, four up and four down ;
 });
 
 test("said in the documentation", () => {
-  const d = read("docs/BM_MODULE.md"); for (const re of [/Concept 2/, /consumer product interface/, /bandes à lamelles/, /came/, /thermistances/, /prises de tension/]) assert.match(d, re);
+  const d = read("docs/BM_MODULE.md"); for (const re of [/Concept 2/, /consumer product interface/, /bandes à lamelles/, /came/, /thermistances/, /prises de tension/, /face_cam/, /goupilles d'appui/, /butée à aiguilles/]) assert.match(d, re);
 });
