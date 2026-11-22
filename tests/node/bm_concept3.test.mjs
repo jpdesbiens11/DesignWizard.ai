@@ -15,13 +15,14 @@ const near = (a, b, msg, tol = 1e-3) => assert.ok(Math.abs(a - b) < tol, `${msg}
 
 test("the history : concept 3 is a branch of MAIN (P1), beside concept 2 ; it is concept 1 with its joints changed", () => {
   const p = bmProject({ branch: "c3" }), h = p.history, names = branchNames(h);
-  assert.deepEqual(h.points.map((x) => [x.id, x.parent, names.get(x.id)]), [["P1", null, "MAIN"], ["P2", "P1", "concept 2 - consumer product interface"], ["P3", "P1", C3_BRANCH], ["P4", "P3", C3_BRANCH], ["P5", "P4", C3_BRANCH]]);
-  assert.equal(h.head, "P5", "the home card opens on the tip of concept 3");
+  assert.deepEqual(h.points.map((x) => [x.id, x.parent, names.get(x.id)]), [["P1", null, "MAIN"], ["P2", "P1", "concept 2 - consumer product interface"], ["P3", "P1", C3_BRANCH], ["P4", "P3", C3_BRANCH], ["P5", "P4", C3_BRANCH], ["P6", "P5", C3_BRANCH]]);
+  assert.equal(h.head, "P6", "the home card opens on the tip of concept 3");
   const main = rebuild(h, "P1"), ids = (d) => d.parts.map((x) => x.id);
   /* the top end shortened (JP, by menu : « Raccourcir le bout haut ») : no backing plate on the + terminal, the casing shorter */
-  const cas = (d) => d.parts.find((x) => x.id === "BM-CASING").params.L.value; near(cas(main) - cas(p), 4.75, "4.75 mm shorter than concept 1");
+  const cas = (d) => d.parts.find((x) => x.id === "BM-CASING").params.L.value; near(cas(main) - cas(p), 12.9, "12.9 mm shorter than concept 1"); near(cas(main) - cas(rebuild(h, "P5")), 4.75, "P5 : 4.75 mm");
   assert.ok(!p.parts.find((x) => x.id === "BM-TERM-POS").bodies.appui, "the pressure plate bears on the copper"); assert.ok(rebuild(h, "P4").parts.find((x) => x.id === "BM-TERM-POS").bodies.appui, "P4 keeps it"); assert.equal(bmProject().history.head, "P1", "by default, MAIN"); assert.equal(bmProject({ branch: true }).history.head, "P2");
-  assert.deepEqual(ids(p).filter((id) => !ids(main).includes(id)), ["BM3-LAMELLES", "BM3-DISCS", "BM3-LAMELLES-HAUT"]); assert.deepEqual(ids(main).filter((id) => !ids(p).includes(id)), ["BM-SPRING-PLATE", "BM-SPRING-PAD-A", "BM-SPRING-PAD-B"]);
+  assert.deepEqual(ids(p).filter((id) => !ids(main).includes(id)), ["BM3-LAMELLES", "BM3-DISCS", "BM3-SHUNT"]); assert.deepEqual(ids(main).filter((id) => !ids(p).includes(id)), ["BM-BRIDGE", "BM-SPRING-PLATE", "BM-SPRING-PAD-A", "BM-SPRING-PAD-B"]);
+  assert.ok(rebuild(h, "P4").parts.some((x) => x.id === "BM3-LAMELLES-HAUT"), "P4 keeps the bridge in its forks");
   const first = rebuild(h, "P3"); assert.ok(first.parts.some((x) => x.id === "BM-SPRING-PAD-A"), "the first jet keeps the pads of concept 1 : the lid is its own point");
   const lam = p.parts.find((x) => x.id === "BM-BB-LAM"); for (const f of ["lame", "oreille_plus", "machoire_int", "machoire_ext", "fond_pince"]) assert.ok(lam.features.some((x) => x.id === f), f);
   assert.ok(!main.parts.find((x) => x.id === "BM-BB-LAM").features.some((x) => x.id === "lame"), "MAIN keeps concept 1");
@@ -54,10 +55,10 @@ test("concept 3 builds, and nothing goes through anything ; each blade sits in t
   const neg = body("borne_moins", "plaque"), b1 = body("core1~lamelles", "bande_int"); near(neg[3], F3.blade[1], "the − terminal has a blade"); near(b1[3], F3.blade[0], "in the fork of CORE 1"); assert.ok(neg[4] >= b1[4] + 0.5, "its blade covers the bands");
   near(CORE_PITCH, 50.9, "the pitch is that of concept 1 : no length added");
   /* the top lid (JP : « Pinces côté module ») : each blade of the rigid bridge in its fork, between its two bands */
-  for (const tag of ["a", "b"]) {
-    const bl = body("couvercle_haut~pont", "pont"), lo = body("couvercle_haut~lamelles_haut", `bande_${tag}_bas`), hi = body("couvercle_haut~lamelles_haut", `bande_${tag}_haut`);
-    const blade = K.bbox(K.common(inst.find((x) => x.id === "couvercle_haut~pont").bodies[0].shape, K.box([0, lo[1], lo[5]], [120, lo[4], hi[2]])));
-    near(blade[2], lo[5], `blade ${tag} on its lower band`); near(blade[5], hi[2], `blade ${tag} under its upper band`); assert.ok(bl[1] < lo[1], `blade ${tag} covers its bands`);
-  }
+  /* the return made fixed (JP, by menu : « Retour fixe, sans pont ») : the shunt on the back of the + terminal and on the tab ; the cap clears the fork of the + terminal */
+  const sh = body("shunt_retour", "main"), term = body("borne_plus", "plaque"), tab = body("retour", "main");
+  near(sh[1], 406.95, "the shunt on the back of the + terminal"); assert.ok(term[1] < sh[1]); near(sh[4], 406.95 + 1.8, "and on the tab"); assert.ok(tab[1] <= sh[4] + 1e-6, "the tab behind it");
+  const cap = body("couvercle_haut~couvercle", "main"), fork = body("borne_plus", "plaque");
+  assert.ok(cap[1] > fork[4], `the cap clears the fork of the + terminal : ${cap[1]} > ${fork[4]}`);
   K.flush && K.flush();
 });

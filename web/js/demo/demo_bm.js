@@ -198,7 +198,49 @@ function withConceptThree(p) {
     note: "Choix de JP par menu : « Couvercle du haut », puis « Pinces côté module ». La borne + et la languette de retour portent chacune une pince en creux ; le couvercle, un pont de cuivre rigide à deux lames. Plus de shunt souple ni de ressort de plot." });
   const cut = shortTopC3(p, env, DISC);
   addPoint(p, { kind: "manual", branch: C3_BRANCH, label: `Concept 3 — bout haut raccourci de ${String(cut).replace(".", ",")} mm`, when: "2026-11-22T20:00:00.000Z", by: "DesignOrbit.ai",
-    note: `Choix de JP par menu : « Raccourcir le bout haut ». La plaque de pression appuie directement sur la borne + (plus de plaque d'appui) ; la languette de retour passe dans une fenêtre de la plaque, juste derrière la borne ; le boîtier perd ${String(cut).replace(".", ",")} mm.` });
+    note: `Choix de JP par menu : « Raccourcir le bout haut ». La plaque de pression appuie directement sur la borne + (plus de plaque d'appui) ; la languette de retour passe dans une fenêtre de la plaque, juste derrière la borne ; le boîtier perd ${String(cut).replace(".", ",")} mm.` });  const cut2 = fixedReturnC3(p, env, DISC);
+  addPoint(p, { kind: "manual", branch: C3_BRANCH, label: `Concept 3 — retour fixe, sans pont : ${frC(cut2)} mm de moins`, when: "2026-11-22T21:00:00.000Z", by: "DesignOrbit.ai",
+    note: `Choix de JP par menu : « Retour fixe, sans pont ». La borne + et le busbar de retour sont reliés en permanence par un shunt souple court ; le couvercle ne fait plus que tenir la pile ; le contacteur du fond reste ce qui ouvre le module. Le boîtier perd encore ${frC(cut2)} mm.` });
+}
+const frC = (v) => String(Math.round(v * 100) / 100).replace(".", ",");
+
+/** Concept 3, the return made fixed (JP, by menu : « Retour fixe, sans pont ») : no bridge, no fork A, no fork B — the + terminal and the tab of the
+    return busbar are joined for good by a short flexible shunt (laminated foils), which takes the 0.8 mm the stack may grow ; the lid only holds
+    the stack. What fixes the length now : the fork of the + terminal, where the blade of CORE 8 goes (18 mm behind its face) — the cap clears it.
+    → the length gained on the casing (mm) */
+function fixedReturnC3(p, env, DISC) {
+  const land = r6(8 * CORE_PITCH - (INS_T + BB_T) + 2), TAB = r6(land + 1.8), forkEnd = r6(7 * CORE_PITCH + CORE_Y + INS_T + BB_T + F3.y.depth);
+  const ring1 = r6(forkEnd + 0.55), end = r6(ring1 - 6), lip0 = r6(ring1 - 7), caseL = r6(end - CASE_Y0), before = p.parts.find((x) => x.id === "BM-CASING").params.L.value;
+  const top = topEnd({ env, lipX1: 92.4, land, plate0: land, end, y0: CASE_Y0 - 16, tab: TAB, tabTop: 80, lip0 }), L = top.layout, find = (id) => p.parts.find((x) => x.id === id);
+  const pos = JSON.parse(JSON.stringify(find("BM-TERM-POS"))), ret = top.parts.find((x) => x.id === "BM-RETURN-BB"), S = L.springs.plate;
+  pos.features = pos.features.filter((f) => !/_a(_|$)/.test(f.id));
+  pos.notes = [...pos.notes.filter((n) => !/pince A/.test(n)), "Concept 3, retour fixe : en haut, au dos, sa plage nue reçoit le shunt souple qui la relie au busbar de retour, pour de bon."];
+  ret.notes = [...ret.notes.filter((n) => !/plot B se pose/.test(n)), `Concept 3, retour fixe : la languette monte jusqu'en haut (z 80) à ${frC(TAB)} mm, 1,8 mm derrière la borne + ; le shunt souple la relie à la borne.`];
+  const casing = casingPart({ L: caseL, env }); casing.plan = { paths: casingPaths(caseL, env) };
+  const win = casing.features.find((f) => f.id === "fenetre_retour"); win.at[1] = r6(TAB - CASE_Y0 - 0.6); win.size[1] = r6(caseL + 1 - win.at[1]);
+  casing.notes = [...casing.notes, `Concept 3 : la cavité s'élargit de ${r6(F3.jawOut[1] - CORE_ENV.x1)} mm au bout +X pour les pinces.`, `Concept 3, retour fixe : coupé à ${frC(caseL)} mm — ${frC(CASE_L - caseL)} mm de moins qu'au concept 1. Ce qui fixe la longueur : la pince de la borne +, 18 mm derrière sa face ; le couvercle la dégage de 0,55 mm.`];
+  const plate = pressPlateC3(L, S, DISC), B = L.bar;
+  plate.features.push({ op: "box", id: "fenetre_retour", name: "Fenêtre de la languette du busbar de retour — toute la hauteur : la plaque appuie par ses deux côtés", mode: "cut", at: [r6(B.x0 - 0.5), r6(L.plate0 - 0.1), -3.1], size: [51, 3.2, 64.2] });
+  const ring = top.parts.find((x) => x.id === "BM-LID-RING-TOP"), cz = L.cav.z1;
+  for (const [id, x] of [["langue_g", L.lipX[0]], ["langue_d", L.lipX[1] - 2.5]]) {
+    const f = ring.features.find((q) => q.id === id); f.at = [x, lip0, 50]; f.size = [2.5, r6(end - lip0), 12];
+    ring.features.push({ op: "box", id: `${id}_attache`, name: `Attache de la ${id === "langue_g" ? "languette gauche" : "languette droite"} à la bride, par le haut`, at: [x, end, 50], size: [2.5, 6, r6(cz + 1 - 50)] });
+  }
+  ring.notes = [...ring.notes, "Concept 3, retour fixe : les lèvres sont à 1 mm du bout du boîtier ; chaque languette rejoint la bride par le haut de la fenêtre."];
+  const shunt = { dw: "part/1", id: "BM3-SHUNT", name: "Shunt souple borne + → busbar de retour", family: "busbar", process: "purchased", material: "CU-C110", revision: "A", params: {},
+    bodies: { main: { material: "CU-C110", kind: "conductor", net: "PACK+", label: "Feuillards de cuivre laminés, soudés à leurs bouts" } },
+    features: [{ op: "box", id: "shunt", name: "Shunt souple — 50 × 14 mm, dans l'écart de 1,8 mm", body: "main", at: [B.x0, land, 66], size: [50, 1.8, 14] }], interfaces: [],
+    function: "Relie pour de bon la borne + du module au busbar de retour : la boucle du courant est fermée sans le couvercle.",
+    notes: ["Feuillards de cuivre empilés, soudés par diffusion à leurs deux plages (usage des busbars souples), l'un sur le dos de la borne +, l'autre sur la languette de retour ; leur pli prend les 0,8 mm dont la pile peut s'allonger. Dessiné comme son enveloppe.",
+      "Plus de sectionneur au couvercle : couvercle retiré, le module reste fermé sur lui-même ; c'est le contacteur du couvercle du fond qui l'ouvre, et le module reste sous 60 V continus (33,6 V au plus). Un sectionneur de service, s'il en faut un, se met au niveau du pack."] };
+  const fresh = new Map([...top.parts.filter((x) => ["BM-LID-TOP", "BM-LATCH-CAM"].includes(x.id)), ring, pos, ret, casing, plate].map((x) => [x.id, x]));
+  p.parts = [...p.parts.filter((x) => !["BM-BRIDGE", "BM3-LAMELLES-HAUT"].includes(x.id)).map((x) => fresh.get(x.id) || x), shunt];
+  const lid = p.assemblies.find((a) => a.id === "BM-LID-TOP-ASM"), mod = p.assemblies.find((a) => a.id === "BM-8S8P-ASM");
+  lid.instances = lid.instances.filter((i) => !["pont", "lamelles_haut"].includes(i.id)).map((i) => (i.part === "BM3-DISCS" ? { ...i, placement: at([i.placement.t[0], r6(L.ring1 - DISC), i.placement.t[2]]) } : i));
+  mod.instances.push({ id: "shunt_retour", part: "BM3-SHUNT", fixed: true, placement: at([0, 0, 0]) });
+  p.physics = p.physics.filter((c) => !["phy-bm3-lidfork", "phy-bm3-lidjaw"].includes(c.id));
+  p.description = p.description.replace(/au couvercle du haut, un pont rigide[^;]*;?/, "au couvercle du haut, des rondelles ressorts qui tiennent la pile, le retour fixé à la borne + par un shunt souple ;").replace(/Bout haut raccourci de [\d,]+ mm\./, `Bout haut raccourci de ${frC(CASE_L - caseL)} mm.`);
+  return r6(before - caseL);
 }
 
 /** Concept 3, the top end shortened (JP, by menu : « Raccourcir le bout haut ») : the backing plate of the + terminal goes — the insulating pressure

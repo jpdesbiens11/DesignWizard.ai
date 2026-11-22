@@ -162,7 +162,11 @@ plus bas, avec sa version. Une revue de la liste se fait à chaque reprise de s�
    ~~**Couvercle du haut**~~ (JP, par menu : « Pinces côté module ») — fait (v0.179.0) : pince A sur la borne +, pince B sur la languette de
    retour, pont rigide à deux lames dans le couvercle, plus de shunt ni de ressorts de plot.
    ~~**Raccourcir le bout haut**~~ (JP, par menu) — fait (v0.180.0) : plus de plaque d'appui sur la borne +, la languette de retour dans une
-   fenêtre de la plaque de pression ; 4,75 mm de moins. Suite proposée par menu.
+   fenêtre de la plaque de pression ; 4,75 mm de moins.
+   ~~**Retour fixe, sans pont**~~ (JP, par menu ; l'anneau dans le boîtier ne gagnait rien) — fait (v0.181.0) : shunt souple borne + → retour,
+   plus de pont ni de pinces au couvercle ; 12,9 mm de moins qu'au concept 1. **JP, même jour : « montre-moi les concepts… image svp et pointe-moi
+   les changements à l'écran ; fini le texte seul pour expliquer du visuel »** — chaque itération se présente en images annotées (coupe avant /
+   après calculée sur le modèle, changements pointés). Suite proposée par menu.
 5. ~~**Icônes : remplacer le chapeau de sorcier** par une alternative du monde des fusées, puis toutes les icônes (JP, 22 novembre) — framework.~~ — fait (v0.178.0, voir plus bas).
    Priorité, par menu : « Tâche à part, maintenant » — lancée par JP depuis sa carte, dans une autre conversation ; pas dans celle de conception.
 

@@ -828,6 +828,19 @@ boîtier coupé à 454,65 mm.
   le couvercle (3 mm) hors du boîtier. Pour gagner plus, il faudrait loger l'anneau dans le boîtier — à proposer.
 - **Vérifié par les essais** : rien ne traverse rien au bout haut ; les lames du pont restent entre leurs bandes.
 
+**Le retour fixe, sans pont** (JP, par menu : « Retour fixe, sans pont », v0.181.0 — point P6) : loger l'anneau dans le boîtier ne faisait
+rien gagner (sa bride entoure l'âme du pont, elle ne s'ajoute pas à la longueur) ; ce qui coûtait la longueur, c'était le pont à deux pinces.
+
+- **La borne + et la languette du busbar de retour sont reliées pour de bon** par un **shunt souple** court (`BM3-SHUNT` : feuillards de cuivre
+  laminés, 50 × 14 mm, dans l'écart de 1,8 mm ; son pli prend les 0,8 mm dont la pile peut s'allonger). La languette monte jusqu'en haut (z 80).
+- **Plus de pont, de pinces A et B ni de leurs bandes.** Le couvercle ne fait plus que tenir la pile (rondelles ressorts, 700 N). **Couvercle
+  retiré, le module reste fermé sur lui-même** : c'est le contacteur du couvercle du fond qui l'ouvre, et le module reste sous 60 V continus
+  (33,6 V au plus) ; un sectionneur de service, s'il en faut un, se met au niveau du pack.
+- **Ce qui fixe maintenant la longueur** : le fond de la pince de la borne + (où entre la lame du CORE 8), 18 mm derrière sa face ; le
+  couvercle le dégage de 0,55 mm. Les lèvres de l'anneau sont à 1 mm du bout du boîtier ; chaque languette rejoint la bride par le haut.
+- **Le boîtier est coupé à 446,5 mm** : 8,15 mm de moins qu'en P5, **12,9 mm de moins qu'au concept 1**.
+- **Vérifié par les essais** : rien ne traverse rien ; le shunt touche le dos de la borne + et la languette ; le couvercle dégage la pince.
+
 **Pas fait, à itérer ensemble** : l'effort pour entrer une lame (non publié dans ce qui a été lu : fabricant ou mesure) ; la tenue de la
 brasure au cyclage thermique ; l'effort pour fermer le couvercle (deux lames à la fois, que la came donne) ; loger l'anneau du haut dans le boîtier pour gagner encore de la longueur ; les fils des plages LV de la borne + à travers la plaque de pression ; « couvercles debout » est lu comme les couvercles du concept 1, aux deux bouts du module
 (à confirmer) ; l'échauffement du module fermé (le calcul du concept 1 n'est pas repris : ses joints étaient plans) ; l'isolation du joint
