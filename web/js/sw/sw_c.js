@@ -103,6 +103,35 @@ void dw_latch_step(dw_latch_t *s, dw_bool a, dw_bool b, dw_bool c, dw_bool reset
     else { /* keeps what it holds */ }
 }`,
     call: (v, i) => `dw_latch_step(&${v}, ${i.a}, ${i.b}, ${i.c}, ${i.reset});`, outs: { fault: "fault" } },
+  module_state: { mod: "dw_state", what: "the state of the module : normal, derated, emergency, stop (contactor open)",
+    h: `#define DW_STATE_NORMAL (0)
+#define DW_STATE_DERATED (1)
+#define DW_STATE_EMERGENCY (2)
+#define DW_STATE_STOP (3)
+
+typedef struct { uint32_t t_lost_ms; uint32_t t_emerg_ms; } dw_state_cfg_t;
+typedef struct { int32_t state; uint32_t tl; uint32_t te; dw_bool close; dw_bool derate; dw_bool emergency; } dw_state_t;
+
+void dw_state_init(dw_state_t *s);
+void dw_state_step(dw_state_t *s, const dw_state_cfg_t *c, dw_bool fault, dw_bool lost, dw_bool warn_a, dw_bool warn_b, dw_bool reset, uint32_t dt_ms);`,
+    c: `void dw_state_init(dw_state_t *s) { s->state = DW_STATE_NORMAL; s->tl = 0U; s->te = 0U; s->close = 1U; s->derate = 0U; s->emergency = 0U; }
+
+void dw_state_step(dw_state_t *s, const dw_state_cfg_t *c, dw_bool fault, dw_bool lost, dw_bool warn_a, dw_bool warn_b, dw_bool reset, uint32_t dt_ms)
+{
+    if (fault != 0U) { s->state = DW_STATE_STOP; s->tl = 0U; s->te = 0U; }
+    else if (s->state == DW_STATE_STOP) { if (reset != 0U) { s->state = DW_STATE_NORMAL; s->tl = 0U; s->te = 0U; } }
+    else {
+        if (lost != 0U) { if (s->tl < c->t_lost_ms) { s->tl += dt_ms; } } else { s->tl = 0U; }
+        if (s->tl >= c->t_lost_ms) {
+            if (s->state != DW_STATE_EMERGENCY) { s->state = DW_STATE_EMERGENCY; s->te = 0U; }
+            else { s->te += dt_ms; if (s->te >= c->t_emerg_ms) { s->state = DW_STATE_STOP; s->te = 0U; } }
+        } else { s->state = ((warn_a != 0U) || (warn_b != 0U)) ? DW_STATE_DERATED : DW_STATE_NORMAL; s->te = 0U; }
+    }
+    s->close = (dw_bool)((s->state != DW_STATE_STOP) ? 1U : 0U);
+    s->derate = (dw_bool)((s->state == DW_STATE_DERATED) ? 1U : 0U);
+    s->emergency = (dw_bool)((s->state == DW_STATE_EMERGENCY) ? 1U : 0U);
+}`,
+    cfg: (c) => `{ ${c.t_lost}U, ${c.t_emerg}U }`, call: (v, i, C) => `dw_state_step(&${v}, &${C}, ${i.fault}, ${i.lost}, ${i.warn_a}, ${i.warn_b}, ${i.reset}, dt_ms);`, outs: { state: "state", close: "close", derate: "derate", emergency: "emergency" } },
   contactor: { mod: "dw_contactor", what: "a contactor closed on request, opened on a fault, its auxiliary contact read back",
     h: `typedef struct { uint32_t t_fb_ms; } dw_contactor_cfg_t;
 typedef struct { dw_bool drive; uint32_t t; dw_bool fault; } dw_contactor_t;
@@ -161,6 +190,7 @@ export function requirement(d, o) {
   if (o.kind === "analog_in") return `${o.name} shall give the value of ${from("counts")} in ${c.unit} (counts x ${c.vref} mV / ${(1 << c.bits) - 1} x ${c.num} / ${c.den} + ${c.offset}), averaged over ${c.n} sample(s), and say it valid between ${c.lo} and ${c.hi} ${c.unit}.`;
   if (o.kind === "limit") return `${o.name} shall trip when ${from("value")} stays ${c.above ? "at or above" : "at or below"} ${c.trip} ${c.unit} for ${c.delay} ms, and clear when it is back ${c.above ? "at or below" : "at or above"} ${c.clear} ${c.unit}.`;
   if (o.kind === "fault_latch") return `${o.name} shall hold a fault as soon as one of its inputs is 1, and release it only on a reset with every input back to 0.`;
+  if (o.kind === "module_state") return `${o.name} shall be in STOP, the contactor open, as soon as ${from("fault")} is 1, and leave it only on a reset with no fault ; be in EMERGENCY when ${from("lost")} has held for ${c.t_lost} ms, and in STOP when the emergency lasts ${c.t_emerg} ms ; else be DERATED while ${from("warn_a")} or ${from("warn_b")} holds, and NORMAL otherwise.`;
   if (o.kind === "contactor") return `${o.name} shall close on a request, open on an inhibit, and raise a fault when its feedback has not followed the order for ${c.t_fb} ms.`;
   if (o.kind === "energy_counter") return `${o.name} shall count, in mWh, the energy that leaves the pack and the energy that enters it, from ${from("i")} and ${from("v")}.`;
   return `${o.name} is a pin of the microcontroller (${KINDS[o.kind].label}).`;

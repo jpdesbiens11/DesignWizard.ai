@@ -54,6 +54,20 @@ export const KINDS = {
   fault_latch: { nature: "decide", label: "Fault latch", fr: "mémoire de défaut", icon: "lock", text: "Retient un défaut dès qu'une de ses entrées passe à 1 ; ne l'oublie que sur un acquittement, toutes les entrées revenues à 0.",
     ports: { in: [{ key: "a", label: "a", ...B }, { key: "b", label: "b", ...B, free: 1 }, { key: "c", label: "c", ...B, free: 1 }, { key: "reset", label: "reset", ...B, free: 1 }], out: [{ key: "fault", label: "fault", ...B }] }, params: [], init: () => ({ fault: 0 }),
     step(s, c, i) { const any = i.a || i.b || i.c ? 1 : 0; if (any) s.fault = 1; else if (i.reset) s.fault = 0; return { fault: s.fault }; } },
+  module_state: { nature: "decide", label: "Module state machine", fr: "machine à états du module", icon: "flow", text: "L'état du module, dit au véhicule : normal ; dératé tant qu'un avertissement tient ; urgence quand la chaîne des cartes se tait ; arrêt — contacteur ouvert — sur un défaut, ou quand l'urgence dure. On ne sort de l'arrêt que par un acquittement, sans défaut.",
+    ports: { in: [{ key: "fault", label: "fault", ...B }, { key: "lost", label: "chain lost", ...B, free: 1 }, { key: "warn_a", label: "warning a", ...B, free: 1 }, { key: "warn_b", label: "warning b", ...B, free: 1 }, { key: "reset", label: "reset", ...B, free: 1 }],
+      out: [{ key: "state", label: "state", unit: "state", min: 0, max: 3 }, { key: "close", label: "close", ...B }, { key: "derate", label: "derate", ...B }, { key: "emergency", label: "emergency", ...B }] },
+    params: [P("t_lost", "Silence admis de la chaîne", 500, MS, "Combien de temps la chaîne des cartes peut se taire avant l'urgence.", { min: 10, max: 60000 }), P("t_emerg", "Durée admise de l'urgence", 1000, MS, "Combien de temps l'urgence dure avant que le contacteur s'ouvre : le temps qu'a le véhicule pour s'arrêter.", { min: 10, max: 600000 })],
+    init: () => ({ st: 0, tl: 0, te: 0 }),
+    step(s, c, i, dt) {      // 0 normal, 1 derated, 2 emergency, 3 stop (contactor open)
+      if (i.fault) { s.st = 3; s.tl = 0; s.te = 0; }
+      else if (s.st === 3) { if (i.reset) { s.st = 0; s.tl = 0; s.te = 0; } }
+      else {
+        if (i.lost) { if (s.tl < c.t_lost) s.tl += dt; } else s.tl = 0;
+        if (s.tl >= c.t_lost) { if (s.st !== 2) { s.st = 2; s.te = 0; } else { s.te += dt; if (s.te >= c.t_emerg) { s.st = 3; s.te = 0; } } }
+        else { s.st = i.warn_a || i.warn_b ? 1 : 0; s.te = 0; }
+      }
+      return { state: s.st, close: s.st < 3 ? 1 : 0, derate: s.st === 1 ? 1 : 0, emergency: s.st === 2 ? 1 : 0 }; } },
   contactor: { nature: "command", label: "Contactor driver", fr: "commande d'un contactor", icon: "power", text: "Ferme le contactor sur demande, l'ouvre sur un défaut, et relit son contact auxiliaire : s'il ne suit pas l'ordre à temps, c'est un défaut — soudé, ou bobine coupée.",
     ports: { in: [{ key: "request", label: "request", ...B }, { key: "inhibit", label: "inhibit", ...B }, { key: "feedback", label: "feedback", ...B }], out: [{ key: "drive", label: "drive", ...B }, { key: "fault", label: "fault", ...B }] },
     params: [P("t_fb", "Temps de réponse admis", 50, MS, "Combien de temps le contact auxiliaire a pour suivre l'ordre.", { min: 1, max: 5000 })], init: () => ({ drive: 0, t: 0, fault: 0 }),

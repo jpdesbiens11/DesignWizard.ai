@@ -190,6 +190,14 @@ Non fait ici, et dit : l'essai d'intégration sur la carte et l'essai sur le CPU
 d'un essai. **Aucune prétention de conformité ni de certification** : une norme se tient par un processus,
 des revues indépendantes et une autorité ; l'outil aide à tenir les traces que ce processus demande.
 
+## 4 quater. La machine à états d'un module (v0.165.0)
+
+Un genre d'objet de plus, `module_state` (« Module state machine », Décider) : **normal**, **dératé** tant qu'un avertissement tient,
+**urgence** quand la chaîne des cartes se tait plus longtemps que le silence admis, **arrêt** — contacteur ouvert — sur un défaut ou
+quand l'urgence dure ; on ne sort de l'arrêt que par un acquittement, sans défaut. Son pas en entiers, son C (`lib/dw_state.c`), sa
+phrase d'exigence, et sa place dans un essai dos à dos : le logiciel du module BM 8s8p (`sw/sw_bm_design.js`), joué sur son banc,
+écrit en C, compilé et comparé pas à pas (`tests/node/sw_module_state.test.mjs`). Voir `docs/BM_MODULE.md`, itération 15.
+
 ## 5. Ce qui est vérifié, ce qui ne l'est pas
 
 Vérifié : 6 essais Node (`tests/node/sw_objects.test.mjs`) — objets, fils, guide, simulation, et le C compilé qui

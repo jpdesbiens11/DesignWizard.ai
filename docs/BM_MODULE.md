@@ -640,6 +640,33 @@ trop petit : **à décider**, agrandir le logement ou mettre la carte le long du
 séries génériques de l'outil) ; la précharge, l'HVIL, la mesure directe de la tension du module (aujourd'hui la somme des 8 CORE) ; la
 chaîne réelle à 9 nœuds dans le Labo (la table relie une carte de CORE, pas huit) ; les essais du Labo de la carte entière.
 
+## Itération 15 — la machine à états du BMS central
+
+L'architecture de JP : le BMS central « juge et agit — contactors, état envoyé au véhicule : **normal, dératé, urgence, arrêt
+(contactors ouverts)** ». Un nouveau genre d'objet du groupe Logiciel, **`module_state`** (« Module state machine », nature
+« Décider ») : son pas en nombres entiers (`web/js/sw/sw_objects.js`), son module C `lib/dw_state.c` (`web/js/sw/sw_c.js`) et sa
+phrase d'exigence. Les règles, écrites une fois :
+
+- **arrêt** — contacteur ouvert — dès qu'un défaut est retenu (surtension, surtempérature, contacteur qui ne suit pas), ou quand
+  l'urgence dure ; **on n'en sort que par un acquittement, sans défaut** ;
+- **urgence** quand la chaîne des cartes de CORE s'est tue plus longtemps que le silence admis (500 ms, exemple) : le véhicule a la
+  durée admise de l'urgence (1 s, exemple) pour s'arrêter avant que le contacteur s'ouvre ;
+- **dératé** tant qu'un avertissement tient : la plus haute température au-dessus de 60 °C, ou **le courant du module au-dessus du
+  courant qu'il tient pour toujours** — 95 A, le calcul du module fermé (itération 13) ;
+- **normal** sinon.
+
+**Le logiciel du module** (`web/js/sw/sw_bm_design.js`, dans le projet BM, groupe Logiciel) : 18 objets reliés — trois mesures (la
+plus haute tension de CORE, la plus haute température, le courant du module), leurs seuils, la mémoire de défaut, la machine à états,
+le contacteur et son contact relu. **Sur son banc** (8 s) : 150 A pendant 3,5 s → dératé à 2,49 s, normal à 4,01 s ; la chaîne se tait
+à 5 s → urgence à 5,49 s → **arrêt à 6,49 s**, la bobine coupée, le contact auxiliaire ouvert 20 ms plus tard. **Dos à dos** : le C que
+l'outil écrit, compilé avec tous les avertissements en erreur, imprime caractère pour caractère les 800 pas du modèle
+(`tests/node/sw_module_state.test.mjs`).
+
+**Pas fait** : ce qui vient de la chaîne — la plus haute tension, la plus haute température, le silence — est une **entrée du banc**
+en attendant les objets « Communiquer » (la trame RS-485 et le CRC existent, `sw/rs485_link.js`, mais pas encore comme objets) ;
+l'état n'est pas encore envoyé au véhicule (objet CAN à venir) ; les seuils sont des exemples, à confirmer ; les exigences et les
+essais du cycle en V de ce logiciel sont à écrire ; aucun microcontrôleur n'a fait tourner ce C.
+
 ## Ce qu'il contient
 
 | Élément | Ce que c'est | Où |

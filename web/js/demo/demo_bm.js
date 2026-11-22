@@ -26,6 +26,7 @@ import { cell } from "../cad/elec_library.js";
 import { coreBoard } from "./demo_core.js";
 import { bmsBoard, BMS_BOARD_ID } from "./demo_bms.js";
 import { putBoard } from "../pcba/lab_table.js";
+import { moduleDesign } from "../sw/sw_bm_design.js";
 import { syncTwins } from "../pcba/twin.js";
 import { LIBRARY } from "../pcba/library.js";
 import { WORDS_BM } from "./demo_bm_words.js";
@@ -131,6 +132,7 @@ export function bmProject() {
   p.assemblies = [moduleAssembly(), coreAssembly(twin.id, flex), top.assembly(), bottom.assembly, jointAssembly(layout)];
   const bms = p.parts.find((x) => x.id === p.boards[1].part);
   bms.name = "BMS central du module"; bms.function = "Le BMS central : interroge les 8 cartes de CORE par la chaîne RS-485, lit le courant du module, commande le contacteur et dit l'état au véhicule par CAN. Pas encore posé : le logement du couvercle du fond est trop petit.";
-  putBoard(p, BMS_BOARD_ID); putBoard(p, p.boards[0].id);      // the lab table : the central BMS and one CORE board, linked by the four wires of the chain
+  putBoard(p, BMS_BOARD_ID); putBoard(p, p.boards[0].id);
+  p.software = [moduleDesign()];      // the software of the central BMS : its state machine, run on its bench, written in C      // the lab table : the central BMS and one CORE board, linked by the four wires of the chain
   return p;
 }

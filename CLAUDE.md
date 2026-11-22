@@ -466,6 +466,10 @@ fabrication virtuel)** — faits (v0.142.0 à v0.145.0) ; le projet BM bonifié 
    contrôles sans erreur ; elle alimente le côté bus de la chaîne RS-485 isolée ; le courant du module vient d'un capteur hors carte (le bloc
    isolé de l'outil s'arrête à 20 A) ; sur la table du labo avec une carte de CORE, reliées d'office. Pas posée : le logement du couvercle
    du fond (30 × 48 mm) est trop petit (**à décider**). Reste : la machine à états du module (normal, dératé, urgence, arrêt).
+   **Itération 15 (v0.165.0)** — la machine à états du BMS central : un genre d'objet `module_state` (normal, dératé, urgence, arrêt —
+   contacteur ouvert ; on ne sort de l'arrêt que par un acquittement) et le logiciel du module (`sw/sw_bm_design.js`, dans le projet), joué
+   sur son banc et prouvé dos à dos en C. Reste : les objets « Communiquer » (la chaîne RS-485, le CAN vers le véhicule), les exigences et
+   les essais du V de ce logiciel, le logement de la carte.
    **JP, 22 novembre, ensuite** : « après itération 12, svp corriger l'interface avec les points restants » — une fois l'itération 12 publiée,
    reprendre les points d'interface restants (les « Reste » de cette liste qui touchent l'interface), sans menu entre eux.
    **JP, 22 novembre, par menu : « les 4 pts en ordre svp, en continu »** — dans cet ordre, chacun publié, sans menu entre eux : (1) le point 17
