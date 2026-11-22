@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the levels of the Shop (demande de JP : « à quel niveau tu les fais, ce que tu peux faire, comment tu passes d'un
+/* DynamiteOrbit — the levels of the Shop (demande de JP : « à quel niveau tu les fais, ce que tu peux faire, comment tu passes d'un
    niveau à l'autre »). Three levels, and one path between them :
      1 — the Shop : every part of the product, by nature ; where a part is created ;
      2 — a nature of part (machined, molded, extruded profile, busbar, flex…) : its sisters, the rules of its process ;

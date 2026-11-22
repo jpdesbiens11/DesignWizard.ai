@@ -1,4 +1,4 @@
-/* DesignWizard.ai — renders the film : the page tools/film/film.html drawn frame by frame, each frame handed to ffmpeg.
+/* DynamiteOrbit — renders the film : the page tools/film/film.html drawn frame by frame, each frame handed to ffmpeg.
    Not part of the application and not run by the tests : it needs Playwright, ffmpeg and the clips shot by tools/film_shots.mjs.
      node tools/film_render.mjs <clips folder> <output folder> [fr] [en] [--no-captions] [--crf n] [--from s] [--to s] [--poster]
    For each language it writes, in the output folder (web/video for the site) : designwizard_<lang>.mp4 (1280 × 720, H.264, no sound yet),

@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Atelier, the door « Avec l'IA » (`#/shop/ai`) : one sentence, the instruction the tool proposes, the answer
+/* DynamiteOrbit — Atelier, the door « Avec l'IA » (`#/shop/ai`) : one sentence, the instruction the tool proposes, the answer
    brought back as a file — and, before anything enters the project, what would be created, what would be changed, what is
    set aside, and where each thing goes (core/ai_door.js). One click applies the plan as ONE undoable step ; the journal goes
    back to before an answer. The tool calls no AI : the person carries the instruction, and brings the answer back. */

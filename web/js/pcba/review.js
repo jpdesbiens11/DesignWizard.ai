@@ -1,4 +1,4 @@
-/* DesignWizard.ai — PCBA: the design-review report of a board, as a neutral document model that docx.js and pdfdoc.js
+/* DynamiteOrbit — PCBA: the design-review report of a board, as a neutral document model that docx.js and pdfdoc.js
    both render. Two reviews : the PRELIMINARY one (is the concept right : functions, architecture, conceptual layout)
    and the DETAILED one (can the board be built : layout, checks, fabrication package).
    doc = { title, subtitle, subject, author, date, reference, revision, header, footer, blocks: [
@@ -112,5 +112,5 @@ export function reviewDoc(d) {
   if ((d.open || []).length) { h2("Points ouverts"); out.push({ type: "list", items: d.open }); }
   out.push({ type: "signatures", roles: ["Concepteur", "Relecteur", cdr ? "Responsable de la fabrication" : "Responsable du projet"] });
 
-  return { title: `${K.label} — ${bd.id}`, subtitle: bd.name || "", subject: K.label, author: d.author || "", date, reference: `${bd.id}-${K.short}`, revision: bd.revision || "A", header: `${bd.id} rév. ${bd.revision || "A"} — ${K.label}`, footer: "DesignWizard.ai", blocks: out };
+  return { title: `${K.label} — ${bd.id}`, subtitle: bd.name || "", subject: K.label, author: d.author || "", date, reference: `${bd.id}-${K.short}`, revision: bd.revision || "A", header: `${bd.id} rév. ${bd.revision || "A"} — ${K.label}`, footer: "DynamiteOrbit", blocks: out };
 }

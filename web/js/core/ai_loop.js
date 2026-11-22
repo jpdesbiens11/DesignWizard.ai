@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the AI round trip : hand any artefact of a project to an AI the way a task is handed to a
+/* DynamiteOrbit — the AI round trip : hand any artefact of a project to an AI the way a task is handed to a
    technician or a trainee, get the artefact back, see what changed, and let the human decide.
    aiBrief() writes the request with the artefact in .dwiz ; aiRead() finds the artefact in the answer ; aiDiff()
    lists the differences in plain words. Nothing here touches the project : applying is the caller's one undoable step. */
@@ -10,7 +10,7 @@ import { KINDS, kindOfDoc } from "./dwiz_names.js";
     the tool computes from the artefact, given for reference (a routing sheet…). */
 export function aiBrief(doc, request, help = [], context = "") {
   const kind = kindOfDoc(doc), K = KINDS[kind] || { fr: "Document" };
-  return [`Tu assistes un bureau d'études. Voici un artéfact DesignWizard.ai — ${K.fr.toLowerCase()} « ${doc.id || ""} » — au format .dwiz : une instruction par ligne, les lignes en retrait précisent la ligne du dessus, « # » commente.`,
+  return [`Tu assistes un bureau d'études. Voici un artéfact DynamiteOrbit — ${K.fr.toLowerCase()} « ${doc.id || ""} » — au format .dwiz : une instruction par ligne, les lignes en retrait précisent la ligne du dessus, « # » commente.`,
     "", `DEMANDE : ${String(request || "").trim() || "(décrire la modification, comme à un technicien)"}`, "",
     "RÈGLES :", "- Ne change que ce que la demande exige ; garde les numéros, les repères et les noms existants.", "- Garde le format .dwiz, la première ligne « dwiz … » comprise.",
     "- Réponds par l'artéfact COMPLET modifié, dans un seul bloc de code, puis par la liste courte de ce que tu as changé et de ce qui reste à vérifier par un humain.", ...help.map((h) => `- ${h}`),

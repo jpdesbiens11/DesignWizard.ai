@@ -1,4 +1,4 @@
-/* DesignWizard.ai — kernel worker: all OpenCascade work happens here, off the main thread.
+/* DynamiteOrbit — kernel worker: all OpenCascade work happens here, off the main thread.
    Messages: {id, cmd, ...args} -> {id, ok, result} | {id, ok:false, error}. Progress: {stage: "text"}.
    Shapes stay in the worker, cached per part id; the page receives meshes and numbers only. */
 

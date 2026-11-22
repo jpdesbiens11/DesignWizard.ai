@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Logiciel : the REQUIREMENTS and the TESTS of the example (cycle en V). Each is an EXAMPLE proposed by the tool (sure :
+/* DynamiteOrbit — Logiciel : the REQUIREMENTS and the TESTS of the example (cycle en V). Each is an EXAMPLE proposed by the tool (sure :
    false) — written so that a young engineer sees what a requirement and its test look like, to be read again and confirmed by the project.
    The tests run on the model of the example (sw/sw_design.js demoDesign) and pass ; tests/node/sw_v.test.mjs keeps them so. Pure data. */
 

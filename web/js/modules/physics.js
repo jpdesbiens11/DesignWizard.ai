@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Physique : recognised hand calculations that answer « does the physics behind this part work ? ».
+/* DynamiteOrbit — Physique : recognised hand calculations that answer « does the physics behind this part work ? ».
    A studio like the others. Left : what is entered — the part the dimensions come from, then the inputs by group. Centre :
    the simple model, its diagram in 2D on top and, below, the same model in 3D drawn with the typed dimensions. Right : the
    choice of the model (tiles by physics : a colour, a pictogram), the result, the calculation and the runs kept.

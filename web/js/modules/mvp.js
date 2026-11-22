@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Itérations MVP : how a product converges, iteration after iteration, toward the maturity it aims at.
+/* DynamiteOrbit — Itérations MVP : how a product converges, iteration after iteration, toward the maturity it aims at.
    Each MVP is frozen, reviewed — by a detailed package handed to an AI, or in front of colleagues — and closed with a
    decision before the next one opens. Between two frozen iterations the platform says what moved : shapes, dimensions,
    functions, interfaces. Route : #/mvp (reached from the Review screen and the project menu). */

@@ -97,7 +97,7 @@ test("a drawing says in English what the project typed, when the project gave it
   assert.deepEqual(en.dims.map((d) => d.key), typed.dims.map((d) => d.key), "the keys of the dimensions do not read the words"); assert.deepEqual(en.dims.map((d) => d.text), typed.dims.map((d) => d.text)); assert.equal(en.dims[0].label, "Length — overall length"); assert.equal(typed.dims[0].label, "Longueur — overall length");
   assert.ok(en.dims.some((d) => d.label === "Power board mounting — pitch X")); assert.ok(en.notes.includes("1° draft on the walls, to be added in the tooling.")); assert.equal(en.gdt[0].name, typed.gdt[0].name, "what the screen lists keeps the text as typed");
   // what is left in French on the English sheet : the two fixed notes of the margin, nothing of the project
-  const words = [...tb.matchAll(/>([^<>]*[àâçéèêëîïôûù][^<>]*)</gi)].map((m) => m[1]); assert.ok(words.length >= 2 && words.every((w) => /CONFIDENTIEL|document généré par DesignWizard\.ai/.test(w)), words.join(" | "));
+  const words = [...tb.matchAll(/>([^<>]*[àâçéèêëîïôûù][^<>]*)</gi)].map((m) => m[1]); assert.ok(words.length >= 2 && words.every((w) => /CONFIDENTIEL|document généré par DynamiteOrbit/.test(w)), words.join(" | "));
   assert.deepEqual(partTexts(spec, DEMO_DRIVE).filter((t) => !DEMO_DRIVE.drawing.words[t]), []);
   K.flush();
 });

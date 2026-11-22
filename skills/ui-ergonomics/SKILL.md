@@ -6,7 +6,7 @@ license: MIT
 
 # Interface ergonomics, built with an agent
 
-These rules come from a real application — DesignWizard.ai, a mechatronic design platform written by hand with an
+These rules come from a real application — DynamiteOrbit, a mechatronic design platform written by hand with an
 agent, under the MIT licence. They were found one request at a time, then written down so that the next screen is
 born with them. This is neither a component library nor a design system: it is **a way of working** and **a
 catalogue of rules**, each with its reason.

@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the artwork of a label as a picture : its SVG (core/labels.js) drawn once on a canvas, kept, and laid as a
+/* DynamiteOrbit — the artwork of a label as a picture : its SVG (core/labels.js) drawn once on a canvas, kept, and laid as a
    texture on the patch that wraps the label on its part. Shared by the Labels screen and the marketing render. */
 
 import { labelSvg, labelPatch } from "./labels.js";

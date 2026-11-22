@@ -1,4 +1,4 @@
-/* DesignWizard.ai — an assembly inside an assembly (demande de JP : « Sous-assemblages »). An instance of an assembly names a part
+/* DynamiteOrbit — an assembly inside an assembly (demande de JP : « Sous-assemblages »). An instance of an assembly names a part
    (`part`) or another assembly (`asm`) : a sub-assembly, put together in its own document and carried here as ONE RIGID WHOLE.
    What counts parts reads the assembly OPENED : flatAsm() gives every part through every level as an instance of its own —
    « S~i2 » is the instance i2 of the sub-assembly placed as S — with the joints of every level, so that the view, the mass, the

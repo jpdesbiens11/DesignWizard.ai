@@ -1,4 +1,4 @@
-/* DesignWizard.ai — tool paths of the demonstrations, for the fabrication shop (JP, 21 novembre 2026 : « simuler un parcours d'usinage avec
+/* DynamiteOrbit — tool paths of the demonstrations, for the fabrication shop (JP, 21 novembre 2026 : « simuler un parcours d'usinage avec
    les allers-retours IA pour les pièces d'intérêt pour animer l'usinage »). Written by an AI (Claude) as an answer to the request the shop
    prepares — the phase, its holes, the frame, the format — and read by the tool like any other answer (core/fab_path.js : the G-code
    subset, the checks against the part). Three parts of interest : a profile extruded then machined (drilled and tapped from below), a

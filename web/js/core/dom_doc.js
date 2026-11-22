@@ -1,4 +1,4 @@
-/* DesignWizard.ai — a screen as a document : the blocks of the document model (core/pdfdoc.js, core/docx.js) read from
+/* DynamiteOrbit — a screen as a document : the blocks of the document model (core/pdfdoc.js, core/docx.js) read from
    the element that shows a report on screen, so that the PDF and the Word file say exactly what the screen says — one
    source, no second report to keep in step. It reads structure, never style : titles, paragraphs, tables, lists, key
    figures, pictures. It only needs tagName, children, textContent, getAttribute, classList-like className and value :

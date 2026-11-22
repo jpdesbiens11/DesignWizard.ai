@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Simulation : the instruments (demande de JP), in the side panel, under the right click, in the view and in
+/* DynamiteOrbit — Simulation : the instruments (demande de JP), in the side panel, under the right click, in the view and in
    the result panel. A temperature sensor or a strain gauge is put on the product the way a support is — a right click on a face,
    or « + » then a click — on the model or on the result. It is read on the result that is kept : moving it, or turning a gauge,
    changes its reading at once, and nothing is solved again. What a sensor is and how it is read : analysis/fea/sensors.js and

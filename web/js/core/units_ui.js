@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the choice of the units, as a row of buttons : the system the DESIGN is read in (SI, or the imperial
+/* DynamiteOrbit — the choice of the units, as a row of buttons : the system the DESIGN is read in (SI, or the imperial
    engineering hybrid). A click keeps the choice and tells every screen (« dw:units » on the window, core/units.js) ; the row
    redraws itself. The calculations do not follow it : they stay in SI. Used by the menu of the account. */
 

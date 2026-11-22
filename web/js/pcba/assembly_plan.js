@@ -1,4 +1,4 @@
-/* DesignWizard.ai — PCBA: the assembly routing of an electronic board, written for the discussion with the assembler :
+/* DynamiteOrbit — PCBA: the assembly routing of an electronic board, written for the discussion with the assembler :
    solder paste, placement, reflow, inspection, through-hole parts, cleaning, programming and test, conformal coating,
    final check — each phase with what the board itself asks (how many parts, which fine-pitch packages, which parts to
    solder by hand, which areas to mask). It proposes ; the assembler's own process prevails. */

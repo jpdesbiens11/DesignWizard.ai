@@ -1,5 +1,5 @@
 <!-- Fichier généré par tools/gen_docs.mjs à partir de web/js/cad/language_doc.js : ne pas modifier à la main. -->
-# Le langage de pièce de DesignWizard.ai (DW part/1)
+# Le langage de pièce de DynamiteOrbit (DW part/1)
 
 Une pièce est un document `.dwiz` (voir [FORMAT.md](FORMAT.md)) ou son jumeau JSON. C'est ce que Claude écrit à la fin de
 l'entrevue, ce que montre l'onglet Fichier du studio de pièce, et ce que le noyau construit. La référence ci-dessous est
@@ -7,7 +7,7 @@ exactement le texte donné à l'assistant dans le prompt générique
 (elle est en anglais parce que les clés du langage le sont).
 
 ```text
-# DesignWizard part language — DW part/1
+# DynamiteOrbit part language — DW part/1
 
 A part is ONE JSON object. Units: millimetres, degrees, grams. Axes: X to the right, Y to the back, Z up.
 Every number may be an expression of the part parameters: "L/2 - 10", "max(t, 2)", "W - 2*wall".

@@ -1,4 +1,4 @@
-/* DesignWizard.ai — « Partager » (point 17, JP, 20 novembre 2026 : « Partager sur chaque artéfact de la plateforme — un lien vers l'élément,
+/* DynamiteOrbit — « Partager » (point 17, JP, 20 novembre 2026 : « Partager sur chaque artéfact de la plateforme — un lien vers l'élément,
    ou une version numérique choisie au clic : STEP, Word, PDF, STL, Gerber, animation… »).
    What is shared is what the screen already knows how to make : every screen has its export buttons, each going out through download() with
    the mark of the platform. Sharing gathers them in one menu, grouped by nature, a pictogram and a short title each, and adds the link of the

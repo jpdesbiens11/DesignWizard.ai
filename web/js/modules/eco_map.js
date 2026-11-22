@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Écosystème : the MAP of what depends on what. Four columns, in the order a product is built : the assemblies, the parts
+/* DynamiteOrbit — Écosystème : the MAP of what depends on what. Four columns, in the order a product is built : the assemblies, the parts
    (grouped by the way they are made, a colour per group), the boards and the software, the analyses and the load cases. A link is a curve in the
    colour of its kind ; links between parts of the same column (a shared interface key, a mate) bow out on the right, as an arc diagram draws
    them. The artefact handed to the AI is ringed ; what it disturbs when it changes is outlined in amber, with how many steps away ; the rest

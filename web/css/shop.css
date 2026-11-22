@@ -1,4 +1,4 @@
-/* DesignWizard.ai — screens added with the technology bricks (Atelier, Physique, Artéfacts, compte et accès).
+/* DynamiteOrbit — screens added with the technology bricks (Atelier, Physique, Artéfacts, compte et accès).
    Only design tokens here: every colour, radius and shadow comes from app.css / themes.css, so the four themes apply. */
 
 html[data-module="shop"] { --acc: var(--hl-violet); }

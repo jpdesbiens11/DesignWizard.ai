@@ -1,4 +1,4 @@
-/* DesignWizard.ai — a face of the meshed product, as the designer points at it : the connected set of exposed cell faces
+/* DynamiteOrbit — a face of the meshed product, as the designer points at it : the connected set of exposed cell faces
    that look the same way as the one under the pointer. It reaches what the six outer sides cannot — the floor and the
    inner walls of a housing, the underside of a cover, a step, the bottom of a pocket. Neighbours are joined in their
    plane and across one layer of cells at most, so a drafted or gently sloped wall (a staircase on this mesh) stays one

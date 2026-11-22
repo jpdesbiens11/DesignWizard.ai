@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Revue : the design review of the whole project, artefact by artefact. What an AI wrote arrives
+/* DynamiteOrbit — Revue : the design review of the whole project, artefact by artefact. What an AI wrote arrives
    here as « Brouillon IA » ; the engineer opens each piece, reads what the tool finds (does it build ? what does DFx
    say ? what verdict for the analysis ?), writes what must change, and either validates it, sends that one piece to an
    AI, or sends every note at once for one complete outside iteration. A validated piece that changes afterwards says

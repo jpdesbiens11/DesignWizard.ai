@@ -1,4 +1,4 @@
-/* DesignWizard.ai — PCBA: the catalogue of function blocks. A block is the proven little circuit that fulfils one
+/* DynamiteOrbit — PCBA: the catalogue of function blocks. A block is the proven little circuit that fulfils one
    function ; a template sizes it from a few parameters and returns
      { parts: [{ id, comp, value, role, near, edge, nc, pin, corner }],      // local ids ; comp = library id
        nets:  [{ name, class, voltage, current, pins: ["U.VIN", "CIN.1"] }], // local names

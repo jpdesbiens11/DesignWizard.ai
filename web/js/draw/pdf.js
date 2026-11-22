@@ -1,4 +1,4 @@
-/* DesignWizard.ai — vector PDF backend of the drawing kit. Writes a plain PDF 1.4 (uncompressed content
+/* DynamiteOrbit — vector PDF backend of the drawing kit. Writes a plain PDF 1.4 (uncompressed content
    streams, standard fonts with /WinAnsiEncoding, JPEG images as DCTDecode) into a Uint8Array.
    Each page content starts with one `cm` matrix that converts millimetres / y-down to PDF points / y-up,
    so every primitive is emitted directly in sheet coordinates. */
@@ -229,7 +229,7 @@ export class PdfSheet extends Sheet {
     objects[catalogId - 1] = [`<< /Type /Catalog /Pages ${pagesId} 0 R >>`];
     objects[pagesId - 1] = [`<< /Type /Pages /Kids [${kids.join(" ")}] /Count ${kids.length} >>`];
     objects[infoId - 1] = [
-      `<< /Title ${pdfHexText(this.title)} /Creator (DesignWizard.ai) /Producer (DesignWizard.ai)` +
+      `<< /Title ${pdfHexText(this.title)} /Creator (DynamiteOrbit) /Producer (DynamiteOrbit)` +
       ` /CreationDate (${pdfDate(this._date)}) >>`,
     ];
 

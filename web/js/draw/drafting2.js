@@ -1,4 +1,4 @@
-/* DesignWizard.ai — drafting helpers, part 2: shared constants and small utilities, GD&T (vector symbols,
+/* DynamiteOrbit — drafting helpers, part 2: shared constants and small utilities, GD&T (vector symbols,
    feature control frame, datum feature) and the surface-finish symbol.
    Everything here is built ONLY on the Sheet primitives, so it renders identically on the PDF and SVG
    backends. Units: mm, y down. Re-exported by drafting.js. */

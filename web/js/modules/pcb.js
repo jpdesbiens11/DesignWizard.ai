@@ -1,4 +1,4 @@
-/* DesignWizard.ai — PCB: boards as mechanical and electrical envelopes. The tab "Carte" edits the components (with
+/* DynamiteOrbit — PCB: boards as mechanical and electrical envelopes. The tab "Carte" edits the components (with
    their heights and nets), the copper zones that matter for isolation, and the nets; the board mates through a
    bolt_pattern interface like any other part, and its zones feed the isolation analysis of the assembly. */
 

@@ -1,4 +1,4 @@
-/* DesignWizard.ai — inspector panels of the part studio: parameters (sliders with live rebuild), interfaces,
+/* DynamiteOrbit — inspector panels of the part studio: parameters (sliders with live rebuild), interfaces,
    DFx findings with one-click fixes, data sheet, raw JSON. */
 
 import { variantNow } from "../core/variants.js";

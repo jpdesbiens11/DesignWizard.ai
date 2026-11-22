@@ -60,7 +60,7 @@ const answer = {
 const row = (list) => `[\n${list.map((x) => `  ${JSON.stringify(x)}`).join(",\n")}\n ]`;
 const compact = (a) => `{\n ${Object.entries(a).map(([k, v]) => `${JSON.stringify(k)}: ${Array.isArray(v) ? row(v) : JSON.stringify(v)}`).join(",\n ")}\n}`;
 const esc = (s) => s.replace(/\\/g, "\\\\").replace(/`/g, "\\`").replace(/\$\{/g, "\\${");
-writeFileSync(new URL("../web/js/demo/demo_first_design.js", import.meta.url), `/* DesignWizard.ai — the worked example of a first complete design, written by tools/gen_first_design_example.mjs :
+writeFileSync(new URL("../web/js/demo/demo_first_design.js", import.meta.url), `/* DynamiteOrbit — the worked example of a first complete design, written by tools/gen_first_design_example.mjs :
    the description an engineer gives, and the file an assistant gives back after the interview. Do not edit by hand. */
 
 export const FIRST_DESIGN_DESCRIPTION = \`${esc(DESCRIPTION)}\`;

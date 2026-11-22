@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Labo, « Manipulation en labo » : a test done at the real bench, one step per screen (demande de JP : « un
+/* DynamiteOrbit — Labo, « Manipulation en labo » : a test done at the real bench, one step per screen (demande de JP : « un
    étudiant de 1re année… chaque étape pointée sur la carte directement au lieu de numéros de broches… un mode "Manipulation
    en labo", avec mode plein écran, des étapes à faire et des notes / mesures devant être notées »).
    Left, the board : the pads the step touches carry a ring and the lead that goes there, the pin written small. Right, the

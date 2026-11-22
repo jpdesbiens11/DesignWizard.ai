@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the film of the platform : two and a half minutes, in French and in English. Its pictures are the real screens, drawn
+/* DynamiteOrbit — the film of the platform : two and a half minutes, in French and in English. Its pictures are the real screens, drawn
    frame by frame by tools/film_render.mjs from one timeline (tools/film/script.mjs) ; the files live in web/video. The home screen opens
    the film in a dialog ; the showcase page (vitrine.html) shows it in two players, one per language.
    Two states, told by FILM.voice (docs/VIDEO.md) : a silent film whose narration is drawn in the picture, or a film that speaks, whose
@@ -56,7 +56,7 @@ export function showFilm(lang) {
     if (subs && subs.now() === subDefault(now.lang, FILM.langs)) subs.set(subDefault(l, FILM.langs));      // subtitles that followed the voice follow it still ; a choice of the viewer (the other language, both, none) is left alone
     now = filmFiles(l); load(at, playing);
   }
-  modal(`DesignWizard.ai en ${filmLength()}`, [video,
+  modal(`DynamiteOrbit en ${filmLength()}`, [video,
     el("div", { class: "film-bar" }, el("span", { class: "film-langs", role: "group", "aria-label": "Langue de la voix" }, voiceWord, picks), box, note,
       el("a", { class: "btn btn-small", href: "presentation.html", target: "_blank", rel: "noopener" }, "Présentation guidée"))],
   { xl: true, onClose: () => { video.pause(); video.removeAttribute("src"); video.load(); } });      // a film taken off the page would go on playing : it is stopped and let go

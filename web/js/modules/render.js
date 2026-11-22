@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Studio photo : a picture of the product, taken as in a studio. Left, what is entered : the set (a studio,
+/* DynamiteOrbit — Studio photo : a picture of the product, taken as in a studio. Left, what is entered : the set (a studio,
    a desert, a street, a deck…), how large the product looks in it, the point of view, the picture. Centre, the product in its
    set under its lamps — the mouse turns around it, a click chooses a part, a lamp is taken and pulled around the product ; the
    picture refines itself as soon as nothing moves. Right, what is chosen and obtained : the lighting (a setup, the plot, each
@@ -52,7 +52,7 @@ function finishPic(id, color) {
     ...(F.pattern === "grain" || F.pattern === "flakes" ? [[10, 11], [18, 9], [14, 17], [21, 16], [11, 21], [18, 22]].map(([x, y]) => svg("circle", { cx: x, cy: y, r: 0.7, fill: "#ffffff", "fill-opacity": F.pattern === "flakes" ? 0.8 : 0.35 })) : []));
 }
 const tile = (o) => el("button", { class: `cf-tile${o.sel ? " sel" : ""}`, type: "button", "aria-pressed": o.sel ? "true" : "false", "data-tip": o.tip || null, style: `--dom:${o.color}`, onClick: o.run, ...o.data }, o.pic, el("b", null, o.label));
-const request = (asm, rows) => ["Tu es l'assistant de conception de DesignWizard.ai. Voici la séance photo d'un produit : seul le bloc « render » se modifie.",
+const request = (asm, rows) => ["Tu es l'assistant de conception de DynamiteOrbit. Voici la séance photo d'un produit : seul le bloc « render » se modifie.",
   "ENTREVUE — pose-moi au plus cinq questions, une à la fois : à qui l'image s'adresse, où l'on veut voir le produit (studio, désert, mer, ville, campagne…), l'heure et l'ambiance de la lumière, les couleurs de la marque, les pièces à mettre en valeur. Puis résume en trois lignes et attends mon accord.",
   `RÉPONSE ATTENDUE — un seul bloc \`\`\`dwiz avec l'assemblage entier, bloc « render » à jour : scene (${Object.keys(SETS).join(", ")}), shot (${Object.keys(SHOTS).join(", ")}), size (${Object.keys(SIZES).join(", ")}), quality (${Object.keys(QUALITY).join(", ")}), scale (0.4 à 2.5 : la taille du produit dans le décor), exposure (−2 à 2 crans), ground et labels (true ou false) ; l'éclairage : setup (${Object.keys(LIGHT_SETUPS).join(", ")}) et ambient (0 à 1.5), ou des lignes « light » placées à la main — id, kind (${Object.keys(LIGHT_KINDS).join(", ")}), az (autour du produit, degrés), el (hauteur, 0 à 90), power (0 à 6), soft (0 à 1), kelvin (2000 à 10000), shadow ; et une ligne « look » par pièce habillée : sa référence, finish (${Object.keys(FINISHES).join(", ")}), color (« #rrggbb », pour une peinture ou une anodisation). N'invente aucune pièce.`,
   "", `Pièces : ${rows.map((r) => `${r.part} ${r.name} (${r.label})`).join(" ; ")}.`, "", toDwiz(asm).trimEnd()].join("\n");

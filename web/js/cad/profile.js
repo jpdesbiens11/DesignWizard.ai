@@ -1,4 +1,4 @@
-/* DesignWizard.ai — 2D profiles of the part language (pure geometry, no kernel).
+/* DynamiteOrbit — 2D profiles of the part language (pure geometry, no kernel).
    A profile is {outer, holes[]} where each loop is given as one of:
      {rect:[x,y,w,h], r}            rectangle from its min corner, optional corner radius
      {circle:[cx,cy,d]}             circle by centre and DIAMETER

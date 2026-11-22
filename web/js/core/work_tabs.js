@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the work tabs (demande de JP : « pouvoir les sélectionner ou les faire apparaître dans de nouveaux onglets ») :
+/* DynamiteOrbit — the work tabs (demande de JP : « pouvoir les sélectionner ou les faire apparaître dans de nouveaux onglets ») :
    the parts and the assemblies one keeps at hand, in a row under the breadcrumb. A tab is KEPT on purpose — Ctrl + click on a
    part, its « open in a tab » button, a double click on the tab of the moment — and stays until it is closed ; what one merely
    looks at shows as a passing tab, in italics, which the next thing looked at replaces.

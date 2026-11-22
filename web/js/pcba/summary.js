@@ -1,4 +1,4 @@
-/* DesignWizard.ai — PCBA: one line per board for the design-review report of the project — what it holds, where it
+/* DynamiteOrbit — PCBA: one line per board for the design-review report of the project — what it holds, where it
    stands in its flow, what the checks say, which review it is ready for. */
 
 import { LIBRARY } from "./library.js";

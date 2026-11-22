@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Logiciel : the boards, as the software sees them. A battery management system is two kinds of boards :
+/* DynamiteOrbit — Logiciel : the boards, as the software sees them. A battery management system is two kinds of boards :
    the cell electronics (ISO 12405-4 ; a « cell monitoring board ») on each module — it measures the voltage of every cell and a few temperatures, bleeds a cell
    on demand, and answers on an isolated link — and one BMS board that reads the pack current and the two voltages across the
    contactors, drives the contactors and reads them back, watches the interlock loop, and speaks to the vehicle over low voltage

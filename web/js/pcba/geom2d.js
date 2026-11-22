@@ -1,4 +1,4 @@
-/* DesignWizard.ai — PCBA: plane geometry of copper. Every piece of copper is one of two shapes:
+/* DynamiteOrbit — PCBA: plane geometry of copper. Every piece of copper is one of two shapes:
    a capsule { a: [x, y], b: [x, y], r } — a track segment, a via, a round or oval pad — or an axis-aligned
    rectangle { rect: [x0, y0, x1, y1] } — a rectangular pad. gap() gives the clear distance between two of them
    (zero or negative when they touch or overlap). */

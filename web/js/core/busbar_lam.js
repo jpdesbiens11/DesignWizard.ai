@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the laminated busbar and the thermal pad.
+/* DynamiteOrbit — the laminated busbar and the thermal pad.
    A laminated busbar is a flat stack : conductors of opposite potentials lying on each other, a sheet of aramid paper
    between them through the whole thickness, a polymer film wrapped outside. The insulation overhangs the conductors all
    round — that overhang is the creepage path between two layers. Each conductor comes out at both ends by a tab of its own,

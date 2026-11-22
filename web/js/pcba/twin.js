@@ -1,4 +1,4 @@
-/* DesignWizard.ai — PCBA: the mechanical twin of a board. The electronic board (kind "board") and the part of the
+/* DynamiteOrbit — PCBA: the mechanical twin of a board. The electronic board (kind "board") and the part of the
    "pcb" family that stands for it in the assembly are two views of the same object : the part gives the outline, the
    thickness and the mounting holes (its bolt-pattern interface) ; the board gives back its components as envelopes
    with their heights and its nets with their voltages, for the 3-D view, the isolation analysis and the simulation. */

@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the Shop companion: writes a part from its design INTENT, with no sketch.
+/* DynamiteOrbit — the Shop companion: writes a part from its design INTENT, with no sketch.
    Input (the brief): what the part is for, its interfaces (type, shared parameters, which side of the part), the
    material, the process and the raw stock. Output: a complete part in the part language — stock from the rack,
    interfaces placed without clash, the smallest envelope that carries them, a commercial thickness chosen from what

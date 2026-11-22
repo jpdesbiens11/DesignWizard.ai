@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Historique : the restore points of the product and the tree of their branches (point 9 of the plan agreed with JP : « ces
+/* DynamiteOrbit — Historique : the restore points of the product and the tree of their branches (point 9 of the plan agreed with JP : « ces
    itérations sont la colonne vertébrale » ; choices clicked on 20 November : a point keeps the complete definition, heavy files stored once,
    the points and the tree first, the package for an AI next). Route : #/history[/<point>].
    The same three places as every studio. Left, what one does and where one is : pose a point (a name, a note one may dictate), what changed

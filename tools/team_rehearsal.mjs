@@ -1,4 +1,4 @@
-/* DesignWizard.ai — rehearsal of the two-person trial, by file, without Google : two browsers on one local server play
+/* DynamiteOrbit — rehearsal of the two-person trial, by file, without Google : two browsers on one local server play
    « jp » and « ami ». jp shares the demonstration ; ami joins from his mirror, changes two parts and writes to him ; jp
    changes one of the same parts (a conflict) and another, merges, settles, ticks the message ; ami merges back. At the
    end the two projects must say the same thing. Not part of the application and not run by the tests : it needs Playwright.

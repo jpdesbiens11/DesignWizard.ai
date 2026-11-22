@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the part studio shared by Pièces, Extrusion and PCB: list of parts, construction tree, 3D view,
+/* DynamiteOrbit — the part studio shared by Pièces, Extrusion and PCB: list of parts, construction tree, 3D view,
    and the inspector (parameters with sliders, interfaces, live DFx, data sheet, JSON). Every edit is one undo step and
    rebuilds the part in the kernel worker; linked interfaces adapt the neighbouring parts. */
 

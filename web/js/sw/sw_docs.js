@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Logiciel : the two documents a software leaves with (cycle en V, « 7 Livraison » ; point 25 de la suite convenue avec JP :
+/* DynamiteOrbit — Logiciel : the two documents a software leaves with (cycle en V, « 7 Livraison » ; point 25 de la suite convenue avec JP :
    « une spécification et un rapport d'essais en Word / PDF ; les exigences, les essais et la trace dans le paquet C »).
      the SPECIFICATION of the requirements — what the software must do : the reference chosen, every requirement with its kind, its proof and
        the tiles that carry it out, what the tool found in its sentence, what each tile says it does (the low-level requirements), the trace ;
@@ -67,7 +67,7 @@ export function srsDoc(d, o = {}) {
   if (T.orphans.length) out.push({ type: "p", style: "warn", text: `Tuiles qu'aucune exigence ne demande : ${T.orphans.map((id) => objName(d, id)).join(", ")} — une fonction que personne n'a demandée se justifie par une exigence, ou se retire.` });
   sec("Ce qui est vérifié, ce qui ne l'est pas");
   out.push({ type: "list", items: ["Vérifié par l'outil : la forme de chaque phrase, l'allocation de chaque exigence, la trace dans les deux sens, les tuiles qu'aucune exigence ne demande.", "Non vérifié par l'outil : que les exigences soient justes, complètes et suffisantes pour la sécurité du produit — c'est le travail de la revue, par une autre personne que l'auteur.", "Le plan de ce document suit l'usage du métier, écrit de mémoire : aucun gabarit d'une norme n'a été lu, et il ne tient pas lieu des données du cycle de vie qu'une norme demande.", "Aucune prétention de conformité ni de certification."] });
-  return { title: `Spécification des exigences du logiciel — ${d.name || d.id}`, subtitle: "Software Requirements Specification", subject: "Spécification des exigences du logiciel", kind: "Spécification des exigences", author: o.author || "", date: o.date || new Date(0), reference: `${d.id}-SRS`, revision: d.revision || "A", header: `${d.id} — Spécification des exigences du logiciel`, footer: "DesignWizard.ai", blocks: out };
+  return { title: `Spécification des exigences du logiciel — ${d.name || d.id}`, subtitle: "Software Requirements Specification", subject: "Spécification des exigences du logiciel", kind: "Spécification des exigences", author: o.author || "", date: o.date || new Date(0), reference: `${d.id}-SRS`, revision: d.revision || "A", header: `${d.id} — Spécification des exigences du logiciel`, footer: "DynamiteOrbit", blocks: out };
 }
 
 /** The report of verification. o : { date, author, version } → the document model */
@@ -99,7 +99,7 @@ export function svrDoc(d, o = {}) {
   out.push({ type: "table", head: ["Point", "État"], widths: [82, 18], rows: checks.map((c) => [c.text, { text: c.ok ? "tenu" : "à régler", fill: c.ok ? "ok" : "warn" }]), caption: "La liste de l'outil : elle ne remplace ni la revue de conception, ni l'autorité qui accepte un logiciel." });
   sec("Ce qui est vérifié, ce qui ne l'est pas");
   out.push({ type: "list", items: ["Vérifié : chaque essai à On a tourné sur le modèle au moment où ce rapport a été écrit ; ses attendus sont comparés à ce que le modèle a donné.", "Vérifié ailleurs, par les essais de l'outil : le C écrit par l'outil, compilé sur un ordinateur avec tous les avertissements en erreur, imprime caractère pour caractère ce que le modèle donne.", "Non vérifié : le logiciel sur la carte et sur le CPU (essai d'intégration, essai sur la cible) ; la couverture structurelle du C ; les temps d'exécution.", "Le plan de ce rapport suit l'usage du métier, écrit de mémoire : aucun gabarit d'une norme n'a été lu. Aucune prétention de conformité ni de certification."] });
-  return { title: `Rapport de vérification du logiciel — ${d.name || d.id}`, subtitle: "Software Verification Report — essais sur le modèle", subject: "Rapport de vérification du logiciel", kind: "Rapport de vérification", author: o.author || "", date: o.date || new Date(0), reference: `${d.id}-SVR`, revision: d.revision || "A", header: `${d.id} — Rapport de vérification du logiciel`, footer: "DesignWizard.ai", blocks: out, run };
+  return { title: `Rapport de vérification du logiciel — ${d.name || d.id}`, subtitle: "Software Verification Report — essais sur le modèle", subject: "Rapport de vérification du logiciel", kind: "Rapport de vérification", author: o.author || "", date: o.date || new Date(0), reference: `${d.id}-SVR`, revision: d.revision || "A", header: `${d.id} — Rapport de vérification du logiciel`, footer: "DynamiteOrbit", blocks: out, run };
 }
 
 /* ---------- the same, in the C package ---------- */

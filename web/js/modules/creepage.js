@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Isolation (Creepage & Clearance): the geometry analysed is the COMPLETE assembly, or ONE board alone (demande de
+/* DynamiteOrbit — Isolation (Creepage & Clearance): the geometry analysed is the COMPLETE assembly, or ONE board alone (demande de
    JP : « analyse PCBA ou analyse Assy » — the menu « Ce que l'on analyse », modules/creepage_board.js). Each body is a
    conductor of a net, a floating conductor or an insulator of a material group; for every pair of nets the required
    distances come from IEC 60664-1 (cc_rules) and the measured ones from the shortest paths on the model (cc_paths).

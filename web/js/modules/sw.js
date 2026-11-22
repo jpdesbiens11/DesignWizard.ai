@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Logiciel : the software of an embedded BMS, drawn as objects one links, and written by the tool (demande de JP :
+/* DynamiteOrbit — Logiciel : the software of an embedded BMS, drawn as objects one links, and written by the tool (demande de JP :
    « une approche de design logiciel via des objets visuels adaptés qui se codent tout seuls en librairie, module et structure de
    fichiers pour un CPU de BMS embarqué, sachant les in/out à gérer, leurs plages et le CPU choisi »).
    A GROUP OF ITS OWN, in the order of the V (demande de JP, 21 novembre 2026 : « sortir et bonifier la suite d'outils logiciel de l'onglet

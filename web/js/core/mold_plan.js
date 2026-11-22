@@ -1,4 +1,4 @@
-/* DesignWizard.ai — a moulded part, thought through its MOLD. Plastic or metal, the part is what the mold lets out : where
+/* DynamiteOrbit — a moulded part, thought through its MOLD. Plastic or metal, the part is what the mold lets out : where
    the material comes in (the gate), where the mold opens (the parting line) and which way (the pull), whether two halves
    are enough or side actions are needed (slides, lifters — cores in a sand mold), where the risers stand on a casting poured
    by gravity or filled from below, and what all of that LEAVES on the part once the gate and the risers are cut off and

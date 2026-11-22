@@ -1,4 +1,4 @@
-/* DesignWizard.ai — labels and stickers : what is stuck, riveted or marked on a product — a brand sticker, a rating plate,
+/* DynamiteOrbit — labels and stickers : what is stuck, riveted or marked on a product — a brand sticker, a rating plate,
    a warning. A label belongs to an assembly and sits on one instance, on a flat face or wrapped on a cylinder ; it has a
    size in millimetres, a rotation, and an artwork : the mark of the platform, a text, or an image the designer brings.
    The artwork is one SVG, at scale, used both as the texture of the 3D view and as the file sent to the printer.
@@ -19,7 +19,7 @@ export const LABEL_KINDS = {
   marking: { label: "Direct marking", fr: "Marquage direct", text: "Gravé au laser ou tampographié sur la pièce : aucune épaisseur", lift: 0.03, color: "#25ad9f" },
 };
 export const LABEL_ARTS = {
-  logo: { fr: "Marque DesignWizard.ai", text: "Le sigle et le nom de la plateforme" },
+  logo: { fr: "Marque DynamiteOrbit", text: "Le sigle et le nom de la plateforme" },
   text: { fr: "Texte", text: "Une ligne, et une seconde plus petite : un nom, une référence, un avertissement" },
   image: { fr: "Image", text: "Un fichier PNG, JPEG ou SVG que vous apportez" },
 };
@@ -27,7 +27,7 @@ export const LABEL_SHAPES = { rect: "Angles vifs", round: "Coins arrondis", pill
 export const IMAGE_LIMIT = 400000;           // characters of a data URL kept in the project : beyond, the project file grows too fast
 export const blankLabel = (id = "E1") => ({ id, name: "Autocollant", kind: "sticker", inst: null, w: 80, h: 30, turn: 0, on: null, art: { type: "text", text: "", sub: "", ink: "#1b2733", paper: "#ffffff", shape: "round" } });
 /** The sticker of the platform : its mark and its name, dark on white. */
-export const brandSticker = (id = "E1", patch = {}) => ({ ...blankLabel(id), name: "Sticker DesignWizard.ai", w: 180, h: 60, art: { type: "logo", text: "DesignWizard.ai", sub: "by DynamiteAgile™", ink: "#26323f", paper: "#ffffff", shape: "round" }, ...patch });
+export const brandSticker = (id = "E1", patch = {}) => ({ ...blankLabel(id), name: "Sticker DynamiteOrbit", w: 180, h: 60, art: { type: "logo", text: "DynamiteOrbit", sub: "by DynamiteAgile™", ink: "#26323f", paper: "#ffffff", shape: "round" }, ...patch });
 export const nextLabelId = (list) => `E${(list || []).reduce((m, l) => Math.max(m, parseInt(String(l.id).replace(/\D/g, ""), 10) || 0), 0) + 1}`;
 export const isWrapped = (label) => !!(label && label.on && Array.isArray(label.on.axis) && label.on.r > 0);
 

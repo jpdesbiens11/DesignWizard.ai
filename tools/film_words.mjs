@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the words of the film, written everywhere they are read, from the one timeline (tools/film/script.mjs) : the subtitle
+/* DynamiteOrbit — the words of the film, written everywhere they are read, from the one timeline (tools/film/script.mjs) : the subtitle
    tracks of the site (web/video/designwizard_<lang>.vtt), the scripts to record (docs/film/narration_<lang>.md), the storyline — what
    the screen shows and what the voice tells over it, both languages side by side (docs/film/storyline.md) — and the narration given as
    text under each player of the showcase page (web/vitrine.html). Run it after changing the narration ; the picture is not drawn again

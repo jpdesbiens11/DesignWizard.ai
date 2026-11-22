@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the project « BM 8s8p - 21700 » (demande de JP, 21 novembre 2026 : « créer un nouveau projet pour ces pièces et assembly
+/* DynamiteOrbit — the project « BM 8s8p - 21700 » (demande de JP, 21 novembre 2026 : « créer un nouveau projet pour ces pièces et assembly
    qui s'appelle BM 8s8p - 21700 et tout mettre ce qui a trait au core 1s8p dedans… commencer un assembly des 8 cores pour voir où on en
    est, et après on itérera ensemble le design »).
    What it holds, from the architecture JP gave (CLAUDE.md, point 20) : a CORE is 8 cells 21700 in PARALLEL (1S8P), two rows of 4 — the
@@ -123,7 +123,7 @@ export function busbarSizing() {
     concept 1 kept on MAIN, concept 2 and concept 3 on their own branches. o : { branch (true or "c2" : the project opens on concept 2 ; "c3" :
     on concept 3 ; else on MAIN) } */
 export function bmProject(opts = {}) {
-  const p = { dw: "project/1", id: "bm-8s8p-21700", name: "BM 8s8p - 21700", author: "DesignWizard.ai",
+  const p = { dw: "project/1", id: "bm-8s8p-21700", name: "BM 8s8p - 21700", author: "DynamiteOrbit",
     description: "Module de batterie 8s8p en cellules 21700 : 8 CORE 1S8P en série, côte à côte, chacun avec sa carte de mesure posée dessus. Douzième itération : le CORE refait — busbar laminé industriel sur le dessus, soudures laser dessinées, joints plans pressés par les ressorts du couvercle, capteurs dans le support du bas.",
     parts: [JSON.parse(JSON.stringify(CELL))], assemblies: [], boards: [coreBoard(), bmsBoard()], drawing: { words: WORDS_BM }, physics: [busbarSizing(), returnSizing(I_CORE), screwHolding(), ...heatCalcs(CASE_L)], log: [] };
   const layout = contactLayout(CORE_X, D), z = stackOf({ H, ins: INS_T, t: BB_T, w: WRAP_T });
@@ -156,14 +156,14 @@ export function bmProject(opts = {}) {
     and their twins, the parts and the assemblies of concept 2 (demo_bm_c2.js), the calculations that still speak of its parts. back : the
     project stays on concept 2 ; else it goes back to MAIN (concept 1, what every screen opened on until now). */
 function withConceptTwo(p, onBranch) {
-  addPoint(p, { kind: "manual", label: "Concept 1 — itération 15", when: "2026-11-22T12:00:00.000Z", by: "DesignWizard.ai",
+  addPoint(p, { kind: "manual", label: "Concept 1 — itération 15", when: "2026-11-22T12:00:00.000Z", by: "DynamiteOrbit",
     note: "Le module tel que les itérations 1 à 15 l'ont fait : 8 CORE debout côte à côte, busbar laminé à jambes pliées, joints plans pressés par le couvercle du haut à came quart de tour, couvercle du fond à anneau usiné." });
   const doc = JSON.parse(JSON.stringify(withoutHistory(p))), twins = new Set(p.boards.map((b) => b.part)), c2 = conceptTwo({ core: p.boards[0].part, bms: p.boards[1].part });
   doc.parts = [...doc.parts.filter((x) => twins.has(x.id)), ...c2.parts]; doc.assemblies = c2.assemblies;
   const ids = new Set(doc.parts.map((x) => x.id)); doc.physics = [...(doc.physics || []).filter((c) => !c.part || ids.has(c.part)), camCalc()];
   doc.description = `Concept 2 « consumer product interface » : les 8 CORE couchés en ligne, pressés comme des piles dans une lampe — bandes à lamelles sur la face − de chaque CORE, plaque + rigide à bossages ; poignée quart de tour à came double lobe (${camLayout().preload.toFixed(0)} N sur la pile) ; couvercle du fond actif (connecteur, contacteur, carte BMS). Premier jet, à itérer.`;
   delete doc.id; delete doc.log; delete doc.updated; putDefinition(p, doc);
-  addPoint(p, { kind: "manual", branch: C2_BRANCH, label: "Concept 2 — premier jet : CORE 2.0 en ligne, poignée à came", when: "2026-11-22T12:30:00.000Z", by: "DesignWizard.ai",
+  addPoint(p, { kind: "manual", branch: C2_BRANCH, label: "Concept 2 — premier jet : CORE 2.0 en ligne, poignée à came", when: "2026-11-22T12:30:00.000Z", by: "DynamiteOrbit",
     note: "D'après les documents et les réponses de JP : CORE en ligne pressés, bandes à lamelles sur la face −, + rigide à bossages, poignée quart de tour à came double lobe, couvercle du fond actif." });
   if (!onBranch) restoreInto(p, "P1");
 }

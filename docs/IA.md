@@ -1,6 +1,6 @@
 # Travailler avec une IA — l'aller-retour
 
-DesignWizard.ai ne cache pas une IA dans ses menus : il rend chaque artéfact **lisible par une IA et par un humain**,
+DynamiteOrbit ne cache pas une IA dans ses menus : il rend chaque artéfact **lisible par une IA et par un humain**,
 et organise l'aller-retour entre les deux. On confie une tâche à une IA comme à un technicien ou à un stagiaire ;
 elle rend l'artéfact modifié ; l'outil montre ce qui a changé ; l'humain décide.
 
@@ -224,7 +224,7 @@ tertiaires ; 160 caractères par fonction, aucun balisage. Le lecteur a été é
 dépôt de DynamiteAgile. Dans l'autre sens, six fichiers écrits ici — le premier design d'exemple, le variateur de
 démonstration, un projet à deux cartes, un projet sans carte, un projet vide, des textes à nettoyer — ont été soumis au
 validateur de DynamiteAgile lui-même (`tools/check_starter.py`, version 0.60.104) : tous acceptés, avec ses seuls avis
-d'usage (aucun requis, aucun backlog, aucun code de temps, que DesignWizard n'exporte pas). Cette vérification est faite
+d'usage (aucun requis, aucun backlog, aucun code de temps, que DynamiteOrbit n'exporte pas). Cette vérification est faite
 à la main : la suite de tests de ce dépôt ne dépend pas de celui de DynamiteAgile.
 
 ## Pourquoi cela marche
@@ -258,4 +258,4 @@ répond dans le format du second. La boucle de mise à jour reste donc celle de 
 FeatureScript sert à lire, à reconstruire dans Onshape, ou à demander une variante à part.
 
 Limites : le FeatureScript n'est pas relu en sens inverse (une réponse en FeatureScript ne revient pas dans
-DesignWizard.ai), et il reste expérimental — généré, non exécuté dans Onshape.
+DynamiteOrbit), et il reste expérimental — généré, non exécuté dans Onshape.

@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Révisions : FREEZING a part, an assembly or a board, then releasing it. Each receives its number ; freezing
+/* DynamiteOrbit — Révisions : FREEZING a part, an assembly or a board, then releasing it. Each receives its number ; freezing
    fixes a revision that never changes again, and a lean design review — an approver who is not the author — releases it or
    refuses it (modules/plm_review.js). The name and the state of each revision are shown on its line. The screen says, for every item, what releasing it now would do — the next revision
    when form, fit and function hold, a new number when they do not — and why ; an assembly shows the revision of each part

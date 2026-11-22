@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Physique : the right panel of the studio. « Modèles » : the hand calculations as tiles, grouped by
+/* DynamiteOrbit — Physique : the right panel of the studio. « Modèles » : the hand calculations as tiles, grouped by
    physics — a colour and a pictogram per physics, the diagram of each model as its pictogram, a few words under it ;
    the long title and the question come once the tile is chosen. « Résultat » : the verdict, the key values, the checks
    with their margins. « Calcul » : the steps written like a hand calculation, the assumptions, the validity and the

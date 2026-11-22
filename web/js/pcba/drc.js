@@ -1,4 +1,4 @@
-/* DesignWizard.ai — PCBA: the design-rule check of an assembled board. Geometry first (short circuits, clearances,
+/* DynamiteOrbit — PCBA: the design-rule check of an assembled board. Geometry first (short circuits, clearances,
    widths, drills, edges, placement), then what the assembler and the test bench will meet (fiducials, both sides,
    decoupling, test access, coating). Every finding carries the measured value, the limit and where it is. */
 

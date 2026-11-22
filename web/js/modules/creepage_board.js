@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Isolation of a board ALONE : what the Isolation screen needs when what it analyses is a PCBA and not an assembly
+/* DynamiteOrbit — Isolation of a board ALONE : what the Isolation screen needs when what it analyses is a PCBA and not an assembly
    (demande de JP : « analyser l'isolation du PCBA… analyse PCBA ou analyse Assy »). The scene comes from the real copper of the board
    (pcba/board_iso.js) ; this module gives the screen its menu « Ce que l'on analyse », the potentials of the board, what the analysis
    looks at, and the bodies in the view. Nothing is decided here : the distances are those of the common engine (analysis/cc_paths.js). */

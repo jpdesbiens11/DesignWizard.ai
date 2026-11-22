@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Premiers pas : the eight steps of a newcomer, grouped by what one does (begin, design, check, deliver),
+/* DynamiteOrbit — Premiers pas : the eight steps of a newcomer, grouped by what one does (begin, design, check, deliver),
    each group in its colour, each step with its pictogram, its few words and its state — read off the project, never
    declared. The next step is open, with how to do it ; « Y aller » opens its screen. Route : #/start. */
 

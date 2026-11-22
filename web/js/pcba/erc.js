@@ -1,4 +1,4 @@
-/* DesignWizard.ai — PCBA: the electrical rule check — what a careful reader of the schematic would catch before any
+/* DynamiteOrbit — PCBA: the electrical rule check — what a careful reader of the schematic would catch before any
    copper is drawn : functions without a solution, pins left in the air, supplies without a source, outputs fighting
    each other, capacitors under-rated for their net. */
 

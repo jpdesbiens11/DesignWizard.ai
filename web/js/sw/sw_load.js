@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Logiciel : from the files the tool writes to the microcontroller (demande de JP : « l'important, c'est de voir le
+/* DynamiteOrbit — Logiciel : from the files the tool writes to the microcontroller (demande de JP : « l'important, c'est de voir le
    package final, puis de savoir comment il serait téléchargé dans le microprocesseur choisi »). The chain is said step by step, for someone
    who learns : what one does, in plain words, and — for a CPU whose documents were opened — what its maker PUBLISHES about each step, with
    where it was read. Tools and kits of a maker are cited in text, as references of compatibility : no logo, none of their code.

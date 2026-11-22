@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Physique, fluid: flow in a round pipe (Hagen-Poiseuille, then Darcy-Weisbach above Re 2300) and
+/* DynamiteOrbit — Physique, fluid: flow in a round pipe (Hagen-Poiseuille, then Darcy-Weisbach above Re 2300) and
    flow through an orifice / restriction. Inputs in mm, L/min, °C, kPa, mPa.s; SI inside. */
 
 import { PI, n, sheet, num, opt, out, GEO, CRIT } from "./models_core.js";

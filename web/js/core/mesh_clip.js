@@ -1,4 +1,4 @@
-/* DesignWizard.ai — a mesh of the kernel made ready for a view that works in the frame of the product : placed where its part stands
+/* DynamiteOrbit — a mesh of the kernel made ready for a view that works in the frame of the product : placed where its part stands
    (bakeMesh), and cut by planes square to the axes (clipMesh) — what a model reduced by a symmetry or a cut still shows. Faces and
    edges keep their numbers, so what is pointed at in the view is still the face, the edge of the part. Pure. */
 

@@ -29,7 +29,7 @@ test("teaser — the voice tells, in both languages, inside its shots, without r
     const shot = teaserShotAt(c.t0); assert.ok(shot && c.t1 <= shot.at + shot.len + 1e-9, `line ${i + 1} stays inside its shot`); assert.ok(teaserRoom(i) > 1.5);
     for (const l of LANGS) { assert.deepEqual(teaserReads(c, l), [], `line ${i + 1} (${l}) reads the screen`); assert.ok(c[l].trim().split(/\s+/).length / (c.t1 - c.t0) <= 3.3, `line ${i + 1} (${l}) can be said without running`); assert.deepEqual(gainClaims(c[l]), []); }
   });
-  for (const l of LANGS) { assert.ok(shownTexts(l).length > 20); assert.match(TEASER_LINES[TEASER_LINES.length - 1][l], /DesignWizard\.ai/, "the name is said at the end"); }
+  for (const l of LANGS) { assert.ok(shownTexts(l).length > 20); assert.match(TEASER_LINES[TEASER_LINES.length - 1][l], /DesignWizard\.ai/, "the name is said at the end (the voice was recorded before the new name)"); }
   const srt = teaserSrt("fr"); assert.match(srt, /^1\n00:00:00,300 --> 00:00:02,900\nUne pièce commence par une question\.\n\n2\n/); assert.equal(srt.split("\n\n").length, TEASER_LINES.length);
   const script = teaserScript(); for (const c of TEASER_LINES) { assert.ok(script.includes(c.fr)); assert.ok(script.includes(c.en)); }
 });
@@ -53,7 +53,7 @@ test("kit — what it says of the project is what the project is : free, in deve
     assert.doesNotMatch(all, /\b(?:Onshape|SolidWorks|Fusion ?360|CATIA|Inventor|Google|Microsoft|LinkedIn|Twitter|Facebook|Instagram)\b/i, `${l} : the name of another product`);
     assert.doesNotMatch(all, /\b(?:révolutionn\w+|revolutionar\w+|n° ?1|numéro un|world-class|best-in-class|le meilleur|the best)\b/i, `${l} : a claim nobody can hold`);
   }
-  assert.match(LINKS.demo, /^https:\/\/[a-z0-9.-]+\/DesignWizard\.ai\/$/); assert.match(LINKS.code, /^https:\/\/github\.com\//); assert.ok(read("web/vitrine.html").includes(LINKS.code), "the links are those of the showcase page");
+  assert.match(LINKS.demo, /^https:\/\/[a-z0-9.-]+\/DynamiteOrbit\/$/); assert.match(LINKS.code, /^https:\/\/github\.com\//); assert.ok(read("web/vitrine.html").includes(LINKS.code), "the links are those of the showcase page");
   assert.match(POSTS.find((p) => p.id === "liens").fr, new RegExp(LINKS.demo.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
 });
 

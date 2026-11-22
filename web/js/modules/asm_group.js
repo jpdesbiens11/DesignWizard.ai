@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Assemblage : what is done to SEVERAL elements at once (demande de JP : « quand on sélectionne plusieurs
+/* DynamiteOrbit — Assemblage : what is done to SEVERAL elements at once (demande de JP : « quand on sélectionne plusieurs
    pièces… il faut être capable de changer les propriétés de tout le groupe de sélection, en un seul clic » — before, a setting
    touched on a line changed that line only). One rule, held here : a setting touched while several elements are chosen applies
    to ALL of them — the swatch of a line, its On / Off switch, its eye, the menu of the right click (on the line and on the part

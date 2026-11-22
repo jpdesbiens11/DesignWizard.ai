@@ -1,22 +1,22 @@
-/* DesignWizard.ai — the mark every document of the platform carries, whatever its format : who made it, and the note
+/* DynamiteOrbit — the mark every document of the platform carries, whatever its format : who made it, and the note
    « Co-Intelligence WorkFlow™ » in the words of DynamiteAgile. One source for the PDF, the Word document, the text
    and data files, the fabrication files and what is sent to Onshape — so that no export goes out without it.
    Pure : the writers and the tests share it. */
 
-export const BRAND = { product: "DesignWizard.ai™", by: "DynamiteAgile™", workflow: "Co-Intelligence WorkFlow™", site: "DesignWizard.ai" };
+export const BRAND = { product: "DynamiteOrbit™", by: "DynamiteAgile™", workflow: "Co-Intelligence WorkFlow™", site: "DynamiteOrbit" };
 /** Who made the document. */
 export const BRAND_LINE = `${BRAND.product} by ${BRAND.by}`;
 /** The mark : the platform, the house, the workflow. */
 export const MARK = `${BRAND_LINE} · ${BRAND.workflow}`;
 /** The note at the bottom of every document. */
-export const FOOT_NOTE = `${MARK} — document généré par DesignWizard.ai. La version électronique fait foi ; la version imprimée est pour référence.`;
+export const FOOT_NOTE = `${MARK} — document généré par DynamiteOrbit. La version électronique fait foi ; la version imprimée est pour référence.`;
 /** The same note for the formats that only take plain ASCII (DXF, Gerber, drill files, STEP, STL). */
-export const FOOT_NOTE_ASCII = "DesignWizard.ai(TM) by DynamiteAgile(TM) - Co-Intelligence WorkFlow(TM) - document genere par DesignWizard.ai. La version electronique fait foi ; la version imprimee est pour reference.";
+export const FOOT_NOTE_ASCII = "DynamiteOrbit(TM) by DynamiteAgile(TM) - Co-Intelligence WorkFlow(TM) - document genere par DynamiteOrbit. La version electronique fait foi ; la version imprimee est pour reference.";
 const KEY = "Co-Intelligence WorkFlow";                        // what tells a file is already marked
-/** « Extrait le 2026-11-16 14:02 — DesignWizard.ai v0.42.0 » : when the document left the platform, and from which version. */
+/** « Extrait le 2026-11-16 14:02 — DynamiteOrbit v0.42.0 » : when the document left the platform, and from which version. */
 export function stampLine(when = new Date(), version = "") {
   const d = when instanceof Date && !Number.isNaN(when.getTime()) ? when : new Date(0), p = (n) => String(n).padStart(2, "0");
-  return `Extrait le ${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())} — DesignWizard.ai${version ? ` v${version}` : ""}`;
+  return `Extrait le ${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())} — DynamiteOrbit${version ? ` v${version}` : ""}`;
 }
 
 /* ---------- the mark as a vector (64 × 64, the figure of docs/BRAND.md) : two legs, the arc they trace, the spark ---------- */
@@ -34,7 +34,7 @@ export function drawLogo(sheet, x, y, size) {
 /** The mark as an inline SVG, for a page (the report in HTML). */
 export function logoSvg(size = 40) {
   const { c, r, a0, a1 } = LOGO.arc, pt = (a) => `${(c[0] + r * Math.cos(a * Math.PI / 180)).toFixed(2)} ${(c[1] + r * Math.sin(a * Math.PI / 180)).toFixed(2)}`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="${size}" height="${size}" role="img" aria-label="DesignWizard.ai">${LOGO.legs.map(([x1, y1, x2, y2]) => `<path d="M${x1} ${y1}L${x2} ${y2}" fill="none" stroke="${LOGO.ink}" stroke-width="6" stroke-linecap="round"/>`).join("")}<path d="M${pt(a0)}A${r} ${r} 0 0 1 ${pt(a1)}" fill="none" stroke="${LOGO.blue}" stroke-width="6" stroke-linecap="round"/><path d="M${LOGO.star.map((p) => p.join(" ")).join("L")}Z" fill="${LOGO.yellow}" stroke="${LOGO.ink}" stroke-width="2" stroke-linejoin="round"/></svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="${size}" height="${size}" role="img" aria-label="DynamiteOrbit">${LOGO.legs.map(([x1, y1, x2, y2]) => `<path d="M${x1} ${y1}L${x2} ${y2}" fill="none" stroke="${LOGO.ink}" stroke-width="6" stroke-linecap="round"/>`).join("")}<path d="M${pt(a0)}A${r} ${r} 0 0 1 ${pt(a1)}" fill="none" stroke="${LOGO.blue}" stroke-width="6" stroke-linecap="round"/><path d="M${LOGO.star.map((p) => p.join(" ")).join("L")}Z" fill="${LOGO.yellow}" stroke="${LOGO.ink}" stroke-width="2" stroke-linejoin="round"/></svg>`;
 }
 
 /* ---------- a text file : the note where its format takes a comment, and nowhere it could break a reader ---------- */
@@ -75,7 +75,7 @@ export function stampText(name, text) {
 /** Whether a text carries the note. */
 export const isMarked = (text) => typeof text === "string" && text.includes(KEY);
 /** The 80 bytes at the head of a binary STL : the mark, in ASCII. */
-export const STL_HEADER = "DesignWizard.ai(TM) by DynamiteAgile(TM) - Co-Intelligence WorkFlow(TM)";
+export const STL_HEADER = "DynamiteOrbit(TM) by DynamiteAgile(TM) - Co-Intelligence WorkFlow(TM)";
 
 /* ---------- the confidentiality note of a deliverable : whose document it is ---------- */
 /** owner : the organisation the documents of the project belong to ("" : the issuer, unnamed) ; text : the wording of the project when it has its own. */

@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Simulation : refinement zones, in the side panel, under the right click and in the view.
+/* DynamiteOrbit — Simulation : refinement zones, in the side panel, under the right click and in the view.
    A zone is a cylinder or a square prism along X, Y or Z, placed in the model. Where it meets the product the cubes are 2, 3 or 4
    times smaller — its shape shows on the part, in small cubes — and the model is solved with its zones as one mesh.
    The mesh and the physics are in analysis/fea/refine.js and composite.js ; this is only their screen. */

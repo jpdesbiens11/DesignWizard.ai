@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the 3D viewport shared by every studio: the viewer plus its toolbar
+/* DynamiteOrbit — the 3D viewport shared by every studio: the viewer plus its toolbar
    (standard views, fit, x-ray, section, exploded view, measure, picture) and a busy veil. */
 
 import { loupeButton } from "./loupe.js";

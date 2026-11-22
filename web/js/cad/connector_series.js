@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the dimensions of each series of connectors of the library, as its maker publishes them : what the
+/* DynamiteOrbit — the dimensions of each series of connectors of the library, as its maker publishes them : what the
    generators of connector_models.js need to rebuild the series — its pitch, its rows, how its length grows with the number
    of circuits, its depth, its height, its pin, the hole in the board, its colour. Nothing is copied from a maker : no
    drawing, no model, no logo — numbers read on a data sheet, and a geometry of our own built from them.

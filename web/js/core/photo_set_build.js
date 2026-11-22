@@ -1,4 +1,4 @@
-/* DesignWizard.ai — a set of the photo studio, built : the ground with its relief and its matter, the water, the dome of the
+/* DynamiteOrbit — a set of the photo studio, built : the ground with its relief and its matter, the water, the dome of the
    sky, and what stands around (core/photo_sets.js says what ; this file makes the meshes). Everything is in UNITS and sits in
    one group that the stage scales to the product and puts under it. The tiles of the grounds are shared and kept ; what a
    set builds for itself is freed with it. Needs a page (canvas) and three.js. */

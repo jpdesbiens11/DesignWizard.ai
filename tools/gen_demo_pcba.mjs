@@ -41,7 +41,7 @@ for (const t of b.tracks) { t.pts = t.pts.map((p) => [+p[0].toFixed(3), +p[1].to
 for (const v of b.vias) delete v.auto;
 const text = toDwiz(b), lines = text.split("\n"), cut = lines.findIndex((l) => l.startsWith("# Le cuivre"));
 const esc = (s) => s.replace(/\\/g, "\\\\").replace(/`/g, "\\`").replace(/\$\{/g, "\\${");
-const head = "/* DesignWizard.ai — the demonstration board, written by tools/gen_demo_pcba.mjs : the control board of the compact drive,\n   from its functions to its copper, in the .dwiz format. Do not edit by hand : change the tool and run it again. */\n";
+const head = "/* DynamiteOrbit — the demonstration board, written by tools/gen_demo_pcba.mjs : the control board of the compact drive,\n   from its functions to its copper, in the .dwiz format. Do not edit by hand : change the tool and run it again. */\n";
 writeFileSync(new URL("../web/js/demo/demo_pcba_data.js", import.meta.url), `${head}\nexport const DEMO_PCBA_DESIGN = \`${esc(lines.slice(0, cut).join("\n"))}\`;\n`);
 writeFileSync(new URL("../web/js/demo/demo_pcba_copper.js", import.meta.url), `${head}\nexport const DEMO_PCBA_COPPER = \`${esc(lines.slice(cut).join("\n"))}\`;\n`);
 console.log("lines:", cut, lines.length - cut);

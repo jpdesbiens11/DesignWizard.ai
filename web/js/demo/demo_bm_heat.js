@@ -1,4 +1,4 @@
-/* DesignWizard.ai — BM 8s8p : what the closed module asks of the screws of its lids, and of its heat (JP, 22 novembre 2026, la reprise du
+/* DynamiteOrbit — BM 8s8p : what the closed module asks of the screws of its lids, and of its heat (JP, 22 novembre 2026, la reprise du
    projet BM : « effort sur la pile et tenue des vis, échauffement du module fermé »). Pure : numbers, and the calculations kept in the project.
    - The screws : the four of each ring carry what the lid takes (lidForces) ; they hold in the polycarbonate by the thread they formed — the
      model « plastic_screw » (Engineers Edge), the hole of the EVO PT recommendation (0.85 d1, read) standing for the pitch diameter, the

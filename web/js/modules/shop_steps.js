@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Atelier, a new part step by step : the screen of core/shop_steps.js. It LAYS the six questions over the page
+/* DynamiteOrbit — Atelier, a new part step by step : the screen of core/shop_steps.js. It LAYS the six questions over the page
    of the intent, whose fields it does not own : the blocks of the left column carry `data-step`, and only the block of the
    question asked is shown — with a rail that says where one is, Back, Skip and Next (Enter), and a card that keeps what has
    been said, each line a way back to its question. The part is born at right all along. « Tout voir sur une page » brings the

@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the formulas of the workbooks, thermal : conduction through a stack, the junction chain, the lumped
+/* DynamiteOrbit — the formulas of the workbooks, thermal : conduction through a stack, the junction chain, the lumped
    mass, and the two finned heat sinks — the forced one recomputed six times like the model, the natural one found by a
    bisection laid out in the sheet « Solveur » (the balance convection + radiation has no closed form). Air : Sutherland's
    law, as props.js. A temperature check compares RISES above the reference : `ref`. mm, mm², cm², W, °C, K/W, g. */
