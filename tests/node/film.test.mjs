@@ -44,8 +44,8 @@ test("film — the narration : one breath after another, sayable, and it names t
     for (const l of LANGS) assert.ok(pace(c, l) <= 3, `cue ${i + 1} (${l}) : ${pace(c, l).toFixed(2)} words a second`);
     assert.ok(sceneAt(c.t0) === sceneAt(c.t1 - 0.01), `cue ${i + 1} stays in its scene`);
   });
-  for (const l of LANGS) assert.equal(CUES.filter((c) => c[l].includes("DesignWizard.ai")).length, 2, `${l} : the name is said when it appears and at the very end`);
-  assert.ok(CUES[CUES.length - 1].fr.endsWith("DesignWizard.ai.") && CUES[CUES.length - 1].en.endsWith("DesignWizard.ai."), "the last word of the film is its name");
+  for (const l of LANGS) assert.equal(CUES.filter((c) => c[l].includes("DesignOrbit.ai")).length, 2, `${l} : the name is said when it appears and at the very end`);
+  assert.ok(CUES[CUES.length - 1].fr.endsWith("DesignOrbit.ai.") && CUES[CUES.length - 1].en.endsWith("DesignOrbit.ai."), "the last word of the film is its name");
   assert.equal(cueAt(1).fr, CUES[0].fr); assert.equal(cueAt(CUES[0].t1 + 0.05), null); assert.equal(cueAt(DURATION + 1), null);
   const words = (l) => CUES.reduce((n, c) => n + c[l].trim().split(/\s+/).length, 0);
   assert.ok(words("fr") > 150 && words("fr") < 380 && words("en") > 150 && words("en") < 380, "a narration of under three minutes");
@@ -82,7 +82,7 @@ test("film — subtitles and script : written from the timeline, and the files o
   assert.equal(blocks[0], "WEBVTT"); assert.equal(blocks.length, CUES.length + 1);
   assert.equal(blocks[1], `1\n00:00:00.500 --> 00:00:03.900\n${CUES[0].fr}`);
   for (const b of blocks.slice(1)) assert.match(b, /^\d+\n\d\d:\d\d:\d\d\.\d{3} --> \d\d:\d\d:\d\d\.\d{3}\n\S/);
-  assert.match(toScript("en"), /^# DesignWizard\.ai — video narration\n\nLength: 2 min 50 s\./); assert.ok(toScript("fr").includes(`**00:00.5 → 00:03.9** ${CUES[0].fr}`));
+  assert.match(toScript("en"), /^# DesignOrbit\.ai — video narration\n\nLength: 2 min 50 s\./); assert.ok(toScript("fr").includes(`**00:00.5 → 00:03.9** ${CUES[0].fr}`));
   for (const l of LANGS) { assert.equal(read(`web/video/designwizard_${l}.vtt`), toVtt(l), `web/video/designwizard_${l}.vtt is out of date : render the film again`); assert.equal(read(`docs/film/narration_${l}.md`), toScript(l), `docs/film/narration_${l}.md is out of date : node tools/film_words.mjs`); }
   /* the storyline : every scene with what it writes on screen, every line of the voice in both languages */
   const story = toStoryline(); assert.equal(read("docs/film/storyline.md"), story, "docs/film/storyline.md is out of date : node tools/film_words.mjs");

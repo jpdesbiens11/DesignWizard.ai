@@ -1,4 +1,4 @@
-# DesignWizard.ai — video narration
+# DesignOrbit.ai — video narration
 
 Length: 2 min 50 s. One line, one breath: each line is said between its two times. Tone: warm, confident, unforced.
 
@@ -11,10 +11,10 @@ Length: 2 min 50 s. One line, one breath: each line is said between its two time
 
 - **00:09.2 → 00:14.8** But you must repeat it. To the modeller, the solver, the drawing. Every time.
 
-## 00:15 — DesignWizard.ai
+## 00:15 — DesignOrbit.ai
 
 - **00:15.3 → 00:18.4** What if you only had to say it once?
-- **00:18.6 → 00:22.9** DesignWizard.ai: the tool that remembers why.
+- **00:18.6 → 00:22.9** DesignOrbit.ai: the tool that remembers why.
 
 ## 00:23 — Shop
 
@@ -69,4 +69,4 @@ Length: 2 min 50 s. One line, one breath: each line is said between its two time
 ## 02:41 — End
 
 - **02:41.4 → 02:44.2** A part begins with a question.
-- **02:44.5 → 02:49.7** Here is the tool that remembers the answer: DesignWizard.ai.
+- **02:44.5 → 02:49.7** Here is the tool that remembers the answer: DesignOrbit.ai.
