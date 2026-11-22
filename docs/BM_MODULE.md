@@ -783,8 +783,24 @@ celles lues à l'itération 9 (Stäubli MULTILAM LA-CU : 40 A, 300 µΩ, 7 N ; e
 lame — celles des CORE 1, 7 et 8 et celle de la borne − — est dans la pince suivante, posée sur ses deux bandes, et les couvre. MAIN garde
 le concept 1 tel quel.
 
-**Pas fait, à itérer ensemble** : l'effort pour entrer une lame (non lu : fiche ou mesure) ; le logement des bandes (une rainure dans chaque
-mâchoire) et le chanfrein d'entrée de la lame ; la brasure lame-oreille (sa tenue, son courant) ; le pont du couvercle du haut — ses plots
+**La pince détaillée** (JP, par menu : « Pince détaillée », v0.176.0) — même encombrement :
+
+- **Le logement des bandes** : chaque mâchoire a 3,2 mm, et une rainure de 1,2 mm où sa bande flotte (0,2 mm plus longue et plus large
+  qu'elle) ; la bande tient sa hauteur de travail de 1,7 mm depuis le fond de la rainure, et il reste **0,5 mm d'air** entre la mâchoire et la
+  lame : la lame est guidée, la bande ne travaille que sur sa hauteur.
+- **Les entrées** : un nez de 0,75 mm par face sur 2 mm au bout de la lame, une bouche de 0,5 mm sur 1,5 mm à chaque mâchoire (exemples).
+- **La brasure** : le bout de l'oreille (2 mm) repose sur 2,5 mm sur un talon de la lame (1,5 mm) et bute contre elle, brasé dessous et au
+  bout — environ 284 mm² de joint, 1,3 A/mm² (brasure à l'argent, exemple).
+- **L'effort des lamelles, lu** : la fiche de la Weftron LOUVER_tron 112 (rev03, p. 2) donne **5 à 30 N par pont selon la hauteur de
+  travail** et, d'habitude, plus de 40 A par pont ; elle dit la bande faite pour glisser et tourner. **L'effort pour entrer la lame n'y est
+  pas**, et la page de Stäubli refuse les lectures automatiques : à demander au fabricant ou à mesurer.
+- **La mâchoire, vérifiée au plus fort** : la mâchoire extérieure ne tient que par le fond de la pince — une poutre encastrée de 16 mm, haute
+  de 68 mm, épaisse de 2 mm derrière la rainure, sous 16 ponts à 30 N (480 N) : **0,046 mm de flèche** pour 0,1 admis, 85 MPa pour 250
+  (modèle « poutre encastrée, charge répartie », gardé sur la branche). Le modèle avertit que la poutre est courte (L / h = 8) : la flèche
+  réelle est un peu plus grande — la marge de 2 la couvre.
+
+**Pas fait, à itérer ensemble** : l'effort pour entrer une lame (non publié dans ce qui a été lu : fabricant ou mesure) ; la tenue de la
+brasure au cyclage thermique ; le pont du couvercle du haut — ses plots
 sont encore plans, pressés par des ressorts à spires : ils pourraient devenir lame et pince eux aussi ; raccourcir le couvercle du haut,
 maintenant que les rondelles ne prennent que 3 mm ; « couvercles debout » est lu comme les couvercles du concept 1, aux deux bouts du module
 (à confirmer) ; l'échauffement du module fermé (le calcul du concept 1 n'est pas repris : ses joints étaient plans) ; l'isolation du joint
