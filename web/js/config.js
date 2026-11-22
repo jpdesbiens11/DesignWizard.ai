@@ -8,7 +8,7 @@ export const CONFIG = Object.freeze({
   clientId: "437109324574-b0kdk554tldhsj1gjllnhu42m1gueorr.apps.googleusercontent.com",
   /* Smallest useful scopes: who signs in (e-mail), and the files THIS app creates in the user's Drive — nothing else. */
   scopes: "openid email https://www.googleapis.com/auth/drive.file",
-  driveRoot: "DynamiteOrbit",                 // name of the root folder created in the user's Drive
+  driveRoot: "DynamiteOrbit.ai",                 // name of the root folder created in the user's Drive
   /* Browser API key for the Google file picker (Équipe : reading the mirror another member shared). Optional : the
      picker is given the signed-in person's token and the project number. Fill it only if Google asks for it ; such a
      key is public by nature and must be restricted, in the Cloud console, to this site and to the Picker API. */

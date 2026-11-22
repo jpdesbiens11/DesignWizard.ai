@@ -10,7 +10,7 @@
    Pure : no kernel, no DOM. */
 
 import { v3 } from "../cad/vec.js";
-import { LOGO } from "./brand.js";
+import { LOGO, drawLogo } from "./brand.js";
 
 const r2 = (x) => Math.round(x * 100) / 100, fr = (x) => String(r2(x)).replace(".", ","), esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 export const LABEL_KINDS = {
@@ -88,10 +88,8 @@ export function labelSvg(label, o = {}) {
   if (paper !== "none") out.push(`<rect x="0" y="0" width="${r2(w)}" height="${r2(h)}" rx="${rc}" fill="${esc(paper)}"/>`);
   const text = (s, x, y, fs, anchor = "middle", bold = true, fill = ink) => `<text x="${r2(x)}" y="${r2(y)}" font-family="Helvetica, Arial, sans-serif" font-size="${r2(fs)}" font-weight="${bold ? 700 : 400}" text-anchor="${anchor}" fill="${esc(fill)}">${esc(s)}</text>`;
   if (a.type === "logo") {
-    const wide = w / h >= 2.2 && a.text, m = Math.min(h - 2 * pad, wide ? h - 2 * pad : w - 2 * pad), k = m / LOGO.size, x0 = wide ? pad : (w - m) / 2, y0 = (h - m) / 2, { c, r, a0, a1 } = LOGO.arc, pt = (deg) => `${r2(x0 + (c[0] + r * Math.cos(deg * Math.PI / 180)) * k)} ${r2(y0 + (c[1] + r * Math.sin(deg * Math.PI / 180)) * k)}`;
-    for (const [x1, y1, x2, y2] of LOGO.legs) out.push(`<path d="M${r2(x0 + x1 * k)} ${r2(y0 + y1 * k)}L${r2(x0 + x2 * k)} ${r2(y0 + y2 * k)}" fill="none" stroke="${esc(ink)}" stroke-width="${r2(6 * k)}" stroke-linecap="round"/>`);
-    out.push(`<path d="M${pt(a0)}A${r2(r * k)} ${r2(r * k)} 0 0 1 ${pt(a1)}" fill="none" stroke="${LOGO.blue}" stroke-width="${r2(6 * k)}" stroke-linecap="round"/>`,
-      `<path d="M${LOGO.star.map(([px, py]) => `${r2(x0 + px * k)} ${r2(y0 + py * k)}`).join("L")}Z" fill="${LOGO.yellow}" stroke="${esc(ink)}" stroke-width="${r2(2 * k)}" stroke-linejoin="round"/>`);
+    const wide = w / h >= 2.2 && a.text, m = Math.min(h - 2 * pad, wide ? h - 2 * pad : w - 2 * pad), x0 = wide ? pad : (w - m) / 2, y0 = (h - m) / 2;
+    drawLogo({ polyline: (pts, st) => out.push(`<path d="M${pts.map(([px, py]) => `${r2(px)} ${r2(py)}`).join("L")}${st.close ? "Z" : ""}" fill="${st.fill || "none"}" stroke="${esc(st.color)}" stroke-width="${r2(st.w)}" stroke-linecap="round" stroke-linejoin="round"/>`) }, x0, y0, m, { ink });
     if (wide) { const tx = x0 + m + pad * 0.8, tw = w - tx - pad, fs = fitText(a.text, tw, a.sub ? m * 0.46 : m * 0.6), fs2 = a.sub ? Math.min(fs * 0.48, fitText(a.sub, tw, m * 0.24, 0.5)) : 0;
       out.push(text(a.text, tx, h / 2 + (a.sub ? fs * 0.12 : fs * 0.36), fs, "start")); if (a.sub) out.push(text(a.sub, tx, h / 2 + fs * 0.12 + fs2 * 1.25, fs2, "start", false)); }
   } else if (a.type === "image") {

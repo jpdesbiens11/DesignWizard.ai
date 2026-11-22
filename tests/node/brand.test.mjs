@@ -40,9 +40,9 @@ test("every text format takes the note where it may carry a comment — once, an
 
 test("the mark as a drawing : the same figure for the PDF, the page and the Word header", () => {
   const calls = [], sheet = { line: (...a) => calls.push(["line", ...a]), polyline: (...a) => calls.push(["polyline", ...a]) };
-  drawLogo(sheet, 10, 20, 32); assert.deepEqual(calls.map((c) => c[0]), ["line", "line", "polyline", "polyline"]);
-  const pts = calls.flatMap((c) => (c[0] === "line" ? [[c[1], c[2]], [c[3], c[4]]] : c[1])); assert.ok(pts.every(([x, y]) => x >= 10 - 1e-9 && x <= 42 + 1e-9 && y >= 20 - 1e-9 && y <= 52 + 1e-9), "inside its 32 × 32 box");
-  assert.deepEqual([calls[0][5].color, calls[2][2].color, calls[3][2].fill, calls[3][2].close], [LOGO.ink, LOGO.blue, LOGO.yellow, true]); assert.match(logoSvg(24), /^<svg [^>]*viewBox="0 0 64 64" width="24" height="24"/); assert.equal((logoSvg().match(/<path /g) || []).length, 4);
+  drawLogo(sheet, 10, 20, 32); assert.deepEqual(calls.map((c) => c[0]), ["polyline", "polyline", "polyline", "polyline", "polyline"], "orbit behind, tile, bolt, orbit in front, spark");
+  const pts = calls.flatMap((c) => c[1]); assert.ok(pts.every(([x, y]) => x >= 10 - 1e-9 && x <= 42 + 1e-9 && y >= 20 - 1e-9 && y <= 52 + 1e-9), "inside its 32 × 32 box");
+  assert.deepEqual([calls[0][2].color, calls[1][2].fill, calls[2][2].color, calls[3][2].color, calls[4][2].fill], [LOGO.blue, LOGO.yellow, LOGO.ink, LOGO.blue, LOGO.orange]); assert.match(logoSvg(24), /^<svg [^>]*viewBox="0 0 64 64" width="24" height="24"/); assert.equal((logoSvg().match(/<path /g) || []).length, 5);
   const png = logoPng(); assert.deepEqual([...png.slice(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10], "a PNG"); assert.ok(png.length > 2000 && png.length < 12000);
 });
 

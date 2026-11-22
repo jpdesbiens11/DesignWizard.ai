@@ -19,22 +19,33 @@ export function stampLine(when = new Date(), version = "") {
   return `Extrait le ${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())} — DynamiteOrbit${version ? ` v${version}` : ""}`;
 }
 
-/* ---------- the mark as a vector (64 × 64, the figure of docs/BRAND.md) : two legs, the arc they trace, the spark ---------- */
-export const LOGO = { size: 64, legs: [[26.6, 24.72, 12, 51], [37.4, 24.72, 52, 51]], arc: { c: [32, 15], r: 41.18, a0: 46.94, a1: 133.06 }, star: [[32, 2], [34.76, 12.24], [45, 15], [34.76, 17.76], [32, 28], [29.24, 17.76], [19, 15], [29.24, 12.24]],
-  ink: "#26323f", blue: "#0c66e4", yellow: "#ffd23f" };
-/** Draws the mark on a sheet that has line(), polyline() (a PdfSheet, or anything that draws the same way) : its top left
-    corner at (x, y), `size` wide and high. */
-export function drawLogo(sheet, x, y, size) {
-  const k = size / LOGO.size, P = (px, py) => [x + px * k, y + py * k], n = 28, { c, r, a0, a1 } = LOGO.arc;
-  for (const [x1, y1, x2, y2] of LOGO.legs) sheet.line(...P(x1, y1), ...P(x2, y2), { color: LOGO.ink, w: 6 * k, cap: "round" });
-  sheet.polyline(Array.from({ length: n + 1 }, (_, i) => { const a = (a0 + (a1 - a0) * i / n) * Math.PI / 180; return P(c[0] + r * Math.cos(a), c[1] + r * Math.sin(a)); }), { color: LOGO.blue, w: 6 * k, cap: "round" });
-  sheet.polyline(LOGO.star.map(([px, py]) => P(px, py)), { color: LOGO.ink, w: 2 * k, fill: LOGO.yellow, close: true });
+/* ---------- the mark as a vector (64 × 64, the figure of docs/BRAND.md) : « the bolt put in orbit » — the yellow tile and the bolt
+   of the DynamiteAgile family at the centre, an orbit that passes behind the tile and in front of it, an orange spark on it ---------- */
+export const LOGO = { size: 64, ring: { c: [32, 32], rx: 29, ry: 12, rot: -28 }, tile: [15, 15, 34, 34],
+  bolt: [[34.48, 19.6], [25.8, 33.24], [32, 33.24], [29.52, 44.4], [39.44, 29.52], [33.24, 29.52]], spark: { at: 30, r: 6.4 },
+  ink: "#26323f", blue: "#0c66e4", yellow: "#ffd23f", orange: "#e0602f" };
+/** Point of the orbit at parameter t (degrees) ; 0..180 is the half in front of the tile. */
+export function ringPoint(t) {
+  const { c, rx, ry, rot } = LOGO.ring, a = t * Math.PI / 180, r = rot * Math.PI / 180;
+  return [c[0] + rx * Math.cos(a) * Math.cos(r) - ry * Math.sin(a) * Math.sin(r), c[1] + rx * Math.cos(a) * Math.sin(r) + ry * Math.sin(a) * Math.cos(r)];
+}
+const sparkPoints = () => { const [cx, cy] = ringPoint(LOGO.spark.at), R = LOGO.spark.r; return Array.from({ length: 8 }, (_, i) => { const a = Math.PI * i / 4 - Math.PI / 2, k = i % 2 ? R * 0.3 : R; return [cx + k * Math.cos(a), cy + k * Math.sin(a)]; }); };
+/** Draws the mark on a sheet that has polyline() (a PdfSheet, or anything that draws the same way) : its top left corner at
+    (x, y), `size` wide and high — the orbit behind, the tile, the bolt, the orbit in front, the spark. */
+export function drawLogo(sheet, x, y, size, { ink = LOGO.ink } = {}) {
+  const k = size / LOGO.size, P = ([px, py]) => [x + px * k, y + py * k], arc = (t0, t1, n = 36) => Array.from({ length: n + 1 }, (_, i) => P(ringPoint(t0 + (t1 - t0) * i / n)));
+  const [tx, ty, tw, th] = LOGO.tile;
+  sheet.polyline(arc(180, 360), { color: LOGO.blue, w: 4 * k, cap: "round" });
+  sheet.polyline([[tx, ty], [tx + tw, ty], [tx + tw, ty + th], [tx, ty + th]].map(P), { color: ink, w: 4 * k, fill: LOGO.yellow, close: true });
+  sheet.polyline(LOGO.bolt.map(P), { color: LOGO.ink, w: 3.6 * k, close: true });
+  sheet.polyline(arc(0, 180), { color: LOGO.blue, w: 4 * k, cap: "round" });
+  sheet.polyline(sparkPoints().map(P), { color: ink, w: 1.4 * k, fill: LOGO.orange, close: true });
   return sheet;
 }
 /** The mark as an inline SVG, for a page (the report in HTML). */
 export function logoSvg(size = 40) {
-  const { c, r, a0, a1 } = LOGO.arc, pt = (a) => `${(c[0] + r * Math.cos(a * Math.PI / 180)).toFixed(2)} ${(c[1] + r * Math.sin(a * Math.PI / 180)).toFixed(2)}`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="${size}" height="${size}" role="img" aria-label="DynamiteOrbit">${LOGO.legs.map(([x1, y1, x2, y2]) => `<path d="M${x1} ${y1}L${x2} ${y2}" fill="none" stroke="${LOGO.ink}" stroke-width="6" stroke-linecap="round"/>`).join("")}<path d="M${pt(a0)}A${r} ${r} 0 0 1 ${pt(a1)}" fill="none" stroke="${LOGO.blue}" stroke-width="6" stroke-linecap="round"/><path d="M${LOGO.star.map((p) => p.join(" ")).join("L")}Z" fill="${LOGO.yellow}" stroke="${LOGO.ink}" stroke-width="2" stroke-linejoin="round"/></svg>`;
+  const { c, rx, ry, rot } = LOGO.ring, [tx, ty, tw, th] = LOGO.tile, xy = (p) => p.map((v) => v.toFixed(2)).join(" "), ring = `fill="none" stroke="${LOGO.blue}" stroke-width="4" stroke-linecap="round"`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="${size}" height="${size}" role="img" aria-label="DynamiteOrbit"><path d="M${xy(ringPoint(180))}A${rx} ${ry} ${rot} 0 1 ${xy(ringPoint(360))}" ${ring}/><path d="M${tx} ${ty}h${tw}v${th}h-${tw}Z" fill="${LOGO.yellow}" stroke="${LOGO.ink}" stroke-width="4" stroke-linejoin="round"/><path d="M${LOGO.bolt.map(xy).join("L")}Z" fill="none" stroke="${LOGO.ink}" stroke-width="3.6" stroke-linejoin="round"/><path d="M${xy(ringPoint(0))}A${rx} ${ry} ${rot} 0 1 ${xy(ringPoint(180))}" ${ring}/><path d="M${sparkPoints().map(xy).join("L")}Z" fill="${LOGO.orange}" stroke="${LOGO.ink}" stroke-width="1.4" stroke-linejoin="round"/></svg>`;
 }
 
 /* ---------- a text file : the note where its format takes a comment, and nowhere it could break a reader ---------- */

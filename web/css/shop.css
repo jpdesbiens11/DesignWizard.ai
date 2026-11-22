@@ -56,7 +56,7 @@ html[data-module="account"] { --acc: var(--hl-green); }
   background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size: 24px 24px; }
 .gate-card { width: min(460px, 100%); padding: 1.6rem 1.5rem 1.1rem; text-align: center; background: var(--surface); border: 1.8px solid var(--graphite); border-radius: var(--r-card); box-shadow: var(--shadow-sketch); }
 .gate-logo { width: 84px; height: 84px; }
-.gate-card h1 { font-size: 1.7rem; margin-top: .3rem; } .gate-card h1 i { color: var(--primary); font-style: normal; }
+.gate-card h1 { font-size: 1.7rem; margin-top: .3rem; color: #e0602f; } .gate-card h1 i { color: var(--primary); font-style: normal; }
 .gate-by { color: var(--muted); font-size: .86rem; margin-bottom: 1rem; }
 .gate-body { text-align: left; } .gate-body p { margin-bottom: .7rem; }
 .gate-actions { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: center; margin: .9rem 0; }

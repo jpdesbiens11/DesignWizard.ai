@@ -7,7 +7,7 @@
 
 import * as THREE from "../../vendor/three/three.module.min.js";
 import { patternPixels, boxUv, cameraFor } from "./render_looks.js";
-import { LOGO, MARK } from "./brand.js";
+import { LOGO, MARK, drawLogo } from "./brand.js";
 import { PATTERNS } from "./look_patterns.js";
 import { patternTexture as lookTexture } from "./look_paint.js";
 import { SETS, validSet } from "./photo_sets.js";
@@ -149,9 +149,8 @@ export class RenderStage {
         const s = Math.max(22, Math.round(Math.min(w, h) * 0.042)), x = Math.round(s * 0.7), y = h - Math.round(s * 1.7), k = s / LOGO.size, P = (px, py) => [x + px * k, y + py * k];
         const under = g.getImageData(x, y, Math.min(w - x, s * 7), s).data; let lum = 0; for (let i = 0; i < under.length; i += 4) lum += 0.2126 * under[i] + 0.7152 * under[i + 1] + 0.0722 * under[i + 2]; lum /= (under.length / 4) * 255;
         const inkc = lum < 0.5 ? "#f2f4f6" : LOGO.ink;                                    // the mark is written light on a dark ground, dark on a light one
-        g.lineCap = "round"; g.lineJoin = "round"; g.strokeStyle = inkc; g.lineWidth = 6 * k; for (const [x1, y1, x2, y2] of LOGO.legs) { g.beginPath(); g.moveTo(...P(x1, y1)); g.lineTo(...P(x2, y2)); g.stroke(); }
-        g.strokeStyle = LOGO.blue; g.beginPath(); g.arc(...P(...LOGO.arc.c), LOGO.arc.r * k, rad(LOGO.arc.a0), rad(LOGO.arc.a1)); g.stroke();
-        g.fillStyle = LOGO.yellow; g.strokeStyle = inkc; g.lineWidth = 2 * k; g.beginPath(); LOGO.star.forEach(([px, py], i) => (i ? g.lineTo(...P(px, py)) : g.moveTo(...P(px, py)))); g.closePath(); g.fill(); g.stroke();
+        g.lineCap = "round"; g.lineJoin = "round";
+        drawLogo({ polyline: (pts, st) => { g.beginPath(); pts.forEach(([px, py], i) => (i ? g.lineTo(px, py) : g.moveTo(px, py))); if (st.close) g.closePath(); if (st.fill) { g.fillStyle = st.fill; g.fill(); } g.strokeStyle = st.color; g.lineWidth = st.w; g.stroke(); } }, x, y, s, { ink: inkc });
         g.fillStyle = inkc; g.globalAlpha = 0.86; g.font = `600 ${Math.round(s * 0.4)}px Helvetica, Arial, sans-serif`; g.textBaseline = "middle"; g.fillText(MARK, x + s * 1.2, y + s * 0.5); g.globalAlpha = 1;
       }
     } finally {

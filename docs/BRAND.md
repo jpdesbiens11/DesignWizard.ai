@@ -9,25 +9,29 @@ On ne retouche jamais un SVG à la main. Aucune ressource externe : ni police we
 
 ![Planche du logo](img/brand/logo-sheet.png)
 
-## 1. Le logo : le compas-chapeau
+## 1. Le logo : l'éclair mis en orbite
 
-Trois pistes ont été dessinées ; la première a été retenue.
+Le 22 novembre 2026, DesignWizard.ai devient **DynamiteOrbit**, de la famille DynamiteAgile (« de la mine souterraine vers le ciel » :
+on bâtit la fusée en plein vol vers les étoiles). La planche d'identité v1 a proposé trois pistes ; JP a dit « commençons avec les
+éléments actuels, on finetunera » et la piste C a été prise d'office, facile à changer.
 
 | Piste | Idée | Verdict |
 |---|---|---|
-| **A. Compas-chapeau** | Un compas de dessinateur dont les deux branches forment le cône d'un chapeau de magicien ; l'arc qu'il trace est le bord du chapeau ; une étincelle au pivot. | **Retenue** : une seule silhouette porte les deux idées (l'outil de conception, le « wizard »), trois primitives, lisible à 16 px, entièrement construite. |
-| B. Cercle et carré de proportion + baguette | Construction « homme de Vitruve » traversée par un trait de baguette. | Écartée : belle en grand, mais devient une géométrie anonyme sous 32 px. |
-| C. Monogramme W en règle pliante | Un W fait de deux V, étincelle à un sommet. | Écartée : se lit comme une lettre, pas comme un outil ; trop proche de nombreux monogrammes. |
+| A. La mèche qui monte | Le carré jaune de DynamiteAgile ; l'éclair devient une trajectoire qui finit en étincelle. | Gardée en réserve : la plus proche du parent, au risque de confondre les deux produits en petit. |
+| B. L'astre et son anneau | Un cercle jaune entouré d'un anneau violet, l'étincelle qui y monte. | Gardée en réserve : la plus à part, mais une image courante dans le spatial. |
+| **C. L'éclair mis en orbite** | Le carré jaune et l'éclair de DynamiteAgile, plus petits, au centre ; une orbite bleue passe derrière puis devant, avec son étincelle orange. | **Retenue** : la charge utile de la famille, mise en orbite ; lisible à 16 px. |
+
+L'ancien symbole (le compas-chapeau de sorcier de DesignWizard.ai) est retiré ; son histoire reste dans l'historique du dépôt.
 
 ### Construction (grille de 64, module 8)
 
 ![Construction](../web/img/logo/construction.svg)
 
-- **Pivot** P = (32 ; 15). **Branches** : de P vers (12 ; 51) et (52 ; 51), trait de 6, bouts ronds ; elles démarrent à 27 % de leur
-  longueur, sous l'étincelle.
-- **Bord** : l'arc que trace le compas — cercle de centre P, de rayon égal à la longueur d'une branche (≈ 41,2), balayé de 14° au-delà
-  de chaque branche, trait de 6.
-- **Étincelle** : étoile à quatre branches centrée sur P, rayon 13, taille de guêpe 30 %.
+- **Orbite** : ellipse de centre (32 ; 32), demi-axes 29 et 12, inclinée de −28°, trait bleu `#0c66e4` de 4, bouts ronds ; la moitié
+  du haut passe derrière le carré, celle du bas devant.
+- **Carré** : (15 ; 15), 34 × 34, coins de rayon 6, jaune `#ffd23f`, bord graphite `#26323f` de 4.
+- **Éclair** : celui de DynamiteAgile, réduit de 0,62 autour du centre, trait graphite de 3,6.
+- **Étincelle** : étoile à quatre branches sur l'orbite (paramètre 30°), rayon 6,4, orange `#e0602f` (le « Dynamite » de la famille).
 - **Zone de protection** : un module (8 unités, soit 1/8 du côté) tout autour — le cadre en tirets de la figure.
 - **Tailles minimales** : symbole 16 px ; logotype horizontal 24 px de haut ; sous 24 px, utiliser `favicon.svg`.
 - **Lettrage** : « DynamiteOrbit » et « by DynamiteAgile™ » sont tracés en lettrage technique à trait unique (hauteur de capitale 10,
@@ -37,7 +41,7 @@ Trois pistes ont été dessinées ; la première a été retenue.
 
 | Fichier | Usage |
 |---|---|
-| `web/img/logo/mark.svg` (= `web/img/brand.svg`) | Symbole en couleur : branches graphite `#26323f`, arc bleu `#0c66e4`, étincelle jaune `#ffd23f`. Fonds clairs. |
+| `web/img/logo/mark.svg` (= `web/img/brand.svg`) | Symbole en couleur : carré jaune `#ffd23f` au bord graphite `#26323f`, orbite bleue `#0c66e4`, étincelle orange `#e0602f`. Fonds clairs et sombres. |
 | `web/img/logo/mark-mono.svg` | Symbole en `currentColor` : gravure, tampon, fonds colorés ou sombres. |
 | `web/img/logo/wordmark.svg`, `stacked.svg` | Logotype horizontal et empilé. |
 | `web/img/favicon.svg` | Symbole inversé sur pastille graphite : lisible sur onglets clairs et sombres. |
