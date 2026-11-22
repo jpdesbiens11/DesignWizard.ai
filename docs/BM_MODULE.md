@@ -744,6 +744,52 @@ couvercle du fond (contacteur → connecteur) ; le levier repliable de la poign�
 nervuration des couvercles ; l'échauffement de la pile couchée. Non calculés : la pression de contact sur la rampe, la tenue
 de la clavette et des goupilles d'appui dans le plastique.
 
+## Concept 3 — « blade and fork » (branche de l'historique, partie de MAIN)
+
+Demande de JP (22 novembre 2026) : une 3e branche, partie du concept 1 — cellules perpendiculaires à l'axe d'insertion, les CORE
+assemblés l'un à l'autre, − contre +, dans l'axe d'insertion ; des contacts haute puissance à lames ; couvercles debout ; **commencer
+simple** ; pas de ressorts de produit grand public, des ressorts fins et compacts, **aucune place en longueur**. Ses choix, par menu :
+**« Lame dans une pince »**, à partir du **concept 1 complet**. Source : `web/js/demo/demo_bm_c3.js`, `withConceptThree` de
+`demo_bm.js` ; essais : `tests/node/bm_concept3.test.mjs`. La carte de l'accueil ouvre cette branche (point P3, parent P1).
+
+**Ce qui change du concept 1, et seulement cela :**
+
+- **Le joint entre deux CORE.** Au-delà du bout +X du CORE, la jambe + se prolonge en **oreille** ; à son bout, une **lame** de cuivre de
+  2,5 × 63 mm (usinée, brasée : une borne rapportée, comme en font les fabricants de busbars laminés — à voir avec eux) court le long de Y
+  et dépasse la face de 15 mm. La jambe − du CORE suivant porte la **pince** : deux mâchoires de 2 mm, son fond à 18 mm de la face. Dans la
+  pince, **deux bandes à lamelles** (`BM3-LAMELLES`, 12 × 58 mm, debout, à leur hauteur de travail de 1,7 mm) pressent les deux faces de la
+  lame. **L'effort de contact reste dans la pince** : la pile n'a plus à être écrasée pour faire ses contacts, et la lame glisse dans la
+  pince — les tolérances des 8 CORE le long de Y se prennent là (la lame dépasse ses bandes de 1 mm ; les lamelles sont posées dans le sens
+  de l'entrée, comme autour d'une broche, et touchent sur leur largeur : la lame peut reculer de quelques millimètres sans les quitter —
+  où une lamelle touche sur sa largeur reste à lire sur la fiche).
+- **Le pas reste 50,9 mm** : pas un millimètre de longueur. Les jambes se touchent encore, face contre face (même potentiel, sans effort
+  défini) ; le courant passe par la lame.
+- **Le prix : 10 mm de largeur** au bout +X — la cavité du boîtier passe de 95,8 à 105,8 mm de large. Les nervures de ce côté font face à la
+  mâchoire extérieure (0,5 mm de jeu) : la pince guide le CORE. La quille, les rails et le busbar de retour restent sous le CORE ; les
+  anneaux et les couvercles suivent la section ; les lèvres de l'anneau du haut restent où le bras de la came les prend.
+- **Les bornes** : la borne − porte une lame (elle joue la jambe + d'un CORE 0), la borne + une pince et ses bandes (la jambe − d'un CORE 9).
+- **Les ressorts du couvercle** : les quatre ressorts à spires de 23 mm de la plaque de pression deviennent **quatre empilages de rondelles
+  ressorts** (`BM3-DISCS`, Ø10, 3 mm) sur des colonnes de la plaque. Ils ne portent aucun courant ; ils **tiennent** la pile : 400 N
+  (exemple) avec les 300 N du plot A, soit 700 N — de quoi tenir la pile jusqu'à environ 15 g le long du module (cellules seules, 4,48 kg :
+  avec le reste, moins). La vraie valeur vient de la spécification du véhicule.
+
+**Les calculs, gardés sur la branche** : la **pince** par le modèle « Louvre strip » — 2 bandes × 16 lamelles = 32, **1 280 A assignés** pour
+360 A (28 %), **9,4 µΩ**, **3,4 mV** (« très bon »), 1,2 W, 224 N tenus entre les mâchoires ; la **lame** par le modèle « busbar » — à 2,5 mm,
+2,29 A/mm², 54 °C sous 60 °C (une oreille simplement pliée à 2 mm donnait 2,86 A/mm² et un avertissement) ; les **vis des couvercles** avec les
+nouveaux efforts — 250 N par vis (350 au concept 1), même avertissement qu'au concept 1 sur le lobe de Ø8,4. Les valeurs d'une lamelle sont
+celles lues à l'itération 9 (Stäubli MULTILAM LA-CU : 40 A, 300 µΩ, 7 N ; enveloppe Weftron LOUVER_tron 112).
+
+**Vérifié par les essais** : toutes les pièces se construisent ; rien ne traverse rien (CORE 1, 2, 7 et 8, les deux bouts, le boîtier) ; chaque
+lame — celles des CORE 1, 7 et 8 et celle de la borne − — est dans la pince suivante, posée sur ses deux bandes, et les couvre. MAIN garde
+le concept 1 tel quel.
+
+**Pas fait, à itérer ensemble** : l'effort pour entrer une lame (non lu : fiche ou mesure) ; le logement des bandes (une rainure dans chaque
+mâchoire) et le chanfrein d'entrée de la lame ; la brasure lame-oreille (sa tenue, son courant) ; le pont du couvercle du haut — ses plots
+sont encore plans, pressés par des ressorts à spires : ils pourraient devenir lame et pince eux aussi ; raccourcir le couvercle du haut,
+maintenant que les rondelles ne prennent que 3 mm ; « couvercles debout » est lu comme les couvercles du concept 1, aux deux bouts du module
+(à confirmer) ; l'échauffement du module fermé (le calcul du concept 1 n'est pas repris : ses joints étaient plans) ; l'isolation du joint
+(l'assemblage « Joint entre deux CORE » n'a pas la pince).
+
 ## Ce qu'il contient
 
 | Élément | Ce que c'est | Où |

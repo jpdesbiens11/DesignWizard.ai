@@ -35,8 +35,8 @@ export function lidForces(I = 360) {
 /** The planes of the top end, along Y (module frame), from the + terminal (its land) to the cap. o : { land (the back face of the + terminal),
     end (the end of the casing) } → numbers */
 export function topLayout(o) {
-  const S = caseSection(), G = 0, cav = S.cavity;      // iteration 12 : the pads lie on their faces
-  const L = { land: o.land, end: o.end, padA: r3(o.land + G), plate0: r3(o.land + 3), tab: r3(o.end - 10.3), ring1: r3(o.end + 6), cap1: r3(o.end + 9), S, G, cav };
+  const S = caseSection(o.env), G = 0, cav = S.cavity, c0 = caseSection().cavity;      // iteration 12 : the pads lie on their faces ; c0 : the cavity of concept 1, where the lips stay
+  const L = { lipX: [c0.x0, o.lipX1 ?? c0.x1], out: { x0: r3(S.ports[0][0] - S.R), x1: r3(S.ports[1][0] + S.R) }, land: o.land, end: o.end, padA: r3(o.land + G), plate0: r3(o.land + 3), tab: r3(o.end - 10.3), ring1: r3(o.end + 6), cap1: r3(o.end + 9), S, G, cav };
   /* iteration 12 : the tab of the return busbar 1.7 mm nearer the lid — pad B lies on it where it stood on its louvred strip */
   L.plate1 = r3(L.plate0 + 3); L.padA1 = r3(L.padA + 3); L.tab1 = r3(L.tab + 4); L.padB = r3(L.tab1 + G); L.padB1 = r3(L.padB + 3.6); L.strap1 = r3(L.padB1 + 4);
   L.lip0 = r3(L.end - 9); L.lip1 = r3(L.lip0 + 3); L.arm1 = r3(L.lip1 + 3);
@@ -65,12 +65,12 @@ export function returnBar(L, o) {
 
 /** The interface ring of the top lid : aluminium, screwed to the casing ; its window ; its two tongues and their lips. */
 export function topRing(L) {
-  const S = L.S, c = L.cav, out = { x0: -8.7, x1: 101.5, z0: S.keel.z0, z1: r3(S.ports[2][1] + S.R) }, at = S.ports.map((p) => [p[0], p[1]]);
+  const S = L.S, c = L.cav, out = { ...L.out, z0: S.keel.z0, z1: r3(S.ports[2][1] + S.R) }, at = S.ports.map((p) => [p[0], p[1]]), [lx0, lx1] = L.lipX;
   return { dw: "part/1", id: "BM-LID-RING-TOP", name: "Anneau d'interface du couvercle du haut", family: "machined", process: "cnc_milling", material: "AL6061-T6", revision: "A", params: {},
     features: [box("bride", "Bride", null, [out.x0, L.end, out.z0], [out.x1 - out.x0, 6, out.z1 - out.z0]),
       box("fenetre", "Fenêtre — la section de la cavité", null, [c.x0, L.end - 1, c.z0], [c.x1 - c.x0, 8, c.z1 - c.z0], "cut"),
-      box("langue_g", "Languette gauche, le long de la paroi", null, [c.x0, L.lip0, 50], [2.5, L.end - L.lip0, 12]), box("levre_g", "Lèvre gauche — l'appui du bras de la came", null, [c.x0, L.lip0, 50], [7.5, 3, 12]),
-      box("langue_d", "Languette droite, le long de la paroi", null, [c.x1 - 2.5, L.lip0, 50], [2.5, L.end - L.lip0, 12]), box("levre_d", "Lèvre droite — l'appui du bras de la came", null, [c.x1 - 7.5, L.lip0, 50], [7.5, 3, 12]),
+      box("langue_g", "Languette gauche, le long de la paroi", null, [lx0, L.lip0, 50], [2.5, L.end - L.lip0, 12]), box("levre_g", "Lèvre gauche — l'appui du bras de la came", null, [lx0, L.lip0, 50], [7.5, 3, 12]),
+      box("langue_d", "Languette droite", null, [lx1 - 2.5, L.lip0, 50], [2.5, L.end - L.lip0, 12]), box("levre_d", "Lèvre droite — l'appui du bras de la came", null, [lx1 - 7.5, L.lip0, 50], [7.5, 3, 12]),
       { op: "hole", id: "vis", name: "Passages des quatre vis du boîtier", face: "+Y", at, d: 4.5, depth: "through" }],
     interfaces: [],
     function: `Prend l'effort du latch (${lidForces().total} N) et le passe au boîtier par ses quatre vis, ${lidForces().perScrew} N chacune : la came du couvercle s'appuie sur ses deux lèvres.`,
@@ -82,7 +82,7 @@ export function topRing(L) {
 /** The cap, the cam latch, the pressure plate. */
 export function topCap(L) {
   return { dw: "part/1", id: "BM-LID-TOP", name: "Couvercle du haut", family: "molded", process: "injection_molding", material: "PA66-GF30", revision: "A", params: {},
-    features: [box("plaque", "Plaque du couvercle", null, [-8.7, L.ring1, L.S.keel.z0], [110.2, 3, r3(L.S.ports[2][1] + L.S.R - L.S.keel.z0)]), cylY("arbre", "Passage de l'arbre de la came", null, [L.shaft[0], L.ring1 - 1, L.shaft[1]], 8.6, 5, "cut"),
+    features: [box("plaque", "Plaque du couvercle", null, [L.out.x0, L.ring1, L.S.keel.z0], [r3(L.out.x1 - L.out.x0), 3, r3(L.S.ports[2][1] + L.S.R - L.S.keel.z0)]), cylY("arbre", "Passage de l'arbre de la came", null, [L.shaft[0], L.ring1 - 1, L.shaft[1]], 8.6, 5, "cut"),
       ...L.S.ports.map((q, k) => cylY(`tete_${k + 1}`, `Logement de la tête de vis ${k + 1}`, null, [q[0], L.ring1 - 0.5, q[1]], 9, 3, "cut"))],
     interfaces: [],
     function: "Ferme le bout haut du module ; porte la came, les ressorts et le pont de contact ; tenu contre l'anneau par la came.",
