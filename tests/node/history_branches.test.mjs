@@ -5,7 +5,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { addPoint, restoreInto, putDefinition, pointOf, branchNames, nextBranch, tipOf, historyOf, changeCount, sinceThen, MAIN, POINT_KINDS } from "../../web/js/core/history.js";
-import { baseOf, branchList, branchLayout, mergePlan, importPlan, importBranch, freeName } from "../../web/js/core/history_branches.js";
+import { baseOf, branchList, branchLayout, mergePlan, importPlan, importBranch, freeName, startBranch, branchSuggestion } from "../../web/js/core/history_branches.js";
 import { toDwiz, fromDwiz } from "../../web/js/core/dwiz.js";
 
 const read = (p) => readFileSync(new URL(`../../${p}`, import.meta.url), "utf8");
@@ -97,9 +97,33 @@ test("a teammate's product, read from their file, becomes a branch of its own �
   assert.equal(importPlan(h, shuffled, {}).same, true, "the same artefacts written with their keys in another order : no change");
 });
 
+test("« Nouvelle branche ici » on the last point of MAIN : a branch beside it at once, MAIN does not move ; the points after it continue the branch ; back to MAIN, MAIN goes on ; the branch merges back", () => {
+  const p = project(); addPoint(p, { label: "Départ", when: at() }); p.parts[0].params.L.value = 110; addPoint(p, { label: "Plus long", when: at() });
+  const h = historyOf(p); assert.equal(branchSuggestion(h), "Branche 2"); assert.equal(nextBranch(h), MAIN, "at the end of MAIN, the next point continues MAIN");
+  p.parts[0].name = "Boîtier alu";      // a change no point keeps yet : it goes with the branch
+  const q = startBranch(p, "Essai alu", { when: at() });
+  assert.equal(q.id, "P3"); assert.equal(q.parent, "P2"); assert.equal(branchNames(h).get("P3"), "Essai alu"); assert.equal(q.label, "Départ de « Essai alu »");
+  assert.equal(tipOf(h, MAIN).id, "P2", "MAIN does not move"); assert.equal(h.head, "P3"); assert.equal(nextBranch(h), "Essai alu", "the next point continues the branch");
+  assert.equal(branchLayout(h).lanes.length, 2); assert.notEqual(branchLayout(h).rows.find((r) => r.id === "P3").col, branchLayout(h).rows.find((r) => r.id === "P2").col, "beside MAIN, in its own column");
+  assert.equal(mergePlan(h, "Essai alu").take.length, 1, "the change made before opening it is in the branch");
+  restoreInto(p, "P2"); assert.equal(p.parts[0].name, "Boîtier", "back on MAIN : MAIN's product"); assert.equal(nextBranch(h), MAIN, "and MAIN goes on");
+  p.parts[0].params.L.value = 130; addPoint(p, { label: "MAIN continue", when: at() }); assert.equal(branchNames(h).get("P4"), MAIN);
+  const plan = mergePlan(h, "Essai alu"); assert.ok(!plan.nothing); assert.equal(plan.base, "P2");
+  assert.equal(startBranch(project(), "x"), null, "no point, no branch");
+});
+
+test("a branch opened from an older point, its name taken : a free one ; a branch that changed nothing brings nothing to MAIN", () => {
+  const p = project(); addPoint(p, { label: "A", when: at() }); addPoint(p, { label: "B", kind: "manual", when: at() });
+  restoreInto(p, "P1"); const a = startBranch(p, "Essai", { when: at() }); assert.equal(a.parent, "P1"); assert.equal(a.branch, "Essai");
+  restoreInto(p, "P1"); const b = startBranch(p, "Essai", { when: at() }); assert.equal(b.branch, "Essai (2)", "a name already taken gets a number");
+  assert.ok(mergePlan(historyOf(p), "Essai").nothing, "opened and left as it was : nothing to merge");
+  assert.deepEqual(freeName(historyOf(p), "MAIN"), "MAIN (2)");
+});
+
 test("wired : the screen, the tree, the sources, the news, the documents", () => {
   const ui = read("web/js/modules/history.js") + read("web/js/modules/history_branches_ui.js");
   assert.match(ui, /mergePlan/); assert.match(ui, /importPlan/); assert.match(ui, /historyMerge:/); assert.match(ui, /data-history-import/);
+  assert.match(ui, /startBranch/); assert.match(ui, /historyFork:/); assert.match(ui, /historyForkHere:/); assert.match(ui, /Nouvelle branche ici/);
   assert.match(read("web/js/modules/history_tree.js"), /branchLayout/); assert.match(read("web/js/modules/history_tree.js"), /data-lane/);
-  assert.match(read("docs/HISTORIQUE.md"), /MAIN/); assert.match(read("CLAUDE.md"), /history_branches\.js/);
+  assert.match(read("docs/HISTORIQUE.md"), /MAIN/); assert.match(read("docs/HISTORIQUE.md"), /Nouvelle branche ici/); assert.match(read("CLAUDE.md"), /history_branches\.js/);
 });

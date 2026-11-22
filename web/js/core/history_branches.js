@@ -10,7 +10,7 @@
    merge : an artefact the branch took out stays in MAIN ; an instance that MAIN's assembly has and the branch's lacks comes back at Off,
    with its mates, ready to be switched on. Pure : no page, no store. The naming of branches is in core/history.js. */
 
-import { MAIN, pointOf, branchNames, tipOf, describe, docOf, storePieces, fingerprint, cut, historyOf, diffTrees, pathTo } from "./history.js";
+import { MAIN, pointOf, branchNames, tipOf, describe, docOf, storePieces, fingerprint, cut, historyOf, diffTrees, pathTo, addPoint } from "./history.js";
 
 const own = (tree) => (tree || []).filter(([k]) => !k.startsWith("list:"));
 /* Two files of the same product may write an artefact with its keys in another order (a project read back from its .dwiz) : the same
@@ -92,6 +92,18 @@ export function freeName(h, want) {
   const used = new Set(branchNames(h).values()), clean = String(want || "").replace(/\s+/g, " ").trim().slice(0, 40) || "Branche";
   if (!used.has(clean) && clean !== MAIN) return clean;
   let n = 2; while (used.has(`${clean} (${n})`)) n++; return `${clean} (${n})`;
+}
+/** The name a new branch is offered : « Branche N », the first one free. */
+export function branchSuggestion(h) { const used = new Set(branchNames(h).values()); let n = 2; while (used.has(`Branche ${n}`)) n++; return `Branche ${n}`; }
+/** « Nouvelle branche ici » (JP, 22 novembre 2026 : « je ne vois pas le bouton pour commencer une branche parallèle ») — as a version-control
+    client creates a branch at a commit : a branch opens where « vous êtes ici » is, at ANY point, the last one of MAIN included. Its first point,
+    « Départ de … », keeps the product as it stands — what changed since « ici » goes with the branch — and the points after it continue the
+    branch ; the branch the point left does not move. Go to the point first (a return, undoable) to open a branch from an older one.
+    o : { by, context, when } → the point, or null without a point to leave from */
+export function startBranch(project, name, o = {}) {
+  const h = historyOf(project); if (!pointOf(h, h.head)) return null;
+  const b = freeName(h, name || branchSuggestion(h));
+  return addPoint(project, { kind: "manual", branch: b, label: `Départ de « ${b} »`, ...(o.by ? { by: o.by } : {}), ...(o.context ? { context: o.context } : {}), ...(o.when ? { when: o.when } : {}) }).point;
 }
 /** What reading a teammate's product as a branch would do. other : the project read from their file (with its history or without).
     The branch leaves the most recent of OUR points whose product one of THEIR points also had (the files share a past) ; without one,

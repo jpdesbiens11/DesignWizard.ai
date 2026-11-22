@@ -6,21 +6,24 @@
    looks at : the tree (modules/history_tree.js). Right, the point chosen : when, why, its own journal, the MVP iteration and the revisions of
    that moment, what differs from now or from another point ; go back to it, or take it away as a .dwiz that stands alone.
    Going back is ONE undoable step (Ctrl + Z) ; before it, what is kept by no point is kept by an automatic point « Avant le retour ». The
-   history itself is not undone. Every rule is in core/history.js. */
+   history itself is not undone. « Nouvelle branche ici » (JP, 22 novembre : « je ne vois pas le bouton pour commencer une branche
+   parallèle ») opens a named branch at any point, as a version-control client creates a branch at a commit : on the point chosen (a return
+   first when it is not « ici »), a first point « Départ de … » in the new branch. Every rule is in core/history.js and core/history_branches.js. */
 
-import { el, clear, btn, toast, download, confirmBox, field } from "../core/dom.js";
+import { el, clear, btn, toast, download, confirmBox, field, modal } from "../core/dom.js";
 import { store } from "../core/store.js";
 import { registerModule, setGuide } from "../core/app.js";
 import { guideBox } from "../core/guide.js";
 import { toDwiz } from "../core/dwiz.js";
 import { historyOf, pointOf, addPoint, restoreInto, sinceThen, diffTrees, changeCount, setDropped, weight, pointProject, contextOf, historyGuide, POINT_KINDS, ART_KINDS, MAIN, nextBranch, branchNames } from "../core/history.js";
-import { freeName } from "../core/history_branches.js";
+import { freeName, startBranch, branchSuggestion } from "../core/history_branches.js";
 import { branchSection, branchGuide } from "./history_branches_ui.js";
 import { historyTree } from "./history_tree.js";
 
 const VERB = { added: ["ajouté", "#16a34a"], removed: ["retiré", "#dc2626"], changed: ["modifié", "#b45309"] };
 const kb = (n) => (n < 1024 ? `${n} o` : n < 1048576 ? `${(n / 1024).toFixed(n < 10240 ? 1 : 0).replace(".", ",")} ko` : `${(n / 1048576).toFixed(1).replace(".", ",")} Mo`);
 const when = (iso) => { const d = new Date(iso); return Number.isNaN(d.getTime()) ? String(iso || "") : d.toLocaleString("fr-CA", { dateStyle: "medium", timeStyle: "short" }); };
+const tagged = (b, data) => { Object.assign(b.dataset, data); return b; };      // a button marked for the tests and the news
 const fileName = (s) => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9._-]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 80) || "point";
 
 /** What changed, grouped by what it is : a colour per kind of artefact, the verb in its colour. */
@@ -49,14 +52,40 @@ function render(main, args) {
     st.name = ""; st.note = ""; st.branch = ""; st.sel = r.point.id; mark(); draw();
     toast(r.same ? `${r.point.id} posé — rien n'avait changé depuis le point d'avant : il garde le même produit, sous un autre nom.` : `${r.point.id} posé : la définition complète du produit est gardée, chaque artéfact rangé une seule fois.`, "success", 6000);
   }
-  async function goBack(id) {
-    const p = store.project, h = historyOf(p), pt = pointOf(h, id), head = pointOf(h, h.head), pending = head ? changeCount(sinceThen(p, head.id)) : 0;
-    const ok = await confirmBox(`Revenir au point ${pt.id}`, `Le produit redevient celui du point « ${pt.label} » (${when(pt.at)}) : pièces, assemblages, cartes et registres.${pending ? ` Les ${pending} changement${pending > 1 ? "s" : ""} qu'aucun point ne garde encore seront d'abord gardés par un point automatique « Avant le retour ».` : ""} Ce que vous ferez ensuite ouvrira une branche. Le retour est une étape annulable (Ctrl + Z).`, "Revenir à ce point");
-    if (!ok) return;
-    if (pending) store.writeHistory("Point avant le retour", (x) => addPoint(x, { kind: "before", label: `Avant le retour à ${pt.id}`, context: contextOf(x) }));
+  const pendingNow = () => { const p = store.project, h = historyOf(p), head = pointOf(h, h.head); return head ? changeCount(sinceThen(p, head.id)) : 0; };
+  /** The return itself, without asking : what no point keeps is kept first by a point « Avant le retour » ; then ONE undoable step. */
+  function restoreTo(id) {
+    const pt = pointOf(historyOf(store.project), id);
+    if (pendingNow()) store.writeHistory("Point avant le retour", (x) => addPoint(x, { kind: "before", label: `Avant le retour à ${pt.id}`, context: contextOf(x) }));
     const changed = store.commit(`Retour au point ${pt.id} — ${pt.label}`, (x) => { restoreInto(x, id); });
     if (!changed) store.writeHistory("Vous êtes ici", (x) => { historyOf(x).head = id; });
-    st.sel = id; draw(); toast(`Vous êtes au point ${pt.id}. Le prochain point posé partira d'ici.`, "success", 6000);
+  }
+  async function goBack(id) {
+    const pt = pointOf(historyOf(store.project), id), pending = pendingNow();
+    const ok = await confirmBox(`Revenir au point ${pt.id}`, `Le produit redevient celui du point « ${pt.label} » (${when(pt.at)}) : pièces, assemblages, cartes et registres.${pending ? ` Les ${pending} changement${pending > 1 ? "s" : ""} qu'aucun point ne garde encore seront d'abord gardés par un point automatique « Avant le retour ».` : ""} Ce que vous ferez ensuite ouvrira une branche. Le retour est une étape annulable (Ctrl + Z).`, "Revenir à ce point");
+    if (!ok) return;
+    restoreTo(id); st.sel = id; draw(); toast(`Vous êtes au point ${pt.id}. Le prochain point posé partira d'ici.`, "success", 6000);
+  }
+  /** « Nouvelle branche ici » : a name, then the branch opens at the point — its first point « Départ de … » is in the tree at once. */
+  function openFork(id) {
+    const p = store.project, h = historyOf(p), pt = pointOf(h, id || h.head); if (!pt) return;
+    const here = pt.id === h.head, pending = pendingNow(), sug = branchSuggestion(h), from = branchNames(h).get(pt.id);
+    const name = el("input", { type: "text", placeholder: sug, maxlength: "40", "data-history-fork-name": "", onKeydown: (e) => { if (e.key === "Enter") { e.preventDefault(); go(); } } });
+    const go = () => {
+      m.close(); if (!here) restoreTo(pt.id);
+      let q = null; store.writeHistory("Nouvelle branche", (x) => { q = startBranch(x, name.value.trim() || sug, { by: (x.team && x.team.owner) || "", context: contextOf(x) }); });
+      if (!q) return; st.sel = q.id; mark(); draw(); requestAnimationFrame(() => tree.focus(q.id));
+      toast(`Branche « ${q.branch} » ouverte (${q.id}), à côté de ${from === MAIN ? "MAIN" : `« ${from} »`}, qui ne bouge pas. Les points suivants iront dans « ${q.branch} » ; « Les branches » passe de l'une à l'autre et la fusionne dans MAIN.`, "success", 9000);
+    };
+    const m = modal(`Nouvelle branche à partir de ${pt.id}`, [
+      el("p", { class: "small" }, `La branche part de ${pt.id} — « ${pt.label} », sur ${from === MAIN ? "MAIN" : `« ${from} »`}. Son premier point, « Départ de … », se pose tout de suite : la branche se voit dans l'arbre, à côté. Ce que vous ferez ensuite ira dans la branche ; ${from === MAIN ? "MAIN" : `« ${from} »`} reste tel qu'il est.`),
+      here ? (pending ? el("p", { class: "small" }, `Les ${pending} changement${pending > 1 ? "s" : ""} faits depuis ${pt.id}, qu'aucun point ne garde encore, partent avec la branche.`) : null)
+        : el("p", { class: "small" }, `Vous êtes à ${h.head}. Le produit redevient d'abord celui de ${pt.id} — un retour, annulable par Ctrl + Z${pending ? ` ; les ${pending} changement${pending > 1 ? "s" : ""} qu'aucun point ne garde sont d'abord gardés par un point « Avant le retour »` : ""}.`),
+      field("Nom de la branche", name, "Par exemple : couvercle embouti, piste de Sam, essai alu"),
+      el("p", { class: "muted small" }, "Pour passer d'une branche à l'autre : « Revenir à MAIN », « Travailler sur cette branche » (section « Les branches »). Quand elle est prête : « Fusionner dans MAIN »."),
+      el("div", { class: "form-actions" }, btn("Annuler", () => m.close()), tagged(btn("Ouvrir la branche", go, { primary: true, icon: "branch" }), { historyForkGo: "" })),
+    ]);
+    requestAnimationFrame(() => name.focus());
   }
   function takeAway(id) {
     const p = store.project, doc = pointProject(p, id), pt = pointOf(historyOf(p), id);
@@ -86,7 +115,7 @@ function render(main, args) {
     body.append(el("div", { class: "side-section", "data-fold-note": head ? `${n} changement${n > 1 ? "s" : ""}` : "aucun point" }, el("h3", null, "Où l'on en est"),
       head ? el("p", { class: "small" }, "Vous êtes ici : ", el("b", null, `${head.id} — ${head.label}`), `, posé le ${when(head.at)}.`) : el("p", { class: "muted small" }, "Aucun point encore : le premier gardera le produit tel qu'il est."),
       head ? (n ? el("div", null, el("p", { class: "small" }, `Depuis, ${n} artéfact${n > 1 ? "s ont" : " a"} changé — aucun point ne les garde encore :`), changeList(d)) : el("p", { class: "muted small" }, "Rien n'a changé depuis : ce point garde le produit tel qu'il est.")) : null));
-    body.append(branchSection(h, { changeList, goTo: (id) => goBack(id), drop, pick: (id) => { st.sel = id; mark(); draw(); requestAnimationFrame(() => tree.focus(id)); } }));
+    body.append(branchSection(h, { changeList, goTo: (id) => goBack(id), drop, fork: () => openFork(h.head), pick: (id) => { st.sel = id; mark(); draw(); requestAnimationFrame(() => tree.focus(id)); } }));
     const w = weight(h);
     if (w.points) body.append(el("div", { class: "side-section", "data-fold-note": kb(w.bytes) }, el("h3", null, "Ce que pèse l'historique"),
       el("p", { class: "small" }, `${w.points} point${w.points > 1 ? "s" : ""}, ${w.objects} artéfact${w.objects > 1 ? "s" : ""} rangé${w.objects > 1 ? "s" : ""} une seule fois : ${kb(w.bytes)} de plus dans le fichier du projet.`),
@@ -100,6 +129,7 @@ function render(main, args) {
     right.append(el("div", { class: "side-head" }, el("h2", null, `${pt.id} — ${pt.label}`)),
       el("div", { class: "side-actions" }, el("div", { class: "side-actions-row" },
         btn("Revenir à ce point", () => goBack(pt.id), { primary: true, icon: "undo", disabled: here && !changeCount(sinceThen(p, pt.id)), tip: here ? "Vous êtes déjà ici ; revenir défait ce qui a changé depuis" : "Le produit redevient celui de ce point — une étape annulable" }),
+        tagged(btn("Nouvelle branche ici", () => openFork(pt.id), { icon: "branch", tip: "Partir de ce point dans une branche nommée, à côté : la branche d'où elle part ne bouge pas ; elle se fusionne dans MAIN quand elle est prête" }), { historyFork: pt.id }),
         btn(".dwiz", () => takeAway(pt.id), { icon: "download", tip: "Ce point comme un projet complet, qui s'ouvre seul" }))));
     const body = el("div", { class: "side-scroll" }); right.append(body);
     body.append(el("div", { class: "side-section", "data-fold-note": K.label }, el("h3", null, "Ce point"),

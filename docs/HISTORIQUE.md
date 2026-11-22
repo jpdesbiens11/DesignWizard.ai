@@ -90,6 +90,15 @@ branche se fusionne d'un bloc** ; une pièce que le côté qui l'emporte n'a pas
   continue la branche de son parent quand le parent en est le bout ; revenir à un point qui n'est pas le bout de sa
   branche et continuer **ouvre une nouvelle branche** — le volet propose de la nommer (« couvercle embouti », « piste
   de Sam »…), sinon « Branche 2 », « Branche 3 »… Un historique gardé avant les noms les prend par la même règle.
+- **« Nouvelle branche ici »** (demande de JP, 22 novembre : « je ne vois pas le bouton pour commencer une branche parallèle ») :
+  sur **n'importe quel point**, le dernier de MAIN compris — bouton de la marge de droite, ou « Nouvelle branche » dans la
+  section « Les branches » pour partir d'où l'on est. On nomme la branche (le nom proposé est « Branche N ») ; si le point
+  n'est pas « vous êtes ici », le produit y revient d'abord (un retour, annulable). Son premier point, **« Départ de … »**,
+  se pose tout de suite : la branche se voit dans l'arbre, à côté ; ce qui avait changé depuis « ici » part avec elle, et
+  la branche d'où elle part **ne bouge pas**. Les points suivants continuent la branche. « Revenir à MAIN » et
+  « Travailler sur cette branche » passent de l'une à l'autre ; « Fusionner dans MAIN » ne paraît que lorsque la branche
+  apporte quelque chose. C'est l'usage d'un client de gestion de versions (créer une branche sur un commit, puis
+  basculer de l'une à l'autre) ; `startBranch` et `branchSuggestion` de `web/js/core/history_branches.js`.
 - **L'arbre** : une colonne par branche, **MAIN au centre** — autant de colonnes à sa gauche qu'à sa droite —, plus
   épaisse, nommée en tête ; les autres branches s'ouvrent à droite, puis à gauche, dans l'ordre où elles naissent, et
   leur nom est écrit sur leur dernier point. Un point de fusion reçoit une seconde ligne, en tirets, depuis le bout de

@@ -17,30 +17,35 @@ const tag = (b, data) => { Object.assign(b.dataset, data); return b; };      // 
 const plural = (n, one, many) => `${n} ${n > 1 ? many : one}`;
 const asGroup = (list) => ({ added: list.filter((x) => x.how === "added"), removed: [], changed: list.filter((x) => x.how !== "added") });
 
+/** Does a branch bring anything to MAIN ? Its points may keep the product as MAIN has it (a branch just opened). */
+const brings = (h, b) => { if (b.name === MAIN || !b.ahead) return false; try { const plan = mergePlan(h, b.name); return !!plan && !plan.nothing; } catch (e) { return true; } };
 /** What the guide says about the branches. → [{ level, text }] */
 export function branchGuide(h) {
-  return branchList(h).filter((b) => b.name !== MAIN && !b.dropped && b.ahead > 0)
+  return branchList(h).filter((b) => !b.dropped && brings(h, b))
     .map((b) => ({ level: "tip", text: `La branche « ${b.name} » a ${plural(b.ahead, "point", "points")} que MAIN n'a pas : « Fusionner dans MAIN » les reprend d'un bloc.` }));
 }
 
-/** The section « Les branches ». ctx : { changeList, goTo(id), drop(tip, on), pick(id), redraw() } */
+/** « Nouvelle branche » : where « vous êtes ici » is ; on any other point, the same button in the right pane. */
+const forkRow = (h, ctx) => el("div", { class: "form-actions" }, tag(btn("Nouvelle branche", () => ctx.fork(), { small: true, primary: branchList(h).length < 2, icon: "branch", disabled: !pointOf(h, h.head),
+  tip: pointOf(h, h.head) ? `Une branche nommée qui part d'ici (${h.head}), à côté de sa branche — qui ne bouge pas. Sur un autre point : « Nouvelle branche ici », à droite.` : "Posez d'abord un point : une branche part d'un point" }), { historyForkHere: "" }));
+/** The section « Les branches ». ctx : { changeList, goTo(id), drop(tip, on), fork(), pick(id), redraw() } */
 export function branchSection(h, ctx) {
   const B = branchList(h), lanes = branchLayout(h).lanes;
   if (B.length < 2) return el("div", { class: "side-section", "data-fold-note": "MAIN seule" }, el("h3", null, "Les branches"),
-    el("p", { class: "muted small" }, "Tout est sur MAIN, la branche du centre. Revenez à un point plus ancien et continuez : une nouvelle branche s'ouvre à côté, que l'on fusionne ensuite dans MAIN."),
-    importRow(ctx));
+    el("p", { class: "small" }, "Tout est sur MAIN, la branche du centre. Pour essayer une autre direction sans toucher MAIN : « Nouvelle branche » — elle part d'ici, ou de n'importe quel point avec « Nouvelle branche ici » (marge de droite). Le travail continue dans la branche ; « Revenir à MAIN » et « Travailler sur cette branche » passent de l'une à l'autre ; « Fusionner dans MAIN » la ramène, d'un bloc."),
+    forkRow(h, ctx), importRow(ctx));
   return el("div", { class: "side-section", "data-fold-note": plural(B.length, "branche", "branches") }, el("h3", null, "Les branches"),
-    el("p", { class: "muted small" }, "MAIN est au centre de l'arbre. Une branche y revient d'un bloc : ce qu'elle a changé passe dans MAIN, le reste de MAIN ne bouge pas."),
+    el("p", { class: "muted small" }, "MAIN est au centre de l'arbre. Une branche y revient d'un bloc : ce qu'elle a changé passe dans MAIN, le reste de MAIN ne bouge pas."), forkRow(h, ctx),
     el("ul", { class: "hist-branch-list", "data-history-branches": "" }, B.map((b) => {
       const tip = pointOf(h, b.tip), main = b.name === MAIN, color = laneColor(lanes, b.name);
       const meta = main ? `${plural(b.points.length, "point", "points")} · la branche principale` : [`part de ${b.fork || "—"}`, b.by ? `par ${b.by}` : "", b.imported ? "importée" : "",
-        b.ahead ? `${plural(b.ahead, "point", "points")} pas encore dans MAIN` : b.mergedAt ? `fusionnée (${b.mergedAt})` : "rien de neuf pour MAIN", b.dropped ? "abandonnée" : ""].filter(Boolean).join(" · ");
+        brings(h, b) ? `${plural(b.ahead, "point", "points")} pas encore dans MAIN` : b.ahead && !b.mergedAt ? "rien de changé encore" : b.mergedAt ? `fusionnée (${b.mergedAt})` : "rien de neuf pour MAIN", b.dropped ? "abandonnée" : ""].filter(Boolean).join(" · ");
       return el("li", { class: `${main ? "main" : ""}${b.dropped ? " dropped" : ""}`, style: `--lane:${color}`, "data-branch": b.name },
         el("span", { class: "hist-branch-name" }, b.name), b.here ? el("span", { class: "muted small" }, " · vous êtes ici") : null,
         el("span", { class: "hist-branch-meta" }, meta, ` — bout : ${tip.id} ${tip.label}`),
         el("div", { class: "hist-branch-acts" },
           b.here && h.head === b.tip ? null : btn(main ? "Revenir à MAIN" : "Travailler sur cette branche", () => ctx.goTo(b.tip), { small: true, icon: "branch", tip: `Le produit redevient celui du bout de « ${b.name} » (${b.tip}) ; les points suivants iront dans cette branche` }),
-          !main && b.ahead && !b.dropped ? tag(btn("Fusionner dans MAIN", () => openMerge(b.name, ctx), { small: true, primary: true, icon: "branch", tip: "Voir ce qui passerait dans MAIN, puis fusionner d'un bloc (une étape annulable)" }), { historyMerge: b.name }) : null,
+          !main && !b.dropped && brings(h, b) ? tag(btn("Fusionner dans MAIN", () => openMerge(b.name, ctx), { small: true, primary: true, icon: "branch", tip: "Voir ce qui passerait dans MAIN, puis fusionner d'un bloc (une étape annulable)" }), { historyMerge: b.name }) : null,
           main || b.here ? null : btn(b.dropped ? "Reprendre" : "Abandonner", () => ctx.drop(b.tip, !b.dropped), { small: true, tip: b.dropped ? "La branche redevient une branche comme les autres" : "La mettre de côté : elle reste gardée, pâle dans l'arbre" })));
     })), importRow(ctx));
 }
