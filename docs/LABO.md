@@ -77,6 +77,36 @@ Usage suivi : la face avant d'un appareil de banc — la valeur se tape là où 
 borne de l'appareil au point où il est pincé. Choix maison : les cordons dessinés par-dessus l'écran, de la carte de
 l'appareil à la carte électronique.
 
+## 1 ter. La table : plusieurs cartes sur le même banc
+
+Demande de JP (20 novembre 2026, point 6) : « Labo à plusieurs cartes : deux vues à bascule — la table et le schéma des
+liaisons, où un lien se change (l'outil refuse l'incompatible) ; deux cartes dont les interfaces s'accordent se relient
+d'office ». Le bouton « La table » du Labo (`#/elab/table`, `modules/elab_table.js`) :
+
+- **Les broches d'une carte** sont celles de ses connecteurs (J…), chacune sur un net de la carte, avec sa nature —
+  alimentation, masse, signal, haute tension — et sa tension (`portsOf` de `web/js/pcba/lab_table.js`). Un connecteur de
+  programmation (SWD) est dit : il va à la sonde de débogage, jamais à une autre carte.
+- **Deux vues à bascule** : « Table » — les cartes posées côte à côte, leur contour et leurs connecteurs là où ils sont,
+  les câbles entre elles, l'alimentation de laboratoire dessinée au-dessus et cordée à la carte qu'aucune autre ne nourrit
+  (`benchFeeds`) ; « Schéma des liaisons » — une colonne par carte, ses broches en lignes, les câbles entre les colonnes.
+- **Reliées d'office** : une carte posée sur la table se relie aux autres par les nets que leurs connecteurs partagent,
+  avec une seule masse (`autoLinks`, `putBoard`) ; « Relier d'office » le refait.
+- **Le montage est verrouillé** d'office — les câbles viennent des cartes et de l'IA ; un clic sur une broche dit ce
+  qu'elle porte. **Déverrouillé**, ils se changent à la souris (JP, 22 novembre : « permettre les changements de connexion
+  à la souris… lock / unlock setup ; si un expert HW designer veut s'amuser en connaissance de cause ») : un clic sur une
+  broche puis sur une broche d'une autre carte, ou un glisser de l'une à l'autre. **L'outil refuse l'incompatible et dit
+  pourquoi** (`linkCheck`) : une masse sur une alimentation, une alimentation sur un signal, deux tensions différentes, une
+  haute tension sur une broche basse tension, deux liaisons différentes, les deux fils d'une paire croisés, deux broches
+  d'une même carte, un connecteur de programmation. Chaque câble se met à Off ou se retire ; chaque changement est une
+  étape annulable.
+- La table est gardée dans le projet (`labTable`) et voyage dans le `.dwiz` ; le guide dit un câble qui ne tient plus
+  (une carte a changé sous lui) et une carte posée sans câble.
+- **Câblage, pas simulation** : les cartes de la table ne sont pas simulées ensemble ; chaque carte s'essaie dans la vue
+  « Une carte ». L'écran le dit.
+
+Usage suivi : un schéma de câblage — les broches en colonnes, un fil tiré de broche à broche. Choix maison : la masse
+unique posée d'office, l'alimentation du banc posée sur la plus haute tension que rien ne nourrit.
+
 ## 2. Les essais
 
 Chaque bloc de la bibliothèque (45 gabarits, `web/js/pcba/blocks.js`) a ses essais (92 en tout,

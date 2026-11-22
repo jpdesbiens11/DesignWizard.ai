@@ -20,6 +20,7 @@ import { labBoard, scope, bode } from "./elab_view.js";
 import { screenToBench } from "../pcba/lab_plain.js";
 import { benchTable, whyList } from "./elab_plain.js";
 import { openManip } from "./elab_manip.js";
+import { tableScreen } from "./elab_table.js";
 import { manipDoc } from "../pcba/lab_manip_doc.js";
 import { readUnit as unitOf, placedPoints } from "../pcba/lab_manip.js";
 import { boardTests, BOARD_KEY } from "../pcba/lab_board.js";
@@ -49,6 +50,7 @@ const naturePic = (id) => ({
 const tile = (o) => el("button", { class: `cf-tile${o.sel ? " sel" : ""}${o.off ? " off" : ""}`, type: "button", "aria-pressed": o.sel ? "true" : "false", "data-tip": o.tip || null, style: `--dom:${o.color}`, onClick: o.run, ...o.data }, o.pic, el("b", null, o.label), o.small ? el("small", null, o.small) : null);
 
 function render(main, args) {
+  if (args[0] === "table") return tableScreen(main);      // several boards on one bench : the table and the schema of the links (modules/elab_table.js)
   const boards = store.boards, id = args[0] && store.board(args[0]) ? args[0] : (boards[0] && boards[0].id) || null;
   const left = el("aside", { class: "side" }), right = el("aside", { class: "side right" }), view = el("div", { class: "viewport lab-view" }), root = el("div", { class: "studio" }, left, view, right);
   root.style.setProperty("--right-w", "430px"); main.append(root);
@@ -154,7 +156,7 @@ function render(main, args) {
   function renderLeft() {
     clear(left); const b = cur(), all = blocks();
     left.append(el("div", { class: "side-head" }, el("h2", null, "Labo"))      /* the step up to the PCBA of this board comes with every screen : core/stairs.js */,
-      el("div", { class: "side-actions" }, (() => { const m = btn("Manipulation en labo", () => manip(), { primary: true, small: true, icon: "play", disabled: !st.sheet, tip: "L'essai choisi, fait au vrai banc : une étape par écran, pointée sur la carte, en plein écran — relevés et notes gardés dans le carnet de la carte" }); m.dataset.manip = ""; return m; })(), btn("Plan de test (.docx)", () => plan("docx"), { small: true, icon: "download", tip: "Le plan de test fonctionnel de la carte : une fiche par essai — comprendre, puis faire — au gabarit des documents" }), btn("PDF", () => plan("pdf"), { small: true, icon: "pdf", tip: "Le même plan, en PDF" })));
+      el("div", { class: "side-actions" }, (() => { const m = btn("Manipulation en labo", () => manip(), { primary: true, small: true, icon: "play", disabled: !st.sheet, tip: "L'essai choisi, fait au vrai banc : une étape par écran, pointée sur la carte, en plein écran — relevés et notes gardés dans le carnet de la carte" }); m.dataset.manip = ""; return m; })(), btn("Plan de test (.docx)", () => plan("docx"), { small: true, icon: "download", tip: "Le plan de test fonctionnel de la carte : une fiche par essai — comprendre, puis faire — au gabarit des documents" }), btn("PDF", () => plan("pdf"), { small: true, icon: "pdf", tip: "Le même plan, en PDF" }), (() => { const t = btn("La table", () => go("#/elab/table"), { small: true, icon: "link", tip: "Plusieurs cartes sur la même table : leurs câbles, reliés d'office quand leurs connecteurs s'accordent, vérifiés quand on les pose" }); t.dataset.tableOpen = ""; return t; })()));
     const scroll = el("div", { class: "side-scroll" }); left.append(scroll);
     if (boards.length > 1) scroll.append(el("div", { class: "side-section", "data-fold-note": String(boards.length) }, el("h3", null, "La carte"), boards.map((x) => el("a", { class: "nav-item" + (x.id === id ? " active" : ""), href: `#/elab/${encodeURIComponent(x.id)}` }, icon("chip"), el("span", { class: "grow" }, x.name || x.id)))));
     scroll.append(el("div", { class: "side-section", "data-box": "block", "data-fold-note": !b ? "à choisir" : b.whole ? "la carte entière" : b.name || BLOCKS[b.template].name }, el("h3", null, "Le bloc à l'essai"),
