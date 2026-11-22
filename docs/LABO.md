@@ -79,6 +79,40 @@ Usage suivi : la face avant d'un appareil de banc — la valeur se tape là où 
 borne de l'appareil au point où il est pincé. Choix maison : les cordons dessinés par-dessus l'écran, de la carte de
 l'appareil à la carte électronique.
 
+### La plaque d'essai
+
+Demande de JP (22 novembre 2026, sur une capture du Labo : « une vue breadboard plus clean… voir clairement ce qui se
+connecte où sur la carte en laissant sortir les traces vers le breadboard de manière clean et en connectant les
+instruments sur les pins du breadboard bien identifiés par tag de carte et d'équipement »).
+
+- En haut à gauche de la vue, **« Plaque d'essai · Carte »** (un groupe de deux boutons radio ; ← → aussi). « Plaque
+  d'essai » est la vue d'office ; le choix est gardé dans ce navigateur (`dw.lab.view`).
+- **Plaque d'essai** : à côté de la carte, une plaque d'essai dessinée par l'outil. Chaque point de la carte que
+  touche un appareil a **sa rangée** ; un **fil** part de sa pastille (un point de soudure, un anneau qui bat) et
+  rejoint le premier trou de sa rangée. La rangée porte **l'étiquette du point** — la référence et la broche de la
+  carte, puis son signal (« C3.1 · VIN ») — et le titre de la plaque, le nom de la carte. Les cordons des appareils
+  arrivent dans les trous suivants, chacun avec sa lettre, et **l'étiquette de l'appareil** est écrite au bout de la
+  rangée (« Alim. + », « Osc. S2 », « Charge C »). La rangée de la masse est sombre, son fil noir ; le fil du + d'une
+  alimentation est rouge ; les autres ont chacun leur couleur.
+- **Les fils ne se croisent jamais** : ils sortent de la carte tout droit, chacun dans son couloir, puis tournent une
+  fois vers leur rangée ; les rangées gardent l'ordre de leurs points, et les couloirs sont rangés selon le sens où
+  chaque fil tourne. Deux pastilles sur la même ligne : celle de droite sort tout droit, celle de gauche monte d'abord
+  un peu — jamais jusqu'à la pastille suivante. Un essai le tient sur tous les essais des trois cartes d'exemple et
+  sur trois mille jeux de points tirés au hasard (`crossings`).
+- **Ce que la main fait sur la carte y reste** : le doigt sur un bouton, la pile dans son support sont marqués sur la
+  carte, comme avant.
+- La carte continue de s'allumer avec le courant ; le zoom, « Ajuster » et la loupe couvrent la carte et la plaque.
+- **Carte** : la vue d'avant, les cordons directement sur les pastilles.
+
+Placement : `breadLayout` et `crossings` de `web/js/pcba/lab_breadboard.js` (pur) ; dessin : `drawBread` de
+`web/js/modules/elab_bread.js`, appelé par la vue de la carte (`labBoard().bread(on)`). Les trous des cordons sont les
+marques que les cordons cherchent (`.lab-mark[data-gear] .lab-mark-dot`) : les cordons y descendent d'eux-mêmes.
+
+Usage suivi : la vue « breadboard » des outils de prototypage (une rangée de cinq trous reliés, un fil par liaison) et
+la sortie d'une piste routée (tout droit, un couloir par piste). Choix maison : une rangée par point plutôt qu'une
+plaque réelle à 2,54 mm ; la plaque n'existe pas sur le vrai banc tant qu'on ne l'y pose pas — c'est une façon de
+voir les liaisons, et le montage de la fiche reste celui des points de la carte.
+
 ## 1 ter. La table : plusieurs cartes sur le même banc
 
 Demande de JP (20 novembre 2026, point 6) : « Labo à plusieurs cartes : deux vues à bascule — la table et le schéma des

@@ -61,10 +61,20 @@ function render(main, args) {
   const blocks = () => (board().blocks || []).filter((b) => BLOCKS[b.template]), refsOf = (b) => Object.fromEntries((board().parts || []).filter((p) => p.block === b.id && p.local).map((p) => [p.local, p.ref]));
   const boardHost = el("div", { class: "lab-board-host" }), bench = el("div", { class: "lab-bench" }, boardHost), bar = el("div", { class: "lab-bar" }), scopes = el("div", { class: "lab-scopes bottom-body" }), veil = busyVeil(view); view.append(bench, el("div", { class: "lab-bottom bottom-pane", "data-bottom": "lab" }, bar, scopes));      // the bar and the oscilloscopes : a panel whose height is dragged at its top edge (core/panes.js mountBottom)
   const pcb = labBoard(boardHost); let S1 = null, S2 = null, BD = null, stateNodes = [];
+  /* the board alone, or the board and its breadboard (JP, 22 novembre : « une vue breadboard plus clean ») — a group of two radio buttons ;
+     the choice is a convenience of this browser */
+  const VIEW_KEY = "dw.lab.view", saved = (() => { try { return localStorage.getItem(VIEW_KEY); } catch { return null; } })();
+  const modes = [["bread", "Plaque d'essai", "Chaque point de la carte sorti par son fil vers sa rangée de la plaque d'essai, étiquetée ; les appareils branchés dans les trous", "link"], ["board", "Carte", "Les cordons des appareils directement sur les pastilles de la carte", "pcb"]];
+  const viewMode = el("div", { class: "role-switch lab-viewmode", role: "radiogroup", "aria-label": "Vue du banc" });
+  const setMode = (m, keep = true) => { pcb.bread(m === "bread"); for (const b of viewMode.children) { const on = b.dataset.mode === m; b.setAttribute("aria-checked", String(on)); b.tabIndex = on ? 0 : -1; b.classList.toggle("on", on); } if (keep) try { localStorage.setItem(VIEW_KEY, m); } catch { /* private window */ } strip.redraw(); };
+  viewMode.append(...modes.map(([m, label, tip, ic]) => el("button", { type: "button", role: "radio", "data-mode": m, "data-tip": tip, style: { "--g": "#0f766e" }, onClick: () => setMode(m) }, icon(ic), el("span", null, label))));
+  viewMode.addEventListener("keydown", (e) => { if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) return; e.preventDefault(); const i = modes.findIndex(([m]) => pcb.bread() === (m === "bread")), m = modes[(i + 1) % modes.length][0]; setMode(m); viewMode.querySelector(`[data-mode="${m}"]`).focus(); });
+  boardHost.append(viewMode);
   /* the instruments of the test, drawn above the board, set on their front, their cords run to the board (modules/elab_bench.js) */
   const strip = benchStrip(bench, bench, pcb, { pcbaHref: `#/pcba/${encodeURIComponent(id)}`,
     set: (g, k, v) => { const K = g.knobs.find((x) => x.k === k); store.updateBoard(id, (b) => { b.lab = setGear(b, key(), g.key, { [k]: v }); }, `Banc : ${g.name} sur ${g.to} — ${K ? K.label.toLowerCase() : k} ${v === null ? "de l'essai" : "réglée"}`); },
     reset: (g) => store.updateBoard(id, (b) => { b.lab = setGear(b, key(), g.key, null); }, `Banc : ${g.name} sur ${g.to} — réglage de l'essai`) });
+  setMode(saved === "board" ? "board" : "bread", false);
   let unpress = () => {};
   /* the instruments on the board : their points marked, a button of the board pressed by a click on it */
   function wireBench() {
@@ -99,7 +109,7 @@ function render(main, args) {
     const gear = gearEnv(board(), key()), env = Object.keys(gear).length ? { gear } : null; st.gearSig = JSON.stringify(gear);      // what was set on the instruments of this test (modules/elab_bench.js)
     setTimeout(() => { if (!st.alive) return; let sheet = null; try { sheet = b.whole ? boardSheet(board(), st.test, env ? { env } : {}) : testSheet(b.template, st.test, b.params || {}, { refs: refsOf(b), name: `${b.name || BLOCKS[b.template].name} (${b.id})`, ...(env ? { env } : {}) }); } catch (e) { toast(`Essai : ${e.message}`, "error", 8000); }
       veil.set(""); if (!sheet) { setStatus("Essai impossible", "error"); return; } st.sheet = { ...sheet, blockId: b.id }; st.q = 0; st.netMap = b.whole ? {} : Object.fromEntries(sheet.result.built.nets.map((n) => [n.name, netOf(b, sheet.result.built, n.name)]));
-      setStatus(sheet.ok ? "Essai simulé" : "Essai non abouti", sheet.ok ? "done" : "error"); pcb.show(resolveBoard(board(), LIBRARY), b.whole ? {} : { focus: new Set(Object.values(refsOf(b))) }); wireBench(); centre(); renderRight(); renderLeft(); paint(); tell(); }, 30);
+      setStatus(sheet.ok ? "Essai simulé" : "Essai non abouti", sheet.ok ? "done" : "error"); pcb.show(resolveBoard(board(), LIBRARY), b.whole ? { name: board().name || id } : { focus: new Set(Object.values(refsOf(b))), name: board().name || id }); wireBench(); centre(); renderRight(); renderLeft(); paint(); tell(); }, 30);
   }
   function centre() {
     const R = st.sheet && st.sheet.result; clear(scopes); clear(bar); S1 = S2 = BD = null; if (!R) return;
@@ -202,7 +212,7 @@ function render(main, args) {
   document.addEventListener("keydown", onKey);
   const off = store.on("change", () => { if (!store.board(id)) { go("#/elab"); return; } if (st.block && !cur()) { st.block = null; st.sheet = null; } renderLeft(); renderRight(); tell(); paint();
     if (st.sheet && key() && JSON.stringify(gearEnv(board(), key())) !== st.gearSig) run(); });      // a setting made on an instrument, or taken back by « Annuler » : the test is simulated again with the bench as it is
-  pcb.show(resolveBoard(board(), LIBRARY)); renderLeft(); renderRight(); tell(); st.raf = requestAnimationFrame(tick);
+  pcb.show(resolveBoard(board(), LIBRARY), { name: board().name || id }); renderLeft(); renderRight(); tell(); st.raf = requestAnimationFrame(tick);
   const lively = (b, natures) => blockTests(b.template).some((t) => natures.includes(t.nature)), cyc = blocks().find((b) => blockTests(b.template).some((t) => t.id === "ripple")), first = cyc || blocks().find((b) => lively(b, ["dynamic", "bus"])) || blocks().find((b) => lively(b, ["function", "frequency", "static"])) || blocks()[0]; if (first) pick(first.id, cyc ? "ripple" : undefined);      // it opens on a test where something moves — a chopper first : tracks that beat, a square wave, a ripple
   view._lab = { st, run, labStatus: () => labStatus(board(), st.sheets || (st.sheets = boardSheets(board()))) };      // for whoever inspects the page (tests, the console)
   return () => { st.alive = false; if (st.manip) st.manip.close(); cancelAnimationFrame(st.raf); document.removeEventListener("keydown", onKey); off(); setGuide([]); veil.dispose(); unpress(); strip.destroy(); pcb.destroy(); };

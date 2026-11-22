@@ -8,13 +8,17 @@ import { el, svg } from "../core/dom.js";
 import { viewBar } from "../core/view_bar.js";
 import { eng } from "../pcba/lab_bench.js";
 import { channelSetting, timeBase } from "../pcba/lab_plan.js";
+import { breadLayout } from "../pcba/lab_breadboard.js";
+import { drawBread } from "./elab_bread.js";
 
 const pts = (a) => a.map((p) => `${p[0]},${p[1]}`).join(" ");
 /* from rest to full : dark copper, orange, then red — the colour of a filament that heats */
 function heat(a) { const x = Math.max(0, Math.min(1, a)), mix = (p, q, t) => Math.round(p + (q - p) * t), c = x < 0.5 ? [mix(122, 255, x * 2), mix(84, 150, x * 2), mix(40, 20, x * 2)] : [255, mix(150, 40, (x - 0.5) * 2), mix(20, 20, (x - 0.5) * 2)]; return `rgb(${c[0]},${c[1]},${c[2]})`; }
 const LED = { rouge: "#ff3b30", verte: "#34d058", jaune: "#ffd60a", orange: "#ff9f0a", bleue: "#3b9bff", blanche: "#f5f7fa" };
 
-/** The board. → { show(R, o), light(frame), mark(points, box), onView(fn), partNode(ref), destroy() }
+/** The board. → { show(R, o), light(frame), mark(points, box), bread(on), onView(fn), partNode(ref), destroy() }
+    bread(on) : the breadboard beside the board (pcba/lab_breadboard.js) — each point of the instruments brought out by its jumper to its
+           own row, the leads in the holes of that row ; what the hand does on the board (a button, the cell) stays marked on the board
     R : the resolved board (pcba/model.js resolveBoard) ; o : { focus: Set of references under test (the rest is dimmed) }
     mark : the points a step of the bench touches (pcba/lab_manip.js placedPoints) — a ring on the pad, the lead that goes there, the pin written small ;
            box : what to look at ([x0, y0, x1, y1], board coordinates), nothing : the whole board
@@ -23,10 +27,12 @@ export function labBoard(host) {
   host.classList.add("lab-board");
   const root = svg("svg", { class: "lab-svg", preserveAspectRatio: "xMidYMid meet", role: "img", "aria-label": "La carte vue de dessus : les pistes et les composants s'allument avec le courant" }), world = svg("g", { transform: "scale(1,-1)" }), tags = el("div", { class: "lab-tags" });
   root.append(svg("defs", null, svg("filter", { id: "lab-glow", x: "-50%", y: "-50%", width: "200%", height: "200%" }, svg("feGaussianBlur", { stdDeviation: 0.7, result: "b" }), svg("feMerge", null, svg("feMergeNode", { in: "b" }), svg("feMergeNode", { in: "SourceGraphic" })))), world); host.append(root, tags);
-  let tracks = new Map(), parts = new Map(), vb = null, vb0 = null, drag = null, marked = [];
+  let tracks = new Map(), parts = new Map(), vb = null, vb0 = null, drag = null, marked = [], bb = null, name = "", bread = false, layout = null;
   const marks = svg("g", { class: "lab-marks" }); root.append(marks);
   /* the marks are drawn in what one sees : they keep their size on the screen whatever the zoom */
-  function drawMarks() { marks.replaceChildren(); if (!vb) return; const u = Math.max(vb[2], vb[3]) / 100, on = marked.filter((p) => p.at), DIR = [[-0.7, -0.7], [0.7, -0.7], [-0.7, 0.7], [0.7, 0.7]], cx = on.reduce((a, p) => a + p.at.x, 0) / (on.length || 1), cy = on.reduce((a, p) => a - p.at.y, 0) / (on.length || 1);
+  /* what one sees when everything is fitted : the board, and the breadboard beside it */
+  function fitted() { const B = bread && layout && layout.box ? [Math.min(bb[0], layout.box[0]), Math.min(bb[1], layout.box[1]), Math.max(bb[2], layout.box[2]), Math.max(bb[3], layout.box[3])] : bb, m = 3; return [B[0] - m, -B[3] - m, B[2] - B[0] + 2 * m, B[3] - B[1] + 2 * m]; }
+  function drawMarks() { marks.replaceChildren(); if (!vb) return; if (bread && layout) drawBread(marks, layout); const u = Math.max(vb[2], vb[3]) / 100, on = (bread && layout && layout.rows.length ? layout.stay : marked).filter((p) => p.at), DIR = [[-0.7, -0.7], [0.7, -0.7], [-0.7, 0.7], [0.7, 0.7]], cx = on.reduce((a, p) => a + p.at.x, 0) / (on.length || 1), cy = on.reduce((a, p) => a - p.at.y, 0) / (on.length || 1);
     const twice = new Map();      // several leads on the same pad (the black tip of the meter where the supply's − already is) : their labels fan out
     on.forEach((p, i) => { const x = p.at.x, y = -p.at.y, vx = x - cx, vy = y - cy - 0.6 * Math.hypot(x - cx, y - cy), n = Math.hypot(vx, vy), d0 = n > 1e-6 ? [vx / n, vy / n] : DIR[i % 4], at = `${x},${y}`, j = twice.get(at) || 0, turn = j ? (j % 2 ? 1 : -1) * Math.ceil(j / 2) * 0.75 : 0;
        twice.set(at, j + 1); const d = [d0[0] * Math.cos(turn) - d0[1] * Math.sin(turn), d0[0] * Math.sin(turn) + d0[1] * Math.cos(turn)], bx = x + d[0] * 9 * u, by = y + d[1] * 9 * u,      // each label leaves away from the others, and upward
@@ -46,8 +52,8 @@ export function labBoard(host) {
   root.addEventListener("pointerup", () => { drag = null; });
   return {
     show(R, o = {}) {
-      world.replaceChildren(); tags.replaceChildren(); tracks = new Map(); parts = new Map(); const focus = o.focus || null, b = R.bbox, m = 3;
-      vb = [b[0] - m, -b[3] - m, b[2] - b[0] + 2 * m, b[3] - b[1] + 2 * m]; vb0 = [...vb]; marked = []; setVb();
+      world.replaceChildren(); tags.replaceChildren(); tracks = new Map(); parts = new Map(); const focus = o.focus || null; bb = R.bbox; name = o.name || name; marked = []; layout = null;
+      vb = fitted(); vb0 = [...vb]; setVb();
       world.append(svg("polygon", { points: pts(R.outline), class: "lab-fr4" }));
       const copper = svg("g", { class: "lab-copper" }), bodies = svg("g", { class: "lab-parts" }); world.append(copper, bodies);
       const lay = (net, node) => { if (!tracks.has(net)) tracks.set(net, []); tracks.get(net).push(node); copper.append(node); };
@@ -73,7 +79,8 @@ export function labBoard(host) {
     onView(fn) { seen.add(fn); return () => seen.delete(fn); },
     /** a part of the board, as drawn : its group (for a hand that presses it) */
     partNode(ref) { const p = parts.get(ref); return p ? p.g : null; },
-    mark(points = [], box = null) { marked = points || []; if (vb0) vb = box ? [box[0], -box[3], box[2] - box[0], box[3] - box[1]] : [...vb0]; if (vb) setVb(); },
+    mark(points = [], box = null) { marked = points || []; layout = bread && bb ? breadLayout(marked, bb, { board: name }) : null; if (bb) { vb0 = fitted(); vb = box && !bread ? [box[0], -box[3], box[2] - box[0], box[3] - box[1]] : [...vb0]; } if (vb) setVb(); },
+    bread(on) { if (on === undefined) return bread; bread = !!on; root.classList.toggle("is-bread", bread); this.mark(marked, null); return bread; },
     destroy() { root.remove(); tags.remove(); },
   };
 }
