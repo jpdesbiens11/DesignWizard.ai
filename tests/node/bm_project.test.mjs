@@ -59,7 +59,7 @@ test("the copper is sized for 360 A by the model of the tool : below the ambient
 test("the parts of the CORE : each one builds, the top of a CORE is the size of its board", async () => {
   near(CORE_X, 4 * 21.7 + 6, "length"); near(CORE_Y, 2 * 21.7 + 3, "width");
   const { K, p, built } = await placedCore(), board = p.boards[0]; assert.deepEqual(board.board.size, [CORE_X, CORE_Y]); assert.equal(board.part, "CORE-1S8P-PCBA-PCB");
-  assert.deepEqual(p.parts.map((x) => x.id), ["BM-CELL-21700", "BM-BB-LAM", "BM-FLEX-BOX", "BM-HOLDER", "BM-HOLDER-BASE", "BM-LAM-HV", "BM-LAM-CAGE", "BM-STOP", "BM-LAM-LV", "BM-CASING", "BM-TERM-NEG", "BM-TERM-POS", "BM-RETURN-BB", "BM-LID-RING-TOP", "BM-LID-TOP", "BM-LATCH-CAM", "BM-PRESS-PLATE", "BM-BRIDGE", "BM-SPRING-PLATE", "BM-SPRING-PAD-A", "BM-SPRING-PAD-B", "CORE-1S8P-PCBA-PCB"]);
+  assert.deepEqual(p.parts.map((x) => x.id), ["BM-CELL-21700", "BM-BB-LAM", "BM-FLEX-BOX", "BM-HOLDER", "BM-HOLDER-BASE", "BM-LAM-HV", "BM-LAM-CAGE", "BM-STOP", "BM-LAM-LV", "BM-CASING", "BM-TERM-NEG", "BM-TERM-POS", "BM-RETURN-BB", "BM-LID-RING-TOP", "BM-LID-TOP", "BM-LATCH-CAM", "BM-PRESS-PLATE", "BM-BRIDGE", "BM-SPRING-PLATE", "BM-SPRING-PAD-A", "BM-SPRING-PAD-B", "BM-LID-RING-BOT", "BM-POST", "BM-LID-BOT", "BM-SWAP-CONN", "BM-CONTACTOR", "BM-BMS-BOARD", "BM-LID-STRAPS", "CORE-1S8P-PCBA-PCB"]);
   for (const s of p.parts) { assert.deepEqual(validateSpec(s).errors, [], s.id); assert.deepEqual(built.get(s.id).log.filter((l) => l.level === "error"), [], s.id); }
   near(BELOW, FLOOR_T + BB_T + WRAP_T, "under the cans : the floor, the copper, the film");
 });
@@ -192,15 +192,15 @@ test("the islands, measured by the Isolation engine on the joint between CORE 7 
   assert.ok(out.every((x) => x.clr > 0.5 && x.crp > 0.5), JSON.stringify(out));
 });
 
-test("the module : 8 CORE side by side, the same way round ; 192 parts in the CORE (24 each), the casing, the two terminals, the return busbar and the top lid — 222 — and no joint between two copies by the same face", () => {
+test("the module : 8 CORE side by side, the same way round ; 192 parts in the CORE (24 each), the casing, the two terminals, the return busbar and the two lids — 232 — and no joint between two copies by the same face", () => {
   const p = bmProject(), core = p.assemblies.find((a) => a.id === "BM-CORE-ASM"), mod = p.assemblies.find((a) => a.id === "BM-8S8P-ASM");
   const cells = core.instances.filter((i) => i.part === "BM-CELL-21700").map((i) => i.placement.t);
   assert.equal(cells.length, 8); assert.deepEqual([...new Set(cells.map((t) => t[1]))], ROWS); assert.deepEqual([...new Set(cells.map((t) => +t[0].toFixed(2)))], [13.85, 35.55, 57.25, 78.95]);
   near(CORE_PITCH, 52.6, "46.4 + 2 × (0.25 + 2.0) + 1.7, the working height of the strips", 1e-9);
-  const cores = mod.instances.filter((i) => i.asm === "BM-CORE-ASM"); assert.equal(mod.instances.length, 13); assert.equal(cores.length, 8);
+  const cores = mod.instances.filter((i) => i.asm === "BM-CORE-ASM"); assert.equal(mod.instances.length, 14); assert.equal(cores.length, 8);
   assert.ok(cores.every((i, k) => Math.abs(i.placement.t[1] - k * CORE_PITCH) < 1e-9 && i.placement.r.every((v) => v === 0)));
   const find = (id) => p.assemblies.find((a) => a.id === id), flat = flatAsm(mod, find), counts = partCounts(mod, find);
-  assert.equal(flat.instances.length, 222); assert.equal(counts.get("BM-LAM-HV"), 20); assert.equal(counts.get("BM-STOP"), 36); assert.equal(counts.get("BM-LAM-LV"), 36); assert.equal(counts.get("BM-LAM-CAGE"), 9);
+  assert.equal(flat.instances.length, 232); assert.equal(counts.get("BM-LAM-HV"), 20); assert.equal(counts.get("BM-STOP"), 36); assert.equal(counts.get("BM-LAM-LV"), 36); assert.equal(counts.get("BM-LAM-CAGE"), 9);
   assert.equal(counts.get("BM-CASING"), 1); assert.equal(counts.get("BM-TERM-NEG"), 1); assert.equal(counts.get("BM-TERM-POS"), 1); assert.equal(counts.get("BM-CELL-21700"), 64); assert.equal(counts.get("BM-BB-LAM"), 8);
   assert.equal(counts.get("BM-FLEX-BOX"), 8); assert.equal(counts.get("BM-HOLDER"), 8); assert.equal(counts.get("BM-HOLDER-BASE"), 8); assert.equal(counts.get("CORE-1S8P-PCBA-PCB"), 8);
   const built = Object.fromEntries(p.parts.map((x) => [x.id, { interfaces: x.interfaces || [] }])), loose = { ...flat, instances: flat.instances.map(({ group, ...i }) => i) };
@@ -210,7 +210,7 @@ test("the module : 8 CORE side by side, the same way round ; 192 parts in the CO
 test("wired : the example on the home page, the English of its drawings, the .dwiz file, the documents", () => {
   const p = bmProject(), texts = [...new Set([...p.parts.flatMap((s) => partTexts(s, p)), ...p.assemblies.flatMap((a) => drawingTexts(p, `assembly:${a.id}`))])];
   assert.deepEqual(wordsLeft(p.drawing.words, texts), []); assert.deepEqual(wordsUnused(p), []);
-  const back = fromDwiz(toDwiz(p)); assert.equal(back.assemblies.length, 5); assert.equal(back.boards[0].id, "CORE-1S8P-PCBA"); assert.equal(back.physics[0].model, "busbar");
+  const back = fromDwiz(toDwiz(p)); assert.equal(back.assemblies.length, 6); assert.equal(back.boards[0].id, "CORE-1S8P-PCBA"); assert.equal(back.physics[0].model, "busbar");
   assert.match(read("web/js/modules/home.js"), /"data-example": "bm"/);
-  for (const re of [/Itération 11/, /came quart de tour/i, /sectionneur/i, /Itération 10/, /EVO PT/, /boîtier extrudé/i, /borne −/i, /52,6 mm/, /Itération 9/, /lamelles/, /LOUVER_tron 112/, /Itération 8/, /sertie/, /Itération 6/, /couronne de lames/i, /butée/, /support de cellules/i, /busbar laminé/i, /flex en boîte/i, /rondelle/i, /2K/, /Itération 5/]) assert.match(read("docs/BM_MODULE.md"), re);
+  for (const re of [/Itération 11 b/, /contacteur/, /connecteur d'échange/i, /Itération 11/, /came quart de tour/i, /sectionneur/i, /Itération 10/, /EVO PT/, /boîtier extrudé/i, /borne −/i, /52,6 mm/, /Itération 9/, /lamelles/, /LOUVER_tron 112/, /Itération 8/, /sertie/, /Itération 6/, /couronne de lames/i, /butée/, /support de cellules/i, /busbar laminé/i, /flex en boîte/i, /rondelle/i, /2K/, /Itération 5/]) assert.match(read("docs/BM_MODULE.md"), re);
 });

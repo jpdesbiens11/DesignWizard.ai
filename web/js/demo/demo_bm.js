@@ -32,6 +32,7 @@ import { coreHolder, coreBase } from "./demo_bm_holder.js";
 import { GAP as JOINT_GAP, STRIPS, contactLayout, stripPart, cagePart, stopPart, busbarContacts, contactSizing } from "./demo_bm_contacts.js";
 import { casingPart, terminalParts, returnSizing, casingPaths } from "./demo_bm_case.js";
 import { topEnd } from "./demo_bm_lid.js";
+import { bottomEnd } from "./demo_bm_bottom.js";
 
 /* Iteration 2 (JP, 21 novembre : « garder les L pressés » ; « le max de courant continu des 21700 P45B de Molicel, en décharge et en charge,
    la valeur la plus élevée — on est en 8s8p avec 8 CORE » ; then the flex in G). The cell is the Molicel INR-21700-P45B of the library, its
@@ -100,7 +101,8 @@ function moduleAssembly() {
     instances: [{ id: "boitier", part: "BM-CASING", fixed: true, placement: at([0, CASE_Y0, 0]) }, { id: "borne_moins", asm: "BM-TERM-NEG-ASM", fixed: true, placement: at([0, 0, 0]) },
       ...Array.from({ length: 8 }, (_, k) => ({ id: `core${k + 1}`, asm: "BM-CORE-ASM", fixed: true, placement: at([0, k * CORE_PITCH, 0]) })),
       { id: "borne_plus", part: "BM-TERM-POS", fixed: true, placement: at([0, Math.round(7 * CORE_PITCH * 1e6) / 1e6, 0]) },
-      { id: "retour", part: "BM-RETURN-BB", fixed: true, placement: at([0, 0, 0]) }, { id: "couvercle_haut", asm: "BM-LID-TOP-ASM", fixed: true, placement: at([0, 0, 0]) }], mates: [] };
+      { id: "retour", part: "BM-RETURN-BB", fixed: true, placement: at([0, 0, 0]) }, { id: "couvercle_haut", asm: "BM-LID-TOP-ASM", fixed: true, placement: at([0, 0, 0]) },
+      { id: "couvercle_fond", asm: "BM-LID-BOT-ASM", fixed: true, placement: at([0, 0, 0]) }], mates: [] };
 }
 
 /** The calculation that sized the copper, kept in the project under the name of the laminated busbar : the analytic model of the tool (a bar in
@@ -122,11 +124,12 @@ export function bmProject() {
     stripPart("hv", layout.hv[0].x, layout.hv[0].z0, contacts.faces.plus), cagePart(layout, contacts.faces.plus), stopPart(layout.stops[0], contacts.faces.plus), stripPart("lv", layout.lv[0].x, layout.lv[0].z - STRIPS.lv.L / 2, contacts.faces.lv));
   const ends = terminalParts({ X: CORE_X, Y: CORE_Y, ins: INS_T, t: BB_T, gap: JOINT_GAP }), casing = casingPart({ L: CASE_L });
   casing.plan = { paths: casingPaths(CASE_L) };
-  const top = topEnd({ land: Math.round((8 * CORE_PITCH - (INS_T + BB_T) + 2) * 1e6) / 1e6, end: CASE_Y0 + CASE_L, y0: CASE_Y0 - 10 });      // the back of the + terminal ; the end of the casing ; the bottom end of the return busbar
-  p.parts.push(casing, ends.neg, ends.pos, ...top.parts);
+  const top = topEnd({ land: Math.round((8 * CORE_PITCH - (INS_T + BB_T) + 2) * 1e6) / 1e6, end: CASE_Y0 + CASE_L, y0: CASE_Y0 - 16 });      // the back of the + terminal ; the end of the casing ; the bottom end of the return busbar
+  const negLand = Math.round((CORE_Y + INS_T + BB_T - CORE_PITCH - 2) * 1e6) / 1e6, bottom = bottomEnd({ end: CASE_Y0, land: negLand, back: Math.round((negLand - 3) * 1e6) / 1e6, barEnd: CASE_Y0 - 16 });      // the − terminal : its copper, then its backing plate ; the return busbar ends inside the bottom lid
+  p.parts.push(casing, ends.neg, ends.pos, ...top.parts, ...bottom.parts);
   syncTwins(p, LIBRARY);
   const board = p.boards[0], twin = p.parts.find((x) => x.id === board.part);
   twin.name = "Carte de CORE 1S8P"; twin.function = "La carte de mesure du CORE, posée sur le busbar laminé : 8 températures, la tension du CORE, l'équilibrage, RS-485 isolé.";
-  p.assemblies = [moduleAssembly(), coreAssembly(twin.id, box, layout), terminalAssembly(layout), top.assembly({ x: layout.hv[0].x, z0: layout.hv[0].z0, y: contacts.faces.plus }), jointAssembly(layout)];
+  p.assemblies = [moduleAssembly(), coreAssembly(twin.id, box, layout), terminalAssembly(layout), top.assembly({ x: layout.hv[0].x, z0: layout.hv[0].z0, y: contacts.faces.plus }), bottom.assembly, jointAssembly(layout)];
   return p;
 }

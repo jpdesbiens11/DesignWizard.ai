@@ -60,6 +60,10 @@ export function downOf(key, args, project) {
   if (lv && lv.part) { const p = lv.part;
     for (const b of boards.filter((x) => x.part === p.id)) B(b, "le PCBA monté sur cette carte");
     if (!p.step) out.push({ hash: `#/drawings/${enc(p.id)}`, icon: "drawing", color: null, label: "Dessin", tip: `Descendre d'un niveau : le dessin de « ${p.name || p.id} »` });
+    /* the assembly the part goes into (JP, 22 novembre : « dans Pièces, il n'y a pas d'icône pour descendre vers l'assemblage à côté du Dessin ») —
+       the first that holds it directly ; an assembly holds many parts : its own step up does not lead back to this one */
+    const home = asms.find((x) => (x.instances || []).some((i) => i.part === p.id));
+    if (home) out.push({ hash: asmHash(home), icon: "assembly", color: "#475569", label: home.name || home.id, tip: `Descendre d'un niveau : l'assemblage « ${home.name || home.id} », où « ${p.name || p.id} » est monté` });
     out.push({ hash: `#/fea/${enc(p.id)}`, icon: "physics", color: null, label: "Simulation", tip: `Descendre d'un niveau : la simulation de « ${p.name || p.id} »` });
     if (fabPlayable(p).ok && out.length < 4) out.push({ hash: `#/fab/${enc(p.id)}`, icon: "mill", color: null, label: "Atelier de fab", tip: `Descendre d'un niveau : la gamme de « ${p.name || p.id} » jouée à l'atelier` });
   } else if (lv && lv.assembly) { const x = lv.assembly, name = x.name || x.id;

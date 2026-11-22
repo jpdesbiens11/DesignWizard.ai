@@ -40,13 +40,14 @@ test("steps down : the exact reverse of the step up — a board to its PCBA, a P
   const board = downOf("pcb", ["B1-PCB"], p); assert.equal(board[0].hash, "#/pcba/B1"); assert.equal(board[0].icon, "chip"); assert.match(board[0].tip, /Descendre d'un niveau : le PCBA monté sur cette carte/);
   assert.deepEqual(board.slice(1).map((d) => d.hash), ["#/drawings/B1-PCB", "#/fea/B1-PCB"]);
   assert.deepEqual(downOf("pcba", ["B1"], p).map((d) => d.hash), ["#/elab/B1", "#/creepage/board/B1", "#/swreq"], "the Labo of the board, its isolation alone, and the software that runs on its CPU"); assert.equal(stairOf("swreq", [], p).hash, "#/pcba/B1", "the step up of the software leads back to that board");
-  assert.deepEqual(downOf("parts", ["BRKT"], p).map((d) => d.hash), ["#/drawings/BRKT", "#/fea/BRKT", "#/fab/BRKT"], "its drawing, its simulation, its routing played in the fabrication shop");
+  assert.deepEqual(downOf("parts", ["BRKT"], p).map((d) => d.hash), ["#/drawings/BRKT", "#/assembly/TOP", "#/fea/BRKT", "#/fab/BRKT"], "its drawing, the assembly it goes into (JP, 22 novembre), its simulation, its routing played in the fabrication shop");
   assert.deepEqual(downOf("assembly", ["TOP"], p).map((d) => d.hash), ["#/assembly/SUB", "#/creepage/TOP", "#/drawings/asm/TOP"]);
   assert.deepEqual(downOf("help", [], p), []); assert.deepEqual(downOf("pcba", [], null), []); assert.ok(downOf("assembly", ["TOP"], p).length <= 4);
   // up and down answer each other
   assert.equal(stairOf("pcba", ["B1"], p).hash, "#/pcb/B1-PCB"); assert.equal(stairOf("elab", ["B1"], p).hash, "#/pcba/B1");
   assert.equal(stairOf("fea", ["BRKT"], p).hash, "#/parts/BRKT"); assert.equal(stairOf("assembly", ["SUB"], p).hash, "#/assembly/TOP");
-  for (const [key, args] of [["pcb", ["B1-PCB"]], ["pcba", ["B1"]], ["parts", ["BRKT"]]]) for (const d of downOf(key, args, p)) { const [k, ...a] = d.hash.replace(/^#\//, "").split("/"), up = stairOf(k, a, p); assert.ok(up && up.hash === `#/${key}/${args[0]}`, `${d.hash} leads back up to #/${key}/${args[0]} (${up && up.hash})`); }
+  // an assembly holds many parts : its step up does not lead back to one
+  for (const [key, args] of [["pcb", ["B1-PCB"]], ["pcba", ["B1"]], ["parts", ["BRKT"]]]) for (const d of downOf(key, args, p).filter((x) => !x.hash.startsWith("#/assembly/"))) { const [k, ...a] = d.hash.replace(/^#\//, "").split("/"), up = stairOf(k, a, p); assert.ok(up && up.hash === `#/${key}/${args[0]}`, `${d.hash} leads back up to #/${key}/${args[0]} (${up && up.hash})`); }
   const ui = read("web/js/core/stairs_ui.js"); assert.match(ui, /stair-downs/); assert.match(ui, /e\.key !== "ArrowDown"/); assert.match(ui, /\.stair-btn:not\(\.down\)/, "the cleanup of the step up leaves the steps down alone");
   assert.match(read("web/css/nav.css"), /\.stair-btn\.down::after \{ content: "↓"/); assert.match(read("web/js/modules/pcb.js"), /data-twin-of/);
 });

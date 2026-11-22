@@ -34,11 +34,12 @@ export function lidForces() {
 export function topLayout(o) {
   const S = caseSection(), G = 1.7, cav = S.cavity;
   const L = { land: o.land, end: o.end, padA: r3(o.land + G), plate0: r3(o.land + 3), tab: r3(o.end - 12), ring1: r3(o.end + 6), cap1: r3(o.end + 9), S, G, cav };
-  L.plate1 = r3(L.plate0 + 3); L.padA1 = r3(L.padA + 3); L.tab1 = r3(L.tab + 4); L.padB = r3(L.tab1 + G); L.padB1 = r3(L.padB + 3.6); L.strap1 = r3(L.padB1 + 2);
+  L.plate1 = r3(L.plate0 + 3); L.padA1 = r3(L.padA + 3); L.tab1 = r3(L.tab + 4); L.padB = r3(L.tab1 + G); L.padB1 = r3(L.padB + 3.6); L.strap1 = r3(L.padB1 + 4);
   L.lip0 = r3(L.end - 9); L.lip1 = r3(L.lip0 + 3); L.arm1 = r3(L.lip1 + 3);
   L.tabTop = 40; L.bar = { x0: r3(S.xm - RETURN.w / 2), x1: r3(S.xm + RETURN.w / 2), z0: r3(S.channel.z0 + 0.5), z1: r3(S.channel.z1 - 0.5) };
+  /* the cam shaft stands aside : the shunt, 40 mm wide, comes down in the middle */
   L.springs = { plate: [[8, 5], [84.8, 5], [8, 44], [84.8, 44]], padA: [[30, 73], [62, 73]], padB: [[61, 4], [61, 22]] };
-  L.shaft = [S.xm, 56]; L.stripA = { x: S.xm, z: 73 }; L.stripB = { x: 61.4, z0: -5 };
+  L.shaft = [20, 56]; L.stripA = { x: S.xm, z: 73 }; L.stripB = { x: 61.4, z0: -5 };
   return L;
 }
 
@@ -49,12 +50,12 @@ export function returnBar(L, o) {
     bodies: { main: { material: "CU-C110", kind: "conductor", net: "PACK+", label: "Busbar de retour" } },
     features: [box("barre", "Barre dans le canal du boîtier", "main", [B.x0, o.y0, B.z0], [RETURN.w, L.tab1 - o.y0, RETURN.t]),
       box("languette", "Languette relevée au bout haut — la plage du contact B", "main", [B.x0, L.tab, B.z0], [RETURN.w, RETURN.t, L.tabTop - B.z0]),
-      { op: "cylinder", id: "trou_bas", name: "Trou de la liaison au contacteur (M10, exemple)", body: "main", mode: "cut", d: 10.5, h: 10, at: [L.S.xm, r3(o.y0 + 9), r3(B.z0 - 1)], axis: "Z" }],
+      { op: "cylinder", id: "trou_bas", name: "Trou de la liaison au contacteur (M10, exemple)", body: "main", mode: "cut", d: 10.5, h: 10, at: [41.4, r3(o.y0 + 4.5), r3(B.z0 - 1)], axis: "Z" }],
     interfaces: [],
     function: "Ramène le courant du module, 360 A, du bout + au couvercle du fond, le long du boîtier, dans son canal fermé ; au bout haut, sa languette reçoit le contact B du couvercle du haut.",
     notes: [`Cuivre C110 de ${RETURN.w} × ${RETURN.t} mm, dimensionné par le modèle « busbar » de l'outil (calcul gardé dans le projet) ; plié à 90° au bout haut — rayon intérieur d'au moins une épaisseur (exemple), non dessiné.`,
       "Argenté sur la plage de la languette, là où appuie la bande à lamelles du contact B ; nu ailleurs, isolé par le boîtier (paroi de 2,5 mm de PC).",
-      "Le bout bas se boulonne au contacteur du couvercle du fond (itération 11 b) : trou Ø10,5 pour une vis M10, exemple.",
+      "Le bout bas se boulonne à la barre du contacteur, dans le couvercle du fond : trou Ø10,5 pour une vis M10, exemple.",
       "Une pièce de spécialiste (busbar) : elle ne se joue pas dans l'atelier de fab."] };
 }
 
@@ -112,13 +113,13 @@ export function bridgePart(L) {
   return { dw: "part/1", id: "BM-BRIDGE", name: "Pont de contact du couvercle du haut", family: "busbar", process: "purchased", material: "CU-C110", revision: "A", params: {},
     bodies: { plotA: { ...net, label: "Plot A — sur la borne +" }, tresse: { ...net, label: "Shunt souple (feuillards de cuivre laminés)" }, plotB: { ...net, label: "Plot B — sur le busbar de retour" } },
     features: [box("plot_a", "Plot A, face à la plage de la borne +", "plotA", [24, L.padA, 66.5], [45, 3, 13]),
-      box("plot_b", "Plot B, face à la languette du busbar de retour", "plotB", [52, L.padB, -8], [18, L.padB1 - L.padB, 46]), box("plot_b_haut", "Plot B, talon du shunt", "plotB", [56, L.padB1, 30], [12, 2, 8]),
-      box("shunt_h", "Shunt souple — le long du couvercle", "tresse", [56, L.plate0 + 0.25, 63], [12, L.strap1 - L.plate0 - 0.25, 3.5]),
-      box("shunt_v", "Shunt souple — la descente vers le plot B", "tresse", [56, L.padB1, 34], [12, 2, 32.5])],
+      box("plot_b", "Plot B, face à la languette du busbar de retour", "plotB", [30, L.padB, -8], [40, L.padB1 - L.padB, 46]), box("plot_b_haut", "Plot B, talon du shunt", "plotB", [30, L.padB1, 30], [40, 4, 4]),
+      box("shunt_h", "Shunt souple, 40 × 4 mm — le long du couvercle", "tresse", [30, L.plate0 + 0.25, 62.5], [40, L.strap1 - L.plate0 - 0.25, 4]),
+      box("shunt_v", "Shunt souple, 40 × 4 mm — la descente vers le plot B", "tresse", [30, L.padB1, 34], [40, 4, 32.5])],
     interfaces: [],
     function: "Ferme la boucle du courant du module quand le couvercle est verrouillé : le plot A presse la plage de la borne +, le plot B la languette du busbar de retour, chacun sur sa bande à lamelles et ses ressorts ; un shunt souple les relie.",
     notes: ["Deux plots, deux jeux de ressorts : la position de la borne + dépend des tolérances des 8 joints (± 0,05 mm chacun), celle de la languette du boîtier — chaque plot trouve sa face, à la hauteur de travail de sa bande (1,5 à 1,9 mm).",
-      "Shunt souple : un empilage de feuillards de cuivre soudés à leurs bouts (soudure par diffusion, usage des busbars souples), d'une section au moins égale à celle du busbar de retour (exemple, à confirmer par l'échauffement).",
+      "Shunt souple de 40 × 4 mm (160 mm²) : un empilage de feuillards de cuivre soudés à leurs bouts (soudure par diffusion, usage des busbars souples). 160 mm² est ce que le modèle « busbar » de l'outil demande pour 360 A sous 60 °C — barre seule à l'air libre : prudent ici, où le shunt est court et boulonné à des pièces plus grosses.",
       "Une pièce de spécialiste : elle ne se joue pas dans l'atelier de fab."] };
 }
 

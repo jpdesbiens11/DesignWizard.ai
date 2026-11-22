@@ -493,6 +493,38 @@ appuis ; tous les conducteurs de la boucle sur PACK+. **Le module compte 222 pi�
 la came ; les nervures du couvercle et leur simulation ; l'échauffement du pont et du shunt à 360 A ; la tenue des vis ; un essai
 du latch.
 
+## Itération 11 b — le couvercle du fond : connecteur d'échange, contacteur, volume du BMS central, barres de 40 × 4 mm
+
+Demande de JP (22 novembre) : « celui du fond aura le connecteur LV et HV qui se connecte quand le BM est swappé dans sa cavité
+d'installation ou la station de recharge, et contient aussi [peut-être] la carte BMS principale, et le contacteur interne du BM ».
+Source : `web/js/demo/demo_bm_bottom.js` ; essais : `tests/node/bm_bottom.test.mjs`.
+
+- **L'anneau d'interface du fond** (`BM-LID-RING-BOT`, aluminium 6061-T6 usiné dans une plaque de 6 mm) se visse au boîtier ; un
+  passage laisse sortir le busbar de retour ; quatre **pattes intérieures** reçoivent quatre **entretoises** (`BM-POST`, aluminium,
+  pièces à part) qui portent la poussée de la pile — la réaction des ressorts du couvercle du haut, 690 N — de la plaque d'appui
+  de la borne − à l'anneau. D'un seul bloc, l'anneau aurait été usiné dans une plaque de 30 mm, 93 % de copeaux : l'outil l'a
+  signalé, les entretoises sont devenues des pièces à part.
+- **Le logement** (`BM-LID-BOT`, PA66-GF30, coque de 2,5 mm avec congés : l'outil avait signalé une pièce massive puis des angles
+  intérieurs vifs) porte, sur sa face du bas, le **connecteur d'échange** (`BM-SWAP-CONN`) — une enveloppe générique à engagement
+  aveugle, deux broches HV de Ø12 et six broches LV (CAN, réveil 12 V, masse LV, boucle HVIL) : aucune série n'est choisie ni
+  recopiée —, et dedans le **contacteur** (`BM-CONTACTOR`, enveloppe générique sur le pôle +, deux bornes M10 ; rien de sa fiche n'a
+  été lu) et le **volume réservé à la carte BMS centrale** (`BM-BMS-BOARD`).
+- **Ce que l'outil a fait voir** : à 360 A, des barres de 3 × 10 mm (30 mm²) monteraient bien au-delà de 60 °C ; le modèle
+  « busbar » de l'outil demande **160 mm², soit 40 × 4 mm** (barre seule à l'air libre : prudent pour des barres courtes boulonnées).
+  Les trois barres du fond (`BM-LID-STRAPS` : busbar de retour → contacteur, contacteur → broche HV+, borne − → broche HV−) et le
+  **shunt souple du pont du haut** sont passés à 40 × 4 mm ; l'arbre de la came s'est décalé pour laisser descendre le shunt.
+- **Le BMS central (« peut-être »)** : avec un contacteur de 360 A et des barres de 40 × 4 mm, il reste une carte de **30 × 48 mm**
+  dans un couvercle de 56 mm de profondeur — trop petit pour une carte BMS complète. À décider : un couvercle plus profond, une carte
+  ailleurs (contre une paroi du boîtier), ou une carte en deux.
+
+**Vérifié par les essais** : toutes les pièces se construisent ; l'anneau, les entretoises et le logement passent leurs règles DFx
+sans avertissement ; **aucune interférence** au bout bas (anneau, entretoises, logement, connecteur, contacteur, carte, barres,
+busbar de retour, borne −, boîtier, CORE 1) ; chaque entretoise entre la plaque d'appui et l'anneau ; le chemin de puissance (PACK+ →
+contacteur → HV+, PACK− → HV−) et ses potentiels ; le connecteur sort de la face du bas. **Le module compte 232 pièces.**
+
+**Pas fait** : le choix du connecteur, du contacteur, de la précharge ; la carte BMS et ses fils (chaîne RS-485, seconde
+terminaison, CAN, bobine, HVIL) ; la cavité ou la station ; l'échauffement réel du module fermé.
+
 ## Ce qu'il contient
 
 | Élément | Ce que c'est | Où |
@@ -513,7 +545,8 @@ du latch.
 | Bornes du module | `BM-TERM-NEG` (avec ses contacts, `BM-TERM-NEG-ASM`) et `BM-TERM-POS` : cuivre, plaque d'appui, îlots LV, goujons vers les couvercles (itération 10) | Pièces ; Assemblage |
 | Busbar de retour | `BM-RETURN-BB` : cuivre 50 × 4 mm dans le canal du boîtier, sa languette relevée au bout haut (itération 11 a) | Pièces |
 | Couvercle du haut | `BM-LID-TOP-ASM` : anneau d'interface en aluminium, couvercle, came quart de tour, plaque de pression, huit ressorts, pont de contact et ses deux bandes (itération 11 a) | Assemblage |
-| BM 8s8p - 21700 | `BM-8S8P-ASM` : 8 CORE côte à côte, tous dans le même sens, la borne − avant le CORE 1, la borne + après le CORE 8, le boîtier autour, le busbar de retour, le couvercle du haut — 222 pièces | Assemblage |
+| Couvercle du fond | `BM-LID-BOT-ASM` : anneau d'interface en aluminium et ses quatre entretoises, logement, connecteur d'échange, contacteur, volume de la carte BMS centrale, barres de 40 × 4 mm (itération 11 b) | Assemblage |
+| BM 8s8p - 21700 | `BM-8S8P-ASM` : 8 CORE côte à côte, tous dans le même sens, la borne − avant le CORE 1, la borne + après le CORE 8, le boîtier autour, le busbar de retour, les deux couvercles — 232 pièces | Assemblage |
 
 ## La géométrie, telle que dessinée
 
@@ -540,8 +573,7 @@ modèle simple. Les pièces sont posées à leur place (« fixe »), sans accoup
 CTN ↔ busbar ne sont pas encore des interfaces appariées, d'où les « interfaces sans jumelle » que l'écran signale.
 
 **Pas encore dessiné** : les languettes de soudure minces (les bossages en tiennent la place) ; le chant du cuivre aux
-petits bouts, nu ; la dépouille du support de cellules ; le couvercle du fond, le contacteur, le connecteur de la cavité ; le BMS
-central, ses connecteurs et le faisceau RS-485.
+petits bouts, nu ; la dépouille du support de cellules ; la carte BMS centrale et ses fils, la précharge, la cavité ou la station.
 
 **Non vérifié** : l'échauffement réel du cuivre dans le module fermé (le modèle est une barre seule à l'air libre) ; la
 chaleur des cellules elles-mêmes à 45 A (la fiche donne ≤ 8 mΩ à 1 kHz à l'expédition, pas la résistance en courant
