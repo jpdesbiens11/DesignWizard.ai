@@ -40,8 +40,8 @@ Trois façons de rejouer un exemple :
 
 ## Où l'on en est
 
-**18 des 25 modèles** ont au moins un exemple publié rejoué — 27 cas, dont 25 lus sur la page de leur source.
-Sans cas : `spring_stop`, `junction_temperature`, `heatsink_natural`, `heatsink_forced`, `lumped_mass`, `pcb_trace`, `adiabatic_pulse`.
+**18 des 26 modèles** ont au moins un exemple publié rejoué — 27 cas, dont 25 lus sur la page de leur source.
+Sans cas : `spring_stop`, `louvre_strip`, `junction_temperature`, `heatsink_natural`, `heatsink_forced`, `lumped_mass`, `pcb_trace`, `adiabatic_pulse`.
 
 ## Structure
 
@@ -152,6 +152,10 @@ Sans cas : `spring_stop`, `junction_temperature`, `heatsink_natural`, `heatsink_
 ### Spring contact · to its stop — Contact à lames pressé jusqu'à sa butée
 
 **Aucun cas.** Aucun exemple publié n'a encore été rejoué. La partie élastique est la poutre bi-encastrée chargée en son milieu ; au-delà, la courbe qui rejoint la charge de ruine est une forme choisie par l'outil, pas une solution exacte ; la résistance de contact est l'estimation de Holm. Un essai d'écrasement sur une couronne réelle doit la recaler.
+
+### Louvre strip · flat joint — Bande de contact à lamelles entre deux faces planes
+
+**Aucun cas.** Aucun exemple chiffré publié n'a encore été rejoué : les règles sont celles que les fabricants impriment (n = longueur / pas, R = Rk / n, I = n × I d'une lamelle) ; le catalogue d'un cadre porte-lamelles (Stäubli ClipLam) imprime des joints entiers — 400 A et 50 µΩ, 800 A et 25 µΩ, 1600 A et 13 µΩ — sans dire le nombre de lamelles de chacun.
 
 ## Fluides
 
@@ -294,7 +298,7 @@ Les exemples en unités impériales sont convertis : 1 in = 25,4 mm ; 1 lbf = 4,
 
 ## Ce qui n'est pas fait
 
-- 7 modèles n'ont aucun cas (voir plus haut) ; la plaque n'est recoupée que par ses coefficients.
+- 8 modèles n'ont aucun cas (voir plus haut) ; la plaque n'est recoupée que par ses coefficients.
 - Aucun cas ne vient d'un **essai** : ce sont des exemples de manuels, résolus par leurs auteurs avec les mêmes théories.
 - Les sources sont des pages publiques ; les manuels cités par les modèles (Roark, Shigley, Incropera, White) n'ont pas été ouverts.
 - La simulation n'a que quatre cas, tous sur des barreaux : voir `docs/SIMULATION.md` pour ses recoupements internes.

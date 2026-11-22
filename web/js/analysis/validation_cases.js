@@ -145,5 +145,6 @@ export const NONE = {
   lumped_mass: "Aucun exemple publié n'a encore été rejoué.",
   pcb_trace: "La norme IPC-2221 n'est pas en lecture libre, et aucun exemple publié n'a encore été rejoué.",
   adiabatic_pulse: "Aucun exemple publié n'a encore été rejoué.",
+  louvre_strip: "Aucun exemple chiffré publié n'a encore été rejoué : les règles sont celles que les fabricants impriment (n = longueur / pas, R = Rk / n, I = n × I d'une lamelle) ; le catalogue d'un cadre porte-lamelles (Stäubli ClipLam) imprime des joints entiers — 400 A et 50 µΩ, 800 A et 25 µΩ, 1600 A et 13 µΩ — sans dire le nombre de lamelles de chacun.",
   spring_stop: "Aucun exemple publié n'a encore été rejoué. La partie élastique est la poutre bi-encastrée chargée en son milieu ; au-delà, la courbe qui rejoint la charge de ruine est une forme choisie par l'outil, pas une solution exacte ; la résistance de contact est l'estimation de Holm. Un essai d'écrasement sur une couronne réelle doit la recaler.",
 };

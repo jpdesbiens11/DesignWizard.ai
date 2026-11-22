@@ -52,7 +52,9 @@ export function coreLaminate(o) {
     box("jambe_moins", "Jambe − (flanc −Y, contact série)", "moins", ["e", "-(ins + t)", `-${under}`], [len, "t", `H - z0 + ${under}`]),
     // the film outside : on the top (under the board) and under the bottom (on the flex) ; the outer faces of the legs stay bare — the series contact
     box("film_haut", "Enveloppe du dessus", "enveloppe", ["e", 0, "H + ins + t"], [len, "Y + ins + t", "w"]),
-    box("film_bas", "Enveloppe du dessous", "enveloppe", ["e", "-(ins + t)", `-(${under} + t + w)`], [len, "Y + ins + t", "w"])];
+    box("film_bas", "Enveloppe du dessous", "enveloppe", ["e", o.round ? `-(ins + t) + ${o.round + 0.1}` : "-(ins + t)", `-(${under} + t + w)`], [len, o.round ? `Y + ins + t - ${o.round + 0.1}` : "Y + ins + t", "w"])];
+  /* iteration 9 : the outer edge of the − conductor's bend, rounded — a bent busbar has one ; the tails of the flex wrap it, up the face of the − leg */
+  if (o.round) features.push({ op: "fillet", id: "arrondi_moins", name: "Arrondi du pli du conducteur − (où passent les queues du flex)", body: "moins", r: o.round, edges: [{ dir: "X", near: [o.X / 2, -(INS_T + o.t), -(o.floor + o.t)], tol: 0.5 }] });
   for (const c of cells) features.push(
     cyl(`fenetre_${c.n}`, `Fenêtre du papier — calotte + de ${c.n}`, "aramide", [c.x, c.y, "H - 0.5"], "cap", "ins + 1", "cut"),
     cyl(`bossage_${c.n}`, `Bossage de soudure + de ${c.n}`, "plus", [c.x, c.y, "H"], "pj", "ins"),

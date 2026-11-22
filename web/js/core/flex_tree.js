@@ -3,7 +3,7 @@
    a tongue that slips into a clipped slot, or bare pads. A rigid board can sit on the core or under it — the usual case :
    the core is the layer under a rigid board, and its branches run to the measuring points of the product.
    def = { name, t, cu, r, layers, gap, core: { L, W }, rigid: { side: "over" | "under", t } | null,
-           branches: [{ id, edge: "+X" | "-X" | "+Y" | "-Y", at (along that edge, mm), w, legs: [{ L, bend: 90 | -90 }],
+           branches: [{ id, edge: "+X" | "-X" | "+Y" | "-Y", at (along that edge, mm), w, legs: [{ L, bend: 90 | -90 }], r (its own bend radius ; default def.r),
                         end: "temp" | "volt" | "slot" | "free", net, on, tracks, side, tabW (the width of a voltage tab) }],
            spots: [{ id, x, y (on the core, from its corner), end: "temp" | "volt", net, on, side }] (optional) }
    A spot sits on the core itself, on the face toward what it watches (side +1 : the top) : a thermistor pressed on its target through
@@ -38,7 +38,7 @@ export const isTree = (def) => !!(def && def.core && Array.isArray(def.branches)
 export const tracksOf = (b) => Math.max(1, Math.round(b.tracks || (ENDS[b.end] || ENDS.free).tracks));
 /** The width a branch needs for its tracks. */
 export const widthNeeded = (def, b) => r2(tracksOf(b) * TRACK + (tracksOf(b) - 1) * (def.gap || 0.3) + 2 * EDGE);
-const strip = (def, b, extra = {}) => ({ t: def.t, r: def.r, legs: b.legs.map((g, i) => (i ? { ...g } : { ...g, L: (Number(g.L) || 0) + ROOT })), ...extra });
+const strip = (def, b, extra = {}) => ({ t: def.t, r: b.r ?? def.r, legs: b.legs.map((g, i) => (i ? { ...g } : { ...g, L: (Number(g.L) || 0) + ROOT })), ...extra });
 /** The geometry of a branch : its legs in its own frame (x away from the core, z up), and how that frame sits in the model.
     → { legs, model(lx, across, lz) → [x, y, z], dir([dx, dz]) → unit vector of the model, plane ("XZ" | "YZ"), at (where its width starts), poly(profile) } */
 export function branchFrame(def, b) {
@@ -76,7 +76,7 @@ export function treeChecks(def) {
     if (b.w < need - 1e-9) say("bad", `${b.id} : ${n} piste(s) demandent ${fr(need)} mm de large — la branche n'en fait que ${fr(b.w)}.`, b.id, "w");
     if (b.at - b.w / 2 < -1e-9 || b.at + b.w / 2 > span + 1e-9) say("bad", `${b.id} : elle dépasse le bord ${b.edge} du cœur (${fr(span)} mm de long).`, b.id, "at");
     legs.forEach((g, i) => { if (g.to - g.from < 3 + (i ? 0 : 1)) say("bad", `${b.id} : sa partie ${i + 1} (${fr(b.legs[i].L)} mm) est trop courte entre ses plis.`, b.id, `leg${i}`); });
-    if (b.legs.length > 1 && def.r < rMin - 1e-9) say("bad", `${b.id} : rayon de pli de ${fr(def.r)} mm pour ${fr(def.t)} mm d'épaisseur — au moins ${ratio} × l'épaisseur = ${fr(rMin)} mm (${DYNAMIC_RATIO} × si la branche fléchit en service).`, b.id, "r");
+    if (b.legs.length > 1 && (b.r ?? def.r) < rMin - 1e-9) say("bad", `${b.id} : rayon de pli de ${fr(b.r ?? def.r)} mm pour ${fr(def.t)} mm d'épaisseur — au moins ${ratio} × l'épaisseur = ${fr(rMin)} mm (${DYNAMIC_RATIO} × si la branche fléchit en service).`, b.id, "r");
     if (b.end === "volt" && !b.net) say("todo", `${b.id} : dites quel potentiel cette prise ramène (S1+, HV−…).`, b.id, "net");
     if (b.end === "slot" && legs.at(-1).to - legs.at(-1).from < 6) say("check", `${b.id} : moins de 6 mm de plat au bout pour la languette et son raidisseur.`, b.id, `leg${b.legs.length - 1}`);
     (byEdge[b.edge] = byEdge[b.edge] || []).push(b);
@@ -108,7 +108,7 @@ export function treePart(def, id, before = null) {
     if (!EDGES[b.edge] || !(b.w > 0) || !b.legs.length) return;
     const F = branchFrame(def, b), n = tracksOf(b), body = b.id.toLowerCase(), net = b.end === "volt" ? b.net || b.id : b.id, tw = r2(Math.min(b.w - 2 * EDGE, n * TRACK + (n - 1) * (def.gap || 0.3))), label = `${b.id} — ${(ENDS[b.end] || ENDS.free).label.toLowerCase()}`;
     features.push({ op: "extrude", id: `film_${body}`, name: `Branche ${label}`, profile: F.poly(stripProfile(strip(def, b))), plane: F.plane, at: F.at, length: b.w });
-    if (tw > 0.05) { const core = F.poly(stripProfile(strip(def, b, { t: def.cu, r: def.r + (def.t - def.cu) / 2, zc: def.t / 2 }))), at = r2(b.at - tw / 2);
+    if (tw > 0.05) { const core = F.poly(stripProfile(strip(def, b, { t: def.cu, r: (b.r ?? def.r) + (def.t - def.cu) / 2, zc: def.t / 2 }))), at = r2(b.at - tw / 2);
       bodies[body] = { material: "CU-C110", net, kind: "conductor", label: `${b.id} ${net}` };
       features.push({ op: "extrude", id: `lit_${body}`, mode: "cut", profile: core, plane: F.plane, at, length: tw }, { op: "extrude", id: `piste_${body}`, name: `Pistes de ${b.id} (${n}) — ${net}`, body, profile: core, plane: F.plane, at, length: tw }); }
     const side = b.side === -1 ? -1 : 1, K = SENSOR_KINDS[b.end], on = b.on || (b.end === "volt" ? "Busbar ou borne de cellule" : b.end === "temp" ? "Ce qu'elle surveille" : b.end === "slot" ? "Fente du support" : "Fils ou composant");

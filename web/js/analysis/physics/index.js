@@ -19,7 +19,7 @@ export const DOMAINS = [{ id: "structure", label: "Structure", color: "#2563eb",
   { id: "electrical", label: "Électrique", color: "#b45309", icon: "power", hint: "Le courant passe sans brûler ?" }];
 /* the few words of a model on its tile : the long title and the question come once it is chosen */
 const SHORT = { beam_cantilever_point: "Cantilever · end load", beam_cantilever_udl: "Cantilever · distributed load", beam_simple_point: "Two supports · center load", beam_simple_udl: "Two supports · distributed load",
-  column_buckling: "Column buckling", shaft_torsion: "Shaft torsion", plate_pressure: "Plate under pressure", thermal_mismatch: "Thermal mismatch", bolted_joint: "Bolted joint", press_fit: "Press fit", dowel_pin: "Dowel pin · shear", spring_stop: "Spring contact · to its stop",
+  column_buckling: "Column buckling", shaft_torsion: "Shaft torsion", plate_pressure: "Plate under pressure", thermal_mismatch: "Thermal mismatch", bolted_joint: "Bolted joint", press_fit: "Press fit", dowel_pin: "Dowel pin · shear", spring_stop: "Spring contact · to its stop", louvre_strip: "Louvre strip · flat joint",
   pipe_flow: "Tube · pressure loss", orifice_flow: "Calibrated orifice", conduction_stack: "Wall · conduction", junction_temperature: "Junction temperature", heatsink_natural: "Fins · natural convection", heatsink_forced: "Fins · forced convection",
   lumped_mass: "Thermal mass", busbar: "Busbar", pcb_trace: "PCB trace", adiabatic_pulse: "Current pulse" };
 export const shortTitle = (m) => (m ? SHORT[m.id] || m.title : "");

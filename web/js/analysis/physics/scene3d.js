@@ -100,6 +100,11 @@ const SCENES = {
     for (let k = 0; k < n; k++) { const q = 2 * Math.PI * k / n, c = Math.cos(q), s = Math.sin(q), at = (r, z) => [r * c, r * s, z], r0 = R - l / 2, r1 = R + l / 2; G.cyl(at(r0, t / 2), at(R, lift), Math.max(t, w / 4) / 2, C.second); G.cyl(at(R, lift), at(r1, t / 2), Math.max(t, w / 4) / 2, C.second); }
     G.box([0, 0, hs + 0.5], [2 * out + 4, 2 * out + 4, 1], C.second, 0.3); G.arrow([0, 0, hs + 1 + 2 * l], [0, 0, -1]); G.arrow([-out - 4, 0, 0], [1, 0, 0], C.current);
     G.label([0, -out, hs], `${n} lames ${G.dims([l, w, t])} · levée ${G.q(lift, "mm")} → butée ${G.q(hs, "mm")}`); G.label([-out - 4, 0, 0], `I = ${n1(P(i.I, 0))} A`); },
+  louvre(G, i) { const ns = Math.max(1, Math.min(20, Math.round(P(i.strips, 2)))), L = P(i.L, 40), p = Math.max(0.3, P(i.p, 3.5)), h = Math.max(0.2, P(i.h, 1.7)), w = 12, gap = 6, per = Math.max(0, Math.floor(L / p + 1e-9)), W = ns * w + (ns - 1) * gap + 8;
+    G.box([0, 0, -1], [W, L + 8, 2], C.second); G.box([0, 0, h + 1], [W, L + 8, 2], C.second, 0.3);
+    for (let s = 0; s < ns; s++) { const x0 = -W / 2 + 4 + w / 2 + s * (w + gap); for (let k = 0; k < Math.min(per, 80); k++) { const y = -L / 2 + p / 2 + k * p; for (const dx of [-w / 2 + 1, 0, w / 2 - 1]) G.cyl([x0 + dx, y - 0.3 * p, 0], [x0 + dx, y + 0.3 * p, h], Math.min(0.25, p / 10), C.current); } }
+    G.arrow([-W / 2 - 6, 0, 0], [1, 0, 0], C.current); G.arrow([0, 0, h + 4 + L / 4], [0, 0, -1]);
+    G.label([0, -L / 2 - 4, 0], `${ns} × ${per} lamelles au pas de ${G.q(p, "mm")} · bandes de ${G.q(L, "mm")}`); G.label([0, 0, h + 2], `hauteur ${G.q(h, "mm")} · I = ${n1(P(i.I, 0))} A`); },
   pulse(G, i) { const r = Math.sqrt(P(i.A, 2.5) / Math.PI), L = 14 * r; G.cyl([0, 0, 0], [L, 0, 0], r, C.second); G.arrow([0, 0, 0], [1, 0, 0], C.current); G.arrow([L + 5 * r, 0, 0], [1, 0, 0], C.current); G.gem([L / 2, 0, r], C.hot);
     G.label([L / 2, 0, -r], `section ${G.q(P(i.A, 2.5), "mm²")} (${G.dia(2 * r)} équivalent)`); G.label([0, 0, r], `I = ${n1(P(i.I, 0))} A pendant ${n1(P(i.time, 0))} s`); },
 };

@@ -184,4 +184,46 @@ const springStop = { id: "spring_stop", domain: "joints", sketch: "spring", titl
     return S.set({ F, Fb, set, R: R * 1e6, ds, dy, k, Fy, Fp, Rc: Rc * 1e6, Rb: Rb * 1e6, dU: R * i.I * 1e3, P: R * i.I * i.I, iMax, J, dsMax, FbMin });
   } };
 
-export const JOINTS = [bolt, pressfit, pin, springStop];
+/* A louvred contact strip between two flat faces (JP, 21 novembre 2026 : « fais-les en lamelles unidirectionnelles, en te basant sur un cas réel
+   de l'industrie ») : the rules the makers print, nothing more — n louvres = length / pitch, the joint resistance Rk / n, the joint current n ×
+   the current of a louvre (The MULTILAM Principle, Multi-Contact AG 2011, p. 13) ; the drop and its classes (p. 9 : < 5 mV very good, 5–12 good,
+   13–25 usable) ; the 12.5 mV limit of a rated current (Stäubli fork plugs catalogue, US, p. 10) ; the derating of the mating metal (Weftron
+   LOUVER_tron datasheets, p. 2 : Cu 1, E-Al 0.75, CuZn39Pb3 0.60) ; the working height range of a strip (Weftron 112, p. 2 : 1.5–1.9 mm). The
+   values of a louvre are those of a maker's sheet, typed with their source : the model does not invent them. */
+const STRIP = "Bande à lamelles", SHEET = "Fiche de la bande (fabricant)", JOINT = "Joint et courant";
+const MATES = { cu: { k: 1, label: "Cuivre argenté (1)" }, al: { k: 0.75, label: "Aluminium E-Al (0,75)" }, brass: { k: 0.6, label: "Laiton CuZn39Pb3 (0,60)" } };
+const louvreStrip = { id: "louvre_strip", domain: "joints", sketch: "louvre", title: "Louvred contact strip between two flat faces", fr: "Bande de contact à lamelles entre deux faces planes",
+  question: "Combien de lamelles faut-il pour porter le courant, avec quelle chute de tension, et la hauteur tenue reste-t-elle dans la plage de la bande ?",
+  inputs: [num("strips", "Nombre de bandes dans le joint", "", 2, 1, 20, 1, STRIP), num("L", "Longueur d'une bande", "mm", 40, 2, 1000, 0.5, STRIP),
+    num("p", "Pas des lamelles", "mm", 3.5, 0.3, 10, 0.05, SHEET), num("Il", "Courant assigné d'une lamelle", "A", 40, 0.01, 500, 0.5, SHEET),
+    num("Rl", "Résistance de contact d'une lamelle", "µΩ", 300, 1, 100000, 1, SHEET), num("Fl", "Effort de contact d'une lamelle", "N", 7, 0.05, 200, 0.1, SHEET),
+    num("hMin", "Hauteur de travail la plus basse de la bande", "mm", 1.5, 0.1, 20, 0.05, SHEET), num("hMax", "Hauteur de travail la plus haute de la bande", "mm", 1.9, 0.1, 20, 0.05, SHEET),
+    opt("mate", "Matière de la face d'en face (déclassement)", "cu", Object.entries(MATES).map(([k, v]) => ({ value: k, label: v.label })), JOINT),
+    num("h", "Hauteur tenue par les butées (l'écart entre les deux faces)", "mm", 1.7, 0.1, 20, 0.01, JOINT), num("tol", "Tolérance sur cette hauteur (±)", "mm", 0.05, 0, 2, 0.01, JOINT),
+    num("I", "Courant porté par le joint", "A", 360, 0, 1e5, 1, JOINT), num("Umax", "Chute de tension admise", "mV", 12.5, 0.1, 100, 0.1, CRIT)],
+  outputs: [out("n", "Nombre de lamelles du joint", ""), out("Irat", "Courant assigné du joint (déclassé)", "A"), out("R", "Résistance du joint", "µΩ"), out("dU", "Chute de tension", "mV"), out("P", "Pertes", "W"),
+    out("F", "Effort pour fermer le joint", "N"), out("use", "Part du courant assigné utilisée", "%"), out("hLo", "Hauteur la plus basse (tolérance comprise)", "mm"), out("hHi", "Hauteur la plus haute (tolérance comprise)", "mm")],
+  assumptions: ["Une lamelle par pas : n = nombre de bandes × partie entière de (longueur / pas) (The MULTILAM Principle, p. 13).",
+    "Les lamelles sont en parallèle : R = Rk / n, I assigné = n × I d'une lamelle (même page) ; déclassé par la matière d'en face (fiches LOUVER_tron, p. 2).",
+    "Chute de tension ΔU = R I : moins de 5 mV très bon, 5 à 12 bon, 13 à 25 utilisable (The MULTILAM Principle, p. 9) ; 12,5 mV est la limite qu'un fabricant prend pour son courant assigné (catalogue des fiches à fourche, p. 10).",
+    "Effort pour fermer le joint : n × l'effort d'une lamelle — celui que les plaques de bout doivent fournir au moins ; les butées prennent le reste.",
+    "La hauteur tenue par les butées, tolérance comprise, doit rester dans la plage de travail de la bande (fiche LOUVER_tron 112, p. 2 : 1,5 à 1,9 mm)."],
+  validity: "Valeurs d'une lamelle lues sur la fiche du fabricant, contre du cuivre argenté propre, rugosité N6, à 20 °C (The MULTILAM Principle, p. 13) : la tenue en température, l'usure et le nombre de manœuvres se lisent sur la fiche du type choisi ; un essai sur le joint réel fait foi.",
+  reference: "Multi-Contact AG (Stäubli), The MULTILAM Principle, 2011, p. 9, 13, 16 ; Stäubli, Fork plug connectors (US), p. 10 ; Weftron, LOUVER_tron 112, p. 2 — pages publiques lues",
+  compute(i) {
+    const S = sheet(), nb = Math.max(1, Math.round(i.strips)), per = Math.floor(i.L / i.p + 1e-9), nl = nb * per, k = (MATES[i.mate] || MATES.cu).k, Irat = nl * i.Il * k, R = nl ? i.Rl / nl : 1e9;      // no louvre : the joint does not conduct — a resistance that says so, not an infinity
+    const dU = R * 1e-6 * i.I * 1e3, P = R * 1e-6 * i.I * i.I, F = nl * i.Fl, hLo = i.h - Math.max(0, i.tol || 0), hHi = i.h + Math.max(0, i.tol || 0);
+    S.step(`Lamelles : ${nb} bande(s) × ⌊${n(i.L)} / ${n(i.p)}⌋ = ${nb} × ${per} = ${nl} lamelles en parallèle.`);
+    S.step(`Courant assigné : n × I d'une lamelle × déclassement = ${nl} × ${n(i.Il)} × ${n(k)} = ${n(Irat)} A ; le joint en porte ${n(i.I)} A, soit ${n(i.I / Irat * 100)} %.`);
+    S.step(`Résistance : Rk / n = ${n(i.Rl)} / ${nl} = ${n(R)} µΩ ; chute ΔU = R I = ${n(dU)} mV (${dU < 5 ? "très bon" : dU <= 12 ? "bon" : dU <= 25 ? "utilisable" : "au-delà de ce que la fiche classe"}), pertes P = R I² = ${n(P)} W.`);
+    S.step(`Effort pour fermer le joint : n × F d'une lamelle = ${nl} × ${n(i.Fl)} = ${n(F)} N — au moins ce que la compression du module doit fournir.`);
+    S.step(`Hauteur : ${n(i.h)} ± ${n(i.tol)} mm, soit ${n(hLo)} à ${n(hHi)} mm, pour une bande qui travaille de ${n(i.hMin)} à ${n(i.hMax)} mm.`);
+    if (per < 1) S.warn("La bande est plus courte qu'un pas : aucune lamelle.");
+    S.check("Courant du joint vs courant assigné", i.I, Irat, "A");
+    S.check("Chute de tension vs chute admise", dU, i.Umax, "mV");
+    S.check("Hauteur la plus basse vs plage de la bande", hLo, i.hMin, "mm", { min: true, note: hLo < i.hMin ? "La bande serait écrasée au-delà de sa plage : une butée plus haute." : "" });
+    S.check("Hauteur la plus haute vs plage de la bande", hHi, i.hMax, "mm", { note: hHi > i.hMax ? "Les lamelles ne toucheraient plus assez : une butée plus basse." : "" });
+    return S.set({ n: nl, Irat, R, dU, P, F, use: Irat > 0 ? i.I / Irat * 100 : 999, hLo, hHi });
+  } };
+
+export const JOINTS = [bolt, pressfit, pin, springStop, louvreStrip];

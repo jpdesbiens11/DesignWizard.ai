@@ -321,6 +321,67 @@ Choix de JP, par menu (21 novembre) : **« Couronne sertie »** — tenir la cou
 - **Pas fait** : un essai de sertissage (effort de pose, tenue de la lèvre), la tolérance de la rondelle mesurée, la
   tenue du papier aramide derrière un point de soudure — à voir avec le fabricant du busbar.
 
+## Itération 9 — des bandes à lamelles prises dans l'industrie, quatre contacts LV, leurs queues, l'isolation des îlots
+
+Demandes de JP (22 novembre) : « Fil LV et isolation des îlots » ; puis, sur une capture des couronnes : « ces contacts n'ont pas
+l'air réalistes et possibles ; s'il le faut imite un design de ce genre d'interface et fais-les en lamelles unidirectionnelles, en te
+basant sur un cas réel de l'industrie, fais tes devoirs… on améliore ». Le menu « que portent les contacts LV » a été fermé par un
+message : **choix conseillé, annoncé et facile à changer — 4 contacts LV** (RS-485 A et B, +5V_ISO, GND_ISO), parce que les deux
+connecteurs de chaîne de la carte de CORE portent ces quatre fils : le côté bus de chaque transceiver isolé est alimenté et référencé
+depuis le BMS central.
+
+**Ce qui a été lu** (pages publiques ouvertes pendant le développement ; seuls des nombres et des références sont repris) :
+
+| Source | Ce qui en est pris |
+|---|---|
+| Multi-Contact (Stäubli), *The MULTILAM Principle*, 2011 — p. 9, 13, 16, 22 | une bande à lamelles entre deux faces planes ; n = longueur / pas, R = Rk / n, I = n × I d'une lamelle (p. 13) ; classes de chute de tension : < 5 mV très bon, 5–12 bon, 13–25 utilisable (p. 9) ; LA-CU : 12 mm de large, pas de 3,5 mm, 7 N par lamelle (p. 16) ; la bande flotte dans son logement (p. 22) |
+| Stäubli, page produit de la MULTILAM LA-CU | 40 A et 0,3 mΩ par lamelle |
+| Stäubli, catalogue des fiches à fourche (US) — p. 9, 10 | busbars argentés aux plages de contact ; courant assigné limité par 12,5 mV de chute et 80 °C |
+| Stäubli, catalogue ClipLam — p. 4, 6, 7 | des bandes tenues dans un cadre plastique entre deux busbars ; joints entiers de 400 A / 50 µΩ, 800 A / 25 µΩ, 1600 A / 13 µΩ, busbars argentés |
+| Weftron, fiche LOUVER_tron 112 — p. 2 | 12 mm de large, pas de 3,5 mm, plaques de cuivre sur un ressort en inox (sans béryllium), argent 25 µm au moins, **hauteur de travail 1,5 à 1,9 mm** ; déclassement de la face d'en face (Cu 1, E-Al 0,75, CuZn39Pb3 0,60) |
+| TE Connectivity, catalogue LOUVERTAC 65141 (2001) — p. 31, 32 | les types à lame dorés (LAIA, LAIV, LAV) ; une lamelle de LAV de 0,56 mm de haut libre |
+
+**Ce que devient le joint entre deux CORE :**
+
+- **Deux bandes HV à lamelles** (`BM-LAM-HV`) sur la jambe +, verticales, de 40 mm : l'enveloppe de la LOUVER_tron 112 (12 mm, pas de
+  3,5 mm, 11 lamelles par bande). Elles sont **dessinées posées**, à leur hauteur de travail : les lamelles inclinées touchent la jambe
+  − du CORE voisin. Les plages des deux jambes sont argentées là où elles appuient.
+- **Un cadre** (`BM-LAM-CAGE`, PA66-GF30, 1 mm) tient les deux bandes à leur place, une fenêtre par bande — comme le cadre plastique
+  d'un joint busbar-busbar du commerce. Plus mince que l'écart, il ne porte pas l'effort.
+- **Quatre butées** (`BM-STOP`, cuivre argenté Ø8 × 1,7 mm) aux coins de la jambe tiennent l'écart à **1,7 ± 0,05 mm**, au milieu de
+  la plage de travail publiée (1,5 à 1,9 mm), et portent l'effort qui presse le module. Le pas d'un CORE au suivant passe à **52,6 mm**.
+- **Quatre contacts LV** en rangée dans le bas de la jambe : un îlot (insert PA66-GF30 dans un trou du cuivre, plage dorée) sur chaque
+  jambe ; côté +, la plage est surélevée de 1,25 mm et porte une **courte bande à lamelles dorée** (`BM-LAM-LV`, type LAV : 5 mm, 7
+  lamelles) écrasée à 0,45 mm sur la plage d'en face. Le pas et la hauteur de travail de ce type ne sont pas publiés dans ce qui a été
+  lu : ce sont des exemples ; aucune résistance n'est publiée pour les versions dorées.
+- **Le fil LV : des queues du flex.** Huit branches du flex en boîte montent des grands côtés de sa section centrale, contre la face
+  extérieure de chaque jambe, jusqu'au bas de chaque îlot ; le bout se brase sur la languette de la plage (non dessinée). Elles passent
+  dans l'écart de 1,7 mm, chacune contre sa jambe. Pour qu'une queue plie autour du busbar sans entrer dans le cuivre, **le pli du
+  conducteur − est arrondi à 1,8 mm** (un busbar plié en a un) et la queue plie à 1,9 mm, plus de 6 fois son épaisseur — la règle de
+  pose statique d'un flex simple face que l'outil vérifie. Les deux connecteurs de chaîne de la carte deviennent ces pistes : **à
+  reporter dans le PCBA**.
+- **Le calcul** : un nouveau modèle de l'outil, « Louvre strip · flat joint » (`louvre_strip`, domaine Assemblages), qui ne fait que
+  ce que les documents impriment. Gardé dans le projet : 2 bandes × 11 lamelles = 22 lamelles, **880 A assignés** pour 360 A, **13,6 µΩ**,
+  **4,9 mV** de chute (« très bon »), 1,8 W, **154 N** pour fermer le joint ; la hauteur, tolérance comprise, reste dans la plage. Les
+  valeurs d'une lamelle sont celles de la LA-CU (même largeur, même pas) : la résistance d'une lamelle de la 112 n'est pas dans ce qui a
+  été lu — à demander au fabricant.
+- **L'isolation des îlots** : un petit assemblage, `BM-JOINT-ASM` — le busbar laminé de deux CORE voisins et tout ce qui est entre
+  eux —, avec les potentiels du joint le plus haut de la chaîne : N7 = 29,4 V (le cuivre du joint), et le bus à 0–5 V ; les conducteurs
+  éloignés des deux CORE (N6, N8) sont laissés hors de l'analyse, de l'autre côté de leur CORE. Le bus est
+  **supposé référencé au − du pack au BMS central** (à confirmer). Niveau Functional (tout reste sous 60 V continus : un choix de
+  l'outil, écrit). Un essai le mesure avec le moteur de l'écran Isolation : le bus (0 V) contre le cuivre du joint (29,4 V) — **1,34 mm
+  dans l'air pour 0,5 mm requis, 3,98 mm de ligne de fuite pour 0,52 mm requis** (PD2, OVC I, tables intégrées de l'outil, à vérifier
+  contre la norme). Les cellules n'y sont pas.
+
+**Retour DFM.** Les bandes à lamelles se coupent à la longueur et se remplacent ; elles ne demandent ni soudure ni revenu chez nous.
+Les plages argentées (5 à 10 µm, avec sous-couche de nickel pour beaucoup de manœuvres, selon les fabricants) se font sur le busbar
+laminé, avant le laminage ou par masquage. Les butées brasées sur la jambe + fixent l'écrasement : leur hauteur se tient à ± 0,05 mm.
+Ce que la bande demande à la face d'en face (planéité, rugosité N6) se spécifie sur le dessin du busbar. **L'effort de fermeture**
+(154 N par joint, plus ce que les butées doivent garder) revient aux plaques de bout et au couvercle à verrou de l'itération 11.
+
+**Pas fait** : la languette de la plage et son encoche, la pose et la tenue de la queue (collage), la carte qui reçoit les pistes, un
+essai de résistance du joint réel et de l'échauffement à 360 A, le modèle d'un îlot LV (résistance non publiée).
+
 ## Ce qu'il contient
 
 | Élément | Ce que c'est | Où |
@@ -331,9 +392,12 @@ Choix de JP, par menu (21 novembre) : **« Couronne sertie »** — tenir la cou
 | Flex en boîte du CORE | `BM-FLEX-BOX` : la section centrale sous le CORE (8 CTN, B−), deux panneaux pleine largeur aux petits bouts, le X− continue dans la carte (rigid-flex), le rabat X+ prend B+ | Pièces |
 | Support du bas des cellules | `BM-HOLDER-BASE` : le support du bas avec un fond sous les cellules, deux fenêtres de soudure − par cellule, et ses 8 rondelles thermiques moulées en deuxième injection (itération 5 ; les rondelles séparées `BM-PUCK` de l'itération 4 sont dedans) | Pièces |
 | Support du haut des cellules | `BM-HOLDER` : une épine entre les rangées, deux barres aux bouts, une poche par cellule, cinq noyautages | Pièces |
-| Ressorts de contact HV et LV | `BM-SPRING-HV`, `BM-SPRING-LV` : une couronne de lames-ponts en cuivre-béryllium, deux de chaque par CORE, sur la jambe + (itération 6) ; élastiques jusqu'à la butée, la version plastique gardée en variante (itération 7) | Pièces |
-| Rondelle de butée HV | `BM-STOP-HV` : la butée d'un contact HV, qui sertit sa couronne sous sa lèvre (itération 8) | Pièces |
-| CORE 1S8P | `BM-CORE-ASM` : 8 cellules en deux rangées de 4, le support du haut, le support du bas et ses rondelles, le busbar laminé, le flex en boîte, la carte dessus, 4 ressorts de contact | Assemblage |
+| Bandes de contact HV | `BM-LAM-HV` : bande à lamelles de 12 × 40 mm, l'enveloppe de la LOUVER_tron 112 ; deux par CORE, sur la jambe + (itération 9 — elles remplacent les couronnes des itérations 6 à 8) | Pièces |
+| Cadre des bandes | `BM-LAM-CAGE` : PA66-GF30, 1 mm, une fenêtre par bande | Pièces |
+| Butées | `BM-STOP` : cuivre argenté Ø8 × 1,7 mm, quatre par CORE — l'écart de travail des bandes, et l'effort du module | Pièces |
+| Bandes de contact LV | `BM-LAM-LV` : courte bande à lamelles dorée, quatre par CORE, sur les plages surélevées des îlots + | Pièces |
+| CORE 1S8P | `BM-CORE-ASM` : 8 cellules en deux rangées de 4, le support du haut, le support du bas et ses rondelles, le busbar laminé, le flex en boîte et ses 8 queues, la carte dessus, 2 bandes HV, leur cadre, 4 butées, 4 bandes LV — 24 pièces | Assemblage |
+| Joint entre deux CORE | `BM-JOINT-ASM` : le busbar de deux CORE voisins et ce qui est entre eux, chaque conducteur à son potentiel — pour l'écran Isolation | Assemblage |
 | BM 8s8p - 21700 | `BM-8S8P-ASM` : 8 CORE côte à côte, tous dans le même sens | Assemblage |
 
 ## La géométrie, telle que dessinée
@@ -346,7 +410,7 @@ Choix de JP, par menu (21 novembre) : **« Couronne sertie »** — tenir la cou
 - **La série** : la jambe + d'un CORE presse la jambe − du CORE suivant, face contre face (itération 1 : 49,4 mm d'un CORE
   au suivant avec 1 mm de cuivre ; itération 2 : 51,4 mm avec 2 mm ; itération 4 : 50,9 mm, le papier aramide de 0,25 mm
   remplaçant l'isolant de 0,5 mm ; itération 6 : 51,25 mm — les deux jambes ne se touchent plus, ce sont les butées des
-  contacts qui portent ; itération 8 : 51,5 mm, les rondelles de butée de 0,6 mm).
+  contacts qui portent ; itération 8 : 51,5 mm, les rondelles de butée de 0,6 mm ; itération 9 : 52,6 mm, l'écart de 1,7 mm des bandes à lamelles).
 - La jambe + s'arrête à 5 mm du bas, la jambe − à 5 mm du haut : aucune des deux ne frôle la plaque de l'autre polarité
   de son propre CORE (exemple, paramètre `z0`).
 

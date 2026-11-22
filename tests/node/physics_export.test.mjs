@@ -91,6 +91,7 @@ const CASES = {
   press_fit: [{}, { di: 10 }, { Do: 15 }, { Treq: 50, Freq: 2000 }, { delta: 0 }, { mat_h: "AL6061-T6", delta: 40, di: 25 }, { Treq: 5000, L: 100 }],
   dowel_pin: [{}, { planes: "2", np: 3 }, { F: 0 }, { t: 2, d: 8, np: 2.4 }, { F: 90000 }],
   spring_stop: [{}, { l: 9.5, lift: 0.5, tol: 0.05, n: 10 }, { l: 7, lift: 0.65, tol: 0.05, n: 10 }, { plating: "Au", n: 4, l: 5.5, w: 1, t: 0.1, lift: 0.45, tol: 0.05, I: 0.05, Fmin: 0.5 }, { lift: 0.4, tol: 0.2 }, { lift: 0.65, hs: 0.35 }, { lift: 0.2, hs: 0.35 }, { plating: "Au", I: 0.05, n: 4, l: 3, w: 1, t: 0.1, lift: 0.3, hs: 0.2 }, { plating: "Sn", Fmin: 30 }, { I: 3000 }, { t: 1.2 }],
+  louvre_strip: [{}, { strips: 1, L: 10 }, { mate: "al", I: 900 }, { mate: "brass", Rl: 2000, I: 500 }, { h: 1.45, tol: 0.1 }, { h: 1.95 }, { L: 2, p: 3.5 }, { strips: 3.4, Umax: 3 }],
   conduction_stack: [{}, { t2: 1.6, t3: 2 }, { tim_t: 0, Rc: 0 }, { P: 0 }, { mat1: "CU-C110", t1: 40, A: 100 }, { P: 500, Tmax: 30 }],
   junction_temperature: [{}, { P: 0 }, { Rsa: 0, Rjc: 0, Rcs: 0 }, { P: 80, Rsa: 2 }, { Tjmax: 30 }, { P: 0.001, Tjmax: 400 }],
   heatsink_natural: [{}, { P: 0 }, { eps: 0 }, { N: 40 }, { N: 60 }, { P: 200, Ta: 60, mat: "CU-C110" }, { P: 0.5 }, { P: 3000, Lf: 400 }],

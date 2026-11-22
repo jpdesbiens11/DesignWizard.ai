@@ -69,4 +69,14 @@ const springStop = {
     { label: "Lames minces (t ≤ l / 10)", f: 'IF({t}>{l}/10,"NON : lame épaisse, le cisaillement compte","Oui")' }],
 };
 
-export const XL_JOINTS = { bolted_joint: bolt, press_fit: pressfit, dowel_pin: pin, spring_stop: springStop };
+const louvreStrip = {
+  helpers: [{ key: "nb", label: "Nombre de bandes retenu", unit: "", f: "MAX(1,ROUND({strips},0))" }, { key: "per", label: "Lamelles par bande", unit: "", f: "ROUND({L}/{p}-0.5+0.000000001,0)" },
+    { key: "k", label: "Déclassement de la matière d'en face", unit: "", f: 'IF({mate}="al",0.75,IF({mate}="brass",0.6,1))' }],
+  outputs: { n: "{h:nb}*{h:per}", Irat: "{o:n}*{Il}*{h:k}", R: "IF({o:n}>0,{Rl}/{o:n},1000000000)", dU: "{o:R}/1000000*{I}*1000", P: "{o:R}/1000000*{I}^2", F: "{o:n}*{Fl}", use: "IF({o:Irat}>0,{I}/{o:Irat}*100,999)",
+    hLo: "{h}-MAX(0,{tol})", hHi: "{h}+MAX(0,{tol})" },
+  checks: [{ label: "Courant du joint vs courant assigné", unit: "A", value: "{I}", limit: "{o:Irat}" }, { label: "Chute de tension vs chute admise", unit: "mV", value: "{o:dU}", limit: "{Umax}" },
+    { label: "Hauteur la plus basse vs plage de la bande", unit: "mm", value: "{o:hLo}", limit: "{hMin}", min: true }, { label: "Hauteur la plus haute vs plage de la bande", unit: "mm", value: "{o:hHi}", limit: "{hMax}" }],
+  flags: [],
+};
+
+export const XL_JOINTS = { bolted_joint: bolt, press_fit: pressfit, dowel_pin: pin, spring_stop: springStop, louvre_strip: louvreStrip };

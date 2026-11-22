@@ -379,6 +379,24 @@ fabrication virtuel)** — faits (v0.142.0 à v0.145.0) ; le projet BM bonifié 
    l'ordre des points (2, puis 4, 5…) ; le projet BM (plaques de bout, fil des plages LV, isolation des îlots, boîtier) revient en dernier.
    Reste : les languettes de soudure minces, le heat staking du flex (la plaque − est entre les deux), la nuance du silicone 2K, la lamination
    d'une pièce pliée, l'évent au fond de la P45B (à demander), les bornes du module, le boîtier, le BMS central, l'échauffement du module fermé.
+   **JP, 22 novembre, la suite du BM** (message, après le menu « par quoi commencer ») : **« Fil LV et isolation des îlots, puis boîtier et
+   borne du module »** ; ensuite **un boîtier extrudé en plastique le long des 8 CORE**, qui les contient ; puis **un busbar le long du boîtier
+   extrudé qui se connecte aux 2 couvercles** — **le couvercle du fond** porte le connecteur LV et HV qui se branche quand le BM est glissé dans
+   sa cavité d'installation ou sa station de recharge, le contacteur interne du BM, et **« peut-être » la carte BMS principale** (JP, message
+   suivant : « contient peut-être le BMS ») ; **le 2e couvercle** ferme la boucle de courant interne, **pousse sur les CORE pour écraser les
+   contacts LV et HV en série**, et se verrouille par un **latch rotatif** ; **l'interface des 2 couvercles est vissée au boîtier central** — des
+   trous sont extrudés dans la section, des **vis autotaraudeuses** y font leurs filets au premier assemblage — en métal ou en plastique robuste
+   qui tient l'effort du latch. Même jour, sur une capture des couronnes : **« ces contacts n'ont pas l'air réalistes… fais-les en lamelles
+   unidirectionnelles, en te basant sur un cas réel de l'industrie, fais tes devoirs »**. Le menu « que portent les contacts LV » a été fermé par
+   un message : choix conseillé, **4 contacts LV — A, B, +5V_ISO, GND_ISO** (les deux connecteurs de chaîne de la carte portent ces quatre fils).
+   **Itération 9 (v0.147.0)** : les contacts entre deux CORE en **bandes à lamelles** d'après des fiches publiques lues — l'enveloppe de la
+   Weftron LOUVER_tron 112 (12 mm, pas de 3,5 mm, sans béryllium, hauteur de travail 1,5–1,9 mm), les valeurs d'une lamelle de la Stäubli
+   MULTILAM LA-CU (40 A, 0,3 mΩ, 7 N), dans un **cadre** comme les joints busbar-busbar du commerce ; **quatre butées** de cuivre tiennent l'écart
+   à 1,7 mm (pas 52,6 mm) ; **quatre îlots LV** par jambe, une courte bande dorée de type LAV côté + ; **les queues du flex** montent du dessous à
+   chaque îlot, autour du pli arrondi du conducteur − ; un modèle analytique nouveau, `louvre_strip` (22 lamelles, 880 A, 13,6 µΩ, 4,9 mV) ;
+   l'assemblage **« Joint entre deux CORE »** pour l'Isolation, mesuré par un essai (`demo/demo_bm_contacts.js`, `docs/BM_MODULE.md`). Reste :
+   reporter les pistes de chaîne dans le PCBA de la carte, la languette de la plage et son encoche, un essai du joint réel ; puis les
+   itérations 10 (boîtier extrudé, bornes) et 11 (busbar de retour, couvercles, latch, vis).
 21. ~~**Logiciel : pas à pas, simulation en direct, code visible, chargement**~~ — fait (v0.124.0 ; demande de JP du 20
    novembre, sur l'écran `#/sw`) : sept étapes, entrées et sorties dites sur chaque tuile, la fiche du CPU au centre avec
    un lien par page, le guide dans le volet, l'essai de démarrage et la mémoire, la simulation en direct, le code à l'écran,

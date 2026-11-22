@@ -32,12 +32,14 @@ test("which parts unfold : a branched circuit with a fold, a strip with legs, a 
   const flat = { ...exampleTree(), branches: exampleTree().branches.map((b) => ({ ...b, legs: [b.legs[0]] })) }; assert.equal(canFlatten(treePart(flat, "T2")), false, "nothing folded, nothing to unfold");
 });
 
-test("the flex in a box of the CORE, flat : its core and its two full-width panels in one strip, 4 bends UP, a thermistor on the core under each cell", async () => {
-  const p = bmProject(), s = p.parts.find((x) => x.id === "BM-FLEX-BOX"), f = flatOf(s), def = s.flex;
-  assert.equal(f.kind, "flex-tree"); assert.equal(f.bends.length, 4); assert.ok(f.bends.every((b) => b.dir === "UP" && b.r === def.r && b.label === "UP 90° R2"));
+test("the flex in a box of the CORE, flat : its core and its two full-width panels in one strip, 4 bends UP, a thermistor on the core under each cell ; 8 tails up to the LV islands", async () => {
+  const p = bmProject(), s = p.parts.find((x) => x.id === "BM-FLEX-BOX"), f = flatOf(s), def = s.flex, panels = f.bends.filter((b) => /^P[AB]-/.test(b.id)), tails = f.bends.filter((b) => /^L[PM]/.test(b.id));
+  assert.equal(f.kind, "flex-tree"); assert.equal(panels.length, 4); assert.ok(panels.every((b) => b.dir === "UP" && b.r === def.r && b.label === "UP 90° R2"));
+  assert.equal(tails.length, 8, "iteration 9 : one bend per tail"); assert.ok(tails.every((b) => b.dir === "UP" && b.r === 1.9 && b.label === "UP 90° R1.9"), "each at its own radius, around the rounded bend of the − conductor");
   const pa = def.branches.find((b) => b.id === "PA"), d = develop([{ ...pa.legs[0], L: pa.legs[0].L + 1 }, ...pa.legs.slice(1)], def.t, def.r, K_FILM);
   near(f.size[0], def.core.L + 2 * (d.total - 1) - (pa.legs[2].L - def.branches.find((b) => b.id === "PB").legs[2].L), "the core plus both panels, developed", 0.01);
-  near(f.size[1], def.core.W, "the width of the core");
+  const tl = def.branches.find((b) => b.id === "LPA"), dt = develop([{ ...tl.legs[0], L: tl.legs[0].L + 1 }, ...tl.legs.slice(1)], def.t, tl.r, K_FILM);
+  near(f.size[1], def.core.W + 2 * (dt.total - 1), "the width of the core, and the tails unfolded on both sides", 0.01);
   assert.ok(f.size[0] > 2 * CORE_X, `a long strip, flat : ${f.size[0]} mm`);
   const temps = f.marks.filter((m) => m.kind === "temp"); assert.equal(temps.length, 8); for (const sp of def.spots.filter((x) => x.end === "temp")) assert.ok(temps.some((m) => m.at[0] === sp.x && m.at[1] === sp.y && m.face === "top"));
   assert.deepEqual(f.marks.filter((m) => m.kind === "volt").map((m) => m.net).sort(), ["B+", "B−"]);

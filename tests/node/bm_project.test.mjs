@@ -4,6 +4,9 @@
    through its thermal washer. Iteration 5 : the bottom holder with a floor under the cells and its washers molded in (2K). Iteration 6 : the
    4 contacts between two CORE — springs on the + leg pressed to their stops, lands on the − leg, the LV contacts on insulated islands.
    Iteration 7 : the HV blades stay elastic at the longest travel of the tolerance window ; the plastic crown kept as a variant, to compare.
+   Iteration 9 (JP : « ces contacts n'ont pas l'air réalistes… fais-les en lamelles unidirectionnelles, en te basant sur un cas réel de l'industrie ») :
+   louvred contact strips modelled on real ones, held in a frame, the gap held by copper stops ; four LV contacts on raised islands, their flex
+   tails ; the joint between two CORE measured by the Isolation engine.
      node --test tests/node/bm_project.test.mjs */
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -12,9 +15,11 @@ import { bmProject, busbarSizing, CORE_X, CORE_Y, CORE_PITCH, BB_T, I_CORE, STAC
 import { coreBox, FLEX_T, FLEX_X0, NTC_H } from "../../web/js/demo/demo_bm_box.js";
 import { INS_T, WRAP_T } from "../../web/js/demo/demo_bm_lam.js";
 import { coreHolder, coreBase } from "../../web/js/demo/demo_bm_holder.js";
-import { STOP_H, TOL, LV_UP, SPRINGS, ELASTIC, PLASTIC, MARK, contactLayout } from "../../web/js/demo/demo_bm_contacts.js";
+import { GAP, GAP_TOL, STRIPS, ISLAND, CAGE, STOP, LV_NETS, MARK, contactLayout } from "../../web/js/demo/demo_bm_contacts.js";
+import { sceneBody } from "../../web/js/analysis/cc_scene.js";
+import { prepareScene, measurePair } from "../../web/js/analysis/cc_paths.js";
+import { BUILTIN, requirement } from "../../web/js/analysis/cc_rules.js";
 import { textWidth } from "../../web/js/cad/stroke_font.js";
-import { applyVariant, variantNow } from "../../web/js/core/variants.js";
 import { run, defaults } from "../../web/js/analysis/physics/index.js";
 import { cell } from "../../web/js/cad/elec_library.js";
 import { buildPart, validateSpec } from "../../web/js/cad/build.js";
@@ -54,18 +59,18 @@ test("the copper is sized for 360 A by the model of the tool : below the ambient
 test("the parts of the CORE : each one builds, the top of a CORE is the size of its board", async () => {
   near(CORE_X, 4 * 21.7 + 6, "length"); near(CORE_Y, 2 * 21.7 + 3, "width");
   const { K, p, built } = await placedCore(), board = p.boards[0]; assert.deepEqual(board.board.size, [CORE_X, CORE_Y]); assert.equal(board.part, "CORE-1S8P-PCBA-PCB");
-  assert.deepEqual(p.parts.map((x) => x.id), ["BM-CELL-21700", "BM-BB-LAM", "BM-FLEX-BOX", "BM-HOLDER", "BM-HOLDER-BASE", "BM-SPRING-HV", "BM-STOP-HV", "BM-SPRING-LV", "CORE-1S8P-PCBA-PCB"]);
+  assert.deepEqual(p.parts.map((x) => x.id), ["BM-CELL-21700", "BM-BB-LAM", "BM-FLEX-BOX", "BM-HOLDER", "BM-HOLDER-BASE", "BM-LAM-HV", "BM-LAM-CAGE", "BM-STOP", "BM-LAM-LV", "CORE-1S8P-PCBA-PCB"]);
   for (const s of p.parts) { assert.deepEqual(validateSpec(s).errors, [], s.id); assert.deepEqual(built.get(s.id).log.filter((l) => l.level === "error"), [], s.id); }
   near(BELOW, FLOOR_T + BB_T + WRAP_T, "under the cans : the floor, the copper, the film");
 });
 
 test("the laminated busbar : the two L of a CORE in one part — two conductors, the paper toward the cells, a thin film outside ; the legs press the next CORE", async () => {
   const { K, p, built } = await placedCore(), lam = p.parts.find((x) => x.id === "BM-BB-LAM"), b = built.get("BM-BB-LAM"), body = (n) => b.bodies.find((x) => x.name === n);
-  assert.deepEqual(b.bodies.map((x) => x.name).sort(), ["aramide", "enveloppe", "isolant_lv", "lv_a_m", "lv_a_p", "lv_b_m", "lv_b_p", "moins", "plus"]);
+  assert.deepEqual(b.bodies.map((x) => x.name).sort(), ["aramide", "enveloppe", "isolant_lv", "lv_5viso_m", "lv_5viso_p", "lv_gndiso_m", "lv_gndiso_p", "lv_rs485a_m", "lv_rs485a_p", "lv_rs485b_m", "lv_rs485b_p", "moins", "plus"]);
   assert.equal(lam.bodies.plus.kind, "conductor"); assert.equal(lam.bodies.moins.kind, "conductor"); assert.equal(lam.bodies.aramide.material, "NOMEX-410"); assert.equal(lam.bodies.enveloppe.material, "PET-FILM");
   const plus = K.bbox(body("plus").shape), moins = K.bbox(body("moins").shape);
-  near(plus[4], CORE_Y + INS_T + BB_T, "the + leg, outer face : flat — its stops are washers of their own", 1e-3); near(moins[1], -(INS_T + BB_T), "the − leg, outer face", 1e-3);
-  near(CORE_PITCH, CORE_Y + 2 * (INS_T + BB_T) + STOP_H, "pitch", 1e-9); near(plus[4] + STOP_H, CORE_PITCH + moins[1], "the next CORE : its − leg rests on the stop washers of this + leg", 1e-3);
+  near(plus[4], CORE_Y + INS_T + BB_T, "the + leg, outer face : flat — its stops are parts of their own", 1e-3); near(moins[1], -(INS_T + BB_T), "the − leg, outer face", 1e-3);
+  near(CORE_PITCH, CORE_Y + 2 * (INS_T + BB_T) + GAP, "pitch", 1e-9); near(plus[4] + GAP, CORE_PITCH + moins[1], "the next CORE : its − leg rests on the stops of this + leg", 1e-3);
   near(plus[0], 3, "the copper leaves the 3 mm of the short ends to the flex", 1e-3); near(plus[3], CORE_X - 3, "both ends", 1e-3);
   const names = b.bodies.map((x) => x.name);
   for (const pair of names.flatMap((x, i) => names.slice(i + 1).map((y) => [x, y]))) assert.ok(K.props(K.common(body(pair[0]).shape, body(pair[1]).shape)).volume < 1e-6, `${pair} : no overlap inside the laminate`);
@@ -82,7 +87,7 @@ test("the flex in a box : flat central section under the CORE, two full-width pa
   assert.ok(box.checks.ok, JSON.stringify(box.checks.notes));
   assert.equal(flex.flex.spots.filter((s) => s.end === "temp").length, 8); assert.deepEqual(flex.flex.spots.filter((s) => s.end === "volt").map((s) => s.net), ["B−"]);
   assert.deepEqual(flex.flex.branches.filter((b) => b.end === "volt").map((b) => b.net), ["B+"]);
-  assert.ok(flex.flex.branches.every((b) => b.w >= CORE_Y - 3 && b.legs[1].bend === 90 && b.legs[2].bend === 90), "full width, up then over the top : a box");
+  assert.ok(flex.flex.branches.filter((b) => /^P[AB]$/.test(b.id)).every((b) => b.w >= CORE_Y - 3 && b.legs[1].bend === 90 && b.legs[2].bend === 90), "full width, up then over the top : a box");
   const at = (id) => core.instances.find((i) => i.id === id).placement.t;
   near(at("flex")[2], -BELOW - FLEX_T, "under the film of the busbar"); near(at("carte")[2], 70.15 + STACK + FLEX_T, "the board on the flex, on the busbar");
   const F = placed.find((x) => x.id === "flex"), film = K.bbox(F.bodies.find((b) => b.name === "main").shape);
@@ -97,8 +102,8 @@ test("the flex in a box : flat central section under the CORE, two full-width pa
   near(FLEX_X0, 8, "the central section starts 8 mm from the end of the CORE");
 });
 
-test("the CORE : nothing goes through anything — busbar, flex, washers, holders, board, cells, springs and their stops", async () => {
-  const { K, placed } = await placedCore(), hits = [], mine = new Set(["BM-BB-LAM", "BM-FLEX-BOX", "BM-HOLDER", "BM-HOLDER-BASE", "CORE-1S8P-PCBA-PCB", "BM-SPRING-HV", "BM-STOP-HV", "BM-SPRING-LV"]);
+test("the CORE : nothing goes through anything — busbar, flex and its tails, washers, holders, board, cells, strips, their frame, the stops", async () => {
+  const { K, placed } = await placedCore(), hits = [], mine = new Set(["BM-BB-LAM", "BM-FLEX-BOX", "BM-HOLDER", "BM-HOLDER-BASE", "CORE-1S8P-PCBA-PCB", "BM-LAM-HV", "BM-LAM-CAGE", "BM-STOP", "BM-LAM-LV"]);
   for (let a = 0; a < placed.length; a++) for (let b = a + 1; b < placed.length; b++) {
     const A = placed[a], B = placed[b]; if (!mine.has(A.part) && !mine.has(B.part)) continue;
     for (const x of A.bodies) for (const y of B.bodies) { const v = K.props(K.common(x.shape, y.shape)).volume; if (v > 1e-3) hits.push(`${A.id}/${x.name} × ${B.id}/${y.name} : ${v.toFixed(3)} mm³`); }
@@ -127,60 +132,74 @@ test("the cell holders : one solid at the top, the bottom one with its floor and
   assert.equal(coreBase({ X: CORE_X, Y: CORE_Y, grid: 21.7, gap: 3, h: 8, floor: 1.5, below: 1.3, washer: { d: 5 } }).params.rh.value, 2.8);
 });
 
-test("the 4 contacts between two CORE : springs on the + leg, lands on the − leg ; pressed, the stops touch and only the crests go in, by the travel the model takes", async () => {
-  const { K, p, core, placed, built } = await placedCore(), L = contactLayout(CORE_X, 70.15);
-  assert.deepEqual(L.map((c) => [c.id, c.kind]), [["HV1", "hv"], ["HV2", "hv"], ["LVA", "lv"], ["LVB", "lv"]]); assert.deepEqual(L.filter((c) => c.kind === "lv").map((c) => c.net), ["RS485_A", "RS485_B"]);
+test("the contacts between two CORE : louvred strips modelled on real ones, in their frame, the gap held by stops ; four LV contacts on raised islands", async () => {
+  const { K, p, core, placed, built } = await placedCore(), L = contactLayout(CORE_X), Yp = CORE_Y + INS_T + BB_T;
+  assert.deepEqual(L.hv.map((c) => c.id), ["HV1", "HV2"]); assert.deepEqual(L.lv.map((c) => c.net), LV_NETS); assert.deepEqual(LV_NETS, ["GND_ISO", "RS485_A", "RS485_B", "+5V_ISO"], "the 4 wires of the chain connectors of the CORE board");
+  assert.ok(GAP >= 1.5 && GAP <= 1.9 && GAP - GAP_TOL >= 1.5 && GAP + GAP_TOL <= 1.9, "the gap, tolerance included, in the working range the maker prints (1.5–1.9 mm)");
+  const hv = p.parts.find((x) => x.id === "BM-LAM-HV"), lv = p.parts.find((x) => x.id === "BM-LAM-LV");
+  assert.equal(hv.features.filter((f) => /^lamelle_/.test(f.id)).length, Math.floor(STRIPS.hv.L / STRIPS.hv.p), "a louvre every pitch"); assert.equal(STRIPS.hv.w, 12); assert.equal(STRIPS.hv.p, 3.5);
+  assert.match(hv.notes.join(" "), /LOUVER_tron 112/); assert.match(hv.notes.join(" "), /LA-CU/); assert.match(lv.notes.join(" "), /dorées|dorée/); assert.match(lv.notes.join(" "), /exemples/);
+  assert.equal(p.parts.find((x) => x.id === "BM-LAM-CAGE").material, "PA66-GF30"); assert.ok(CAGE.t < GAP, "the frame is thinner than the gap : it never carries the force");
+  /* as installed : the louvres lean from the + face to the face of the next CORE, the stops are as high as the gap */
+  const sb = (id) => K.bbox(placed.find((x) => x.id === id).bodies[0].shape);
+  near(sb("hv1")[1], Yp, "the strip on the + leg", 1e-3); near(sb("hv1")[4], Yp + GAP, "its louvres reach the face of the next CORE", 1e-3);
+  for (const k of [1, 2, 3, 4]) { near(sb(`but${k}`)[1], Yp, "a stop on the + leg", 1e-3); near(sb(`but${k}`)[4] - sb(`but${k}`)[1], GAP, "as high as the gap", 1e-3); }
+  near(sb("lv1")[4], Yp + GAP, "the LV strip, on its raised land, reaches the land of the next CORE", 1e-3); near(sb("lv1")[1], Yp + ISLAND.raise, "it stands on its raised land", 1e-3);
+  assert.deepEqual(core.instances.filter((i) => /^lv\d/.test(i.id)).map((i) => i.placement.t[0]), [0, 18, 36, 54], "four islands in a row, 18 mm apart");
+  /* the islands of the laminated busbar : an insulating insert in a hole of the copper, a gold land, on both legs ; the + one raised */
   const lam = p.parts.find((x) => x.id === "BM-BB-LAM"), f = (re) => lam.features.filter((x) => re.test(x.id)).map((x) => x.id);
-  assert.deepEqual(f(/^butee_/), [], "iteration 8 : the HV stops are washers of their own, not rings of the leg"); assert.equal(f(/^gravure_[a-z0-9]+$/).length, 8, "an engraved circle around each contact, on both legs");
-  assert.equal(f(/^ilot_[a-z0-9]+$/).length, 4, "an insulating island for each LV contact, on both legs"); assert.equal(lam.bodies.isolant_lv.kind, "insulator"); assert.deepEqual(["lv_a_p", "lv_a_m"].map((n) => lam.bodies[n].net), ["RS485_A", "RS485_A"]);
-  for (const s of ["BM-SPRING-HV", "BM-SPRING-LV"]) { const sp = p.parts.find((x) => x.id === s); assert.equal(sp.material, "CUBE-C17200"); assert.equal(sp.features.filter((x) => x.op === "arch").length, SPRINGS[s === "BM-SPRING-HV" ? "hv" : "lv"].n); }
-  assert.deepEqual(core.instances.filter((i) => /^BM-(SPRING|STOP)/.test(i.part)).map((i) => [i.id, i.placement.t]), [["hv1", [0, 0, 0]], ["hv2", [48, 0, 0]], ["st1", [0, 0, 0]], ["st2", [48, 0, 0]], ["lva", [0, 0, 0]], ["lvb", [0, 0, -37]]]);
-  /* the crown is crimped : its washer sits on the leg, STOP_H high, its lip over the outer ring — lifted 0.05 mm, the crown runs into it */
-  const crown = placed.find((x) => x.id === "hv1").bodies[0].shape, washer = placed.find((x) => x.id === "st1").bodies[0].shape, wb = K.bbox(washer);
-  near(wb[1], CORE_Y + INS_T + BB_T, "the washer on the leg", 1e-3); near(wb[4] - wb[1], STOP_H, "as high as the stop", 1e-3);
-  assert.ok(K.props(K.common(K.transform(crown, M([0, 0.05, 0])), washer)).volume > 1, "the crown cannot leave : the lip holds its outer ring");
-  assert.ok(K.props(K.common(crown, washer)).volume < 1e-3, "held, not squeezed through");
-  for (const c of L.filter((x) => x.kind === "hv")) assert.ok(c.x - SPRINGS.hv.groove - 0.2 > 3 && c.x + SPRINGS.hv.groove + 0.2 < CORE_X - 3, `${c.id} : the engraved circle stays on the leg`);
-  const gap = Math.hypot(L[2].x - L[0].x, L[2].z - L[0].z) - (SPRINGS.hv.groove + SPRINGS.lv.groove + 0.4); assert.ok(gap > 0.3, `between the circles of HV 1 and RS-485 A : ${gap.toFixed(2)} mm`);
-  /* the laser marking beside each contact, on both legs : what it is, in a free corner — clear of every circle, on the copper of the leg */
-  const marks = lam.features.filter((x) => x.op === "mark");
-  assert.deepEqual(marks.map((m) => `${m.face} ${m.text}`).sort(), ["+Y HV1 +", "+Y HV2 +", "+Y RS485 A", "+Y RS485 B", "-Y HV1 −", "-Y HV2 −", "-Y RS485 A", "-Y RS485 B"]);
-  for (const m of marks) {
-    const w = textWidth(m.text, m.h) / 2 + m.w, hh = m.h / 2 + m.w, [x, z] = m.at; assert.deepEqual(m.dir, [m.face === "+Y" ? -1 : 1, 0], `${m.text} : read the right way from outside`);
-    assert.ok(x - w > 3 && x + w < CORE_X - 3 && z - hh > 5 && z + hh < 70.15 - 5, `${m.face} ${m.text} : on the leg`);
-    for (const c of L) { const r = (c.kind === "hv" ? SPRINGS.hv.groove : SPRINGS.lv.groove) + 0.2, dx = Math.max(Math.abs(x - c.x) - w, 0), dz = Math.max(Math.abs(z - c.z) - hh, 0); assert.ok(Math.hypot(dx, dz) > r + 0.5, `${m.face} ${m.text} clear of ${c.id}`); }
-  }
-  assert.equal(MARK.depth, 0.05); assert.ok(built.get("BM-BB-LAM").facts.marks.length === 8, "the kernel marked them all");
-  /* the next CORE, placed at the pitch : what of this CORE goes into it */
+  assert.equal(f(/^ilot_[a-z0-9]+_[pm]$/).length, 8, "an island for each LV contact, on both legs"); assert.deepEqual(LV_NETS.flatMap((n) => ["p", "m"].map((sd) => lam.bodies[`lv_${n.replace(/[^A-Za-z0-9]/g, "").toLowerCase()}_${sd}`].net)), LV_NETS.flatMap((n) => [n, n]));
+  assert.equal(f(/^gravure_hv\dm$/).length, 2, "an engraved frame around each HV land of the − leg");
+  const marks = lam.features.filter((x) => x.op === "mark"); assert.deepEqual(marks.map((m) => `${m.face} ${m.text}`).sort(), ["+Y 0V", "+Y 5V", "+Y A", "+Y B", "+Y HV1 +", "+Y HV2 +", "-Y 0V", "-Y 5V", "-Y A", "-Y B", "-Y HV1 −", "-Y HV2 −"]);
+  for (const m of marks) { const w = textWidth(m.text, m.h) / 2 + m.w, hh = m.h / 2 + m.w, [x, z] = m.at; assert.deepEqual(m.dir, [m.face === "+Y" ? -1 : 1, 0]); assert.ok(x - w > 3 && x + w < CORE_X - 3 && z - hh > 5 && z + hh < 65.8, `${m.face} ${m.text} : on the leg`);
+    for (const c of L.lv) assert.ok(Math.hypot(Math.max(Math.abs(x - c.x) - w, 0), Math.max(Math.abs(z - c.z) - hh, 0)) > ISLAND.hole / 2 + 0.3, `${m.text} clear of the island ${c.net}`);
+    for (const c of L.hv) assert.ok(Math.abs(x - c.x) - w > STRIPS.hv.w / 2 + CAGE.rim + 0.3 || Math.abs(z - (c.z0 + c.z1) / 2) - hh > STRIPS.hv.L / 2 + CAGE.rim + 0.3, `${m.text} clear of ${c.id}`);
+    for (const [sx, sz] of L.stops) assert.ok(Math.hypot(Math.max(Math.abs(x - sx) - w, 0), Math.max(Math.abs(z - sz) - hh, 0)) > STOP.d / 2 + 0.3, `${m.text} clear of a stop`); }
+  assert.equal(built.get("BM-BB-LAM").facts.marks.length, 12, "the kernel marked them all");
+  /* the tails of the flex : one up each leg to the bottom of each island, against its face */
+  const box = p.parts.find((x) => x.id === "BM-FLEX-BOX"), tails = box.flex.branches.filter((b) => /^L[PM]/.test(b.id));
+  assert.equal(tails.length, 8); assert.deepEqual([...new Set(tails.map((b) => b.net))], LV_NETS); assert.equal(box.flex.branches[0].tracks, 18 + 8, "the panel X− carries them to the board");
+  const fb = K.bbox(placed.find((x) => x.id === "flex").bodies[0].shape); near(fb[4], Yp + FLEX_T, "the + tails lie on the face of the + leg", 1e-2); near(fb[1], -(INS_T + BB_T) - FLEX_T, "the − tails on the face of the − leg", 1e-2);
+  /* the next CORE, at the pitch : nothing of this CORE goes into it — the strips are drawn at their working height, they touch its face */
   const next = placed.map((P) => ({ ...P, bodies: P.bodies.map((b) => ({ name: b.name, shape: K.transform(b.shape, M([0, CORE_PITCH, 0])) })) })), into = [];
-  for (const A of placed) for (const B of next) for (const x of A.bodies) for (const y of B.bodies) { const c = K.common(x.shape, y.shape), v = K.props(c).volume; if (v > 1e-4) into.push({ what: `${A.id} × ${B.id}/${y.name}`, bb: K.bbox(c) }); }
-  assert.deepEqual(into.map((x) => x.what).sort(), ["hv1 × bb/moins", "hv2 × bb/moins", "lva × bb/lv_a_m", "lvb × bb/lv_b_m"], "only the crests, each on its own land : A on A, B on B, HV on the copper");
-  const face = CORE_Y + INS_T + BB_T + STOP_H;
-  for (const x of into) { const lv = !/^hv/.test(x.what), s = SPRINGS[lv ? "lv" : "hv"]; near(x.bb[1], face, `${x.what} : from the face of the next CORE`, 1e-3); near(x.bb[4], face - STOP_H + (lv ? LV_UP : 0) + s.lift, `${x.what} : the crest goes in by the travel the model takes`, 1e-3); }
-  /* the calculations kept in the project : the same crowns, pressed by the same travel, ± the same tolerance */
-  const hv = p.physics.find((r) => r.id === "phy-bm-hv"), pl = p.physics.find((r) => r.id === "phy-bm-hv-plastic"), lv = p.physics.find((r) => r.id === "phy-bm-lv");
-  assert.deepEqual([hv.part, pl.part, lv.part], ["BM-SPRING-HV", "BM-SPRING-HV", "BM-SPRING-LV"]); near(hv.inputs.lift - hv.inputs.hs, SPRINGS.hv.lift - STOP_H, "the travel of the HV blade", 1e-9);
-  for (const r of [hv, pl, lv]) { assert.equal(r.inputs.tol, TOL); assert.deepEqual(run("spring_stop", { ...defaults("spring_stop"), ...r.inputs }).values, r.values, `${r.id} : the kept values are the model's`); }
-  assert.equal(hv.verdict, "ok", "iteration 7 : the HV blade stays elastic"); assert.equal(hv.values.set, 0); assert.ok(hv.values.dsMax <= hv.values.dy, `elastic at the longest travel : ${hv.values.dsMax} ≤ ${hv.values.dy}`);
-  assert.equal(pl.verdict, "warn", "the plastic crown of iteration 6 passes its elastic travel — kept to compare, and said"); assert.ok(pl.values.set > 0.05);
-  assert.ok(pl.values.F > 2 * hv.values.F && pl.values.R < hv.values.R, "the price of staying elastic : less force, more resistance");
-  assert.ok(hv.values.FbMin >= hv.inputs.Fmin && lv.values.FbMin >= lv.inputs.Fmin, "enough force at the shortest travel");
-  assert.equal(lv.verdict, "ok", "the LV blade stays elastic"); assert.equal(lv.values.set, 0); assert.ok(lv.values.dsMax <= lv.values.dy);
-  assert.ok(hv.values.iMax > hv.inputs.I, "the current of a HV contact under what the Holm estimate allows");
-  /* the plastic crown, as a variant of the part : it builds, its crest stands higher */
-  const spring = p.parts.find((x) => x.id === "BM-SPRING-HV"); assert.equal(variantNow(spring), ELASTIC); assert.deepEqual(spring.variants.map((v) => v.name), [ELASTIC, PLASTIC]);
-  const plastic = { ...spring, ...applyVariant(spring, spring.variants[1]) }, bp = buildPart(K, plastic); assert.deepEqual(bp.log.filter((l) => l.level === "error"), []);
-  near(K.bbox(bp.bodies[0].shape)[4] - K.bbox(placed.find((x) => x.id === "hv1").bodies[0].shape)[4], SPRINGS.hv.plastic.lift - SPRINGS.hv.lift, "the plastic crest stands higher", 1e-3);
+  for (const A of placed) for (const B of next) for (const x of A.bodies) for (const y of B.bodies) { const v = K.props(K.common(x.shape, y.shape)).volume; if (v > 1e-3) into.push(`${A.id}/${x.name} × ${B.id}/${y.name} : ${v.toFixed(3)}`); }
+  assert.deepEqual(into, []);
+  /* the calculation kept in the project : the model of the tool, the values the documents print */
+  const r = p.physics.find((x) => x.id === "phy-bm-lam"); assert.equal(r.model, "louvre_strip"); assert.equal(r.part, "BM-LAM-HV");
+  assert.deepEqual(run("louvre_strip", { ...defaults("louvre_strip"), ...r.inputs }).values, r.values, "the kept values are the model's");
+  assert.equal(r.verdict, "ok"); assert.equal(r.values.n, 22); assert.equal(r.values.Irat, 880); near(r.values.dU, 4.909, "the drop at 360 A, under 5 mV : « very good »", 1e-3); assert.equal(r.values.F, 154);
+  assert.match(r.why, /LA-CU/); assert.match(r.why, /112/); assert.match(r.why, /12,5 mV/);
+  assert.ok(!p.parts.some((x) => /^BM-SPRING|^BM-STOP-HV/.test(x.id)), "the crowns of iterations 6 to 8 are gone");
 });
 
-test("the module : 8 CORE side by side, the same way round ; 152 parts (19 per CORE) — and no joint between two copies by the same face", () => {
+test("the islands, measured by the Isolation engine on the joint between CORE 7 and CORE 8 : the bus against the copper of the joint", async () => {
+  const { K, p, placed } = await placedCore(), J = p.assemblies.find((a) => a.id === "BM-JOINT-ASM"), iso = J.isolation;
+  assert.equal(J.instances.length, 13); assert.equal(iso.params.level, "functional"); assert.deepEqual(iso.nets.map((n) => [n.name, n.voltage]), [["N7", 29.4], ["+5V_ISO", 5], ["RS485_A", 5], ["RS485_B", 5], ["GND_ISO", 0]]); assert.deepEqual([iso.overrides["bb/moins"].kind, iso.overrides["bb2/plus"].kind], ["ignore", "ignore"], "the far conductors are left out : the islands face the copper of the joint");
+  const byId = new Map(placed.map((x) => [x.id, x])), bodies = [];
+  for (const inst of J.instances) {
+    const P = inst.id === "bb2" ? { bodies: byId.get("bb").bodies.map((b) => ({ name: b.name, shape: K.transform(b.shape, M([0, CORE_PITCH, 0])) })) } : byId.get(inst.id), part = p.parts.find((x) => x.id === inst.part);
+    const meta = await placedCore().then((c) => c.built.get(inst.part));
+    for (const b of P.bodies) { const raw = meta.bodies.find((x) => x.name === b.name), id = `${inst.id}/${b.name}`, mesh = K.tessellate(b.shape);
+      bodies.push(sceneBody(id, `${part.name} · ${b.name}`, { ...raw, mesh }, { pos: mesh.pos, idx: mesh.idx }, null, iso.overrides[id] || {})); }
+  }
+  const scene = prepareScene(bodies.map((b) => ({ id: b.id, name: b.name, kind: b.kind, net: b.net, group: b.group, printed: b.printed, pos: b.pos, idx: b.idx })), {}), net = (n) => iso.nets.find((x) => x.name === n), out = [];
+  for (const sig of ["GND_ISO", "RS485_A"]) {
+    const req = requirement(BUILTIN, iso.params, net(sig), net("N7"), "functional"), m = measurePair(scene, sig, "N7", { x: req.x_mm, maxClearance: 25, maxCreepage: 40 });
+    const crpReq = req.creepage_mm[m.creepage.group || "IIIa"] ?? req.creepage_mm.IIIb;
+    out.push({ sig, clr: m.clearance.d, crp: m.creepage.d, clrReq: req.clearance_mm, crpReq });
+    assert.ok(m.clearance.d >= req.clearance_mm, `${sig} ↔ N7 : clearance ${m.clearance.d} ≥ ${req.clearance_mm} mm`); assert.ok(m.creepage.d >= crpReq, `${sig} ↔ N7 : creepage ${m.creepage.d} ≥ ${crpReq} mm`);
+  }
+  assert.ok(out.every((x) => x.clr > 0.5 && x.crp > 0.5), JSON.stringify(out));
+});
+
+test("the module : 8 CORE side by side, the same way round ; 192 parts (24 per CORE) — and no joint between two copies by the same face", () => {
   const p = bmProject(), core = p.assemblies.find((a) => a.id === "BM-CORE-ASM"), mod = p.assemblies.find((a) => a.id === "BM-8S8P-ASM");
   const cells = core.instances.filter((i) => i.part === "BM-CELL-21700").map((i) => i.placement.t);
   assert.equal(cells.length, 8); assert.deepEqual([...new Set(cells.map((t) => t[1]))], ROWS); assert.deepEqual([...new Set(cells.map((t) => +t[0].toFixed(2)))], [13.85, 35.55, 57.25, 78.95]);
-  near(CORE_PITCH, 51.5, "46.4 + 2 × (0.25 + 2.0) + 0.6", 1e-9);
+  near(CORE_PITCH, 52.6, "46.4 + 2 × (0.25 + 2.0) + 1.7, the working height of the strips", 1e-9);
   assert.equal(mod.instances.length, 8); assert.ok(mod.instances.every((i, k) => i.asm === "BM-CORE-ASM" && Math.abs(i.placement.t[1] - k * CORE_PITCH) < 1e-9 && i.placement.r.every((v) => v === 0)));
   const find = (id) => p.assemblies.find((a) => a.id === id), flat = flatAsm(mod, find), counts = partCounts(mod, find);
-  assert.equal(flat.instances.length, 152); assert.equal(counts.get("BM-SPRING-HV"), 16); assert.equal(counts.get("BM-STOP-HV"), 16); assert.equal(counts.get("BM-SPRING-LV"), 16); assert.equal(counts.get("BM-CELL-21700"), 64); assert.equal(counts.get("BM-BB-LAM"), 8);
+  assert.equal(flat.instances.length, 192); assert.equal(counts.get("BM-LAM-HV"), 16); assert.equal(counts.get("BM-STOP"), 32); assert.equal(counts.get("BM-LAM-LV"), 32); assert.equal(counts.get("BM-LAM-CAGE"), 8); assert.equal(counts.get("BM-CELL-21700"), 64); assert.equal(counts.get("BM-BB-LAM"), 8);
   assert.equal(counts.get("BM-FLEX-BOX"), 8); assert.equal(counts.get("BM-HOLDER"), 8); assert.equal(counts.get("BM-HOLDER-BASE"), 8); assert.equal(counts.get("CORE-1S8P-PCBA-PCB"), 8);
   const built = Object.fromEntries(p.parts.map((x) => [x.id, { interfaces: x.interfaces || [] }])), loose = { ...flat, instances: flat.instances.map(({ group, ...i }) => i) };
   assert.deepEqual(candidates(loose, built).filter((c) => c.a.iface === c.b.iface && built[flat.instances.find((i) => i.id === c.a.inst).part] === built[flat.instances.find((i) => i.id === c.b.inst).part]), []);
@@ -189,7 +208,7 @@ test("the module : 8 CORE side by side, the same way round ; 152 parts (19 per C
 test("wired : the example on the home page, the English of its drawings, the .dwiz file, the documents", () => {
   const p = bmProject(), texts = [...new Set([...p.parts.flatMap((s) => partTexts(s, p)), ...p.assemblies.flatMap((a) => drawingTexts(p, `assembly:${a.id}`))])];
   assert.deepEqual(wordsLeft(p.drawing.words, texts), []); assert.deepEqual(wordsUnused(p), []);
-  const back = fromDwiz(toDwiz(p)); assert.equal(back.assemblies.length, 2); assert.equal(back.boards[0].id, "CORE-1S8P-PCBA"); assert.equal(back.physics[0].model, "busbar");
+  const back = fromDwiz(toDwiz(p)); assert.equal(back.assemblies.length, 3); assert.equal(back.boards[0].id, "CORE-1S8P-PCBA"); assert.equal(back.physics[0].model, "busbar");
   assert.match(read("web/js/modules/home.js"), /"data-example": "bm"/);
-  for (const re of [/51,5 mm/, /Itération 8/, /sertie/, /Itération 6/, /couronne de lames/i, /butée/, /support de cellules/i, /busbar laminé/i, /flex en boîte/i, /rondelle/i, /2K/, /Itération 5/]) assert.match(read("docs/BM_MODULE.md"), re);
+  for (const re of [/52,6 mm/, /Itération 9/, /lamelles/, /LOUVER_tron 112/, /Itération 8/, /sertie/, /Itération 6/, /couronne de lames/i, /butée/, /support de cellules/i, /busbar laminé/i, /flex en boîte/i, /rondelle/i, /2K/, /Itération 5/]) assert.match(read("docs/BM_MODULE.md"), re);
 });

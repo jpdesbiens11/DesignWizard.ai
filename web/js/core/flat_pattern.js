@@ -47,12 +47,12 @@ function treeFlat(def) {
   const c = def.core, t = def.t, pieces = [{ at: [0, 0], size: [c.L, c.W], name: "Cœur" }], bends = [], marks = [];
   for (const b of def.branches) {
     const E = EDGES[b.edge]; if (!E || !(b.w > 0) || !b.legs.length) continue;
-    const legs = b.legs.map((g, i) => (i ? g : { ...g, L: (Number(g.L) || 0) + ROOT })), d = develop(legs, t, def.r, K_FILM), ext = r3(d.total - ROOT);
+    const legs = b.legs.map((g, i) => (i ? g : { ...g, L: (Number(g.L) || 0) + ROOT })), rb = b.r ?? def.r, d = develop(legs, t, rb, K_FILM), ext = r3(d.total - ROOT);      // a branch may bend at its own radius (the tails of the CORE flex)
     const o = E.sign > 0 ? (E.axis === 0 ? c.L : c.W) : 0, out = (u) => r3(o + E.sign * u), lo = r2(b.at - b.w / 2), hi = r2(b.at + b.w / 2);
     const P = (u, a) => (E.axis === 0 ? [out(u), a] : [a, out(u)]);      // u : from the edge of the core, outward ; a : along the edge
     const p0 = P(0, lo), p1 = P(ext, hi);
     pieces.push({ at: [Math.min(p0[0], p1[0]), Math.min(p0[1], p1[1])], size: [r3(Math.abs(p1[0] - p0[0])), r3(Math.abs(p1[1] - p0[1]))], name: `Branche ${b.id}` });
-    d.bends.forEach((g, k) => bends.push({ id: `${b.id}-${k + 1}`, of: b.id, a: P(g.at - ROOT, lo), b: P(g.at - ROOT, hi), dir: g.dir, angle: g.angle, r: def.r, label: bendLabel(g, def.r), zone: [r3(g.from - ROOT), r3(g.to - ROOT)] }));
+    d.bends.forEach((g, k) => bends.push({ id: `${b.id}-${k + 1}`, of: b.id, a: P(g.at - ROOT, lo), b: P(g.at - ROOT, hi), dir: g.dir, angle: g.angle, r: rb, label: bendLabel(g, rb), zone: [r3(g.from - ROOT), r3(g.to - ROOT)] }));
     if (b.end === "temp" || b.end === "volt") {
       const K = SENSOR_KINDS[b.end], tip = P(ext - 3, b.at), back = b.end === "temp" ? (b.side === -1 ? 1 : -1) : (b.side === -1 ? -1 : 1);      // a probe stands on the back of its branch ; a tab on its front
       const len = b.end === "volt" ? 4 : K.size[0], wid = b.end === "volt" ? (b.tabW > 0 ? Math.min(b.tabW, b.w - 1) : Math.max(1, b.w - 1)) : K.size[1];
