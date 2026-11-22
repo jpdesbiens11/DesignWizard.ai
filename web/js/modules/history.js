@@ -15,7 +15,7 @@ import { store } from "../core/store.js";
 import { registerModule, setGuide } from "../core/app.js";
 import { guideBox } from "../core/guide.js";
 import { toDwiz } from "../core/dwiz.js";
-import { historyOf, pointOf, addPoint, restoreInto, sinceThen, diffTrees, changeCount, setDropped, weight, pointProject, contextOf, historyGuide, POINT_KINDS, ART_KINDS, MAIN, nextBranch, branchNames } from "../core/history.js";
+import { historyOf, pointOf, addPoint, restoreInto, sinceThen, diffTrees, changeCount, setDropped, weight, pointProject, contextOf, historyGuide, POINT_KINDS, ART_KINDS, MAIN, deletePlan, deletePoint, nextBranch, branchNames } from "../core/history.js";
 import { freeName, startBranch, branchSuggestion, mergePlan } from "../core/history_branches.js";
 import { branchSection, branchGuide, openMerge } from "./history_branches_ui.js";
 import { historyTree } from "./history_tree.js";
@@ -92,6 +92,21 @@ function render(main, args) {
     download(`${fileName(`${p.name || p.id}_${pt.id}_${pt.label}`)}.dwiz`, toDwiz(doc), "text/plain;charset=utf-8");
     toast(`${pt.id} téléchargé : un projet complet, qui s'ouvre seul (menu Projet › Importer).`, "success", 5000);
   }
+  /** « Effacer ce point » (JP, 22 novembre : « effacer ces points de sauvegarde individuellement… les autres se réattachent, ou si un seul
+      concept sur la branche, elle meurt et on revient par défaut au MAIN ») : what it does is said first ; the deletion itself is not undoable. */
+  async function erase(id) {
+    const h = historyOf(store.project), plan = deletePlan(h, id); if (!plan.ok) { toast(plan.why, "warn", 5000); return; }
+    const pt = plan.point, kids = plan.children, lines = [
+      kids.length ? `${kids.length > 1 ? `Les points ${kids.join(", ")} se rattachent` : `Le point ${kids[0]} se rattache`} à ${plan.parent || "la racine de l'arbre"}.` : "Aucun point ne part de lui.",
+      plan.dies ? `La branche « ${plan.branch} » n'a que ce point : elle disparaît.` : `La branche « ${plan.branch} » garde ses autres points.`,
+      plan.here && plan.back ? (plan.back.restore ? `Vous y êtes : le produit revient au dernier point de MAIN, ${plan.back.id} « ${plan.back.label} » (Ctrl + Z ramène le produit, pas le point).` : `Vous y êtes : « vous êtes ici » remonte à ${plan.back.id} ; le produit ne change pas.`) : "Le produit ne change pas.",
+      `${plan.freed.length ? `${plan.freed.length} artéfact${plan.freed.length > 1 ? "s" : ""} que seul ce point gardait ${plan.freed.length > 1 ? "sont libérés" : "est libéré"}.` : "Les autres points gardent tout ce qu'il gardait."} Un point effacé ne revient pas : emportez-le d'abord en .dwiz si vous voulez le garder.`];
+    const ok = await confirmBox(`Effacer le point ${pt.id} — ${pt.label}`, lines.join(" "), "Effacer le point", true); if (!ok) return;
+    if (plan.here && plan.back && plan.back.restore) { if (!store.commit(`Point ${pt.id} effacé — retour à MAIN (${plan.back.id})`, (x) => { deletePoint(x, id); })) store.writeHistory(`Point ${pt.id} effacé`, () => null); }      // the product did not change : the history is saved all the same
+    else store.writeHistory(`Point ${pt.id} effacé`, (x) => deletePoint(x, id));
+    st.sel = kids[0] || plan.parent || (plan.back && plan.back.id) || null; mark(); draw();
+    toast(`${pt.id} effacé${plan.dies ? ` ; la branche « ${plan.branch} » a disparu` : ""}${plan.here && plan.back && plan.back.restore ? ` ; retour à MAIN (${plan.back.id})` : ""}.`, "success", 6000);
+  }
   const drop = (tip, on) => { store.writeHistory(on ? "Branche abandonnée" : "Branche reprise", (x) => setDropped(x, tip, on)); draw(); };
 
   /** Where the next point goes : the branch it continues, or the name of the branch it opens. */
@@ -136,7 +151,8 @@ function render(main, args) {
         merge,
         btn("Revenir à ce point", () => goBack(pt.id), { primary: !merge || !brings, icon: "undo", disabled: here && !changeCount(sinceThen(p, pt.id)), tip: here ? "Vous êtes déjà ici ; revenir défait ce qui a changé depuis" : "Le produit redevient celui de ce point — une étape annulable" }),
         tagged(btn("Nouvelle branche ici", () => openFork(pt.id), { icon: "branch", tip: "Partir de ce point dans une branche nommée, à côté : la branche d'où elle part ne bouge pas ; elle se fusionne dans MAIN quand elle est prête" }), { historyFork: pt.id }),
-        btn(".dwiz", () => takeAway(pt.id), { icon: "download", tip: "Ce point comme un projet complet, qui s'ouvre seul" }))));
+        btn(".dwiz", () => takeAway(pt.id), { icon: "download", tip: "Ce point comme un projet complet, qui s'ouvre seul" }),
+        tagged(btn("Effacer ce point", () => erase(pt.id), { icon: "trash", tip: "Effacer ce point seul : les points d'après se rattachent au point d'avant ; une branche qui n'avait que lui disparaît. Ce qu'il fait est dit avant ; un point effacé ne revient pas" }), { historyErase: pt.id }))));
     const body = el("div", { class: "side-scroll" }); right.append(body);
     body.append(el("div", { class: "side-section", "data-fold-note": K.label }, el("h3", null, "Ce point"),
       el("p", { class: "hist-kindline", style: `--dom:${K.color}` }, el("span", { class: "hist-kind" }, K.label), ` ${K.fr}.`),

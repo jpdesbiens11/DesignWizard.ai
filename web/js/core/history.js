@@ -7,7 +7,7 @@
    an answer of an AI, before a return), what was done since the point before (its own journal), the MVP iteration open then and the
    revisions frozen then.
    Going back to a point and continuing opens a BRANCH : the history is a tree. A branch can be set aside (« abandonnée ») and taken up again ;
-   nothing is deleted. What it follows : the snapshot manager of a virtual machine (a tree, « vous êtes ici »), the commit graph of a
+   a point is deleted only by hand, one at a time, after it said what it does (`deletePlan`, `deletePoint`). What it follows : the snapshot manager of a virtual machine (a tree, « vous êtes ici »), the commit graph of a
    version-control client (a lane per branch). The history is not part of the undo : Ctrl + Z undoes a change, not a point.
    Pure : no page, no store. project.history = { v: 1, head, objects: { fingerprint: text }, points: [...] } */
 
@@ -180,6 +180,33 @@ export function setDropped(project, tip, on = true) {
   const h = historyOf(project), b = branches(h).find((x) => x.tip === tip); if (!b || (on && b.here)) return false;
   for (const id of b.points) { const p = pointOf(h, id); if (on) p.dropped = true; else delete p.dropped; }
   return true;
+}
+/* ---------- deleting a point (JP, 22 novembre 2026 : « je veux dorénavant être capable d'effacer ces points de sauvegarde individuellement
+   et ensuite les autres se réattachent, ou si un seul concept sur la branche, elle meurt et on revient par défaut au MAIN ») ----------
+   The usage followed : deleting a snapshot in the snapshot manager of a virtual machine — its children are kept and hang from its parent,
+   nothing else moves. The names of the branches are written on every point first, so that no branch is renamed by the deletion. */
+/** What deleting a point would do, in words, before it is done. → { ok, why, point, parent, children: [id], branch, dies (the branch has no
+    other point), here (it is « vous êtes ici »), back (where « vous êtes ici » goes : { id, label, branch, restore }), freed (texts no other point cites) } */
+export function deletePlan(h, id) {
+  const pt = pointOf(h, id); if (!pt) return { ok: false, why: "Ce point n'existe plus." };
+  const names = branchNames(h), branch = names.get(id), dies = ![...names].some(([k, b]) => k !== id && b === branch), here = h.head === id, parent = pointOf(h, pt.parent);
+  let back = null;
+  if (here) { const mainTip = [...h.points].filter((p) => p.id !== id && names.get(p.id) === MAIN).sort((a, b) => b.n - a.n)[0] || null, to = dies ? mainTip || parent : parent || mainTip;      // a branch that dies : back to MAIN ; else one point up
+    back = to ? { id: to.id, label: to.label, branch: names.get(to.id), restore: dies } : null; }
+  const cited = new Set(h.points.filter((p) => p.id !== id).flatMap((p) => (p.tree || []).map(([, f]) => f))), freed = [...new Set((pt.tree || []).map(([, f]) => f))].filter((f) => f && !cited.has(f));
+  return { ok: true, why: "", point: pt, parent: parent ? parent.id : null, children: childrenOf(h, id).map((p) => p.id), branch, dies, here, back, freed };
+}
+/** Delete a point : its children hang from its parent, the branches keep their names, the texts no other point cites go away ; « vous êtes ici »
+    moves as `deletePlan` says — when its branch dies, the product goes back to the last point of MAIN (call it INSIDE one step of the store :
+    the return of the product is undoable, the deletion of the point is not). → the plan, or null */
+export function deletePoint(project, id) {
+  const h = historyOf(project), plan = deletePlan(h, id); if (!plan.ok) return null;
+  const names = branchNames(h); for (const p of h.points) if (!p.branch) p.branch = names.get(p.id);      // the names, frozen first
+  for (const c of h.points) if (c.parent === id) c.parent = plan.point.parent;
+  h.points = h.points.filter((p) => p.id !== id);
+  for (const f of plan.freed) delete h.objects[f];
+  if (plan.here) { if (plan.back && plan.back.restore) restoreInto(project, plan.back.id); else h.head = plan.back ? plan.back.id : null; }
+  return plan;
 }
 /** What a point weighs, and what the history weighs. → { points, objects, bytes } — bytes : what the history adds to the file */
 export function weight(h) {

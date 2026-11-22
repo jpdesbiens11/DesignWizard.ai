@@ -136,6 +136,29 @@ l'emporte (JP a choisi le bloc) ; une fusion à l'intérieur d'une pièce (deux 
 même pièce : la version de la branche l'emporte entière) ; renommer une branche ; un miroir d'équipe qui porte les
 branches tout seul (aujourd'hui, le fichier se passe à la main).
 
+## 5 ter. Effacer un point
+
+Demande de JP (22 novembre 2026) : « je veux dorénavant être capable d'effacer ces points de sauvegarde individuellement
+et ensuite les autres se réattachent, ou si un seul concept sur la branche, elle meurt et on revient par défaut au
+MAIN ».
+
+- **« Effacer ce point »**, dans la marge de droite de tout point, à côté de « .dwiz ». Avant d'effacer, la boîte dit
+  ce que cela fait : quels points se rattachent et à quoi, si la branche garde d'autres points ou disparaît, où va
+  « vous êtes ici », et combien d'artéfacts seul ce point gardait.
+- **Les points d'après se rattachent au point d'avant** : un point du milieu de MAIN effacé, son suivant repart de son
+  parent, et une branche qui partait de lui part désormais de ce parent. Rien d'autre ne bouge ; chaque branche garde
+  son nom (les noms sont écrits sur chaque point avant l'effacement).
+- **Une branche qui n'avait que ce point disparaît.** Si « vous êtes ici » y était, **le produit revient au dernier
+  point de MAIN** — une étape annulable du produit (Ctrl + Z ramène le produit, pas le point). Si la branche garde
+  d'autres points, « vous êtes ici » remonte d'un point et le produit ne change pas.
+- Les artéfacts que plus aucun point ne cite s'en vont : l'historique s'allège.
+- **Un point effacé ne revient pas** (l'historique n'est pas dans l'annulation) : la boîte le dit, et propose de
+  l'emporter d'abord en `.dwiz`.
+
+Pur : `deletePlan` (ce que cela ferait) et `deletePoint` de `web/js/core/history.js` ; écran : `modules/history.js`.
+Usage suivi : effacer un instantané dans le gestionnaire d'instantanés d'une machine virtuelle — ses enfants restent et
+pendent de son parent. Choix maison : le retour à MAIN quand la branche de « vous êtes ici » disparaît (demande de JP).
+
 ## 6. Ce qui est vérifié, ce qui ne l'est pas
 
 Branches, fusion et import d'un coéquipier : essais `tests/node/history_branches.test.mjs`, et essayés dans Chromium sur
