@@ -167,7 +167,9 @@ plus bas, avec sa version. Une revue de la liste se fait à chaque reprise de s�
    ~~**Retour fixe, sans pont**~~ (JP, par menu ; l'anneau dans le boîtier ne gagnait rien) — fait (v0.181.0) : shunt souple borne + → retour,
    plus de pont ni de pinces au couvercle ; 12,9 mm de moins qu'au concept 1. **JP, même jour : « montre-moi les concepts… image svp et pointe-moi
    les changements à l'écran ; fini le texte seul pour expliquer du visuel »** — chaque itération se présente en images annotées (coupe avant /
-   après calculée sur le modèle, changements pointés). Suite proposée par menu.
+   après calculée sur le modèle, changements pointés).
+   ~~**Bout bas, même méthode**~~ (JP, par menu) — fait (v0.182.0) : plus d'entretoises, l'anneau du fond sur la plaque d'appui de la borne − ;
+   20,75 mm de moins, 33,65 mm de moins qu'au concept 1 au total. Suite proposée par menu.
 5. ~~**Icônes : remplacer le chapeau de sorcier** par une alternative du monde des fusées, puis toutes les icônes (JP, 22 novembre) — framework.~~ — fait (v0.178.0, voir plus bas).
    Priorité, par menu : « Tâche à part, maintenant » — lancée par JP depuis sa carte, dans une autre conversation ; pas dans celle de conception.
 

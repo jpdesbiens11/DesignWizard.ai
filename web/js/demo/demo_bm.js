@@ -200,7 +200,34 @@ function withConceptThree(p) {
   addPoint(p, { kind: "manual", branch: C3_BRANCH, label: `Concept 3 — bout haut raccourci de ${String(cut).replace(".", ",")} mm`, when: "2026-11-22T20:00:00.000Z", by: "DesignOrbit.ai",
     note: `Choix de JP par menu : « Raccourcir le bout haut ». La plaque de pression appuie directement sur la borne + (plus de plaque d'appui) ; la languette de retour passe dans une fenêtre de la plaque, juste derrière la borne ; le boîtier perd ${String(cut).replace(".", ",")} mm.` });  const cut2 = fixedReturnC3(p, env, DISC);
   addPoint(p, { kind: "manual", branch: C3_BRANCH, label: `Concept 3 — retour fixe, sans pont : ${frC(cut2)} mm de moins`, when: "2026-11-22T21:00:00.000Z", by: "DesignOrbit.ai",
-    note: `Choix de JP par menu : « Retour fixe, sans pont ». La borne + et le busbar de retour sont reliés en permanence par un shunt souple court ; le couvercle ne fait plus que tenir la pile ; le contacteur du fond reste ce qui ouvre le module. Le boîtier perd encore ${frC(cut2)} mm.` });
+    note: `Choix de JP par menu : « Retour fixe, sans pont ». La borne + et le busbar de retour sont reliés en permanence par un shunt souple court ; le couvercle ne fait plus que tenir la pile ; le contacteur du fond reste ce qui ouvre le module. Le boîtier perd encore ${frC(cut2)} mm.` });  const cut3 = bottomShortC3(p, env);
+  addPoint(p, { kind: "manual", branch: C3_BRANCH, label: `Concept 3 — bout bas raccourci : ${frC(cut3)} mm de moins`, when: "2026-11-22T22:00:00.000Z", by: "DesignOrbit.ai",
+    note: `Choix de JP par menu : « Bout bas, même méthode ». Plus d'entretoises : le boîtier s'arrête 1 mm derrière la plaque d'appui de la borne −, l'anneau du fond y appuie par ses quatre pattes ; le couvercle du fond et ce qu'il porte suivent. Le module perd ${frC(cut3)} mm.` });
+}
+
+/** Concept 3, the bottom end shortened (JP, by menu : « Bout bas, même méthode ») : the four spacers go — the casing stops 1 mm behind the backing plate
+    of the − terminal and the bottom ring bears on it by its four lugs ; the lid, its connector, contactor, board volume and straps follow ; the
+    return busbar starts nearer. → the length gained (mm) */
+function bottomShortC3(p, env) {
+  const negLand = r6(CORE_Y + INS_T + BB_T - CORE_PITCH - 2), back = r6(negLand - 3), Y0 = r6(back - 1), find = (id) => p.parts.find((x) => x.id === id);
+  const old = find("BM-CASING").params.L.value, topEnd_ = r6(CASE_Y0 + old), caseL = r6(topEnd_ - Y0), gain = r6(Y0 - CASE_Y0);
+  const bottom = bottomEnd({ env, end: Y0, land: negLand, back, barEnd: r6(Y0 - 16) }), L = bottom.layout, ring = bottom.parts.find((x) => x.id === "BM-LID-RING-BOT");
+  for (const f of ring.features.filter((q) => /^patte_/.test(q.id))) { f.size[1] = r6(back - L.ring0); f.name = f.name.replace("l'appui de l'entretoise", "elle appuie sur la plaque d'appui de la borne −, entretoise"); }
+  ring.function = "Prend la poussée de la pile — la réaction des rondelles du couvercle du haut — par ses quatre pattes, posées sur la plaque d'appui de la borne −, et la passe au boîtier par ses quatre vis.";
+  ring.notes = [...ring.notes.filter((n) => !/entretoises sont des pièces/.test(n)), "Concept 3, bout bas raccourci : plus d'entretoises — le boîtier s'arrête 1 mm derrière la plaque d'appui, et les pattes de l'anneau, longues de 7 mm, y appuient. Usinées dans une plaque de 13 mm : à revoir avec l'atelier (pattes rapportées et vissées, comme les entretoises d'avant)."];
+  const ret = JSON.parse(JSON.stringify(find("BM-RETURN-BB"))), y0 = r6(Y0 - 16), bar = ret.features.find((f) => f.id === "barre"), hole = ret.features.find((f) => f.id === "trou_bas");
+  bar.size[1] = r6(bar.at[1] + bar.size[1] - y0); bar.at[1] = y0; hole.at[1] = r6(y0 + 4.5);
+  const cas0 = find("BM-CASING"), win0 = cas0.features.find((f) => f.id === "fenetre_retour"), tab = r6(CASE_Y0 + win0.at[1] + 0.6);
+  const casing = casingPart({ L: caseL, env }); casing.plan = { paths: casingPaths(caseL, env) };
+  const win = casing.features.find((f) => f.id === "fenetre_retour"); win.at[1] = r6(tab - Y0 - 0.6); win.size[1] = r6(caseL + 1 - win.at[1]);
+  casing.notes = [...casing.notes, `Concept 3 : la cavité s'élargit de ${r6(F3.jawOut[1] - CORE_ENV.x1)} mm au bout +X pour les pinces.`, `Concept 3, bouts haut et bas raccourcis : coupé à ${frC(caseL)} mm — ${frC(CASE_L - caseL)} mm de moins qu'au concept 1. En haut, la pince de la borne + fixe la longueur ; en bas, la plaque d'appui de la borne −.`];
+  const fresh = new Map([...bottom.parts.filter((x) => x.id !== "BM-POST"), ret, casing].map((x) => [x.id, x]));
+  p.parts = p.parts.filter((x) => x.id !== "BM-POST").map((x) => fresh.get(x.id) || x);
+  const asm = { ...bottom.assembly, instances: bottom.assembly.instances.filter((i) => i.part !== "BM-POST") };
+  p.assemblies = p.assemblies.map((a) => (a.id === asm.id ? asm : a));
+  const mod = p.assemblies.find((a) => a.id === "BM-8S8P-ASM"), box = mod.instances.find((i) => i.id === "boitier"); box.placement = at([0, Y0, 0]);
+  p.description = p.description.replace(/Bout haut raccourci de [\d,]+ mm\./, `Bouts haut et bas raccourcis : ${frC(CASE_L - caseL)} mm de moins sur le boîtier.`);
+  return gain;
 }
 const frC = (v) => String(Math.round(v * 100) / 100).replace(".", ",");
 

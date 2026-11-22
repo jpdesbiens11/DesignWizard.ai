@@ -841,6 +841,17 @@ rien gagner (sa bride entoure l'âme du pont, elle ne s'ajoute pas à la longueu
 - **Le boîtier est coupé à 446,5 mm** : 8,15 mm de moins qu'en P5, **12,9 mm de moins qu'au concept 1**.
 - **Vérifié par les essais** : rien ne traverse rien ; le shunt touche le dos de la borne + et la languette ; le couvercle dégage la pince.
 
+**Le bout bas raccourci** (JP, par menu : « Bout bas, même méthode », v0.182.0 — point P7) : **20,75 mm de moins**.
+
+- **Plus d'entretoises** : le boîtier s'arrête 1 mm derrière la plaque d'appui de la borne −, et l'anneau du fond y appuie par ses quatre
+  pattes, longues de 7 mm (usinées dans la masse : 13 mm de plaque — à revoir avec l'atelier, des pattes rapportées et vissées comme l'étaient
+  les entretoises).
+- **Le couvercle du fond et tout ce qu'il porte remontent de 20,75 mm** : connecteur d'échange (il sort maintenant à y −74,25), contacteur,
+  volume de la carte, barres ; la barre PACK− est plus courte d'autant ; le busbar de retour commence à y −24,25.
+- **Le boîtier est coupé à 425,75 mm** : **33,65 mm de moins qu'au concept 1**. Ce qui fixe la longueur : en haut, la pince de la borne + ; en
+  bas, la plaque d'appui de la borne −.
+- **Vérifié par les essais** : rien ne traverse rien, CORE 1, CORE 2, CORE 7, CORE 8 et les deux bouts compris.
+
 **Pas fait, à itérer ensemble** : l'effort pour entrer une lame (non publié dans ce qui a été lu : fabricant ou mesure) ; la tenue de la
 brasure au cyclage thermique ; l'effort pour fermer le couvercle (deux lames à la fois, que la came donne) ; loger l'anneau du haut dans le boîtier pour gagner encore de la longueur ; les fils des plages LV de la borne + à travers la plaque de pression ; « couvercles debout » est lu comme les couvercles du concept 1, aux deux bouts du module
 (à confirmer) ; l'échauffement du module fermé (le calcul du concept 1 n'est pas repris : ses joints étaient plans) ; l'isolation du joint
