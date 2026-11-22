@@ -24,10 +24,11 @@ const cylZ = (id, name, body, at, d, h, mode) => ({ op: "cylinder", id, name, ..
 /** The planes of the bottom end, along Y : from the backing plate of the − terminal down to the bottom face of the housing. o : { end (the bottom
     end of the casing), back (the back of the backing plate of the − terminal), land (the back face of its copper), barEnd (the end of the return busbar) } */
 export function bottomLayout(o) {
-  const S = caseSection(), c = S.cavity;
+  const S = caseSection(o.env), c = S.cavity, c0 = caseSection().cavity;      // c0 : the cavity of concept 1 — the posts stay on the backing plate of the − terminal
   const e = o.end;      // every plane below is measured from the bottom end of the casing
   return { S, c, end: e, back: o.back, land: o.land, barEnd: o.barEnd, ring0: r3(e - 6), house0: r3(e - 56), wall: 2.5,
-    posts: [[c.x0, 6], [c.x1 - 11.5, 6], [c.x0, 50], [c.x1 - 11.5, 50]], postW: 11.5, postH: 8,
+    out: { x0: r3(S.ports[0][0] - S.R), x1: r3(S.ports[1][0] + S.R) },
+    posts: [[c0.x0, 6], [c0.x1 - 11.5, 6], [c0.x0, 50], [c0.x1 - 11.5, 50]], postW: 11.5, postH: 8,
     conn: { x0: 20, x1: 86, z0: 6, z1: 34, y0: r3(e - 66), y1: r3(e - 51), hvP: [76, 20], hvN: [46, 24], pin: 12, lv: [24, 29, 34, 54, 59, 64].map((x) => [x, 12]) },
     cont: { x0: 4, x1: 64, z0: 34, z1: 74, y0: r3(e - 43), y1: r3(e - 23), studA: [14, 54], studB: [54, 54] },
     riser: { y0: r3(e - 19), y1: r3(e - 15) }, descent: { y0: r3(e - 49), y1: r3(e - 45) },
@@ -37,7 +38,7 @@ export function bottomLayout(o) {
 
 /** The interface ring of the bottom lid : its flange, the slot of the return busbar, the four posts on the backing plate of the − terminal. */
 export function bottomRing(L) {
-  const S = L.S, c = L.c, ch = S.channel, out = { x0: -8.7, x1: 101.5, z0: S.keel.z0, z1: r3(S.ports[2][1] + S.R) }, at = S.ports.map((p) => [p[0], p[1]]);
+  const S = L.S, c = L.c, ch = S.channel, out = { ...L.out, z0: S.keel.z0, z1: r3(S.ports[2][1] + S.R) }, at = S.ports.map((p) => [p[0], p[1]]);
   return { dw: "part/1", id: "BM-LID-RING-BOT", name: "Anneau d'interface du couvercle du fond", family: "machined", process: "cnc_milling", material: "AL6061-T6", revision: "A", params: {},
     features: [box("bride", "Bride", null, [out.x0, L.ring0, out.z0], [out.x1 - out.x0, 6, out.z1 - out.z0]),
       box("fenetre", "Fenêtre — la section de la cavité", null, [c.x0, L.ring0 - 1, c.z0], [c.x1 - c.x0, 8, c.z1 - c.z0], "cut"),
@@ -61,7 +62,7 @@ export function postPart(L) {
 
 /** The housing of the bottom lid : a shell open toward the ring ; the window of the swap connector in its bottom face. */
 export function bottomHousing(L) {
-  const S = L.S, w = L.wall, x0 = -8.7, x1 = 101.5, z0 = S.keel.z0, z1 = r3(S.ports[2][1] + S.R), K = L.conn;
+  const S = L.S, w = L.wall, x0 = L.out.x0, x1 = L.out.x1, z0 = S.keel.z0, z1 = r3(S.ports[2][1] + S.R), K = L.conn;
   return { dw: "part/1", id: "BM-LID-BOT", name: "Couvercle du fond", family: "molded", process: "injection_molding", material: "PA66-GF30", revision: "A", params: {},
     features: [box("coque", "Coque", null, [x0, L.house0, z0], [x1 - x0, L.ring0 - L.house0, z1 - z0]),
       { op: "fillet", id: "conges", name: "Congés des arêtes le long de l'axe — R3,75 dehors, R1,25 dedans après la coque", r: 1.5 * w, edges: { dir: "Y" } },

@@ -35,7 +35,7 @@ export const CORE_ENV = { x0: 0, x1: 92.8, flex0: 0.7, flex1: 92.1, z0: -3.8, z1
 
 /** The numbers of the section : cavity, walls, keel, channel, lobes and their ports. → { cavity, outer, keel, channel, ports, R, xm, zm } */
 export function caseSection(env = CORE_ENV, C = CASE) {
-  const t = C.t, xm = (env.x0 + env.x1) / 2;
+  const t = C.t, xm = env.xm ?? (env.x0 + env.x1) / 2;      // concept 3 : the cavity widens at +X for the forks, the keel and the rails stay under the CORE
   const cav = { x0: env.x0 - C.side, x1: env.x1 + C.side, z0: env.z0 - C.rail.h - 0.5, z1: env.z1 + C.top };      // the rails stand 0.5 mm under the flex
   const outer = { x0: cav.x0 - t, x1: cav.x1 + t, z0: cav.z0 - t, z1: cav.z1 + t };
   const ch = { w: RETURN.w + 2 * C.keel.clr, h: RETURN.t + 2 * C.keel.clr }, channel = { x0: xm - ch.w / 2, x1: xm + ch.w / 2, z1: outer.z0, z0: outer.z0 - ch.h };
@@ -76,16 +76,16 @@ export function cavityPoly(S, C = CASE, env = CORE_ENV) {
 
 /** The casing. o : { L (length along Y), Y0 (where its −Y end is, in the module) } → a part (its own frame : y from 0 to L) */
 export function casingPart(o) {
-  const S = caseSection(), C = CASE, Pt = C.port, L = o.L, ch = S.channel;
-  const profile = { outer: { path: outlinePath(S) }, holes: [{ poly: cavityPoly(S) }, { rect: [ch.x0, ch.z0, ch.x1 - ch.x0, ch.z1 - ch.z0], r: C.r.channel }, ...S.ports.map((p) => ({ circle: [p[0], p[1], Pt.ext] }))] };
+  const E = o.env || CORE_ENV, S = caseSection(E), C = CASE, Pt = C.port, L = o.L, ch = S.channel;
+  const profile = { outer: { path: outlinePath(S) }, holes: [{ poly: cavityPoly(S, C, E) }, { rect: [ch.x0, ch.z0, ch.x1 - ch.x0, ch.z1 - ch.z0], r: C.r.channel }, ...S.ports.map((p) => ({ circle: [p[0], p[1], Pt.ext] }))] };
   const env = (name, x0, x1, z0, z1, clearance) => ({ name, w: r3(x1 - x0), h: r3(z1 - z0), at: [r3((x0 + x1) / 2), r3((z0 + z1) / 2)], clearance });
-  const E = CORE_ENV, at = S.ports.map((p) => [p[0], p[1]]), cb = { d: Pt.cb, depth: Pt.cbDepth };
+  const at = S.ports.map((p) => [p[0], p[1]]), cb = { d: Pt.cb, depth: Pt.cbDepth };
   const lid = (face, name, key, partner) => ({ id: face === "-Y" ? "IF1" : "IF2", type: "bolt_pattern", name, key, partner, side: "B", face, at: [S.xm, r3((S.ports[0][1] + S.ports[2][1]) / 2)],
     params: { screw: "M4", pattern: { type: "rect", nx: 2, ny: 2, dx: r3(S.ports[1][0] - S.ports[0][0]), dy: r3(S.ports[2][1] - S.ports[1][1]) } }, opts: { depth: Pt.depth, port: true } });
   return { dw: "part/1", id: "BM-CASING", name: "Boîtier extrudé du module", family: "extrusion", process: "extrusion_plastic", material: "PC", revision: "A",
     function: "Contient les 8 CORE, glissés sur deux rails du fond et tenus par quatre nervures de côté ; porte aux quatre coins les vis des deux couvercles, dans des trous venus d'extrusion ; sous le fond, le canal fermé du busbar de retour. Sa quille et ses quatre lobes guident le module dans sa cavité ou sa station de recharge.",
     params: { L: { value: L, unit: "mm", label: "Longueur coupée", min: 300, max: 800, step: 0.5, group: "Enveloppe" } },
-    extrusion: { axis: "Y", length: "L", profile, inside: [env("CORE — carte et composants", E.x0, E.x1, 72.7, E.z1, 0.3), env("CORE — flex et supports", E.flex0, E.flex1, E.z0, 72.7, 0.3),
+    extrusion: { axis: "Y", length: "L", profile, inside: [env("CORE — carte et composants", E.x0, Math.min(E.x1, CORE_ENV.x1), 72.7, E.z1, 0.3), env("CORE — flex et supports", E.flex0, E.flex1, E.z0, 72.7, 0.3),
       env("Busbar de retour (itération 11)", S.xm - RETURN.w / 2, S.xm + RETURN.w / 2, ch.z0 + C.keel.clr, ch.z1 - C.keel.clr, 0.3)] },
     features: [{ op: "interfaces" },
       { op: "hole", id: "vis_fond", name: "Trous des vis du couvercle du fond (percés, lamés)", face: "-Y", at, d: Pt.hole, depth: Pt.depth, cbore: cb },
@@ -147,8 +147,8 @@ export function returnSizing(I) {
 
 /** The paths of the machining phases of the casing, written by an AI (Claude) as answers to the request of the shop : drill, ream and counterbore
     the four screw holes of each end. In the frame of the part ; the tool comes along Y. */
-export function casingPaths(L) {
-  const S = caseSection(), P = CASE.port, BY = "Claude (IA) — exemple de démonstration", n = (v) => String(r3(v));
+export function casingPaths(L, env) {
+  const S = caseSection(env), P = CASE.port, BY = "Claude (IA) — exemple de démonstration", n = (v) => String(r3(v));
   const pass = (sgn, tool, d, depth, note) => { const y0 = sgn > 0 ? 0 : L, far = y0 - sgn * 20, near = y0 - sgn * 2, end = y0 + sgn * depth, lines = ["G21 G90"];
     S.ports.forEach((p, k) => { lines.push(`G0 X${n(p[0])} Y${n(far)} Z${n(p[1])}`, `G0 Y${n(near)}`, `G1 Y${n(end)}`, `G0 Y${n(far)}`); });
     return { tool, d, by: BY, note, gcode: lines.join("\n") }; };

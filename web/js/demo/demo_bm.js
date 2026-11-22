@@ -40,11 +40,16 @@ import { topEnd } from "./demo_bm_lid.js";
 import { bottomEnd } from "./demo_bm_bottom.js";
 import { screwHolding, heatCalcs } from "./demo_bm_heat.js";
 import { conceptTwo, camLayout, camCalc } from "./demo_bm_c2.js";
+import { ENV3, laminateC3, louvrePart, terminalsC3, lidForcesC3, pressPlateC3, discPart, calcsC3, F3 } from "./demo_bm_c3.js";
+import { CORE_ENV } from "./demo_bm_case.js";
 import { addPoint, restoreInto, putDefinition, withoutHistory } from "../core/history.js";
 
 /** The branch of concept 2 (JP, 22 novembre : « commence un point de sauvegarde du MAIN et fait une branche parallèle (concept 2 - consumer
     product interface) »). */
 export const C2_BRANCH = "concept 2 - consumer product interface";
+/** The branch of concept 3 (JP, 22 novembre : « une 3e branche, partie du concept 1… contacts haute puissance à lames… commencer simple ») ;
+    his choices by menu : « Lame dans une pince », from the whole of concept 1. */
+export const C3_BRANCH = "concept 3 - blade and fork";
 
 /* Iteration 2 (JP, 21 novembre : « garder les L pressés » ; « le max de courant continu des 21700 P45B de Molicel, en décharge et en charge,
    la valeur la plus élevée — on est en 8s8p avec 8 CORE » ; then the flex in G). The cell is the Molicel INR-21700-P45B of the library, its
@@ -115,7 +120,8 @@ export function busbarSizing() {
 }
 
 /** The project, new each time : the CORE board with its mechanical twin, the parts of the CORE, the CORE and the module — and its history :
-    concept 1 kept on MAIN, concept 2 on its own branch. o : { branch (true : the project opens on concept 2, « vous êtes ici » on its branch) } */
+    concept 1 kept on MAIN, concept 2 and concept 3 on their own branches. o : { branch (true or "c2" : the project opens on concept 2 ; "c3" :
+    on concept 3 ; else on MAIN) } */
 export function bmProject(opts = {}) {
   const p = { dw: "project/1", id: "bm-8s8p-21700", name: "BM 8s8p - 21700", author: "DynamiteOrbit",
     description: "Module de batterie 8s8p en cellules 21700 : 8 CORE 1S8P en série, côte à côte, chacun avec sa carte de mesure posée dessus. Douzième itération : le CORE refait — busbar laminé industriel sur le dessus, soudures laser dessinées, joints plans pressés par les ressorts du couvercle, capteurs dans le support du bas.",
@@ -141,7 +147,8 @@ export function bmProject(opts = {}) {
   bms.name = "BMS central du module"; bms.function = "Le BMS central : interroge les 8 cartes de CORE par la chaîne RS-485, lit le courant du module, commande le contacteur et dit l'état au véhicule par CAN. Pas encore posé : le logement du couvercle du fond est trop petit.";
   putBoard(p, BMS_BOARD_ID); putBoard(p, p.boards[0].id);
   p.software = [moduleDesign()];
-  withConceptTwo(p, !!opts.branch);      // the software of the central BMS : its state machine, run on its bench, written in C      // the lab table : the central BMS and one CORE board, linked by the four wires of the chain
+  withConceptTwo(p, true); withConceptThree(p);
+  restoreInto(p, opts.branch === "c3" ? "P3" : opts.branch ? "P2" : "P1");      // the software of the central BMS : its state machine, run on its bench, written in C      // the lab table : the central BMS and one CORE board, linked by the four wires of the chain
   return p;
 }
 
@@ -160,3 +167,29 @@ function withConceptTwo(p, onBranch) {
     note: "D'après les documents et les réponses de JP : CORE en ligne pressés, bandes à lamelles sur la face −, + rigide à bossages, poignée quart de tour à came double lobe, couvercle du fond actif." });
   if (!onBranch) restoreInto(p, "P1");
 }
+
+/** Concept 3, on its branch from MAIN (P1) : concept 1 whole, its joints made of a blade and a fork, its terminals likewise, the springs of the
+    top lid as disc springs, the casing and the lids 10 mm wider at +X (demo_bm_c3.js). */
+function withConceptThree(p) {
+  restoreInto(p, "P1");
+  const env = ENV3(CORE_ENV), find = (id) => p.parts.find((x) => x.id === id), DISC = 3, S = topEnd({ land: 0, end: 0, y0: 0 }).layout.springs.plate;
+  const lam = laminateC3(find("BM-BB-LAM"), { Y: CORE_Y, ins: INS_T, t: BB_T }), louv = louvrePart(-(INS_T + BB_T));
+  const t3 = terminalsC3(find("BM-TERM-NEG"), find("BM-TERM-POS"), { Y: CORE_Y, ins: INS_T, t: BB_T, pitch: CORE_PITCH });
+  const casing = casingPart({ L: CASE_L, env }); casing.plan = { paths: casingPaths(CASE_L, env) };
+  casing.notes = [...casing.notes, `Concept 3 : la cavité s'élargit de ${r6(F3.jawOut[1] - CORE_ENV.x1)} mm au bout +X pour les pinces ; les nervures de ce côté font face à leur mâchoire extérieure, 0,5 mm de jeu. La quille et les rails restent sous le CORE.`];
+  const top = topEnd({ env, lipX1: 92.4, land: r6(8 * CORE_PITCH - (INS_T + BB_T) + 2), end: r6(CASE_Y0 + CASE_L), y0: CASE_Y0 - 16 });
+  const negLand = r6(CORE_Y + INS_T + BB_T - CORE_PITCH - 2), bottom = bottomEnd({ env, end: CASE_Y0, land: negLand, back: r6(negLand - 3), barEnd: CASE_Y0 - 16 });
+  const F = lidForcesC3(64 * C.mass[0] / 1000), plate = pressPlateC3(top.layout, S, DISC), disc = discPart(DISC, F.stack / 4);
+  const fresh = new Map([...top.parts, ...bottom.parts, casing, lam, t3.neg, t3.pos, plate].map((x) => [x.id, x]));
+  p.parts = [...p.parts.filter((x) => x.id !== "BM-SPRING-PLATE").map((x) => fresh.get(x.id) || x), louv, disc];
+  const core = p.assemblies.find((a) => a.id === "BM-CORE-ASM"), mod = p.assemblies.find((a) => a.id === "BM-8S8P-ASM"), lid = top.assembly();
+  core.instances.push({ id: "lamelles", part: "BM3-LAMELLES", fixed: true, placement: at([0, 0, 0]) });
+  mod.instances.splice(mod.instances.findIndex((i) => i.id === "borne_plus") + 1, 0, { id: "lamelles_plus", part: "BM3-LAMELLES", fixed: true, placement: at([0, r6(8 * CORE_PITCH), 0]) });
+  lid.instances = lid.instances.map((i) => (i.part === "BM-SPRING-PLATE" ? { ...i, part: "BM3-DISCS", placement: at([i.placement.t[0], r6(top.layout.ring1 - DISC), i.placement.t[2]]) } : i));
+  p.assemblies = p.assemblies.map((a) => (a.id === lid.id ? lid : a.id === "BM-LID-BOT-ASM" ? bottom.assembly : a));
+  p.physics = [...p.physics.filter((c) => ["phy-bm-busbar", "phy-bm-return"].includes(c.id)), ...calcsC3(I_CORE, F)];
+  p.description = `Concept 3 « blade and fork » : le concept 1 entier, mais chaque joint entre deux CORE est une lame dans une pince à deux bandes à lamelles — l'effort de contact reste dans la pince, la pile n'est plus pressée pour ses contacts ; rondelles ressorts au couvercle du haut ; boîtier ${r6(F3.jawOut[1] - CORE_ENV.x1)} mm plus large au bout +X. Premier jet, à itérer.`;
+  addPoint(p, { kind: "manual", branch: C3_BRANCH, label: "Concept 3 — premier jet : lame dans une pince", when: "2026-11-22T18:00:00.000Z", by: "DesignWizard.ai",
+    note: "Choix de JP par menu : lame dans une pince, à partir du concept 1 complet. Joints entre CORE et bornes en lame et pince à bandes à lamelles ; rondelles ressorts au couvercle ; boîtier élargi au bout +X." });
+}
+const r6 = (v) => Math.round(v * 1e6) / 1e6;

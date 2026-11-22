@@ -21,12 +21,12 @@ const near = (a, b, msg, tol = 1e-3) => assert.ok(Math.abs(a - b) < tol, `${msg}
 
 test("the history of the project : concept 1 kept on MAIN, concept 2 on its branch ; the home card opens on the branch", () => {
   const p = bmProject(), h = p.history, names = branchNames(h);
-  assert.deepEqual(h.points.map((x) => [x.id, names.get(x.id)]), [["P1", "MAIN"], ["P2", C2_BRANCH]]); assert.equal(C2_BRANCH, "concept 2 - consumer product interface");
+  assert.deepEqual(h.points.slice(0, 2).map((x) => [x.id, names.get(x.id)]), [["P1", "MAIN"], ["P2", C2_BRANCH]]); assert.equal(C2_BRANCH, "concept 2 - consumer product interface");
   assert.equal(h.head, "P1", "by default, the project is concept 1 — what every screen and test knew"); assert.ok(p.assemblies.some((a) => a.id === "BM-8S8P-ASM"));
   const c2 = rebuild(h, "P2"); assert.ok(c2.assemblies.some((a) => a.id === "BM2-MODULE-ASM")); assert.ok(!c2.parts.some((x) => x.id === "BM-BB-LAM"), "concept 2 is not concept 1 with more parts");
   assert.ok(c2.parts.some((x) => x.id === p.boards[0].part) && c2.parts.some((x) => x.id === p.boards[1].part), "the two boards keep their twins");
   const b = bmProject({ branch: true }); assert.equal(b.history.head, "P2"); assert.ok(b.assemblies.some((a) => a.id === "BM2-MODULE-ASM"));
-  assert.match(read("web/js/modules/home.js"), /bmProject\(\{ branch: true \}\), "#\/assembly\/BM2-MODULE-ASM"/);
+  assert.match(read("web/js/modules/home.js"), /bmProject\(\{ branch: "c3" \}\), "#\/assembly\/BM-8S8P-ASM"/, "the home card opens on the latest concept, concept 3");
 });
 
 test("the stack in numbers : a CORE is a big cell ; the bands of one press the + plate of the one before down to its bosses ; the handle presses them all", () => {

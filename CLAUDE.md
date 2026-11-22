@@ -147,8 +147,12 @@ plus bas, avec sa version. Une revue de la liste se fait à chaque reprise de s�
    du concept 1 (MAIN) : cellules PERPENDICULAIRES à l'axe d'insertion du module, comme au concept 1 ; les CORE s'assemblent l'un à l'autre,
    contacts face à face, − contre +, DANS l'axe d'insertion (comme au concept 1) ; y mettre des contacts haute puissance à lames ; couvercles
    debout. Commencer SIMPLE, puis complexifier ensemble. Pas de ressorts de produit grand public (2–3 A) : des ressorts fins et compacts,
-   aucune place en longueur. À reprendre dans une nouvelle conversation. La came détaillée et le modèle `face_cam` (v0.173.0, non publiés sur
-   `main`) sont sur la branche de travail.
+   aucune place en longueur. **Premier jet fait (v0.174.0)** — JP par menu : « Lame dans une pince », à partir du concept 1 complet : une lame
+   de 2,5 mm au bout +X de chaque jambe +, une pince à deux bandes à lamelles sur chaque jambe −, rondelles ressorts au couvercle, boîtier 10 mm
+   plus large, pas inchangé (`demo/demo_bm_c3.js`, `docs/BM_MODULE.md`). **Cette conversation ne parle que de conception** (JP : « plus de
+   conversation mêlée framework et conception… surveille-moi ») : une demande sur l'application va dans une tâche à part.
+5. **Icônes : remplacer le chapeau de sorcier** par une alternative du monde des fusées, puis toutes les icônes (JP, 22 novembre) — framework :
+   tâche à part, proposée à JP en carte ; ne pas la faire dans la conversation de conception.
 
 **Réponses de l'interview** (JP, 22 novembre, par menu — les quatre choix conseillés) : les CORE **en ligne, pressés**, comme des piles D
 dans une lampe — le + de l'un contre le − du suivant, la pile pressée par la poignée du haut, le retour du courant le long du boîtier ; sur la
