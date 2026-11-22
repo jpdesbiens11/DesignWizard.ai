@@ -14,11 +14,13 @@
 export const KNOBS = {
   supply: [{ k: "v", label: "Tension", unit: "V", min: 0, max: 60, step: 0.1 }, { k: "ilim", label: "Limite", unit: "A", min: 0.001, max: 10, step: 0.01 }],
   load: [{ k: "r", label: "Résistance", unit: "Ω", min: 0.1, max: 1e7, step: 1 }],
+  generator: [{ k: "high", label: "Niveau haut", unit: "V", min: -20, max: 20, step: 0.01 }, { k: "low", label: "Niveau bas", unit: "V", min: -20, max: 20, step: 0.01 }, { k: "freq", label: "Fréquence", unit: "Hz", min: 0.01, max: 1e6, step: 1 }],
 };
 const NAMES = { supply: "Alimentation de laboratoire", load: "Charge", generator: "Générateur de fonctions", scope: "Oscilloscope", meter: "Multimètre", wire: "Composant d'essai", cell: "Pile de la carte", press: "Votre doigt", logic: "Adaptateur de bus" };
 /** Why an instrument has nothing to turn here : said, never hidden. */
 const FIXED = {
-  generator: "Le signal du générateur est celui de l'essai : sa forme, son amplitude et sa fréquence sont dans les réglages de la fiche.",
+  generator: "Ce signal est écrit par l'essai, point par point (une impulsion, une rampe, des marches) : il ne se règle pas sur l'appareil.",
+  sweep: "La réponse en fréquence balaie toute la plage de l'essai : ni le niveau ni la fréquence du générateur n'y changent rien.",
   logic: "Le signal logique est celui de l'essai : il est écrit par la fiche.",
   scope: "L'oscilloscope ne change rien au circuit : ses calibres se règlent pour bien voir, d'après la fiche.",
   meter: "Le multimètre lit ; il ne change rien au circuit. Un seul à la fois : chaque relevé dit où vont ses pointes.",
@@ -49,7 +51,9 @@ export function benchGear(sheet) {
     const free = l.instr === "load" && !!l.free && Number.isFinite(l.r);
     push({ key: gearKey(l.instr, l.to), kind: l.instr === "load" ? "load" : "wire", name: NAMES[l.instr], to: l.to, r: l.r, set: !!l.set, knobs: free ? KNOBS.load.map((k) => ({ ...k, value: l.r })) : [], fixed: free ? "" : l.instr === "wire" ? FIXED.wire : FIXED.sink, leads: [lead("load", l.at, l.to), lead("load", l.backAt, l.back)] });
   }
-  for (const l of L.filter((x) => x.instr === "generator" || x.instr === "logic")) push({ key: gearKey(l.instr, l.to), kind: "generator", name: NAMES[l.instr], to: l.to, fixed: FIXED[l.instr], leads: [lead("back", l.backAt, l.back), lead("hot", l.at, l.to)] });
+  for (const l of L.filter((x) => x.instr === "generator" || x.instr === "logic")) { const free = l.instr === "generator" && !l.logic && !!l.free;      // a plain sine or square : its levels and its frequency turn on its front
+    push({ key: gearKey(l.instr, l.to), kind: "generator", name: NAMES[l.instr], to: l.to, high: free ? l.high : null, low: free ? l.low : null, freq: free ? l.freq : null, set: !!l.set,
+      knobs: free ? KNOBS.generator.map((k) => ({ ...k, value: l[k.k] })) : [], fixed: free ? "" : l.sweep ? FIXED.sweep : FIXED[l.instr], leads: [lead("back", l.backAt, l.back), lead("hot", l.at, l.to)] }); };
   const probes = L.filter((x) => x.instr === "scope").filter((l, i, a) => a.findIndex((q) => q.to === l.to) === i);
   if (probes.length && scoped) { const ground = probes.find((p) => p.backAt && !p.float);
     push({ key: "scope", kind: "scope", name: NAMES.scope, to: probes[0].to, fixed: FIXED.scope, channels: probes.map((p) => p.ch || 1),
@@ -71,10 +75,13 @@ export function checkKnob(kind, k, raw) {
 /** What the settings of a test change, in sentences for the guide and the sheet : a setting differs from what the test proposes.
     gears : labOf(board).gears for this test ; gear : benchGear(sheet) */
 export function gearWords(gear) {
-  return gear.filter((g) => g.set).map((g) => g.kind === "supply" ? `${g.name} sur ${g.to} réglée à ${fmt(g.v)} V${g.ilim ? `, limite ${fmtA(g.ilim)}` : ""} : les valeurs attendues suivent ce réglage.` : `${g.name} sur ${g.to} réglée à ${fmtR(g.r)} : les valeurs attendues suivent ce réglage.`);
+  return gear.filter((g) => g.set).map((g) => g.kind === "supply" ? `${g.name} sur ${g.to} réglée à ${fmt(g.v)} V${g.ilim ? `, limite ${fmtA(g.ilim)}` : ""} : les valeurs attendues suivent ce réglage.`
+    : g.kind === "generator" ? `${g.name} sur ${g.to} réglé de ${fmt(g.low)} à ${fmt(g.high)} V, ${fmtHz(g.freq)} : les valeurs attendues suivent ce réglage.`
+    : `${g.name} sur ${g.to} réglée à ${fmtR(g.r)} : les valeurs attendues suivent ce réglage.`);
 }
 const fmt = (x) => (x === null || x === undefined ? "—" : String(+(+x).toPrecision(3)).replace(".", ","));
 const fmtA = (a) => (a >= 1 ? `${fmt(a)} A` : `${fmt(a * 1e3)} mA`);
+const fmtHz = (f) => (f >= 1e3 ? `${fmt(f / 1e3)} kHz` : `${fmt(f)} Hz`);
 const fmtR = (r) => (r >= 1e6 ? `${fmt(r / 1e6)} MΩ` : r >= 1e3 ? `${fmt(r / 1e3)} kΩ` : `${fmt(r)} Ω`);
 
 /** For a test with a button held by hand : which frames of the run have it pressed, and the moment to show for « held » and « released ».

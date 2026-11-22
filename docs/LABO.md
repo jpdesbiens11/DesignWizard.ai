@@ -57,7 +57,9 @@ l'appareil — pas dans une section du volet de gauche ; ce qui ne se règle pas
   marqué sur la carte comme dans la manipulation (anneau, lettre, broche écrite en petit). Plusieurs fils sur la même
   pastille s'écartent en éventail. Les cordons suivent le zoom et le déplacement de la vue.
 - **Ce qui se règle se tape sur l'écran de l'appareil** : la tension et la limite de courant d'une alimentation, la
-  résistance d'une charge. Entrée applique, Échap rend la valeur affichée, un champ vidé revient à ce que l'essai
+  résistance d'une charge, et (v0.166.0) **le niveau haut, le niveau bas et la fréquence d'un générateur** quand l'essai
+  lui donne un sinus ou un créneau simples — une forme que l'essai écrit point par point (impulsion, rampe, marches) reste
+  la sienne, et une réponse en fréquence balaie toute sa plage : l'appareil le dit, et rien ne s'y règle. Entrée applique, Échap rend la valeur affichée, un champ vidé revient à ce que l'essai
   propose ; ↺ sur la carte de l'appareil revient à tout ce que l'essai propose. Chaque réglage est **une étape
   annulable** du carnet de la carte (`gear`) et l'essai est **simulé de nouveau** avec lui : les courbes, les valeurs
   attendues, la fiche, la manipulation et le plan de test suivent (le plan est le banc tel qu'il est réglé). Une

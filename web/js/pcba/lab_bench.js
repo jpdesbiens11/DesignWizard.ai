@@ -49,7 +49,16 @@ function makeBench(tpl, P, env = {}) {
     /** Every supply the block needs, at its nominal voltage. → { port: id } */
     power(o = {}) { const out = {}; for (const [k, p] of Object.entries(built.ports)) if (p.dir === "power_in" && !(o.skip || []).includes(k)) { const v = volts(k) || P.vdd || 3.3; out[k] = B.supply(k, v, { ilim: o.ilim, wave: o.rise ? { kind: "step", low: 0, high: v, delay: o.delay || 0, rise: o.rise } : null }); } return out; },
     /** A generator (50 Ω) on a port or a pin. */
-    gen(name, wave, o = {}) { const id = `FG_${name}`, mid = `${id}_o`; els.push({ t: "V", id, a: mid, b: o.ref ? at(o.ref) : "0", v: wave }, { t: "R", id: `${id}:r`, a: mid, b: at(name), r: o.rs ?? 50 }); log.push({ instr: "generator", to: name, wave, note: o.note || "", ref: o.ref || "GND" }); return id; },
+    gen(name, wave, o = {}) {
+      /* a setting made ON the generator (pcba/lab_gear.js : env.gear) : the high and low levels and the frequency of a plain sine or square ;
+         a wave the test writes point by point (an impulse, a ramp, steps) stays the test's */
+      const g = (env.gear || {})[`generator:${name}`] || {}, free = !!wave && (wave.kind === "sine" || wave.kind === "square");
+      const levels = (w) => (w.kind === "sine" ? { high: (w.offset || 0) + w.amp, low: (w.offset || 0) - w.amp } : { high: w.high ?? (w.offset || 0) + (w.amp || 0), low: w.low ?? (w.offset || 0) - (w.amp || 0) });
+      let set = false;
+      if (free && [g.high, g.low, g.freq].some((x) => Number.isFinite(x))) { const L = levels(wave), high = Number.isFinite(g.high) ? g.high : L.high, low = Number.isFinite(g.low) ? g.low : L.low, freq = Number.isFinite(g.freq) && g.freq > 0 ? g.freq : wave.freq;
+        wave = wave.kind === "sine" ? { ...wave, offset: (high + low) / 2, amp: (high - low) / 2, freq } : { ...wave, high, low, freq }; set = true; }
+      const id = `FG_${name}`, mid = `${id}_o`; els.push({ t: "V", id, a: mid, b: o.ref ? at(o.ref) : "0", v: wave }, { t: "R", id: `${id}:r`, a: mid, b: at(name), r: o.rs ?? 50 });
+      log.push({ instr: "generator", to: name, wave, note: o.note || "", ref: o.ref || "GND", free, ...(free ? { ...levels(wave), freq: wave.freq } : {}), ...(set ? { set: true } : {}) }); return id; },
     /** A logic signal, as the microcontroller would give it (it stands in for a pin that is not there yet). */
     logic(name, wave, o = {}) { const id = `MCU_${name}`, mid = `${id}_o`; els.push({ t: "V", id, a: mid, b: "0", v: wave }, { t: "R", id: `${id}:r`, a: mid, b: at(name), r: 30 }); log.push({ instr: o.instr || "generator", to: name, wave, logic: true, note: o.note || "" }); return id; },
     load(name, r, o = {}) { const g = (env.gear || {})[`load:${name}`] || {}, set = Number.isFinite(g.r) && g.r > 0; if (set) r = g.r;      // a load set on the instrument (pcba/lab_gear.js)

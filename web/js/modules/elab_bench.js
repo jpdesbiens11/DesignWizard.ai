@@ -14,8 +14,8 @@ import { LEADS } from "../pcba/lab_manip.js";
 
 const fr = (x) => (x === null || x === undefined || !Number.isFinite(+x) ? "" : String(+(+x).toPrecision(4)));
 /* where a field sits on the front of its drawing (pixels of the 190 × 104 drawing, drawn at its own size) */
-const FIELD = { supply: { v: [16, 20, 66], ilim: [16, 42, 66] }, load: { r: [58, 72, 74] } };
-const UNIT = { v: "V", ilim: "A", r: "Ω" };
+const FIELD = { supply: { v: [16, 20, 66], ilim: [16, 42, 66] }, load: { r: [58, 72, 74] }, generator: { high: [14, 18, 66], low: [14, 40, 66], freq: [102, 40, 46] } };
+const UNIT = { v: "V", ilim: "A", r: "Ω", high: "V", low: "V", freq: "Hz" };
 
 /** The strip of instruments above the board, and the cords. host : where the strip goes (before the board) ; layer : the element both
     are in (the cords are drawn over it) ; pcb : the board (modules/elab_view.js labBoard).
@@ -28,12 +28,12 @@ export function benchStrip(host, layer, pcb, o = {}) {
     const face = el("div", { class: "gear-face" }), pic = gearPic({ ...g, on: true, down, ch: 0, mode: "vdc" }, `${g.name} — ${g.to}`);
     if (pic) face.append(pic);
     for (const k of g.knobs) { const at = (FIELD[g.kind] || {})[k.k]; if (!at) continue;
-      const shown = k.k === "ilim" && Number.isFinite(k.value) && k.value < 1 ? { k: 1e3, u: "mA" } : k.k === "r" && k.value >= 1e3 ? { k: 1e-3, u: "kΩ" } : { k: 1, u: UNIT[k.k] };
+      const shown = k.k === "ilim" && Number.isFinite(k.value) && k.value < 1 ? { k: 1e3, u: "mA" } : k.k === "r" && k.value >= 1e3 ? { k: 1e-3, u: "kΩ" } : k.k === "freq" && k.value >= 1e3 ? { k: 1e-3, u: "kHz" } : { k: 1, u: UNIT[k.k] };
       const input = el("input", { type: "number", step: "any", class: "gear-knob", value: fr(Number.isFinite(k.value) ? k.value * shown.k : null), "data-knob": k.k, "aria-label": `${g.name} sur ${g.to} — ${k.label} (${shown.u})`, "data-tip": `${k.label}, réglée sur l'appareil : Entrée pour l'appliquer — l'essai est simulé de nouveau avec elle`, style: { left: `${at[0]}px`, top: `${at[1]}px`, width: `${at[2]}px` } });
       const apply = () => { const raw = input.value.trim(); if (raw === fr(Number.isFinite(k.value) ? k.value * shown.k : null)) return; if (raw === "") { o.set(g, k.k, null); return; }
         const c = checkKnob(g.kind, k.k, Number(raw.replace(",", ".")) / shown.k); if (!c.ok) { toast(c.text, "warn", 5000); input.value = fr(k.value * shown.k); return; } o.set(g, k.k, c.value); };
       input.addEventListener("change", apply); input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); input.blur(); } if (e.key === "Escape") { input.value = fr(Number.isFinite(k.value) ? k.value * shown.k : null); input.blur(); } });
-      face.append(input, el("span", { class: "gear-unit", style: { left: `${at[0] + at[2] + 2}px`, top: `${at[1] + 3}px` } }, shown.u)); }
+      face.append(input, el("span", { class: "gear-unit", "data-unit": k.k, style: { left: `${at[0] + at[2] + 2}px`, top: `${at[1] + 3}px` } }, shown.u)); }
     const head = el("div", { class: "gear-head" }, el("b", null, g.name), el("small", null, g.kind === "scope" ? `voie${(g.channels || []).length > 1 ? "s" : ""} ${(g.channels || [1]).join(", ")}` : `sur ${g.to}`), g.set ? btn("", () => o.reset(g), { small: true, icon: "undo", tip: "Revenir au réglage que propose l'essai", cls: "gear-reset" }) : null);
     const note = g.fixed ? el("p", { class: "gear-fixed" }, icon("info"), " ", g.fixed) : el("p", { class: "gear-fixed set" }, icon("wizard"), g.set ? " Réglée ici : l'essai suit ce réglage." : " Tapez la valeur sur l'écran de l'appareil.");
     return el("div", { class: `gear-card${g.set ? " is-set" : ""}`, "data-gear": g.key, "data-kind": g.kind }, head, note, face);      // the face last : its jacks at the bottom of the card, where the cords leave

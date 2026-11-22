@@ -77,3 +77,16 @@ test("wired : the strip above the board, settings as undoable steps, the test ru
   assert.match(strip, /checkKnob\(g\.kind/); assert.match(strip, /CIRCUIT_NOTE/); assert.match(strip, /lab-cord/); assert.match(view, /onView\(fn\)/); assert.match(view, /partNode\(ref\)/);
   assert.match(read("web/js/core/dwiz_names.js"), /gears: \{ word: "gear"/); assert.match(read("web/css/pcba.css"), /\.lab-gear-row/);
 });
+
+test("the generator turns on its front too : the high and low levels and the frequency of a plain sine or square — the run, the sheet and the words follow ; a wave the test writes stays the test's", () => {
+  const s0 = testSheet("amp", "sine", {}, {}), g0 = benchGear(s0).find((g) => g.kind === "generator");
+  assert.deepEqual(g0.knobs.map((k) => k.k), ["high", "low", "freq"]); assert.equal(g0.fixed, ""); assert.equal(g0.knobs[2].value, 100);
+  const s1 = testSheet("amp", "sine", {}, { env: { gear: { "generator:IN": { high: 0.6, low: 0.4, freq: 50 } } } }), g1 = benchGear(s1).find((g) => g.kind === "generator");
+  assert.equal(g1.set, true); assert.deepEqual(g1.knobs.map((k) => k.value), [0.6, 0.4, 50]); assert.ok(Math.abs(s1.rows[0].expected - 1.2) < 0.01 && Math.abs(s1.rows[1].expected - 0.8) < 0.01, "gain 2 : the expected peaks follow the setting");
+  assert.match(gearWords(benchGear(s1))[0], /réglé de 0,4 à 0,6 V, 50 Hz : les valeurs attendues suivent/); assert.match(s1.settings.join("\n"), /réglé sur l'appareil/);
+  const pwl = benchGear(testSheet("led", "blink", {}, {})).find((g) => g.kind === "generator"); assert.deepEqual(pwl.knobs, []); assert.match(pwl.fixed, /point par point/);
+  const sweep = benchGear(testSheet("ntc", "filter", {}, {})).find((g) => g.kind === "generator"); assert.deepEqual(sweep.knobs, []); assert.match(sweep.fixed, /balaie toute la plage/, "a frequency response sweeps : nothing to set, said");
+  assert.equal(checkKnob("generator", "freq", 0).ok, false); assert.equal(checkKnob("generator", "high", 3.3).ok, true);
+  const B = { lab: setGear({}, "B1/sine", "generator:IN", { high: 0.6, freq: 50 }) }; assert.deepEqual(gearEnv(B, "B1/sine"), { "generator:IN": { high: 0.6, freq: 50 } }, "the notebook keeps them");
+  assert.match(read("web/js/modules/elab_bench.js"), /generator: \{ high: \[/, "its three fields sit on the screen of its drawing");
+});
