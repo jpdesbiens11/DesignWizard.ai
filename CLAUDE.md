@@ -132,17 +132,18 @@ premier) ; on descend « Prochaines actions » dans l'ordre ; ce qui est fait se
 plus bas, avec sa version. Une revue de la liste se fait à chaque reprise de séance.
 
 **Prochaines actions** (dans l'ordre)
-1. **Interview de JP** : son idée pour l'interface des batteries avec le boîtier — ce que c'est, ce qu'elle fait avec
+1. **Pivot du nom et de la marque** (JP, 22 novembre : « designwizard.ai ou .ca est déjà pris… pivoter vers DynamiteDesign.ca pour être conforme à mon architecture de produit basé sur DynamiteAgile.ca ») — **priorité n° 1, par menu**. Dans le chat de ce pivot : le cadre, le nom et la marque seulement, aucune conception (JP). Lu aux registres (RDAP, 22 novembre) : dynamitedesign.ca est pris depuis 2006 (expire le 12 juillet 2027), dynamitedesigns.ca est un studio graphique de Winnipeg, dynamitedesign.com est parqué à vendre ; « Design » seul se lit design graphique. Choix de JP, par menu : **la famille Dynamite + un mot qui dit l'ingénierie ou le prototypage ultra-rapide**, acronymes permis (pistes de JP : DynamiteStage, DynamiteOrbite). **Nom pressenti par JP : DynamiteOrbite** — « l'humain hybride au jet pack qui vole vers les étoiles » : on va vite à la rampe de lancement, on décolle, on vole en altitude, vers le ciel cette fois (pas dans la mine). Libres au registre le 22 novembre : dynamiteorbite.ca / .com / .ai, dynamiteorbit.ca / .com / .ai. Prochaine action : JP confirme le nom ; puis réserver les domaines, le logo (visuel parent de DynamiteAgile, identité propre), et renommer partout (`core/brand.js`, README, démo, dépôt) — rien n'est renommé avant.
+2. **Interview de JP** : son idée pour l'interface des batteries avec le boîtier — ce que c'est, ce qu'elle fait avec
    l'interface des blocs (les CORE, le + et le −), l'analogie sur laquelle on s'appuie ; et les couvercles du fond et du
    haut retravaillés « comme les produits grand public, plus compacts ». Attendre ses autres idées avant de construire.
-2. ~~**Historique : effacer un point de sauvegarde** un à un — les points d'après se rattachent au point d'avant ; une
+3. ~~**Historique : effacer un point de sauvegarde** un à un — les points d'après se rattachent au point d'avant ; une
    branche qui n'avait que ce point meurt et l'on revient à MAIN~~ — fait (v0.170.0 : « Effacer ce point », `deletePlan`, `deletePoint`).
-3. ~~**BM — concept 2** : un point de sauvegarde de MAIN, puis une branche parallèle **« concept 2 - consumer product
+4. ~~**BM — concept 2** : un point de sauvegarde de MAIN, puis une branche parallèle **« concept 2 - consumer product
    interface »**~~ — premier jet fait (v0.171.0 : `demo/demo_bm_c2.js`, `withConceptTwo` ; P1 « Concept 1 » sur MAIN, P2 sur la branche ;
    la carte de l'accueil ouvre la branche). **À itérer avec JP** : les capteurs de température (la face − est un contact), les prises de
    tension, la chaîne RS-485 d'un CORE à l'autre, les barres du couvercle du fond, les rampes de la came, les vis et les joints.
 
-4. **BM — concept 3** (JP, 22 novembre, après la came détaillée du concept 2 — « le concept 2 n'est pas correct ») : une 3e branche, partie
+5. **BM — concept 3** (JP, 22 novembre, après la came détaillée du concept 2 — « le concept 2 n'est pas correct ») : une 3e branche, partie
    du concept 1 (MAIN) : cellules PERPENDICULAIRES à l'axe d'insertion du module, comme au concept 1 ; les CORE s'assemblent l'un à l'autre,
    contacts face à face, − contre +, DANS l'axe d'insertion (comme au concept 1) ; y mettre des contacts haute puissance à lames ; couvercles
    debout. Commencer SIMPLE, puis complexifier ensemble. Pas de ressorts de produit grand public (2–3 A) : des ressorts fins et compacts,
