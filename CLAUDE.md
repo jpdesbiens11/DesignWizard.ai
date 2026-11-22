@@ -195,6 +195,8 @@ fabrication virtuel)** — faits (v0.142.0 à v0.145.0) ; le projet BM bonifié 
    hauteurs différentes ; couvercle embouti à rabats avec joint silicone collé ; petit couvercle dessous ; potting ;
    connecteurs (trois AC, DC + / −), filtre, carte de commande, carte de puissance sous les IGBT, IGBT, condensateur de
    bus, busbars laminés. S'inspirer des **principes** d'un onduleur du commerce : aucune marque, aucun dessin copié.
+   **Fait (v0.161.0)** : `demo/demo_inverter.js`, 16 pièces, rien ne traverse rien, l'anglais de chaque texte (`docs/ONDULEUR.md`).
+   Reste : les liaisons AC des modules aux connecteurs, le refroidissement, les vis, les cartes dans le PCBA.
 8. **Logiciel BMS** (nouveau groupe « Logiciel ») : le logiciel est un **modèle simulé**, dont l'outil écrit ensuite le
    **squelette C** et les vecteurs d'essai ; d'abord un **banc complet** — pack en modules, l'électronique de cellules de chaque module (« cell electronics » ; le mot de maison « CMB » n'est défini par aucune norme lue), une carte
    BMS, surveillance V et T, courant, charge, décharge, contacteurs, signaux LV vers le véhicule, pannes injectées, chaque
