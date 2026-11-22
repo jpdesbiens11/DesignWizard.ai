@@ -6,7 +6,7 @@ carte, physique, dessins, IA — et le nom de nouveau. Deux versions, **françai
 
 | | |
 |---|---|
-| En ligne | https://jpdesbiens11.github.io/DynamiteOrbit/vitrine.html#film |
+| En ligne | https://jpdesbiens11.github.io/DynamiteOrbit.ai/vitrine.html#film |
 | Dans l'application | Accueil → « Voir la vidéo (2 min 50) » : une fenêtre, choix Français / English en cours de lecture |
 | Fichiers | `web/video/designwizard_fr.mp4`, `designwizard_en.mp4` (1280 × 720, 24 images/s, H.264), leur image d'attente `.jpg`, leurs sous-titres `.vtt` |
 | Narration à enregistrer | `docs/film/narration_fr.md`, `docs/film/narration_en.md` |

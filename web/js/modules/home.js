@@ -87,7 +87,7 @@ function render(main) {
         btn(`Voir la vidéo (${filmLength()})`, () => showFilm(), { icon: "play", tip: "La plateforme en deux minutes et demie, sur ses vrais écrans — en français ou en anglais" }),
         el("a", { class: "btn", href: "presentation.html", target: "_blank", rel: "noopener", "data-tip": "De la conception d'aujourd'hui à l'assemblage prêt à commander, brique par brique — une vingtaine de pages à faire défiler" }, icon("eye"), "Présentation guidée"),
         btn("Importer…", () => app.pickFile(), { icon: "upload", tip: "Projet .json, pièce JSON d'une entrevue, ou fichier STEP — vous pouvez aussi coller (Ctrl+V) ou déposer un fichier n'importe où" }),
-        el("a", { class: "btn btn-primary gh", href: "https://github.com/jpdesbiens11/DynamiteOrbit", target: "_blank", rel: "noopener noreferrer", "data-tip": "Le code source, sous licence MIT" }, "GitHub"))),
+        el("a", { class: "btn btn-primary gh", href: "https://github.com/jpdesbiens11/DynamiteOrbit.ai", target: "_blank", rel: "noopener noreferrer", "data-tip": "Le code source, sous licence MIT" }, "GitHub"))),
     el("img", { src: `img/sketch/hero-${document.documentElement.dataset.theme || "carnet"}.svg`, alt: "" })));
 
   /* first steps : where this project stands, and the next thing to do */
