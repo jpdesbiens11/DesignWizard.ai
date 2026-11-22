@@ -14,8 +14,10 @@
    contact strips modelled on real ones, four LV contacts, their flex tails, the joint for the Isolation screen (demo_bm_contacts.js) ; 10 — the casing
    extruded in polycarbonate along the 8 CORE, its screw ports for the two lids, the channel of the return busbar, the two terminals of the module
    (demo_bm_case.js) ; 11 a — the return busbar and the top lid : interface ring in aluminium, cap, quarter-turn cam latch, springs on a
-   pressure plate, a contact bridge that closes the loop by pressure (demo_bm_lid.js). Thicknesses, windows and holes are EXAMPLES (said on each
-   part) ; the bottom lid, the contactor, the connector and the central BMS are not drawn yet (iteration 11 b).
+   pressure plate, a contact bridge that closes the loop by pressure (demo_bm_lid.js) ; 11 b — the bottom lid (demo_bm_bottom.js) ; 12 — the CORE
+   remade (JP, 22 novembre) : the laminated busbar as the trade makes them, both layers stacked on top of the cells and welded by thin tongues,
+   the welds drawn ; the joints between two CORE face against face, pressed by the springs of the lid (bounded with Holm) ; the sensors in the
+   bottom support, on cones of a flex that slides into it. Thicknesses, windows and holes are EXAMPLES (said on each part).
    Frame of a CORE : X along a row of 4 (92.8 mm), Y across the two rows (46.4 mm), Z up ; the cells stand on z = 0. Every part of the
    CORE is drawn in that frame, so its place in the CORE is the origin (the cells and the board excepted). */
 
@@ -26,10 +28,10 @@ import { syncTwins } from "../pcba/twin.js";
 import { LIBRARY } from "../pcba/library.js";
 import { WORDS_BM } from "./demo_bm_words.js";
 import { run, sessionDefaults } from "../analysis/physics/index.js";
-import { coreBox, FLEX_T, FLEX_X0, NTC_H } from "./demo_bm_box.js";
-import { coreLaminate, INS_T, WRAP_T } from "./demo_bm_lam.js";
-import { coreHolder, coreBase } from "./demo_bm_holder.js";
-import { GAP as JOINT_GAP, STRIPS, contactLayout, stripPart, cagePart, stopPart, busbarContacts, contactSizing } from "./demo_bm_contacts.js";
+import { coreFlex, FLEX_T } from "./demo_bm_box.js";
+import { coreLaminate, INS_T, WRAP_T, stackOf } from "./demo_bm_lam.js";
+import { coreHolder, coreBase, coreClip } from "./demo_bm_holder.js";
+import { contactLayout, busbarContacts, lvContactPart, tapParts, lvBody } from "./demo_bm_contacts.js";
 import { casingPart, terminalParts, returnSizing, casingPaths } from "./demo_bm_case.js";
 import { topEnd } from "./demo_bm_lid.js";
 import { bottomEnd } from "./demo_bm_bottom.js";
@@ -42,64 +44,53 @@ const C = cell("21700-P45B"), D = 21.7, H = C.L, GAP = 3;
 export const CORE_X = 4 * D + 2 * GAP, CORE_Y = 2 * D + GAP;      // 92.8 × 46.4 : the top of a CORE, and the size of its board
 export const I_CORE = 8 * C.discharge[1];      // 360 A : the 8 cells in parallel, each at its largest continuous current
 export const BB_T = 2.0, HOLDER_H = 8;      // the copper, sized for I_CORE (the calculation is kept in the project) ; the height of a cell holder (example)
-export const CORE_PITCH = CORE_Y + 2 * (INS_T + BB_T) + JOINT_GAP;      // one CORE to the next : 52.6 mm — the stops of the + leg of one on the − leg of the next hold the working height of the strips
-const BB_W = CORE_X - 2 * GAP;      // 86.8 : the busbar stops at the gaps of 3 mm of the short ends, where the panels of the flex rise
-export const STACK = INS_T + BB_T + WRAP_T;      // paper, copper, film : above the + terminals
-export const FLOOR_T = 1.5;      // the floor of the bottom holder, under the cans (example ; the PC/ABS walls of the tool : 1.2 to 3.5 mm)
-export const BELOW = FLOOR_T + BB_T + WRAP_T;      // floor, copper, film : under the cans
+export const CORE_PITCH = CORE_Y + 2 * (INS_T + BB_T);      // one CORE to the next : 50.9 mm — iteration 12 : the legs face against face, no gap
+const BB_W = CORE_X - 2 * GAP;      // 86.8 : the busbar stops at the gaps of 3 mm of the short ends, where the panel of the flex rises
+export const STACK = stackOf({ H: 0, ins: INS_T, t: BB_T, w: WRAP_T }).h;      // paper, − copper, paper, + copper, film : 4.6 mm above the cells
+export const FLOOR_T = 1.5, SLOT = 0.4, CLIP_T = 1.9;      // the floor of the bottom support, the slot of the flex, the clipped plate (examples)
+export const BELOW = FLOOR_T + SLOT + CLIP_T;      // 3.8 mm under the cans
 
 const CELL = { ...cellPart(C, { id: "BM-CELL-21700" }), name: "Cellule 21700 du CORE" };
 CELL.notes = [...CELL.notes, "Dans le CORE, la grille reste à 21,7 mm par cellule (la taille de la carte) : une P45B fait 21,55 mm au plus, il reste au moins 0,15 mm entre deux cellules."];
 
 const at = (t) => ({ t, r: [0, 0, 0] });
 const ROWS = [D / 2, D + GAP + D / 2], cellAt = (i, j) => [GAP + D / 2 + i * D, ROWS[j]];
-/** Iteration 4 (JP, 21 novembre : the two L in one laminated busbar ; the flex delivered flat, folded into a box around CORE and busbar ; a
-    thermistor under the centre of each cell, through a washer). Iteration 5 (JP, par menu : « support + rondelles en un ») : the bottom holder
-    has a floor under the cells and its 8 washers molded in. The CORE : 8 cells, the top holder, the bottom holder with its washers, the
-    laminated busbar, the flex in a box, its board on top — each at its place, the frame of the CORE at the origin. */
-function coreAssembly(pcbPart, box, layout) {
-  const [h1, h2] = layout.hv, lv = layout.lv, st = layout.stops, at3 = (dx, dz) => at([dx, 0, dz].map((v) => Math.round(v * 1e6) / 1e6));      // iteration 9 : each copy is moved along the leg from the first of its kind
+const ZB = Math.round((H + STACK + FLEX_T) * 1e6) / 1e6;      // the bottom of the board : on the panel of the flex, on the laminated busbar
+/** The CORE, iteration 12 : 8 cells, the top holder, the bottom support and its clipped plate, the flex of the sensors in the slot between them,
+    the laminated busbar on top, the LV contacts of both legs, the two voltage taps, the board — each at its place, the frame of the CORE at the origin. */
+function coreAssembly(pcbPart, flex) {
   const cells = [];
   for (let j = 0; j < 2; j++) for (let i = 0; i < 4; i++) { const [x, y] = cellAt(i, j); cells.push({ id: `c${j + 1}${i + 1}`, part: CELL.id, fixed: true, placement: at([x, y, 0]) }); }
   return { dw: "assembly/1", id: "BM-CORE-ASM", name: "CORE 1S8P",
     instances: [...cells, { id: "supH", part: "BM-HOLDER", fixed: true, placement: at([0, 0, H - HOLDER_H]) }, { id: "supB", part: "BM-HOLDER-BASE", fixed: true, placement: at([0, 0, 0]) },
-      { id: "bb", part: "BM-BB-LAM", fixed: true, placement: at([0, 0, 0]) }, { id: "flex", part: box.part.id, fixed: true, placement: at([FLEX_X0, 0, box.z]) },
-      { id: "carte", part: pcbPart, fixed: true, placement: at([0, 0, H + STACK + FLEX_T]) },
-      { id: "hv1", part: STRIPS.hv.id, fixed: true, placement: at3(0, 0) }, { id: "hv2", part: STRIPS.hv.id, fixed: true, placement: at3(h2.x - h1.x, h2.z0 - h1.z0) }, { id: "cadre", part: "BM-LAM-CAGE", fixed: true, placement: at3(0, 0) },
-      ...st.map((p, k) => ({ id: `but${k + 1}`, part: "BM-STOP", fixed: true, placement: at3(p[0] - st[0][0], p[1] - st[0][1]) })),
-      ...lv.map((c, k) => ({ id: `lv${k + 1}`, part: STRIPS.lv.id, fixed: true, placement: at3(c.x - lv[0].x, c.z - lv[0].z) }))],
+      { id: "plaque", part: "BM-BASE-CLIP", fixed: true, placement: at([0, 0, 0]) }, { id: "flex", part: "BM-FLEX-BASE", fixed: true, placement: at(flex.at) },
+      { id: "bb", part: "BM-BB-LAM", fixed: true, placement: at([0, 0, 0]) }, { id: "lvp", part: "BM-LV-PLUS", fixed: true, placement: at([0, 0, 0]) }, { id: "lvm", part: "BM-LV-MOINS", fixed: true, placement: at([0, 0, 0]) },
+      { id: "bplus", part: "BM-TAP-NI-P", fixed: true, placement: at([0, 0, 0]) }, { id: "bmoins", part: "BM-TAP-NI-M", fixed: true, placement: at([0, 0, 0]) },
+      { id: "carte", part: pcbPart, fixed: true, placement: at([0, 0, ZB]) }],
     mates: [] };
 }
-/** The joint between two CORE, for the Isolation screen : the laminated busbar of a CORE and of the next, the strips, frame, stops and LV strips
-    between them — each conductor with its own potential, for the highest CORE of the chain (CORE 7 → CORE 8, the bus referred to the − of the
-    pack at the central BMS : an assumption, said). */
+/** The joint between two CORE, for the Isolation screen : the laminated busbar of a CORE and of the next, the LV contacts that meet there — each
+    conductor with its own potential, for the highest CORE of the chain (CORE 7 → CORE 8, the bus referred to the − of the pack at the central BMS :
+    an assumption, said). */
 function jointAssembly(layout) {
-  const asm = coreAssembly("—", { part: { id: "—" }, z: 0 }, layout), keep = new Set(["bb", "hv1", "hv2", "cadre", "but1", "but2", "but3", "but4", "lv1", "lv2", "lv3", "lv4"]);
-  const inst = asm.instances.filter((x) => keep.has(x.id)), V = (k) => Math.round(k * 4.2 * 10) / 10;
+  const V = (k) => Math.round(k * 4.2 * 10) / 10, P = Math.round(CORE_PITCH * 1e6) / 1e6;
   const ov = { "bb/plus": { kind: "conductor", net: "N7" }, "bb/moins": { kind: "ignore" }, "bb2/plus": { kind: "ignore" }, "bb2/moins": { kind: "conductor", net: "N7" },      // the far conductors of the two CORE (N6, N8) are left out : the islands face the copper of the joint
-    "hv1/main": { kind: "conductor", net: "N7" }, "hv2/main": { kind: "conductor", net: "N7" }, ...Object.fromEntries([1, 2, 3, 4].map((k) => [`but${k}/main`, { kind: "conductor", net: "N7" }])),
-    ...Object.fromEntries(layout.lv.map((c, k) => [`lv${k + 1}/main`, { kind: "conductor", net: c.net }])) };
+    ...Object.fromEntries(layout.lv.flatMap((c) => [[`lvp/${lvBody(c.net)}`, { kind: "conductor", net: c.net }], [`lvm2/${lvBody(c.net)}`, { kind: "conductor", net: c.net }]])) };
   return { dw: "assembly/1", id: "BM-JOINT-ASM", name: "Joint entre deux CORE (CORE 7 → CORE 8)", notes: ["Pour l'Isolation : le joint le plus haut de la chaîne — 29,4 V entre le cuivre du joint et la masse du bus. Les cellules n'y sont pas ; le bus RS-485 est supposé référencé au − du pack, au BMS central.", "Le conducteur − du CORE 7 (25,2 V) et le conducteur + du CORE 8 (33,6 V) sont laissés hors de l'analyse : ils sont de l'autre côté de leur CORE ; l'isolation à l'intérieur d'un CORE se regarde sur le CORE."],
-    instances: [...inst, { id: "bb2", part: "BM-BB-LAM", fixed: true, placement: at([0, CORE_PITCH, 0]) }], mates: [],
+    instances: [{ id: "bb", part: "BM-BB-LAM", fixed: true, placement: at([0, 0, 0]) }, { id: "lvp", part: "BM-LV-PLUS", fixed: true, placement: at([0, 0, 0]) },
+      { id: "bb2", part: "BM-BB-LAM", fixed: true, placement: at([0, P, 0]) }, { id: "lvm2", part: "BM-LV-MOINS", fixed: true, placement: at([0, P, 0]) }], mates: [],
     isolation: { nets: [{ name: "N7", kind: "dc", voltage: V(7) }, { name: "+5V_ISO", kind: "dc", voltage: 5 }, { name: "RS485_A", kind: "dc", voltage: 5 }, { name: "RS485_B", kind: "dc", voltage: 5 }, { name: "GND_ISO", kind: "dc", voltage: 0 }],
       params: { pollution_degree: 2, altitude_m: 2000, ovc: "I", field: "A", level: "functional" }, overrides: ov } };
 }
-/* Iteration 10 : the casing runs from 11 mm beyond the studs of the − terminal to 11 mm beyond those of the + terminal — the room of the lids,
-   an example until iteration 11 draws them. */
-export const CASE_Y0 = -29, CASE_L = 473;
-/** The − terminal of the module, with what its face carries : the strips, their frame, the stops and the LV strips of a + leg, one pitch before
-    CORE 1 (every part in the frame of CORE 1). */
-function terminalAssembly(layout) {
-  const core = coreAssembly("—", { part: { id: "—" }, z: 0 }, layout), keep = new Set(["hv1", "hv2", "cadre", "but1", "but2", "but3", "but4", "lv1", "lv2", "lv3", "lv4"]);
-  const moved = core.instances.filter((x) => keep.has(x.id)).map((x) => ({ ...x, placement: at([x.placement.t[0], Math.round((x.placement.t[1] - CORE_PITCH) * 1e6) / 1e6, x.placement.t[2]]) }));
-  return { dw: "assembly/1", id: "BM-TERM-NEG-ASM", name: "Borne − du module, avec ses contacts", instances: [{ id: "borne", part: "BM-TERM-NEG", fixed: true, placement: at([0, 0, 0]) }, ...moved], mates: [] };
-}
+/* The casing runs from 11 mm beyond the studs of the − terminal to the room of the top lid : 52.2 mm more than the 8 CORE (iteration 12 : it follows
+   the pitch). */
+export const CASE_Y0 = -29, CASE_L = Math.round((8 * CORE_PITCH + 52.2) * 1e6) / 1e6;
 /** The module : 8 CORE side by side along Y, all the same way round ; the + leg of each on the − leg of the next ; the − terminal before CORE 1,
     the + terminal after CORE 8, the casing around them all. */
 function moduleAssembly() {
   return { dw: "assembly/1", id: "BM-8S8P-ASM", name: "BM 8s8p - 21700",
-    instances: [{ id: "boitier", part: "BM-CASING", fixed: true, placement: at([0, CASE_Y0, 0]) }, { id: "borne_moins", asm: "BM-TERM-NEG-ASM", fixed: true, placement: at([0, 0, 0]) },
-      ...Array.from({ length: 8 }, (_, k) => ({ id: `core${k + 1}`, asm: "BM-CORE-ASM", fixed: true, placement: at([0, k * CORE_PITCH, 0]) })),
+    instances: [{ id: "boitier", part: "BM-CASING", fixed: true, placement: at([0, CASE_Y0, 0]) }, { id: "borne_moins", part: "BM-TERM-NEG", fixed: true, placement: at([0, 0, 0]) },
+      ...Array.from({ length: 8 }, (_, k) => ({ id: `core${k + 1}`, asm: "BM-CORE-ASM", fixed: true, placement: at([0, Math.round(k * CORE_PITCH * 1e6) / 1e6, 0]) })),
       { id: "borne_plus", part: "BM-TERM-POS", fixed: true, placement: at([0, Math.round(7 * CORE_PITCH * 1e6) / 1e6, 0]) },
       { id: "retour", part: "BM-RETURN-BB", fixed: true, placement: at([0, 0, 0]) }, { id: "couvercle_haut", asm: "BM-LID-TOP-ASM", fixed: true, placement: at([0, 0, 0]) },
       { id: "couvercle_fond", asm: "BM-LID-BOT-ASM", fixed: true, placement: at([0, 0, 0]) }], mates: [] };
@@ -116,20 +107,24 @@ export function busbarSizing() {
 /** The project, new each time : the CORE board with its mechanical twin, the parts of the CORE, the CORE and the module. */
 export function bmProject() {
   const p = { dw: "project/1", id: "bm-8s8p-21700", name: "BM 8s8p - 21700", author: "DesignWizard.ai",
-    description: "Module de batterie 8s8p en cellules 21700 : 8 CORE 1S8P en série, côte à côte, chacun avec sa carte de mesure posée dessus. Onzième itération : le busbar de retour et le couvercle du haut — came quart de tour, ressorts, pont de contact qui ferme la boucle ; le couvercle du fond vient ensuite.",
-    parts: [JSON.parse(JSON.stringify(CELL))], assemblies: [], boards: [coreBoard()], drawing: { words: WORDS_BM }, physics: [busbarSizing(), ...contactSizing(I_CORE), returnSizing(I_CORE)], log: [] };
-  const layout = contactLayout(CORE_X), contacts = busbarContacts(layout, { Y: CORE_Y, ins: INS_T, t: BB_T });
-  const o = { X: CORE_X, Y: CORE_Y, H, t: BB_T, ins: INS_T, w: WRAP_T, floor: FLOOR_T, e: GAP, grid: D, gap: GAP, rows: ROWS, lv: layout.lv }, box = coreBox(o), hold = { X: CORE_X, Y: CORE_Y, grid: D, gap: GAP, h: HOLDER_H };
-  p.parts.push(coreLaminate({ ...o, taps: box.taps, contacts, round: 1.8 }), box.part, coreHolder(hold), coreBase({ ...hold, floor: FLOOR_T, below: BB_T + WRAP_T - NTC_H, washer: { d: 5 } }),
-    stripPart("hv", layout.hv[0].x, layout.hv[0].z0, contacts.faces.plus), cagePart(layout, contacts.faces.plus), stopPart(layout.stops[0], contacts.faces.plus), stripPart("lv", layout.lv[0].x, layout.lv[0].z - STRIPS.lv.L / 2, contacts.faces.lv));
-  const ends = terminalParts({ X: CORE_X, Y: CORE_Y, ins: INS_T, t: BB_T, gap: JOINT_GAP }), casing = casingPart({ L: CASE_L });
+    description: "Module de batterie 8s8p en cellules 21700 : 8 CORE 1S8P en série, côte à côte, chacun avec sa carte de mesure posée dessus. Douzième itération : le CORE refait — busbar laminé industriel sur le dessus, soudures laser dessinées, joints plans pressés par les ressorts du couvercle, capteurs dans le support du bas.",
+    parts: [JSON.parse(JSON.stringify(CELL))], assemblies: [], boards: [coreBoard()], drawing: { words: WORDS_BM }, physics: [busbarSizing(), returnSizing(I_CORE)], log: [] };
+  const layout = contactLayout(CORE_X, D), z = stackOf({ H, ins: INS_T, t: BB_T, w: WRAP_T });
+  const o = { X: CORE_X, Y: CORE_Y, H, t: BB_T, ins: INS_T, w: WRAP_T, e: GAP, grid: D, gap: GAP, rows: ROWS };
+  const contacts = busbarContacts(layout, { Y: CORE_Y, ins: INS_T, t: BB_T, H, top: z.zF1 }), flex = coreFlex({ ...o, top: STACK, floor: FLOOR_T });
+  const hold = { X: CORE_X, Y: CORE_Y, grid: D, gap: GAP, h: HOLDER_H, rows: ROWS };
+  p.parts.push(coreLaminate({ ...o, contacts }), flex.part, coreHolder(hold), coreBase({ ...hold, floor: FLOOR_T, cone: 6 }),
+    coreClip({ ...hold, floor: FLOOR_T, slot: SLOT, t: CLIP_T, flexT: FLEX_T, pad: { d: 5, pocket: 1 } }),
+    lvContactPart("p", layout, { Y: CORE_Y, ins: INS_T, t: BB_T, zb: ZB }), lvContactPart("m", layout, { Y: CORE_Y, ins: INS_T, t: BB_T, zb: ZB }),
+    ...tapParts({ X: CORE_X, Y: CORE_Y, ins: INS_T, t: BB_T, zP1: z.zP1, zM1: z.zM1, zb: ZB, boardT: 1.6 }));
+  const ends = terminalParts({ X: CORE_X, Y: CORE_Y, ins: INS_T, t: BB_T, gap: 0 }), casing = casingPart({ L: CASE_L });
   casing.plan = { paths: casingPaths(CASE_L) };
-  const top = topEnd({ land: Math.round((8 * CORE_PITCH - (INS_T + BB_T) + 2) * 1e6) / 1e6, end: CASE_Y0 + CASE_L, y0: CASE_Y0 - 16 });      // the back of the + terminal ; the end of the casing ; the bottom end of the return busbar
+  const top = topEnd({ land: Math.round((8 * CORE_PITCH - (INS_T + BB_T) + 2) * 1e6) / 1e6, end: Math.round((CASE_Y0 + CASE_L) * 1e6) / 1e6, y0: CASE_Y0 - 16 });      // the back of the + terminal ; the end of the casing ; the bottom end of the return busbar
   const negLand = Math.round((CORE_Y + INS_T + BB_T - CORE_PITCH - 2) * 1e6) / 1e6, bottom = bottomEnd({ end: CASE_Y0, land: negLand, back: Math.round((negLand - 3) * 1e6) / 1e6, barEnd: CASE_Y0 - 16 });      // the − terminal : its copper, then its backing plate ; the return busbar ends inside the bottom lid
   p.parts.push(casing, ends.neg, ends.pos, ...top.parts, ...bottom.parts);
   syncTwins(p, LIBRARY);
   const board = p.boards[0], twin = p.parts.find((x) => x.id === board.part);
   twin.name = "Carte de CORE 1S8P"; twin.function = "La carte de mesure du CORE, posée sur le busbar laminé : 8 températures, la tension du CORE, l'équilibrage, RS-485 isolé.";
-  p.assemblies = [moduleAssembly(), coreAssembly(twin.id, box, layout), terminalAssembly(layout), top.assembly({ x: layout.hv[0].x, z0: layout.hv[0].z0, y: contacts.faces.plus }), bottom.assembly, jointAssembly(layout)];
+  p.assemblies = [moduleAssembly(), coreAssembly(twin.id, flex), top.assembly(), bottom.assembly, jointAssembly(layout)];
   return p;
 }

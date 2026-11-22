@@ -1,106 +1,109 @@
-/* DesignWizard.ai — BM 8s8p - 21700 : the contacts between two CORE, iteration 9 (JP, 21 novembre 2026, on a capture of the crowns : « ces
-   contacts n'ont pas l'air réalistes et possibles ; s'il le faut imite un design de ce genre d'interface et fais-les en lamelles
-   unidirectionnelles, en te basant sur un cas réel de l'industrie, fais tes devoirs… on améliore » ; and, the menu closed by a message : the
-   recommended choice, 4 LV contacts — RS-485 A and B, the supply of the bus side +5V_ISO and its ground GND_ISO, as the chain connectors of the
-   CORE board carry them).
-   Read from the makers' public documents (sources in docs/BM_MODULE.md and in the register of the tool) : a louvred contact strip between two
-   flat faces — the strip of Weftron LOUVER_tron 112 (12 mm wide, louvres every 3.5 mm, copper plates on a stainless spring, no beryllium,
-   silver 25 µm at least, a working height of 1.5 to 1.9 mm, p. 2) ; the same width and pitch as Stäubli's MULTILAM LA-CU, whose louvre is
-   printed at 40 A and 0.3 mΩ (its product page) and 7 N (The MULTILAM Principle, p. 16). The strips of a joint are held by a plastic frame on
-   the face, as a busbar-to-busbar frame of the trade holds its strips (Stäubli ClipLam) ; the gap between the two faces — the working height
-   of the strip — is held by copper stops, which carry the force of the module. The signal contacts are short gold-plated leaf louvre strips
-   (the LAV type of the makers : 5 mm wide, a louvre about 0.56 mm high free, TE p. 32) on raised insulating islands.
-   Every size is an EXAMPLE, said on each part ; what the documents print is said as read. Pure : the layout, the parts, what the contacts add
-   to the laminated busbar, the calculation kept in the project. */
+/* DesignWizard.ai — BM 8s8p - 21700 : the contacts between two CORE, iteration 12 (JP, 22 novembre 2026 : « let's pivot for a planar
+   high-current contact with a spring (to replace the deformable contact) » — then the laminated busbar of a CORE remade as an industrial one,
+   the welds on the cells visible, the sensors moved to the bottom support).
+   What it is now : FACE AGAINST FACE. The outer face of the + leg of a CORE lies on the outer face of the − leg of the next, bare silver-plated
+   copper on bare silver-plated copper ; the SPRING is the one of the module — the springs of the top lid press the whole stack of the 8 CORE
+   between the two lids (demo_bm_lid.js, lidForces). No strip, no frame, no stop : the gap is zero and the pitch of the CORE is the CORE and its
+   two legs. The four LV contacts of the RS-485 chain stay on the legs — a gold land FLUSH with the copper in an insulating insert, on both legs ;
+   behind each land, a pin through the insert and a tail that climbs inside the leg, in the valley between two cells, to the board on top
+   (the parts BM-LV-PLUS and BM-LV-MOINS) : nothing passes between two CORE any more.
+   The resistance of a joint is bounded with Holm's theory, as printed by Lu, Goddard, Han and Hahn (arXiv 1701.00447, 2017, p. 3, eq. 1–3,
+   citing Holm 1967 and Slade 2013) : constriction ρ / (2 a N) per unit area, the pressure at the asperities equal to the hardness. With the
+   whole force on ONE spot (N A = 1) : R = ρ / (2 a), a = √(F / (π H)) — an upper bound ; many spots, which a real joint has, lower it, and a
+   contamination film raises it (the second term of eq. 1, not counted : the faces are silver-plated and greased). ρ and H of copper : the
+   infobox of the Wikipedia page « Copper » (16.78 nΩ·m at 20 °C ; Brinell up to 878 MPa, the highest hardness printed — the safe side).
+   Every size is an EXAMPLE, said on each part. Pure : the layout, the parts, what the contacts add to the laminated busbar, the bound. */
 
-import { run, sessionDefaults } from "../analysis/physics/index.js";
-
-/** The gap the stops hold between the + leg of a CORE and the − leg of the next : the middle of the working range of the strip (1.5–1.9 mm). */
-export const GAP = 1.7, GAP_TOL = 0.05;
-export const STRIPS = {
-  hv: { id: "BM-LAM-HV", w: 12, L: 40, p: 3.5, t: 0.15, h: GAP, rail: 1.2, e: 0.4, s: 0.9, color: "#c9ced6" },      // e : the thickness of a louvre as drawn ; s : half its lean along the strip
-  lv: { id: "BM-LAM-LV", w: 5, L: 6, p: 0.8, t: 0.1, h: 0.45, free: 0.56, rail: 0.6, e: 0.2, s: 0.2, color: "#e2b340" } };
-export const STOP = { id: "BM-STOP", d: 8 }, CAGE = { id: "BM-LAM-CAGE", t: 1.0, rim: 2 };
-export const ISLAND = { insert: 10, hole: 10.4, land: 7, landT: 0.3, raise: GAP - STRIPS.lv.h };      // the LV land of the + leg stands `raise` above the face : its strip works at its height
+/** The insulating island of an LV contact, its gold land, the pin and the tail behind it. */
+export const ISLAND = { insert: 6, hole: 6, land: 4, landT: 0.3, pin: 1.2, tailW: 1.5, tailT: 0.3, tailIn: 1.0, slot: 0.6, recess: 0.1 };      // tailIn : the tail stands 1 mm inside the paper of the flank ; slot : the air around it, in its slot ; recess : the insert 0.1 mm under the copper — two inserts pressed together keep a creepage path between them
 export const LV_NETS = ["GND_ISO", "RS485_A", "RS485_B", "+5V_ISO"];
-const fr = (v) => String(v).replace(".", ",");
+/** The height of the LV contacts on the legs (example) : mid-height of the cells. */
+export const LV_Z = 40;
+const fr = (v) => String(Math.round(v * 1000) / 1000).replace(".", ",");
 export const MARK = { hv: { h: 2.5, w: 0.3 }, lv: { h: 2, w: 0.25 }, depth: 0.05 };
+/** Copper, as read (Wikipedia, « Copper », infobox) : resistivity at 20 °C ; the highest Brinell hardness printed. */
+export const COPPER = { rho: 16.78e-9, H: 878e6 };
 
-/** Where the contacts are on a leg, in the frame of the CORE (X the length of the CORE) : two HV strips along Z, four LV islands in a row low on
-    the leg (their flex tails come up from under the CORE), four stops. */
-export function contactLayout(X) {
-  const xm = X / 2;
-  return { hv: [{ id: "HV1", x: xm - 22, z0: 22, z1: 62, mark: [9.5, 42] }, { id: "HV2", x: xm + 22, z0: 22, z1: 62, mark: [X - 9.5, 42] }],
-    lv: LV_NETS.map((net, k) => ({ id: `LV${k + 1}`, net, x: xm - 27 + 18 * k, z: 12, mark: ["0V", "A", "B", "5V"][k] })),
-    stops: [[8, 30], [X - 8, 30], [8, 60], [X - 8, 60]] };
+/** Where the contacts are on a leg, in the frame of the CORE (X the length of the CORE, the middle of it a valley between two cells) : the four
+    LV contacts, two on each side of the valleys a cell from the middle — where the tails climb, clear of the cans — and the HV marks. */
+export function contactLayout(X, grid = 21.7) {
+  const xm = X / 2, v = [xm - grid, xm + grid];
+  return { lv: LV_NETS.map((net, k) => ({ id: `LV${k + 1}`, net, x: Math.round((v[k >> 1] + (k % 2 ? 2.5 : -2.5)) * 1000) / 1000, z: LV_Z, mark: ["0V", "A", "B", "5V"][k] })),
+    hv: [{ id: "HV1", mark: [9.5, 62] }, { id: "HV2", mark: [X - 9.5, 62] }] };
 }
-const slug = (net) => net.replace(/[^A-Za-z0-9]/g, "").toLowerCase();
-const box = (id, name, body, at, size, mode) => ({ op: "box", id, name, body, at, size, ...(mode ? { mode } : {}) });
-const cyl = (id, name, body, at, d, h, mode) => ({ op: "cylinder", id, name, body, at, d, h, axis: "Y", ...(mode ? { mode } : {}) });
+const slug = (net) => net.replace(/[^A-Za-z0-9]/g, "").toLowerCase(), r3 = (v) => Math.round(v * 1000) / 1000;
+/** Where the tail of an LV contact stands across Y : 1 mm inside the paper of the flank, on the + side (s > 0) or the − side. */
+export const tailY = (Y, s) => (s > 0 ? [r3(Y - ISLAND.tailIn - ISLAND.tailT), r3(Y - ISLAND.tailIn)] : [ISLAND.tailIn, r3(ISLAND.tailIn + ISLAND.tailT)]);
+export const lvBody = slug;
+const box = (id, name, body, at, size, mode, all) => ({ op: "box", id, name, ...(body ? { body } : {}), at, size, ...(mode ? { mode } : {}), ...(all ? { bodies: "all" } : {}) });
+const cyl = (id, name, body, at, d, h, mode, all) => ({ op: "cylinder", id, name, ...(body ? { body } : {}), at, d, h, axis: "Y", ...(mode ? { mode } : {}), ...(all ? { bodies: "all" } : {}) });
 /** The text the laser marks beside a contact : on the + leg (s > 0, read from +Y) or on the − leg (read from −Y). */
 const marking = (id, text, at, kind, body, y, s) => ({ op: "mark", id, name: `Marquage laser « ${text} »`, body, face: s > 0 ? "+Y" : "-Y", start: y, at, dir: [-s, 0], text, h: MARK[kind].h, w: MARK[kind].w, depth: MARK.depth });
 
-/** A louvred strip, as installed (its louvres leaning, pressed to the working height h) : two rails along Z on the face y, the louvres across
-    them. Drawn in the frame of the CORE at x, from z0 ; the copies are moved along the leg. */
-export function stripPart(kind, x, z0, y) {
-  const S = STRIPS[kind], hv = kind === "hv", n = Math.floor(S.L / S.p + 1e-9), feats = [
-    box("rail_a", "Bord de la bande", "main", [x - S.w / 2, y, z0], [S.rail, S.t, S.L]), box("rail_b", "Bord de la bande", "main", [x + S.w / 2 - S.rail, y, z0], [S.rail, S.t, S.L])];
-  for (let k = 0; k < n; k++) { const zc = z0 + S.p / 2 + k * S.p;
-    feats.push({ op: "extrude", id: `lamelle_${k + 1}`, name: `Lamelle ${k + 1}`, body: "main", plane: "YZ", at: x - S.w / 2, length: S.w,
-      profile: { poly: [[y, zc - S.s - S.e / 2], [y, zc - S.s + S.e / 2], [y + S.h, zc + S.s + S.e / 2], [y + S.h, zc + S.s - S.e / 2]] } }); }
-  return { dw: "part/1", id: S.id, name: hv ? "Bande de contact HV à lamelles" : "Bande de contact LV à lamelles, dorée", family: "contact", process: "purchased", material: hv ? "CU-C110" : "CUBE-C17200", revision: "A",
-    bodies: { main: { material: hv ? "CU-C110" : "CUBE-C17200", kind: "conductor", label: hv ? "Bande à lamelles (argentée)" : "Bande à lamelles (dorée)" } }, params: {}, features: feats, interfaces: [],
-    function: hv ? "Le contact de puissance entre deux CORE : une bande à lamelles tenue dans son cadre sur la jambe +, écrasée par la jambe − du CORE voisin jusqu'à la hauteur que tiennent les butées."
-      : "Un contact du signal entre deux CORE (RS-485 A ou B, +5V_ISO, GND_ISO) : une courte bande à lamelles dorée sur la plage surélevée d'un îlot de la jambe +, écrasée sur la plage de l'îlot d'en face.",
-    notes: hv ? [`${n} lamelles au pas de ${fr(S.p)} mm sur ${S.L} mm, ${S.w} mm de large — l'enveloppe d'une bande du commerce : LOUVER_tron 112 de Weftron (plaques de cuivre sur un ressort en inox, sans béryllium, argent 25 µm au moins, hauteur de travail 1,5 à 1,9 mm — fiche, p. 2, lue), même largeur et même pas que la MULTILAM LA-CU de Stäubli. La référence et ses valeurs se confirment avec le fabricant.`,
-        `Dessinée posée, à sa hauteur de travail de ${fr(S.h)} mm : les lamelles inclinées touchent la jambe d'en face. Elle se coupe à la longueur et se pose dans son cadre (BM-LAM-CAGE) ; elle n'est ni soudée ni brasée : elle se remplace.`,
-        "Les plages des deux jambes sont argentées là où la bande appuie, comme le demandent les fabricants pour les valeurs de leurs fiches (cuivre argenté propre, rugosité N6) ; graisse de contact selon la fiche."]
-      : [`${n} lamelles au pas de ${fr(S.p)} mm sur ${S.L} mm, ${S.w} mm de large, dorées — le type à lame « LAV » des fabricants (5 mm de large ; une lamelle de 0,56 mm de haut libre chez TE, catalogue p. 32, lu). Le pas exact et la hauteur de travail de ce type ne sont pas publiés dans ce qui a été lu : ${fr(S.p)} mm et ${fr(S.h)} mm sont des exemples.`,
-        "Brasée ou clipsée sur la plage dorée de son îlot ; aucune valeur de résistance n'est publiée pour les versions dorées lues : à mesurer sur l'îlot réel."] };
-}
-/** The frame that holds the HV strips on the + leg : an insulating plate thinner than the gap — it never carries the force of the module. */
-export function cagePart(L, y) {
-  const S = STRIPS.hv, C = CAGE, feats = [];
-  for (const c of L.hv) feats.push(box(`cadre_${c.id.toLowerCase()}`, `Cadre de ${c.id}`, "main", [c.x - S.w / 2 - C.rim, y, c.z0 - C.rim], [S.w + 2 * C.rim, C.t, S.L + 2 * C.rim]),
-    box(`fenetre_${c.id.toLowerCase()}`, `Fenêtre de ${c.id}`, "main", [c.x - S.w / 2 - 0.2, y - 0.1, c.z0 - 0.2], [S.w + 0.4, C.t + 0.2, S.L + 0.4], "cut"));
-  return { dw: "part/1", id: C.id, name: "Cadre des bandes HV", family: "insulator", process: "injection_molding", material: "PA66-GF30", revision: "A", params: {}, features: feats, interfaces: [], elec: { kind: "insulator" },
-    function: "Tient les deux bandes HV à leur place sur la jambe + : une fenêtre par bande, comme le cadre plastique d'un joint busbar-busbar du commerce ; plus mince que l'écart, il ne porte pas l'effort du module.",
-    notes: [`PA66-GF30, ${fr(C.t)} mm d'épaisseur pour ${fr(GAP)} mm d'écart (exemple) ; collé sur la jambe ou clipsé dans deux trous — à choisir avec le fabricant du busbar.`] };
-}
-/** A stop : a silver-plated copper spacer brazed on the + leg, as high as the gap. It holds the working height of the strips and carries the force of the module. */
-export function stopPart(at, y) {
-  return { dw: "part/1", id: STOP.id, name: "Butée entre deux CORE", family: "contact", process: "cnc_turning", material: "CU-C110", revision: "A", params: {},
-    features: [cyl("butee", "Butée", "main", [at[0], y, at[1]], STOP.d, GAP)], interfaces: [],
-    function: "Tient l'écart entre la jambe + d'un CORE et la jambe − du suivant — la hauteur de travail des bandes — et porte l'effort qui presse le module.",
-    notes: [`Cuivre argenté, Ø${STOP.d} × ${fr(GAP)} mm, hauteur à ± ${fr(GAP_TOL)} mm : c'est elle qui fixe l'écrasement des lamelles (plage de la bande : 1,5 à 1,9 mm). Brasée sur la jambe + ; les deux jambes qu'elle sépare sont au même potentiel — elle conduit aussi.`, "Quatre par CORE, aux coins de la jambe, hors des bandes et des îlots."] };
-}
-
-/** What the contacts add to the laminated busbar : the LV islands of both legs (an insulating insert in a hole of the copper, a gold land in it —
-    raised on the + leg), the engraved frames around the HV lands of the − leg, the laser marks. o : { Y, ins, t } ; L : contactLayout. */
+/** What the contacts add to the laminated busbar : on both legs, an insulating insert per LV contact (a hole through the copper and the paper of
+    the flank, the insert, the pocket of its land, the bore of its pin), the laser marks ; at the top, the slot where each tail goes up to the
+    board. o : { Y, ins, t, top (the top of the laminate), H (the top of the cells) } ; L : contactLayout. */
 export function busbarContacts(L, o) {
-  const Yp = o.Y + o.ins + o.t, Ym = -(o.ins + o.t), S = STRIPS.hv, I = ISLAND, features = [];
+  const Yp = o.Y + o.ins + o.t, Ym = -(o.ins + o.t), I = ISLAND, features = [];
   const bodies = { isolant_lv: { material: "PA66-GF30", kind: "insulator", label: "Inserts isolants des contacts LV" } };
-  for (const c of L.hv) {
-    const k = c.id.toLowerCase(), g = 0.4, d = MARK.depth;
-    features.push(box(`gravure_${k}m`, `Gravure laser — cadre de la plage ${c.id} (jambe −)`, "moins", [c.x - S.w / 2 - 1 - g, Ym, c.z0 - 1 - g], [S.w + 2 + 2 * g, d, S.L + 2 + 2 * g], "cut"),
-      box(`gravure_${k}m_in`, `Gravure laser — intérieur du cadre de ${c.id}`, "moins", [c.x - S.w / 2 - 1, Ym, c.z0 - 1], [S.w + 2, d, S.L + 2]),
-      marking(`texte_${k}p`, `${c.id} +`, c.mark, "hv", "plus", Yp, 1), marking(`texte_${k}m`, `${c.id} −`, c.mark, "hv", "moins", Ym, -1));
-  }
+  for (const c of L.hv) features.push(marking(`texte_${c.id.toLowerCase()}p`, "HV +", c.mark, "hv", "plus", Yp, 1), marking(`texte_${c.id.toLowerCase()}m`, "HV −", c.mark, "hv", "moins", Ym, -1));
   for (const c of L.lv) for (const [side, s] of [["p", 1], ["m", -1]]) {
-    const k = `${slug(c.net)}_${side}`, body = s > 0 ? "plus" : "moins", base = s > 0 ? o.Y + o.ins : Ym, face = s > 0 ? Yp : -o.ins, top = s > 0 ? Yp + I.raise : Ym;
-    const land = `lv_${k}`; bodies[land] = { material: "CU-C110", kind: "conductor", net: c.net, label: `Plage ${c.net} (jambe ${s > 0 ? "+" : "−"}), dorée` };
-    features.push(cyl(`trou_${k}`, `Trou de l'îlot ${c.net} dans la jambe ${s > 0 ? "+" : "−"}`, body, [c.x, Math.min(base, face) - 0.2, c.z], I.hole, Math.abs(face - base) + 0.4, "cut"),
-      cyl(`ilot_${k}`, `Insert isolant de ${c.net}${s > 0 ? `, surélevé de ${fr(I.raise)} mm` : ""}`, "isolant_lv", [c.x, s > 0 ? base : top, c.z], I.insert, s > 0 ? top - base : -o.ins - top),
-      cyl(`ilot_${k}_creux`, `Logement de la plage de ${c.net}`, "isolant_lv", [c.x, s > 0 ? top - I.landT : top - 0.1, c.z], I.land + 0.2, I.landT + 0.1, "cut"),
-      cyl(`plage_${k}`, `Plage dorée de ${c.net}`, land, [c.x, s > 0 ? top - I.landT : top, c.z], I.land, I.landT),
-      marking(`texte_${k}`, c.mark, [c.x + 9, c.z], "lv", body, s > 0 ? Yp : Ym, s));
+    const k = `${slug(c.net)}_${s > 0 ? "p" : "m"}`, body = s > 0 ? "plus" : "moins", y0 = s > 0 ? o.Y : Ym, y1 = s > 0 ? Yp : 0, out = s > 0 ? Yp : Ym;
+    features.push(cyl(`trou_${k}`, `Trou de l'îlot ${c.net} — jambe ${s > 0 ? "+" : "−"} et papier du flanc`, null, [c.x, y0 - 0.2, c.z], I.hole, y1 - y0 + 0.4, "cut", true),
+      cyl(`ilot_${k}`, `Insert isolant de ${c.net}, ${fr(I.recess)} mm sous le cuivre`, "isolant_lv", [c.x, s > 0 ? y0 : y0 + I.recess, c.z], I.insert, y1 - y0 - I.recess),
+      cyl(`ilot_${k}_plage`, `Logement de la plage de ${c.net}, affleurante`, "isolant_lv", [c.x, s > 0 ? out - I.landT : out - 0.1, c.z], I.land + 0.2, I.landT + 0.1, "cut"),
+      cyl(`ilot_${k}_broche`, `Passage de la broche de ${c.net}`, "isolant_lv", [c.x, y0 - 0.1, c.z], I.pin + 0.2, y1 - y0 + 0.2, "cut"),
+      marking(`texte_${k}`, c.mark, [c.x + 1.2 * s, c.z + 5.5], "lv", body, out, s));
+    void side;
+    /* the slot of its tail through the top of the laminate : around the tail, I.slot of air on every side */
+    const tl = tailY(o.Y, s), ys = [tl[0] - I.slot, tl[1] + I.slot], xw = I.tailW + 2 * I.slot;
+    features.push(box(`fente_${k}`, `Fente de la queue de ${c.net} (jambe ${s > 0 ? "+" : "−"})`, null, [r3(c.x - xw / 2), r3(ys[0]), o.H], [r3(xw), r3(ys[1] - ys[0]), r3(o.top - o.H + 0.1)], "cut", true));
   }
-  return { bodies, features, faces: { plus: Yp, moins: Ym, lv: Yp + I.raise } };
+  return { bodies, features, faces: { plus: Yp, moins: Ym } };
 }
 
-/** The calculation of the HV joint, kept in the project under the name of the strip : the model « louvre_strip » with the values the documents print. */
-export function contactSizing(I_CORE) {
-  const S = STRIPS.hv, inputs = { ...sessionDefaults("louvre_strip"), strips: 2, L: S.L, p: S.p, Il: 40, Rl: 300, Fl: 7, hMin: 1.5, hMax: 1.9, mate: "cu", h: GAP, tol: GAP_TOL, I: I_CORE, Umax: 12.5 }, r = run("louvre_strip", inputs);
-  return [{ id: "phy-bm-lam", name: `Joint HV entre deux CORE — 2 bandes de ${S.L} mm, ${I_CORE} A`, model: "louvre_strip", part: S.id, inputs: r.inputs, values: r.values, checks: r.checks, verdict: r.verdict, when: "2026-11-22T01:00:00.000Z",
-    why: `Le courant du CORE, ${I_CORE} A, par les deux bandes du joint. Valeurs d'une lamelle : 40 A et 0,3 mΩ (page produit de la MULTILAM LA-CU de Stäubli, même largeur et même pas que la bande dessinée), 7 N (The MULTILAM Principle, p. 16) ; plage de travail 1,5 à 1,9 mm (Weftron LOUVER_tron 112, p. 2) ; 12,5 mV, la limite qu'un fabricant prend pour son courant assigné (catalogue des fiches à fourche, p. 10). La résistance d'une lamelle de la 112 elle-même n'est pas dans ce qui a été lu : à demander au fabricant.` }];
+/** The four LV contacts of a leg, one part : on each, the gold land flush with the leg, the pin through its insert, the tail that climbs inside
+    the leg (against the paper of the flank, between two cells) and through the slot of the laminate to the bottom of the board, where it is
+    soldered. side : "p" (the + leg) or "m" (the − leg) ; o : { Y, ins, t, zb (the bottom of the board) }. */
+export function lvContactPart(side, L, o) {
+  const p = side === "p", I = ISLAND, Yp = o.Y + o.ins + o.t, Ym = -(o.ins + o.t), bodies = {}, features = [];
+  for (const c of L.lv) {
+    const b = slug(c.net), tail = tailY(o.Y, p ? 1 : -1);
+    bodies[b] = { material: "CU-C110", kind: "conductor", net: c.net, label: `${c.net} — plage dorée, broche et queue` };
+    const land = p ? Yp - I.landT : Ym, pin0 = p ? tail[0] : Ym + I.landT, pin1 = p ? Yp - I.landT : tail[1];
+    features.push(cyl(`plage_${b}`, `Plage dorée de ${c.net}`, b, [c.x, land, c.z], I.land, I.landT),
+      cyl(`broche_${b}`, `Broche de ${c.net}, à travers l'insert`, b, [c.x, pin0, c.z], I.pin, pin1 - pin0),
+      box(`queue_${b}`, `Queue de ${c.net}, jusqu'à la carte`, b, [c.x - I.tailW / 2, tail[0], c.z - I.tailW / 2], [I.tailW, I.tailT, o.zb - (c.z - I.tailW / 2)]));
+  }
+  const sign = p ? "+" : "−";
+  return { dw: "part/1", id: p ? "BM-LV-PLUS" : "BM-LV-MOINS", name: `Contacts LV de la jambe ${sign}`, family: "contact", process: "purchased", material: "CU-C110", revision: "A", params: {}, bodies, features, interfaces: [],
+    function: `Les quatre contacts de la chaîne RS-485 sur la jambe ${sign} : une plage dorée affleurante, posée face à face sur celle du CORE ${p ? "suivant" : "précédent"} ; derrière, une broche et une queue qui montent à la carte.`,
+    notes: [`Plage Ø${fr(I.land)} × ${fr(I.landT)} mm, dorée, dans un insert isolant Ø${fr(I.insert)} en PA66-GF30 emmanché dans la jambe, ${fr(I.recess)} mm sous le cuivre ; broche Ø${fr(I.pin)} ; queue de ${fr(I.tailW)} × ${fr(I.tailT)} mm qui monte à ${fr(I.tailIn)} mm du papier du flanc, dans le creux entre deux cellules (là où leurs godets sont loin de la jambe), puis par une fente du busbar laminé — ${fr(I.slot)} mm d'air tout autour — jusqu'à la carte, où elle se brase dans un trou (à placer dans le PCBA). Exemples.`,
+      p ? "Côté +, la plage repose sur une rondelle ondulée dans son insert (non dessinée) : libre, elle dépasse de quelques centièmes ; pressée, elle affleure et touche celle d'en face — c'est le ressort du contact LV."
+        : "Côté −, la plage est fixe et affleure : elle reçoit la plage + du CORE précédent.",
+      "Les plages LV sont au potentiel du bus isolé ; le cuivre autour, à celui du CORE : l'insert et la fente gardent la distance, à vérifier dans l'Isolation (« Joint entre deux CORE »)."] };
+}
+
+/** The bound of the resistance of a pressed copper joint, after Holm (as printed by Lu et al., arXiv 1701.00447, p. 3, eq. 1–3) : the whole force
+    F on one spot, of radius a = √(F / (π H)), its constriction R = ρ / (2 a). I : the current. → { F, a (m), R (Ω), U (V), P (W) } */
+export function planarJoint(F, I, C = COPPER) {
+  const a = Math.sqrt(F / (Math.PI * C.H)), R = C.rho / (2 * a);
+  return { F, a, R, U: R * I, P: R * I * I };
+}
+
+/** The two voltage taps of the board : a nickel-plated copper tab laser-welded on a layer of the laminated busbar, through a window of its film,
+    and rising beside the edge of the board, where it is soldered to a castellated pad. o : { X, Y, ins, t, zP1 (top of the + layer), zM1 (top of
+    the − layer), zb (bottom of the board), boardT } → [B+, B−] */
+export function tapParts(o) {
+  const T = 0.2, w = 4, x0 = Math.round((o.X / 2 - w / 2) * 1000) / 1000, top = Math.round((o.zb + o.boardT) * 1000) / 1000, Ym = -(o.ins + o.t), r3 = (v) => Math.round(v * 1000) / 1000;
+  const make = (plus) => {
+    const net = plus ? "B+" : "B−", z0 = plus ? o.zP1 : o.zM1, foot = plus ? [o.Y, o.Y + 2] : [r3(Ym + 0.2), 0], blade = plus ? [o.Y, o.Y + T] : [-T, 0];
+    return { dw: "part/1", id: plus ? "BM-TAP-NI-P" : "BM-TAP-NI-M", name: `Languette de prise ${net}`, family: "contact", process: "purchased", material: "CU-C110", revision: "A", params: {},
+      bodies: { main: { material: "CU-C110", kind: "conductor", net: plus ? "CORE+" : "CORE-", label: `Languette ${net}, cuivre nickelé` } },
+      features: [box("pied", `Pied soudé sur la couche ${plus ? "+" : "−"}`, "main", [x0, foot[0], z0], [w, r3(foot[1] - foot[0]), T]),
+        box("lame", "Lame qui monte au bord de la carte", "main", [x0, blade[0], z0], [w, T, r3(top - z0)])], interfaces: [],
+      function: `Prend la tension du CORE (${net}) pour la carte : soudée au laser sur la couche ${plus ? "+ au bord +Y" : "− au bord −Y"} du busbar laminé, elle monte le long du bord de la carte et s'y brase sur une demi-plage crénelée.`,
+      notes: [`Cuivre nickelé de ${String(T).replace(".", ",")} × ${w} mm (exemple) ; la plage crénelée du bord de la carte est à placer dans le PCBA.`, "La mesure de tension se fait par cette languette, sans courant : sa section ne compte pas pour les 360 A."] };
+  };
+  return [make(true), make(false)];
 }

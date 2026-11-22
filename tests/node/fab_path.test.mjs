@@ -23,7 +23,7 @@ test("the shop plays only what it can show right : machined, moulded or cast, ex
   for (const p of ["cnc_milling", "cnc_turning", "injection_molding", "die_casting", "sand_casting", "extrusion_al", "sheet_metal", "laser_cut"]) assert.ok(fabPlayable({ process: p }).ok, p);
   for (const p of ["pcb", "purchased", "fdm", "mjf", "sla", "lpbf", undefined]) { const r = fabPlayable({ process: p }); assert.ok(!r.ok && r.why && r.short, String(p)); }
   assert.ok(!fabPlayable({ process: "laser_cut", flex: {} }).ok, "a flex is not played, whatever its process says");
-  const bm = bmProject(); assert.ok(!fabPlayable(bm.parts.find((p) => p.id === "BM-BB-LAM")).ok, "the laminated busbar of JP's capture : not played"); assert.ok(!fabPlayable(bm.parts.find((p) => p.id === "BM-FLEX-BOX")).ok);
+  const bm = bmProject(); assert.ok(!fabPlayable(bm.parts.find((p) => p.id === "BM-BB-LAM")).ok, "the laminated busbar of JP's capture : not played"); assert.ok(!fabPlayable(bm.parts.find((p) => p.id === "BM-FLEX-BASE")).ok);
   assert.ok(!downOf("parts", ["BM-BB-LAM"], bm).some((d) => /#\/fab\//.test(d.hash)), "no step down to the shop for a part it does not play");
   assert.ok(toolMoves({ process: "cnc_milling" }, { key: "setup:+Z" }) && toolMoves({ process: "die_casting" }, { key: "rework" }) && toolMoves({ process: "extrusion_al" }, { key: "setup:-Z" }), "machined, machined after casting or extrusion : the tool moves");
   assert.ok(!toolMoves({ process: "injection_molding" }, { key: "rework" }) && !toolMoves({ process: "laser_cut" }, { key: "setup:+Z" }) && !toolMoves({ process: "cnc_milling" }, { key: "deburr" }), "elsewhere, it does not");

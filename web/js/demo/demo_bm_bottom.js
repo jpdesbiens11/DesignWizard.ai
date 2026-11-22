@@ -37,7 +37,7 @@ export function bottomLayout(o) {
 
 /** The interface ring of the bottom lid : its flange, the slot of the return busbar, the four posts on the backing plate of the − terminal. */
 export function bottomRing(L) {
-  const S = L.S, c = L.c, ch = S.channel, out = { x0: -8.7, x1: 101.5, z0: S.keel.z0, z1: 89.2 }, at = S.ports.map((p) => [p[0], p[1]]);
+  const S = L.S, c = L.c, ch = S.channel, out = { x0: -8.7, x1: 101.5, z0: S.keel.z0, z1: r3(S.ports[2][1] + S.R) }, at = S.ports.map((p) => [p[0], p[1]]);
   return { dw: "part/1", id: "BM-LID-RING-BOT", name: "Anneau d'interface du couvercle du fond", family: "machined", process: "cnc_milling", material: "AL6061-T6", revision: "A", params: {},
     features: [box("bride", "Bride", null, [out.x0, L.ring0, out.z0], [out.x1 - out.x0, 6, out.z1 - out.z0]),
       box("fenetre", "Fenêtre — la section de la cavité", null, [c.x0, L.ring0 - 1, c.z0], [c.x1 - c.x0, 8, c.z1 - c.z0], "cut"),
@@ -61,7 +61,7 @@ export function postPart(L) {
 
 /** The housing of the bottom lid : a shell open toward the ring ; the window of the swap connector in its bottom face. */
 export function bottomHousing(L) {
-  const S = L.S, w = L.wall, x0 = -8.7, x1 = 101.5, z0 = S.keel.z0, z1 = 89.2, K = L.conn;
+  const S = L.S, w = L.wall, x0 = -8.7, x1 = 101.5, z0 = S.keel.z0, z1 = r3(S.ports[2][1] + S.R), K = L.conn;
   return { dw: "part/1", id: "BM-LID-BOT", name: "Couvercle du fond", family: "molded", process: "injection_molding", material: "PA66-GF30", revision: "A", params: {},
     features: [box("coque", "Coque", null, [x0, L.house0, z0], [x1 - x0, L.ring0 - L.house0, z1 - z0]),
       { op: "fillet", id: "conges", name: "Congés des arêtes le long de l'axe — R3,75 dehors, R1,25 dedans après la coque", r: 1.5 * w, edges: { dir: "Y" } },

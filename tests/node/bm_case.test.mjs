@@ -7,7 +7,6 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { bmProject, CORE_X, CORE_Y, CORE_PITCH, CASE_Y0, CASE_L, I_CORE } from "../../web/js/demo/demo_bm.js";
 import { CASE, RETURN, CORE_ENV, caseSection, casingPart } from "../../web/js/demo/demo_bm_case.js";
-import { GAP } from "../../web/js/demo/demo_bm_contacts.js";
 import { buildPart, validateSpec } from "../../web/js/cad/build.js";
 import { checkPart } from "../../web/js/analysis/dfx_rules.js";
 import { normalizeProfile } from "../../web/js/cad/profile.js";
@@ -60,17 +59,14 @@ test("the casing builds, extruded in polycarbonate : no DFx error ; six closed h
   assert.equal(b.facts.extrusion.envelopes.length, 3); assert.ok(b.facts.extrusion.envelopes.every((e) => !e.collides));
 });
 
-test("the module closes : casing, − terminal before CORE 1, + terminal after CORE 8 — no interference, each terminal on its CORE", async () => {
-  const { K, flat, place } = await module(), at = (id) => flat.instances.find((i) => i.id === id), core = (k) => flat.instances.filter((i) => i.id.startsWith(`core${k}~`)).map(place);
-  const casing = place(at("boitier")), ends = flat.instances.filter((i) => i.id.startsWith("borne_moins~")).map(place), plus = place(at("borne_plus"));
-  near(at("boitier").placement.t[1], CASE_Y0, "the casing"); assert.ok(CASE_Y0 < -17.95 && CASE_Y0 + CASE_L > 7 * CORE_PITCH + 64.35, "it runs past the studs of both terminals");
-  assert.deepEqual(clashes(K, casing, [...core(1), ...ends, plus]), [], "the section is the same all along : CORE 1 stands for the 8");
-  for (const e of ends) assert.deepEqual(clashes(K, e, core(1)), [], e.id);
-  assert.deepEqual(clashes(K, plus, core(8)), []);
-  const box = (i) => K.bbox(place(i).bodies[0].shape), strip = flat.instances.find((i) => i.id === "borne_moins~hv1"), lam = flat.instances.find((i) => i.id === "core1~bb");
-  near(box(strip)[4], -(0.25 + 2.0), "the strips of the − terminal reach the − leg of CORE 1", 1e-3);
-  near(K.bbox(place(lam).bodies.find((b) => b.name === "moins").shape)[1], -(0.25 + 2.0), "where that leg is", 1e-3);
-  near(K.bbox(plus.bodies.find((b) => b.name === "plaque").shape)[1], 7 * CORE_PITCH + CORE_Y + 0.25 + 2.0 + GAP, "the + terminal : on the strips of CORE 8", 1e-3);
+test("the module closes : casing, − terminal before CORE 1, + terminal after CORE 8 — no interference, each terminal face against its CORE", async () => {
+  const { K, flat, place } = await module(), at = (id) => flat.instances.find((i) => i.id === id), core = (k) => flat.instances.filter((i) => i.id.startsWith(`core${k}~`)).map((i) => ({ ...i, placement: { ...i.placement, t: i.placement.t.map((v, n) => v + flat.groups[i.group].placement.t[n]) } })).map(place);
+  const casing = place(at("boitier")), neg = place(at("borne_moins")), plus = place(at("borne_plus"));
+  near(at("boitier").placement.t[1], CASE_Y0, "the casing"); assert.ok(CASE_Y0 < -16.25 && CASE_Y0 + CASE_L > 7 * CORE_PITCH + 53.65, "it runs past the studs of the − terminal and the backing plate of the + terminal");
+  assert.deepEqual(clashes(K, casing, [...core(1), neg, plus]), [], "the section is the same all along : CORE 1 stands for the 8");
+  assert.deepEqual(clashes(K, neg, core(1)), []); assert.deepEqual(clashes(K, plus, core(8)), []);
+  near(K.bbox(neg.bodies.find((b) => b.name === "plaque").shape)[4], -(0.25 + 2.0), "the − terminal : face against the − leg of CORE 1", 1e-3);
+  near(K.bbox(plus.bodies.find((b) => b.name === "plaque").shape)[1], 7 * CORE_PITCH + CORE_Y + 0.25 + 2.0, "the + terminal : face against the + leg of CORE 8", 1e-3);
 });
 
 test("the terminals : copper and a backing plate, the LV islands of a leg, studs to the lids ; the end of the RS-485 chain terminated there", async () => {

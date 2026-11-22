@@ -4,9 +4,9 @@
    What is drawn here : the CASING — a profile of polycarbonate extruded along Y, the 8 CORE slid inside on two floor rails and four side ribs ;
    a screw port in each corner, in a lobe outside the walls (the corners of the cavity are taken by the board and the flex) ; under the floor, a
    closed channel for the return busbar of iteration 11 (its section sized here, its bar not drawn) — the channel's keel and the four lobes
-   also guide the module in its cavity or its charging station. The two TERMINALS of the module : the − terminal, at the bottom end, carries
-   what a + leg carries (two louvred strips in their frame, four stops, the four LV contacts on raised islands — the RS-485 chain comes in
-   there from the central BMS) ; the + terminal, at the top end, is a flat face like a − leg, its LV lands flush (the end of the chain).
+   also guide the module in its cavity or its charging station. The two TERMINALS of the module : the − terminal, at the bottom end, is a flat
+   face like a + leg, its four LV lands flush (the RS-485 chain comes in there from the central BMS) ; the + terminal, at the top end, is a flat
+   face like a − leg, its LV lands flush (the end of the chain). Iteration 12 : the joints are face against face (demo_bm_contacts.js).
    Read : the pre-hole and the depth of a thread-forming screw for plastics — EVO PT (EJOT), on the page of its licensee Semblex : hole
    0.85 × d1 ± 0.05 mm, installation depth 2 × d1 or more, counterbore 1.05 × d1, 0.1 × d1 deep. Not read : the boss diameter (no ratio is
    printed there ; the tool keeps a wall as thick as the casing around the hole), the pull-out of the screw in PC (the maker's EVO CALC), the
@@ -14,11 +14,11 @@
    z = 0) — the casing runs along Y. */
 
 import { run, sessionDefaults } from "../analysis/physics/index.js";
-import { STRIPS, ISLAND, LV_NETS, contactLayout } from "./demo_bm_contacts.js";
+import { ISLAND, contactLayout } from "./demo_bm_contacts.js";
 
 const r3 = (v) => Math.round(v * 1000) / 1000, fr = (v) => String(r3(v)).replace(".", ",");
-/** The section, around the envelope of a CORE (measured on its parts : x 0 to 92.8 — the board ; the flex panels at 0.7 and 92.1 ; z −3.8 —
-    the flex under the CORE — to 80.3, the tallest component). */
+/** The section, around the envelope of a CORE (measured on its parts : x 0 to 92.8 — the board ; the flex panel at 0.7, and 92.1 kept for the
+    symmetry of the section ; z −3.8 — the clipped plate under the CORE — to 82.55, the tallest component). */
 export const CASE = {
   t: 2.5,      // the wall, the same everywhere (the tool's rule for a plastic section whose circumscribed circle is above 150 mm)
   side: 1.5, floor: 1.7, top: 1.7,      // from the CORE to the walls of the cavity : beside the board, under the flex, over the components
@@ -31,7 +31,7 @@ export const CASE = {
 /** The return busbar of iteration 11 : the section the channel is made for — 50 × 4 mm of copper (the tool's model below). */
 export const RETURN = { w: 50, t: 4, L: 460 };
 /** The CORE, as the casing sees it. */
-export const CORE_ENV = { x0: 0, x1: 92.8, flex0: 0.7, flex1: 92.1, z0: -3.8, z1: 80.3 };
+export const CORE_ENV = { x0: 0, x1: 92.8, flex0: 0.7, flex1: 92.1, z0: -3.8, z1: 82.55 };
 
 /** The numbers of the section : cavity, walls, keel, channel, lobes and their ports. → { cavity, outer, keel, channel, ports, R, xm, zm } */
 export function caseSection(env = CORE_ENV, C = CASE) {
@@ -97,7 +97,7 @@ export function casingPart(o) {
       `Vis des couvercles : quatre vis pour plastiques EVO PT 40 (EJOT) par bout, prises dans des trous venus d'extrusion (Ø${fr(Pt.ext)}) que l'on perce à Ø${fr(Pt.hole)} ± 0,05 sur ${Pt.depth} mm et que l'on lame à Ø${fr(Pt.cb)} × ${fr(Pt.cbDepth)} mm aux deux bouts — 0,85 × d1, au moins 2 × d1 de prise, lamage 1,05 × d1 sur 0,1 × d1 : valeurs du fabricant de la vis, lues. Une section extrudée tient d'usage ± 0,3 mm : le trou se fait donc en reprise là où la vis travaille. La vis forme son filet au premier vissage.`,
       `Les trous sont fermés, dans un lobe de ${fr(2 * S.R)} mm, une paroi de ${fr(C.t)} mm autour : la vis pousse la matière vers l'extérieur, un canal ouvert en « C » s'écarterait (choix de l'outil). Le diamètre du lobe n'est pas dans ce qui a été lu du fabricant de la vis, ni la tenue à l'arrachement dans le PC : à calculer avec son outil (EVO CALC) quand l'effort du latch sera connu (itération 11).`,
       "Profilé fermé, six creux (la cavité, le canal, quatre trous) : une filière à mandrin et un calibrage — à discuter avec l'extrudeur, avec la planéité des grandes parois (± 0,3 mm d'usage à confirmer).",
-      `Les CORE ne touchent le boîtier que par les deux rails du fond et les quatre nervures de côté, 0,5 mm de jeu : le flex frotte sur les rails quand on glisse un CORE — un film ou des patins sur le support du bas sont à décider.`,
+      `Les CORE ne touchent le boîtier que par les deux rails du fond et les quatre nervures de côté, 0,5 mm de jeu : la plaque clipsée sous le support du bas glisse sur les rails quand on pose un CORE (itération 12 : le flex est dans la fente, à l'abri) ; la nervure du côté +X fait face à la barre du support, il n'y a plus de panneau de flex de ce côté.`,
       `Canal du busbar de retour : ${fr(ch.x1 - ch.x0)} × ${fr(ch.z1 - ch.z0)} mm, pour une barre de ${RETURN.w} × ${RETURN.t} mm (calcul gardé dans le projet) ; au bout haut, une fenêtre fraisée dans le fond laisse monter sa languette vers le couvercle.`] };
 }
 
@@ -116,22 +116,22 @@ export function terminalParts(o) {
     feats.push(box("plaque", "Plaque de cuivre", "plaque", [x0, lo(face, back), z0], [x1 - x0, T, z1 - z0]), box("appui", "Plaque d'appui isolante", "appui", [x0, lo(back, bk), z0], [x1 - x0, B, zb - z0]));
     if (neg) for (const [k, p] of studs.entries()) feats.push(cyl(`goujon_${k + 1}`, `Goujon serti M6 ${k + 1} — liaison au couvercle`, "goujons", [p[0], back - 12, p[1]], 6, 12));
     for (const c of L.lv) {
-      const k = c.net.replace(/[^A-Za-z0-9]/g, "").toLowerCase(), top = neg ? face + I.raise : face, land = `lv_${k}`;
+      const k = c.net.replace(/[^A-Za-z0-9]/g, "").toLowerCase(), top = face, land = `lv_${k}`;
       bodies[land] = { material: "CU-C110", kind: "conductor", net: c.net, label: `Plage ${c.net} de la borne ${neg ? "−" : "+"}, dorée` };
       feats.push(cyl(`trou_${k}`, `Trou de l'îlot ${c.net}`, "plaque", [c.x, lo(face, back) - 0.2, c.z], I.hole, T + 0.4, "cut"),
-        cyl(`ilot_${k}`, `Insert isolant de ${c.net}${neg ? `, surélevé de ${fr(I.raise)} mm` : ""}`, "isolant_lv", [c.x, lo(top, back), c.z], I.insert, Math.abs(top - back)),
+        cyl(`ilot_${k}`, `Insert isolant de ${c.net}`, "isolant_lv", [c.x, lo(top, back), c.z], I.insert, Math.abs(top - back)),
         cyl(`ilot_${k}_creux`, `Logement de la plage de ${c.net}`, "isolant_lv", [c.x, neg ? top - I.landT : top - 0.1, c.z], I.land + 0.2, I.landT + 0.1, "cut"),
         cyl(`plage_${k}`, `Plage dorée de ${c.net}`, land, [c.x, neg ? top - I.landT : top, c.z], I.land, I.landT),
         cyl(`fil_${k}`, `Passage du fil de ${c.net}`, "appui", [c.x, lo(back, bk) - 0.2, c.z], 4, B + 0.4, "cut"));
     }
     const sign = neg ? "−" : "+";
     return { dw: "part/1", id: neg ? "BM-TERM-NEG" : "BM-TERM-POS", name: `Borne ${sign} du module`, family: "busbar", process: "purchased", material: "CU-C110", revision: "A", params: {}, bodies, features: feats, interfaces: [],
-      function: neg ? "Le bout − de la chaîne des 8 CORE, au fond du boîtier : sa face porte ce que porte une jambe + (deux bandes à lamelles dans leur cadre, quatre butées, les quatre contacts LV) et presse la jambe − du CORE 1 ; ses îlots amènent le RS-485 du BMS central dans la chaîne."
-        : "Le bout + de la chaîne, en haut du boîtier : une face plane comme une jambe −, où appuient les bandes et les butées du CORE 8 ; ses plages LV ferment la chaîne.",
-      notes: [`Cuivre de ${T} mm (C110), argenté là où les bandes appuient ; plaque d'appui isolante de ${B} mm (PA66-GF30, exemple) entre la borne et le couvercle, qui transmet l'effort de la pile sans conduire.`,
+      function: neg ? "Le bout − de la chaîne des 8 CORE, au fond du boîtier : une face plane comme une jambe +, posée sur la jambe − du CORE 1 ; ses quatre plages LV affleurantes amènent le RS-485 du BMS central dans la chaîne."
+        : "Le bout + de la chaîne, en haut du boîtier : une face plane comme une jambe −, où se pose la jambe + du CORE 8 ; ses plages LV ferment la chaîne.",
+      notes: [`Cuivre de ${T} mm (C110), argenté sur sa face de contact ; plaque d'appui isolante de ${B} mm (PA66-GF30, exemple) entre la borne et le couvercle, qui transmet l'effort de la pile sans conduire.`,
         neg ? "En haut, au dos, la plage de liaison reste nue : deux goujons sertis M6 à tête affleurante (exemple) y reçoivent le conducteur du couvercle du fond — vers le contacteur et le connecteur (itération 11 b)."
-          : "En haut, au dos, une plage de 14 mm reste nue, argentée : le plot A du couvercle du haut y appuie par sa bande à lamelles — le couvercle retiré, le module est ouvert (itération 11).",
-        neg ? "Ses îlots LV sont ceux d'une jambe + : plage surélevée, bande dorée ; au dos, un fil par îlot passe la plaque d'appui vers le BMS central (itération 11)."
+          : "En haut, au dos, une plage de 14 mm reste nue, argentée : le plot A du couvercle du haut y appuie, face contre face — le couvercle retiré, le module est ouvert (itération 11).",
+        neg ? "Ses plages LV affleurent comme celles d'une jambe + ; au dos, un fil par îlot passe la plaque d'appui vers le BMS central (itération 11)."
           : "Ses plages LV sont celles d'une jambe −, affleurantes. Les 8 cartes sont identiques et sans terminaison (bloc RS-485 du PCBA : terminaison « non ») : la terminaison de 120 Ω du bout de la chaîne se pose ici, entre les plages A et B — l'autre est au BMS central.",
         "Une pièce de spécialiste (busbar) : faite chez son fabricant, elle ne se joue pas dans l'atelier de fab."] };
   };

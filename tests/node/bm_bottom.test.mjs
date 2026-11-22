@@ -20,7 +20,7 @@ async function bottom() {
   if (cache) return cache;
   const K = await kernel(), p = bmProject(), find = (id) => p.assemblies.find((a) => a.id === id), built = new Map(p.parts.map((s) => [s.id, buildPart(K, s)]));
   const flat = flatAsm(find("BM-8S8P-ASM"), find), place = (i) => ({ id: i.id, bodies: built.get(i.part).bodies.map((b) => ({ name: b.name, shape: K.transform(b.shape, matFromPlacement(i.placement)) })) });
-  const near1 = flat.instances.filter((i) => /^(couvercle_fond~|retour$|boitier$|borne_moins~|core1~)/.test(i.id)).map(place);
+  const near1 = flat.instances.filter((i) => /^(couvercle_fond~|retour$|boitier$|borne_moins$|core1~)/.test(i.id)).map(place);
   cache = { K, p, built, near1, box: (id, body) => { const x = near1.find((q) => q.id === id); return K.bbox((body ? x.bodies.find((b) => b.name === body) : x.bodies[0]).shape); } }; return cache;
 }
 
@@ -40,7 +40,7 @@ test("the bottom end closes : nothing goes through anything — ring, spacers, h
 });
 
 test("the push of the stack ends on the ring : each spacer from the backing plate of the − terminal to a tab of the ring ; the ring on the end of the casing", async () => {
-  const { box } = await bottom(), backer = box("borne_moins~borne", "appui"), ring = box("couvercle_fond~anneau");
+  const { box } = await bottom(), backer = box("borne_moins", "appui"), ring = box("couvercle_fond~anneau");
   near(ring[4], CASE_Y0, "the ring on the end of the casing"); near(box("couvercle_fond~couvercle")[4], ring[1], "the housing on the ring");
   for (const k of [1, 2, 3, 4]) { const s = box(`couvercle_fond~entretoise_${k}`); near(s[4], backer[1], `spacer ${k} on the backing plate`); near(s[1], ring[4], `spacer ${k} on the ring`);
     assert.ok(s[0] < backer[3] && s[3] > backer[0], `spacer ${k} under the backing plate`); }
@@ -52,7 +52,7 @@ test("the power path : return busbar → contactor (PACK+), contactor → HV+ pi
   assert.equal(cont.bodies.borne_a.net, "PACK+"); assert.equal(cont.bodies.borne_b.net, "HV+"); assert.equal(conn.bodies.hv_plus.net, "HV+"); assert.equal(conn.bodies.hv_moins.net, "PACK-");
   const bar = box("retour"), foot = box("couvercle_fond~barres", "plus"), top = caseSection().channel.z1 - 0.5;      // the bar in its channel : 0.5 mm under the floor
   near(foot[2], top, "the PACK+ strap stands on the return busbar"); assert.ok(foot[1] <= bar[1] + 1e-6, "it reaches the end of the return busbar");
-  near(box("couvercle_fond~barres", "moins")[4], box("borne_moins~borne", "plaque")[1], "the PACK− strap on the bare land of the − terminal");
+  near(box("couvercle_fond~barres", "moins")[4], box("borne_moins", "plaque")[1], "the PACK− strap on the bare land of the − terminal");
   const pins = [box("couvercle_fond~connecteur", "hv_plus"), box("couvercle_fond~connecteur", "hv_moins")]; near(pins[0][4], box("couvercle_fond~barres", "hv")[1], "the HV+ pin meets its strap"); near(pins[1][4], box("couvercle_fond~barres", "moins")[1], "the HV− pin meets its strap");
   assert.ok(box("couvercle_fond~connecteur")[1] < box("couvercle_fond~couvercle")[1], "the connector stands out of the bottom face : it engages blind in the cavity");
   assert.match(conn.notes.join(" "), /aucune série/); assert.match(cont.notes.join(" "), /rien de cela n'a été lu/); assert.match(p.parts.find((s) => s.id === "BM-BMS-BOARD").notes.join(" "), /30 × 48/);

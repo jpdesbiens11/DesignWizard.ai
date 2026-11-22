@@ -418,9 +418,17 @@ fabrication virtuel)** — faits (v0.142.0 à v0.145.0) ; le projet BM bonifié 
    la poussée de la pile, logement PA66-GF30 en coque, connecteur d'échange (enveloppe générique, aucune série copiée), contacteur sur le pôle +
    (enveloppe générique, fiche non lue), volume de la carte BMS centrale (30 × 48 mm : trop petit, à décider), barres de **40 × 4 mm** — ce que
    le modèle « busbar » demande pour 360 A ; le shunt du pont du haut aussi (l'outil a fait voir les 30 et 42 mm² d'avant). 232 pièces, aucune
-   interférence. **JP, 22 novembre, deux messages à traiter ensuite** : remplacer le contact déformable (lamelles) par un **contact plan
-   haute intensité avec ressort** ; refaire le busbar laminé du CORE **comme un busbar laminé industriel** (photo d'un busbar laminé à 90°
-   d'Exxelia : couches + et − empilées, isolées, encapsulées, languettes de sortie percées).
+   interférence. **Itération 12 (v0.154.0)**, messages de JP du 22 novembre (« a planar high-current contact with a spring », la photo d'un busbar
+   laminé industriel plié à 90°, les plaques soudées au laser « la marque bien visible », et son idée des capteurs dans le support du
+   bas) : **le busbar laminé du CORE** a ses deux couches empilées sur le dessus (papier, −, papier, +, film : 4,6 mm), ses languettes
+   minces soudées sur chaque calotte et sur l'épaule de chaque godet (à confirmer avec Molicel), les cordons dessinés, ses jambes pliées
+   à 90° ; **les joints entre CORE sont plans**, face contre face, pressés par les ressorts du couvercle du haut — plus de bande, de
+   cadre ni de butée, pas 50,9 mm — et leur résistance est **bornée par Holm** d'après une source ouverte lue (arXiv 1701.00447, p. 3 ;
+   au plus 13,3 µΩ par joint à 1 100 N) ; **les contacts LV affleurent**, leurs queues montent dans les jambes jusqu'à la carte ;
+   **les capteurs** : un flex glissé dans le support du bas et sa plaque clipsée, un cône formé sous chaque cellule et sa thermistance,
+   une pastille de mousse dessous ; **la tension** par deux languettes de nickel. 18 pièces par CORE, 171 dans le module, aucune
+   interférence. Reste : un essai de résistance d'un joint plan réel, la soudure sur l'épaule (Molicel), le formage des cônes, la
+   rondelle ondulée des plages LV, les plages crénelées et les trous de la carte (PCBA), l'échauffement du module fermé.
    **JP, 22 novembre, ensuite** : « après itération 12, svp corriger l'interface avec les points restants » — une fois l'itération 12 publiée,
    reprendre les points d'interface restants (les « Reste » de cette liste qui touchent l'interface), sans menu entre eux.
 21. ~~**Logiciel : pas à pas, simulation en direct, code visible, chargement**~~ — fait (v0.124.0 ; demande de JP du 20

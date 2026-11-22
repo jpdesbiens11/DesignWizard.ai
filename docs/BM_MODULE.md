@@ -525,28 +525,69 @@ contacteur → HV+, PACK− → HV−) et ses potentiels ; le connecteur sort de
 **Pas fait** : le choix du connecteur, du contacteur, de la précharge ; la carte BMS et ses fils (chaîne RS-485, seconde
 terminaison, CAN, bobine, HVIL) ; la cavité ou la station ; l'échauffement réel du module fermé.
 
+## Itération 12 — le CORE refait : busbar laminé industriel, soudures visibles, joints plans, capteurs dans le support du bas
+
+Messages de JP (22 novembre) : remplacer le contact déformable par **un contact plan à fort courant avec ressort** ; refaire le
+busbar laminé du CORE **comme un busbar laminé industriel** (la photo d'un busbar laminé plié à 90° : couches + et − empilées,
+isolées, encapsulées, languettes de sortie percées) ; l'interface des capteurs sous les cellules « pas comme il faut » ; s'inspirer
+des plaques soudées au laser qui épousent les cellules, **la marque du laser bien visible** ; et l'idée de JP pour les capteurs :
+**intégrer la mesure de température dans le support du bas**, un flex qui y glisse et dont des **cônes**, faits dans le flex, montent
+toucher le fond de chaque cellule — la cellule se pose sur son capteur.
+
+- **Le busbar laminé** (`BM-BB-LAM`, `demo_bm_lam.js`) : les deux conducteurs sont **empilés à plat sur le dessus** des cellules —
+  papier aramide, couche − (2 mm), papier, couche + (2 mm), film : 4,6 mm. Leurs sorties sont les deux **jambes pliées à 90°** le long
+  des grands côtés, les faces du contact série. Rien sous les cellules : la plaque − du dessous et ses rondelles sont parties.
+- **Les deux pôles par le dessus** : le − se prend sur **l'épaule du godet** (le bord serti) — à confirmer avec Molicel, la fiche de la
+  P45B ne cote ni la calotte ni l'épaule. Au-dessus de chaque cellule, un puits de Ø15 traverse le papier et la couche − ; une
+  **languette mince de la couche +** (0,3 mm) en descend jusqu'à la calotte ; deux **disques minces de la couche −** se posent sur
+  l'épaule, sous un petit trou, et une fenêtre de la couche + et du film laisse passer le laser.
+- **Les soudures sont dessinées** : un anneau gravé et son centre sur chaque calotte et chaque point d'épaule (8 + 16 cordons) ; on
+  les voit d'en haut. Elles se font sur les parties minces, jamais à travers 2 mm de cuivre.
+- **Le contact entre deux CORE est plan** (`demo_bm_contacts.js`) : la jambe + d'un CORE posée sur la jambe − du suivant, cuivre argenté
+  contre cuivre argenté. Le **ressort** est celui du module — les ressorts du couvercle du haut pressent toute la pile (plus de bande à
+  lamelles, de cadre ni de butée). Le pas devient **50,9 mm** (46,4 + 2 × (0,25 + 2,0)), le boîtier 459,4 mm.
+- **Combien de résistance ?** La théorie de **Holm**, telle que l'imprime un article ouvert lu (Lu, Goddard, Han et Hahn, « Contact
+  resistance between two REBCO tapes under load and load-cycles », arXiv 1701.00447, p. 3, éq. 1 à 3, citant Holm 1967 et Slade 2013) :
+  résistance de constriction ρ / (2aN), la pression aux aspérités égale à la dureté. Toute la force sur **une seule tache** donne
+  R = (ρ/2)·√(πH/F) — **une borne haute** (plusieurs taches la baissent ; un film d'oxyde l'augmenterait, non compté : faces argentées et
+  graissées). Cuivre : ρ = 16,78 nΩ·m à 20 °C et la dureté Brinell la plus haute imprimée, 878 MPa (page Wikipédia « Copper »,
+  encadré, lu). Avec les ressorts du couvercle — 800 N sur la plaque, 300 N par plot — chaque joint porte **1 100 N** : **au plus
+  13,3 µΩ, 4,8 mV et 1,7 W à 360 A** ; chaque plot du pont, 300 N : au plus 25,4 µΩ. À mesurer sur un joint réel.
+- **Les quatre contacts LV** restent sur les jambes, **affleurants** : une plage dorée Ø4 dans un insert PA66-GF30 emmanché, 0,1 mm sous le
+  cuivre (deux inserts pressés l'un sur l'autre gardent ainsi un chemin de fuite) ; côté +, une rondelle ondulée sous la plage (non
+  dessinée) en fait le ressort. Derrière chaque plage, une broche et une **queue** qui monte **à l'intérieur de la jambe**, dans le creux
+  entre deux cellules, puis par une fente du busbar (0,6 mm d'air autour) jusqu'à la carte (`BM-LV-PLUS`, `BM-LV-MOINS`) : rien ne passe
+  plus entre deux CORE. Mesuré par l'Isolation sur le joint CORE 7 → CORE 8 : **0,6 mm dans l'air, 1,19 mm de ligne de fuite**
+  (exigences fonctionnelles : 0,5 et 0,52 mm).
+- **Les capteurs** (idée de JP, `demo_bm_box.js`, `demo_bm_holder.js`) : le **support du bas** garde son fond sous les cellules, percé
+  de Ø6 sous le centre de chacune ; une **plaque clipsée** dessous laisse une **fente de 0,4 mm** où le **flex** glisse par le bout −X.
+  Sous chaque cellule, le film est formé en **cône** (Ø5 → Ø2,2, 0,7 mm) qui monte par le trou ; sa thermistance, sur la pointe,
+  touche le fond du godet ; une **pastille de mousse de silicone** dans la plaque le presse. Un seul panneau monte au bout −X et
+  continue dans la carte (rigid-flex). Les cônes se forment après le flex : le développé à plat n'en a pas.
+- **La tension du CORE** se prend par deux **languettes de nickel** soudées sur les couches du busbar (B+ au bord +Y, B− au bord −Y)
+  et brasées au bord de la carte (`BM-TAP-NI-P`, `BM-TAP-NI-M`).
+- Le CORE compte **18 pièces**, le module **171** ; aucune interférence dans un CORE, entre deux CORE, ni aux deux bouts (essais).
+
 ## Ce qu'il contient
 
 | Élément | Ce que c'est | Où |
 |---|---|---|
 | Carte de CORE 1S8P | la carte du PCBA (`CORE-1S8P-PCBA`, 92,8 × 46,4 mm) et son jumeau mécanique `CORE-1S8P-PCBA-PCB` | Électronique › PCBA ; Pièces |
 | Cellule 21700 du CORE | `BM-CELL-21700`, l'enveloppe la plus grande publiée pour une 21700 (Ø 21,7 × 70,8 mm), bornes soudables | Pièces |
-| Busbar laminé du CORE | `BM-BB-LAM` : le conducteur + (bornes +, flanc +Y) et le conducteur − (fonds, flanc −Y) en une pièce, papier aramide côté cellules, film PET dehors, fenêtres et bossages de soudure, un trou sous chaque cellule | Pièces |
-| Flex en boîte du CORE | `BM-FLEX-BOX` : la section centrale sous le CORE (8 CTN, B−), deux panneaux pleine largeur aux petits bouts, le X− continue dans la carte (rigid-flex), le rabat X+ prend B+ | Pièces |
-| Support du bas des cellules | `BM-HOLDER-BASE` : le support du bas avec un fond sous les cellules, deux fenêtres de soudure − par cellule, et ses 8 rondelles thermiques moulées en deuxième injection (itération 5 ; les rondelles séparées `BM-PUCK` de l'itération 4 sont dedans) | Pièces |
+| Busbar laminé du CORE | `BM-BB-LAM` : les couches − et + empilées sur le dessus, papier aramide sous, entre et autour, film dehors ; languettes minces soudées sur chaque calotte et chaque épaule, cordons dessinés ; jambes pliées à 90° (itération 12) | Pièces |
+| Flex des capteurs du CORE | `BM-FLEX-BASE` : glissé dans la fente du support du bas, un cône formé sous chaque cellule et sa CTN, un panneau qui continue dans la carte (itération 12) | Pièces |
+| Support du bas des cellules | `BM-HOLDER-BASE` : le support du bas, son fond percé sous chaque cellule pour le cône du flex (itération 12) ; `BM-BASE-CLIP` : la plaque clipsée dessous, la fente du flex, les pastilles de mousse | Pièces |
 | Support du haut des cellules | `BM-HOLDER` : une épine entre les rangées, deux barres aux bouts, une poche par cellule, cinq noyautages | Pièces |
-| Bandes de contact HV | `BM-LAM-HV` : bande à lamelles de 12 × 40 mm, l'enveloppe de la LOUVER_tron 112 ; deux par CORE, sur la jambe + (itération 9 — elles remplacent les couronnes des itérations 6 à 8) | Pièces |
-| Cadre des bandes | `BM-LAM-CAGE` : PA66-GF30, 1 mm, une fenêtre par bande | Pièces |
-| Butées | `BM-STOP` : cuivre argenté Ø8 × 1,7 mm, quatre par CORE — l'écart de travail des bandes, et l'effort du module | Pièces |
-| Bandes de contact LV | `BM-LAM-LV` : courte bande à lamelles dorée, quatre par CORE, sur les plages surélevées des îlots + | Pièces |
-| CORE 1S8P | `BM-CORE-ASM` : 8 cellules en deux rangées de 4, le support du haut, le support du bas et ses rondelles, le busbar laminé, le flex en boîte et ses 8 queues, la carte dessus, 2 bandes HV, leur cadre, 4 butées, 4 bandes LV — 24 pièces | Assemblage |
+| Contacts LV | `BM-LV-PLUS`, `BM-LV-MOINS` : les quatre plages dorées affleurantes d'une jambe, leurs broches et leurs queues jusqu'à la carte (itération 12 — les bandes, cadres et butées des itérations 9 à 11 sont partis) | Pièces |
+| Languettes de prise | `BM-TAP-NI-P`, `BM-TAP-NI-M` : cuivre nickelé, B+ et B− du busbar au bord de la carte | Pièces |
+| CORE 1S8P | `BM-CORE-ASM` : 8 cellules en deux rangées de 4, le support du haut, le support du bas et sa plaque clipsée, le flex des capteurs, le busbar laminé, les contacts LV des deux jambes, les deux languettes de prise, la carte dessus — 18 pièces | Assemblage |
 | Joint entre deux CORE | `BM-JOINT-ASM` : le busbar de deux CORE voisins et ce qui est entre eux, chaque conducteur à son potentiel — pour l'écran Isolation | Assemblage |
-| Boîtier extrudé du module | `BM-CASING` : polycarbonate extrudé, 473 mm ; deux rails, quatre nervures, quatre lobes et leurs trous de vis, le canal du busbar de retour (itération 10) | Pièces |
-| Bornes du module | `BM-TERM-NEG` (avec ses contacts, `BM-TERM-NEG-ASM`) et `BM-TERM-POS` : cuivre, plaque d'appui, îlots LV, goujons vers les couvercles (itération 10) | Pièces ; Assemblage |
+| Boîtier extrudé du module | `BM-CASING` : polycarbonate extrudé, 459,4 mm (473 mm avant l'itération 12) ; deux rails, quatre nervures, quatre lobes et leurs trous de vis, le canal du busbar de retour (itération 10) | Pièces |
+| Bornes du module | `BM-TERM-NEG` et `BM-TERM-POS` : cuivre, plaque d'appui, plages LV affleurantes, goujons vers le couvercle du fond (itération 10 ; faces planes depuis l'itération 12) | Pièces |
 | Busbar de retour | `BM-RETURN-BB` : cuivre 50 × 4 mm dans le canal du boîtier, sa languette relevée au bout haut (itération 11 a) | Pièces |
-| Couvercle du haut | `BM-LID-TOP-ASM` : anneau d'interface en aluminium, couvercle, came quart de tour, plaque de pression, huit ressorts, pont de contact et ses deux bandes (itération 11 a) | Assemblage |
+| Couvercle du haut | `BM-LID-TOP-ASM` : anneau d'interface en aluminium, couvercle, came quart de tour, plaque de pression, huit ressorts, pont de contact, ses plots plans (itération 11 a ; plans depuis l'itération 12) | Assemblage |
 | Couvercle du fond | `BM-LID-BOT-ASM` : anneau d'interface en aluminium et ses quatre entretoises, logement, connecteur d'échange, contacteur, volume de la carte BMS centrale, barres de 40 × 4 mm (itération 11 b) | Assemblage |
-| BM 8s8p - 21700 | `BM-8S8P-ASM` : 8 CORE côte à côte, tous dans le même sens, la borne − avant le CORE 1, la borne + après le CORE 8, le boîtier autour, le busbar de retour, les deux couvercles — 232 pièces | Assemblage |
+| BM 8s8p - 21700 | `BM-8S8P-ASM` : 8 CORE côte à côte, tous dans le même sens, la borne − avant le CORE 1, la borne + après le CORE 8, le boîtier autour, le busbar de retour, les deux couvercles — 171 pièces | Assemblage |
 
 ## La géométrie, telle que dessinée
 
@@ -558,11 +599,12 @@ terminaison, CAN, bobine, HVIL) ; la cavité ou la station ; l'échauffement ré
 - **La série** : la jambe + d'un CORE presse la jambe − du CORE suivant, face contre face (itération 1 : 49,4 mm d'un CORE
   au suivant avec 1 mm de cuivre ; itération 2 : 51,4 mm avec 2 mm ; itération 4 : 50,9 mm, le papier aramide de 0,25 mm
   remplaçant l'isolant de 0,5 mm ; itération 6 : 51,25 mm — les deux jambes ne se touchent plus, ce sont les butées des
-  contacts qui portent ; itération 8 : 51,5 mm, les rondelles de butée de 0,6 mm ; itération 9 : 52,6 mm, l'écart de 1,7 mm des bandes à lamelles).
-- **Le boîtier** court le long de Y, de −29 à 444 mm dans le repère du module (le CORE 1 à l'origine) : 11 mm au-delà des goujons de
-  chaque borne, la place des couvercles — un exemple jusqu'à l'itération 11. Sa section est dessinée dans le plan X Z du repère d'un CORE.
-- La jambe + s'arrête à 5 mm du bas, la jambe − à 5 mm du haut : aucune des deux ne frôle la plaque de l'autre polarité
-  de son propre CORE (exemple, paramètre `z0`).
+  contacts qui portent ; itération 8 : 51,5 mm, les rondelles de butée de 0,6 mm ; itération 9 : 52,6 mm, l'écart de 1,7 mm des bandes à lamelles ;
+  itération 12 : **50,9 mm**, de nouveau face contre face — contact plan, pressé par les ressorts du couvercle du haut).
+- **Le boîtier** court le long de Y, de −29 à 430,4 mm dans le repère du module (le CORE 1 à l'origine) : 8 pas de CORE et 52,2 mm, la
+  place des deux couvercles ; il suit le pas. Sa section est dessinée dans le plan X Z du repère d'un CORE.
+- Les deux jambes s'arrêtent à 5 mm du bas des cellules (exemple) ; en haut, la couche − s'arrête à 1,5 mm de la jambe +, la couche +
+  commence à 1,5 mm de la jambe − : les deux pôles ne se frôlent pas.
 
 ## Ce qui est un exemple, et ce qui n'est pas dessiné
 
@@ -572,11 +614,11 @@ support. Le cuivre (2,0 mm) est dimensionné, par un
 modèle simple. Les pièces sont posées à leur place (« fixe »), sans accouplements : les soudures cellule ↔ busbar et les
 CTN ↔ busbar ne sont pas encore des interfaces appariées, d'où les « interfaces sans jumelle » que l'écran signale.
 
-**Pas encore dessiné** : les languettes de soudure minces (les bossages en tiennent la place) ; le chant du cuivre aux
+**Pas encore dessiné** : la rondelle ondulée sous chaque plage LV côté + ; les crochets de la plaque clipsée ; la plage crénelée et les trous de la carte où se brasent les languettes et les queues (à placer dans le PCBA) ; le chant du cuivre aux
 petits bouts, nu ; la dépouille du support de cellules ; la carte BMS centrale et ses fils, la précharge, la cavité ou la station.
 
 **Non vérifié** : l'échauffement réel du cuivre dans le module fermé (le modèle est une barre seule à l'air libre) ; la
 chaleur des cellules elles-mêmes à 45 A (la fiche donne ≤ 8 mΩ à 1 kHz à l'expédition, pas la résistance en courant
-continu) ; la tenue des plis du flex à l'assemblage ; la lamination d'une pièce pliée sur trois faces ; la mesure par
-la rondelle (aucun essai) ; la tenue des cellules dans leur support
+continu) ; la tenue des plis du flex à l'assemblage ; le formage des cônes dans le polyimide ; la mesure par le cône (aucun essai) ;
+la soudure sur l'épaule des godets (Molicel) ; la résistance réelle des joints plans (la borne de Holm est un plafond) ; la tenue des cellules dans leur support
 (vibration, choc) ; l'isolation entre CORE ; la conformité de quoi que ce soit.

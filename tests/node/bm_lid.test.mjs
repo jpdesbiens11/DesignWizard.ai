@@ -8,7 +8,7 @@ import assert from "node:assert/strict";
 import { bmProject, CORE_PITCH, CASE_Y0, CASE_L } from "../../web/js/demo/demo_bm.js";
 import { lidForces } from "../../web/js/demo/demo_bm_lid.js";
 import { RETURN, caseSection } from "../../web/js/demo/demo_bm_case.js";
-import { STRIPS } from "../../web/js/demo/demo_bm_contacts.js";
+import { COPPER } from "../../web/js/demo/demo_bm_contacts.js";
 import { buildPart } from "../../web/js/cad/build.js";
 import { checkPart } from "../../web/js/analysis/dfx_rules.js";
 import { flatAsm } from "../../web/js/core/asm_levels.js";
@@ -22,7 +22,8 @@ let cache = null;
 async function topEnd() {
   if (cache) return cache;
   const K = await kernel(), p = bmProject(), find = (id) => p.assemblies.find((a) => a.id === id), built = new Map(p.parts.map((s) => [s.id, buildPart(K, s)]));
-  const flat = flatAsm(find("BM-8S8P-ASM"), find), place = (i) => ({ id: i.id, bodies: built.get(i.part).bodies.map((b) => ({ name: b.name, shape: K.transform(b.shape, matFromPlacement(i.placement)) })) });
+  const flat = flatAsm(find("BM-8S8P-ASM"), find), T = (i) => ({ ...i.placement, t: i.placement.t.map((v, n) => v + (i.group ? flat.groups[i.group].placement.t[n] : 0)) });      // a part in a CORE : the place of its CORE added
+  const place = (i) => ({ id: i.id, bodies: built.get(i.part).bodies.map((b) => ({ name: b.name, shape: K.transform(b.shape, matFromPlacement(T(i))) })) });
   const near8 = flat.instances.filter((i) => /^(couvercle_haut~|retour$|boitier$|borne_plus$|core8~)/.test(i.id)).map(place);
   cache = { K, p, built, flat, near8, box: (id, body) => { const x = near8.find((q) => q.id === id); return K.bbox((body ? x.bodies.find((b) => b.name === body) : x.bodies[0]).shape); } }; return cache;
 }
@@ -43,14 +44,12 @@ test("the top end closes : nothing goes through anything — lid, springs, bridg
   assert.deepEqual(out, []);
 });
 
-test("the loop closes by pressure : pad A on the land of the + terminal, pad B on the tab of the return busbar, each across a louvred strip at its working height", async () => {
+test("the loop closes by pressure : pad A on the land of the + terminal, pad B on the tab of the return busbar — each face against face", async () => {
   const { box } = await topEnd(), land = 8 * CORE_PITCH - 2.25 + 2;
   near(box("borne_plus", "plaque")[4], land, "the back of the + terminal");
-  const sA = box("couvercle_haut~bande_a"), pA = box("couvercle_haut~pont", "plotA"), sB = box("couvercle_haut~bande_b"), pB = box("couvercle_haut~pont", "plotB"), tab = box("retour");
-  near(sA[1], land, "strip A on the land"); near(sA[4], pA[1], "pad A on strip A"); near(sA[4] - sA[1], STRIPS.hv.h, "at the working height");
-  assert.ok(sA[2] >= 66 && sA[5] <= 80, "strip A on the bare land, above the backing plate"); near(sA[3] - sA[0], STRIPS.hv.L, "strip A lies along X");
-  near(sB[1], tab[4], "strip B on the tab"); near(sB[4], pB[1], "pad B on strip B");
-  assert.ok(sB[2] >= tab[2] && sB[5] <= tab[5] && sB[0] >= tab[0] && sB[3] <= tab[3], "strip B on the tab");
+  const pA = box("couvercle_haut~pont", "plotA"), pB = box("couvercle_haut~pont", "plotB"), tab = box("retour");
+  near(pA[1], land, "pad A on the land"); assert.ok(pA[2] >= 66 && pA[5] <= 80, "pad A on the bare land, above the backing plate");
+  near(pB[1], tab[4], "pad B on the tab"); assert.ok(pB[0] >= tab[0] && pB[3] <= tab[3], "pad B within the tab");
   near(box("couvercle_haut~plaque")[1], box("borne_plus", "appui")[4], "the pressure plate on the backing plate of the + terminal");
 });
 
@@ -65,13 +64,14 @@ test("the latch holds the cap : the arm bears on both lips of the ring ; the spr
   assert.deepEqual(hole.at, S.ports.map((q) => [q[0], q[1]]), "the screws go into the ports of the casing");
 });
 
-test("the forces, in one place : the springs keep every joint closed with reserve ; what each screw of the ring pulls", () => {
+test("the forces, in one place : every planar joint pressed by the springs, its resistance bounded with Holm ; what each screw of the ring pulls", () => {
   const F = lidForces();
-  assert.equal(F.joint, 154, "22 louvres × 7 N (the maker's value read)"); assert.equal(F.pad, 77, "11 louvres × 7 N");
-  assert.ok(F.stack + F.padA > F.joint, "the stack is pressed beyond what the louvres of a joint need : the stops carry the rest");
-  assert.ok(F.padA >= F.pad && F.padB >= F.pad, "each pad pressed beyond what its strip needs");
-  assert.equal(F.total, 780); assert.equal(F.perScrew, 195);
-  const p = bmProject(); assert.match(p.parts.find((s) => s.id === "BM-LID-RING-TOP").function, /195 N/); assert.match(p.parts.find((s) => s.id === "BM-LID-TOP").notes.join(" "), /780 N/);
+  assert.deepEqual([F.stack, F.padA, F.padB], [800, 300, 300]); assert.equal(F.joint, F.stack + F.padA, "every joint of the stack carries the plate and pad A");
+  assert.equal(F.total, 1400); assert.equal(F.perScrew, 350);
+  near(F.jointR.R, COPPER.rho / 2 * Math.sqrt(Math.PI * COPPER.H / F.joint), "R = (ρ/2) √(πH/F)", 1e-12);
+  assert.ok(F.jointR.R < 14e-6 && F.padAR.R < 26e-6 && F.padBR.R < 26e-6, `at most : ${(F.jointR.R * 1e6).toFixed(1)} µΩ a joint, ${(F.padAR.R * 1e6).toFixed(1)} µΩ a pad`);
+  const p = bmProject(); assert.match(p.parts.find((s) => s.id === "BM-LID-RING-TOP").function, /350 N/); assert.match(p.parts.find((s) => s.id === "BM-LID-TOP").notes.join(" "), /1400 N/);
+  assert.match(p.parts.find((s) => s.id === "BM-BRIDGE").notes.join(" "), /Holm/);
 });
 
 test("the return busbar : 50 × 4 mm in the channel, its tab raised through the window milled at the top end ; every conductor of the loop on PACK+", async () => {
