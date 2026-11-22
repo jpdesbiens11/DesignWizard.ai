@@ -406,6 +406,14 @@ fabrication virtuel)** — faits (v0.142.0 à v0.145.0) ; le projet BM bonifié 
    terminaison de 120 Ω du bus (les 8 cartes n'en ont pas) ; plaque d'appui isolante, goujons M6 vers les couvercles. Aucune interférence ;
    206 pièces. Reste : l'itération 11 (busbar de retour, couvercles, latch, contacteur, effort sur la pile et tenue des vis), la terminaison
    posée, le frottement du flex sur les rails à la pose, les tolérances réelles de la section.
+   **Itération 11 a (v0.151.0)** — choix proposés par menu (came quart de tour, anneaux en aluminium usiné), réponse de JP : « Go, c'est
+   bien les modifs » : le **busbar de retour** (50 × 4 mm dans le canal, relevé au bout haut par une fenêtre fraisée) et le **couvercle du
+   haut** (`demo/demo_bm_lid.js`) : anneau d'interface en 6061-T6 vissé au boîtier, couvercle PA66-GF30, came quart de tour sur deux lèvres,
+   quatre ressorts sur une plaque de pression qui tient la pile, un **pont de contact** — plot A sur la plage nue de la borne +, plot B sur
+   la languette du busbar de retour, chacun sur sa bande à lamelles et ses ressorts, un shunt souple entre eux — : **le couvercle retiré,
+   le module est ouvert** (sectionneur de service). Les efforts en un seul endroit (`lidForces` : 780 N, 195 N par vis). 222 pièces, aucune
+   interférence. Reste : l'itération 11 b (couvercle du fond, contacteur, connecteur, BMS central peut-être), la rampe de la came, les
+   nervures du couvercle, l'échauffement du pont, la tenue des vis.
 21. ~~**Logiciel : pas à pas, simulation en direct, code visible, chargement**~~ — fait (v0.124.0 ; demande de JP du 20
    novembre, sur l'écran `#/sw`) : sept étapes, entrées et sorties dites sur chaque tuile, la fiche du CPU au centre avec
    un lien par page, le guide dans le volet, l'essai de démarrage et la mémoire, la simulation en direct, le code à l'écran,

@@ -447,6 +447,52 @@ garder sur la pile (au moins 154 N par joint, la somme des lamelles, pour que le
 la dépouille et les tolérances réelles de la section, la planéité des grandes parois, le frottement du flex sur les rails à la pose
 (un film ou des patins à décider) ; la terminaison posée sur la borne + ; l'échauffement du module fermé.
 
+## Itération 11 a — le busbar de retour et le couvercle du haut : came quart de tour, ressorts, boucle fermée par pression
+
+Demandes de JP (22 novembre) : « un busbar le long du boîtier extrudé qui se connecte aux 2 couvercles… le 2e couvercle vient
+fermer la boucle de courant interne, pousse sur les cores pour écraser les contacts LV et HV un sur l'autre en série et se lock
+avec un latch rotatif ; l'interface des 2 couvercles est vissée au casing central… soit métal ou plastique robuste supportant les
+efforts du latch ». Deux choix proposés par menu — **une came quart de tour** et **des anneaux d'interface en aluminium usiné** ;
+réponse de JP par message : « Go, c'est bien les modifs ». Source : `web/js/demo/demo_bm_lid.js` ; essais :
+`tests/node/bm_lid.test.mjs`. L'itération est livrée en deux : **11 a**, le bout haut (ici) ; **11 b**, le couvercle du fond
+(connecteur LV et HV, contacteur, BMS central peut-être).
+
+- **Le busbar de retour** (`BM-RETURN-BB`, cuivre 50 × 4 mm) court dans le canal fermé du boîtier, du couvercle du fond au bout
+  haut, où il se relève à 90° par une **fenêtre fraisée dans le fond** du boîtier : sa **languette** fait face au couvercle. Son
+  bout bas sort du boîtier vers le contacteur (trou M10, exemple).
+- **L'anneau d'interface** (`BM-LID-RING-TOP`, aluminium 6061-T6 usiné) se visse au bout du boîtier par les quatre vis EVO PT 40
+  dans les trous du boîtier ; deux **languettes** entrent le long des parois et finissent chacune par une **lèvre**. Entre un trou
+  de vis et la fenêtre, 2 mm de matière : pas de lamage, les têtes se logent dans le couvercle (l'outil avait signalé le lamage
+  qui débouchait).
+- **Le couvercle** (`BM-LID-TOP`, PA66-GF30, isolant) et **la came quart de tour** (`BM-LATCH-CAM`) : un levier dehors, un arbre,
+  un bras dedans ; tourné d'un quart, le bras s'appuie sur les deux lèvres et tient le couvercle contre l'anneau. La rampe qui
+  tire le couvercle de quelques millimètres, la butée du quart de tour et le verrou du levier sont à dessiner avec le
+  fournisseur du latch.
+- **Les ressorts** : quatre sur une **plaque de pression** isolante (`BM-PRESS-PLATE`) qui pousse la plaque d'appui de la borne + —
+  **la pile des 8 CORE est tenue par des ressorts**, quelles que soient les tolérances de ses 8 joints —, et deux sur chaque plot
+  de contact. Ressorts dessinés à leur longueur posée, efforts visés en exemple, à choisir dans un catalogue.
+- **La boucle se ferme par pression** (`BM-BRIDGE`) : le **plot A** presse la plage nue et argentée de la borne + (14 mm en haut, la
+  plaque d'appui s'arrête dessous, les goujons de la borne + sont partis), le **plot B** presse la languette du busbar de retour,
+  chacun à travers une bande à lamelles — la même que celle des joints, à plat pour le plot A — à sa hauteur de travail ; un
+  **shunt souple** (feuillards de cuivre laminés) les relie. Deux plots, deux jeux de ressorts : chaque plot trouve sa face, alors
+  que la borne + bouge avec les tolérances de la pile et que la languette est tenue par le boîtier. **Le couvercle retiré, le
+  module est ouvert** : un sectionneur de service, d'office. Le BMS central devra le voir avant tout courant (itération 11 b).
+
+**Les efforts, en un seul endroit** (`lidForces`, exemples) : un joint entre deux CORE demande 154 N (22 lamelles × 7 N, valeur
+lue du fabricant) ; la plaque de pression en donne 600 N, le plot A 90 N — une réserve de 536 N au-delà de ce que les lamelles
+d'un joint demandent, que les butées portent ; un plot demande 77 N (11 lamelles), ses ressorts en donnent 90. En tout **780 N**
+sur la came, soit **195 N par vis** de l'anneau. La tenue de ces vis dans le PC reste à calculer avec l'outil du fabricant ou à
+essayer ; la réserve à donner contre les accélérations le long du module reste à fixer avec la spécification du véhicule.
+
+**Vérifié par les essais** : toutes les pièces se construisent ; l'anneau usiné, le couvercle et la plaque moulés passent leurs
+règles DFx sans avertissement ; **aucune interférence** au bout haut (couvercle, ressorts, pont, busbar de retour, borne +, boîtier,
+CORE 8) ; chaque bande à sa hauteur de travail entre sa plage et son plot ; le bras sur les lèvres, chaque ressort entre ses
+appuis ; tous les conducteurs de la boucle sur PACK+. **Le module compte 222 pièces.**
+
+**Pas fait** : le couvercle du fond, le contacteur, le connecteur de la cavité ou de la station, le BMS central (11 b) ; la rampe de
+la came ; les nervures du couvercle et leur simulation ; l'échauffement du pont et du shunt à 360 A ; la tenue des vis ; un essai
+du latch.
+
 ## Ce qu'il contient
 
 | Élément | Ce que c'est | Où |
@@ -465,7 +511,9 @@ la dépouille et les tolérances réelles de la section, la planéité des grand
 | Joint entre deux CORE | `BM-JOINT-ASM` : le busbar de deux CORE voisins et ce qui est entre eux, chaque conducteur à son potentiel — pour l'écran Isolation | Assemblage |
 | Boîtier extrudé du module | `BM-CASING` : polycarbonate extrudé, 473 mm ; deux rails, quatre nervures, quatre lobes et leurs trous de vis, le canal du busbar de retour (itération 10) | Pièces |
 | Bornes du module | `BM-TERM-NEG` (avec ses contacts, `BM-TERM-NEG-ASM`) et `BM-TERM-POS` : cuivre, plaque d'appui, îlots LV, goujons vers les couvercles (itération 10) | Pièces ; Assemblage |
-| BM 8s8p - 21700 | `BM-8S8P-ASM` : 8 CORE côte à côte, tous dans le même sens, la borne − avant le CORE 1, la borne + après le CORE 8, le boîtier autour — 206 pièces | Assemblage |
+| Busbar de retour | `BM-RETURN-BB` : cuivre 50 × 4 mm dans le canal du boîtier, sa languette relevée au bout haut (itération 11 a) | Pièces |
+| Couvercle du haut | `BM-LID-TOP-ASM` : anneau d'interface en aluminium, couvercle, came quart de tour, plaque de pression, huit ressorts, pont de contact et ses deux bandes (itération 11 a) | Assemblage |
+| BM 8s8p - 21700 | `BM-8S8P-ASM` : 8 CORE côte à côte, tous dans le même sens, la borne − avant le CORE 1, la borne + après le CORE 8, le boîtier autour, le busbar de retour, le couvercle du haut — 222 pièces | Assemblage |
 
 ## La géométrie, telle que dessinée
 
@@ -492,7 +540,7 @@ modèle simple. Les pièces sont posées à leur place (« fixe »), sans accoup
 CTN ↔ busbar ne sont pas encore des interfaces appariées, d'où les « interfaces sans jumelle » que l'écran signale.
 
 **Pas encore dessiné** : les languettes de soudure minces (les bossages en tiennent la place) ; le chant du cuivre aux
-petits bouts, nu ; la dépouille du support de cellules ; les couvercles du boîtier, le busbar de retour, le latch rotatif, le contacteur ; le BMS
+petits bouts, nu ; la dépouille du support de cellules ; le couvercle du fond, le contacteur, le connecteur de la cavité ; le BMS
 central, ses connecteurs et le faisceau RS-485.
 
 **Non vérifié** : l'échauffement réel du cuivre dans le module fermé (le modèle est une barre seule à l'air libre) ; la

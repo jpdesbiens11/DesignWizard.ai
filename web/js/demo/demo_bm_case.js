@@ -89,7 +89,8 @@ export function casingPart(o) {
       env("Busbar de retour (itération 11)", S.xm - RETURN.w / 2, S.xm + RETURN.w / 2, ch.z0 + C.keel.clr, ch.z1 - C.keel.clr, 0.3)] },
     features: [{ op: "interfaces" },
       { op: "hole", id: "vis_fond", name: "Trous des vis du couvercle du fond (percés, lamés)", face: "-Y", at, d: Pt.hole, depth: Pt.depth, cbore: cb },
-      { op: "hole", id: "vis_haut", name: "Trous des vis du couvercle du haut (percés, lamés)", face: "+Y", at, d: Pt.hole, depth: Pt.depth, cbore: cb }],
+      { op: "hole", id: "vis_haut", name: "Trous des vis du couvercle du haut (percés, lamés)", face: "+Y", at, d: Pt.hole, depth: Pt.depth, cbore: cb },
+      { op: "box", id: "fenetre_retour", name: "Fenêtre fraisée dans le fond, au bout haut — la languette du busbar de retour y monte", mode: "cut", at: [ch.x0, r3(L - 14), r3(ch.z1 - 0.2)], size: [r3(ch.x1 - ch.x0), 15, 4] }],
     interfaces: [lid("-Y", "Fixation du couvercle du fond", "bm_casing_lid_bottom", "Couvercle du fond"), lid("+Y", "Fixation du couvercle du haut", "bm_casing_lid_top", "Couvercle du haut")],
     look: { color: "#cfe4f2", opacity: 0.35 },
     notes: [`Polycarbonate d'une nuance V-0 à choisir (exemple), extrudé : paroi de ${fr(C.t)} mm partout, section ${fr(S.outer.x1 - S.outer.x0)} × ${fr(S.outer.z1 - S.keel.z0)} mm hors lobes ; coupé à ${fr(L)} mm.`,
@@ -97,23 +98,23 @@ export function casingPart(o) {
       `Les trous sont fermés, dans un lobe de ${fr(2 * S.R)} mm, une paroi de ${fr(C.t)} mm autour : la vis pousse la matière vers l'extérieur, un canal ouvert en « C » s'écarterait (choix de l'outil). Le diamètre du lobe n'est pas dans ce qui a été lu du fabricant de la vis, ni la tenue à l'arrachement dans le PC : à calculer avec son outil (EVO CALC) quand l'effort du latch sera connu (itération 11).`,
       "Profilé fermé, six creux (la cavité, le canal, quatre trous) : une filière à mandrin et un calibrage — à discuter avec l'extrudeur, avec la planéité des grandes parois (± 0,3 mm d'usage à confirmer).",
       `Les CORE ne touchent le boîtier que par les deux rails du fond et les quatre nervures de côté, 0,5 mm de jeu : le flex frotte sur les rails quand on glisse un CORE — un film ou des patins sur le support du bas sont à décider.`,
-      `Canal du busbar de retour : ${fr(ch.x1 - ch.x0)} × ${fr(ch.z1 - ch.z0)} mm, pour une barre de ${RETURN.w} × ${RETURN.t} mm (calcul gardé dans le projet) ; la barre et ses liaisons aux couvercles viennent à l'itération 11.`] };
+      `Canal du busbar de retour : ${fr(ch.x1 - ch.x0)} × ${fr(ch.z1 - ch.z0)} mm, pour une barre de ${RETURN.w} × ${RETURN.t} mm (calcul gardé dans le projet) ; au bout haut, une fenêtre fraisée dans le fond laisse monter sa languette vers le couvercle.`] };
 }
 
 /** The terminals. Every plate is drawn in the frame of the CORE it touches : the − terminal in that of CORE 1, the + terminal in that of CORE 8.
     o : { Y (the width of the CORE), ins, t (the copper of a leg), gap (between two CORE), X } → { neg, pos } */
 export function terminalParts(o) {
-  const T = 2, B = 3, x0 = 3, x1 = o.X - 3, z0 = -3, z1 = 80, zb = 71, L = contactLayout(o.X), I = ISLAND, studs = [[o.X / 2 - 25, 76.5], [o.X / 2 + 25, 76.5]];
+  const T = 2, B = 3, x0 = 3, x1 = o.X - 3, z0 = -3, z1 = 80, L = contactLayout(o.X), I = ISLAND, studs = [[o.X / 2 - 25, 76.5], [o.X / 2 + 25, 76.5]];
   const box = (id, name, body, at, size, mode) => ({ op: "box", id, name, body, at, size, ...(mode ? { mode } : {}) });
   const cyl = (id, name, body, at, d, h, mode) => ({ op: "cylinder", id, name, body, at, d, h, axis: "Y", ...(mode ? { mode } : {}) });
   const make = (neg) => {
     const face = neg ? o.Y + o.ins + o.t - (o.Y + 2 * (o.ins + o.t) + o.gap) : -(o.ins + o.t) + (o.Y + 2 * (o.ins + o.t) + o.gap);      // the face that meets the CORE
-    const s = neg ? 1 : -1, back = face - s * T, bk = back - s * B, lo = (a, b) => Math.min(a, b), feats = [], bodies = {
+    const s = neg ? 1 : -1, back = face - s * T, bk = back - s * B, zb = neg ? 71 : 66, lo = (a, b) => Math.min(a, b), feats = [], bodies = {
       plaque: { material: "CU-C110", kind: "conductor", net: neg ? "PACK-" : "PACK+", label: `Plaque de cuivre de la borne ${neg ? "−" : "+"}` },
       appui: { material: "PA66-GF30", kind: "insulator", label: "Plaque d'appui isolante" }, isolant_lv: { material: "PA66-GF30", kind: "insulator", label: "Inserts isolants des contacts LV" },
-      goujons: { material: "STEEL-1018", kind: "conductor", net: neg ? "PACK-" : "PACK+", label: "Goujons sertis M6" } };
+      ...(neg ? { goujons: { material: "STEEL-1018", kind: "conductor", net: "PACK-", label: "Goujons sertis M6" } } : {}) };
     feats.push(box("plaque", "Plaque de cuivre", "plaque", [x0, lo(face, back), z0], [x1 - x0, T, z1 - z0]), box("appui", "Plaque d'appui isolante", "appui", [x0, lo(back, bk), z0], [x1 - x0, B, zb - z0]));
-    for (const [k, p] of studs.entries()) feats.push(cyl(`goujon_${k + 1}`, `Goujon serti M6 ${k + 1} — liaison au couvercle`, "goujons", [p[0], neg ? back - 12 : back, p[1]], 6, 12));
+    if (neg) for (const [k, p] of studs.entries()) feats.push(cyl(`goujon_${k + 1}`, `Goujon serti M6 ${k + 1} — liaison au couvercle`, "goujons", [p[0], back - 12, p[1]], 6, 12));
     for (const c of L.lv) {
       const k = c.net.replace(/[^A-Za-z0-9]/g, "").toLowerCase(), top = neg ? face + I.raise : face, land = `lv_${k}`;
       bodies[land] = { material: "CU-C110", kind: "conductor", net: c.net, label: `Plage ${c.net} de la borne ${neg ? "−" : "+"}, dorée` };
@@ -128,7 +129,8 @@ export function terminalParts(o) {
       function: neg ? "Le bout − de la chaîne des 8 CORE, au fond du boîtier : sa face porte ce que porte une jambe + (deux bandes à lamelles dans leur cadre, quatre butées, les quatre contacts LV) et presse la jambe − du CORE 1 ; ses îlots amènent le RS-485 du BMS central dans la chaîne."
         : "Le bout + de la chaîne, en haut du boîtier : une face plane comme une jambe −, où appuient les bandes et les butées du CORE 8 ; ses plages LV ferment la chaîne.",
       notes: [`Cuivre de ${T} mm (C110), argenté là où les bandes appuient ; plaque d'appui isolante de ${B} mm (PA66-GF30, exemple) entre la borne et le couvercle, qui transmet l'effort de la pile sans conduire.`,
-        `En haut, au dos, la plage de liaison reste nue : deux goujons sertis M6 à tête affleurante (exemple) y reçoivent le conducteur du couvercle ${neg ? "du fond — vers le contacteur et le connecteur" : "du haut — vers le busbar de retour"} (itération 11).`,
+        neg ? "En haut, au dos, la plage de liaison reste nue : deux goujons sertis M6 à tête affleurante (exemple) y reçoivent le conducteur du couvercle du fond — vers le contacteur et le connecteur (itération 11 b)."
+          : "En haut, au dos, une plage de 14 mm reste nue, argentée : le plot A du couvercle du haut y appuie par sa bande à lamelles — le couvercle retiré, le module est ouvert (itération 11).",
         neg ? "Ses îlots LV sont ceux d'une jambe + : plage surélevée, bande dorée ; au dos, un fil par îlot passe la plaque d'appui vers le BMS central (itération 11)."
           : "Ses plages LV sont celles d'une jambe −, affleurantes. Les 8 cartes sont identiques et sans terminaison (bloc RS-485 du PCBA : terminaison « non ») : la terminaison de 120 Ω du bout de la chaîne se pose ici, entre les plages A et B — l'autre est au BMS central.",
         "Une pièce de spécialiste (busbar) : faite chez son fabricant, elle ne se joue pas dans l'atelier de fab."] };
