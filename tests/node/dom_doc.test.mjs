@@ -32,7 +32,7 @@ test("the report on screen becomes the blocks of a document : titles, text, tabl
 
 test("the document of the house : title block on every page, approval and log of revisions on the first, confidentiality and mark at the bottom", () => {
   const id = docIdentity({ name: "Variateur", author: "JDE", drawing: { checkedBy: "ADO", approvedBy: "EZA", organisation: "Atelier Démo inc." } }, new Date(2026, 10, 16, 14, 2), "0.44.0");
-  assert.deepEqual(id.approvals.map((a) => [a.role, a.name]), [["Préparé par", "JDE"], ["Vérifié par", "ADO"], ["Approuvé par", "EZA"]]); assert.equal(id.stamp, "Extrait le 2026-11-16 14:02 — DesignWizard.ai v0.44.0");
+  assert.deepEqual(id.approvals.map((a) => [a.role, a.name]), [["Préparé par", "JDE"], ["Vérifié par", "ADO"], ["Approuvé par", "EZA"]]); assert.equal(id.stamp, "Extrait le 2026-11-16 14:02 — DynamiteOrbit v0.44.0");
   assert.match(id.confidential, /^CONFIDENTIEL — ce document et les informations qu'il contient sont la propriété de Atelier Démo inc\. Toute reproduction, diffusion ou utilisation sans son autorisation écrite est interdite\.$/);
   assert.match(confidentialNote(), /la propriété de son émetteur/); assert.equal(confidentialNote("X", "Usage interne."), "Usage interne.", "a project may word its own note"); assert.equal(docIdentity({ drawing: { confidentiality: "Diffusion restreinte." } }).confidential, "Diffusion restreinte.");
   const doc = { title: "Dossier de revue de conception", subtitle: "Variateur", kind: "Rapport de revue de conception", reference: "DRV-REVUE", revision: "B", date: new Date(Date.UTC(2026, 10, 16)), header: "Variateur — revue de conception", ...id,

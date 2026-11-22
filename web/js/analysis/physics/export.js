@@ -1,4 +1,4 @@
-/* DesignWizard.ai — what an analytical calculation leaves with : a REPORT, as the neutral document model the house
+/* DynamiteOrbit — what an analytical calculation leaves with : a REPORT, as the neutral document model the house
    template prints (core/docx.js, core/pdfdoc.js — cartridge on every page, title page, approval, revision log), and a
    WORKBOOK for a spreadsheet (core/xlsx.js) laid out like the tool : the media to choose and what they give, the yellow
    cells to fill, the results, the checks and their verdict, then one sweep per input with its curve and a cell to try a
@@ -145,7 +145,7 @@ export function physicsBook(modelId, inputs, meta = {}) {
       ["Feuille Methode", "Le calcul écrit étape par étape avec les valeurs de l'export, ses hypothèses, son domaine de validité et sa référence."],
       ["Unités", "Celles du modèle : mm, N, MPa, GPa, kPa, °C, L/min. Une pression en kPa est aussi donnée en psi, bar et atm."],
       ["Limites", "Un calcul analytique répond à l'essentiel de la question ; il ne remplace ni une simulation, ni un essai. Hors du domaine de validité, le résultat n'est qu'un ordre de grandeur."],
-      ["Projet", `${meta.project || "—"}${meta.part ? ` · pièce ${meta.part}` : ""} · ${date.toISOString().slice(0, 10)}${meta.version ? ` · DesignWizard.ai ${meta.version}` : ""}`], ...(meta.confidential ? [["Confidentialité", meta.confidential]] : []), ["Marque", FOOT_NOTE]].map(([a, b]) => ({ h: 44, cells: [{ v: a, s: "head" }, { v: b, s: "text" }] }))];
+      ["Projet", `${meta.project || "—"}${meta.part ? ` · pièce ${meta.part}` : ""} · ${date.toISOString().slice(0, 10)}${meta.version ? ` · DynamiteOrbit ${meta.version}` : ""}`], ...(meta.confidential ? [["Confidentialité", meta.confidential]] : []), ["Marque", FOOT_NOTE]].map(([a, b]) => ({ h: 44, cells: [{ v: a, s: "head" }, { v: b, s: "text" }] }))];
   const pic = meta.logo ? [{ png: meta.logo, col: 0, row: 0, w: 10, h: 10 }] : [];
   const sheets = [{ name: S, cols: [46, 26, 12, 56, 12, 12], rows, merges, limits, verdicts, pictures: pic, freeze: 4 },
     { name: "Iterations", cols: [34, 16, 22, 22, 22, 4, 12, 12, 12, 12, 12, 12, 12, 12], rows: it, merges: itMerges, limits: itLimits, pictures: pic, charts },

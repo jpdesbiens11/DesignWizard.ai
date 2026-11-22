@@ -1,4 +1,4 @@
-/* DesignWizard.ai — PCBA: function blocks that measure — temperature, current, bus voltage, motion. A measurement that
+/* DynamiteOrbit — PCBA: function blocks that measure — temperature, current, bus voltage, motion. A measurement that
    goes to the microcontroller asks for the next free analogue input (ports with `pool`). */
 
 import { builder, P, eSeries, fr, ohm, farad } from "./blocks_util.js";

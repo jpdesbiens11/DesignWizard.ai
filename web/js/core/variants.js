@@ -1,4 +1,4 @@
-/* DesignWizard.ai — a part and its close cousins (demande de JP). A family of parts that differ a little is kept in ONE part :
+/* DynamiteOrbit — a part and its close cousins (demande de JP). A family of parts that differ a little is kept in ONE part :
    an operation of the construction tree is put aside (off — « suppressed » in the part language) or copied, the copy born off ;
    a parameter keeps other values beside the one that counts, and one of them is turned on in its place. Nothing is lost when
    one goes from one cousin to the next. Pure : the Part Studio draws the switches, the store keeps each change as one step. */

@@ -1,4 +1,4 @@
-/* DesignWizard.ai — drafting helpers (entry point): dimensions, leaders, centre lines, section arrows and
+/* DynamiteOrbit — drafting helpers (entry point): dimensions, leaders, centre lines, section arrows and
    view labels. Built ONLY on the Sheet primitives, so they work on both the PDF and the SVG backend.
    Conventions (ISO 128 / ISO 129): thin lines for dimensions, filled arrowheads 3 mm long, text 3.5 mm
    placed above the dimension line and readable from the bottom / right. Units: mm, y down; points are [x, y].

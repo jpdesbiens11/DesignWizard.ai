@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the pictures of the photo studio, taken by the application itself : one demonstration in each set, each
+/* DynamiteOrbit — the pictures of the photo studio, taken by the application itself : one demonstration in each set, each
    picture made by the button « Faire l'image » of the screen — refined, with the mark of the platform — and saved under
    « <Produit>_<décor>_<AAAA-MM-JJ>.png ». Not part of the application and not run by the tests : it needs Playwright and a
    running local server.

@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Logiciel : the bench of the LIVE simulation (demande de JP : « le voir en mode pause, en attente des différentes entrées
+/* DynamiteOrbit — Logiciel : the bench of the LIVE simulation (demande de JP : « le voir en mode pause, en attente des différentes entrées
    qui pourraient changer à l'écran… une vraie simulation logicielle en temps réel »). The software runs its step against a bench one drives :
    « Marche » lets the time run — in real time, or slowed down so a delay of 100 ms can be seen —, « Pause » stops it, « Un pas » runs one
    period. In pause nothing moves : one changes an input, then steps, to see what the software does of it.

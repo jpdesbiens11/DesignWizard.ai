@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the look of a part, picked by its designer : a round swatch beside each part, and a picker that opens on it —
+/* DynamiteOrbit — the look of a part, picked by its designer : a round swatch beside each part, and a picker that opens on it —
    a row per colour, a column per shade, lighter / darker, a pattern (the camouflage sets), a sheen (matte … metallic), see-through
    or not, any other colour, or back to what it showed before. Each choice is one undoable step ; the picker stays open to try
    another. ONE picker for three things (demande de JP : « part & assembly defined and visible ») :

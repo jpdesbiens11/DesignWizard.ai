@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the simulation runs here, off the page, so the interface stays alive while the solver iterates. */
+/* DynamiteOrbit — the simulation runs here, off the page, so the interface stays alive while the solver iterates. */
 
 import { buildModel, solveStructure, solveThermal, skin } from "./index.js";
 import { exposedFaces } from "./voxel.js";

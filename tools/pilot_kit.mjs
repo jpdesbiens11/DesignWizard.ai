@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the pilot trial, written : the path of one hour and the feedback sheet, each as a Word and a PDF document at the
+/* DynamiteOrbit — the pilot trial, written : the path of one hour and the feedback sheet, each as a Word and a PDF document at the
    template of the platform's documents — and, with --docs, the guide of the repository (docs/ESSAI_PILOTE.md). Not part of the
    application. Every file is named « Sujet_AAAA-MM-JJ », as the deposit in Drive wants (CLAUDE.md).
      node tools/pilot_kit.mjs <out folder> [--date AAAA-MM-JJ] [--docs]
@@ -16,7 +16,7 @@ if (args.includes("--docs")) { writeFileSync(join(root, "docs/ESSAI_PILOTE.md"),
 if (out) {
   const date = flag("--date", new Date().toISOString().slice(0, 10)); if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error(`--date ${date} : AAAA-MM-JJ`);
   mkdirSync(out, { recursive: true });
-  const common = { kind: "Essai pilote", revision: "A", date: new Date(`${date}T12:00:00Z`), project: "DesignWizard.ai", organisation: "DynamiteAgile™" };
+  const common = { kind: "Essai pilote", revision: "A", date: new Date(`${date}T12:00:00Z`), project: "DynamiteOrbit", organisation: "DynamiteAgile™" };
   const docs = [["Essai-pilote_Parcours", { ...common, title: `${PILOT.title} — le parcours d'une heure`, subtitle: PILOT.subtitle, header: "Essai pilote — parcours", reference: "DW-PIL-001", blocks: pilotDoc() }],
     ["Essai-pilote_Fiche-de-retour", { ...common, title: `${PILOT.title} — fiche de retour`, subtitle: "À remplir pendant et juste après l'essai", header: "Essai pilote — fiche de retour", reference: "DW-PIL-002", blocks: feedbackDoc() }]];
   for (const [name, doc] of docs) { const w = docx(doc), p = pdfDoc(doc); writeFileSync(join(out, `${name}_${date}.docx`), w); writeFileSync(join(out, `${name}_${date}.pdf`), p); console.log(`${name}_${date}.docx ${Math.round(w.length / 1024)} ko · ${name}_${date}.pdf ${Math.round(p.length / 1024)} ko`); }

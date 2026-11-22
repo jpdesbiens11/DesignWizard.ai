@@ -1,4 +1,4 @@
-/* DesignWizard.ai — what the brief of the Shop lacks or gets wrong, said while the designer types it : a part with no
+/* DynamiteOrbit — what the brief of the Shop lacks or gets wrong, said while the designer types it : a part with no
    name, a material that does not come in the stock chosen, a quantity of zero… Pure : the Shop shows the list next to
    the proposal, marks the field that waits, and holds « Créer la pièce » until what blocks is dealt with.
    An entry : { level, text, field (key of the brief the entry is about, when one) } — levels of core/guide.js. */

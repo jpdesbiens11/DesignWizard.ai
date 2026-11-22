@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Aide : the words of a battery system, with the published document behind each (core/battery_terms.js).
+/* DynamiteOrbit — Aide : the words of a battery system, with the published document behind each (core/battery_terms.js).
    Grouped by nature — what stores, what watches and cuts, the whole — each group with its colour and its pictogram ; then
    the words of a house, with what was found about each ; then what public documents say about the buses. Nothing is
    decided here. Route : #/help/batteries. */

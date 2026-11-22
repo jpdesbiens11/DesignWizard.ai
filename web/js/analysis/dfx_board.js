@@ -1,4 +1,4 @@
-/* DesignWizard.ai — DFx : the board of the project. Every part and every assembly as one item with its points, so that
+/* DynamiteOrbit — DFx : the board of the project. Every part and every assembly as one item with its points, so that
    the page opens on what has to be settled — the points to fix and to check, each with its explanation and its fix —
    and keeps what is in order apart. Pure : the page, the report and the tests read the same lists.
    item = { key, kind: "part" | "assembly", ref, name, process, score, errors, warnings, infos, state, points, metrics, broken }

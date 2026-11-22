@@ -1,4 +1,4 @@
-/* DesignWizard.ai — interfaces: the entry point of every part.
+/* DynamiteOrbit — interfaces: the entry point of every part.
    An interface is a typed contract between two parts (bolt pattern, cut-out, fit...). Its `params` are SHARED by both
    sides; each part carries one side ("A" or "B"), a face, a position and an angle. From that single definition the
    platform generates the geometry of each side, the mate frame, the hardware of the BOM and the GD&T of the drawing.

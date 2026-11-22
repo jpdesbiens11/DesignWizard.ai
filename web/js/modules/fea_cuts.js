@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Simulation : symmetries and cuts, in the side panel and under the right click.
+/* DynamiteOrbit — Simulation : symmetries and cuts, in the side panel and under the right click.
    The planes about which the product is its own mirror are found on the mesh and proposed ; one click solves a half, a
    quarter or an eighth instead of the whole. A cut can also be put anywhere, to isolate a zone : its plane then carries
    the condition the analyst chooses. The physics is in analysis/fea/symmetry.js ; this is only its screen. */

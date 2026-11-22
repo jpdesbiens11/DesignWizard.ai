@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the storyline : one animated HTML file that tells, scene by scene, how a student takes a product from the
+/* DynamiteOrbit — the storyline : one animated HTML file that tells, scene by scene, how a student takes a product from the
    idea to the result with the platform. Every screen is a real capture of the running application (the Rover example) ; a
    cursor moves on it where the story says the hand goes, the narration and the talk of the team run beside it.
    The story : tools/storyline_story.mjs. The file is self-contained (pictures inlined as WebP) and carries the brand note.
@@ -70,7 +70,7 @@ const html = `<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${esc(TITLE.title)} — une storyline DesignWizard.ai</title>
+<title>${esc(TITLE.title)} — une storyline DynamiteOrbit</title>
 <style>
 :root { --paper: #fbfaf6; --ink: #1f2a37; --soft: #5b6673; --line: #d9d5c9; --note: #fff7d6; --blue: #0c66e4; --yellow: #ffd23f; --card: #ffffff; }
 * { box-sizing: border-box; } html, body { height: 100%; margin: 0; }
@@ -121,7 +121,7 @@ function scene(S) {
   const screen = $("div", "screen"), imgs = S.frames.map((f, k) => Object.assign($("img", k ? "" : "on"), { src: f, alt: k ? "L'écran, après le clic" : "Capture de la plateforme : " + S.title }));
   const cur = $("div", "cursor"); cur.innerHTML = '<svg viewBox="0 0 26 26" width="26" height="26"><path d="M4 2 L4 21 L9.5 16.5 L13 24 L16.2 22.5 L12.8 15.2 L20 15 Z" fill="#fff" stroke="#1f2a37" stroke-width="1.8" stroke-linejoin="round"/></svg>';
   const ring = $("div", "ring"); cur.style.left = "88%"; cur.style.top = "86%"; screen.append(...imgs, ring, cur);
-  const bar = $("div", "bar", $("i"), $("i"), $("i"), $("span", "", "DesignWizard.ai — " + S.go));
+  const bar = $("div", "bar", $("i"), $("i"), $("i"), $("span", "", "DynamiteOrbit — " + S.go));
   const chat = $("div", "chat"), h = $("h1"); h.append($("mark", "", S.title));
   main.replaceChildren($("div", "stage", bar, screen), $("div", "side", h, $("p", "tell", S.text), chat)); day.textContent = S.day;
   let t = 900;

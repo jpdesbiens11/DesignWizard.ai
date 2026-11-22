@@ -89,13 +89,13 @@ function fakeDrive() {
 }
 
 test("drive tree: the product as an ergonomic folder — named, renamed, archived, never duplicated", async () => {
-  const drive = fakeDrive(), fs = createDriveFs(drive, { root: "DesignWizard.ai" });
+  const drive = fakeDrive(), fs = createDriveFs(drive, { root: "DynamiteOrbit" });
   const part = (id, name) => ({ dw: "part/1", id, name, material: "AL6061-T6", features: [{ op: "box", size: [1, 1, 1] }] });
   const project = { dw: "project/1", id: "p1", name: "Variateur 400 V / essai", description: "Démonstration", parts: [part("DW-0001", "Support"), part("DW-0002", "Capot")], assemblies: [] };
   const a = await fs.saveProject(project);
   assert.equal(a.folder.name, "Variateur 400 V essai", "the folder name is made safe");
   assert.equal(a.file.name, "Variateur 400 V essai.project.dwiz", "the project file carries the name of the product");
-  assert.deepEqual(drive.names("DesignWizard.ai"), ["LISEZ-MOI.txt", "Variateur 400 V essai"]);
+  assert.deepEqual(drive.names("DynamiteOrbit"), ["LISEZ-MOI.txt", "Variateur 400 V essai"]);
   assert.deepEqual(drive.names("Variateur 400 V essai"), ["LISEZ-MOI.txt", "Variateur 400 V essai.project.dwiz"]);
   assert.match(drive.files.get(a.file.id).content, /^dwiz project\/1 p1 "Variateur 400 V \/ essai"/, "stored in the platform's own format");
   const readme = [...drive.files.values()].find((f) => f.name === "LISEZ-MOI.txt" && f.parents[0] === a.folder.id).content;
@@ -147,7 +147,7 @@ test("drive tree: the product as an ergonomic folder — named, renamed, archive
 
 test("drive tree: each released revision has a folder of its own, named after its number and its revision", async () => {
   const { release, releaseFiles } = await import("../../web/js/core/plm.js"), { toDwiz, fromDwiz } = await import("../../web/js/core/dwiz.js");
-  const drive = fakeDrive(), fs = createDriveFs(drive, { root: "DesignWizard.ai" });
+  const drive = fakeDrive(), fs = createDriveFs(drive, { root: "DynamiteOrbit" });
   const project = { dw: "project/1", id: "p-rev", name: "Variateur", parts: [{ dw: "part/1", id: "DW-0001", name: "Support", material: "AL6061-T6", features: [{ op: "box", size: [1, 1, 1] }] }], assemblies: [] };
   release(project, "part:DW-0001", { date: new Date(Date.UTC(2026, 0, 1, 12, 0)) }); project.parts[0].notes = ["Ébavurer."]; release(project, "part:DW-0001", { date: new Date(Date.UTC(2026, 0, 1, 12, 5)) });
   await fs.saveProject(project); const r = await fs.publish(project, releaseFiles(project, toDwiz, TREE.revisions));

@@ -1,4 +1,4 @@
-/* DesignWizard.ai — BM 8s8p - 21700, CONCEPT 2 « consumer product interface » : a parallel branch of the history (JP, 22 novembre 2026 :
+/* DynamiteOrbit — BM 8s8p - 21700, CONCEPT 2 « consumer product interface » : a parallel branch of the history (JP, 22 novembre 2026 :
    « retravailler l'interface couvercle du fond et couvercle avec latch du haut pour imiter les concepts actuels plus compacts des consumer
    products… on commence le design de l'interface +/− des Core 2.0, commence un point de sauvegarde du MAIN et fait une branche parallèle »).
    JP's material (his own research notes, read ; no maker's sheet read here) : the battery compartment of a consumer product — the cells in

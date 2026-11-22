@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the lights of the photo studio (demande de JP : « un module de rendu photo avec éclairage, pouvant être
+/* DynamiteOrbit — the lights of the photo studio (demande de JP : « un module de rendu photo avec éclairage, pouvant être
    positionné comme dans un studio… on doit voir les ombres associées à la position de l'éclairage, comme dans un outil
    professionnel »). A light is a lamp one places around the product :
      { id, kind, az, el, power, soft, kelvin, shadow, off }

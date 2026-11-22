@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the names of the trade for a board, on the screens (core/board_names.js says the words). Installed once :
+/* DynamiteOrbit — the names of the trade for a board, on the screens (core/board_names.js says the words). Installed once :
    every text that is drawn is mapped as it enters the page — the text of an element, its tip, its accessible name —, so a
    screen declares nothing and a new screen follows without knowing. What somebody types, the code of an artefact (.dwiz,
    JSON, a prompt to copy) and the fields are left alone : they are data, or the person's own words in the making.

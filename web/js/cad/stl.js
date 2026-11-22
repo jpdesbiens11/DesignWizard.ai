@@ -1,4 +1,4 @@
-/* DesignWizard.ai — STL export (binary) of tessellated bodies, for 3D printing and for viewers that do not read STEP.
+/* DynamiteOrbit — STL export (binary) of tessellated bodies, for 3D printing and for viewers that do not read STEP.
    Pure module (browser and Node): takes the meshes of the kernel's tessellation ({pos: Float32Array, idx: Uint32Array}),
    returns the bytes of the file. Units are the model's (millimetres); the facet normals are recomputed from the vertices. */
 

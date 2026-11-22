@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Pièces : choosing the part one looks at, and choosing several to change them together (demandes de JP).
+/* DynamiteOrbit — Pièces : choosing the part one looks at, and choosing several to change them together (demandes de JP).
    At the head of the left panel, a drop-down list one can search (core/pick_list.js) : the parts grouped by the way they are made,
    a colour per group, a pictogram, a name and the colour of the part — thirty parts no longer push the construction tree off the
    screen. The whole list stays, UNDER the tree : « Toutes les pièces », where Ctrl + click and Shift + click choose several parts

@@ -1,4 +1,4 @@
-/* DesignWizard.ai — who may use the hosted demo, and who administers it.
+/* DynamiteOrbit — who may use the hosted demo, and who administers it.
    The list of approved accounts is a public file (web/acces.json) that holds NO e-mail address: each account is a
    slow salted hash (PBKDF2-SHA-256) of its lower-cased address, so the file can live in a public repository.
    - Local use (python designwizard.py, localhost): no gate, no account needed.
@@ -87,7 +87,7 @@ export function readDraft(text, published) {
 }
 /** GitHub issue that asks for access: carries the fingerprint, never the address. */
 export function requestUrl(hash, repo = CONFIG.repo) {
-  const body = `Bonjour,\n\nJe souhaite accéder à la démo de DesignWizard.ai.\n\nEmpreinte d'accès : ${hash}\n\n(L'empreinte est calculée dans mon navigateur à partir de mon adresse Google ; l'adresse elle-même n'est pas publiée. Je vous l'envoie en privé si besoin.)\n`;
+  const body = `Bonjour,\n\nJe souhaite accéder à la démo de DynamiteOrbit.\n\nEmpreinte d'accès : ${hash}\n\n(L'empreinte est calculée dans mon navigateur à partir de mon adresse Google ; l'adresse elle-même n'est pas publiée. Je vous l'envoie en privé si besoin.)\n`;
   return `https://github.com/${repo}/issues/new?title=${encodeURIComponent("Demande d'accès à la démo")}&labels=${encodeURIComponent("acces")}&body=${encodeURIComponent(body)}`;
 }
 

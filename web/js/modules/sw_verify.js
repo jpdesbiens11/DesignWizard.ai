@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Logiciel, étape 6 du V : la VÉRIFICATION (choix cliqué de JP, 21 novembre 2026 : « Cycle en V »). Route : #/swtest[/<test>].
+/* DynamiteOrbit — Logiciel, étape 6 du V : la VÉRIFICATION (choix cliqué de JP, 21 novembre 2026 : « Cycle en V »). Route : #/swtest[/<test>].
    The same three places as every studio, under the V. Left : the card of the step, the tests — On / Off, a copy born Off, passed or failed —,
    the coverage of the model, the guide. Centre : the MATRIX of traceability — a row per requirement, a column per test, ✓ where a test that
    proves it passed, ✗ where it failed —, then what the tests never moved, and what the reference chosen asks of the code that the model cannot

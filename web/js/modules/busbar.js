@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Busbars : a solid conductor cut and folded from sheet, with its terminals and its lamella contacts.
+/* DynamiteOrbit — Busbars : a solid conductor cut and folded from sheet, with its terminals and its lamella contacts.
    Left, the strip : material, potential, current, width, thickness, and its legs, each after a bend. In the view, the mouse
    says WHERE : a right click on a flat face lays a contact or a terminal there ; a click moves the chosen one ; the arrows
    nudge it, R turns it, V sends it to the other face, + and − change its points, Delete removes it. Right, each connection

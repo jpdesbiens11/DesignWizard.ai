@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the electronics lab : the bench. For each function block of a board, the tests one would run on the real
+/* DynamiteOrbit — the electronics lab : the bench. For each function block of a board, the tests one would run on the real
    board once it comes back from the fab — a supply, a generator, a load, two probes — set up here FIRST, on the circuit of the
    block (pcba/lab_devices.js), so that the lab starts with numbers to compare with. A test says :
      what it is and of which nature (power-up, levels, time, frequency, function, bus) ;

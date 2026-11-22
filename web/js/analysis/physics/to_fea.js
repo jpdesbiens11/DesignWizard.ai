@@ -1,4 +1,4 @@
-/* DesignWizard.ai — from an analytical model to the simulation, with the same geometry (demande de JP : « passer du module
+/* DynamiteOrbit — from an analytical model to the simulation, with the same geometry (demande de JP : « passer du module
    Analytique au module Simulation avec la même géométrie, même si ce n'est pas une pièce du produit, et faire un FEA simple »).
    A hand calculation and a simulation of the same thing are worth more together : this file turns the model on the screen —
    its dimensions, its material, its supports and its load — into a small part and its load case, which the Simulation opens

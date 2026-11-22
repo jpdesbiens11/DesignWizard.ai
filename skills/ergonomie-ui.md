@@ -8,9 +8,9 @@
 > **Pour l'agent qui le reçoit.** Ce document est une méthode à appliquer, pas un texte à résumer. Commence par « D'abord : où es-tu ? ».
 > Les annexes A à D sont le détail de chaque partie : ne déroule que celle que la demande appelle.
 >
-> Source : DesignWizard.ai, licence MIT — dossier `skills/ergonomie-ui` du dépôt (le même contenu, en skill).
+> Source : DynamiteOrbit, licence MIT — dossier `skills/ergonomie-ui` du dépôt (le même contenu, en skill).
 
-Ces règles viennent d'une application réelle — DesignWizard.ai, une plateforme de conception mécatronique écrite à
+Ces règles viennent d'une application réelle — DynamiteOrbit, une plateforme de conception mécatronique écrite à
 la main avec un agent, sous licence MIT. Elles ont été trouvées une demande à la fois, puis écrites pour que le
 prochain écran naisse avec. Ce n'est ni une bibliothèque de composants ni un système de design : c'est **une façon
 de travailler** et **un catalogue de règles**, chacune avec sa raison.

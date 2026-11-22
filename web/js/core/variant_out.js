@@ -1,4 +1,4 @@
-/* DesignWizard.ai — what leaves, for a chosen variant (demande de JP : On / Off et copies — « la gamme, le rapport et la commande
+/* DynamiteOrbit — what leaves, for a chosen variant (demande de JP : On / Off et copies — « la gamme, le rapport et la commande
    suivent une variante choisie »). A part or an assembly keeps its cousins under a name ; a file, a routing, an order or a send is
    made for ONE of them. Two rules, held here for every reader :
      1. what leaves SAYS which variant it is — in its name (« DRV-BASE_Longue.step ») and in its heading (« Variante : Longue ») —

@@ -1,4 +1,4 @@
-/* DesignWizard.ai — symmetries and cuts : solving a part of the model instead of the whole.
+/* DynamiteOrbit — symmetries and cuts : solving a part of the model instead of the whole.
    A product that is the same on both sides of a plane, held and loaded the same on both sides, need only be solved on one
    side : on the plane nothing crosses — no displacement through it, no heat through it. A half, a quarter or an eighth of
    the cubes gives the same answer, or a finer mesh for the same time. A cut can also isolate a zone : the plane then carries

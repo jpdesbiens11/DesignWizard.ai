@@ -1,6 +1,6 @@
 """Small fake of the Onshape REST API (v17) used by tests/py/test_server.py - standard library only.
 
-Implements only what the DesignWizard.ai proxy calls, with the behaviours documented in the API
+Implements only what the DynamiteOrbit proxy calls, with the behaviours documented in the API
 reference: sessioninfo answers 204 for bad keys, drawings are APPLICATION elements, translations
 go ACTIVE -> DONE and create Part Studio / Assembly tabs named after the STEP PRODUCT names,
 modify requests are asynchronous and report one result per annotation.

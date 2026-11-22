@@ -1,4 +1,4 @@
-/* DesignWizard.ai — a long operation says where it stands. What a busy veil shows is worked out here, away from the screen : how far the
+/* DynamiteOrbit — a long operation says where it stands. What a busy veil shows is worked out here, away from the screen : how far the
    operation is (a count read in its own words, « Construction 3 / 24 », or the bytes of the kernel being downloaded), how long it has been
    running, and — when nothing has moved for a while — a word that says so and what can be done. Pure, tested ; the veil itself is drawn by
    core/busy.js. */

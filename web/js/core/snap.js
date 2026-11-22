@@ -1,4 +1,4 @@
-/* DesignWizard.ai — assisted positioning : where a feature lands when the mouse lets it go on a flat face, and where the
+/* DynamiteOrbit — assisted positioning : where a feature lands when the mouse lets it go on a flat face, and where the
    second point of a measure goes when its line is nearly parallel to an axis. No number to type : the symmetry axis of the
    face catches the feature first, then the line of a feature already there, then a 5 mm grid ; each of the two directions
    of the face is caught on its own. What is caught is told, so that the screen can draw the centre line, the alignment and

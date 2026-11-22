@@ -1,4 +1,4 @@
-/* DesignWizard.ai — choosing several lines of a list at once (demande de JP : « la fonction contrôle doit permettre de faire
+/* DynamiteOrbit — choosing several lines of a list at once (demande de JP : « la fonction contrôle doit permettre de faire
    des multiples sélections »). The usage it follows is the one of every file manager and list box : a click takes one line ;
    Ctrl (⌘ on a Mac) + click adds a line or takes it away ; Shift + click takes the whole run from the last line clicked.
    What is chosen is kept in the order of the list. Pure : a screen gives the list, the line and the keys, and gets the choice. */

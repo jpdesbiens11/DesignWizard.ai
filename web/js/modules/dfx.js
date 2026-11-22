@@ -1,4 +1,4 @@
-/* DesignWizard.ai — DFx : the health of the whole project (DFM of every part, DFA of every assembly), and the printable
+/* DynamiteOrbit — DFx : the health of the whole project (DFM of every part, DFA of every assembly), and the printable
    rule book. The page opens on WHAT HAS TO BE SETTLED : the counts at the top are buttons — a click shows the points they
    count, each with what was measured, why the rule exists, and its fix in one click when there is one. What is in order
    is kept apart, behind its own count. Routes : #/dfx (the points to settle), #/dfx/points/<reference> (those of one part

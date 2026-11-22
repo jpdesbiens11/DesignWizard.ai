@@ -1,4 +1,4 @@
-/* DesignWizard.ai — demo of the 2D drawing kit: renders one A3 sheet that exercises every primitive and
+/* DynamiteOrbit — demo of the 2D drawing kit: renders one A3 sheet that exercises every primitive and
    drafting helper, with both backends.
    Usage: node tools/draw_demo.mjs <outdir>   → <outdir>/demo.pdf and <outdir>/demo.svg
    The module also exports buildDemo() and makeMosaicJpeg() (used by tests/node/draw.test.mjs). */
@@ -222,7 +222,7 @@ export function buildDemo(sheet, { jpeg = demoJpeg() } = {}) {
 
 function main(outDir) {
   const [width, height] = PAPER.A3;
-  const title = "DesignWizard.ai — drawing kit demo";
+  const title = "DynamiteOrbit — drawing kit demo";
   mkdirSync(outDir, { recursive: true });
   const pdf = buildDemo(new PdfSheet({ width, height, title }));
   const svg = buildDemo(new SvgSheet({ width, height, title }));

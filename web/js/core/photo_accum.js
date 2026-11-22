@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the picture that refines itself. One frame of a 3D view draws each light from one point, and each pixel
+/* DynamiteOrbit — the picture that refines itself. One frame of a 3D view draws each light from one point, and each pixel
    through its centre : a shadow is then either on or off, and an edge is a staircase. A photograph is the sum of the light
    from every point of each source : so the stage draws the scene again and again — each time the lamps moved a little inside
    their own size, the sky seen from another side, the camera moved by a fraction of a pixel — and this module keeps the

@@ -1,4 +1,4 @@
-/* DesignWizard.ai — "paste or drop anything": recognises what the user brings (an interview result from Claude, a part,
+/* DynamiteOrbit — "paste or drop anything": recognises what the user brings (an interview result from Claude, a part,
    an extrusion profile, a whole project, a STEP file) and puts it in the right place. */
 
 import { store } from "./store.js";
@@ -76,7 +76,7 @@ export async function importAny(text, filename = "") {
     return { kind: "step", id };
   }
   const obj = extractJson(text), kind = kindOf(obj);
-  if (!kind) { toast(extractJson.error ? `Fichier .dwiz illisible — ${extractJson.error}` : "Texte non reconnu : ni pièce, ni profil, ni projet DesignWizard (.dwiz ou JSON), ni STEP. Correctif : collez la réponse complète de l'entrevue.", "error", 8000); return null; }
+  if (!kind) { toast(extractJson.error ? `Fichier .dwiz illisible — ${extractJson.error}` : "Texte non reconnu : ni pièce, ni profil, ni projet DynamiteOrbit (.dwiz ou JSON), ni STEP. Correctif : collez la réponse complète de l'entrevue.", "error", 8000); return null; }
   if (kind === "project" && ((obj.boards || []).some((b) => b && Array.isArray(b.functions) && !Array.isArray(b.parts)) || (obj.physics || []).some((r) => r && !r.values))) {
     const { readFirstDesign } = await import("./first_design.js"), r = readFirstDesign(obj), p = await store.create(r.project.name, r.project);      // a first design written by an AI : built, computed, and filed as a draft
     toast(`Premier design « ${p.name} » importé : ${r.counts.parts} pièce(s), ${r.counts.boards} carte(s), ${r.counts.physics} analyse(s) calculée(s)${r.counts.refused ? `, ${r.counts.refused} élément(s) refusé(s)` : ""} — tout est en brouillon, à passer en revue.`, r.counts.refused ? "info" : "success", 9000);

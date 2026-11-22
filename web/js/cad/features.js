@@ -1,4 +1,4 @@
-/* DesignWizard.ai — feature engine of the part language: turns an (already evaluated) feature list into kernel bodies.
+/* DynamiteOrbit — feature engine of the part language: turns an (already evaluated) feature list into kernel bodies.
    Each feature: {op, id?, name?, body? ("main"), mode? ("add" | "cut" | "intersect"), suppressed?, when?} + its own fields.
    Face-based features take `face` ("+Z", "top"...), 2D positions in MODEL coordinates of that face's plane
    ([x,y] on ±Z, [x,z] on ±Y, [y,z] on ±X) and `start` (level of the face along its axis; default: the outside of the body). */

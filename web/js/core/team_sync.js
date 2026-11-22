@@ -1,4 +1,4 @@
-/* DesignWizard.ai — reading the mirrors where they live. Each member keeps their mirror in their own storage ; when that
+/* DynamiteOrbit — reading the mirrors where they live. Each member keeps their mirror in their own storage ; when that
    storage is a Drive, a member's entry in the team carries the id of their file (`mirror`). Whoever was given the right
    to read that file can then fetch every mirror in one go and see, before anything is applied, what each would bring.
    The reader is injected (`read(id) → text`) : this module knows nothing of Google, and is tested without network. */
@@ -11,7 +11,7 @@ const clone = (x) => JSON.parse(JSON.stringify(x));
 /** The project a mirror file holds. Throws when the text is not the mirror of a member. */
 export function parseMirror(text) {
   const t = String(text || ""); let d;
-  try { d = /^\s*\{/.test(t) ? JSON.parse(t) : fromDwiz(t); } catch (e) { throw new Error("Ce fichier ne se lit pas comme un projet DesignWizard."); }
+  try { d = /^\s*\{/.test(t) ? JSON.parse(t) : fromDwiz(t); } catch (e) { throw new Error("Ce fichier ne se lit pas comme un projet DynamiteOrbit."); }
   if (Array.isArray(d)) d = d[0];
   if (!d || !d.team || !d.team.owner) throw new Error("Ce fichier n'est pas le miroir d'un membre : il ne dit pas à qui il est.");
   return d;

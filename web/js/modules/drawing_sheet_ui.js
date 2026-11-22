@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Dessins, what the right margin adds to the sheet (JP, 21 novembre 2026 : « tout texte de la feuille éditable dans la
+/* DynamiteOrbit — Dessins, what the right margin adds to the sheet (JP, 21 novembre 2026 : « tout texte de la feuille éditable dans la
    marge de droite… tolérances générales par défaut = bloc ASME… un outil pour choisir une zone → vue de détail ») : the tolerance block of
    the project and its example values to confirm, the general notes On / Off, and the detail views — the tool that draws a zone on a view,
    and the list of the details (scale, On / Off, copy, delete). Each change is one step of the store. */

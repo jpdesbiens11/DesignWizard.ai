@@ -1,4 +1,4 @@
-/* DesignWizard.ai — TRL : the technology readiness scale as its publishers wrote it, so that a level means the same thing
+/* DynamiteOrbit — TRL : the technology readiness scale as its publishers wrote it, so that a level means the same thing
    to everyone in the room. For each level : the definition of the NASA table and of the European Commission, quoted in
    English as read (the English is the official text ; the French beside it is a translation of the platform), what the
    NASA table says of the hardware and of the proof to show, a summary of the UK automotive guide, and two examples —

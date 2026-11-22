@@ -1,7 +1,7 @@
-/* DesignWizard.ai — the product as a folder tree in the user's own Google Drive: the data store of the online
+/* DynamiteOrbit — the product as a folder tree in the user's own Google Drive: the data store of the online
    application, and a place a colleague or a shop can browse without the application.
 
-     DesignWizard.ai/
+     DynamiteOrbit/
        LISEZ-MOI.txt
        <Nom du projet>/
          <Nom du projet>.project.dwiz      the whole project — what the application opens
@@ -37,7 +37,7 @@ const day = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).p
 export function readmeText(project, when = new Date()) {
   const parts = (project.parts || []).map((p) => `  ${p.id} — ${p.name || ""}${p.material ? ` (${p.material})` : ""}`), asms = (project.assemblies || []).map((a) => `  ${a.id} — ${a.name || ""}`);
   return [`${project.name || project.id}`, project.description || "", "",
-    "Ce dossier est tenu par DesignWizard.ai. Vous pouvez le lire, le partager et le renommer ; ne modifiez pas les", "fichiers à la main : ouvrez le projet dans l'application, elle les réécrit.", "",
+    "Ce dossier est tenu par DynamiteOrbit. Vous pouvez le lire, le partager et le renommer ; ne modifiez pas les", "fichiers à la main : ouvrez le projet dans l'application, elle les réécrit.", "",
     `${projectFileName(project)}   le projet entier (format .dwiz : du texte, une instruction par ligne)`,
     `${TREE.parts}/        une pièce par dossier : fiche .dwiz, STEP, STL, DXF, dessin PDF, FeatureScript, gamme`,
     `${TREE.assemblies}/   un assemblage par dossier : fiche .dwiz, STEP, nomenclature`,
@@ -46,9 +46,9 @@ export function readmeText(project, when = new Date()) {
     parts.length ? `Pièces (${parts.length}) :` : "Aucune pièce pour l'instant.", ...parts, asms.length ? `\nAssemblages (${asms.length}) :` : "", ...asms, "",
     `Mis à jour le ${day(when)}.`].filter((l) => l !== "").join("\n").replace(/\n(Ce dossier|Pièces|Aucune pièce|Mis à jour)/g, "\n\n$1") + "\n";
 }
-const ROOT_README = `DesignWizard.ai\n\nUn dossier par produit. Chaque dossier contient le projet (fichier .project.dwiz) et, rangés par numéro,\nses pièces, ses assemblages, ses analyses, ses rapports et ses commandes de prototypes.\n\nCes dossiers sont créés par l'application DesignWizard.ai, qui ne voit dans votre Drive que ce qu'elle y a créé.\n`;
+const ROOT_README = `DynamiteOrbit\n\nUn dossier par produit. Chaque dossier contient le projet (fichier .project.dwiz) et, rangés par numéro,\nses pièces, ses assemblages, ses analyses, ses rapports et ses commandes de prototypes.\n\nCes dossiers sont créés par l'application DynamiteOrbit, qui ne voit dans votre Drive que ce qu'elle y a créé.\n`;
 
-export function createDriveFs(drive, { root = "DesignWizard.ai" } = {}) {
+export function createDriveFs(drive, { root = "DynamiteOrbit" } = {}) {
   const cache = new Map();                                     // key -> folder or file
   const once = async (key, make) => { if (!cache.has(key)) cache.set(key, await make()); return cache.get(key); };
   const rootFolder = () => once("/", async () => {
@@ -107,7 +107,7 @@ export function createDriveFs(drive, { root = "DesignWizard.ai" } = {}) {
       for (const old of OLD_PROJECT_FILES) if (!found.length) found = await drive.find({ parent: folderId, name: old, limit: 2 });
       if (!found.length) throw new Error("Ce dossier ne contient pas de fichier de projet (.project.dwiz).");
       const text = await drive.text(found[0].id), obj = /^\s*\{/.test(text) ? JSON.parse(text) : fromDwiz(text);
-      if (!obj || Array.isArray(obj) || !Array.isArray(obj.parts)) throw new Error("Le fichier de projet lu dans Drive n'est pas un projet DesignWizard.");
+      if (!obj || Array.isArray(obj) || !Array.isArray(obj.parts)) throw new Error("Le fichier de projet lu dans Drive n'est pas un projet DynamiteOrbit.");
       cache.set(`file:${obj.id}`, found[0]);
       return obj;
     },

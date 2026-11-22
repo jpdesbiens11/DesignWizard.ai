@@ -1,4 +1,4 @@
-/* DesignWizard.ai — DFM / DFx rule engine of a part: the printable rule book (RULEBOOK) and checkPart().
+/* DynamiteOrbit — DFM / DFx rule engine of a part: the printable rule book (RULEBOOK) and checkPart().
    The rules live in one module per process family (dfx_rules_<family>.js); this file gives them a common context
    (facts, material, evaluated spec, lazy mesh wall thickness, patch helpers) and collects the findings.
    A rule never throws: every rule runs inside ctx.run(), a failing rule is skipped and listed in `skipped`. */

@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Physique, structure (2/2): rectangular flat plate under uniform pressure (Roark coefficients),
+/* DynamiteOrbit — Physique, structure (2/2): rectangular flat plate under uniform pressure (Roark coefficients),
    thermal expansion mismatch of two joined materials. Inputs in mm, kPa, GPa, MPa, µm/m.K, °C. */
 
 import { n, sheet, num, opt, out, interp, MAT, GEO, LOAD, CRIT } from "./models_core.js";

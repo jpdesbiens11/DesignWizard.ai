@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the stage of the photo studio : the product in a set (core/photo_sets.js), under lamps one places
+/* DynamiteOrbit — the stage of the photo studio : the product in a set (core/photo_sets.js), under lamps one places
    (core/photo_lights.js), in perspective, with the finish of each part and its labels. The mouse turns around it (drag),
    comes closer (wheel), slides (right drag or Shift + drag) ; a click says which part is under the pointer ; a lamp of the
    view is taken and pulled around the product. While something moves, one frame is drawn ; as soon as nothing does, the

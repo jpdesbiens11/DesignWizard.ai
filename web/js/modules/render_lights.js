@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Studio photo, the lighting : the setups one chooses (three-point, high key, the sun at different hours…),
+/* DynamiteOrbit — Studio photo, the lighting : the setups one chooses (three-point, high key, the sun at different hours…),
    grouped by nature, each with a small diagram of itself ; the PLOT — the studio seen from above, the camera at the bottom as on
    a lighting diagram, each lamp a dot one drags around the product (toward the centre : higher) ; the list of the lamps, each
    with its On / Off, its copy, and its settings when it is in hand : where it stands, how strong, how soft, how warm, and

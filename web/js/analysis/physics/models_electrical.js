@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Physique, electrical: busbar / conductor (resistance, voltage drop, Joule loss, temperature rise),
+/* DynamiteOrbit — Physique, electrical: busbar / conductor (resistance, voltage drop, Joule loss, temperature rise),
    PCB trace ampacity (IPC-2221), short-time adiabatic heating (I2t, Onderdonk). Inputs in mm, µm, A, nΩ.m, °C. */
 
 import { SIGMA_SB, n, sheet, num, opt, out, bisect, tempCheck, MAT, GEO, CRIT } from "./models_core.js";

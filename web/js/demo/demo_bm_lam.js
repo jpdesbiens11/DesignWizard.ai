@@ -1,4 +1,4 @@
-/* DesignWizard.ai — BM 8s8p - 21700 : the laminated busbar of a CORE, iteration 12 (JP, 22 novembre 2026, on the picture of an industrial
+/* DynamiteOrbit — BM 8s8p - 21700 : the laminated busbar of a CORE, iteration 12 (JP, 22 novembre 2026, on the picture of an industrial
    laminated busbar bent at 90° : « by laminated busbar for the core, I meant something like this… can you refine » ; on pictures of laser-welded
    cell connections : contoured plates that follow the cells, « let's put the laser mark visibly »).
    What it is now : a laminated busbar as the trade makes them — the two conductors STACKED, flat, ON TOP of the cells : the − layer first, then

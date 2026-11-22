@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Labo, the breadboard DRAWN beside the board (pcba/lab_breadboard.js gives where everything goes ; nothing is
+/* DynamiteOrbit — Labo, the breadboard DRAWN beside the board (pcba/lab_breadboard.js gives where everything goes ; nothing is
    decided here). A breadboard as the prototyping tools draw it : a pale body, rows of five holes tied by their metal strip, the
    ground row dark ; on each row, at its left, the tag of the point of the board it comes from (reference . pin · signal) ; the
    jumper from the pad of the board to the first hole of its row, a dot soldered on the pad ; the leads of the instruments in the

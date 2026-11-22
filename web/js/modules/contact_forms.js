@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the three forms of a pressure contact, shown as what they are : a cross-section of two bars pressed
+/* DynamiteOrbit — the three forms of a pressure contact, shown as what they are : a cross-section of two bars pressed
    together, with pointed bosses, spring blades or a band of lamellae between them. One picker for the Busbars screen and
    the Shop : a tile per form (its colour, its picture, a few words), the one the platform would choose marked, and under
    it what the chosen form is made of and what the voltage asks. Words and figures : cad/interfaces_elec.js. */
