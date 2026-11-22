@@ -1,4 +1,4 @@
-/* DynamiteOrbit — profile generators: usual cross-sections described by a few numbers, e.g.
+/* DesignOrbit.ai — profile generators: usual cross-sections described by a few numbers, e.g.
    {"gen":"heatsink","W":80,"base":5,"fin":18,"tf":2,"n":9}. They return an ordinary profile definition (poly / outer + holes),
    so everything downstream (extrusion, DFM metrics, drawings) treats them like a hand-drawn profile. */
 

@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the screenshots of the guided presentation (web/img/tour/*.jpg), taken on the demonstration projects.
+/* DesignOrbit.ai — the screenshots of the guided presentation (web/img/tour/*.jpg), taken on the demonstration projects.
    Not part of the application and not run by the tests : it needs Playwright and a running local server.
      python3 designwizard.py --port 8130 --no-browser --data <an empty folder>
      node tools/tour_shots.mjs http://127.0.0.1:8130 web/img/tour [names, comma separated]

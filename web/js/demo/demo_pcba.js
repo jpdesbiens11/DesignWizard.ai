@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the demonstration board : the control board of the compact drive, designed from its functions
+/* DesignOrbit.ai — the demonstration board : the control board of the compact drive, designed from its functions
    (supply, compute, communicate, measure, signal, be testable) down to its routed copper. It is stored as .dwiz text —
    the format an engineer, a shop and an AI read the same way — and read back here. */
 

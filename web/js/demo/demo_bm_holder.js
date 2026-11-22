@@ -1,4 +1,4 @@
-/* DynamiteOrbit — BM 8s8p - 21700 : the cell holder of a CORE (JP, 21 novembre 2026, par menu : « le support de cellules » next).
+/* DesignOrbit.ai — BM 8s8p - 21700 : the cell holder of a CORE (JP, 21 novembre 2026, par menu : « le support de cellules » next).
    What the geometry leaves : the cells of a row stand side by side (21.7 mm a cell, a P45B is 21.55 mm at most : 0.15 mm between two cells)
    — no wall can pass between them. The holder holds each cell where there is room : a SPINE in the 3 mm gap between the two rows, whose teeth
    reach between the cells of each row (their tips stop 4 mm short of the row axis, 1.4 mm wide) and hold every cell, and a BAR in each 3 mm gap of the short ends, which leaves a channel of 1.2 mm

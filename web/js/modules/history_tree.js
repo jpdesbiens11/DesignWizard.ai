@@ -1,4 +1,4 @@
-/* DynamiteOrbit — Historique : the TREE of the restore points, drawn as a version-control client draws its commit graph — a COLUMN per
+/* DesignOrbit.ai — Historique : the TREE of the restore points, drawn as a version-control client draws its commit graph — a COLUMN per
    branch, named at its head, MAIN in the centre and drawn heavier (demande de JP, 21 novembre 2026 : « la MAIN branche au centre clairement
    identifiée »), the other branches on either side in the order they opened ; a row per point, in the order they were posed (the first at the
    top). A merge point on MAIN takes a second line from the end of the branch it took in. The point « vous êtes ici » ringed, as the snapshot

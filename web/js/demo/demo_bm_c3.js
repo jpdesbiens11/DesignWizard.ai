@@ -1,4 +1,4 @@
-/* DynamiteOrbit — BM 8s8p - 21700, CONCEPT 3 « blade and fork », on its own branch, started from concept 1 (MAIN) (JP, 22 novembre 2026 :
+/* DesignOrbit.ai — BM 8s8p - 21700, CONCEPT 3 « blade and fork », on its own branch, started from concept 1 (MAIN) (JP, 22 novembre 2026 :
    « cellules perpendiculaires à l'axe d'insertion du module, comme au concept 1 ; les CORE s'assemblent l'un à l'autre, contacts face à face,
    − contre +, dans l'axe d'insertion ; y mettre des contacts haute puissance à lames ; couvercles debout ; commencer simple… pas de ressorts de
    produit grand public : des ressorts fins et compacts, aucune place en longueur » ; his choices by menu : « Lame dans une pince », and the

@@ -1,4 +1,4 @@
-/* DynamiteOrbit — « Ce que cela dérange », drawn : the disturbances an answer of an AI would cause elsewhere in the product (core/ai_disturb.js),
+/* DesignOrbit.ai — « Ce que cela dérange », drawn : the disturbances an answer of an AI would cause elsewhere in the product (core/ai_disturb.js),
    grouped by level — broken, to redo, to look at —, each group with its colour and its pictogram, each line short, its target named (a click
    goes there when the box is on a page). The same box in the door « Avec l'IA » (under each row of its preview) and in the common loop of
    every screen (under the list of changes). Nothing is decided here. */

@@ -1,4 +1,4 @@
-/* DynamiteOrbit — Labo, « Manipulation en labo » : a test of the plan, as the steps one does at the bench (demande de JP :
+/* DesignOrbit.ai — Labo, « Manipulation en labo » : a test of the plan, as the steps one does at the bench (demande de JP :
    « un étudiant de 1re année… chaque étape pointée sur le schéma ou la carte directement, au lieu de numéros de broches…
    s'assurer qu'ils font les bonnes choses, avec ou sans supervision, et qu'on ne détruit pas les circuits par de mauvaises
    manipulations »).

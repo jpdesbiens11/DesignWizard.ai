@@ -1,4 +1,4 @@
-/* DynamiteOrbit — Aide : where the tools take their methods, conventions and standards from. Grouped by nature, a colour
+/* DesignOrbit.ai — Aide : where the tools take their methods, conventions and standards from. Grouped by nature, a colour
    and a pictogram per group ; each line is closed until it is clicked, then says what the reference covers, what the tool
    takes from it and how it was checked. The words come from core/methods.js. Route : #/help/sources[/<group or id>]. */
 

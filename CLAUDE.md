@@ -1,6 +1,12 @@
-# DynamiteOrbit (anciennement DesignWizard.ai) — consignes pour Claude
+# DesignOrbit.ai — consignes pour Claude
 
-Consignes permanentes de JP (propriétaire du dépôt). **Le produit s'appelle DynamiteOrbit** (v0.174.0, 22 novembre 2026 : DesignWizard.ai était pris), de la famille DynamiteAgile — « de la mine souterraine vers le ciel » : on bâtit la fusée en plein vol vers les étoiles. Les dossiers Drive « DesignWizard.ai » gardent leur nom. Elles s'appliquent à toute session.
+Le produit s'appelle **DesignOrbit.ai** (JP, 22 novembre 2026, par menu ; anciennement DesignWizard.ai, puis DynamiteOrbit le
+même jour). Le dépôt GitHub s'appelle `jpdesbiens11/DynamiteOrbit.ai` et la démo est à
+https://jpdesbiens11.github.io/DynamiteOrbit.ai/ — des adresses, pas le nom du produit. Gardent l'ancien nom, pour ne rien
+casser : le dossier « DesignWizard.ai » du Google Drive de JP (communications), le format `.dwiz`, les réglages gardés du
+navigateur (`dw.*`), le fichier `designwizard.py`, le film et la bande-annonce tant que leur voix n'est pas refaite.
+
+Consignes permanentes de JP (propriétaire du dépôt). Elles s'appliquent à toute session. (Le nom DynamiteOrbit, posé en v0.174.0 parce que DesignWizard.ai était pris, et son symbole « l'éclair mis en orbite » de v0.177.0 sont remplacés en v0.178.0 par DesignOrbit.ai et la fusée du compas — JP, par menu, après qu'on lui eut montré le nom déjà publié.)
 
 ## Façon de travailler
 
@@ -31,7 +37,7 @@ Consignes permanentes de JP (propriétaire du dépôt). **Le produit s'appelle D
    `web/version.json` (ce que la page ouverte lit pour annoncer une mise à jour — `web/js/core/update_check.js`) et l'en-tête
    du README ; un test les compare.
 3. Le flux « Publier la démo » (`.github/workflows/pages.yml`) rejoue les tests et pousse `web/` sur `gh-pages` ;
-   la démo est à https://jpdesbiens11.github.io/DynamiteOrbit.ai/ (dépôt renommé par JP le 22 novembre : `jpdesbiens11/DynamiteOrbit.ai`). Vérifier que le flux a réussi et que la page répond.
+   la démo est à https://jpdesbiens11.github.io/DynamiteOrbit.ai/. Vérifier que le flux a réussi et que la page répond.
 4. Ne jamais forcer `main`. La branche `gh-pages` est réécrite par le flux : ne pas y travailler.
 
 ## Règles du projet
@@ -53,7 +59,7 @@ Consignes permanentes de JP (propriétaire du dépôt). **Le produit s'appelle D
   se présente groupé par nature, chaque groupe avec sa couleur, chaque élément avec un pictogramme qui montre le concept
   et un titre court ; le détail vient ensuite. Les studios gardent tous la même structure : volet de gauche (ce que l'on
   entre), centre (ce que l'on regarde), volet de droite (ce que l'on choisit et ce que l'on obtient).
-- **La marque sur tous les documents** (demande de JP) : tout ce que la plateforme produit — PDF, Word, texte, CSV, DXF, STEP, STL, Gerber, perçage, FeatureScript, `.dwiz`, JSON, ce qui part vers Drive ou vers Onshape, la présentation — porte le visuel de DynamiteOrbit là où le format le permet et la note « DynamiteOrbit™ by DynamiteAgile™ · Co-Intelligence WorkFlow™ — document généré par DynamiteOrbit. La version électronique fait foi ; la version imprimée est pour référence. » (`web/js/core/brand.js`, une seule source). Les livrables à lire (PDF, Word, dessins) portent en plus la **note de confidentialité** du projet et suivent le **gabarit des documents** : cartouche d'en-tête encadré sur chaque page (marque, titre, n° de document, révision, date, page), page de titre avec approbation et journal des révisions (`core/pdfdoc.js`, `core/docx.js`, `docIdentity`). Un écran enregistre un fichier par `download()`, jamais par un `Blob` à lui. Tout nouvel export naît avec la marque ; voir `docs/BRAND.md`.
+- **La marque sur tous les documents** (demande de JP) : tout ce que la plateforme produit — PDF, Word, texte, CSV, DXF, STEP, STL, Gerber, perçage, FeatureScript, `.dwiz`, JSON, ce qui part vers Drive ou vers Onshape, la présentation — porte le visuel de DesignOrbit.ai là où le format le permet et la note « DesignOrbit.ai™ by DynamiteAgile™ · Co-Intelligence WorkFlow™ — document généré par DesignOrbit.ai. La version électronique fait foi ; la version imprimée est pour référence. » (`web/js/core/brand.js`, une seule source). Les livrables à lire (PDF, Word, dessins) portent en plus la **note de confidentialité** du projet et suivent le **gabarit des documents** : cartouche d'en-tête encadré sur chaque page (marque, titre, n° de document, révision, date, page), page de titre avec approbation et journal des révisions (`core/pdfdoc.js`, `core/docx.js`, `docIdentity`). Un écran enregistre un fichier par `download()`, jamais par un `Blob` à lui. Tout nouvel export naît avec la marque ; voir `docs/BRAND.md`.
 - **Un média, pas une valeur** (demande de JP) : dans les modèles analytiques, une propriété de matière ou de fluide ne se tape pas — elle vient d'un **média connu** choisi dans la base (`web/js/analysis/physics/media.js`, écran `#/media`), affichée à côté, non modifiable. Menus : solides d'abord, puis liquides, puis gaz, par groupe et par nom. Tout nouveau modèle déclare ses médias (`MODEL_MEDIA`) ; tout nouveau média dit d'où viennent ses valeurs (`basis`) ; voir `docs/MEDIAS.md`.
 - **Termes techniques en anglais** (demande de JP) : tout terme technique — procédé, opération, forme, interface, matière première, vocabulaire du mold (draft, parting line, slide, gate, riser…), soudage, revêtement, finition — se montre **en anglais, comme le métier le nomme** ; l'explication autour reste en français. Chaque table de vocabulaire donne `label` (anglais, ce que les écrans et les documents montrent) et `fr` (l'équivalent, pour le glossaire de l'Aide : `web/js/core/terms.js`). Toute nouvelle brique apporte ses termes avec les deux noms ; voir `docs/TERMES.md`.
 - **Ce qui est nouveau se voit, le temps d'une revue** (demande de JP : « tague-moi ce qui est nouveau dans l'interface entre les versions pour faciliter la revue humaine… quand on passe à une nouvelle revue seulement cache les tags, sinon laisse-les actifs, pour la traçabilité ») : **toute version qui change un écran ajoute ses lignes à `NEWS`** (`web/js/core/whats_new.js`) — ce qui est nouveau, en une phrase, l'écran (`where`) et l'élément (`sel`) ; un essai tient que la version qui tourne a ses lignes et que l'élément existe. L'élément porte alors une marque « Nouveau » (un calque au-dessus de la page, `core/whats_new_ui.js`, installé une fois) ; le bouton à l'étoile de la barre du haut en tient la liste. **Une ligne cochée « vu » garde sa marque**, en vert ; seul « Passer à une nouvelle revue » les range, et la revue rangée se rouvre. Voir `docs/ERGONOMIE.md`.
@@ -132,7 +138,7 @@ premier) ; on descend « Prochaines actions » dans l'ordre ; ce qui est fait se
 plus bas, avec sa version. Une revue de la liste se fait à chaque reprise de séance.
 
 **Prochaines actions** (dans l'ordre)
-1. **Pivot du nom et de la marque** (JP, 22 novembre) — **nom fixé : DynamiteOrbit** (par menu ; dynamiteorbit.ca réservé par JP, déployé sur ce domaine dans environ deux semaines, à la fin de ses travaux de cadre). Dans ce chat : le cadre, le nom et la marque seulement, aucune conception. ~~Renommer le produit partout~~ — fait (v0.174.0) : ce qui se lit change ; le format .dwiz, les clés `dw.`, les numéros DW-, les noms de fichiers et les dossiers Drive (retrouvés par leur propriété) restent ; le film et le teaser gardent l'ancien nom tant que leur voix n'est pas enregistrée de nouveau. **Reste, dans l'ordre** : ~~(a) JP renomme le dépôt GitHub~~ — fait : `jpdesbiens11/DynamiteOrbit.ai` (tout le matériel et le code y vont), démo à https://jpdesbiens11.github.io/DynamiteOrbit.ai/ ; (b) **le nouveau visuel** — planche d'identité v1 (https://claude.ai/artifact/7AzCdNsEq7rQseozYGKvz9) : « Dynamite » orange, le carré jaune au trait d'encre, le carnet quadrillé de DynamiteAgile, l'altitude en km (la mine descend en mètres, la fusée monte) ; JP : « commençons avec les éléments actuels, on finetunera » — **seuls les éléments visuels et les couleurs changent, pour un design uniforme et attrayant pour les jeunes ingénieurs et ingénieures ; rien du contenu technique ni de la place des fonctions de l'interface** ; le symbole « l'éclair mis en orbite » (piste C) d'office, facile à changer ; le logo des documents (`tools/sketch_logo.py`, compas-chapeau de sorcier) refait ; l'idée « bâtir la fusée en plein vol vers les étoiles » dans le ton et la présentation ; (c) la voix du film et du teaser enregistrée de nouveau ; (d) recherche CIPO pour DYNAMITEORBIT.
+1. **Pivot du nom et de la marque** (JP, 22 novembre) — **nom : DesignOrbit.ai** depuis v0.178.0 (JP, par menu, dans la tâche des icônes ; avant : « nom fixé : DynamiteOrbit », par menu ; dynamiteorbit.ca réservé par JP, déployé sur ce domaine dans environ deux semaines, à la fin de ses travaux de cadre). Dans ce chat : le cadre, le nom et la marque seulement, aucune conception. ~~Renommer le produit partout~~ — fait (v0.174.0) : ce qui se lit change ; le format .dwiz, les clés `dw.`, les numéros DW-, les noms de fichiers et les dossiers Drive (retrouvés par leur propriété) restent ; le film et le teaser gardent l'ancien nom tant que leur voix n'est pas enregistrée de nouveau. **Reste, dans l'ordre** : ~~(a) JP renomme le dépôt GitHub~~ — fait : `jpdesbiens11/DynamiteOrbit.ai` (tout le matériel et le code y vont), démo à https://jpdesbiens11.github.io/DynamiteOrbit.ai/ ; (b) **le nouveau visuel** — planche d'identité v1 (https://claude.ai/artifact/7AzCdNsEq7rQseozYGKvz9) : « Dynamite » orange, le carré jaune au trait d'encre, le carnet quadrillé de DynamiteAgile, l'altitude en km (la mine descend en mètres, la fusée monte) ; JP : « commençons avec les éléments actuels, on finetunera » — **seuls les éléments visuels et les couleurs changent, pour un design uniforme et attrayant pour les jeunes ingénieurs et ingénieures ; rien du contenu technique ni de la place des fonctions de l'interface** ; ~~le symbole « l'éclair mis en orbite » (piste C)~~ — fait (v0.177.0), puis remplacé par JP (v0.178.0) : la fusée quitte le compas sur sa trajectoire (L3) ; l'idée « bâtir la fusée en plein vol vers les étoiles » dans le ton et la présentation ; (c) la voix du film et du teaser enregistrée de nouveau ; (d) recherche CIPO pour le nom retenu (DESIGNORBIT) ; dynamiteorbit.ca, réservé par JP, ne correspond plus au nom — à lui de voir.
 2. **Interview de JP** : son idée pour l'interface des batteries avec le boîtier — ce que c'est, ce qu'elle fait avec
    l'interface des blocs (les CORE, le + et le −), l'analogie sur laquelle on s'appuie ; et les couvercles du fond et du
    haut retravaillés « comme les produits grand public, plus compacts ». Attendre ses autres idées avant de construire.
@@ -153,9 +159,9 @@ plus bas, avec sa version. Une revue de la liste se fait à chaque reprise de s�
    conversation mêlée framework et conception… surveille-moi ») : une demande sur l'application va dans une tâche à part.
    ~~**Pince détaillée**~~ (JP, par menu) — fait (v0.176.0) : logements des bandes, chanfreins d'entrée, talon brasé, effort des lamelles lu
    (Weftron 112 : 5–30 N par pont), mâchoire vérifiée ; l'effort d'insertion n'est pas publié dans ce qui a été lu.
-   ~~**Couvercle du haut**~~ (JP, par menu : « Pinces côté module ») — fait (v0.177.0) : pince A sur la borne +, pince B sur la languette de
+   ~~**Couvercle du haut**~~ (JP, par menu : « Pinces côté module ») — fait (v0.179.0) : pince A sur la borne +, pince B sur la languette de
    retour, pont rigide à deux lames dans le couvercle, plus de shunt ni de ressorts de plot. Suite proposée par menu (raccourcir le bout haut…).
-5. **Icônes : remplacer le chapeau de sorcier** par une alternative du monde des fusées, puis toutes les icônes (JP, 22 novembre) — framework.
+5. ~~**Icônes : remplacer le chapeau de sorcier** par une alternative du monde des fusées, puis toutes les icônes (JP, 22 novembre) — framework.~~ — fait (v0.178.0, voir plus bas).
    Priorité, par menu : « Tâche à part, maintenant » — lancée par JP depuis sa carte, dans une autre conversation ; pas dans celle de conception.
 
 **Réponses de l'interview** (JP, 22 novembre, par menu — les quatre choix conseillés) : les CORE **en ligne, pressés**, comme des piles D
@@ -178,6 +184,15 @@ pour un module glissé** — lame pliée 3–15 A, broche à ressort 5–60 A, b
 de course et goupille de butée, butée à aiguilles ou rondelle bronze / PTFE vers une plaque de pression guidée par goupilles (sans
 rotation), réaction axiale reprise par un circlip ou un épaulement, clavette ajustée (pas de jeu au retour). Lecture : un CORE est déjà
 une « grosse pile » (8 cellules en parallèle, + sur la face des calottes, − sur celle des fonds).
+
+**Fait (v0.178.0)** — **Icônes et logo du monde des fusées, nom DesignOrbit.ai** (JP, 22 novembre, par menus) : le chapeau de
+sorcier (icône `wizard`) devient une **tour de lancement et sa fusée** ; **toutes les icônes** suivent une seule famille, la
+« ligne de mission » (`mission()` de `tools/sketch_icons.py` : coins de panneau arrondis, mêmes noms, mêmes sens) ; **Le.Carnet
+garde son crayonné** ; le logo devient **L3 — la fusée quitte le compas sur sa trajectoire**, une seule figure (`LOGO`,
+`logoShapes` de `web/js/core/brand.js`, les mêmes nombres dans `tools/sketch_logo.py`, tenus égaux par un essai) ; le produit
+s'appelle **DesignOrbit.ai**. Reste : refaire la voix et les sous-titres du film et de la bande-annonce (ils disent
+« DesignWizard.ai »), reprendre les captures de la visite (`web/img/tour`), renommer l'application sur l'écran de
+consentement de Google (Google Cloud Console : à faire par JP) ; peut-être renommer le dépôt « DesignOrbit.ai ».
 
 **Un jour / peut-être** (les « Reste », à reprioriser à la demande)
 - BM : ~~**lobe des vis élargi à Ø 10 mm**~~ — fait dans le concept 2 (v0.171.0) ; ~~le logement de la carte BMS centrale~~ — réglé

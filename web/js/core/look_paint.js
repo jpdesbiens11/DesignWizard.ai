@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the pattern and the sheen of a look, laid on a mesh of a 3D view. The tile of a pattern (core/look_patterns.js)
+/* DesignOrbit.ai — the pattern and the sheen of a look, laid on a mesh of a 3D view. The tile of a pattern (core/look_patterns.js)
    is drawn once on a canvas and repeats ; a mesh that has no texture coordinates gets them from a box projection, one tile every
    `period` millimetres (core/render_looks.js boxUv) — in the coordinates of the part, so that every instance of a part wears the
    same cloth. The tiles are shared by every view : they are never disposed with a mesh. Also the little pictures of a pattern

@@ -1,4 +1,4 @@
-/* DynamiteOrbit — what a look can carry beside its colour (demande de JP : « color and shading that can be applied to each 3D
+/* DesignOrbit.ai — what a look can carry beside its colour (demande de JP : « color and shading that can be applied to each 3D
    part… including military camouflage colour / shade / texture options — snow, forest, desert… ») :
      a PATTERN — a texture laid on the part, here the camouflage sets ; each is a handful of colours and a way to break them up ;
      a SHEEN   — how the surface answers light in the view : matte, satin (what the view always showed), gloss, metallic.

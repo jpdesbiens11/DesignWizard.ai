@@ -1,4 +1,4 @@
-/* DynamiteOrbit — Logiciel : the sheet of what is chosen on the page — an object, a wire, or the software as a whole — in the right panel.
+/* DesignOrbit.ai — Logiciel : the sheet of what is chosen on the page — an object, a wire, or the software as a whole — in the right panel.
    An object says first WHAT ENTERS AND WHAT LEAVES (demande de JP : « ce n'est pas clair quels sont les entrées et les sorties des blocs ») :
    one line per input and per output — its name, its unit and range, where it comes from or where it goes, what it is worth now. Then its
    values : one the tool proposed blinks until it is typed or confirmed. Then the sentence of what it must do, written from its values.
@@ -49,7 +49,7 @@ export function sheet(body, c) {
 }
 
 /** The software as a text for an assistant : its objects, its wires, the CPU, and the task. */
-export const aiText = (d) => ["Tu es l'assistant de conception de DynamiteOrbit. Voici le logiciel embarqué d'un BMS, décrit comme des OBJETS reliés par des fils : chaque objet a un genre (kind), des paramètres, et des ports ; un fil va d'une sortie « objet.port » à une entrée « objet.port ».",
+export const aiText = (d) => ["Tu es l'assistant de conception de DesignOrbit.ai. Voici le logiciel embarqué d'un BMS, décrit comme des OBJETS reliés par des fils : chaque objet a un genre (kind), des paramètres, et des ports ; un fil va d'une sortie « objet.port » à une entrée « objet.port ».",
   `GENRES DISPONIBLES — ${Object.entries(KINDS).map(([k, K]) => `${k} (${K.label} : entrées ${K.ports.in.map((p) => p.key).join(", ") || "aucune"} ; sorties ${K.ports.out.map((p) => p.key).join(", ") || "aucune"} ; paramètres ${K.params.map((p) => p.key).join(", ") || "aucun"})`).join(" · ")}.`,
   `CPU CHOISI — ${cpuOf(d).name} : ${cpuOf(d).adc.channels} voies analogiques de ${cpuOf(d).adc.bits} bits, ${cpuOf(d).gio} broches logiques.`,
   "TA TÂCHE — relis ce logiciel comme un ingénieur de logiciel embarqué : un objet qui manque, un seuil ou un délai qui te paraît faux, une entrée non reliée. Dis-le en quelques lignes, puis attends mon accord.",

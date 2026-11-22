@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the CORE board example : the small board laid on the top of a CORE of 8 cells 21700 in parallel (architecture de
+/* DesignOrbit.ai — the CORE board example : the small board laid on the top of a CORE of 8 cells 21700 in parallel (architecture de
    JP, 21 novembre 2026 : une carte par CORE, posée sur son dessus et de sa taille ; RS-485 isolé vers le BMS central, côté bus alimenté
    par le faisceau ; équilibrage passif ; les 8 CTN sur les rabats d'un flex replié en G). From its functions down to its routed copper.
    Stored as .dwiz text (tools/gen_demo_core.mjs writes it), read back here. */

@@ -1,4 +1,4 @@
-/* DynamiteOrbit — Assemblage: add parts and they mate themselves through their interfaces. A linked mate is a
+/* DesignOrbit.ai — Assemblage: add parts and they mate themselves through their interfaces. A linked mate is a
    dependency: change one side, the other part adapts. Exploded view, BOM with the implied hardware, interference
    check, complementary-part generator, STEP of the assembly, and the assembly routing step by step (asm_gamme.js). */
 

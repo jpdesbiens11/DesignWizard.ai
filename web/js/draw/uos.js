@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the tolerance block of a drawing, « UNLESS OTHERWISE SPECIFIED » (JP, 21 novembre 2026 : « tolérances générales par
+/* DesignOrbit.ai — the tolerance block of a drawing, « UNLESS OTHERWISE SPECIFIED » (JP, 21 novembre 2026 : « tolérances générales par
    défaut = bloc du cartouche ASME »). Beside the title block, as North American drawings carry it : the unit of the dimensions, the
    tolerance of a dimension by the number of its decimals, the tolerance of an angle, the standard the symbols are read in. The values are
    the project's — one block for all its drawings. The tool proposes EXAMPLE values : they are said as such on the sheet and in the guide

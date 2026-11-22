@@ -1,4 +1,4 @@
-/* DynamiteOrbit — application shell: top bar, hash router (#/module/arg/...), module registry, kernel status,
+/* DesignOrbit.ai — application shell: top bar, hash router (#/module/arg/...), module registry, kernel status,
    project menu, global shortcuts (undo / redo, Ctrl+K wand, paste or drop anything to import). */
 
 import { mountCodeSwitch } from "./code_view.js";
@@ -25,7 +25,7 @@ import { installLoupe } from "./loupe.js";
 import { installUpdateCheck, updateButton } from "./update_check.js";
 import { installWhatsNew, newsButton } from "./whats_new_ui.js";
 
-export const APP_VERSION = "0.177.0";
+export const APP_VERSION = "0.179.0";
 /** What every document of the open project carries beside its content : approval names, organisation, confidentiality note, extraction stamp (core/brand.js). */
 export const docMeta = (when = new Date()) => docIdentity(store.project, when, APP_VERSION);
 const modules = new Map();
@@ -116,8 +116,8 @@ function topbar() {
     menuButton("", session.account && session.account.admin ? "admin" : "user", accountMenu, session.account ? `Compte : ${session.account.email}` : "Compte Google, Drive et thème"),
     updateButton(), newsButton(), guideButton(), el("a", { class: "btn btn-small", href: "#/help", "data-tip": "Aide, raccourcis et guide des collaborateurs" }, icon("help")));
   return el("header", { class: "topbar" },
-    el("a", { class: "brand", href: "#/home", "aria-label": "DynamiteOrbit, accueil" }, icon("logo", "brand-logo"),
-      el("span", { class: "brand-name" }, el("b", null, "Dynamite", el("i", null, "Orbit")), el("small", null, "by DynamiteAgile™"))),
+    el("a", { class: "brand", href: "#/home", "aria-label": "DesignOrbit.ai, accueil" }, icon("logo", "brand-logo"),
+      el("span", { class: "brand-name" }, el("b", null, "DesignOrbit", el("i", null, ".ai")), el("small", null, "by DynamiteAgile™"))),
     tabs, tools);
 }
 export function setStatus(text, cls = "") { const c = document.getElementById("kernel-chip"); if (c) { c.textContent = text; c.className = "chip " + cls; c.title = text; } }
@@ -167,7 +167,7 @@ async function projectMenu(menu, close) {
   menu.append(item("Importer un projet ou une pièce…", "upload", () => app.pickFile && app.pickFile(), close));
   if (session.configured && store.mode !== "drive") menu.append(item("Ouvrir depuis Google Drive…", "cloud", () => app.openFromDrive && app.openFromDrive(), close));
   menu.append(el("hr"));
-  menu.append(el("div", { class: "menu-title" }, store.mode === "server" ? "Serveur local : projets sur le disque" : store.mode === "drive" ? "Projets dans votre Google Drive, dossier « DynamiteOrbit »" : "Mode navigateur : projets gardés dans ce navigateur"));
+  menu.append(el("div", { class: "menu-title" }, store.mode === "server" ? "Serveur local : projets sur le disque" : store.mode === "drive" ? "Projets dans votre Google Drive, dossier « DesignOrbit.ai »" : "Mode navigateur : projets gardés dans ce navigateur"));
 }
 function accountMenu(menu, close) {
   const a = session.account, cur = currentTheme();
@@ -203,7 +203,7 @@ function route() {
     const G = NAV.find((g) => g.id === t.dataset.group), on = !!G && G.keys.includes(shown), n = t.querySelector(".nav-name"); t.classList.toggle("active", on); t.dataset.key = on ? shown : ""; if (n) n.textContent = on && modules.get(shown) ? `${G.label} · ${modules.get(shown).label}` : G ? G.label : ""; });
   document.querySelectorAll(".topbar .nav-pop").forEach((m) => m.remove());
   const m = modules.get(key);
-  document.title = `${m.label} · DynamiteOrbit`;
+  document.title = `${m.label} · DesignOrbit.ai`;
   if (app.levels) app.levels(key, parts.slice(1));      // where this screen stands (Shop → nature → part), before it is drawn : a studio then measures the room it really has
   if (!store.project && !["home", "help", "account"].includes(key)) {
     main.append(el("div", { class: "page" }, el("div", { class: "empty" }, el("h2", null, "Aucun projet ouvert"),

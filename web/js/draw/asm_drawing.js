@@ -1,4 +1,4 @@
-/* DynamiteOrbit — composes the drawing of an ASSEMBLY on a tabloid sheet : the three standard views of the placed
+/* DesignOrbit.ai — composes the drawing of an ASSEMBLY on a tabloid sheet : the three standard views of the placed
    parts in the middle, a small isometric view top right, the notes bottom left, and above the title block — bottom
    right — the parts list. Each part of the list is shown on a view by a round balloon with its item number ; the overall
    dimensions carry their own small balloons, numbered after the items, so that no number is used twice on the sheet.
@@ -81,7 +81,7 @@ function composeSheet(sheet, data) {
   viewLabel(sheet, fx + B.front.w * s / 2, frontY + B.front.h * s + 34, "", `SCALE ${scale[1]}`);
   drawRevisionTable(sheet, frame.x + frame.w, frame.y, revs.slice(-4), { align: "right" });
   drawTitleBlock(sheet, frame, { title: `${say(asm.name) || asm.id}${o.variant ? ` — VARIANT ${say(o.variant)}` : ""}`, partNumber: asm.id, revision: asm.revision || "A", material: "Assembly", finish: "—", mass: massOf(data.mass || 0),
-    scale: scale[1], sheet: "1/1", size: "B (11 × 17)", drawnBy: o.drawnBy || "", checkedBy: o.checkedBy || "", approvedBy: o.approvedBy || "", date: o.date || "", company: o.organisation || "DynamiteOrbit", project: say((project && project.name) || ""),
+    scale: scale[1], sheet: "1/1", size: "B (11 × 17)", drawnBy: o.drawnBy || "", checkedBy: o.checkedBy || "", approvedBy: o.approvedBy || "", date: o.date || "", company: o.organisation || "DesignOrbit.ai", project: say((project && project.name) || ""),
     projection: third ? "third" : "first", units: drawingUnit(), status: o.status || "Preliminary", uos: { lines: uosLines(U, drawingUnit() === "in"), example: !U.sure, std: UOS_STD } });
   /* detail views (JP : « une vue de détail sur un dessin d'assemblage ») : as on a part, a circle drawn on a view becomes a view of its own, in the
      white room left — the views, their balloons and dimensions, the iso view, the parts list, the notes and the title block are not white ;

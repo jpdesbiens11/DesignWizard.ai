@@ -1,4 +1,4 @@
-/* DynamiteOrbit — example project : the Rover, the product that DynamiteAgile carries through its guided tour — an
+/* DesignOrbit.ai — example project : the Rover, the product that DynamiteAgile carries through its guided tour — an
    autonomous learning vehicle built on a 1:16 all-terrain RC chassis. Same parts and part numbers (RVR-…) as its bill of
    materials there : the bought chassis, motor, servo and modules, the three parts the team designs (laser-cut module
    plate, printed enclosure, printed bumper) and the sensors. Every part carries the interfaces that tie it to its
@@ -206,7 +206,7 @@ formSub(MODULES, "RVR-ASM", TRAY, { id: "RVR-ELEC-ASM", name: "Plateau électron
 formSub(MODULES, "RVR-ASM", BUILD.map(([id]) => id).filter((id) => !TRAY.includes(id)), { id: "RVR-ROLL-ASM", name: "Châssis roulant", inst: "roulant" });
 
 export const DEMO_ROVER = {
-  dw: "project/1", id: "demo-rover", name: "Rover — véhicule autonome d'apprentissage (exemple)", author: "DynamiteOrbit",
+  dw: "project/1", id: "demo-rover", name: "Rover — véhicule autonome d'apprentissage (exemple)", author: "DesignOrbit.ai",
   description: "Le Rover de la visite guidée de DynamiteAgile, en 3D : un robot autonome sur un châssis tout-terrain 1:16 — plaque porte-modules découpée au laser, boîtier et pare-chocs imprimés, Raspberry Pi, trois capteurs à ultrasons, un capteur à temps de vol, une centrale inertielle, un capteur à effet Hall, arrêt d'urgence. Mêmes références RVR que sa nomenclature ; les pièces achetées sont des enveloppes indicatives. Le logiciel RVR-SW-001, la boîte RVR-9010-01 et la notice RVR-9020-01 ne sont pas des pièces 3D.",
   parts: PARTS,
   assemblies: MODULES.assemblies,      // RVR-ASM (the two modules and the joint between them), RVR-ELEC-ASM, RVR-ROLL-ASM

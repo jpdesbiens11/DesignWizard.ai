@@ -1,4 +1,4 @@
-/* DynamiteOrbit — "folded" family : a sheet-metal part, a flat base and edges folded at 90° on a press brake.
+/* DesignOrbit.ai — "folded" family : a sheet-metal part, a flat base and edges folded at 90° on a press brake.
    spec.folded = {
      base: [L, W],       // the flat base : min corner at the origin, thickness from z = 0 to z = t
      t,                  // thickness of the sheet

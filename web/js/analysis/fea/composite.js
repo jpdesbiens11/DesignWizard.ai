@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the model and its refinement zones solved as ONE mesh.
+/* DesignOrbit.ai — the model and its refinement zones solved as ONE mesh.
    The cubes of the model the zones took are removed (what is left : the « outside ») ; each zone brings its fine cubes ; on the edge
    of a zone, every fine node is tied to the cube of the outside it sits on — it moves, or warms, as that cube says there (the 8
    weights of its corners). The tied nodes are no unknowns : their stiffness and their loads are carried to the corners that lead

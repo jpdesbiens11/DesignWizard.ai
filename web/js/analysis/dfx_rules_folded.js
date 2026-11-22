@@ -1,4 +1,4 @@
-/* DynamiteOrbit — rules of a folded sheet-metal part (spec.folded) : measured on what the block declares — the inside
+/* DesignOrbit.ai — rules of a folded sheet-metal part (spec.folded) : measured on what the block declares — the inside
    radius, the height of each folded edge, the corner reliefs — and on the holes of the built part, told apart as near a
    bend or near a free edge. Called by the sheet-metal check when the part carries the block ; the limits are the ones of
    the sheet rule book (SM-01, SM-02, SM-03, SM-04, SM-07), typical values of published design guides. */

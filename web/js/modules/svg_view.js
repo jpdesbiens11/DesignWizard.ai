@@ -1,4 +1,4 @@
-/* DynamiteOrbit — a page drawn in SVG that pans and zooms like every 2D view of the tool (core/view_bar.js) : the wheel zooms about the
+/* DesignOrbit.ai — a page drawn in SVG that pans and zooms like every 2D view of the tool (core/view_bar.js) : the wheel zooms about the
    pointer, a drag of the background pans (a click without a drag reaches what is under it), the bar of the view gives − % + · Ajuster · Loupe.
    The page opens fitted, and fits again when the window changes size while one has not zoomed nor moved it.
    Used by the tree of the history (history_tree.js) and the map of the ecosystem (eco_map.js). Draws nothing of its own. */

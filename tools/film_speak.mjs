@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the day the film speaks : what the site publishes goes from « silent, its narration drawn in the picture » to
+/* DesignOrbit.ai — the day the film speaks : what the site publishes goes from « silent, its narration drawn in the picture » to
    « speaking, its subtitles tracks in both languages that stay on with the voice » (web/js/core/captions.js). Not part of the application and not
    run by the tests : it needs the two spoken films, made by tools/film_voice.mjs over pictures rendered with --no-captions.
      node tools/film_speak.mjs <spoken fr.mp4> <spoken en.mp4> [--root folder]

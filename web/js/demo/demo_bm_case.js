@@ -1,4 +1,4 @@
-/* DynamiteOrbit — BM 8s8p - 21700, iteration 10 (JP, 22 novembre 2026, par menu : « fil LV et isolation des îlots, puis boîtier et borne du
+/* DesignOrbit.ai — BM 8s8p - 21700, iteration 10 (JP, 22 novembre 2026, par menu : « fil LV et isolation des îlots, puis boîtier et borne du
    module » ; then « un boîtier extrudé en plastique le long des 8 modules qui contient ces 8 derniers… l'interface des 2 couvercles est vissée
    au casing central — des trous sont extrudés dans la section centrale et des vis autotaraudeuses se font des filets au premier assemblage »).
    What is drawn here : the CASING — a profile of polycarbonate extruded along Y, the 8 CORE slid inside on two floor rails and four side ribs ;

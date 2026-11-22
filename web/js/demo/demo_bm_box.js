@@ -1,4 +1,4 @@
-/* DynamiteOrbit — BM 8s8p - 21700 : the flex of the sensors of a CORE, iteration 12 (JP, 22 novembre 2026 : « maybe instead of a punctual
+/* DesignOrbit.ai — BM 8s8p - 21700 : the flex of the sensors of a CORE, iteration 12 (JP, 22 novembre 2026 : « maybe instead of a punctual
    thermal sensor attached to the flex PCB, there is a way to integrate the thermal measurement into the bottom cell support… a flex PCB that
    slides into the bottom support bracket and reaches for the cell bottom, and the cell sits on top of the sensor location… cone shape but
    part of the flex PCB »).

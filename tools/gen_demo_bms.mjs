@@ -51,7 +51,7 @@ if (process.argv.includes("--dry")) process.exit(0);
 for (const t of b.tracks) { t.pts = t.pts.map((p) => [+p[0].toFixed(3), +p[1].toFixed(3)]); delete t.auto; }
 for (const v of b.vias) delete v.auto;
 const text = toDwiz(b), esc = (s) => s.replace(/\\/g, "\\\\").replace(/`/g, "\\`").replace(/\$\{/g, "\\${");
-const head = "/* DynamiteOrbit — the central BMS board of the module BM 8s8p, written by tools/gen_demo_bms.mjs, from its functions to its copper, in the\n   .dwiz format. Do not edit by hand : change the generator and run it again. */";
+const head = "/* DesignOrbit.ai — the central BMS board of the module BM 8s8p, written by tools/gen_demo_bms.mjs, from its functions to its copper, in the\n   .dwiz format. Do not edit by hand : change the generator and run it again. */";
 const lines = text.split("\n"), half = Math.ceil(lines.length / 2), parts = [lines.slice(0, half).join("\n") + "\n", lines.slice(half).join("\n")];      // two files : each source file stays under 500 lines
 writeFileSync(new URL("../web/js/demo/demo_bms_data.js", import.meta.url), `${head}\nexport const DEMO_BMS_1 = \`${esc(parts[0])}\`;\n`);
 writeFileSync(new URL("../web/js/demo/demo_bms_data2.js", import.meta.url), `${head}\nexport const DEMO_BMS_2 = \`${esc(parts[1])}\`;\n`);

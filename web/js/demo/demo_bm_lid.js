@@ -1,4 +1,4 @@
-/* DynamiteOrbit — BM 8s8p - 21700, iteration 11 a : the RETURN BUSBAR and the TOP LID (JP, 22 novembre 2026 : « un busbar le long du boîtier
+/* DesignOrbit.ai — BM 8s8p - 21700, iteration 11 a : the RETURN BUSBAR and the TOP LID (JP, 22 novembre 2026 : « un busbar le long du boîtier
    extrudé qui se connecte aux 2 couvercles… le 2e couvercle vient fermer la boucle de courant interne, pousse sur les cores pour écraser les
    contacts LV et HV un sur l'autre en série et se lock avec un latch rotatif ; l'interface des 2 couvercles est vissée au casing central… soit
    métal ou plastique robuste supportant les efforts du latch » ; « Go, c'est bien les modifs » — the choices offered : a quarter-turn cam latch,

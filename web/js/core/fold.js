@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the groups of a side panel fold on demand (demande de JP). A studio stacks its groups in its panels ; the one to
+/* DesignOrbit.ai — the groups of a side panel fold on demand (demande de JP). A studio stacks its groups in its panels ; the one to
    work on may be far down. A click on the title of a group folds it — its chevron then points to the right — and what is below comes
    up. Alt + click keeps that group alone open ; a button at the head of the panel folds or unfolds them all ; what is folded stays so
    from one visit to the next (this browser only). A folded group that still waits for a value says so, and the guide opens the group

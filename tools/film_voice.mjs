@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the voice of the film : each line of the narration (tools/film/script.mjs) said by a synthetic voice, set at its time,
+/* DesignOrbit.ai — the voice of the film : each line of the narration (tools/film/script.mjs) said by a synthetic voice, set at its time,
    and laid over the picture. Not part of the application and not run by the tests : it needs ffmpeg, and an ElevenLabs account for the voice.
      node tools/film_voice.mjs voices <fr|en> [--library] [--search words]     the women's voices of the account, or of the shared library
      node tools/film_voice.mjs sample <voice id> <fr|en> <folder>              the first three lines, to listen to before the whole film

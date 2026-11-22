@@ -1,4 +1,4 @@
-/* DynamiteOrbit — starter parts: parametric specs in the part language, used by "Nouvelle pièce" when the user does
+/* DesignOrbit.ai — starter parts: parametric specs in the part language, used by "Nouvelle pièce" when the user does
    not start from an interview. Each is a normal part: every dimension is a parameter, interfaces are ready to mate. */
 
 const P = (value, min, max, label, group = "Enveloppe", step = 1) => ({ value, min, max, step, unit: "mm", label, group });

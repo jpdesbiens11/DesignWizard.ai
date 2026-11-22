@@ -1,4 +1,4 @@
-/* DynamiteOrbit — messages pinned on the 3D. A right click on a face writes a message at that very point of the part ; it
+/* DesignOrbit.ai — messages pinned on the 3D. A right click on a face writes a message at that very point of the part ; it
    shows in the view as a numbered mark, is answered and closed from its card, belongs to the thread of its artefact (Équipe)
    and travels in the mirror like any message. A pin is kept in the coordinates of the part — in an assembly, with the
    instance it was put on, so it follows the part when the assembly moves. Shared by the part studio and the assembly. */

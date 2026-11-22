@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the analytical models stay ALIVE in a spreadsheet : their formulas written for Excel, so that a young
+/* DesignOrbit.ai — the analytical models stay ALIVE in a spreadsheet : their formulas written for Excel, so that a young
    engineer changes a yellow cell offline and reads the answer. Every model has its formulas : here the two flows, and the
    four families gathered — structure, joints, thermal, electrical. A formula names what it reads between braces :
    {key} an input of the model, {p:prop} a property of the fluid, {h:key} an intermediate cell, {o:key} a result,

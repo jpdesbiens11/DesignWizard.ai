@@ -59,7 +59,7 @@ les étiquettes des plans ; depuis la v0.92.0 elle raconte **une histoire que le
 plateforme — un film de marque, plus vivant, en français ou en anglais au choix.
 
 - **Le fil.** Une pièce commence par une question : à quoi doit-elle servir ? Celui qui conçoit le sait, mais il doit le
-  redire à chaque logiciel. DynamiteOrbit est « l'outil qui retient le pourquoi » : on suit la pièce de sa question
+  redire à chaque logiciel. DesignOrbit.ai est « l'outil qui retient le pourquoi » : on suit la pièce de sa question
   jusqu'à la commande, et le film se ferme sur la même phrase — « Une pièce commence par une question. Voici l'outil qui
   se souvient de la réponse. »
 - **L'image montre, la voix raconte.** Dans l'Atelier, l'écran affiche les interfaces à la première personne (« Je me

@@ -1,5 +1,7 @@
-"""Illustrations of DynamiteOrbit (see tools/make_sketch_assets.py): home page journey and empty state. No text."""
-from sketch_marks import ART, BASE, BRIM, HAT, HL, INK, cross, draw_art
+"""Illustrations of DesignOrbit.ai (see tools/make_sketch_assets.py): home page journey and empty state. No text."""
+import math
+
+from sketch_marks import ART, FINS, FLAME, HL, INK, PORTHOLE, ROCKET, cross, draw_art
 from sketch_rough import Pen, scaled, sparkle, star_points
 
 # the product-development journey, left to right: (drawing, scale, centre x, centre y, highlighter)
@@ -31,13 +33,16 @@ def hero_svg():
     p.append(pen.fill(seal, HL["green"], 0.9, 2, 2))
     p.append(pen.stroke(seal, color=INK, width=2.6))
     p.append(pen.stroke(("poly", [(673, 262), (683, 272), (700, 250)], False), color=INK, width=3.6))
-    # the wizard's hat, top left, and the dashed trail of its wand over the whole journey
-    hat = lambda pts: [(x * 1.3 + 10, y * 1.3 + 32) for x, y in pts]  # noqa: E731
-    p.append(pen.fill(("poly", hat(BRIM + BASE[1:2]), True), HL["yellow"], 0.75, 2, 2))
-    p.append(pen.fill(("poly", hat(HAT + BASE[1:2]), True), HL["yellow"], 0.75, 2, 2))
-    for shape in (("curve", hat(HAT[:4]), False), ("curve", hat(HAT[3:]), False), ("curve", hat(BRIM), False),
-                  ("curve", hat(BASE), False)):
+    # the rocket, top left, and the dashed trail of its trajectory over the whole journey
+    turn = math.radians(62)
+    rk = lambda pts: [(16 + 1.25 * ((x - 32) * math.cos(turn) - (y - 30) * math.sin(turn)) + 30,  # noqa: E731
+                       30 + 1.25 * ((x - 32) * math.sin(turn) + (y - 30) * math.cos(turn)) + 30) for x, y in pts]
+    p.append(pen.fill(("poly", rk(FLAME), True), HL["orange"], 0.8, 1.5, 1.5))
+    p.append(pen.fill(("poly", rk(ROCKET), True), HL["yellow"], 0.75, 2, 2))
+    for shape in [("poly", rk(FLAME), True)] + [("poly", rk(f), True) for f in FINS] + [("poly", rk(ROCKET), True)]:
         p.append(pen.stroke(shape, color=INK, width=2.7))
+    cx, cy = rk([PORTHOLE[:2]])[0]
+    p.append(pen.stroke(("ellipse", cx, cy, PORTHOLE[2] * 0.95, PORTHOLE[2] * 0.95), color=INK, width=2.4))
     trail = [(70, 36), (130, 22), (215, 30), (320, 46), (430, 36), (540, 34), (630, 62), (676, 112)]
     p.append(pen.stroke(("curve", trail, False), color=INK, width=1.8, extra=' stroke-dasharray="3 8"'))
     for x, y, r, color in ((216, 30, 13, "yellow"), (432, 36, 16, "yellow"), (632, 62, 12, "cyan")):

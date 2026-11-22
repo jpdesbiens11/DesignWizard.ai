@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the TABLE of the lab : several boards tested together (point 6, JP, 20 novembre 2026 : « Labo à plusieurs cartes : deux
+/* DesignOrbit.ai — the TABLE of the lab : several boards tested together (point 6, JP, 20 novembre 2026 : « Labo à plusieurs cartes : deux
    vues à bascule — la table (cartes posées, appareils dessinés au-dessus, câbles jusqu'aux points d'entrée et de sortie) et le schéma des
    liaisons, où un lien se change (l'outil refuse l'incompatible) ; deux cartes dont les interfaces s'accordent se relient d'office »).
    A board meets another through its CONNECTORS : each pin of a connector (J…) carries a net of the board, with its class and its voltage —

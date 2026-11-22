@@ -1,4 +1,4 @@
-/* DynamiteOrbit — rehearsal of the two-person trial through Google Drive, with a SIMULATED Google : two accounts, each
+/* DesignOrbit.ai — rehearsal of the two-person trial through Google Drive, with a SIMULATED Google : two accounts, each
    with their own Drive, and the « drive.file » rule applied — an application reads a file only if it created it for that
    account, or if the person picked it in the file picker. No file is downloaded by hand. Six stages : share, join by the
    picker, first read by the picker, « Synchroniser » with no picker, a second round, and a read permission that is lost

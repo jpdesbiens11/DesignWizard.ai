@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the AUTOMATIC restore point after an answer of an AI (choice clicked by JP, 20 November 2026 : « des points de restauration
+/* DesignOrbit.ai — the AUTOMATIC restore point after an answer of an AI (choice clicked by JP, 20 November 2026 : « des points de restauration
    datés — manuels, et automatiques après chaque import d'une réponse d'IA »). Whatever door the answer came through — the common loop of a
    studio (modules/ai_loop.js) or the door « Avec l'IA » of the Shop (modules/shop_ai.js) —, an answer applied writes a new first line in
    project.aiJournal ; when that line appears, a point « Après l'IA » is posed. An undo, or the opening of a project, only sets what is known.

@@ -1,4 +1,4 @@
-/* DynamiteOrbit — working together, in mirrors. There is no central copy of a shared project : each member keeps the
+/* DesignOrbit.ai — working together, in mirrors. There is no central copy of a shared project : each member keeps the
    whole project in their own storage (their mirror) and lets the others read it. A member's application reads the mirrors
    of the others and merges what changed into its own — artefact by artefact. Because every mirror is complete, each one is
    also a safety net for the others.

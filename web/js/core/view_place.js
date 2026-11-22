@@ -1,4 +1,4 @@
-/* DynamiteOrbit — placing a feature with the mouse, helped : while a tool is armed, the face under the pointer shows a 5 mm
+/* DesignOrbit.ai — placing a feature with the mouse, helped : while a tool is armed, the face under the pointer shows a 5 mm
    grid, the feature follows as a ghost, the centre line appears when the symmetry axis catches it (so does the line of a
    feature it comes in line with), two dimensions run to the nearer edges, and a window in the top right corner of the view
    gives the coordinates as they change. A click drops the feature there ; Escape lets go ; Alt frees it from every catch.

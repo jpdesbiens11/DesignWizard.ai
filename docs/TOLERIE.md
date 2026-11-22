@@ -1,7 +1,7 @@
 # Tôlerie pliée
 
 Une pièce de tôle pliée est une **base plane** dont certains côtés sont **relevés à la presse plieuse**. Dans
-DynamiteOrbit elle se décrit par un bloc `folded` du langage de pièce : le noyau construit le solide avec ses vrais
+DesignOrbit.ai elle se décrit par un bloc `folded` du langage de pièce : le noyau construit le solide avec ses vrais
 rayons de pliage, la plateforme calcule le **développé à plat** et l'écrit en DXF avec ses lignes de pliage, le DFx
 **mesure** les règles de pliage, la gamme enchaîne la découpe du flan et les plis.
 

@@ -1,4 +1,4 @@
-// DynamiteOrbit - push an assembly (STEP + drawings + metadata) to an Onshape document.
+// DesignOrbit.ai - push an assembly (STEP + drawings + metadata) to an Onshape document.
 // Orchestrates web/js/onshape/api.js. Every step is failure-tolerant: problems are collected in
 // `warnings` (French, with « Correctif : … ») and the push goes on with what can still be done.
 //
@@ -311,7 +311,7 @@ export async function pushToOnshape(job, onProgress, deps) {
     if (!annotations.length) continue;
     tick(5, 'Ajout des notes sur les dessins', entry.name);
     try {
-      const rq = await A.modifyDrawing(did, wid, entry.elementId, { description: 'DynamiteOrbit notes',
+      const rq = await A.modifyDrawing(did, wid, entry.elementId, { description: 'DesignOrbit.ai notes',
         jsonRequests: [{ messageName: 'onshapeCreateAnnotations', formatVersion: '2021-01-01', annotations }] });
       const st = await A.waitModify(did, wid, entry.elementId, rq.requestId, wait);
       const results = (st.output && Array.isArray(st.output.results)) ? st.output.results : [];

@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the marketing render : what each part is finished with, the scene it stands in, the point of view, the
+/* DesignOrbit.ai — the marketing render : what each part is finished with, the scene it stands in, the point of view, the
    size of the picture. A finish is how a surface answers light — a gloss paint, a brushed metal, a matte plastic, a carbon
    weave, a clear shell — with, for some, a fine pattern laid on it ; it is chosen per part (every instance of the part
    wears it) and may carry its own colour. What is not chosen follows the material of the part.

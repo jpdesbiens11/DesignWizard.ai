@@ -100,7 +100,7 @@ test("the model of the link : the frames printed by others, the character, the s
 test("the C driver the tool writes : sober C, marked, and — compiled — it prints what the model says", (t) => {
   const files = cDriver({ board: "NODE-485-PCBA", pins: rs485Links(rs485Board())[0].pins }), by = Object.fromEntries(files.map((f) => [f.name, f.text]));
   assert.deepEqual(files.map((f) => f.name), ["rs485_link.h", "rs485_link.c", "rs485_link_test.c", "rs485_vectors.txt"]);
-  for (const f of files) assert.ok(/DynamiteOrbit\(TM\) by DynamiteAgile\(TM\)/.test(f.text), `${f.name} carries the note of the platform`);
+  for (const f of files) assert.ok(/DesignOrbit.ai\(TM\) by DynamiteAgile\(TM\)/.test(f.text), `${f.name} carries the note of the platform`);
   const h = by["rs485_link.h"], c = by["rs485_link.c"];
   assert.match(h, /#define RS485_BAUD\s+19200u/); assert.match(h, /#define RS485_T15_US\s+859u/); assert.match(h, /#define RS485_T35_US\s+2005u/); assert.match(h, /#define RS485_CHAR_US\s+573u/); assert.match(h, /RS485_UART_TX\s+U2\.PA9\s+-> DI/); assert.match(h, /RS485_UART_RX\s+U2\.PA10\s+<- RO/); assert.match(h, /RS485_DE\s+U2\.PB1\s+-> DE/);
   assert.match(c, /0xFFFFu/); assert.match(c, /0xA001u/); assert.ok(!/malloc|calloc|free\(|#include <stdlib|#include <string/.test(h + c), "no allocation, no library beyond the fixed-width types"); assert.ok(!/\b(int|long|short|unsigned|char)\b(?! \*)/.test(c.replace(/\/\*[\s\S]*?\*\//g, "")), "fixed-width types only in the driver");

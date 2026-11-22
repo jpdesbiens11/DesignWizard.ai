@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""DynamiteOrbit by DynamiteAgile(TM) - local server (Python >= 3.9, standard library only).
+"""DesignOrbit.ai by DynamiteAgile(TM) - local server (Python >= 3.9, standard library only).
 
     python designwizard.py [--port 8070] [--no-browser] [--data DIR]
 
@@ -31,7 +31,7 @@ from urllib.parse import parse_qs, unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parent
 WEB = ROOT / "web"
-APP, VERSION = "DynamiteOrbit", "0.1.0"
+APP, VERSION = "DesignOrbit.ai", "0.1.0"
 MAX_FILE = 60 * 1024 * 1024          # raw file / project body limit
 MAX_IMPORT = 85 * 1024 * 1024        # JSON body of /api/onshape/import (base64 of 60 MB)
 MAX_JSON = 2 * 1024 * 1024
@@ -108,7 +108,7 @@ class ApiError(Exception):
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "DynamiteOrbit/" + VERSION
+    server_version = "DesignOrbit.ai/" + VERSION
     sys_version = ""
     protocol_version = "HTTP/1.1"
     timeout = 120
@@ -454,7 +454,7 @@ class Server(ThreadingHTTPServer):
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description="DynamiteOrbit - serveur local (127.0.0.1 uniquement)")
+    ap = argparse.ArgumentParser(description="DesignOrbit.ai - serveur local (127.0.0.1 uniquement)")
     ap.add_argument("--port", type=int, default=8070, help="port d'écoute (défaut 8070)")
     ap.add_argument("--no-browser", action="store_true", help="ne pas ouvrir le navigateur")
     ap.add_argument("--data", default=None, help="dossier des données (défaut : <repo>/data)")

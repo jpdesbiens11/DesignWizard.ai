@@ -1,4 +1,4 @@
-/* DynamiteOrbit — worker of the isolation analysis: measures clearance and creepage paths off the main thread.
+/* DesignOrbit.ai — worker of the isolation analysis: measures clearance and creepage paths off the main thread.
    Message in: {id, bodies, pairs:[{a, b, x}], opts}. Messages out: {id, progress:{done,total,pair}} then {id, ok, results}. */
 
 import { prepareScene, measurePair } from "./cc_paths.js";

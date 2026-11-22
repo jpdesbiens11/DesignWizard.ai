@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the lamps of the photo studio, on the stage : each light of the list (core/photo_lights.js) is a lamp far
+/* DesignOrbit.ai — the lamps of the photo studio, on the stage : each light of the list (core/photo_lights.js) is a lamp far
    away that shines on the product, the strongest ones with a shadow ; the light from everywhere is a sky that shines from
    above and a ground that sends some of it back. For a picture that refines itself (core/photo_accum.js), sample(i, n) moves
    each lamp inside its own size and looks at the sky from another side : the average is a soft shadow and a dark hollow.

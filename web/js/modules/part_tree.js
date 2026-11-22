@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the operations of a part, in its construction tree : one line each, as before, and what JP asked on top —
+/* DesignOrbit.ai — the operations of a part, in its construction tree : one line each, as before, and what JP asked on top —
    Ctrl + click and Shift + click choose several operations (core/multi_select.js), a bar then says what is done to them at once
    (On / Off, a copy born off, a folder, delete), each as ONE undoable step ; and a FOLDER ranges a run of operations under one
    line that folds (core/folders.js) : folded for the overview, unfolded for the detail. A folder changes nothing in the part —

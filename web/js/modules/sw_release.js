@@ -1,4 +1,4 @@
-/* DynamiteOrbit — Logiciel : the list of delivery, drawn (cycle en V, « 7 Livraison ») — a line per check, a click leads to where it is
+/* DesignOrbit.ai — Logiciel : the list of delivery, drawn (cycle en V, « 7 Livraison ») — a line per check, a click leads to where it is
    settled. The rule is in sw/sw_release.js. */
 
 import { el, icon } from "../core/dom.js";

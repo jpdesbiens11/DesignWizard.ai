@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the only script of the showcase page (vitrine.html), loaded once the film speaks : under each player, the choice of
+/* DesignOrbit.ai — the only script of the showcase page (vitrine.html), loaded once the film speaks : under each player, the choice of
    subtitles — the film's own language (shown from the start, with the voice), the other one, both, none. The choice is written in the
    page, hidden : it shows only when this script is there to make it work ; without it, the subtitles of the film's language still show
    (their track is the default one). Nothing else : no request, nothing stored, nothing measured. */

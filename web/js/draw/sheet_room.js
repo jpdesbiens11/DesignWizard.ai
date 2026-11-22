@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the room left on a sheet. Everything drawn on the first page is inked on a fine grid as it is drawn (a sheet wrapped by
+/* DesignOrbit.ai — the room left on a sheet. Everything drawn on the first page is inked on a fine grid as it is drawn (a sheet wrapped by
    `inked`), the views are inked whole ; then what comes last — a feature control frame and its leader, a detail view — is put where the
    grid is still white, as near as it can to what it belongs to. A frame is never put on a line, a text or a view ; its leader crosses as
    little ink as it can. Pure (browser and Node). */

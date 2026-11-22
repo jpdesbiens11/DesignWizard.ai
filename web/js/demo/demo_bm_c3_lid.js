@@ -1,4 +1,4 @@
-/* DynamiteOrbit — BM 8s8p - 21700, CONCEPT 3 : the TOP LID in blade and fork (JP, 22 novembre 2026, by menu : « Couvercle du haut », then
+/* DesignOrbit.ai — BM 8s8p - 21700, CONCEPT 3 : the TOP LID in blade and fork (JP, 22 novembre 2026, by menu : « Couvercle du haut », then
    « Pinces côté module » — the live side is female : the lid off, the copper under voltage is recessed).
    What changes from concept 1 at the top end :
    - FORK A on the back of the + terminal, FORK B on the back of the tab of the return busbar : horizontal jaws, each with the housing of its

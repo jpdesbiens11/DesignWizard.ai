@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the arrows of a number field, the way a player fast-forwards a show. Everywhere in the application, an arrow adds or
+/* DesignOrbit.ai — the arrows of a number field, the way a player fast-forwards a show. Everywhere in the application, an arrow adds or
    takes away 1 ; hold it, or click quickly, and the change speeds up — ×2, ×5, ×10 — while a small gauge beside the field says the
    speed in force. Typing stays free : any decimal can be written in any field.
    Two halves. The first is pure and tested : the speed for a hold or for a streak of quick clicks, the value after a step. The second

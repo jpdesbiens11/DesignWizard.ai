@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the pilot trial : one hour, eleven stations, for someone who has never seen the tool (essai pilote, choix de JP).
+/* DesignOrbit.ai — the pilot trial : one hour, eleven stations, for someone who has never seen the tool (essai pilote, choix de JP).
    One source for everything that tells the path : the guide of the repository (docs/ESSAI_PILOTE.md), the two documents handed to a
    tester (the path, the feedback sheet — tools/pilot_kit.mjs), and the robot that walks it (tools/pilot_walk.mjs).
    The rule that holds it together : a step names what is on the screen « between quotation marks », and every word so named is in the
@@ -6,7 +6,7 @@
    No figure of gain, no time saved : nobody measured one — the trial is there to find out. Pure. */
 
 export const LINKS = { demo: "https://jpdesbiens11.github.io/DynamiteOrbit.ai/", code: "https://github.com/jpdesbiens11/DynamiteOrbit.ai", issue: "https://github.com/jpdesbiens11/DynamiteOrbit.ai/issues/new/choose" };
-export const PILOT = { minutes: 60, title: "Essai pilote", subtitle: "Une heure avec DynamiteOrbit, sur la démonstration « Variateur compact 400 V »",
+export const PILOT = { minutes: 60, title: "Essai pilote", subtitle: "Une heure avec DesignOrbit.ai, sur la démonstration « Variateur compact 400 V »",
   aim: "Savoir où un nouveau venu hésite, ce qu'il comprend seul et ce qui lui manque en premier. Ce n'est pas un examen de la personne : c'est l'outil que l'on essaie.",
   honest: "L'outil est un logiciel libre en développement actif. Rien de ce qu'il calcule ne remplace la vérification d'un ingénieur ; chaque méthode dit dans l'Aide ce qui a été lu, testé ou repris de mémoire." };
 
@@ -149,7 +149,7 @@ export function clock() { let t = 0; return STATIONS.map((s) => { const from = t
 /** The guide of the repository (docs/ESSAI_PILOTE.md), written from the stations. */
 export function pilotMarkdown() {
   const c = clock(), L = [];
-  L.push("# Essai pilote — une heure avec DynamiteOrbit", "", "> Ce fichier est écrit par `node tools/pilot_kit.mjs --docs` à partir de `tools/pilot/content.mjs` : changez le contenu là, pas ici.", `> Le robot \`tools/pilot_walk.mjs\` suit ce parcours sur l'outil et vérifie que chaque mot cité « entre guillemets » est bien à l'écran.`, "",
+  L.push("# Essai pilote — une heure avec DesignOrbit.ai", "", "> Ce fichier est écrit par `node tools/pilot_kit.mjs --docs` à partir de `tools/pilot/content.mjs` : changez le contenu là, pas ici.", `> Le robot \`tools/pilot_walk.mjs\` suit ce parcours sur l'outil et vérifie que chaque mot cité « entre guillemets » est bien à l'écran.`, "",
     PILOT.aim, "", PILOT.honest, "", "## Avant de commencer", "", ...BEFORE.map((x) => `- ${x}`), "", "## Le parcours", "", "| | Station | Où | Durée |", "|---|---|---|---|",
     ...STATIONS.map((s, i) => `| ${i} | ${s.title} | ${s.screen} | ${c[i].from} – ${c[i].to} min |`), "", `Total : ${total()} minutes.`, "");
   STATIONS.forEach((s, i) => { L.push(`### ${i}. ${s.title} — ${s.minutes} min`, "", `*${s.screen}.* ${s.goal}`, "", ...s.steps.map((x, k) => `${k + 1}. ${x}`), "", `**À remarquer.** ${s.look}`, "", `**À noter sur la fiche.** ${s.ask}`, ""); });

@@ -1,4 +1,4 @@
-/* DynamiteOrbit — Logiciel : the path, STEP BY STEP (demande de JP : « mettre ça pas à pas, comme si la partie logiciel était faite pour
+/* DesignOrbit.ai — Logiciel : the path, STEP BY STEP (demande de JP : « mettre ça pas à pas, comme si la partie logiciel était faite pour
    un étudiant de 16 ans qui va apprendre à faire le logiciel »). Seven steps, in the order one makes software for a board : choose the CPU,
    put and link the objects, set their values, start, simulate live, read the code, load it. Each step says in plain words what one does
    and why, and whether it is done — read from the design, never ticked by hand. The words of the trade a step uses unfold under it.

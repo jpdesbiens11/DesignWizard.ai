@@ -1,4 +1,4 @@
-"""Module marks of DynamiteOrbit (see tools/make_sketch_assets.py; the logo is in tools/sketch_logo.py).
+"""Module marks of DesignOrbit.ai (see tools/make_sketch_assets.py; the logo is in tools/sketch_logo.py).
 
 ART maps a key to a drawing on the same 24-unit grid as the icons: a list of (shape, role). Roles:
   "s" graphite stroke · "t" thin graphite stroke · "d" thin dashed graphite stroke
@@ -207,7 +207,8 @@ def mark_svg(key, accent):
             .format("".join(parts)))
 
 
-# ---------------------------------------------------------------- the wizard's hat of the home illustration (64 grid)
-HAT = [(21, 29), (24.5, 19), (29.5, 10.5), (39.5, 5), (36.5, 11.5), (38.5, 20), (43, 29)]
-BASE = [(21, 29), (32, 32.5), (43, 29)]
-BRIM = [(21, 29), (11.5, 29.5), (10, 33.5), (19, 37), (32, 38.5), (45, 37), (54, 33.5), (52.5, 29.5), (43, 29)]
+# ---------------------------------------------------------------- the rocket of the home illustration (64 grid, nose up)
+ROCKET = [(32, 4), (36.5, 10), (39, 18), (39, 40), (25, 40), (25, 18), (27.5, 10)]
+FINS = [[(25, 30), (17, 40), (17, 46), (25, 40)], [(39, 30), (47, 40), (47, 46), (39, 40)]]
+FLAME = [(27.5, 42), (32, 54), (36.5, 42)]
+PORTHOLE = (32, 22, 4)

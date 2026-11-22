@@ -1,4 +1,4 @@
-/* DynamiteOrbit — Logiciel : the software of an embedded BMS, as OBJECTS one links (demande de JP : « une approche de design logiciel
+/* DesignOrbit.ai — Logiciel : the software of an embedded BMS, as OBJECTS one links (demande de JP : « une approche de design logiciel
    via des objets visuels adaptés qui se codent tout seuls en librairie, module et structure de fichiers pour un CPU de BMS embarqué,
    sachant les in/out à gérer, leurs plages et le CPU choisi » ; choix cliqués : des tuiles reliées, un microcontrôleur de sécurité à
    double cœur d'abord).

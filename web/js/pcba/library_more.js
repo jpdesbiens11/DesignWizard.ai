@@ -1,4 +1,4 @@
-/* DynamiteOrbit — PCBA: more entries of the trade library — what the usual sub-circuits of an embedded board ask for
+/* DesignOrbit.ai — PCBA: more entries of the trade library — what the usual sub-circuits of an embedded board ask for
    beyond the core list of library_parts.js : USB, isolated supply, motor and relay drive, memories, clock, serial
    links, user interface. Same rules : generic classes with the pinout usual for the class, no manufacturer, no
    reference ; the data sheet of the part finally chosen prevails. */

@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the dimension model of a drawing : every dimension the design defines, numbered once and for all the
+/* DesignOrbit.ai — the dimension model of a drawing : every dimension the design defines, numbered once and for all the
    time the part does not change. A drawing shows them either on a view (overall sizes, the basic dimensions that locate a
    bolt pattern) or in a table (the other design parameters, the dimensions of the interfaces, the holes) : in both cases the
    dimension carries a round balloon with its number, and may be classed — normal, reference ( ), special characteristic

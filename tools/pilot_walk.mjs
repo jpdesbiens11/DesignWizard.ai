@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the pilot trial, walked : a robot opens each screen of the path on the demonstration and looks for every word the
+/* DesignOrbit.ai — the pilot trial, walked : a robot opens each screen of the path on the demonstration and looks for every word the
    steps name (tools/pilot/content.mjs). A label that changed makes this walk fail — before a tester meets it. Not part of the
    application and not run by the tests : it needs Playwright and a running server.
      python3 designwizard.py --port 8130 --no-browser --data <an empty folder>

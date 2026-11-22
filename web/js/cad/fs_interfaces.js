@@ -1,4 +1,4 @@
-/* DynamiteOrbit — FeatureScript export (see featurescript.js), family blocks and interfaces: the "extrusion" block (an
+/* DesignOrbit.ai — FeatureScript export (see featurescript.js), family blocks and interfaces: the "extrusion" block (an
    extrude), the "pcb" block (board, holes, one body per component) and the interfaces, recompiled with the logic of
    interfaces.js on symbolic values so that positions, patterns and depths stay expressions of the parameters. */
 

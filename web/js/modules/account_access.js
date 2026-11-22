@@ -1,4 +1,4 @@
-/* DynamiteOrbit — Compte : the access to the hosted demo, said clearly to who administers it (demande de JP : « voir les infos clairement
+/* DesignOrbit.ai — Compte : the access to the hosted demo, said clearly to who administers it (demande de JP : « voir les infos clairement
    pour les comptes ajoutés et leur permission ici en mode admin, c'est trop cryptique »). One line per account : a NAME one gives it — kept
    in this browser only, the public file holds fingerprints and nothing else —, its role in words and what the role allows, and whether the
    line is PUBLISHED or still waits to be. What was added here is kept between two visits until it is published ; what remains to be done
@@ -65,7 +65,7 @@ export async function accessCard(host) {
         btn("ou télécharger", () => download("acces.json", text(), "application/json"), { small: true, icon: "download", tip: "Pour le déposer vous-même dans le dépôt, à la place de web/acces.json" })) : null),
       el("li", null, el("b", null, "Utilisateurs test de Google. "), "Si l'écran de consentement de Google est en mode « Test », seules les adresses de sa liste d'utilisateurs test peuvent se connecter : ajoutez-y l'adresse du compte. L'outil ne peut pas voir cette liste. ",
         el("a", { href: "https://console.cloud.google.com/apis/credentials/consent", target: "_blank", rel: "noopener" }, "Ouvrir l'écran de consentement ↗")),
-      el("li", null, el("b", null, "Le compte se connecte. "), "Sur la page de la démo, « Se connecter avec Google » ; Google lui demande d'autoriser l'application à gérer les fichiers qu'elle crée. Ses projets vont dans SON Google Drive, dossier « DynamiteOrbit » — vous ne les voyez pas, sauf s'il vous les partage.")));
+      el("li", null, el("b", null, "Le compte se connecte. "), "Sur la page de la démo, « Se connecter avec Google » ; Google lui demande d'autoriser l'application à gérer les fichiers qu'elle crée. Ses projets vont dans SON Google Drive, dossier « DesignOrbit.ai » — vous ne les voyez pas, sauf s'il vous les partage.")));
     host.append(todo, el("p", { class: "muted small" }, "La liste publiée ne contient aucune adresse : chaque compte y est une empreinte. Elle vit dans le fichier public ", el("code", null, "web/acces.json"), "."));
   }
 

@@ -8,9 +8,9 @@
 > **For the agent receiving it.** This document is a method to apply, not a text to summarise. Start with "First: where are you?".
 > Annexes A to D are the detail of each part: unfold only the one the request calls for.
 >
-> Source: DynamiteOrbit, MIT licence — folder `skills/ui-ergonomics` of the repository (the same content, as a skill). French original: `skills/ergonomie-ui`.
+> Source: DesignOrbit.ai, MIT licence — folder `skills/ui-ergonomics` of the repository (the same content, as a skill). French original: `skills/ergonomie-ui`.
 
-These rules come from a real application — DynamiteOrbit, a mechatronic design platform written by hand with an
+These rules come from a real application — DesignOrbit.ai, a mechatronic design platform written by hand with an
 agent, under the MIT licence. They were found one request at a time, then written down so that the next screen is
 born with them. This is neither a component library nor a design system: it is **a way of working** and **a
 catalogue of rules**, each with its reason.

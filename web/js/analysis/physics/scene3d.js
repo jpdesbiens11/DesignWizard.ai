@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the simple model of a hand calculation, in 3D : the beam with its wall and its load, the bolt in its
+/* DesignOrbit.ai — the simple model of a hand calculation, in 3D : the beam with its wall and its load, the bolt in its
    two plates, the fins of a heat sink… drawn with the DIMENSIONS THE DESIGNER TYPED, so that a number out of proportion
    shows at once. Pure : it returns solids (as meshes), marks (arrows, supports, heat) and labels ; the screen puts them
    in the 3D view. What is shortened or thickened to stay readable says so in a label.

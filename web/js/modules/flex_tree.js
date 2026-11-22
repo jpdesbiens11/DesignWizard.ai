@@ -1,4 +1,4 @@
-/* DynamiteOrbit — Circuits flexibles : the branched circuit. A wide core, flat — the layer under (or over) a rigid board —
+/* DesignOrbit.ai — Circuits flexibles : the branched circuit. A wide core, flat — the layer under (or over) a rigid board —
    and branches of their own widths that leave it along X or Y and fold toward Z+ or Z− to the points they serve. Left, what
    is entered : the core, the film, the rigid board shown over or under it. Centre, the circuit in 3D : a click chooses a
    branch, a right click on the core starts one toward the nearest edge, the arrows slide and lengthen the chosen one.
@@ -54,7 +54,7 @@ export function kindTiles(pick) {
 const tiles = (cls, items) => el("div", { class: `cf-tiles ${cls}`, role: "group" }, items);
 const tile = (o) => el("button", { class: `cf-tile${o.sel ? " sel" : ""}`, type: "button", "aria-pressed": o.sel ? "true" : "false", "data-tip": o.tip || null, style: `--dom:${o.color}`, onClick: o.run, ...o.data }, o.pic, el("b", null, o.label));
 /** What goes to an AI : the definition alone, behind a short request ; the answer brings the definition back. */
-const request = (spec) => ["Tu es l'assistant de conception de DynamiteOrbit. Voici un circuit flexible ramifié : un cœur large, à plat, et des branches qui le quittent vers les points à mesurer. Seul son bloc « flex » se modifie, la géométrie sera réécrite par la plateforme.",
+const request = (spec) => ["Tu es l'assistant de conception de DesignOrbit.ai. Voici un circuit flexible ramifié : un cœur large, à plat, et des branches qui le quittent vers les points à mesurer. Seul son bloc « flex » se modifie, la géométrie sera réécrite par la plateforme.",
   "ENTREVUE — pose-moi au plus cinq questions, une à la fois : quels points mesurer (tension, température), où ils sont par rapport au cœur (vers X ou Y, plus haut ou plus bas), quelles branches finissent dans une fente clipsée ou sur des plages à braser, la carte rigide est-elle sur ou sous le cœur. Puis résume en trois lignes et attends mon accord.",
   "RÉPONSE ATTENDUE — un seul bloc ```dwiz avec la pièce entière, bloc « flex » à jour : « core » (L, W), « rigid » (side over ou under, t — rien s'il n'y a pas de carte), une ligne « branch » par branche (id, edge +X -X +Y ou -Y, at : sa place le long du bord en mm, w : sa largeur, legs : L puis bend 90 pour un pli vers Z+ et -90 vers Z−, end : temp, volt, slot ou free, net pour une prise de tension, on : ce qu'elle rejoint, tracks). Garde les repères des branches existantes. Après le bloc, liste ce que tu as changé.",
   "", toDwiz(spec).trimEnd()].join("\n");

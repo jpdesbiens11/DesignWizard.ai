@@ -1,4 +1,4 @@
-/* DynamiteOrbit — BM 8s8p - 21700 (demo_bm.js) : the English of every text its drawings write — the names of the parts, their
+/* DesignOrbit.ai — BM 8s8p - 21700 (demo_bm.js) : the English of every text its drawings write — the names of the parts, their
    parameters, their notes and their interfaces (core/drawing_words.js). A test holds that no text is left without its English and no word is
    kept that nobody reads : when the project changes, the words follow. */
 

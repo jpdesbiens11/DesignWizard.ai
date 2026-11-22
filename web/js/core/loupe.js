@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the magnifier (demande de JP). A button turns it on and off — beside the zoom of each view (core/view_bar.js) and in the
+/* DesignOrbit.ai — the magnifier (demande de JP). A button turns it on and off — beside the zoom of each view (core/view_bar.js) and in the
    toolbar of a 3D view ; no longer in the top bar (demande de JP : « ça n'a pas d'affaire là »). While it is on, a round lens
    follows the pointer over every artefact — a drawing, a board, a diagram, a 3D view — and shows what is under it larger, by
    the factor of a short slider beside the button (× 1,5 to × 8). The pointer keeps working through the lens : one clicks, turns

@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the assembly routing of a product, written for the discussion with the prototyping engineers :
+/* DesignOrbit.ai — the assembly routing of a product, written for the discussion with the prototyping engineers :
    which part goes on which, in which order, through which interface, with which screws, tightened how, checked how.
    The sequence comes from the mated interfaces — the fixed part first, then whatever mates with what is already
    there, covers last — and can be reordered by hand (assembly.plan.order). Torques are usual values for class 8.8

@@ -1,4 +1,4 @@
-/* DynamiteOrbit — Équipe : working on one project from several accounts, in mirrors. Each member keeps the whole project
+/* DesignOrbit.ai — Équipe : working on one project from several accounts, in mirrors. Each member keeps the whole project
    in their own storage and hands their mirror to the others ; merging a mirror takes what its owner changed, keeps what
    I changed, and sets aside — for a person to decide — what we both changed. Messages are written on an artefact or on
    the project, call a member with « @name », and travel in the mirror. Route : #/team (and #/team/<artefact> for its thread). */
@@ -127,7 +127,7 @@ function render(main, args) {
     if (!(await signedIn())) return;
     const mail = await promptBox("Partager mon miroir dans Drive", "Adresse Google de la personne", "", "Elle reçoit de Google un lien vers le fichier du projet, en lecture. L'adresse n'est envoyée qu'à Google et n'est pas gardée dans le projet."); if (!mail) return;
     try { const f = await pushMine(); await session.drive.share(f.id, mail.trim());
-      toast(`Partagé : « ${f.name} » est dans ses « Partagés avec moi ». Dans DynamiteOrbit, elle choisit « Rejoindre depuis Drive… » — ou « Lire un miroir dans Drive… » si elle est déjà dans l'équipe.`, "success", 11000);
+      toast(`Partagé : « ${f.name} » est dans ses « Partagés avec moi ». Dans DesignOrbit.ai, elle choisit « Rejoindre depuis Drive… » — ou « Lire un miroir dans Drive… » si elle est déjà dans l'équipe.`, "success", 11000);
     } catch (e) { toast(`Partage impossible : ${e.message}`, "error", 8000); }
   }
   function draw() {

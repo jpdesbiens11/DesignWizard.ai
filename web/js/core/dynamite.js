@@ -1,4 +1,4 @@
-/* DynamiteOrbit — exchange with DynamiteAgile, in its own file format. The functional analysis of a design leaves
+/* DesignOrbit.ai — exchange with DynamiteAgile, in its own file format. The functional analysis of a design leaves
    as a Project Starter file (format "dynamite-project-starter", version 1) : the functional tree, the functional
    structure (inputs, outputs, flows) and the parts on the functions — the "diamond" object that the « Commencer »
    screen of DynamiteAgile reads into Diamond. And the way back : the tree of such a file becomes the functions of a
@@ -29,7 +29,7 @@ export function starterKey(name) {
 export function toProjectStarter(project, o = {}) {
   const functions = [], ports = [], flows = [], parts = [], notes = [], boards = list(project.boards), many = boards.length > 1;
   const first = one(String(project.description || "").split(/(?<=[.!?])\s/)[0], 160);
-  functions.push({ ref: "F0", text: first || one(`Remplir la fonction du produit ${project.name || ""}`, 160), type: "usage", parent: null, notes: one(`Fonction primaire du produit « ${project.name || ""} », exportée de DynamiteOrbit : à reformuler par l'équipe (un verbe et un complément).`, 1500) });
+  functions.push({ ref: "F0", text: first || one(`Remplir la fonction du produit ${project.name || ""}`, 160), type: "usage", parent: null, notes: one(`Fonction primaire du produit « ${project.name || ""} », exportée de DesignOrbit.ai : à reformuler par l'équipe (un verbe et un complément).`, 1500) });
   const top = new Map();                                        // board function id → ref of its secondary ancestor, per board
   boards.forEach((b, n) => {
     const pre = many ? `C${n + 1}-` : "", ref = (id) => one(`${pre}${id}`, 24), fns = list(b.functions), byId = new Map(fns.map((f) => [f.id, f])), depth = (f) => (f.parent && byId.has(f.parent) ? depth(byId.get(f.parent)) + 1 : 2);
@@ -62,7 +62,7 @@ export function toProjectStarter(project, o = {}) {
   }
   for (const [k, arr] of [["functions", functions], ["ports", ports], ["flows", flows], ["parts", parts]]) if (arr.length > LIMITS[k]) { notes.push(`${k} : ${arr.length} éléments, ${LIMITS[k]} gardés (limite du format)`); arr.length = LIMITS[k]; }
   const kept = new Set(functions.map((f) => f.ref)), ends = new Set([...kept, ...ports.map((p) => p.ref)]);
-  const file = { format: STARTER_FORMAT, format_version: STARTER_VERSION, language: "fr", generated_by: "DynamiteOrbit", generated_at: (o.date || new Date()).toISOString().slice(0, 10),
+  const file = { format: STARTER_FORMAT, format_version: STARTER_VERSION, language: "fr", generated_by: "DesignOrbit.ai", generated_at: (o.date || new Date()).toISOString().slice(0, 10),
     project: { key: starterKey(o.key || project.name), name: one(project.name, 120) || "Produit", description: one(project.description, 4000) },
     diamond: { functions: functions.filter((f) => f.parent === null || kept.has(f.parent)), ports, flows: flows.filter((f) => ends.has(f.src) && ends.has(f.dst)), parts: parts.map((p) => ({ ...p, functions: p.functions.filter((r) => kept.has(r)) })) } };
   return { file, notes };

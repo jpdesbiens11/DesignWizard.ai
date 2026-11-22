@@ -1,15 +1,17 @@
-"""Logo of DynamiteOrbit (see tools/make_sketch_assets.py and docs/BRAND.md): constructed, not hand-drawn.
+"""Logo of DesignOrbit.ai (see tools/make_sketch_assets.py and docs/BRAND.md): constructed, not hand-drawn.
 
-The mark is a draughtsman's compass that is also a wizard's hat, on a 64-unit grid (module 8):
-  pivot P = (32, 15); the two legs go to (12, 51) and (52, 51); the brim is the arc the compass traces, a circle centred
-  on P whose radius is the leg length, swept 14° beyond each leg; the spark is a four-point star centred on P.
+The mark is a draughtsman's compass and the rocket that leaves it, on a 64-unit grid (module 8):
+  pivot P = (32, 15); the two legs go to (12, 51) and (52, 51); the orbit is the arc the compass traces, a circle centred
+  on P whose radius is the leg length, swept 14° beyond each leg; the rocket (the figure of web/js/core/brand.js turned
+  40°) leaves the pivot on a dotted trajectory, seven dots 6 apart along the curve M5 38 Q9 14 38 12.
+The numbers are the ones of LOGO in web/js/core/brand.js: a test holds web/img/logo/mark.svg equal to logoSvg().
 The words are drawn with a single-stroke technical lettering (cap height 10, x-height 7, bowls of radius 3.5), so the
 images contain no <text> and look the same on every machine. No randomness here: the output is deterministic.
 """
 import math
 
 INK, BLUE, YELLOW, PAPER, MUTED = "#26323f", "#0c66e4", "#ffd23f", "#fcfbf7", "#5e6c84"
-P, TIP, WIDTH, STAR_R = (32, 15), (12, 51), 6, 13
+P, TIP = (32, 15), (12, 51)
 RADIUS = math.hypot(TIP[0] - P[0], TIP[1] - P[1])
 LEG_ANGLE = math.degrees(math.atan2(TIP[0] - P[0], TIP[1] - P[1]))  # from the vertical, negative = left leg
 OVERHANG = 14
@@ -24,34 +26,33 @@ def _on_circle(deg_from_vertical, r=RADIUS):
     return (P[0] + r * math.sin(a), P[1] + r * math.cos(a))
 
 
-def star_d(cx, cy, r, waist=0.3):
-    pts = []
-    for i in range(8):
-        a, k = math.pi * i / 4 - math.pi / 2, (r if i % 2 == 0 else r * waist)
-        pts.append("{} {}".format(f(cx + k * math.cos(a)), f(cy + k * math.sin(a))))
-    return "M" + "L".join(pts) + "Z"
+ORANGE = "#ff8f4a"
+LEGS = [(26.6, 24.72, 12, 51), (37.4, 24.72, 52, 51)]
+ARC_D = "M60.12 45.09A41.18 41.18 0 0 1 3.88 45.09"
+DOTS, DOT_R = [(5, 38), (6.45, 32.17), (8.93, 26.73), (12.54, 21.96), (17.14, 18.14), (22.44, 15.35), (28.15, 13.49)], 1.5
+FLAME = [(39.99, 16.81), (37.72, 23.26), (43.67, 19.9)]
+FINS = [[(43.19, 9.58), (37.39, 10.58), (34.49, 14.03), (39.33, 14.17)], [(50.24, 15.49), (50.26, 21.38), (47.36, 24.83), (46.38, 20.09)]]
+ROCKET = [(55.71, 1.81), (55.46, 6.16), (53.79, 10.64), (51.52, 13.96), (46.38, 20.09), (39.33, 14.17), (44.48, 8.04), (47.35, 5.24), (51.47, 2.82)]
 
 
-def mark_body(leg=INK, arc=BLUE, star=YELLOW, star_edge=INK):
-    """SVG fragment of the mark on its 64 × 64 grid. Colours may be 'currentColor' or 'var(--acc, …)'."""
-    parts = []
-    for side in (-1, 1):
-        x1, y1 = _on_circle(side * abs(LEG_ANGLE), RADIUS * 0.27)  # the legs start under the spark
-        x2, y2 = _on_circle(side * abs(LEG_ANGLE))
-        parts.append('<path d="M{} {}L{} {}" fill="none" stroke="{}" stroke-width="{}" stroke-linecap="round"/>'.format(
-            f(x1), f(y1), f(x2), f(y2), leg, WIDTH))
-    (ax, ay), (bx, by) = _on_circle(abs(LEG_ANGLE) + OVERHANG), _on_circle(-abs(LEG_ANGLE) - OVERHANG)
-    parts.append('<path d="M{} {}A{r} {r} 0 0 1 {} {}" fill="none" stroke="{}" stroke-width="{}" stroke-linecap="round"/>'.format(
-        f(ax), f(ay), f(bx), f(by), arc, WIDTH, r=f(RADIUS)))
-    edge = ' stroke="{}" stroke-width="2" stroke-linejoin="round"'.format(star_edge) if star_edge else ""
-    parts.append('<path d="{}" fill="{}"{}/>'.format(star_d(P[0], P[1], STAR_R), star, edge))
-    return "".join(parts)
+def mark_body(leg=INK, arc=BLUE, body=YELLOW, edge=INK, fin=None, flame=ORANGE):
+    """SVG fragment of the mark on its 64 × 64 grid. Colours may be 'currentColor' or 'var(--acc, …)'; edge=None: no outline."""
+    fin = fin or edge or leg
+    pts = lambda p: "L".join("{} {}".format(f(x), f(y)) for x, y in p)  # noqa: E731
+    out = ['<path d="M{}" fill="none" stroke="{}" stroke-width="6" stroke-linecap="round"/>'.format(pts([(x1, y1), (x2, y2)]), leg)
+           for x1, y1, x2, y2 in LEGS]
+    out.append('<path d="{}" fill="none" stroke="{}" stroke-width="6" stroke-linecap="round"/>'.format(ARC_D, arc))
+    out += ['<circle cx="{}" cy="{}" r="{}" fill="{}"/>'.format(f(x), f(y), f(DOT_R), arc) for x, y in DOTS]
+    line = ' stroke="{}" stroke-width="2" stroke-linejoin="round"'.format(edge) if edge else ""
+    for shape, fill in [(FLAME, flame)] + [(fn, fin) for fn in FINS] + [(ROCKET, body)]:
+        out.append('<path d="M{}Z" fill="{}"{}/>'.format(pts(shape), fill, line))
+    return "".join(out)
 
 
 # ---------------------------------------------------------------- single-stroke lettering: glyph → (advance, path)
 BOWL = "M7 -3.5A3.5 3.5 0 1 0 0 -3.5A3.5 3.5 0 1 0 7 -3.5"
 GLYPHS = {
-    "D": (7.5, "M0 -10V0H2.5A5 5 0 0 0 2.5 -10H0"), "W": (12, "M0 -10L3 0L6 -8.2L9 0L12 -10"), "A": (8.4, "M0 0L4.2 -10L8.4 0M1.5 -3.4H6.9"),
+    "D": (7.5, "M0 -10V0H2.5A5 5 0 0 0 2.5 -10H0"), "O": (8.6, "M4.3 -10A4.3 5 0 1 0 4.3 0A4.3 5 0 1 0 4.3 -10"), "W": (12, "M0 -10L3 0L6 -8.2L9 0L12 -10"), "A": (8.4, "M0 0L4.2 -10L8.4 0M1.5 -3.4H6.9"),
     "a": (7, BOWL + "M7 -7V0"), "b": (7, "M0 -10V0" + BOWL), "d": (7, BOWL + "M7 -10V0"),
     "e": (7, "M0 -3.5H7A3.5 3.5 0 1 0 5.97 -1.03"), "g": (7, BOWL + "M7 -7V0A3.5 3.5 0 0 1 .47 1.75"),
     "i": (0, "M0 -7V0M0 -9.8V-9.7"), "l": (0, "M0 -10V0"), "m": (10, "M0 -7V0M0 -4.5A2.5 2.5 0 0 1 5 -4.5V0M5 -4.5A2.5 2.5 0 0 1 10 -4.5V0"),
@@ -81,18 +82,18 @@ def lettering(text, x, y, scale, color, weight=1.7):
 
 
 def words(x, y, scale, ink=INK, accent=BLUE, muted=MUTED, center=False):
-    """« DynamiteOrbit » with « by DynamiteAgile™ » under it, starting at x; y = baseline of the name."""
+    """« DesignOrbit.ai » with « by DynamiteAgile™ » under it, starting at x; y = baseline of the name."""
     sub = scale * 0.46
-    name_w = text_width("DesignWizard") * scale
-    out = lettering("DesignWizard", x, y, scale, ink) + lettering(".ai", x + name_w + TRACK * scale, y, scale, accent)
+    name_w = text_width("DesignOrbit") * scale
+    out = lettering("DesignOrbit", x, y, scale, ink) + lettering(".ai", x + name_w + TRACK * scale, y, scale, accent)
     by_w = text_width("by DynamiteAgile") * sub
-    sx = x + (text_width("DynamiteOrbit") * scale - by_w - 9 * sub) / 2 if center else x
+    sx = x + (text_width("DesignOrbit.ai") * scale - by_w - 9 * sub) / 2 if center else x
     sy = y + 3.8 * scale + 10 * sub
     return out + lettering("by DynamiteAgile", sx, sy, sub, muted, 1.5) + lettering("™", sx + by_w + 1.6 * sub, sy, sub, muted, 1.1)
 
 
 def svg(w, h, body, extra=""):
-    return ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {} {}" role="img" aria-label="DynamiteOrbit"{}>{}</svg>'
+    return ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {} {}" role="img" aria-label="DesignOrbit.ai"{}>{}</svg>'
             .format(w, h, extra, body))
 
 
@@ -101,43 +102,43 @@ def mark_svg():
 
 
 def mark_mono_svg():
-    return svg(64, 64, mark_body("currentColor", "currentColor", "currentColor", None))
+    return svg(64, 64, mark_body("currentColor", "currentColor", "currentColor", None, "currentColor", "currentColor"))
 
 
 def favicon_svg():
     """The mark, reversed on a graphite tile: stays legible on light and dark browser tabs down to 16 px."""
     tile = '<rect x="1" y="1" width="62" height="62" rx="14" fill="{}"/>'.format(INK)
-    return svg(64, 64, tile + '<g transform="translate(7 7.5) scale(.78)">{}</g>'.format(mark_body(PAPER, PAPER, YELLOW, None)))
+    return svg(64, 64, tile + '<g transform="translate(7 7.5) scale(.78)">{}</g>'.format(mark_body(PAPER, PAPER, YELLOW, None, PAPER)))
 
 
 def logo_symbol():
     """<symbol id="i-logo"> of the sprite: follows the theme (currentColor) and the module accent (--acc)."""
     return '<symbol id="i-logo" viewBox="0 0 64 64">{}</symbol>'.format(
-        mark_body("currentColor", "currentColor", "var(--acc, {})".format(YELLOW), "currentColor"))
+        mark_body("currentColor", "currentColor", "var(--acc, {})".format(YELLOW), "currentColor", "currentColor", "var(--acc, {})".format(ORANGE)))
 
 
 def wordmark_svg():
     scale = 2.6
-    width = 64 + 16 + text_width("DynamiteOrbit") * scale + 8
+    width = 64 + 16 + text_width("DesignOrbit.ai") * scale + 8
     return svg(f(width), 64, mark_body() + words(80, 33, scale))
 
 
 def stacked_svg():
     scale = 2.3
-    w = text_width("DynamiteOrbit") * scale + 16
+    w = text_width("DesignOrbit.ai") * scale + 16
     body = '<g transform="translate({} 0) scale(1.25)">{}</g>'.format(f(w / 2 - 40), mark_body()) + words(8, 116, scale, center=True)
     return svg(f(w), 150, body)
 
 
 def construction_svg():
-    """The construction of the mark for docs/BRAND.md: module grid, pivot circle, leg and overhang angles, clear space."""
+    """The construction of the mark for docs/BRAND.md: module grid, orbit circle, trajectory, leg and overhang angles, clear space."""
     g = ['<rect x="-16" y="-16" width="96" height="96" fill="{}"/>'.format(PAPER)]
     for k in range(0, 65, 8):
         g.append('<path d="M{0} 0V64M0 {0}H64" stroke="{1}" stroke-opacity=".28" stroke-width=".35"/>'.format(k, BLUE))
     g.append('<rect x="0" y="0" width="64" height="64" fill="none" stroke="{}" stroke-width=".5"/>'.format(BLUE))
     g.append('<rect x="-8" y="-8" width="80" height="80" fill="none" stroke="{}" stroke-width=".4" stroke-dasharray="2 2"/>'.format(MUTED))
     g.append('<circle cx="{}" cy="{}" r="{}" fill="none" stroke="{}" stroke-width=".4" stroke-dasharray="1.5 1.5"/>'.format(P[0], P[1], f(RADIUS), INK))
-    g.append('<circle cx="{}" cy="{}" r="{}" fill="none" stroke="{}" stroke-width=".4" stroke-dasharray="1.5 1.5"/>'.format(P[0], P[1], STAR_R, INK))
+    g.append('<path d="M5 38Q9 14 38 12L47 7" fill="none" stroke="{}" stroke-width=".4" stroke-dasharray="1.5 1.5"/>'.format(INK))
     for deg in (abs(LEG_ANGLE) + OVERHANG, -abs(LEG_ANGLE) - OVERHANG, 0):
         x, y = _on_circle(deg, RADIUS + 5)
         g.append('<path d="M{} {}L{} {}" stroke="{}" stroke-width=".4" stroke-dasharray="3 1 .6 1"/>'.format(P[0], P[1], f(x), f(y), INK))

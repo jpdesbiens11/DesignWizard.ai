@@ -799,7 +799,7 @@ le concept 1 tel quel.
   (modèle « poutre encastrée, charge répartie », gardé sur la branche). Le modèle avertit que la poutre est courte (L / h = 8) : la flèche
   réelle est un peu plus grande — la marge de 2 la couvre.
 
-**Le couvercle du haut** (JP, par menu : « Couvercle du haut », puis « Pinces côté module », v0.177.0 — un second point sur la branche,
+**Le couvercle du haut** (JP, par menu : « Couvercle du haut », puis « Pinces côté module », v0.179.0 — un second point sur la branche,
 P4) : **le côté sous tension est femelle**, comme l'usage le veut — couvercle retiré, le cuivre du module reste en retrait.
 
 - **La pince A** au dos de la borne +, en haut (au-dessus de sa plaque d'appui), **la pince B** au dos de la languette du busbar de retour :

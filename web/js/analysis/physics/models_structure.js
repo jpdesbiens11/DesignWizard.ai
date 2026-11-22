@@ -1,4 +1,4 @@
-/* DynamiteOrbit — Physique, structure (1/2): straight beams (4 load cases), Euler / Johnson column, torsion of a
+/* DesignOrbit.ai — Physique, structure (1/2): straight beams (4 load cases), Euler / Johnson column, torsion of a
    round shaft. Inputs in mm, N, N.m, GPa, MPa, kg/m3; stresses computed in MPa (N/mm2). */
 
 import { PI, SHEAR, n, sheet, num, opt, out, sectionInputs, sectionProps, MAT, GEO, LOAD, CRIT } from "./models_core.js";

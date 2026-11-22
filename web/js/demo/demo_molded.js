@@ -1,4 +1,4 @@
-/* DynamiteOrbit — two TEACHING EXAMPLES of moulded parts (point 14 of the plan agreed with JP : « une pièce plastique moulée par injection
+/* DesignOrbit.ai — two TEACHING EXAMPLES of moulded parts (point 14 of the plan agreed with JP : « une pièce plastique moulée par injection
    complexe — ribs, parting line, points d'injection (gates), dépouilles — et une pièce die cast haute pression… on doit voir le flux complet de
    la pièce : conception, gamme animée, puis le dessin 2D et les artéfacts destinés au fournisseur »).
    Each part is made to SHOW the rules of its process, by their principles — no model, drawing or brand copied :

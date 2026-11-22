@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the special processes of the Shop : what a precision laser cut asks of each SHEET material, and what
+/* DesignOrbit.ai — the special processes of the Shop : what a precision laser cut asks of each SHEET material, and what
    3D printing asks of each MATERIAL. One source for the Shop, the DFx rule book, the routing sheet and the words handed to
    an AI. (Moulding and extrusion, the two other special processes, keep their own rules : shop_mold.js, shop_extrusion.js.)
    Figures are TYPICAL values of published design guides, machine makers and standards — see SOURCES, and `basis` on each
@@ -216,9 +216,9 @@ export function processSheet(process, materialId, t) {
     screen of the special processes. kind : "laser" | "impression". */
 export function processBrief(kind, materials) {
   const list = materials || [], head = kind === "laser"
-    ? ["Voici ce que la DÉCOUPE LASER DE PRÉCISION demande à chaque matière en feuille, tel que la plateforme DynamiteOrbit l'applique (règles LAS-01 à LAS-06).",
+    ? ["Voici ce que la DÉCOUPE LASER DE PRÉCISION demande à chaque matière en feuille, tel que la plateforme DesignOrbit.ai l'applique (règles LAS-01 à LAS-06).",
       "Quand tu proposes ou modifies une pièce découpée (process « laser_cut »), respecte ces limites : matière et laser, épaisseur dans la série du commerce, plus petits trous, fentes et ponts, angles rentrants, état du bord. Dis ce que tu n'as pas pu respecter."]
-    : ["Voici ce que l'IMPRESSION 3D demande à chaque matière, tel que la plateforme DynamiteOrbit l'applique (règles HSG- et AM-10 à AM-17).",
+    : ["Voici ce que l'IMPRESSION 3D demande à chaque matière, tel que la plateforme DesignOrbit.ai l'applique (règles HSG- et AM-10 à AM-17).",
       "Quand tu proposes ou modifies une pièce imprimée (process « fdm », « mjf », « sla » ou « lpbf »), respecte ces limites : procédé de la matière, parois, trous, surplombs et supports, cavités ouvertes, surfaces reprises en usinage, chaîne après impression. Dis ce que tu n'as pas pu respecter."];
   const out = [...head, "Valeurs typiques de guides publiés : le fournisseur et la fiche de la matière font foi.", ""];
   for (const m of list) {
