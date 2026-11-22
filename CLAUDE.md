@@ -123,6 +123,38 @@ Consignes permanentes de JP (propriétaire du dépôt). Elles s'appliquent à to
   et ce qui a été lu (`basis`). Aucun dessin ni modèle 3D de fabricant n'entre dans le dépôt. Toute nouvelle famille
   arrive avec sa série.
 
+## Liste de travail — méthode GTD (JP, 22 novembre 2026)
+
+Demande de JP : « au fur et à mesure que j'ajoute du travail, établissons la priorité à chaque ajout pour descendre la liste
+avec la méthode GTD de David Allen ». **Chaque demande de JP est capturée ici le jour même**, clarifiée (ce que c'est, la
+prochaine action concrète), rangée dans l'une des quatre listes, **sa priorité proposée par menu** (la conseillée en
+premier) ; on descend « Prochaines actions » dans l'ordre ; ce qui est fait se raye et descend dans la « Suite convenue »
+plus bas, avec sa version. Une revue de la liste se fait à chaque reprise de séance.
+
+**Prochaines actions** (dans l'ordre)
+1. **Interview de JP** : son idée pour l'interface des batteries avec le boîtier — ce que c'est, ce qu'elle fait avec
+   l'interface des blocs (les CORE, le + et le −), l'analogie sur laquelle on s'appuie ; et les couvercles du fond et du
+   haut retravaillés « comme les produits grand public, plus compacts ». Attendre ses autres idées avant de construire.
+2. **Historique : effacer un point de sauvegarde** un à un — les points d'après se rattachent au point d'avant ; une
+   branche qui n'avait que ce point meurt et l'on revient à MAIN (JP : « je veux dorénavant être capable d'effacer ces
+   points de sauvegarde individuellement… »). Remplace la règle « rien n'est effacé » pour les points.
+3. **BM — concept 2** : un point de sauvegarde de MAIN, puis une branche parallèle **« concept 2 - consumer product
+   interface »** ; on y commence l'interface + / − des **CORE 2.0** et les couvercles compacts, d'après l'interview.
+
+**En attente** (de JP) : les réponses de l'interview ci-dessus.
+
+**Un jour / peut-être** (les « Reste », à reprioriser à la demande)
+- BM : **lobe des vis élargi à Ø 10 mm** (JP : « garder en note le 10 mm dans la liste des choses à implanter ») ; le
+  logement de la carte BMS centrale (repris par le concept 2) ; les objets « Communiquer » (chaîne RS-485, CAN) ; les
+  exigences et les essais du V du logiciel BM.
+- Onduleur : liaisons AC, refroidissement, vis, cartes dans le PCBA.
+- Labo : un bouton qui relance la simulation au moment du clic ; déplacer un cordon au clavier ; essai au toucher,
+  Firefox, Safari ; la plaque d'essai vérifiée sur la carte entière à plusieurs alimentations.
+- Partage par Drive d'un clic ; animation sur un chemin de caméra.
+- Le logiciel dans une réponse de la porte « Avec l'IA ».
+- Dessins : la liste des cotes en anglais du bloc pour un dessin ISO.
+- Bibliothèque pour un BMS polyvalent (point 6).
+
 ## Suite convenue avec JP (menus du 19 et du 20 novembre 2026)
 
 L'ordre et les choix ci-dessous ont été confirmés par JP, un clic par question. Une session qui reprend continue dans cet
