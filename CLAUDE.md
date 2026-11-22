@@ -3,8 +3,9 @@
 Le produit s'appelle **DesignOrbit.ai** (JP, 22 novembre 2026, par menu ; anciennement DesignWizard.ai, puis DynamiteOrbit le
 même jour). Le dépôt GitHub s'appelle `jpdesbiens11/DynamiteOrbit.ai` et la démo est à
 https://jpdesbiens11.github.io/DynamiteOrbit.ai/ — des adresses, pas le nom du produit. Gardent l'ancien nom, pour ne rien
-casser : le dossier « DesignWizard.ai » du Google Drive de JP (communications), le format `.dwiz`, les réglages gardés du
-navigateur (`dw.*`), le fichier `designwizard.py`, le film et la bande-annonce tant que leur voix n'est pas refaite.
+casser : le format `.dwiz`, les réglages gardés du
+navigateur (`dw.*`), le fichier `designwizard.py`, le film et la bande-annonce tant que leur voix n'est pas refaite. Le dossier du
+Google Drive de JP s'appelle **« DesignOrbit.ai »** (JP, par menu, 22 novembre : renommé ; l'application le retrouve par sa propriété).
 
 Consignes permanentes de JP (propriétaire du dépôt). Elles s'appliquent à toute session. (Le nom DynamiteOrbit, posé en v0.174.0 parce que DesignWizard.ai était pris, et son symbole « l'éclair mis en orbite » de v0.177.0 sont remplacés en v0.178.0 par DesignOrbit.ai et la fusée du compas — JP, par menu, après qu'on lui eut montré le nom déjà publié.)
 
@@ -19,13 +20,13 @@ Consignes permanentes de JP (propriétaire du dépôt). Elles s'appliquent à to
   évidente : choisir, le dire, continuer.
 - Dire ce qui est vérifié et ce qui ne l'est pas ; ne jamais annoncer comme fait ce qui n'a pas tourné.
 - **Communications et marketing** (demande de JP) : la présentation, les communications et le matériel marketing sont
-  déposés dans le Google Drive de JP, au fur et à mesure qu'ils sont produits, dans « DesignWizard.ai » →
+  déposés dans le Google Drive de JP, au fur et à mesure qu'ils sont produits, dans « DesignOrbit.ai » →
   « Communications et marketing » (rangé là à sa demande, le 19 novembre 2026, pour tout trouver au même endroit).
   **Rien en vrac** : chaque fichier va dans le sous-dossier de son sujet — `Présentations` (la plus récente en tête),
   `Communications` (`Essai pilote`, `Anglais des dessins`), `Marketing` (`Kit de lancement`, `Vidéo`, `Studio photo`,
   `Labo`, `Simulation`), `Storyline` ; un nouveau sujet = un nouveau sous-dossier ; ce qu'une version remplace descend dans
   « Versions précédentes », rien n'est supprimé. Fichiers nommés `Sujet_AAAA-MM-JJ` ; le `LISEZ-MOI.txt` du dossier dit
-  le rangement et tient le journal. Les autres dossiers de « DesignWizard.ai » (projets, pièces, révisions) et son
+  le rangement et tient le journal. Les autres dossiers de « DesignOrbit.ai » (projets, pièces, révisions) et son
   LISEZ-MOI sont l'arbre de travail de l'application : ne rien y déposer ni y déplacer. Le connecteur Drive refuse un
   fichier de plus de 3 Mo environ : le dire à JP, ne pas contourner sans son accord.
 
@@ -197,7 +198,7 @@ sorcier (icône `wizard`) devient une **tour de lancement et sa fusée** ; **tou
 garde son crayonné** ; le logo devient **L3 — la fusée quitte le compas sur sa trajectoire**, une seule figure (`LOGO`,
 `logoShapes` de `web/js/core/brand.js`, les mêmes nombres dans `tools/sketch_logo.py`, tenus égaux par un essai) ; le produit
 s'appelle **DesignOrbit.ai**. Reste : refaire la voix et les sous-titres du film et de la bande-annonce (ils disent
-« DesignWizard.ai »), reprendre les captures de la visite (`web/img/tour`), renommer l'application sur l'écran de
+« DesignWizard.ai »), ~~reprendre les captures de la visite (`web/img/tour`)~~ — fait, avec le matériel du dossier « Communications et marketing » refait au nom DesignOrbit.ai, renommer l'application sur l'écran de
 consentement de Google (Google Cloud Console : à faire par JP) ; peut-être renommer le dépôt « DesignOrbit.ai ».
 
 **Un jour / peut-être** (les « Reste », à reprioriser à la demande)
