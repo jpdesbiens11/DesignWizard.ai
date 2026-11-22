@@ -667,6 +667,58 @@ en attendant les objets « Communiquer » (la trame RS-485 et le CRC existent, `
 l'état n'est pas encore envoyé au véhicule (objet CAN à venir) ; les seuils sont des exemples, à confirmer ; les exigences et les
 essais du cycle en V de ce logiciel sont à écrire ; aucun microcontrôleur n'a fait tourner ce C.
 
+## Concept 2 — « consumer product interface » (branche de l'historique)
+
+Demande de JP (22 novembre 2026) : « retravailler l'interface couvercle du fond et couvercle avec latch du haut pour
+imiter les concepts actuels plus compacts des consumer products… on commence le design de l'interface +/− des Core 2.0,
+commence un point de sauvegarde du MAIN et fait une branche parallèle (concept 2 - consumer product interface) ».
+Ses documents (ses notes de recherche, lues ; aucune fiche de fabricant lue ici) : le compartiment à piles d'un produit
+grand public — le − à ressort qui rattrape les tolérances, le + rigide à bossage qui est la butée ; pour la puissance,
+des bandes à lamelles plutôt que des ressorts à spires ; une poignée rotative clavetée sur une came de face qui presse
+l'empilement. Ses réponses, par menu (les choix conseillés) : les CORE en ligne et pressés, des bandes à lamelles sur
+la face − de chaque CORE, une poignée quart de tour à came double lobe, le couvercle du fond actif.
+
+**Dans l'outil** : le projet BM garde le concept 1 sur MAIN (point P1 « Concept 1 — itération 15 ») et porte le concept 2
+sur la branche « concept 2 - consumer product interface » (point P2). La carte de l'accueil ouvre le projet sur la
+branche, à l'assemblage `BM2-MODULE-ASM` ; « Revenir à MAIN » (Produit › Historique) ramène le concept 1.
+`web/js/demo/demo_bm_c2.js` (pièces, assemblages, `C2`, `camLayout`), `withConceptTwo` de `demo_bm.js`.
+
+**Le CORE 2.0** : les 8 cellules en parallèle couchées le long du module (Y), deux rangées de 4 — le CORE est une grosse
+pile, − à y = 0, + à y = 70,15 mm. Une plaque − en cuivre de 1,5 mm sous les fonds porte deux **bandes à lamelles**
+(70 × 12 mm, à leur hauteur de travail de 1,7 mm — enveloppe Weftron LOUVER_tron 112, lue à l'itération 9) ; une plaque +
+de 1,5 mm sur les calottes porte trois **bossages** Ø6 × 1,7 mm sur l'axe entre les rangées, hors des bandes : la butée.
+Deux supports de 8 mm tiennent les cellules aux deux bouts. La carte de CORE est posée à plat sur le dessus (le flanc
+de la rangée haute). Pas d'un CORE au suivant : 74,85 mm (70,15 + 2 × 1,5 + 1,7).
+
+**La pile** (`camLayout`, exemples dits) : 20 lamelles par bande, deux bandes par joint — 280 N à pousser, 1 600 A de
+lamelles pour 360 A (une lamelle Stäubli MULTILAM LA-CU : 40 A, 7 N, lue à l'itération 9). La poignée du haut écrase un
+empilage de **rondelles Belleville** (200 N/mm, exemple) d'une course fixe : **413 N** sur la pile, 1,47 fois ce que
+les bandes demandent, quelles que soient les tolérances des 8 CORE.
+
+**La poignée** : quart de tour, **came de face à deux lobes** (efforts équilibrés, l'arbre ne fléchit pas), rampes de 6°
+sur un rayon moyen de 15 mm, plateau de 15° au bout et goupille de butée : course 2,06 mm, 1,28 N·m, **37 N** au bout
+d'un levier de 35 mm, repliable à plat. À μ = 0,1, une rampe de 6° **ne se bloque pas d'elle-même** (tan 6° = 0,105) :
+c'est le plateau de fin de course qui tient — dit sur la came. Un suiveur et une plaque isolante guidés par deux
+goupilles du couvercle ne tournent pas ; une rondelle de butée (PEEK, ou bronze, PTFE) entre la came et le suiveur,
+une seconde entre la came et le couvercle ; clavette DIN 6885 P9/h9 (la note de JP : pas de jeu au retour).
+
+**Le courant** : la borne − du module (plaque rigide à bossages, comme une plaque +) reçoit les bandes du CORE 1 et
+entre par une languette dans le couvercle du fond ; au bout haut, la plaque de pression en cuivre porte deux bandes sur
+la plaque + du CORE 8, et un shunt souple descend par une fenêtre du fond au **busbar de retour** (40 × 4 mm) qui
+ramène le + au couvercle du fond. **Le couvercle du fond est actif** : connecteur d'échange et contacteur (enveloppes
+génériques) et la **carte du BMS central à plat** (85 × 62 mm) dans un logement de 95,8 × 69 mm — la question « où mettre
+la carte » est réglée ici. **Le boîtier** : section de 100,8 × 69,7 mm, paroi de 2,5 mm, quatre **lobes Ø10** (la note
+de JP) et leurs trous pour vis EVO PT 40, coupé à 623,3 mm.
+
+**Vérifié par un essai** (`tests/node/bm_concept2.test.mjs`) : toutes les pièces se construisent ; rien ne traverse rien
+(CORE 1, 2 et 8, les deux bouts, le boîtier) ; les bandes d'un CORE sont sur la plaque + du précédent, aussi hautes que
+ses bossages ; le shunt est sur le busbar de retour.
+
+**Pas encore dessiné, à itérer** : les capteurs de température (la face − est maintenant un contact — les placer sur le
+flanc des cellules, sous la carte) ; les prises de tension ; la chaîne RS-485 d'un CORE à l'autre ; les barres du
+couvercle du fond (contacteur → connecteur) ; les rampes de la came (seuls les plateaux sont dessinés) ; les vis, les
+joints d'étanchéité, la nervuration des couvercles ; l'échauffement de la pile couchée.
+
 ## Ce qu'il contient
 
 | Élément | Ce que c'est | Où |

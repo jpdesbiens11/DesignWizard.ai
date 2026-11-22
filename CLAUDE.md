@@ -137,10 +137,18 @@ plus bas, avec sa version. Une revue de la liste se fait à chaque reprise de s�
    haut retravaillés « comme les produits grand public, plus compacts ». Attendre ses autres idées avant de construire.
 2. ~~**Historique : effacer un point de sauvegarde** un à un — les points d'après se rattachent au point d'avant ; une
    branche qui n'avait que ce point meurt et l'on revient à MAIN~~ — fait (v0.170.0 : « Effacer ce point », `deletePlan`, `deletePoint`).
-3. **BM — concept 2** : un point de sauvegarde de MAIN, puis une branche parallèle **« concept 2 - consumer product
-   interface »** ; on y commence l'interface + / − des **CORE 2.0** et les couvercles compacts, d'après l'interview.
+3. ~~**BM — concept 2** : un point de sauvegarde de MAIN, puis une branche parallèle **« concept 2 - consumer product
+   interface »**~~ — premier jet fait (v0.171.0 : `demo/demo_bm_c2.js`, `withConceptTwo` ; P1 « Concept 1 » sur MAIN, P2 sur la branche ;
+   la carte de l'accueil ouvre la branche). **À itérer avec JP** : les capteurs de température (la face − est un contact), les prises de
+   tension, la chaîne RS-485 d'un CORE à l'autre, les barres du couvercle du fond, les rampes de la came, les vis et les joints.
 
-**En attente** (de JP) : les réponses de l'interview ci-dessus, et ses autres idées (« attends pour les autres idées »). **Idées
+**Réponses de l'interview** (JP, 22 novembre, par menu — les quatre choix conseillés) : les CORE **en ligne, pressés**, comme des piles D
+dans une lampe — le + de l'un contre le − du suivant, la pile pressée par la poignée du haut, le retour du courant le long du boîtier ; sur la
+face − de chaque CORE, des **bandes à lamelles** (le + reste une plaque rigide à bossage, la butée) ; une **poignée quart de tour à came de
+face double lobe** (rampe 4–7° auto-bloquante, plateau et goupille de fin de course, poignée repliable à plat) ; **couvercle du bas actif**
+(connecteur d'échange, contacteur, carte BMS, logement agrandi), **couvercle du haut = la poignée et sa plaque de pression**, sans électronique.
+
+**En attente** (de JP) : ses autres idées, s'il en a. **Idées
 reçues pour le concept 2** (22 novembre, documents de JP lus, chiffres non vérifiés — ce sont ses notes de recherche, aucune fiche lue) :
 (1) le **compartiment à piles grand public** — piles en baies alternées, une **plaque de retour** d'une seule tôle relie le + d'une pile au
 − de la suivante (bossage rigide d'un côté, ressort de l'autre), seuls le premier + et le dernier − sortent ; (2) le **contact sous
@@ -152,8 +160,8 @@ rotation), réaction axiale reprise par un circlip ou un épaulement, clavette a
 une « grosse pile » (8 cellules en parallèle, + sur la face des calottes, − sur celle des fonds).
 
 **Un jour / peut-être** (les « Reste », à reprioriser à la demande)
-- BM : **lobe des vis élargi à Ø 10 mm** (JP : « garder en note le 10 mm dans la liste des choses à implanter ») ; le
-  logement de la carte BMS centrale (repris par le concept 2) ; les objets « Communiquer » (chaîne RS-485, CAN) ; les
+- BM : ~~**lobe des vis élargi à Ø 10 mm**~~ — fait dans le concept 2 (v0.171.0) ; ~~le logement de la carte BMS centrale~~ — réglé
+  dans le concept 2 (le couvercle du fond actif) ; les objets « Communiquer » (chaîne RS-485, CAN) ; les
   exigences et les essais du V du logiciel BM.
 - Onduleur : liaisons AC, refroidissement, vis, cartes dans le PCBA.
 - Labo : un bouton qui relance la simulation au moment du clic ; déplacer un cordon au clavier ; essai au toucher,

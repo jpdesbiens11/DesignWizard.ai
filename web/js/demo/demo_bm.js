@@ -39,6 +39,12 @@ import { casingPart, terminalParts, returnSizing, casingPaths } from "./demo_bm_
 import { topEnd } from "./demo_bm_lid.js";
 import { bottomEnd } from "./demo_bm_bottom.js";
 import { screwHolding, heatCalcs } from "./demo_bm_heat.js";
+import { conceptTwo, camLayout } from "./demo_bm_c2.js";
+import { addPoint, restoreInto, putDefinition, withoutHistory } from "../core/history.js";
+
+/** The branch of concept 2 (JP, 22 novembre : « commence un point de sauvegarde du MAIN et fait une branche parallèle (concept 2 - consumer
+    product interface) »). */
+export const C2_BRANCH = "concept 2 - consumer product interface";
 
 /* Iteration 2 (JP, 21 novembre : « garder les L pressés » ; « le max de courant continu des 21700 P45B de Molicel, en décharge et en charge,
    la valeur la plus élevée — on est en 8s8p avec 8 CORE » ; then the flex in G). The cell is the Molicel INR-21700-P45B of the library, its
@@ -108,8 +114,9 @@ export function busbarSizing() {
     why: `Courant : la plus grande valeur continue de la P45B, ${C.discharge[1]} A en décharge (contre ${C.charge} A en charge, fiche p. 3), × 8 cellules en parallèle. Limite : ${C.envDis[1]} °C, l'ambiante admissible en décharge (fiche p. 3) — le busbar touche les cellules. Section : la jambe, ${BB_W} mm × l'épaisseur. Barre seule en convection naturelle : dans le module fermé, l'échauffement réel est plus fort.` };
 }
 
-/** The project, new each time : the CORE board with its mechanical twin, the parts of the CORE, the CORE and the module. */
-export function bmProject() {
+/** The project, new each time : the CORE board with its mechanical twin, the parts of the CORE, the CORE and the module — and its history :
+    concept 1 kept on MAIN, concept 2 on its own branch. o : { branch (true : the project opens on concept 2, « vous êtes ici » on its branch) } */
+export function bmProject(opts = {}) {
   const p = { dw: "project/1", id: "bm-8s8p-21700", name: "BM 8s8p - 21700", author: "DesignWizard.ai",
     description: "Module de batterie 8s8p en cellules 21700 : 8 CORE 1S8P en série, côte à côte, chacun avec sa carte de mesure posée dessus. Douzième itération : le CORE refait — busbar laminé industriel sur le dessus, soudures laser dessinées, joints plans pressés par les ressorts du couvercle, capteurs dans le support du bas.",
     parts: [JSON.parse(JSON.stringify(CELL))], assemblies: [], boards: [coreBoard(), bmsBoard()], drawing: { words: WORDS_BM }, physics: [busbarSizing(), returnSizing(I_CORE), screwHolding(), ...heatCalcs(CASE_L)], log: [] };
@@ -133,6 +140,23 @@ export function bmProject() {
   const bms = p.parts.find((x) => x.id === p.boards[1].part);
   bms.name = "BMS central du module"; bms.function = "Le BMS central : interroge les 8 cartes de CORE par la chaîne RS-485, lit le courant du module, commande le contacteur et dit l'état au véhicule par CAN. Pas encore posé : le logement du couvercle du fond est trop petit.";
   putBoard(p, BMS_BOARD_ID); putBoard(p, p.boards[0].id);
-  p.software = [moduleDesign()];      // the software of the central BMS : its state machine, run on its bench, written in C      // the lab table : the central BMS and one CORE board, linked by the four wires of the chain
+  p.software = [moduleDesign()];
+  withConceptTwo(p, !!opts.branch);      // the software of the central BMS : its state machine, run on its bench, written in C      // the lab table : the central BMS and one CORE board, linked by the four wires of the chain
   return p;
+}
+
+/** The history of the project : a point on MAIN that keeps concept 1 as it stands (iteration 15), then the branch of concept 2 — the same boards
+    and their twins, the parts and the assemblies of concept 2 (demo_bm_c2.js), the calculations that still speak of its parts. back : the
+    project stays on concept 2 ; else it goes back to MAIN (concept 1, what every screen opened on until now). */
+function withConceptTwo(p, onBranch) {
+  addPoint(p, { kind: "manual", label: "Concept 1 — itération 15", when: "2026-11-22T12:00:00.000Z", by: "DesignWizard.ai",
+    note: "Le module tel que les itérations 1 à 15 l'ont fait : 8 CORE debout côte à côte, busbar laminé à jambes pliées, joints plans pressés par le couvercle du haut à came quart de tour, couvercle du fond à anneau usiné." });
+  const doc = JSON.parse(JSON.stringify(withoutHistory(p))), twins = new Set(p.boards.map((b) => b.part)), c2 = conceptTwo({ core: p.boards[0].part, bms: p.boards[1].part });
+  doc.parts = [...doc.parts.filter((x) => twins.has(x.id)), ...c2.parts]; doc.assemblies = c2.assemblies;
+  const ids = new Set(doc.parts.map((x) => x.id)); doc.physics = (doc.physics || []).filter((c) => !c.part || ids.has(c.part));
+  doc.description = `Concept 2 « consumer product interface » : les 8 CORE couchés en ligne, pressés comme des piles dans une lampe — bandes à lamelles sur la face − de chaque CORE, plaque + rigide à bossages ; poignée quart de tour à came double lobe (${camLayout().preload.toFixed(0)} N sur la pile) ; couvercle du fond actif (connecteur, contacteur, carte BMS). Premier jet, à itérer.`;
+  delete doc.id; delete doc.log; delete doc.updated; putDefinition(p, doc);
+  addPoint(p, { kind: "manual", branch: C2_BRANCH, label: "Concept 2 — premier jet : CORE 2.0 en ligne, poignée à came", when: "2026-11-22T12:30:00.000Z", by: "DesignWizard.ai",
+    note: "D'après les documents et les réponses de JP : CORE en ligne pressés, bandes à lamelles sur la face −, + rigide à bossages, poignée quart de tour à came double lobe, couvercle du fond actif." });
+  if (!onBranch) restoreInto(p, "P1");
 }
