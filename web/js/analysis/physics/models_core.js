@@ -1,4 +1,4 @@
-/* DynamiteOrbit — Physique: helpers shared by the analytical models (French numbers for the calculation steps,
+/* DesignOrbit.ai — Physique: helpers shared by the analytical models (French numbers for the calculation steps,
    safety checks, section properties, input builders, tiny solvers). SI inside compute(), practical units at the edges. */
 
 export const PI = Math.PI;

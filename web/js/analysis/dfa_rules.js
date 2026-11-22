@@ -1,4 +1,4 @@
-/* DynamiteOrbit — DFA (design for assembly) rules of an assembly, in the spirit of Boothroyd-Dewhurst: fewer parts,
+/* DesignOrbit.ai — DFA (design for assembly) rules of an assembly, in the spirit of Boothroyd-Dewhurst: fewer parts,
    fewer and standard fasteners, one assembly direction (top-down), parts that locate themselves and cannot be mounted
    the wrong way round.
    asm = { id, name, instances: [{id, part, fixed, placement}], mates: [{id, a: {inst, iface}, b: {inst, iface}, linked}] }
@@ -12,7 +12,7 @@ import { THREADS } from "../cad/standards.js";
 import { IDENTITY, matPoint, matDir, matFromPlacement } from "../cad/vec.js";
 import { rule, num, round, makeFinding, sortFindings, summarize } from "./dfx_core.js";
 
-const S = { bd: "Boothroyd-Dewhurst — Product Design for Manufacture and Assembly", thumb: "Règle de pouce DFA (rule of thumb)", pk: "Poka-yoke (Shingo) — détrompage", lang: "DynamiteOrbit part language (interfaces partagées)" };
+const S = { bd: "Boothroyd-Dewhurst — Product Design for Manufacture and Assembly", thumb: "Règle de pouce DFA (rule of thumb)", pk: "Poka-yoke (Shingo) — détrompage", lang: "DesignOrbit.ai part language (interfaces partagées)" };
 const RULES = [
   rule("ASM-01", "Aucune interférence", "Aucun volume commun entre deux pièces", "error", "Les pièces ne peuvent pas être assemblées.", "Contrôle d'interférence de l'assemblage"),
   rule("DFA-01", "Pièces reliées à une pièce fixe", "Chaque instance est reliée par des liaisons (mates) à une instance fixe", "warn", "Une pièce flottante n'a ni position ni fixation définies.", S.lang),

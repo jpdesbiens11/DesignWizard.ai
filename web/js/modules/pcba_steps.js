@@ -1,4 +1,4 @@
-/* DynamiteOrbit — PCBA screen: the design steps — functions, architecture, conceptual layout (zones), detailed
+/* DesignOrbit.ai — PCBA screen: the design steps — functions, architecture, conceptual layout (zones), detailed
    layout (placement and routing). Each step fills the left panel (what to decide), the centre (what it looks like)
    and the right panel (what the choice implies). */
 

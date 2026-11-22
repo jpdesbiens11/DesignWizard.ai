@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the vocabulary of the .dwiz format: one notation for every object of a mechatronic product.
+/* DesignOrbit.ai — the vocabulary of the .dwiz format: one notation for every object of a mechatronic product.
    The notation itself (core/dwiz.js) is generic; this file only gives each KIND of document its reading order and
    the words that turn lists into sentences ("interface IF1 bolt_pattern …", "do drill …", "place i2 DRV-PCB").
    A new module extends the format here — a new kind, or new words in an existing kind — and nowhere else. Unknown

@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the fabrication shop, what leaves it for the supplier (point 13 of the roadmap : « sortir la gamme et la vidéo, ou un
+/* DesignOrbit.ai — the fabrication shop, what leaves it for the supplier (point 13 of the roadmap : « sortir la gamme et la vidéo, ou un
    .pptx de la gamme avec les images des étapes et les mesures intermédiaires ; une case pour que le fournisseur écrive ses commentaires ») :
    the deck — a slide per phase, its picture, its operations, its measures, and a framed box for the supplier's answer — and the film of the
    steps, recorded from the view with its caption burnt in. Each goes out through download(), with the mark of the platform. */
@@ -42,7 +42,7 @@ export async function recordFilm(o) {
   let text = "", live = true;
   const frame = () => { if (!live) return; g.fillStyle = "#ffffff"; g.fillRect(0, 0, w, h); g.drawImage(src, 0, 0); const bh = Math.max(34, h * 0.075);
     g.fillStyle = "rgba(17,24,39,.82)"; g.fillRect(0, h - bh, w, bh); g.fillStyle = "#ffffff"; g.font = `600 ${Math.round(bh * 0.42)}px system-ui, sans-serif`; g.fillText(text, 14, h - bh * 0.36, w - 28);
-    g.fillStyle = "rgba(255,255,255,.9)"; g.font = `${Math.round(bh * 0.3)}px system-ui, sans-serif`; g.fillText("DynamiteOrbit™ — montage de principe", 12, bh * 0.55); requestAnimationFrame(frame); };
+    g.fillStyle = "rgba(255,255,255,.9)"; g.font = `${Math.round(bh * 0.3)}px system-ui, sans-serif`; g.fillText("DesignOrbit.ai™ — montage de principe", 12, bh * 0.55); requestAnimationFrame(frame); };
   rec.start(250); requestAnimationFrame(frame);
   const wait = (s) => new Promise((r) => setTimeout(r, s * 1000));
   try { for (let i = 0; i < o.steps; i++) { text = o.caption(i); const cut = o.play ? o.play(i) : null;      // a phase whose tool path is written : the tool machines on the film

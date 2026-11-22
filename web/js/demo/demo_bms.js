@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the central BMS board of the module BM 8s8p (architecture de JP, 21 novembre 2026 : « le BMS central interroge les cartes,
+/* DesignOrbit.ai — the central BMS board of the module BM 8s8p (architecture de JP, 21 novembre 2026 : « le BMS central interroge les cartes,
    juge et agit — contactors, état envoyé au véhicule ») : fed by the 12 V of the vehicle, it polls the 8 CORE boards on the isolated RS-485
    chain (it feeds their bus side), reads the current of the module on a sensor laid on the return busbar, drives the contactor and reads its
    auxiliary contact back, and tells the vehicle the state of the module on CAN. From its functions down to its routed copper. Stored as .dwiz

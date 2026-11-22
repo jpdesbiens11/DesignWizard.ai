@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the electronics lab : a small circuit solver (demande de JP : « un laboratoire d'électronique virtuel pour
+/* DesignOrbit.ai — the electronics lab : a small circuit solver (demande de JP : « un laboratoire d'électronique virtuel pour
    pré-tester les cartes… voir les fonctions de transfert… un module de simulation électronique pour préparer et anticiper
    les résultats en lab »). Modified nodal analysis, the method of every circuit simulator : one unknown per node voltage, one
    per current of a voltage source, an inductor or a controlled source ; Kirchhoff's current law at each node.

@@ -1,4 +1,4 @@
-/* DynamiteOrbit — Aide: how the platform works, shortcuts, the wand's vocabulary, the part language, and how
+/* DesignOrbit.ai — Aide: how the platform works, shortcuts, the wand's vocabulary, the part language, and how
    collaborators send their feedback. */
 
 import { el, icon, btn, copyText, toast } from "../core/dom.js";
@@ -12,7 +12,7 @@ import { validationCard } from "./validation_view.js";
 import { newsCard } from "../core/whats_new_ui.js";
 import { batteryCard } from "./battery_view.js";
 
-const REPO = "https://github.com/jpdesbiens11/DynamiteOrbit";
+const REPO = "https://github.com/jpdesbiens11/DynamiteOrbit.ai";
 const KEYS = [["Ctrl + K", "La baguette : aller partout, lancer une commande, modifier la pièce en langage courant"], ["Guide", "Le bouton « Guide » de la barre du haut : ce qui manque ou cloche sur l'écran et dans le projet ; un clic sur une ligne mène à l'endroit. Un champ qui clignote attend votre valeur"], ["Ctrl + B", "Cacher ou montrer le volet de gauche d'un studio (le bouton est aussi sur sa bordure) ; sa largeur est la même sur tous les écrans"], ["Clic sur le titre d'un groupe", "Replier ou déplier ce groupe d'un volet, pour faire remonter les suivants ; Alt + clic n'en garde qu'un ouvert ; le bouton à double chevron en tête du volet replie tout"], ["Ctrl + molette sur un dessin", "Zoomer la feuille autour du pointeur (ou les boutons − et +) ; glisser pour la déplacer ; un clic sur le pourcentage la ramène à la largeur"],
   ["Interrupteur On / Off", "Dans un cas de charge, l'arbre d'une pièce, les paramètres, les pièces d'un assemblage : Off met de côté sans perdre — la chose ne compte plus pour rien ; « Dupliquer » en fait une copie à Off, à modifier puis à mettre à On à sa place, pour comparer deux cas"],
   ["Variantes d'une pièce", "Le groupe « Variantes » du Part Studio garde sous un nom l'état de la pièce — opérations à On ou à Off, valeurs des paramètres — et un clic sur un nom ramène toute la cousine, en une étape annulable"],
@@ -61,7 +61,7 @@ const ROADMAP = ["Entrevue directement dans l'app avec une clé d'API Claude (au
 function render(main, args = []) {
   const page = el("div", { class: "page" });
   main.append(page);
-  page.append(el("div", { class: "page-head" }, el("div", { class: "grow" }, el("h1", null, "Aide"), el("p", { class: "muted" }, `DynamiteOrbit by DynamiteAgile™ · version ${app.version} · ${store.mode === "server" ? "serveur local (projets sur le disque, Onshape disponible)" : "mode navigateur (aucun serveur)"}`))));
+  page.append(el("div", { class: "page-head" }, el("div", { class: "grow" }, el("h1", null, "Aide"), el("p", { class: "muted" }, `DesignOrbit.ai by DynamiteAgile™ · version ${app.version} · ${store.mode === "server" ? "serveur local (projets sur le disque, Onshape disponible)" : "mode navigateur (aucun serveur)"}`))));
   const card = (title, ...kids) => el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, title), kids);
   page.append(el("a", { class: "fs-strip", href: "#/start", "data-tip": "Huit étapes qui se cochent d'après le projet" }, icon("sparkle"), el("span", { class: "grow" }, el("b", null, "Premiers pas"), el("small", null, "De la page blanche à la révision libérée, en huit étapes — avec, pour chaque écran, ce que l'on y fait et comment.")), el("span", { class: "btn btn-small" }, "Ouvrir")));
   page.append(el("div", { class: "two-col" },

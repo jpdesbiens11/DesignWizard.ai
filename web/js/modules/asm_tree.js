@@ -1,4 +1,4 @@
-/* DynamiteOrbit — Assembly : the tree of the mates in the left panel, by health. A click on a mate selects it — its two
+/* DesignOrbit.ai — Assembly : the tree of the mates in the left panel, by health. A click on a mate selects it — its two
    parts light up, its label shows, its card opens on the right ; the eye of a state shows or hides its labels in the view.
    The model of the tree is core/asm_tree.js ; this module only draws it, with the look of the load-case tree. */
 

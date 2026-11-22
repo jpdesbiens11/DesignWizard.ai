@@ -1,5 +1,5 @@
 # Publie la démo en ligne : à chaque mise à jour de main, les tests passent, puis le dossier web/ est poussé tel quel
-# sur la branche gh-pages, que GitHub Pages sert à https://jpdesbiens11.github.io/DynamiteOrbit/.
+# sur la branche gh-pages, que GitHub Pages sert à https://jpdesbiens11.github.io/DynamiteOrbit.ai/.
 # La branche gh-pages est réécrite à chaque publication (un seul commit) : le noyau WebAssembly n'alourdit pas l'historique.
 name: Publier la démo
 

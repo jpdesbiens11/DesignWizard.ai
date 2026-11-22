@@ -1,4 +1,10 @@
-# DesignWizard.ai — consignes pour Claude
+# DesignOrbit.ai — consignes pour Claude
+
+Le produit s'appelle **DesignOrbit.ai** (JP, 22 novembre 2026, par menu ; anciennement DesignWizard.ai, puis DynamiteOrbit le
+même jour). Le dépôt GitHub s'appelle `jpdesbiens11/DynamiteOrbit.ai` et la démo est à
+https://jpdesbiens11.github.io/DynamiteOrbit.ai/ — des adresses, pas le nom du produit. Gardent l'ancien nom, pour ne rien
+casser : le dossier « DesignWizard.ai » du Google Drive de JP (communications), le format `.dwiz`, les réglages gardés du
+navigateur (`dw.*`), le fichier `designwizard.py`, le film et la bande-annonce tant que leur voix n'est pas refaite.
 
 Consignes permanentes de JP (propriétaire du dépôt). Elles s'appliquent à toute session.
 
@@ -31,7 +37,7 @@ Consignes permanentes de JP (propriétaire du dépôt). Elles s'appliquent à to
    `web/version.json` (ce que la page ouverte lit pour annoncer une mise à jour — `web/js/core/update_check.js`) et l'en-tête
    du README ; un test les compare.
 3. Le flux « Publier la démo » (`.github/workflows/pages.yml`) rejoue les tests et pousse `web/` sur `gh-pages` ;
-   la démo est à https://jpdesbiens11.github.io/DesignWizard.ai/. Vérifier que le flux a réussi et que la page répond.
+   la démo est à https://jpdesbiens11.github.io/DynamiteOrbit.ai/. Vérifier que le flux a réussi et que la page répond.
 4. Ne jamais forcer `main`. La branche `gh-pages` est réécrite par le flux : ne pas y travailler.
 
 ## Règles du projet
@@ -53,7 +59,7 @@ Consignes permanentes de JP (propriétaire du dépôt). Elles s'appliquent à to
   se présente groupé par nature, chaque groupe avec sa couleur, chaque élément avec un pictogramme qui montre le concept
   et un titre court ; le détail vient ensuite. Les studios gardent tous la même structure : volet de gauche (ce que l'on
   entre), centre (ce que l'on regarde), volet de droite (ce que l'on choisit et ce que l'on obtient).
-- **La marque sur tous les documents** (demande de JP) : tout ce que la plateforme produit — PDF, Word, texte, CSV, DXF, STEP, STL, Gerber, perçage, FeatureScript, `.dwiz`, JSON, ce qui part vers Drive ou vers Onshape, la présentation — porte le visuel de DesignWizard.ai là où le format le permet et la note « DesignWizard.ai™ by DynamiteAgile™ · Co-Intelligence WorkFlow™ — document généré par DesignWizard.ai. La version électronique fait foi ; la version imprimée est pour référence. » (`web/js/core/brand.js`, une seule source). Les livrables à lire (PDF, Word, dessins) portent en plus la **note de confidentialité** du projet et suivent le **gabarit des documents** : cartouche d'en-tête encadré sur chaque page (marque, titre, n° de document, révision, date, page), page de titre avec approbation et journal des révisions (`core/pdfdoc.js`, `core/docx.js`, `docIdentity`). Un écran enregistre un fichier par `download()`, jamais par un `Blob` à lui. Tout nouvel export naît avec la marque ; voir `docs/BRAND.md`.
+- **La marque sur tous les documents** (demande de JP) : tout ce que la plateforme produit — PDF, Word, texte, CSV, DXF, STEP, STL, Gerber, perçage, FeatureScript, `.dwiz`, JSON, ce qui part vers Drive ou vers Onshape, la présentation — porte le visuel de DesignOrbit.ai là où le format le permet et la note « DesignOrbit.ai™ by DynamiteAgile™ · Co-Intelligence WorkFlow™ — document généré par DesignOrbit.ai. La version électronique fait foi ; la version imprimée est pour référence. » (`web/js/core/brand.js`, une seule source). Les livrables à lire (PDF, Word, dessins) portent en plus la **note de confidentialité** du projet et suivent le **gabarit des documents** : cartouche d'en-tête encadré sur chaque page (marque, titre, n° de document, révision, date, page), page de titre avec approbation et journal des révisions (`core/pdfdoc.js`, `core/docx.js`, `docIdentity`). Un écran enregistre un fichier par `download()`, jamais par un `Blob` à lui. Tout nouvel export naît avec la marque ; voir `docs/BRAND.md`.
 - **Un média, pas une valeur** (demande de JP) : dans les modèles analytiques, une propriété de matière ou de fluide ne se tape pas — elle vient d'un **média connu** choisi dans la base (`web/js/analysis/physics/media.js`, écran `#/media`), affichée à côté, non modifiable. Menus : solides d'abord, puis liquides, puis gaz, par groupe et par nom. Tout nouveau modèle déclare ses médias (`MODEL_MEDIA`) ; tout nouveau média dit d'où viennent ses valeurs (`basis`) ; voir `docs/MEDIAS.md`.
 - **Termes techniques en anglais** (demande de JP) : tout terme technique — procédé, opération, forme, interface, matière première, vocabulaire du mold (draft, parting line, slide, gate, riser…), soudage, revêtement, finition — se montre **en anglais, comme le métier le nomme** ; l'explication autour reste en français. Chaque table de vocabulaire donne `label` (anglais, ce que les écrans et les documents montrent) et `fr` (l'équivalent, pour le glossaire de l'Aide : `web/js/core/terms.js`). Toute nouvelle brique apporte ses termes avec les deux noms ; voir `docs/TERMES.md`.
 - **Ce qui est nouveau se voit, le temps d'une revue** (demande de JP : « tague-moi ce qui est nouveau dans l'interface entre les versions pour faciliter la revue humaine… quand on passe à une nouvelle revue seulement cache les tags, sinon laisse-les actifs, pour la traçabilité ») : **toute version qui change un écran ajoute ses lignes à `NEWS`** (`web/js/core/whats_new.js`) — ce qui est nouveau, en une phrase, l'écran (`where`) et l'élément (`sel`) ; un essai tient que la version qui tourne a ses lignes et que l'élément existe. L'élément porte alors une marque « Nouveau » (un calque au-dessus de la page, `core/whats_new_ui.js`, installé une fois) ; le bouton à l'étoile de la barre du haut en tient la liste. **Une ligne cochée « vu » garde sa marque**, en vert ; seul « Passer à une nouvelle revue » les range, et la revue rangée se rouvre. Voir `docs/ERGONOMIE.md`.
@@ -173,6 +179,15 @@ pour un module glissé** — lame pliée 3–15 A, broche à ressort 5–60 A, b
 de course et goupille de butée, butée à aiguilles ou rondelle bronze / PTFE vers une plaque de pression guidée par goupilles (sans
 rotation), réaction axiale reprise par un circlip ou un épaulement, clavette ajustée (pas de jeu au retour). Lecture : un CORE est déjà
 une « grosse pile » (8 cellules en parallèle, + sur la face des calottes, − sur celle des fonds).
+
+**Fait (v0.176.0)** — **Icônes et logo du monde des fusées, nom DesignOrbit.ai** (JP, 22 novembre, par menus) : le chapeau de
+sorcier (icône `wizard`) devient une **tour de lancement et sa fusée** ; **toutes les icônes** suivent une seule famille, la
+« ligne de mission » (`mission()` de `tools/sketch_icons.py` : coins de panneau arrondis, mêmes noms, mêmes sens) ; **Le.Carnet
+garde son crayonné** ; le logo devient **L3 — la fusée quitte le compas sur sa trajectoire**, une seule figure (`LOGO`,
+`logoShapes` de `web/js/core/brand.js`, les mêmes nombres dans `tools/sketch_logo.py`, tenus égaux par un essai) ; le produit
+s'appelle **DesignOrbit.ai**. Reste : refaire la voix et les sous-titres du film et de la bande-annonce (ils disent
+« DesignWizard.ai »), reprendre les captures de la visite (`web/img/tour`), renommer l'application sur l'écran de
+consentement de Google (Google Cloud Console : à faire par JP) ; peut-être renommer le dépôt « DesignOrbit.ai ».
 
 **Un jour / peut-être** (les « Reste », à reprioriser à la demande)
 - BM : ~~**lobe des vis élargi à Ø 10 mm**~~ — fait dans le concept 2 (v0.171.0) ; ~~le logement de la carte BMS centrale~~ — réglé

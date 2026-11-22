@@ -23,13 +23,13 @@ test("a part reads as FeatureScript — the definition Onshape runs — and as .
   const a = codeSources(p, elementFor(p, `#/assembly/${asm.id}`)); assert.deepEqual(a.map((s) => s.key), ["dwiz", "fs"]);
   for (const id of new Set(asm.instances.map((i) => i.part))) assert.match(a[1].text, new RegExp(`// ===== ${id} — `));
   assert.equal((a[1].text.match(/defineFeature\(/g) || []).length, new Set(asm.instances.map((i) => i.part)).size);
-  const all = codeSources(p, elementFor(p, "#/report")); assert.deepEqual(all.map((s) => s.key), ["dwiz"]); assert.doesNotMatch(all[0].text, /^review /m, "the ledgers stay in DynamiteOrbit");
+  const all = codeSources(p, elementFor(p, "#/report")); assert.deepEqual(all.map((s) => s.key), ["dwiz"]); assert.doesNotMatch(all[0].text, /^review /m, "the ledgers stay in DesignOrbit.ai");
   assert.match(codeSources(p, { kind: "part", id: "S", doc: { id: "S", step: { text: "x" } } })[0].text, /géométrie STEP importée/);
 });
 
 test("handed to an AI, the code comes after a short formal request : the interview, then the answer that can come back", () => {
   const e = elementFor(p, `#/parts/${part.id}`), [fs, dwiz] = codeSources(p, e), t = aiCodePrompt(p, e, fs);
-  for (const re of [/^Tu es l'assistant de conception de DynamiteOrbit\. Voici la pièce « /, /sous forme de FeatureScript Onshape/, /ENTREVUE — .*au plus cinq questions, une à la fois/, /RÉPONSE ATTENDUE — un seul bloc de code ```dwiz/, /c'est le bloc dwiz qui revient dans DynamiteOrbit/, /RETOUR — /, /----- FeatureScript -----/, /----- \.dwiz — le format de ta réponse -----/]) assert.match(t, re);
+  for (const re of [/^Tu es l'assistant de conception de DesignOrbit.ai\. Voici la pièce « /, /sous forme de FeatureScript Onshape/, /ENTREVUE — .*au plus cinq questions, une à la fois/, /RÉPONSE ATTENDUE — un seul bloc de code ```dwiz/, /c'est le bloc dwiz qui revient dans DesignOrbit\.ai/, /RETOUR — /, /----- FeatureScript -----/, /----- \.dwiz — le format de ta réponse -----/]) assert.match(t, re);
   assert.ok(t.indexOf("ENTREVUE") < t.indexOf("----- FeatureScript -----"), "the request comes first, the code after"); assert.ok(t.includes(fs.text.trimEnd()) && t.includes(dwiz.text.trimEnd()));
   const d = aiCodePrompt(p, e, dwiz); assert.match(d, /sous forme de spécification \.dwiz/); assert.doesNotMatch(d, /FeatureScript te donne/); assert.equal((d.match(/-----/g) || []).length, 2, "the .dwiz alone : once");
   assert.match(aiCodePrompt(p, elementFor(p, `#/assembly/${asm.id}`), codeSources(p, elementFor(p, `#/assembly/${asm.id}`))[0]), /Voici l'assemblage « /);

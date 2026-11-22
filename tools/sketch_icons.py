@@ -1,8 +1,14 @@
-"""Functional icons of DynamiteOrbit, drawn on a 24-unit grid (see tools/make_sketch_assets.py).
+"""Functional icons of DesignOrbit.ai, drawn on a 24-unit grid (see tools/make_sketch_assets.py).
 
 ICONS maps a name to a list of shapes understood by sketch_rough.Pen.stroke(); the sprite exposes each one as
 <symbol id="i-NAME" viewBox="0 0 24 24">, stroke = currentColor. Keep every coordinate within 2.5 … 21.5 so that the
 pencil overshoot is never clipped by the viewBox. No text: letters (the « i » of info, the « ! » of warning) are strokes.
+
+« Mission line » (JP, 22 November 2026: the icons in line with the world of rockets): one family — the 24 grid, one stroke
+(1.75, round caps and joins), shapes built from straight sides, true circles and arcs; every closed outline has the rounded
+corners of a panel (mission(): a rectangle 1.6, a polygon 1.2; a tip sharper than 50° keeps its point). The figure of the
+assistant (« wizard ») is a launch tower and its rocket. Conventional signs (check, cross, warning, chevrons, undo…) keep
+the shape every interface gives them. Tools-made: no icon set is copied.
 """
 import math
 
@@ -43,12 +49,11 @@ ICONS = {
                    ("arc", 10, 12, 2.7, 2.6, -PI / 2, PI),
                    ("poly", [(14.3, 9.2), (14.3, 5.5), (21.5, 5.5), (21.5, 18.5), (14.3, 18.5), (14.3, 14.8)], False),
                    ("arc", 14.3, 12, 2.9, 2.8, -PI / 2, PI)],
-    "wizard": [("curve", [(6.2, 16.6), (8.4, 11), (11.2, 6.4), (15.6, 3)], False),
-               ("curve", [(15.6, 3), (14, 7), (15.4, 11.5), (17.8, 16.6)], False),
-               ("curve", [(6.2, 16.6), (12, 18.3), (17.8, 16.6)], False),
-               ("curve", [(6.2, 16.6), (3, 17.5), (4.6, 19.6), (12, 20.9), (19.4, 19.6), (21, 17.5), (17.8, 16.6)],
-                False),
-               ("line", 5.4, 3.2, 5.4, 8.8), ("line", 2.8, 6, 8, 6)],
+    "wizard": [("curve", [(12, 17.8), (12, 9.6), (12.9, 6.2), (15, 2.9), (17.1, 6.2), (18, 9.6), (18, 17.8)], False),  # the rocket
+               ("poly", [(12, 14.4), (10.2, 17.8), (19.8, 17.8), (18, 14.4)], False), ("ellipse", 15, 9.8, 1.25, 1.25),
+               ("line", 3.6, 5, 3.6, 20.8), ("line", 7.8, 5, 7.8, 20.8), ("line", 3.6, 8.6, 7.8, 13.2),  # the tower and its arm
+               ("line", 7.8, 8.6, 3.6, 13.2), ("line", 3.6, 16.6, 7.8, 16.6), ("line", 7.8, 8.6, 12, 8.6),
+               ("line", 2.8, 20.8, 21.2, 20.8)],
     "part": CUBE + [("ellipse", 12, 7.2, 3.1, 1.5)],
     "extrusion": [("poly", [(2.5, 8.5), (7.5, 8.5), (7.5, 16), (14, 16), (14, 21), (2.5, 21)], True),
                   ("poly", [(2.5, 8.5), (9.5, 3), (14.5, 3), (7.5, 8.5)], False),
@@ -221,9 +226,34 @@ ICONS = {
             ("arc", 18.6, 12, 2.4, 4.6, -PI / 2, PI)],
     "tube": [("ellipse", 6, 12, 2.9, 5), ("ellipse", 6, 12, 1.1, 2.3), ("line", 6, 7, 18.4, 7), ("line", 6, 17, 18.4, 17),
              ("arc", 18.4, 12, 2.9, 5, -PI / 2, PI)],
+    # ------------------------------------------------------------ history and code
+    "code": [("poly", [(8.5, 6.5), (3, 12), (8.5, 17.5)], False), ("poly", [(15.5, 6.5), (21, 12), (15.5, 17.5)], False),
+             ("line", 13.5, 4.5, 10.5, 19.5)],
+    "history": [("arc", 12, 12, 8, 8, -2.78, 5.72), ("poly", [(3.6, 5.2), (4.6, 9.2), (8.6, 8.4)], False),
+                ("poly", [(12, 7.6), (12, 12.2), (15.2, 14.2)], False)],
+    "branch": [("ellipse", 7, 5.5, 2.2, 2.2), ("ellipse", 7, 18.5, 2.2, 2.2), ("ellipse", 17, 7.5, 2.2, 2.2), ("line", 7, 7.7, 7, 16.3),
+               ("curve", [(17, 9.7), (16.4, 12.4), (12, 13.4), (7.6, 14.6), (7, 16.3)], False)],
     "block": [("poly", [(12, 3.6), (19, 7.1), (12, 10.6), (5, 7.1)], True), ("line", 12, 10.6, 12, 20.6),
               ("poly", [(5, 7.1), (5, 17.1), (12, 20.6), (19, 17.1), (19, 7.1)], False)],
 }
+
+
+
+def mission(shapes):
+    """The « mission line » of a drawing: rectangles and closed polygons get the rounded corners of a panel."""
+    out = []
+    for sh in shapes:
+        if sh[0] == "rect":
+            x, y, w, h = sh[1:5]
+            out.append(("rpoly", [(x, y), (x + w, y), (x + w, y + h), (x, y + h)], True, min(1.6, w / 3, h / 3)))
+        elif sh[0] == "poly" and sh[2] and len(sh[1]) <= 12:
+            out.append(("rpoly", sh[1], True, 1.2))
+        else:
+            out.append(sh)
+    return out
+
+
+ICONS = {name: mission(shapes) for name, shapes in ICONS.items()}
 
 # brick emblems (web/img/bricks/bN.svg and symbols i-bN): the pictogram of each brick of the product ladder
 BRICKS = ("intent", "interfaces", "stock", "atelier", "export", "physics", "assembly", "creepage", "drawing", "cloud")

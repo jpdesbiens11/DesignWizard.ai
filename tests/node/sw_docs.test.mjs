@@ -64,7 +64,7 @@ test("both documents are written by the template of the platform : a PDF and a W
 test("the package carries the requirements and the verification, in plain ASCII, and still compiles back to back", () => {
   const d = demoDesign(), cpu = cpuOf(d), F = vPackage(d, cpu), C = cFiles(d, { cpu });
   assert.equal(F.length, C.length + 2); const req = F.find((f) => f.name === "bms/doc/REQUIREMENTS.md").text, ver = F.find((f) => f.name === "bms/doc/VERIFICATION.md").text;
-  for (const t of [req, ver]) { assert.doesNotMatch(t, /[^\n\x20-\x7e]/, "plain ASCII, as every file of the package"); assert.match(t, /DynamiteOrbit\(TM\)/); }
+  for (const t of [req, ver]) { assert.doesNotMatch(t, /[^\n\x20-\x7e]/, "plain ASCII, as every file of the package"); assert.match(t, /DesignOrbit.ai\(TM\)/); }
   for (const id of ["SWR-001", "SWR-002", "SWR-003", "SWR-004", "SWR-005", "SWR-006"]) assert.match(req, new RegExp(`\\| ${id} \\(example\\) \\|`));
   assert.match(req, /\| SWR-001 \(example\) \| Safety \|.*lib\/dw_limit\.c.*\| TC-001 \|/); assert.match(req, /none chosen yet/);
   assert.match(ver, /did NOT run on the board nor on the CPU/); assert.match(ver, /5 passed, 0 failed/); assert.match(ver, /## TC-003/); assert.match(ver, /structural coverage of the C/);

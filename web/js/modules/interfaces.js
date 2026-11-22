@@ -1,4 +1,4 @@
-/* DynamiteOrbit — Interfaces: the entry point of a part. The user names the part and its neighbours; the platform
+/* DesignOrbit.ai — Interfaces: the entry point of a part. The user names the part and its neighbours; the platform
    gathers the interfaces those neighbours already expose ("anticipated interfaces"), writes the generic prompt, and
    turns the pasted interview result into a built part. Second tab: the interface register of the project. */
 
@@ -105,7 +105,7 @@ function interview(page) {
   async function check() {
     clear(verdict); create.disabled = true; preview = null;
     const obj = extractJson(answer.value), kind = kindOf(obj);
-    if (kind !== "part") { verdict.append(el("p", { class: "form-error" }, obj ? "Ce document n'est pas une pièce DynamiteOrbit (il manque « stock », « features », « extrusion » ou « pcb »). Correctif : demandez à Claude « réponds par la pièce part/1 complète »." : extractJson.error ? `Document .dwiz illisible — ${extractJson.error}` : "Aucune pièce trouvée dans le texte collé (ni JSON, ni .dwiz). Correctif : collez la réponse entière, bloc de code compris.")); return; }
+    if (kind !== "part") { verdict.append(el("p", { class: "form-error" }, obj ? "Ce document n'est pas une pièce DesignOrbit.ai (il manque « stock », « features », « extrusion » ou « pcb »). Correctif : demandez à Claude « réponds par la pièce part/1 complète »." : extractJson.error ? `Document .dwiz illisible — ${extractJson.error}` : "Aucune pièce trouvée dans le texte collé (ni JSON, ni .dwiz). Correctif : collez la réponse entière, bloc de code compris.")); return; }
     const v = validateSpec(obj);
     if (v.errors.length) { verdict.append(el("p", { class: "form-error" }, v.errors.join("\n"))); return; }
     if (!obj.id) obj.id = store.nextPartId();

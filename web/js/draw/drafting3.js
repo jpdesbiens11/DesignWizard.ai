@@ -1,4 +1,4 @@
-/* DynamiteOrbit — drafting helpers, part 3: sheet furniture — ISO 5457 border with zone grid, ISO 7200
+/* DesignOrbit.ai — drafting helpers, part 3: sheet furniture — ISO 5457 border with zone grid, ISO 7200
    style title block ("cartouche", French labels), projection symbol, notes, generic and revision tables.
    Built ONLY on the Sheet primitives (PDF and SVG backends render the same). Units: mm, y down.
    Re-exported by drafting.js. */
@@ -112,12 +112,12 @@ function field(sheet, x, y, w, h, label, value, { font = "sans", size = TEXT_H }
 /** Title block ("cartouche", ISO 7200 style), 180 x 48 mm, in the bottom-right corner of `frame`
     (the { x, y, w, h } returned by drawBorder). All fields of `data` are optional:
     { title, partNumber, revision, material, finish, mass, scale, sheet: '1/1', size: 'A3', drawnBy,
-      checkedBy, approvedBy, date, company: 'DynamiteOrbit', project, generalTolerance: 'ISO 2768-mK',
+      checkedBy, approvedBy, date, company: 'DesignOrbit.ai', project, generalTolerance: 'ISO 2768-mK',
       projection: 'first'|'third', units: 'mm', status, uos: { lines, example } }
     uos : the tolerance block, drawn left of the title block ; the field of the general tolerances then names the standard.
     Returns the block rectangle { x, y, w, h } (with `tol`, the rectangle of the tolerance block, when there is one). */
 export function drawTitleBlock(sheet, frame, data = {}) {
-  const d = { company: "DynamiteOrbit", generalTolerance: "ISO 2768-mK", projection: "first", units: "mm",
+  const d = { company: "DesignOrbit.ai", generalTolerance: "ISO 2768-mK", projection: "first", units: "mm",
     sheet: "1/1", ...data };
   const W = TITLE_BLOCK_W, H = TITLE_BLOCK_H, R = 8; // six rows of 8 mm
   const x = frame.x + frame.w - W, y = frame.y + frame.h - H;
@@ -135,7 +135,7 @@ export function drawTitleBlock(sheet, frame, data = {}) {
 
   // Who made the drawing : the mark of the platform, its name and its house — and the company of the designer when one is given.
   drawLogo(sheet, X(2.5), Y(2.2), 11.5);
-  const own = d.company && !/^DynamiteOrbit/i.test(d.company) ? fitText(sheet, d.company, 42, 3.2, "bold") : null, name = fitText(sheet, BRAND.product, 42, 4.6, "bold");
+  const own = d.company && !/^DesignOrbit.ai/i.test(d.company) ? fitText(sheet, d.company, 42, 3.2, "bold") : null, name = fitText(sheet, BRAND.product, 42, 4.6, "bold");
   sheet.text(X(16), Y(own ? 4.6 : 6.2), name.str, { size: name.size, font: "bold", baseline: "middle" });
   sheet.text(X(16), Y(own ? 8.6 : 10.8), `by ${BRAND.by}`, { size: 2.6, baseline: "middle", color: "#3a4450" });
   if (own) sheet.text(X(16), Y(12.6), own.str, { size: own.size, font: "bold", baseline: "middle" });

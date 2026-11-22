@@ -1,4 +1,4 @@
-# Essai pilote — une heure avec DynamiteOrbit
+# Essai pilote — une heure avec DesignOrbit.ai
 
 > Ce fichier est écrit par `node tools/pilot_kit.mjs --docs` à partir de `tools/pilot/content.mjs` : changez le contenu là, pas ici.
 > Le robot `tools/pilot_walk.mjs` suit ce parcours sur l'outil et vérifie que chaque mot cité « entre guillemets » est bien à l'écran.
@@ -10,7 +10,7 @@ L'outil est un logiciel libre en développement actif. Rien de ce qu'il calcule 
 ## Avant de commencer
 
 - Un ordinateur avec Chrome ou Edge, une fenêtre d'au moins 1366 px de large, une souris à molette. L'outil n'a pas été essayé au toucher, ni sur Firefox et Safari.
-- L'outil, de l'une de ces deux façons. En ligne : https://jpdesbiens11.github.io/DynamiteOrbit/ — connexion Google ; à la première visite l'écran montre une « empreinte d'accès » et un bouton « Demander l'accès » : l'administrateur l'approuve, puis la porte s'ouvre. Sur votre poste : Python 3.9 ou plus récent, « git clone https://github.com/jpdesbiens11/DynamiteOrbit.git », puis « python designwizard.py » dans le dossier — rien d'autre à installer, rien ne quitte votre poste.
+- L'outil, de l'une de ces deux façons. En ligne : https://jpdesbiens11.github.io/DynamiteOrbit.ai/ — connexion Google ; à la première visite l'écran montre une « empreinte d'accès » et un bouton « Demander l'accès » : l'administrateur l'approuve, puis la porte s'ouvre. Sur votre poste : Python 3.9 ou plus récent, « git clone https://github.com/jpdesbiens11/DynamiteOrbit.ai.git », puis « python designwizard.py » dans le dossier — rien d'autre à installer, rien ne quitte votre poste.
 - Une heure sans interruption. Ne préparez rien : c'est le premier contact que l'on veut voir.
 - La fiche de retour, à côté de vous. Notez au fil de l'eau : où vous avez hésité, ce que vous avez cherché sans le trouver.
 - Rien de confidentiel : l'essai se fait sur la démonstration, pas sur vos produits.
@@ -203,7 +203,7 @@ Les deux documents — le parcours et la fiche, en Word et en PDF — s'écriven
 
 ## Envoyer son avis
 
-- Un ticket « Retour d'essai » : https://github.com/jpdesbiens11/DynamiteOrbit/issues/new/choose — ou la fiche remise à la personne qui vous a invité.
+- Un ticket « Retour d'essai » : https://github.com/jpdesbiens11/DynamiteOrbit.ai/issues/new/choose — ou la fiche remise à la personne qui vous a invité.
 - Joignez si vous le pouvez une image de l'écran où vous avez hésité (bouton à appareil photo de la vue).
 - N'envoyez rien de confidentiel.
 

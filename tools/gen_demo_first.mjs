@@ -34,6 +34,6 @@ if (process.argv.includes("--dry")) process.exit(0);
 for (const t of b.tracks) { t.pts = t.pts.map((p) => [+p[0].toFixed(3), +p[1].toFixed(3)]); delete t.auto; }
 for (const v of b.vias) delete v.auto;
 const text = toDwiz(b), esc = (s) => s.replace(/\\/g, "\\\\").replace(/`/g, "\\`").replace(/\$\{/g, "\\${");
-const head = "/* DynamiteOrbit — the first board of the Labo, written by tools/gen_demo_first.mjs : a coin cell, two buttons, a red LED and a yellow\n   LED, from its functions to its copper, in the .dwiz format. Do not edit by hand : change the tool and run it again. */\n";
+const head = "/* DesignOrbit.ai — the first board of the Labo, written by tools/gen_demo_first.mjs : a coin cell, two buttons, a red LED and a yellow\n   LED, from its functions to its copper, in the .dwiz format. Do not edit by hand : change the tool and run it again. */\n";
 writeFileSync(new URL("../web/js/demo/demo_first_data.js", import.meta.url), `${head}\nexport const DEMO_FIRST = \`${esc(text)}\`;\n`);
 console.log("lines:", text.split("\n").length, "bytes:", text.length);

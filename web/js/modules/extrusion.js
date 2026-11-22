@@ -1,4 +1,4 @@
-/* DynamiteOrbit — Extrusion: profiled parts (aluminium or plastic). The cross-section can come from a generator,
+/* DesignOrbit.ai — Extrusion: profiled parts (aluminium or plastic). The cross-section can come from a generator,
    from a template, or from Claude: the prompt lists what must fit INSIDE and what sits OUTSIDE the profile. The tab
    "Profil" shows the section with those envelopes and the measurements the extrusion DFM rules use. */
 

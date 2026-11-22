@@ -1,4 +1,4 @@
-/* DynamiteOrbit — builds every part of an assembly in the kernel, solves the placements from the mates and shows
+/* DesignOrbit.ai — builds every part of an assembly in the kernel, solves the placements from the mates and shows
    the result in a viewer. Shared by Assemblage, Isolation, DFx, Rapport and Onshape. */
 
 import { store } from "./store.js";

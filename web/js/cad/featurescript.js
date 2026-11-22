@@ -1,4 +1,4 @@
-/* DynamiteOrbit — export of a part to Onshape FeatureScript: ONE Feature Studio source defining a custom feature that
+/* DesignOrbit.ai — export of a part to Onshape FeatureScript: ONE Feature Studio source defining a custom feature that
    rebuilds the part natively in Onshape, with the parameters of the part as inputs of the feature.
 
    EXPERIMENTAL: nothing here can be run against Onshape from this project, so the generator sticks to the oldest and
@@ -118,7 +118,7 @@ export function toFeatureScript(spec, opts = {}) {
       G.emit(`// NON CONVERTI : ${clean(title)} — ${why}`);
     }
   };
-  if (spec.step) G.warn("La géométrie importée (STEP) de cette pièce ne peut pas être reconstruite par un script : seules les fonctions ajoutées dans DynamiteOrbit sont converties.");
+  if (spec.step) G.warn("La géométrie importée (STEP) de cette pièce ne peut pas être reconstruite par un script : seules les fonctions ajoutées dans DesignOrbit.ai sont converties.");
   if (spec.pcb) G.main = "board";
   if (spec.extrusion) item("extrusion", "extrusion — section extrudée", () => emitExtrusionBlock(G, spec.extrusion));
   if (spec.pcb) item("pcb", "pcb — carte et composants", () => emitPcbBlock(G, spec.pcb));
@@ -148,7 +148,7 @@ export function toFeatureScript(spec, opts = {}) {
   if (skipped.length) G.warn(`${skipped.length} élément(s) sur ${total} non converti(s) : ${skipped.map((s) => s.feature).join(", ")}. Ils sont repérés « NON CONVERTI » dans le script.`);
 
   // ---- script ----
-  const title = `${spec.id || ""} ${spec.name || ""}`.trim() || "Pièce DynamiteOrbit";
+  const title = `${spec.id || ""} ${spec.name || ""}`.trim() || "Pièce DesignOrbit.ai";
   const identifier = opts.identifier && /^[A-Za-z_][A-Za-z0-9_]*$/.test(opts.identifier) && !FS_KEYWORDS.has(opts.identifier) ? opts.identifier
     : `dw_${String(spec.id || spec.name || "part").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "part"}`;
   const out = [`FeatureScript ${FS_VERSION};`, `import(path : "onshape/std/geometry.fs", version : "${FS_VERSION}.0");`, "",
@@ -163,15 +163,15 @@ export function toFeatureScript(spec, opts = {}) {
 
 /** The notice written at the top of every generated script (French: it is read by the user in Onshape). */
 export const FS_NOTICE = [
-  "EXPÉRIMENTAL — NON TESTÉ DANS ONSHAPE : ce script est généré automatiquement par DynamiteOrbit et n'a pas pu",
+  "EXPÉRIMENTAL — NON TESTÉ DANS ONSHAPE : ce script est généré automatiquement par DesignOrbit.ai et n'a pas pu",
   "être vérifié dans Onshape. Il peut demander des retouches. Contrôlez toujours la géométrie obtenue (cotes,",
-  "perçages, congés) avant de vous en servir ; la référence reste la pièce DynamiteOrbit et son export STEP.",
+  "perçages, congés) avant de vous en servir ; la référence reste la pièce DesignOrbit.ai et son export STEP.",
 ];
 
 function headerComment(title, converted, skipped, warnings) {
   const bar = "// " + "-".repeat(110), L = (s = "") => (s ? `// ${s}` : "//");
   const lines = [bar,
-    L(`Généré par DynamiteOrbit — export FeatureScript (Onshape) de la pièce « ${clean(title)} ».`), L(),
+    L(`Généré par DesignOrbit.ai — export FeatureScript (Onshape) de la pièce « ${clean(title)} ».`), L(),
     ...FS_NOTICE.map(L), L(),
     L("Mode d'emploi :"),
     L("  1. Dans un document Onshape, créez un Feature Studio (bouton « + » en bas à gauche, « Create Feature Studio »)."),

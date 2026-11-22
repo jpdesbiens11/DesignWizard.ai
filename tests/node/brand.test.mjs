@@ -4,7 +4,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
-import { BRAND, BRAND_LINE, MARK, FOOT_NOTE, FOOT_NOTE_ASCII, STL_HEADER, LOGO, stampLine, stampText, markKind, isMarked, drawLogo, logoSvg } from "../../web/js/core/brand.js";
+import { BRAND, BRAND_LINE, MARK, FOOT_NOTE, FOOT_NOTE_ASCII, STL_HEADER, LOGO, stampLine, stampText, markKind, isMarked, drawLogo, logoSvg, logoSvgBody, drawLogoCanvas } from "../../web/js/core/brand.js";
 import { logoPng } from "../../web/js/core/brand_logo.js";
 import { toDwiz, fromDwiz } from "../../web/js/core/dwiz.js";
 import { readGerber } from "../../web/js/pcba/gerber_read.js";
@@ -13,11 +13,11 @@ import { docx } from "../../web/js/core/docx.js";
 import { DEMO_DRIVE } from "../../web/js/demo/demo_drive.js";
 
 test("the words of the mark, as the house writes them", () => {
-  assert.equal(BRAND_LINE, "DynamiteOrbit™ by DynamiteAgile™"); assert.equal(MARK, "DynamiteOrbit™ by DynamiteAgile™ · Co-Intelligence WorkFlow™");
-  assert.equal(FOOT_NOTE, "DynamiteOrbit™ by DynamiteAgile™ · Co-Intelligence WorkFlow™ — document généré par DynamiteOrbit. La version électronique fait foi ; la version imprimée est pour référence.");
+  assert.equal(BRAND_LINE, "DesignOrbit.ai™ by DynamiteAgile™"); assert.equal(MARK, "DesignOrbit.ai™ by DynamiteAgile™ · Co-Intelligence WorkFlow™");
+  assert.equal(FOOT_NOTE, "DesignOrbit.ai™ by DynamiteAgile™ · Co-Intelligence WorkFlow™ — document généré par DesignOrbit.ai. La version électronique fait foi ; la version imprimée est pour référence.");
   assert.ok(/^[\x20-\x7e]+$/.test(FOOT_NOTE_ASCII) && /Co-Intelligence WorkFlow\(TM\)/.test(FOOT_NOTE_ASCII) && !/[*%]/.test(FOOT_NOTE_ASCII), "plain ASCII, and nothing a Gerber file would trip on");
   assert.ok(STL_HEADER.length <= 72 && !/^solid/i.test(STL_HEADER)); assert.equal(BRAND.workflow, "Co-Intelligence WorkFlow™");
-  assert.equal(stampLine(new Date(2026, 10, 16, 9, 5), "0.42.0"), "Extrait le 2026-11-16 09:05 — DynamiteOrbit v0.42.0"); assert.match(stampLine("nope"), /^Extrait le 1970-01-01|^Extrait le 1969-12-31/);
+  assert.equal(stampLine(new Date(2026, 10, 16, 9, 5), "0.42.0"), "Extrait le 2026-11-16 09:05 — DesignOrbit.ai v0.42.0"); assert.match(stampLine("nope"), /^Extrait le 1970-01-01|^Extrait le 1969-12-31/);
 });
 
 test("every text format takes the note where it may carry a comment — once, and without breaking what reads it", () => {
@@ -28,7 +28,7 @@ test("every text format takes the note where it may carry a comment — once, an
   assert.ok(cases["a.csv"] && stampText("a.csv", cases["a.csv"]).startsWith("ref;qte\nR1;2\n\""), "a CSV keeps its rows ; the note is one last quoted cell");
   assert.ok(stampText("v.dxf", cases["v.dxf"]).startsWith(`999\n${FOOT_NOTE_ASCII}\n0\nSECTION`), "a DXF comment is group 999"); assert.ok(stampText("s.step", cases["s.step"]).startsWith(`ISO-10303-21;\n/* ${FOOT_NOTE_ASCII} */\nHEADER;`));
   assert.ok(stampText("c-PTH.DRL", cases["c-PTH.DRL"]).startsWith(`M48\n; ${FOOT_NOTE_ASCII}\nMETRIC`)); assert.ok(stampText("f.fs", cases["f.fs"]).startsWith("FeatureScript 2000;"), "the version line of a FeatureScript stays first");
-  assert.ok(stampText("d.drawio", cases["d.drawio"]).startsWith("<?xml version=\"1.0\"?>\n<!-- DynamiteOrbit™"), "after the prolog, before the root"); assert.match(stampText("r.html", cases["r.html"]), /<!-- DynamiteOrbit™[^>]*-->\n<\/body>/);
+  assert.ok(stampText("d.drawio", cases["d.drawio"]).startsWith("<?xml version=\"1.0\"?>\n<!-- DesignOrbit.ai™"), "after the prolog, before the root"); assert.match(stampText("r.html", cases["r.html"]), /<!-- DesignOrbit\.ai™[^>]*-->\n<\/body>/);
   // the readers of the platform still read what it marks
   const back = fromDwiz(stampText("p.part.dwiz", cases["p.part.dwiz"])); assert.equal(back.id, DEMO_DRIVE.parts[0].id); assert.equal(toDwiz(back), cases["p.part.dwiz"], "the note is a comment of the .dwiz : the part comes back the same");
   const g = readGerber(stampText("c-F_Cu.gbr", cases["c-F_Cu.gbr"])); assert.equal(g.units, "mm"); assert.deepEqual(JSON.parse(stampText("o.json", cases["o.json"])), { _mark: FOOT_NOTE, a: 1 });
@@ -38,20 +38,25 @@ test("every text format takes the note where it may carry a comment — once, an
   const bytes = new Uint8Array([1, 2, 3]); assert.equal(stampText("a.txt", bytes), bytes, "bytes go through untouched");
 });
 
-test("the mark as a drawing : the same figure for the PDF, the page and the Word header", () => {
-  const calls = [], sheet = { line: (...a) => calls.push(["line", ...a]), polyline: (...a) => calls.push(["polyline", ...a]) };
-  drawLogo(sheet, 10, 20, 32); assert.deepEqual(calls.map((c) => c[0]), ["line", "line", "polyline", "polyline"]);
-  const pts = calls.flatMap((c) => (c[0] === "line" ? [[c[1], c[2]], [c[3], c[4]]] : c[1])); assert.ok(pts.every(([x, y]) => x >= 10 - 1e-9 && x <= 42 + 1e-9 && y >= 20 - 1e-9 && y <= 52 + 1e-9), "inside its 32 × 32 box");
-  assert.deepEqual([calls[0][5].color, calls[2][2].color, calls[3][2].fill, calls[3][2].close], [LOGO.ink, LOGO.blue, LOGO.yellow, true]); assert.match(logoSvg(24), /^<svg [^>]*viewBox="0 0 64 64" width="24" height="24"/); assert.equal((logoSvg().match(/<path /g) || []).length, 4);
+test("the mark as a drawing : the same figure for the PDF, the page, the label, the photo and the files of web/img/logo", () => {
+  const calls = [], sheet = { line: (...a) => calls.push(["line", ...a]), polyline: (...a) => calls.push(["polyline", ...a]), circle: (...a) => calls.push(["circle", ...a]) };
+  drawLogo(sheet, 10, 20, 32); assert.deepEqual(calls.map((c) => c[0]), ["line", "line", "polyline", ...LOGO.dots.map(() => "circle"), "polyline", "polyline", "polyline", "polyline"], "legs, orbit, trajectory, flame, fins, rocket");
+  const pts = calls.flatMap((c) => (c[0] === "line" ? [[c[1], c[2]], [c[3], c[4]]] : c[0] === "circle" ? [[c[1], c[2]]] : c[1])); assert.ok(pts.every(([x, y]) => x >= 10 - 1e-9 && x <= 42 + 1e-9 && y >= 20 - 1e-9 && y <= 52 + 1e-9), "inside its 32 × 32 box");
+  const last = calls[calls.length - 1][2]; assert.deepEqual([calls[0][5].color, calls[2][2].color, calls[3][4].fill, last.fill, last.close], [LOGO.ink, LOGO.blue, LOGO.blue, LOGO.yellow, true]);
+  assert.match(logoSvg(24), /^<svg [^>]*viewBox="0 0 64 64" width="24" height="24"/); assert.equal((logoSvg().match(/<path /g) || []).length, 7); assert.equal((logoSvg().match(/<circle /g) || []).length, LOGO.dots.length);
+  const body = (t) => t.replace(/^<svg[^>]*>/, "").replace(/<\/svg>\s*$/, "");
+  assert.equal(body(readFileSync(new URL("../../web/img/logo/mark.svg", import.meta.url), "utf8")), body(logoSvg()), "the generator (tools/sketch_logo.py) and brand.js draw the same mark");
+  assert.doesNotMatch(logoSvgBody("#fff"), /#26323f/, "a light ink writes the legs and the outlines");
+  const g = { calls: 0 }; for (const k of ["beginPath", "moveTo", "lineTo", "closePath", "fill", "stroke", "arc"]) g[k] = () => { g.calls++; }; drawLogoCanvas(g, 0, 0, 64); assert.ok(g.calls > 40, "the photo signs with the same figure");
   const png = logoPng(); assert.deepEqual([...png.slice(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10], "a PNG"); assert.ok(png.length > 2000 && png.length < 12000);
 });
 
 test("a PDF and a Word document : the mark on top of every page, the note at the bottom", () => {
   const doc = { title: "Gamme — P-1", subtitle: "Pièce", author: "A", date: new Date(Date.UTC(2026, 10, 16)), reference: "P-1-GAMME", revision: "B", header: "P-1 — Gamme", footer: "P-1 rév. B", blocks: [{ type: "h1", text: "1. Synthèse" }, { type: "p", text: "Texte." }, { type: "pagebreak" }, { type: "h1", text: "2. Suite" }] };
   const pdf = new TextDecoder("latin1").decode(pdfDoc(doc)), pages = (pdf.match(/\/Type \/Page\b/g) || []).length;
-  assert.ok(pages >= 3); assert.equal((pdf.match(/Co-Intelligence WorkFlow\\231 \\227 document/g) || []).length, pages, "the note on every page, the title page too"); assert.equal((pdf.match(/\(DynamiteOrbit\\231\)/g) || []).length, pages, "who made it, in the title block of every page"); assert.equal((pdf.match(/\(by DynamiteAgile\\231\)/g) || []).length, pages);
+  assert.ok(pages >= 3); assert.equal((pdf.match(/Co-Intelligence WorkFlow\\231 \\227 document/g) || []).length, pages, "the note on every page, the title page too"); assert.equal((pdf.match(/\(DesignOrbit\.ai\\231\)/g) || []).length, pages, "who made it, in the title block of every page"); assert.equal((pdf.match(/\(by DynamiteAgile\\231\)/g) || []).length, pages);
   const files = new Map(); { const z = docx(doc), dv = new DataView(z.buffer); let o = 0; while (dv.getUint32(o, true) === 0x04034b50) { const n = dv.getUint16(o + 26, true), x = dv.getUint16(o + 28, true), size = dv.getUint32(o + 18, true), name = new TextDecoder().decode(z.subarray(o + 30, o + 30 + n)); files.set(name, z.subarray(o + 30 + n + x, o + 30 + n + x + size)); o += 30 + n + x + size; } }
-  const xml = (n) => new TextDecoder().decode(files.get(n)); assert.ok(files.has("word/media/dw_logo.png")); assert.match(xml("word/header1.xml"), /DynamiteOrbit™/); assert.match(xml("word/header1.xml"), /P-1-GAMME/); assert.match(xml("word/header1.xml"), /NUMPAGES/); assert.ok(xml("word/footer1.xml").includes(FOOT_NOTE) && xml("word/footer1.xml").includes("CONFIDENTIEL — ce document"), "the footer : the confidentiality note, then the note of the platform");
+  const xml = (n) => new TextDecoder().decode(files.get(n)); assert.ok(files.has("word/media/dw_logo.png")); assert.match(xml("word/header1.xml"), /DesignOrbit\.ai™/); assert.match(xml("word/header1.xml"), /P-1-GAMME/); assert.match(xml("word/header1.xml"), /NUMPAGES/); assert.ok(xml("word/footer1.xml").includes(FOOT_NOTE) && xml("word/footer1.xml").includes("CONFIDENTIEL — ce document"), "the footer : the confidentiality note, then the note of the platform");
 });
 
 test("no writer of a document goes round the mark : the files that write one import it, or leave by download()", () => {

@@ -1,7 +1,7 @@
-# DynamiteOrbit — charte de marque
+# DesignOrbit.ai — charte de marque
 
 > « De l'intention à la pièce, de la pièce au système — la conception mécatronique réinventée, ouverte. »
-> DynamiteOrbit by DynamiteAgile™ — logiciel libre, licence MIT.
+> DesignOrbit.ai by DynamiteAgile™ — logiciel libre, licence MIT.
 
 Tout ce qui suit est **généré ou tokenisé** : les images sortent de `python3 tools/make_sketch_assets.py` (bibliothèque standard,
 résultat identique à chaque exécution), les couleurs et les formes sont des jetons CSS (`web/css/app.css`, `web/css/themes.css`).
@@ -9,44 +9,50 @@ On ne retouche jamais un SVG à la main. Aucune ressource externe : ni police we
 
 ![Planche du logo](img/brand/logo-sheet.png)
 
-## 1. Le logo : le compas-chapeau
+## 1. Le logo : le compas et la fusée
 
-Trois pistes ont été dessinées ; la première a été retenue.
+Le 22 novembre 2026, JP a choisi par menu, entre trois propositions dessinées, la piste **L3 — la fusée part sur sa trajectoire** :
+le produit s'appelle désormais **DesignOrbit.ai** et son monde est celui des fusées.
 
 | Piste | Idée | Verdict |
 |---|---|---|
-| **A. Compas-chapeau** | Un compas de dessinateur dont les deux branches forment le cône d'un chapeau de magicien ; l'arc qu'il trace est le bord du chapeau ; une étincelle au pivot. | **Retenue** : une seule silhouette porte les deux idées (l'outil de conception, le « wizard »), trois primitives, lisible à 16 px, entièrement construite. |
-| B. Cercle et carré de proportion + baguette | Construction « homme de Vitruve » traversée par un trait de baguette. | Écartée : belle en grand, mais devient une géométrie anonyme sous 32 px. |
-| C. Monogramme W en règle pliante | Un W fait de deux V, étincelle à un sommet. | Écartée : se lit comme une lettre, pas comme un outil ; trop proche de nombreux monogrammes. |
+| L1. Compas-fusée | Les deux branches du compas forment le corps de la fusée ; une coiffe jaune à hublot à la place de l'étincelle. | Proposée : la plus sobre. |
+| L2. Fusée au pivot | Une petite fusée complète posée sur le pivot ; le compas trace son orbite. | Proposée : un peu fine à 16 px. |
+| **L3. Sur sa trajectoire** | Le compas trace l'orbite (l'arc bleu) ; la fusée le quitte, inclinée, sur une trajectoire pointillée qui part du bord de l'orbite. | **Retenue par JP** : la plus dynamique, l'orbite du nom. |
+| A. Compas-chapeau (avant) | Le compas dont les branches formaient un chapeau de magicien, une étincelle au pivot. | Remplacée le 22 novembre 2026. |
 
 ### Construction (grille de 64, module 8)
 
 ![Construction](../web/img/logo/construction.svg)
 
 - **Pivot** P = (32 ; 15). **Branches** : de P vers (12 ; 51) et (52 ; 51), trait de 6, bouts ronds ; elles démarrent à 27 % de leur
-  longueur, sous l'étincelle.
-- **Bord** : l'arc que trace le compas — cercle de centre P, de rayon égal à la longueur d'une branche (≈ 41,2), balayé de 14° au-delà
-  de chaque branche, trait de 6.
-- **Étincelle** : étoile à quatre branches centrée sur P, rayon 13, taille de guêpe 30 %.
+  longueur.
+- **Orbite** : l'arc que trace le compas — cercle de centre P, de rayon égal à la longueur d'une branche (≈ 41,2), balayé de 14°
+  au-delà de chaque branche, trait de 6, bleu.
+- **Trajectoire** : sept points bleus de rayon 1,5, espacés de 6 le long de la courbe M5 38 Q9 14 38 12.
+- **Fusée** : corps jaune, deux ailerons graphite, flamme orangée, contour graphite de 2 ; la fusée dessinée nez en haut puis
+  tournée de 40°. Les nombres sont ceux de `LOGO` (`web/js/core/brand.js`), repris tels quels par `tools/sketch_logo.py` :
+  un essai tient `web/img/logo/mark.svg` égal à `logoSvg()`. Le PDF, la page, l'étiquette et la signature d'une photo dessinent
+  la même liste de formes (`logoShapes`).
 - **Zone de protection** : un module (8 unités, soit 1/8 du côté) tout autour — le cadre en tirets de la figure.
 - **Tailles minimales** : symbole 16 px ; logotype horizontal 24 px de haut ; sous 24 px, utiliser `favicon.svg`.
-- **Lettrage** : « DynamiteOrbit » et « by DynamiteAgile™ » sont tracés en lettrage technique à trait unique (hauteur de capitale 10,
+- **Lettrage** : « DesignOrbit.ai » et « by DynamiteAgile™ » sont tracés en lettrage technique à trait unique (hauteur de capitale 10,
   hauteur d'x 7, panses de rayon 3,5 — `GLYPHS` dans `tools/sketch_logo.py`) : pas de police, donc le même rendu partout.
 
 ### Fichiers
 
 | Fichier | Usage |
 |---|---|
-| `web/img/logo/mark.svg` (= `web/img/brand.svg`) | Symbole en couleur : branches graphite `#26323f`, arc bleu `#0c66e4`, étincelle jaune `#ffd23f`. Fonds clairs. |
+| `web/img/logo/mark.svg` (= `web/img/brand.svg`) | Symbole en couleur : branches graphite `#26323f`, orbite et trajectoire bleues `#0c66e4`, fusée jaune `#ffd23f`, flamme `#ff8f4a`. Fonds clairs. |
 | `web/img/logo/mark-mono.svg` | Symbole en `currentColor` : gravure, tampon, fonds colorés ou sombres. |
 | `web/img/logo/wordmark.svg`, `stacked.svg` | Logotype horizontal et empilé. |
 | `web/img/favicon.svg` | Symbole inversé sur pastille graphite : lisible sur onglets clairs et sombres. |
-| `web/img/icons.svg#i-logo` | Symbole dans le sprite : `currentColor` + `var(--acc)` pour l'étincelle — suit le thème et la brique active. |
+| `web/img/icons.svg#i-logo` | Symbole dans le sprite : `currentColor` + `var(--acc)` pour la fusée — suit le thème et la brique active. |
 | `web/img/og.svg`, `og.png` | Carte sociale 1200 × 630. |
 
 ### À faire / à ne pas faire
 
-- **Oui** : symbole seul dès que la place manque ; version mono sur toute couleur ; étincelle à la couleur d'accent de la brique.
+- **Oui** : symbole seul dès que la place manque ; version mono sur toute couleur ; fusée à la couleur d'accent de la brique.
 - **Non** : déformer, incliner, ombrer ou détourer le symbole ; changer l'angle des branches ; remplacer le lettrage par une police ;
   placer le symbole couleur sur un fond sombre (prendre `mark-mono` ou `i-logo`) ; ajouter un visage, un personnage ou un portrait ;
   rapprocher un autre logo dans la zone de protection ; écrire le nom du produit avec le nom d'une personne.
@@ -146,7 +152,11 @@ anglais quand ils sont l'usage (creepage, clearance, DFM, STEP, FeatureScript).
 
 ## 5. Icônes, logos de module, illustrations
 
-- **Icônes** : grille 24, trait `currentColor` de 1,75, bouts ronds, second passage de crayon à 38 % ; coordonnées entre 2,5 et 21,5.
+- **Icônes** — la « ligne de mission » (JP, 22 novembre 2026 : « en ligne avec le monde des fusées ») : grille 24, trait
+  `currentColor` de 1,75, bouts et jonctions ronds, côtés droits, cercles et arcs vrais ; tout contour fermé a les coins arrondis
+  d'un panneau (`mission()` : rayon 1,6 pour un rectangle, 1,2 pour un polygone ; une pointe de moins de 50° garde sa pointe) ;
+  second passage de crayon à 38 % dans Le.Carnet ; coordonnées entre 2,5 et 21,5. Les signes que toute interface connaît (coche,
+  croix, avertissement, chevrons, annuler…) gardent leur forme. L'assistant (`wizard`) est une tour de lancement et sa fusée.
   `<svg class="sk-icon"><use href="img/icons.svg#i-NOM"/></svg>`. `icons-crisp.svg` porte les mêmes identifiants sans tremblé, pour
   les thèmes construits. On ajoute une forme dans `ICONS` (`tools/sketch_icons.py`), jamais dans le sprite.
 - **Logos de module** (`web/img/marks/<clé>.svg`, 160 × 124) : une tache de surligneur derrière un dessin au graphite ; `ART` et `MARKS`
@@ -180,12 +190,12 @@ Captures de référence : `docs/img/brand/theme-carnet.png`, `theme-mecanique.pn
 Tout document qui sort de la plateforme dit qui l'a fait. Les mots viennent d'une seule source,
 `web/js/core/brand.js` — la formulation est celle de DynamiteAgile :
 
-> DynamiteOrbit™ by DynamiteAgile™ · Co-Intelligence WorkFlow™ — document généré par DynamiteOrbit. La version
+> DesignOrbit.ai™ by DynamiteAgile™ · Co-Intelligence WorkFlow™ — document généré par DesignOrbit.ai. La version
 > électronique fait foi ; la version imprimée est pour référence.
 
 | Document | Le visuel | La note |
 |---|---|---|
-| Rapports et gammes en **PDF** (`core/pdfdoc.js`) | Symbole et nom sur la page de titre ; symbole, « DynamiteOrbit™ by DynamiteAgile™ » et titre en tête de chaque page | Au pied de chaque page, page de titre comprise |
+| Rapports et gammes en **PDF** (`core/pdfdoc.js`) | Symbole et nom sur la page de titre ; symbole, « DesignOrbit.ai™ by DynamiteAgile™ » et titre en tête de chaque page | Au pied de chaque page, page de titre comprise |
 | Rapports et gammes en **Word** (`core/docx.js`) | En-tête de chaque page : symbole, nom, document, référence, révision, date, page | Pied de chaque page |
 | Classeurs **Excel** des calculs (`core/xlsx.js`) | Symbole et ligne de la marque en tête de chaque feuille | Au pied de chaque feuille imprimée, dans la feuille Notice et dans les propriétés du fichier |
 | **Dessins** PDF et SVG (`draw/drafting3.js`) | Symbole, nom et maison dans le cartouche | Sous le cadre de chaque feuille |
@@ -213,11 +223,11 @@ tableaux sortent en CSV.
 ## Le gabarit des documents à lire
 
 Les rapports, les gammes et le dossier de revue (PDF et Word) suivent un même gabarit, dans l'esprit du gabarit
-d'ingénierie de DynamiteAgile, avec le visuel de DynamiteOrbit :
+d'ingénierie de DynamiteAgile, avec le visuel de DesignOrbit.ai :
 
-- **Sur chaque page**, un cartouche d'en-tête encadré : le symbole et « DynamiteOrbit™ by DynamiteAgile™ » ; le titre
+- **Sur chaque page**, un cartouche d'en-tête encadré : le symbole et « DesignOrbit.ai™ by DynamiteAgile™ » ; le titre
   et le genre du document (RAPPORT DE REVUE DE CONCEPTION, GAMME…) ; le n° de document, la révision, la date et la page
-  « n de N ». Dessous, la ligne d'extraction (« Extrait le … — DynamiteOrbit v… ») et le projet.
+  « n de N ». Dessous, la ligne d'extraction (« Extrait le … — DesignOrbit.ai v… ») et le projet.
 - **Sur la première page** : le titre, les faits du document, le bloc **Approbation** (préparé par, vérifié par,
   approuvé par — nom, date, signature) et le **Journal des révisions** (révision, motif, sections touchées, nom, date).
   Le sommaire suit.

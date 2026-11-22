@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the English of a drawing. A sheet is written in English ; what the PROJECT writes on it — the name of
+/* DesignOrbit.ai — the English of a drawing. A sheet is written in English ; what the PROJECT writes on it — the name of
    the part, of its interfaces, the labels of its parameters, its finish, its notes, the name of the project — stays as it
    was typed, often in French. The project keeps, once, the English of these texts : project.drawing.words { text : English }.
    The drawing then writes the English where there is one, the text itself otherwise ; screens keep the text as typed.

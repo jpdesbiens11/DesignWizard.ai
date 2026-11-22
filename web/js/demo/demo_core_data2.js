@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the CORE board, written by tools/gen_demo_core.mjs : the small board laid on the top of a CORE of 8 cells
+/* DesignOrbit.ai — the CORE board, written by tools/gen_demo_core.mjs : the small board laid on the top of a CORE of 8 cells
    21700 in parallel, from its functions to its copper, in the .dwiz format. Do not edit by hand : change the tool and run it again. */
 export const DEMO_CORE_2 = `track +4V2 top w=0.5 pts=[[11.75, 26.75], [11.5, 26.75], [11.25, 27], [11.25, 28], [11.3, 28.3]]
 track +4V2 bottom w=0.5 pts=[[11.75, 26.75], [9, 29.5], [8.5, 29.5]]

@@ -1,4 +1,4 @@
-/* DynamiteOrbit — Logiciel : the LIST OF DELIVERY (cycle en V, « 7 Livraison ») : what must hold before the package leaves — the reference
+/* DesignOrbit.ai — Logiciel : the LIST OF DELIVERY (cycle en V, « 7 Livraison ») : what must hold before the package leaves — the reference
    and its level chosen, the CPU chosen, the requirements written, confirmed and allocated, no tile nobody asked for, every value confirmed,
    the design without error, every test passed and confirmed, every requirement proven — by a test, or signed when it is proven by an
    analysis or a review. Each line says where to go to settle it. It is the tool's own list : it does not replace the design review, nor the

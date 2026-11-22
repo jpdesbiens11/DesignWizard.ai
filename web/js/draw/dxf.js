@@ -1,4 +1,4 @@
-/* DynamiteOrbit — small DXF writer for 2D exchange with any DWG / DXF tool (AutoCAD, DraftSight, LibreCAD, QCAD,
+/* DesignOrbit.ai — small DXF writer for 2D exchange with any DWG / DXF tool (AutoCAD, DraftSight, LibreCAD, QCAD,
    laser and waterjet CAM...). ASCII DXF in the AutoCAD R12 dialect (AC1009): the oldest one every reader accepts, which is
    why polylines are POLYLINE / VERTEX / SEQEND (no LWPOLYLINE) and texts are plain ASCII (accents are removed).
    Drawing units are millimetres, 1:1, x to the right and y up. Pure module (browser and Node). */
@@ -25,7 +25,7 @@ const symbol = (s) => ascii(s).toUpperCase().replace(/[^A-Z0-9$_-]/g, "_").slice
 export class DxfDoc {
   /** opts: {comment: text written as a DXF comment (group 999) at the top of the file}. */
   constructor(opts = {}) {
-    this.comment = opts.comment || "DynamiteOrbit - DXF R12 (AC1009) - units: millimetres";
+    this.comment = opts.comment || "DesignOrbit.ai - DXF R12 (AC1009) - units: millimetres";
     this.layers = new Map();
     this.entities = [];
     this.ext = [Infinity, Infinity, -Infinity, -Infinity];
@@ -149,7 +149,7 @@ function drawSegments(doc, list, layer, dx = 0, dy = 0) {
  */
 export function viewsToDxf(views, opts = {}) {
   const gap = opts.gap ?? 20, keys = ["visible", "hidden", "smooth"];
-  const doc = new DxfDoc({ comment: `DynamiteOrbit - ${opts.title || "part views"} - third-angle projection, 1:1, units: millimetres` });
+  const doc = new DxfDoc({ comment: `DesignOrbit.ai - ${opts.title || "part views"} - third-angle projection, 1:1, units: millimetres` });
   doc.layer("VISIBLE", 7, "CONTINUOUS"); doc.layer("HIDDEN", 8, "HIDDEN"); doc.layer("THIN", 9, "CONTINUOUS");
   const v = views || {}, B = { front: bounds(v.front, keys), top: bounds(v.top, keys), right: bounds(v.right, keys) };
   if (!B.front && !B.top && !B.right) throw new Error("DXF : aucune vue à exporter (vues « front », « top », « right » vides).");
@@ -195,7 +195,7 @@ function drawLoop(doc, loop, layer, dx, dy) {
  */
 export function profileToDxf(profile, opts = {}) {
   const p = normalizeProfile(profile), [dx, dy] = opts.offset || [0, 0];
-  const doc = new DxfDoc({ comment: `DynamiteOrbit - ${opts.title || "profile"} - 1:1, units: millimetres` });
+  const doc = new DxfDoc({ comment: `DesignOrbit.ai - ${opts.title || "profile"} - 1:1, units: millimetres` });
   const layer = doc.layer(opts.layer || "PROFILE", opts.color ?? 7, "CONTINUOUS");
   for (const loop of [p.outer, ...p.holes]) drawLoop(doc, loop, layer, dx, dy);
   if (opts.title) { const h = opts.textHeight ?? 3.5, y = Number.isFinite(doc.ext[1]) ? doc.ext[1] : 0, x = Number.isFinite(doc.ext[0]) ? doc.ext[0] : 0; doc.layer("TEXT", 7, "CONTINUOUS"); doc.text(x, y - 5 - h, h, opts.title, "TEXT"); }
@@ -212,7 +212,7 @@ export function flatOutlineDxf(built, views) {
   const top = views && views.top;
   if (!top || !(top.visible || []).length) throw new Error("DXF : la vue de dessus (« top ») est vide, aucun contour à plat à exporter.");
   const bb = (built && built.bbox) || [0, 0, 0, 0, 0, 0], label = built ? [built.id, built.name].filter(Boolean).join(" ") : "";
-  const doc = new DxfDoc({ comment: `DynamiteOrbit - flat outline${label ? " of " + label : ""} - thickness ${fmt(bb[5] - bb[2])} mm - 1:1, units: millimetres` });
+  const doc = new DxfDoc({ comment: `DesignOrbit.ai - flat outline${label ? " of " + label : ""} - thickness ${fmt(bb[5] - bb[2])} mm - 1:1, units: millimetres` });
   doc.layer("CUT", 1, "CONTINUOUS");
   drawSegments(doc, top.visible, "CUT");
   return doc.toString();

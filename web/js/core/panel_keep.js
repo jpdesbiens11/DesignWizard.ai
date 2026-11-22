@@ -1,4 +1,4 @@
-/* DynamiteOrbit — a side panel drawn anew stays where it was (demande de JP). A studio draws a whole panel again when one of its
+/* DesignOrbit.ai — a side panel drawn anew stays where it was (demande de JP). A studio draws a whole panel again when one of its
    values changes : the panel came back at its top, and the field just typed in lost the cursor — one had to scroll down again after
    each value. Here the panel keeps its place : the scroll position it had, and the cursor in the field one was in (after Tab : in
    the next one, as in any form).

@@ -1,4 +1,4 @@
-/* DynamiteOrbit — turning a 3D view : where it pivots, and which way it goes (demandes de JP). The view turned about its
+/* DesignOrbit.ai — turning a 3D view : where it pivots, and which way it goes (demandes de JP). The view turned about its
    centre, which nothing showed, and some turns were blocked : nothing happened from the top view, and the tilt stopped short of
    the vertical. Now :
    - the view turns about THE POINT UNDER THE POINTER when the button goes down (the centre of the view off the model) : what is

@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the reference cases of the analytical models (validation.js runs them ; the simulation has its own in
+/* DesignOrbit.ai — the reference cases of the analytical models (validation.js runs them ; the simulation has its own in
    validation_fea.js). Each case is a worked example somebody else published : the given values and the printed result were read
    on the page named in `source.url` on 20 November 2026, and copied as printed (`given`, `printed`). Nothing else is taken from a
    source : no text, no figure.

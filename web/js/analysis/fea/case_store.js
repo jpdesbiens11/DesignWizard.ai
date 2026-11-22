@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the load case of a simulation, kept in the project (demande de JP : « finir On / Off »). The supports, the
+/* DesignOrbit.ai — the load case of a simulation, kept in the project (demande de JP : « finir On / Off »). The supports, the
    efforts, the zones, the planes, their copies and what is Off lived for the time of a visit : closing the page lost them.
    Now the cases of a part or an assembly are in the file of the project — one entry per document, holding the case IN USE and,
    beside it, the other cases kept under a name (demande de JP : « plusieurs cas de charge nommés par pièce ») :

@@ -1,4 +1,4 @@
-/* DynamiteOrbit — materials and processes (one source for the studios, the DFx rules, the BOM and the isolation analysis).
+/* DesignOrbit.ai — materials and processes (one source for the studios, the DFx rules, the BOM and the isolation analysis).
    Values are TYPICAL values of each family: the data sheet of the grade actually bought prevails.
    rho g/cm3 · cti = comparative tracking index (V, IEC 60112) for insulators · k W/m.K · E GPa. */
 

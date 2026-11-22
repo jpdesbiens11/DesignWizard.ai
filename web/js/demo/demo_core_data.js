@@ -1,7 +1,7 @@
-/* DynamiteOrbit — the CORE board, written by tools/gen_demo_core.mjs : the small board laid on the top of a CORE of 8 cells
+/* DesignOrbit.ai — the CORE board, written by tools/gen_demo_core.mjs : the small board laid on the top of a CORE of 8 cells
    21700 in parallel, from its functions to its copper, in the .dwiz format. Do not edit by hand : change the tool and run it again. */
 export const DEMO_CORE_1 = `dwiz board/1 CORE-1S8P-PCBA "Carte de CORE 1S8P"
-# DynamiteOrbit — fichier .dwiz : une instruction par ligne, « # » commente, les lignes en retrait précisent la ligne du dessus.
+# DesignOrbit.ai — fichier .dwiz : une instruction par ligne, « # » commente, les lignes en retrait précisent la ligne du dessus.
 
 # Pourquoi — les fonctions que la carte remplit
 description <<<

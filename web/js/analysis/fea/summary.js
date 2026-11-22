@@ -1,4 +1,4 @@
-/* DynamiteOrbit — what a kept simulation looks like in the design-review report. No dependency on the solver, so the
+/* DesignOrbit.ai — what a kept simulation looks like in the design-review report. No dependency on the solver, so the
    report can list the simulations of a project without loading it. */
 
 export const VERDICT = { ok: ["Concordant", "ok"], warn: ["Écart notable", "warn"], fail: ["Discordant", "danger"], none: ["Non recoupé", "neutral"] };

@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the door « Avec l'IA » of the Shop (demandes de JP : « propose seulement le bouton IA avec une proposition
+/* DesignOrbit.ai — the door « Avec l'IA » of the Shop (demandes de JP : « propose seulement le bouton IA avec une proposition
    de prompt qui doit être envoyé à Claude… réinjecter l'information… quels artéfacts vont être créés en apportant le résultat du
    prompt, qui peut être un .zip ou n'importe quelle forme de fichier » ; « pouvoir revenir en arrière si l'IA n'a pas bien compris »).
    The tool calls no AI : it WRITES the instruction, the person carries it to an assistant, and brings the answer back as a file
@@ -32,7 +32,7 @@ const j = (o) => JSON.stringify(o, null, 1);
     free interfaces), questions (the assistant asks before it answers) } → text */
 export function doorPrompt(project, o = {}) {
   const S = scopeOf(o.scope), P = project || {}, parts = P.parts || [], L = [];
-  L.push(`Tu es un concepteur mécanique senior. Tu vas m'aider à définir ${S.say} d'un produit mécatronique pour la plateforme DynamiteOrbit, qui construira chaque pièce en 3D directement à partir de ta réponse. On commence toujours par les INTERFACES : ce qu'une pièce relie la définit.`);
+  L.push(`Tu es un concepteur mécanique senior. Tu vas m'aider à définir ${S.say} d'un produit mécatronique pour la plateforme DesignOrbit.ai, qui construira chaque pièce en 3D directement à partir de ta réponse. On commence toujours par les INTERFACES : ce qu'une pièce relie la définit.`);
   L.push("", `CE QUE JE VEUX : ${String(o.ask || "").trim() || "(à dire en une phrase)"}`, "", `PROJET : ${P.name || "sans nom"}${P.description ? ` — ${P.description}` : ""}`);
   if (o.context !== false && parts.length) {
     L.push("", "PIÈCES DÉJÀ DANS LE PROJET :", ...parts.slice(0, 60).map((p) => `- ${p.id} — ${p.name || ""}${p.function ? ` : ${p.function}` : ""}`));

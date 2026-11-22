@@ -1,4 +1,4 @@
-/* DynamiteOrbit — « Gamme » tab of the assembly : the assembly routing to talk with the prototyping engineers.
+/* DesignOrbit.ai — « Gamme » tab of the assembly : the assembly routing to talk with the prototyping engineers.
    One step per part, in the order the mated interfaces give ; a click on a step shows the product as it stands at
    that step, the part being mounted highlighted ; the order is changed with the arrows and kept in the assembly, with
    the notes and the points to discuss. The Word and PDF sheets carry one picture of the view per step. */

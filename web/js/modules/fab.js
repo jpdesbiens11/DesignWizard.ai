@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the virtual fabrication shop (point 13 of the roadmap, JP : « un genre d'atelier de fab virtuel, une gamme de fab visuelle,
+/* DesignOrbit.ai — the virtual fabrication shop (point 13 of the roadmap, JP : « un genre d'atelier de fab virtuel, une gamme de fab visuelle,
    de la réception du brut au nettoyage et à l'ébavurage » ; choix cliqué : l'écran s'ouvre sur la gamme par défaut). The routing of a part
    (cad/process_plan.js), played step by step : in the centre, the part as it stands after each phase, turned toward the tool and set in the
    fixture of its station — made by the tool (core/fab_scene.js), a set-up of PRINCIPLE ; on the left, the flow, whose steps are dragged to

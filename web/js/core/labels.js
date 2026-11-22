@@ -1,4 +1,4 @@
-/* DynamiteOrbit — labels and stickers : what is stuck, riveted or marked on a product — a brand sticker, a rating plate,
+/* DesignOrbit.ai — labels and stickers : what is stuck, riveted or marked on a product — a brand sticker, a rating plate,
    a warning. A label belongs to an assembly and sits on one instance, on a flat face or wrapped on a cylinder ; it has a
    size in millimetres, a rotation, and an artwork : the mark of the platform, a text, or an image the designer brings.
    The artwork is one SVG, at scale, used both as the texture of the 3D view and as the file sent to the printer.
@@ -10,7 +10,7 @@
    Pure : no kernel, no DOM. */
 
 import { v3 } from "../cad/vec.js";
-import { LOGO } from "./brand.js";
+import { LOGO, logoSvgBody } from "./brand.js";
 
 const r2 = (x) => Math.round(x * 100) / 100, fr = (x) => String(r2(x)).replace(".", ","), esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 export const LABEL_KINDS = {
@@ -19,7 +19,7 @@ export const LABEL_KINDS = {
   marking: { label: "Direct marking", fr: "Marquage direct", text: "Gravé au laser ou tampographié sur la pièce : aucune épaisseur", lift: 0.03, color: "#25ad9f" },
 };
 export const LABEL_ARTS = {
-  logo: { fr: "Marque DynamiteOrbit", text: "Le sigle et le nom de la plateforme" },
+  logo: { fr: "Marque DesignOrbit.ai", text: "Le sigle et le nom de la plateforme" },
   text: { fr: "Texte", text: "Une ligne, et une seconde plus petite : un nom, une référence, un avertissement" },
   image: { fr: "Image", text: "Un fichier PNG, JPEG ou SVG que vous apportez" },
 };
@@ -27,7 +27,7 @@ export const LABEL_SHAPES = { rect: "Angles vifs", round: "Coins arrondis", pill
 export const IMAGE_LIMIT = 400000;           // characters of a data URL kept in the project : beyond, the project file grows too fast
 export const blankLabel = (id = "E1") => ({ id, name: "Autocollant", kind: "sticker", inst: null, w: 80, h: 30, turn: 0, on: null, art: { type: "text", text: "", sub: "", ink: "#1b2733", paper: "#ffffff", shape: "round" } });
 /** The sticker of the platform : its mark and its name, dark on white. */
-export const brandSticker = (id = "E1", patch = {}) => ({ ...blankLabel(id), name: "Sticker DynamiteOrbit", w: 180, h: 60, art: { type: "logo", text: "DynamiteOrbit", sub: "by DynamiteAgile™", ink: "#26323f", paper: "#ffffff", shape: "round" }, ...patch });
+export const brandSticker = (id = "E1", patch = {}) => ({ ...blankLabel(id), name: "Sticker DesignOrbit.ai", w: 180, h: 60, art: { type: "logo", text: "DesignOrbit.ai", sub: "by DynamiteAgile™", ink: "#26323f", paper: "#ffffff", shape: "round" }, ...patch });
 export const nextLabelId = (list) => `E${(list || []).reduce((m, l) => Math.max(m, parseInt(String(l.id).replace(/\D/g, ""), 10) || 0), 0) + 1}`;
 export const isWrapped = (label) => !!(label && label.on && Array.isArray(label.on.axis) && label.on.r > 0);
 
@@ -88,10 +88,8 @@ export function labelSvg(label, o = {}) {
   if (paper !== "none") out.push(`<rect x="0" y="0" width="${r2(w)}" height="${r2(h)}" rx="${rc}" fill="${esc(paper)}"/>`);
   const text = (s, x, y, fs, anchor = "middle", bold = true, fill = ink) => `<text x="${r2(x)}" y="${r2(y)}" font-family="Helvetica, Arial, sans-serif" font-size="${r2(fs)}" font-weight="${bold ? 700 : 400}" text-anchor="${anchor}" fill="${esc(fill)}">${esc(s)}</text>`;
   if (a.type === "logo") {
-    const wide = w / h >= 2.2 && a.text, m = Math.min(h - 2 * pad, wide ? h - 2 * pad : w - 2 * pad), k = m / LOGO.size, x0 = wide ? pad : (w - m) / 2, y0 = (h - m) / 2, { c, r, a0, a1 } = LOGO.arc, pt = (deg) => `${r2(x0 + (c[0] + r * Math.cos(deg * Math.PI / 180)) * k)} ${r2(y0 + (c[1] + r * Math.sin(deg * Math.PI / 180)) * k)}`;
-    for (const [x1, y1, x2, y2] of LOGO.legs) out.push(`<path d="M${r2(x0 + x1 * k)} ${r2(y0 + y1 * k)}L${r2(x0 + x2 * k)} ${r2(y0 + y2 * k)}" fill="none" stroke="${esc(ink)}" stroke-width="${r2(6 * k)}" stroke-linecap="round"/>`);
-    out.push(`<path d="M${pt(a0)}A${r2(r * k)} ${r2(r * k)} 0 0 1 ${pt(a1)}" fill="none" stroke="${LOGO.blue}" stroke-width="${r2(6 * k)}" stroke-linecap="round"/>`,
-      `<path d="M${LOGO.star.map(([px, py]) => `${r2(x0 + px * k)} ${r2(y0 + py * k)}`).join("L")}Z" fill="${LOGO.yellow}" stroke="${esc(ink)}" stroke-width="${r2(2 * k)}" stroke-linejoin="round"/>`);
+    const wide = w / h >= 2.2 && a.text, m = Math.min(h - 2 * pad, wide ? h - 2 * pad : w - 2 * pad), k = m / LOGO.size, x0 = wide ? pad : (w - m) / 2, y0 = (h - m) / 2;
+    out.push(`<g transform="translate(${r2(x0)} ${r2(y0)}) scale(${Math.round(k * 1e4) / 1e4})">${logoSvgBody(esc(ink))}</g>`);
     if (wide) { const tx = x0 + m + pad * 0.8, tw = w - tx - pad, fs = fitText(a.text, tw, a.sub ? m * 0.46 : m * 0.6), fs2 = a.sub ? Math.min(fs * 0.48, fitText(a.sub, tw, m * 0.24, 0.5)) : 0;
       out.push(text(a.text, tx, h / 2 + (a.sub ? fs * 0.12 : fs * 0.36), fs, "start")); if (a.sub) out.push(text(a.sub, tx, h / 2 + fs * 0.12 + fs2 * 1.25, fs2, "start", false)); }
   } else if (a.type === "image") {

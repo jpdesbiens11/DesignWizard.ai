@@ -1,4 +1,4 @@
-/* DynamiteOrbit — a section view. The part is cut by a plane square to an axis ; what lies between the eye and the plane is
+/* DesignOrbit.ai — a section view. The part is cut by a plane square to an axis ; what lies between the eye and the plane is
    taken away, what stays is projected like any view, and the outline of the cut itself is given apart, to be hatched.
    The 2D frame is the one of the hidden-line views : xdir to the right, xdir × dir upward. Used by the kernel worker and by the tests. */
 

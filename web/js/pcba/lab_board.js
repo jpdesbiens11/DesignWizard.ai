@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the electronics lab : the blocks of a board, simulated together (choix de JP, 19 novembre 2026 : « simuler la
+/* DesignOrbit.ai — the electronics lab : the blocks of a board, simulated together (choix de JP, 19 novembre 2026 : « simuler la
    chaîne de la carte d'un seul tenant — protection, abaisseur, linéaire, charges — pour que les essais d'ensemble du plan de test
    aient aussi leurs valeurs attendues »). Each block alone is fed by the bench (pcba/lab_bench.js) ; here the board feeds itself :
    the circuits of its blocks are joined by the nets of the board, a supply is put on what comes from outside, and each rail is

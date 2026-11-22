@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the launch kit, written : the one-page sheet in French and in English (PDF, and a picture of it), the texts to
+/* DesignOrbit.ai — the launch kit, written : the one-page sheet in French and in English (PDF, and a picture of it), the texts to
    post (Markdown, and a Word document at the template of the platform's documents), the script of the teaser — and, when they are
    given, the two teasers and their subtitles under their names. Not part of the application ; it needs the Chromium of the session
    (Playwright) for the sheet. Every file is named « Sujet_AAAA-MM-JJ », as the deposit in Drive wants (CLAUDE.md).
@@ -45,7 +45,7 @@ for (const p of POSTS) {
   for (const l of LANGS) { blocks.push({ type: "h2", text: l === "fr" ? "Français" : "English" }); for (const para of p[l].split("\n").filter((x) => x.trim())) blocks.push({ type: "p", text: para }); if (p.max) blocks.push({ type: "p", style: "muted", text: `${p[l].length} / ${p.max} ${l === "fr" ? "caractères" : "characters"}` }); }
 }
 blocks.push({ type: "h1", text: "Phrases d'accroche · Taglines" }, { type: "table", head: ["Français", "English"], rows: TAGLINES.map((t) => [t.fr, t.en]), widths: [50, 50] });
-keep(`Textes-de-publication_${date}.docx`, docx({ title: "Textes de publication", subtitle: "Kit de lancement — ready-to-post texts, français et anglais", header: "Textes de publication — kit de lancement", kind: "Communication", reference: "DW-COM-001", revision: "A", date: new Date(`${date}T12:00:00Z`), project: "DynamiteOrbit", organisation: "DynamiteAgile™", blocks }));
+keep(`Textes-de-publication_${date}.docx`, docx({ title: "Textes de publication", subtitle: "Kit de lancement — ready-to-post texts, français et anglais", header: "Textes de publication — kit de lancement", kind: "Communication", reference: "DW-COM-001", revision: "A", date: new Date(`${date}T12:00:00Z`), project: "DesignOrbit.ai", organisation: "DynamiteAgile™", blocks }));
 keep(`Bande-annonce_script_${date}.md`, stampText("script.md", teaserScript()));
 
 /* ---------- the teasers, under their names ---------- */

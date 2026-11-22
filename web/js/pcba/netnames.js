@@ -1,4 +1,4 @@
-/* DynamiteOrbit — PCBA: the naming convention of nets. A net name says what the copper carries, so that a schematic,
+/* DesignOrbit.ai — PCBA: the naming convention of nets. A net name says what the copper carries, so that a schematic,
    a layout, a Gerber viewer and a colleague read the same thing. */
 
 export const NET_CONVENTION = [

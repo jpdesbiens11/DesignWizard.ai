@@ -1,4 +1,4 @@
-/* DynamiteOrbit — « Plié · À plat » : a thin folded part seen in its flat state, in the 3D view of its studio (JP, 21 novembre 2026).
+/* DesignOrbit.ai — « Plié · À plat » : a thin folded part seen in its flat state, in the 3D view of its studio (JP, 21 novembre 2026).
    The convention of the mechanical modelers : a switch of the view between the folded part and its flat pattern ; on the flat, the bend
    lines (dash-dot, the colour of the bend lines of the « Développé » tab) and their notes — UP / DOWN, the angle, the inside radius, seen
    from the top face. A click on a note says which bend it is and where it is changed : the bends are not edited on the flat (they are

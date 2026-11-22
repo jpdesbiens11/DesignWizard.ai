@@ -1,4 +1,4 @@
-/* DynamiteOrbit — PCBA: an electronic board designed from what it must do. The screen follows the natural flow —
+/* DesignOrbit.ai — PCBA: an electronic board designed from what it must do. The screen follows the natural flow —
    functions, architecture, conceptual layout, preliminary review, detailed layout, checks, fabrication, detailed
    review — drawn as a diagram that shows where the board stands. The views a user of a classic ECAD tool expects
    (schematic, layers, stack-up, rules, net classes, bill of materials, outputs) stay one click away at all times. */

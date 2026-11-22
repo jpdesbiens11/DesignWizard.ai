@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the ROLE of a board (point 6, JP, 20 novembre 2026 : « chaque carte a un rôle — "Produit" ou "Banc d'essai" — seules les
+/* DesignOrbit.ai — the ROLE of a board (point 6, JP, 20 novembre 2026 : « chaque carte a un rôle — "Produit" ou "Banc d'essai" — seules les
    premières entrent dans l'assemblage, l'isolation et le rapport »).
    A board of the product goes into the product : its mechanical twin is born and mounted, its copper is analysed for isolation, the review
    report carries it. A board of a TEST BENCH is a tool of the lab — an adapter, a load, a fixture that drives the product's board — : it is

@@ -1,4 +1,4 @@
-/* DynamiteOrbit — Google sign-in (Google Identity Services, token flow), same pattern as SuperChef.ai.
+/* DesignOrbit.ai — Google sign-in (Google Identity Services, token flow), same pattern as SuperChef.ai.
    The access token lives in memory only — never in localStorage, never in a cookie. It lasts an hour and is renewed
    without a prompt a few minutes before it ends. The Google script is loaded on the first sign-in only, so the
    application stays fully offline until the user asks for Google. */

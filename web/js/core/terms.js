@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the glossary : the technical terms of the platform, as the trade says them — in English — with their
+/* DesignOrbit.ai — the glossary : the technical terms of the platform, as the trade says them — in English — with their
    French equivalent. The screens show the English term (`label` in each vocabulary table) ; the French one (`fr`) lives
    here, for whoever learned the trade in French. Pure : it gathers the tables, and adds the words of the mold, which belong
    to no table. A new brick that brings terms brings them with both names. */

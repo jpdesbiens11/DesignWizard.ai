@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the first board of the Labo (point 4 of the roadmap : « une pile, deux boutons, une DEL rouge et une DEL jaune ») : a coin
+/* DesignOrbit.ai — the first board of the Labo (point 4 of the roadmap : « une pile, deux boutons, une DEL rouge et une DEL jaune ») : a coin
    cell, and two buttons that light their LED by themselves. Its copper is written by tools/gen_demo_first.mjs (demo_first_data.js). */
 import { fromDwiz } from "../core/dwiz.js";
 import { DEMO_FIRST } from "./demo_first_data.js";

@@ -1,4 +1,4 @@
-/* DynamiteOrbit — Isolation : the bodies of an assembly grouped by what they are for the analysis. Conductors come
+/* DesignOrbit.ai — Isolation : the bodies of an assembly grouped by what they are for the analysis. Conductors come
    first, one group per potential in the order of the nets, with the colour of the net ; then the conductors that still
    wait for a potential, the floating metal, the insulators, and what is left out. Pure : the screen draws the groups. */
 

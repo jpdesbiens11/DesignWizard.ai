@@ -1,4 +1,4 @@
-/* DynamiteOrbit — Dessins: the 2D drawing of each part and of each assembly, generated from the 3D and the interfaces,
+/* DesignOrbit.ai — Dessins: the 2D drawing of each part and of each assembly, generated from the 3D and the interfaces,
    on a tabloid sheet (11 × 17 in) : standard views fitted in the middle, a small isometric view top right, notes bottom
    left, title block bottom right — with the parts list above it for an assembly. Every dimension has its balloon ; the
    left pane lists them all and gives each its class (normal, reference, SC, CSC). Shown as SVG, exported as a vector PDF. */

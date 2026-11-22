@@ -1,4 +1,4 @@
-/* DynamiteOrbit — detail views of a part drawing (JP : « un outil pour choisir une zone → vue de détail à une autre échelle, les vues se
+/* DesignOrbit.ai — detail views of a part drawing (JP : « un outil pour choisir une zone → vue de détail à une autre échelle, les vues se
    replacent seules »). As mechanical modellers do it : a circle drawn on a view — its centre, then its radius — becomes a view of its own,
    lettered (DETAIL D), at a larger scale, the circle and its letter left on the view it comes from. A detail is kept on the part (`details`),
    in the coordinates of its view, so it follows the part and the scale of the sheet ; On / Off and copies as every entry of a model. It

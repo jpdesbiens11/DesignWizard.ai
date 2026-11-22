@@ -1,4 +1,4 @@
-/* DynamiteOrbit — Simulation : the places of a condition on the real geometry.
+/* DesignOrbit.ai — Simulation : the places of a condition on the real geometry.
    A support, a load, a heat source is set on the product itself : any of its faces (plane, cylindrical, sloped, inside a housing),
    any of its edges, any of its points — one, or several chosen together (Ctrl + click) — and, on a model reduced by a cut, the face
    the cut leaves. A place is a short list of such items, kept in st.places under a key (« place:3 ») that the load case refers to ;

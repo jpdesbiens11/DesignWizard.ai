@@ -1,4 +1,4 @@
-/* DynamiteOrbit — reading a solved mesh at a point : what an instrument put on the product would say there.
+/* DesignOrbit.ai — reading a solved mesh at a point : what an instrument put on the product would say there.
    A result is kept with what it takes to be read anywhere, afterwards, without solving again :
      probe = { meshes: [{ grid: { nx, ny, nz, h, origin }, elemCell, elems, elemBody, T?, u? }], planes: [{ axis, at, keep, bc }],
                bodies: [{ name, E, nu }], scale (how much the deformed shape is amplified in the view), kind }

@@ -1,4 +1,4 @@
-/* DynamiteOrbit — Pièces: the part studio for every part of the project. */
+/* DesignOrbit.ai — Pièces: the part studio for every part of the project. */
 
 import { registerModule } from "../core/app.js";
 import { partStudio } from "./part_studio.js";

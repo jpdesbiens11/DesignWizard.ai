@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the names of the trade for a board (demande de JP : « certains de mes collègues appellent PCB la plaque
+/* DesignOrbit.ai — the names of the trade for a board (demande de JP : « certains de mes collègues appellent PCB la plaque
    verte de FR4 avec ses pistes, et le PCBA devient le "PCB" + "A = Assembly"… rester alignés sur la nomenclature de
    l'industrie… une bascule pour changer les noms partout »).
    The platform says « PCB » for the bare board and « PCBA » for the assembled one : the common usage. Other houses say it

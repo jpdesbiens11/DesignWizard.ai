@@ -99,7 +99,7 @@ class Pen:
                 return self.area_d(self.rect_pts(*shape[1:5]))
             if kind == "ellipse":
                 return self.area_d(self.ellipse_pts(*shape[1:5], n=18, overshoot=0))
-            if kind in ("poly", "curve"):
+            if kind in ("poly", "curve", "rpoly"):
                 return self.area_d(shape[1])
         if kind == "line":
             return self.line_d(*shape[1:5], factor=factor)
@@ -116,9 +116,36 @@ class Pen:
         if kind == "arc":
             cx, cy, rx, ry, start, sweep = shape[1:7]
             return self.curve_d(self.ellipse_pts(cx, cy, rx, ry, 10, start, sweep, 0), False, factor)
+        if kind == "rpoly":
+            return self.rpoly_d(shape[1], shape[2], shape[3], factor)
         if kind == "path":
             return shape[1]
         raise ValueError(kind)
+
+    def rpoly_d(self, points, closed, r, factor=1.0):
+        """« Mission line » outline: straight sides, every corner rounded like a panel (a quadratic arc of reach r along each
+        side, at most a third of the side); a corner sharper than 50° keeps its point (a star tip, an arrow head)."""
+        pts, n = list(points), len(points)
+        corners = []
+        for i in range(n):
+            if not closed and i in (0, n - 1):
+                corners.append(None)
+                continue
+            p0, p1, p2 = pts[i - 1], pts[i], pts[(i + 1) % n]
+            a, b = (p0[0] - p1[0], p0[1] - p1[1]), (p2[0] - p1[0], p2[1] - p1[1])
+            la, lb = math.hypot(*a) or 1, math.hypot(*b) or 1
+            ang = math.degrees(math.acos(max(-1, min(1, (a[0] * b[0] + a[1] * b[1]) / (la * lb)))))
+            d = 0 if ang < 50 else min(r, la / 3, lb / 3)
+            corners.append(None if d < 0.05 else ((p1[0] + a[0] / la * d, p1[1] + a[1] / la * d), p1, (p1[0] + b[0] / lb * d, p1[1] + b[1] / lb * d)))
+        ends = [(c[0], c[2]) if c else (pts[i], pts[i]) for i, c in enumerate(corners)]  # (arrive, leave) at each corner
+        f, out = self.f, ""
+        for i in range(n if closed else n - 1):
+            out += self.line_d(*ends[i][1], *ends[(i + 1) % n][0], factor=factor)
+        for c in corners:
+            if c:
+                (ax, ay), (cx, cy), (bx, by) = c
+                out += "M{} {}Q{} {} {} {}".format(f(ax), f(ay), f(cx + self.j(self.jitter * factor * 0.3)), f(cy + self.j(self.jitter * factor * 0.3)), f(bx), f(by))
+        return out
 
 
 # ---------------------------------------------------------------- geometry helpers (pure, no randomness)
@@ -130,6 +157,8 @@ def scaled(shape, s, dx, dy):
         return ("line", *t(shape[1], shape[2]), *t(shape[3], shape[4]))
     if kind in ("poly", "curve"):
         return (kind, [t(x, y) for x, y in shape[1]], shape[2])
+    if kind == "rpoly":
+        return ("rpoly", [t(x, y) for x, y in shape[1]], shape[2], shape[3] * s)
     if kind in ("rect", "ellipse"):
         x, y = t(shape[1], shape[2])
         return (kind, x, y, shape[3] * s, shape[4] * s)

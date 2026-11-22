@@ -1,4 +1,4 @@
-// Core of DynamiteOrbit: expressions, profiles, the part builder (real kernel), interfaces, automatic mating,
+// Core of DesignOrbit.ai: expressions, profiles, the part builder (real kernel), interfaces, automatic mating,
 // linked-interface propagation, the wand's language, the importer and the drawing composer.
 import test from "node:test";
 import assert from "node:assert/strict";

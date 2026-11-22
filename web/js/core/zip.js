@@ -1,4 +1,4 @@
-/* DynamiteOrbit — a tiny ZIP writer (stored, no compression, UTF-8 names): enough to hand a shop one file that holds
+/* DesignOrbit.ai — a tiny ZIP writer (stored, no compression, UTF-8 names): enough to hand a shop one file that holds
    the whole order package. No dependency. */
 
 const TABLE = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();

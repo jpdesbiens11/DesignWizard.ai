@@ -1,4 +1,4 @@
-/* DynamiteOrbit — builds the scene of the isolation analysis from the complete assembly: every body of every
+/* DesignOrbit.ai — builds the scene of the isolation analysis from the complete assembly: every body of every
    instance becomes a world-space triangle mesh with its electrical role.
    Role of a body: "conductor" (conductive material with a net), "floating" (conductive, no net), "insulator", "ignore". */
 

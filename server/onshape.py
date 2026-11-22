@@ -1,4 +1,4 @@
-"""Onshape REST client + proxy operations of the DynamiteOrbit local server (standard library only).
+"""Onshape REST client + proxy operations of the DesignOrbit.ai local server (standard library only).
 
 Coded against the Onshape API v17 reference of 2026-11-14 (docs/ONSHAPE.md): Basic auth with the API keys;
 `GET /users/sessioninfo` answers 204 for bad keys; 307 redirects are followed by hand, to *.onshape.com only;
@@ -431,7 +431,7 @@ class Onshape:
                 isinstance(m, dict) and m.get("messageName") in MODIFY_MESSAGES for m in requests):
             raise _bad("jsonRequests invalide. Correctif : envoyez 1 à 50 messages dont messageName vaut "
                        + ", ".join(MODIFY_MESSAGES) + ".")
-        body = {"description": str(description or "DynamiteOrbit")[:32],  # edit-history label: 32 chars max
+        body = {"description": str(description or "DesignOrbit.ai")[:32],  # edit-history label: 32 chars max
                 "jsonRequests": [{"formatVersion": "2021-01-01", **m} for m in requests]}
         r = self._client().call("POST", f"/drawings{_dwe(did, wid, eid)}/modify", body=body) or {}
         if not r.get("id"):

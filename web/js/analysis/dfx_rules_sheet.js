@@ -1,4 +1,4 @@
-/* DynamiteOrbit — DFM rules: sheet metal (laser cut + press brake) and flat cut plates (laser / waterjet / router),
+/* DesignOrbit.ai — DFM rules: sheet metal (laser cut + press brake) and flat cut plates (laser / waterjet / router),
    carried over from the user's rule book (SM-, MAT-, PL-, LAM- rules). A part with a « folded » block declares its bends :
    radius, edge heights, corner reliefs and holes near a bend are measured (dfx_rules_folded.js). Without the block, a
    shelled part is read as a folded tray (walls = flanges, shell t = sheet thickness) and the bend rules stay reminders

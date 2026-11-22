@@ -1,7 +1,7 @@
-/* DynamiteOrbit — the code behind what a screen shows. Every element has a text form : a part reads as FeatureScript
+/* DesignOrbit.ai — the code behind what a screen shows. Every element has a text form : a part reads as FeatureScript
    (the same definition Onshape runs — it can be pasted there as it is) and as its .dwiz specification ; an assembly, a
    board, the project read as .dwiz, and an assembly also carries the FeatureScript of its parts. The same text can go to
-   an AI, behind a short formal request : how to run the interview, and what must come back so that DynamiteOrbit can
+   an AI, behind a short formal request : how to run the interview, and what must come back so that DesignOrbit.ai can
    take it in again. Pure : no DOM. */
 
 import { toDwiz } from "./dwiz.js";
@@ -32,7 +32,7 @@ function fsOf(spec) {
 }
 /** The text forms of an element. → [{ key, label, text, file, notes }] — FeatureScript first when the element has a geometry of its own. */
 export function codeSources(project, e) {
-  const dwiz = { key: "dwiz", label: ".dwiz", text: toDwiz(light(e.doc)), file: `${e.id || "projet"}.dwiz`, notes: ["La spécification de haut niveau : c'est elle que DynamiteOrbit relit, et qu'une IA doit rendre."] };
+  const dwiz = { key: "dwiz", label: ".dwiz", text: toDwiz(light(e.doc)), file: `${e.id || "projet"}.dwiz`, notes: ["La spécification de haut niveau : c'est elle que DesignOrbit.ai relit, et qu'une IA doit rendre."] };
   if (e.kind === "part") { const f = fsOf(e.doc); return [{ key: "fs", label: "FeatureScript", text: f.text, file: `${e.id}.fs`, notes: ["La même définition qu'Onshape : collez-la dans un Feature Studio, puis insérez la fonction dans un Part Studio.", ...f.notes] }, dwiz]; }
   if (e.kind === "assembly") { const ids = [...partCounts(e.doc, finder(project)).keys()], parts = ids.map((id) => (project.parts || []).find((p) => p.id === id)).filter(Boolean);
     return [dwiz, { key: "fs", label: "FeatureScript des pièces", text: parts.map((p) => `// ===== ${p.id} — ${p.name || ""} =====\n${fsOf(p).text}`).join("\n"), file: `${e.id}_pieces.fs`, notes: [`Un assemblage se définit par ses liaisons, pas par du FeatureScript : voici celui de ses ${parts.length} pièce(s), l'une après l'autre.`] }]; }
@@ -41,9 +41,9 @@ export function codeSources(project, e) {
 /** The request that goes before the code when it is handed to an AI : the interview, then the form of the answer that comes back. */
 export function aiCodePrompt(project, e, source) {
   const what = `${KIND_FR[e.kind]} « ${e.id} »`, fs = source.key === "fs", dwiz = fs ? codeSources(project, e).find((s) => s.key === "dwiz") : null;
-  return [`Tu es l'assistant de conception de DynamiteOrbit. Voici ${what}${project.name ? ` du produit « ${project.name} »` : ""}, sous forme de ${fs ? "FeatureScript Onshape" : "spécification .dwiz"}.`,
+  return [`Tu es l'assistant de conception de DesignOrbit.ai. Voici ${what}${project.name ? ` du produit « ${project.name} »` : ""}, sous forme de ${fs ? "FeatureScript Onshape" : "spécification .dwiz"}.`,
     "", "ENTREVUE — avant de modifier quoi que ce soit, pose-moi au plus cinq questions, une à la fois, sur ce que je veux changer et pourquoi : fonction, interfaces, matière, procédé, quantité. Attends chaque réponse. Résume ensuite en trois lignes ce que tu vas faire, et attends mon accord.",
-    "", `RÉPONSE ATTENDUE — un seul bloc de code \`\`\`dwiz qui contient ${what} EN ENTIER dans le format .dwiz : mêmes repères, mêmes « key » d'interface, une instruction par ligne.${fs ? " Le FeatureScript te donne la géométrie exacte ; tu peux me rendre à part un FeatureScript corrigé pour Onshape, mais c'est le bloc dwiz qui revient dans DynamiteOrbit." : ""} Après le bloc, liste en clair ce que tu as changé. Ne donne aucun résultat d'analyse : la plateforme les recalcule.`,
-    "", "RETOUR — je colle ta réponse dans DynamiteOrbit (« Confier à l'IA », puis réimporter) : j'y vois chaque changement avant de l'appliquer.",
+    "", `RÉPONSE ATTENDUE — un seul bloc de code \`\`\`dwiz qui contient ${what} EN ENTIER dans le format .dwiz : mêmes repères, mêmes « key » d'interface, une instruction par ligne.${fs ? " Le FeatureScript te donne la géométrie exacte ; tu peux me rendre à part un FeatureScript corrigé pour Onshape, mais c'est le bloc dwiz qui revient dans DesignOrbit.ai." : ""} Après le bloc, liste en clair ce que tu as changé. Ne donne aucun résultat d'analyse : la plateforme les recalcule.`,
+    "", "RETOUR — je colle ta réponse dans DesignOrbit.ai (« Confier à l'IA », puis réimporter) : j'y vois chaque changement avant de l'appliquer.",
     "", `----- ${source.label} -----`, source.text.trimEnd(), ...(dwiz ? ["", "----- .dwiz — le format de ta réponse -----", dwiz.text.trimEnd()] : [])].join("\n");
 }

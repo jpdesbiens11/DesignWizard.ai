@@ -1,4 +1,4 @@
-/* DynamiteOrbit — Logiciel : START-UP, and what the software keeps in memory (demande de JP : « une fonction pour commencer à tester la
+/* DesignOrbit.ai — Logiciel : START-UP, and what the software keeps in memory (demande de JP : « une fonction pour commencer à tester la
    routine de démarrage, d'initialisation, la mémoire logicielle »). What happens between power and the first step is said in order — what
    the CPU does on its own (read in its data sheet), then what the software does : hal_init, bms_init, and the step, object after object.
    The start-up TEST runs that very sequence on the model and checks what a start must guarantee : every signal at zero after the

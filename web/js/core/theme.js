@@ -1,4 +1,4 @@
-/* DynamiteOrbit — themes: « Le.Carnet » (the company theme, default) and three design worlds. A theme is only a
+/* DesignOrbit.ai — themes: « Le.Carnet » (the company theme, default) and three design worlds. A theme is only a
    set of design tokens (web/css/themes.css) selected by html[data-theme]; the 3D views listen to "dw:theme". */
 
 export const THEMES = [

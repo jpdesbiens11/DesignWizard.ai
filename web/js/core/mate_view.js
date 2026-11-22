@@ -1,4 +1,4 @@
-/* DynamiteOrbit — what a mate is, shown : the definition of the joint between two parts, whatever its kind — bolt pattern,
+/* DesignOrbit.ai — what a mate is, shown : the definition of the joint between two parts, whatever its kind — bolt pattern,
    dowel pins, shaft / bore fit, planar contact, bonded joint, panel cut-out, rail, weld, pressure contact. From the two
    interfaces it ties, three things come out, all pure :
    · mateDefinition — the two sides, the plane they meet on (in the frame of the assembly), the shared parameters, the
