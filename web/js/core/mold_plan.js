@@ -72,7 +72,7 @@ export function moldPlan(spec, built) {
   const K = MOLDS[proc], m = spec.mold || {}, bb = boxOf(spec, built), pull = FACES[m.pull] ? m.pull : "+Z", ax = FACES[pull].axis, wall = m.wall > 0 ? m.wall : 2.5, log = [], cosmetic = (Array.isArray(m.cosmetic) ? m.cosmetic : []).filter((f) => FACES[f]);
   const metal = K.family === "metal", skim = m.machined > 0 ? m.machined : 0, arch = m.arch || "shell";
   /* the parting line : at the open rim of a shell, around the flat face of a cover or of a plate — the widest section, where the two halves meet */
-  const top = bb ? bb[ax + 3] : 0, level = typeof m.parting_level === "number" ? m.parting_level : top, pf = `${top >= level - 1e-6 ? "+" : "-"}${"XYZ"[ax]}`;
+  const top = bb ? bb[ax + 3] : 0, level = typeof m.parting_level === "number" ? m.parting_level : top, pf = `${bb && level <= bb[ax] + 1e-6 ? "-" : "+"}${"XYZ"[ax]}`;      // a parting line at the bottom face (a flat cover die) is on that face
   const loop = bb ? (() => { const [a, b] = [0, 1, 2].filter((k) => k !== ax), P = (u, v) => { const p = [0, 0, 0]; p[a] = u; p[b] = v; p[ax] = level; return p.map(r1); }; return [P(bb[a], bb[b]), P(bb[a + 3], bb[b]), P(bb[a + 3], bb[b + 3]), P(bb[a], bb[b + 3]), P(bb[a], bb[b])]; })() : [];
   const parting = { level: r1(level), axis: ax, face: pf, loop, text: arch === "shell" ? "au bord supérieur de la coque, tout autour" : "autour de la face plane, sur son arête" };
   log.push(`Pull ${pull} : le mold s'ouvre dans ce sens. Parting line ${parting.text}${bb ? ` (niveau ${fr(level)} mm)` : ""} — ${K.tool}.`);

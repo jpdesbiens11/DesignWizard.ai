@@ -52,8 +52,9 @@ export function placeFor(phase, proc, bbox) {
 
 const STEEL = "#b8c2cc", DARK = "#7c8a99", CAST = "#9aa5b1", WOOD = "#c79a64";      // light, so the part stands out from what holds it
 /** The fixture and machine of a phase, around the part placed by placeFor. → [{ id, label, kind: "box" | "cyl", c, s | a, b, r, color, opacity?, around? }]
-    around : a hollow thing the part stands INSIDE (a mould, a tank, a carton) — drawn see-through. */
-export function fixtureOf(kind, box) {
+    around : a hollow thing the part stands INSIDE (a mould, a tank, a carton) — drawn see-through. mould : the mould of the part in the frame
+    of the station (mouldIn) — the halves split at its parting line, the sprue and the runner to ITS gate, its overflows ; without it, a sprue on top. */
+export function fixtureOf(kind, box, mould = null) {
   const [x0, y0, , x1, y1, h] = box, w = x1 - x0, d = y1 - y0, m = Math.max(w, d), out = [];
   const B = (id, label, c, s, color, o = {}) => out.push({ id, label, kind: "box", c, s, color, ...o }), C = (id, label, a, b, r, color, o = {}) => out.push({ id, label, kind: "cyl", a, b, r, color, ...o });
   const table = (z, size = m * 2 + 120) => B("table", "Table", [0, 0, z - 10], [size, size * 0.7, 20], CAST);
@@ -75,10 +76,22 @@ export function fixtureOf(kind, box) {
     for (let k = 0; k < n; k++) B(`slat-${k}`, "Latte", [x0 - 20 + (k * (w + 40)) / (n - 1), 0, -9], [2, d + 60, 18], STEEL);
     table(-18, m + 120); C("head", "Tête laser", [x0 + w * 0.3, 0, h + 6], [x0 + w * 0.3, 0, h + 60], 10, DARK);
   } else if (kind === "mould") {
-    const g = 25, split = h / 2;
-    B("half-fixed", "Demi-moule fixe (côté injection)", [0, 0, split + (h - split + g) / 2], [w + 2 * g, d + 2 * g, h - split + g], STEEL, { opacity: 0.22, around: true });
-    B("half-moving", "Demi-moule mobile (côté éjection)", [0, 0, (split - g) / 2], [w + 2 * g, d + 2 * g, split + g], "#93a3b5", { opacity: 0.22, around: true });
-    C("sprue", "Buse d'injection", [0, 0, h + g], [0, 0, h + g + 45], 9, DARK);
+    const g = 25, M = mould, a = M ? M.axis : 2, lo = [x0, y0, 0], hi = [x1, y1, h], split = M ? Math.max(lo[a], Math.min(hi[a], M.split)) : h / 2;
+    const mid = [0, 1, 2].map((k) => (lo[k] + hi[k]) / 2), half = (from, to) => { const c = mid.slice(), s = [0, 1, 2].map((k) => hi[k] - lo[k] + 2 * g); c[a] = (from + to) / 2; s[a] = to - from; return [c, s]; };
+    const low = half(lo[a] - g, split), high = half(split, hi[a] + g), [mov, fix] = !M || M.sign > 0 ? [high, low] : [low, high];       // the moving half opens in the pull
+    B("half-fixed", "Demi-moule fixe (côté injection)", fix[0], fix[1], STEEL, { opacity: 0.22, around: true });
+    B("half-moving", "Demi-moule mobile (côté éjection)", mov[0], mov[1], "#93a3b5", { opacity: 0.22, around: true });
+    const G = M && M.gate, add = (p, n, k) => p.map((v, i) => v + n[i] * k), at = (p, v) => { const q = p.slice(); q[a] = v; return q; };
+    if (!G) C("sprue", "Buse d'injection", [0, 0, h + g], [0, 0, h + g + 45], 9, DARK);
+    else if (G.on === "face" || G.on === "bottom") C("sprue", G.on === "bottom" ? "Tube d'alimentation (par le bas)" : "Buse et carotte jusqu'au point d'injection", G.at, add(G.at, G.n, g + 45), 5, DARK);
+    else {                                                                    // at the parting line (or under it) : the sprue comes through the fixed half beside the part, a runner runs along the parting plane to the gate
+      const s = at(add(G.at, G.n, 16), split), out = !M || M.sign > 0 ? lo[a] - g - 40 : hi[a] + g + 40;
+      C("sprue", "Carotte (sprue) et buse, à travers le demi-moule fixe", s, at(s, out), 5, DARK); C("runner", "Canal (runner) dans le plan de joint", s, at(G.at, split), 2.5, "#2563eb");
+      if (Math.abs(G.at[a] - split) > 0.05) C("tunnel", "Tunnel jusqu'au point d'injection, sous le plan de joint", add(at(G.at, split), G.n, 1), add(G.at, G.n, 1), 1, "#2563eb");
+      const t = [0, 1, 2].find((k) => k !== a && Math.abs(G.n[k]) < 0.5), side = hi[t] - lo[t];
+      if (G.kind === "ingate") { const c = add(at(G.at, split), G.n, 3), sz = [0, 1, 2].map((k) => (k === a ? 1.5 : k === t ? side * 0.6 : 6)); B("ingate", "Ingate : le métal entre en lame mince", c, sz, "#2563eb"); }
+      if (M.overflow) for (const k of [-1, 0, 1]) { const c = add(at(M.overflow.at, split), M.overflow.n, 7); c[t] += (k * side) / 3; B(`overflow-${k + 1}`, "Overflow et évent, à l'opposé de l'ingate", c, [0, 1, 2].map((q) => (q === a ? 4 : q === t ? 8 : 6)), "#0ea5a4"); }
+    }
   } else if (kind === "print") {
     B("plate", "Plateau", [0, 0, -4], [m + 60, m + 60, 8], "#9ca3af"); for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) B(`post-${sx}${sy}`, "Montant", [sx * (m / 2 + 40), sy * (m / 2 + 40), (h + 60) / 2], [10, 10, h + 60], DARK);
     C("nozzle", "Tête d'impression", [0, 0, h + 4], [0, 0, h + 30], 8, "#d4a017");
@@ -115,5 +128,17 @@ export function solidBox(s) {
   const lo = [0, 1, 2].map((k) => Math.min(s.a[k], s.b[k])), hi = [0, 1, 2].map((k) => Math.max(s.a[k], s.b[k])), ax = [0, 1, 2].map((k) => Math.abs(s.b[k] - s.a[k]) > 1e-9);
   return [0, 1, 2].map((k) => lo[k] - (ax[k] && !ax.every(Boolean) && ax.filter(Boolean).length === 1 ? 0 : s.r)).concat([0, 1, 2].map((k) => hi[k] + (ax[k] && ax.filter(Boolean).length === 1 ? 0 : s.r)));
 }
-/** The whole scene of a phase. → { kind, station, place, solids } */
-export function sceneOf(phase, proc, bbox) { const kind = stationKind(phase, proc), place = placeFor(phase, proc, bbox); return { kind, station: STATIONS[kind], place, solids: fixtureOf(kind, place.box) }; }
+const NORMAL = { "+X": [1, 0, 0], "-X": [-1, 0, 0], "+Y": [0, 1, 0], "-Y": [0, -1, 0], "+Z": [0, 0, 1], "-Z": [0, 0, -1] };
+/** The mould of a part (moldPlan of core/mold_plan.js) in the frame of the station : the axis and sense of the pull, the level of the parting
+    line, the gate and the overflows, each with the outward normal of its face. null when the plan says too little. */
+export function mouldIn(m, mp) {
+  if (!mp || !mp.parting || !NORMAL[mp.pull]) return null;
+  const d = dirToStation(m, NORMAL[mp.pull]), a = [0, 1, 2].reduce((b, k) => (Math.abs(d[k]) > Math.abs(d[b]) ? k : b), 0), P = [0, 0, 0]; P[mp.parting.axis] = mp.parting.level;
+  const spot = (x) => (x && Array.isArray(x.at) && NORMAL[x.face] ? { at: toStation(m, x.at), n: dirToStation(m, NORMAL[x.face]) } : null), G = spot(mp.gate);
+  return { axis: a, sign: Math.sign(d[a]), split: toStation(m, P)[a], gate: G && { ...G, kind: mp.gate.kind, on: mp.gate.on }, overflow: spot(mp.overflow) };
+}
+/** The whole scene of a phase. mould : the mould plan of a moulded part (moldPlan), drawn on its moulding phase. → { kind, station, place, solids } */
+export function sceneOf(phase, proc, bbox, mould = null) {
+  const kind = stationKind(phase, proc), place = placeFor(phase, proc, bbox);
+  return { kind, station: STATIONS[kind], place, solids: fixtureOf(kind, place.box, kind === "mould" ? mouldIn(place.matrix, mould) : null) };
+}

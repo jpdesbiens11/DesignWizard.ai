@@ -186,7 +186,7 @@ export function routing(spec, built) {
     const face = f.face ? faceKey(f.face) : null, o = { face, source: f.id }, n = countAt(f.at);
     try {
       if (f.op === "interfaces") { ifaceSteps(); ifaceDone = true; }
-      else if (nearNet && !["tap", "deburr", "finish"].includes(f.op) && !(f.op === "hole" && f.thread)) shaped++;
+      else if (nearNet && !["tap", "deburr", "finish", "face", "step"].includes(f.op) && !(f.op === "hole" && f.thread)) shaped++;      // a skimmed face, a shoulder : never out of the mould — a rework
       else if (["drill", "tap", "cbore", "csink", "ream", "bore", "hole"].includes(f.op)) {
         const k = isShopVerb(f.op) ? SHOP_VERBS[f.op].expand(f, {})[0] : f;
         const through = thru(k), l = holeLine({ ...k, through }, f.op === "bore" ? 1 : n);

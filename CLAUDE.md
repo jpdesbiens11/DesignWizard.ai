@@ -308,11 +308,15 @@ fabrication virtuel)** — faits (v0.142.0 à v0.145.0) ; le projet BM bonifié 
    usinées, moulées ou coulées, extrudées, embouties ou découpées au laser se jouent ; l'outil usine le long d'un parcours écrit par
    une IA (trois exemples dans les démonstrations), lu et vérifié par l'outil ; au tour, la pièce dans l'axe du mandrin ; le brut
    supposé d'une pièce tout usinée. Reste : une pièce coulée et reprise dans les démonstrations ; l'enlèvement de matière.
-14. **Deux exemples éducatifs complets** (demande de JP, 20 novembre : « c'est vraiment important ») : une **pièce plastique
-   moulée par injection** complexe — ribs, parting line, points d'injection (gates), dépouilles… — et une **pièce die cast
-   haute pression**, inspirées de modèles connus du web **par leurs principes**, références citées (lues, avec leur niveau
-   de vérification), aucun dessin ni modèle copié, aucune marque. On doit voir **le flux complet** de la pièce : conception,
-   gamme animée (point 13), puis le dessin 2D et les artéfacts destinés au fournisseur.
+14. ~~**Deux exemples éducatifs complets**~~ — fait (v0.162.0 ; demande de JP, 20 novembre : « c'est vraiment important ») : une
+   **coque injectée** en PC-ABS (paroi unique de 2 mm, dépouilles, nervures à 60 % de la paroi, bossages noyés, edge gate au plan
+   de joint) et une **équerre HPDC** en A380 (parois de 4 mm, nervures et bossages dépouillés, ingate et overflows, tiroir pour les
+   trous du flasque, puis surfaçage et taraudage), chacune sans avertissement DFx — `demo/demo_molded.js`, `docs/EXEMPLES_MOULES.md`.
+   Dans l'Atelier de fab, **le moule est celui de la pièce** (`mouldIn` de `core/fab_scene.js` : plan de joint, carotte, canal,
+   point d'injection, overflows) et **une pièce coulée reste brute jusqu'à ses reprises**, faites en posages d'usinage (la face
+   surfacée d'abord) le long d'un parcours écrit par Claude. Un guide public lu (Protolabs, injection : dépouille, parois) est au
+   registre (`im-guide-read`) ; le guide de fonderie ouvert ne donnait aucun nombre. Reste : une pièce plus complexe (clips,
+   lifters, insert surmoulé) ; un guide de fonderie sous pression lu ; la carte de remplissage n'est pas simulée.
 
 18. ~~**Communication RS-485, de la pièce au code**~~ — fait (v0.116.0 ; demande de JP du 20 novembre) : bloc complet,
    essais du Labo (niveaux, bus au repos, une trame), carte d'exemple routée, fiche d'interface matériel / logiciel lue

@@ -87,13 +87,21 @@ export function processPlan(spec, built, opts = {}) {
   const phase = (key, title, station, steps, extra = {}) => { if (steps.length || extra.force) phases.push({ key, title, station, ops: steps.map(op), note: notes[key] || "", ...extra }); };
   const of = (kinds) => r.steps.filter((s) => kinds.includes(s.kind));
   const bare = proc === "pcb";      // a bare board comes drilled and routed from its maker : one phase
-  phase("stock", near ? "Mise en forme" : bare ? "Fabrication de la carte nue" : "Approvisionnement et débit", stations[0], [...of(["stock", "cut"]), ...(near ? of(["machine"]) : bare ? of(["machine", "hole"]) : [])]);
+  phase("stock", near ? "Mise en forme" : bare ? "Fabrication de la carte nue" : "Approvisionnement et débit", stations[0], [...of(["stock", "cut"]), ...(near ? of(["machine"]).filter((s) => !s.face) : bare ? of(["machine", "hole"]) : [])]);
   if (bare) { /* nothing is taken up again */ } else if (!near) {
     const work = of(["machine", "hole"]), free = work.filter((s) => !s.face), faces = [...new Set(work.filter((s) => s.face).map((s) => s.face))];
     faces.forEach((f, i) => phase(`setup:${f}`, `${proc === "cnc_turning" ? "Tournage" : proc === "sheet_metal" || proc === "laser_cut" ? "Reprise" : "Usinage"} — posage ${i + 1}, ${FACE_FR[f] || f}`, stations[1], [...(i === 0 ? free : []), ...work.filter((s) => s.face === f)],
       { hold: proc === "cnc_turning" ? "mandrin trois mors, butée de longueur" : `étau ou bridage, appui sur la face opposée (${FACE_FR[OPPOSITE[f]] || OPPOSITE[f]})` }));
     if (!faces.length) phase("setup:free", "Usinage", stations[1], free);
-  } else phase("rework", "Reprises", stations[1], of(["hole"]));
+  } else {
+    /* a moulded or cast part : threads and inserts are reworks ; a face skimmed or a shoulder cut is machining — one set-up per face, the
+       skimmed face first (it is the datum of the others), the part held on its as-cast faces, then on the one just machined */
+    const cut = of(["machine"]).filter((s) => s.face), holes = of(["hole"]);
+    if (!cut.length) phase("rework", "Reprises", stations[1], holes);
+    else { const work = [...cut, ...holes], key = (s) => s.face || "+Z", faces = [...new Set([...cut.map(key), ...holes.map(key)])];
+      faces.forEach((f, i) => phase(`setup:${f}`, `Reprise d'usinage — posage ${i + 1}, ${FACE_FR[f] || f}`, stations[1], work.filter((s) => key(s) === f),
+        { hold: i === 0 ? "montage sur les appuis bruts (3-2-1), loin du plan de joint et des traces d'éjection" : `appui sur la face reprise au posage 1 (${FACE_FR[faces[0]] || faces[0]})` })); }
+  }
   phase("bend", "Pliage", "Presse plieuse", of(["bend"]), { hold: "butée arrière réglée sur la cote du bord ; premier pli contrôlé à l'équerre avant la série" });
   const fin = of(["finish"]), surface = fin.filter((s) => /^Finition/.test(s.text));
   phase("deburr", "Ébavurage", "Établi", bare ? [] : fin.filter((s) => !/^Finition/.test(s.text)));
@@ -114,9 +122,10 @@ export function processPlan(spec, built, opts = {}) {
 /** The part as it stands after the phase of index k : the features of the later phases are left out, and the interfaces
     until the last phase that works on them. Returns a spec to build, or null when the whole part is the right picture. */
 export function stateSpec(spec, plan, k) {
-  if (k >= plan.phases.length - 1 || NEAR_NET.has(spec.process) || spec.process === "pcb") return null;
-  const phaseOf = new Map(), ifaceAt = Math.max(-1, ...plan.phases.map((ph, i) => (ph.ops.some((o) => o.iface) ? i : -1)));
-  plan.phases.forEach((ph, i) => ph.ops.forEach((o) => { if (o.source) phaseOf.set(o.source, i); }));
+  if (k >= plan.phases.length - 1 || spec.process === "pcb") return null;
+  /* a moulded or cast part comes out of its mould whole, interfaces included : only its reworks (a skimmed face, a thread) wait for their phase */
+  const near = NEAR_NET.has(spec.process), phaseOf = new Map(), ifaceAt = near ? -1 : Math.max(-1, ...plan.phases.map((ph, i) => (ph.ops.some((o) => o.iface) ? i : -1)));
+  plan.phases.forEach((ph, i) => ph.ops.forEach((o) => { if (o.source && (!near || ph.key.startsWith("setup:"))) phaseOf.set(o.source, i); }));
   const features = (spec.features || []).filter((f) => f && (f.op === "interfaces" ? ifaceAt <= k : !phaseOf.has(f.id) || phaseOf.get(f.id) <= k));
   if (features.length === (spec.features || []).length && ifaceAt <= k) return null;
   return { ...spec, features, interfaces: ifaceAt <= k ? spec.interfaces : [] };

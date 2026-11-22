@@ -16,6 +16,7 @@ import { pickList } from "../core/pick_list.js";
 import { partGroups } from "../core/part_groups.js";
 import { processPlan, stateSpec } from "../cad/process_plan.js";
 import { sceneOf, fixtureMeshes, toStation, dirToStation } from "../core/fab_scene.js";
+import { moldPlan } from "../core/mold_plan.js";
 import { flatOf, flatSpec } from "../core/flat_pattern.js";
 import { flowKeys, moveKey, dropKey, orderIssues, stepMeasures, emptyState, blankSpec } from "../core/fab_flow.js";
 import { fabPlayable, toolMoves, passesOf, pathIssues, faceOf, timeline, tipAt, pathAsk, FAB_TOOLS } from "../core/fab_path.js";
@@ -55,8 +56,8 @@ function render(main, args) {
   }
   const vp = createViewport(view, { select: false, name: () => id }), cap = el("span", { class: "chip stage", "data-fab-caption": "" }, "—");
   vp.setStatus(cap);
-  const st = { plan: null, built: null, i: 0, states: new Map(), blank: new Set(), token: 0, anim: 0, playing: false, busy: false, sc: null };
-  const spec = () => store.part(id), lathe = () => spec().process === "cnc_turning", scene = (i) => { const b = st.states.get(i) || st.built; return sceneOf(st.plan.phases[i], spec().process, b.bbox); };
+  const st = { plan: null, mp: null, built: null, i: 0, states: new Map(), blank: new Set(), token: 0, anim: 0, playing: false, busy: false, sc: null };
+  const spec = () => store.part(id), lathe = () => spec().process === "cnc_turning", scene = (i) => { const b = st.states.get(i) || st.built; return sceneOf(st.plan.phases[i], spec().process, b.bbox, st.mp); };
   const caption = (i) => { const ph = st.plan.phases[i], sc = scene(i); return `${ph.n} — ${ph.title} · ${sc.station.label}`; };
   const before = async (i) => (i > 0 ? stateOf(i - 1) : st.built);
   async function stateOf(i) {
@@ -69,7 +70,7 @@ function render(main, args) {
   /** Paints step i : the part as it stands (after the phase, or o.pre : before it), placed for the tool, and the fixture of its station. → its measures */
   async function show(i, o = {}) {
     const token = st.token, b = o.pre || (await stateOf(i)); if (token !== st.token) return null;
-    st.i = i; const sc = (st.sc = sceneOf(st.plan.phases[i], spec().process, b.bbox)), v = vp.viewer;
+    st.i = i; const sc = (st.sc = sceneOf(st.plan.phases[i], spec().process, b.bbox, st.mp)), v = vp.viewer;
     if (!o.keep) v.clearOverlays("fab-path"); for (const k of [...v.objects.keys()]) v.remove(k);
     showBuilt(v, b, { prefix: "fab-part", matrix: sc.place.matrix, pickable: false });
     for (const m of fixtureMeshes(sc.solids)) v.add(m);
@@ -117,7 +118,7 @@ function render(main, args) {
   }
   async function load() {
     const token = ++st.token; st.states.clear(); st.blank.clear(); vp.setBusy("Gamme de la pièce, et la pièce telle qu'elle est après chaque phase…");
-    try { st.built = await kernel.build(spec(), undefined, id); if (token !== st.token) return; st.plan = processPlan(spec(), st.built); vp.setBusy(""); await show(Math.min(st.i, st.plan.phases.length - 1)); setStatus(`Atelier : ${id}, ${st.plan.phases.length} phases`, "done"); }
+    try { st.built = await kernel.build(spec(), undefined, id); if (token !== st.token) return; st.plan = processPlan(spec(), st.built); st.mp = moldPlan(spec(), st.built); vp.setBusy(""); await show(Math.min(st.i, st.plan.phases.length - 1)); setStatus(`Atelier : ${id}, ${st.plan.phases.length} phases`, "done"); }
     catch (e) { vp.setBusy(""); setStatus(`${id} : ${e.message}`, "bad"); }
   }
   const saveOrder = (keys, label) => store.updatePart(id, (x) => { x.plan = { ...(x.plan || {}), order: keys }; }, `${id} : atelier — ${label}`);
@@ -130,7 +131,7 @@ function render(main, args) {
   }
   function drawFlow() {
     if (!st.plan) return; const keys = flowKeys(st.plan), custom = !!(spec().plan && spec().plan.order); let drag = null;
-    flowBox.replaceChildren(...st.plan.phases.map((ph, i) => { const sc = sceneOf(ph, spec().process, (st.states.get(i) || st.built).bbox), moving = hasPath(i);
+    flowBox.replaceChildren(...st.plan.phases.map((ph, i) => { const sc = sceneOf(ph, spec().process, (st.states.get(i) || st.built).bbox, st.mp), moving = hasPath(i);
       return el("div", { class: `fab-step${i === st.i ? " on" : ""}`, role: "listitem", draggable: "true", "data-step": ph.key, "aria-current": i === st.i ? "step" : null,
         onClick: () => goTo(i), onDragstart: (e) => { drag = ph.key; e.dataTransfer.effectAllowed = "move"; }, onDragover: (e) => e.preventDefault(), onDrop: (e) => { e.preventDefault(); if (drag && drag !== ph.key) saveOrder(dropKey(keys, drag, ph.key), `« ${ph.title} » déplacée`); } },
         el("span", { class: "fab-n" }, String(ph.n)), icon(ICON[sc.kind] || "gamme"), el("span", { class: "grow" }, el("b", null, ph.title), el("small", null, sc.station.label, moving ? " · parcours d'outil" : "")),
@@ -142,7 +143,7 @@ function render(main, args) {
         el("div", { class: "form-actions" }, btn("Diaporama (.pptx)", (e, b) => out(b, () => fabDeck({ plan: st.plan, spec: spec(), viewer: vp.viewer, show: (i) => show(i), scene, pathNote }), "diaporama"), { small: true, primary: true, icon: "download", tip: "Une diapositive par étape : l'image, les opérations, les mesures, et une case où le fournisseur écrit sa réponse" }),
           btn("Film (.webm)", (e, b) => out(b, () => recordFilm({ viewer: vp.viewer, steps: st.plan.phases.length, show: (i) => show(i), play: (i) => (hasPath(i) ? machine(i) : null), caption, name: id }), "film"), { small: true, icon: "camera", tip: "Les étapes filmées l'une après l'autre, l'outil qui usine là où un parcours est écrit, leur titre incrusté dans l'image" })),
         planBar(st.plan, { aiKey: `part:${id}`, figures: async () => { const shots = []; for (let i = 0; i < st.plan.phases.length; i++) { await show(i); shots.push(shot(vp.viewer, caption(i), st.plan.phases[i].key)); } return shots; } })),
-      notPlayed());
+      ...[notPlayed()].filter(Boolean));      // replaceChildren writes a null as the text « null »
     const paths = st.plan.phases.map((ph, i) => (hasPath(i) ? pathIssues(passesOf(spec(), ph.key), { bbox: (st.states.get(i - 1) || st.built).bbox, face: faceOf(ph.key), lathe: lathe() }).map((x) => ({ level: x.level, text: `${id} — parcours d'outil de la phase ${ph.n} : ${x.text}`, field: ph.key })) : [])).flat();
     setGuide([...orderIssues(st.plan, id), ...paths].map((x) => ({ ...x, go: () => { const n = flowBox.querySelector(`[data-step="${x.field}"]`); if (n) n.scrollIntoView({ block: "center" }); } })).concat(
       st.plan.phases.length < 3 ? [{ level: "tip", text: `${id} — atelier : la pièce prend forme d'un coup (${spec().process || "procédé à choisir"}) : les étapes qui suivent montrent la pièce finie.` }] : []));
