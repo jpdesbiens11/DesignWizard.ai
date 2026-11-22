@@ -462,6 +462,10 @@ fabrication virtuel)** — faits (v0.142.0 à v0.145.0) ; le projet BM bonifié 
    2,5 d conseillés (**à décider** : Ø 10 mm) ; l'échauffement du module fermé par la « masse thermique » (`demo/demo_bm_heat.js`) — à 360 A,
    80 °C à la surface des cellules en 175 s, 95 A tenus pour toujours dans l'air calme (optimiste, cellules comptées au plus bas). Reste :
    la carte BMS centrale et sa machine à états (le seuil de dératation vient de là), la résistance DC des cellules, un essai d'arrachement.
+   **Itération 14 (v0.164.0)** — la carte du BMS central (`tools/gen_demo_bms.mjs`, `demo/demo_bms.js`) : 85 × 62 mm, 4 couches, tout routé,
+   contrôles sans erreur ; elle alimente le côté bus de la chaîne RS-485 isolée ; le courant du module vient d'un capteur hors carte (le bloc
+   isolé de l'outil s'arrête à 20 A) ; sur la table du labo avec une carte de CORE, reliées d'office. Pas posée : le logement du couvercle
+   du fond (30 × 48 mm) est trop petit (**à décider**). Reste : la machine à états du module (normal, dératé, urgence, arrêt).
    **JP, 22 novembre, ensuite** : « après itération 12, svp corriger l'interface avec les points restants » — une fois l'itération 12 publiée,
    reprendre les points d'interface restants (les « Reste » de cette liste qui touchent l'interface), sans menu entre eux.
    **JP, 22 novembre, par menu : « les 4 pts en ordre svp, en continu »** — dans cet ordre, chacun publié, sans menu entre eux : (1) le point 17

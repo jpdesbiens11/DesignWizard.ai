@@ -44,6 +44,7 @@ export const WORDS_BM = {
   "Épaisseur du fond, sous les cellules (exemple)": "Floor thickness, under the cells (example)",
   "Carte de CORE 1S8P": "CORE 1S8P board",
   "Jumeau mécanique de la carte CORE-1S8P-PCBA.": "Mechanical twin of board CORE-1S8P-PCBA.",
+  "BMS central du module": "Central BMS of the module", "Jumeau mécanique de la carte BMS-CENTRAL-PCBA.": "Mechanical twin of board BMS-CENTRAL-PCBA.",
   "CORE 1S8P": "CORE 1S8P",
   "Joint entre deux CORE (CORE 7 → CORE 8)": "Joint between two COREs (CORE 7 to CORE 8)",
   "Pour l'Isolation : le joint le plus haut de la chaîne — 29,4 V entre le cuivre du joint et la masse du bus. Les cellules n'y sont pas ; le bus RS-485 est supposé référencé au − du pack, au BMS central.": "For the insulation analysis: the highest joint of the chain - 29.4 V between the copper of the joint and the bus ground. The cells are left out; the RS-485 bus is assumed referenced to the pack negative at the central BMS.",

@@ -24,6 +24,8 @@
 import { cellPart } from "../core/elec_parts.js";
 import { cell } from "../cad/elec_library.js";
 import { coreBoard } from "./demo_core.js";
+import { bmsBoard, BMS_BOARD_ID } from "./demo_bms.js";
+import { putBoard } from "../pcba/lab_table.js";
 import { syncTwins } from "../pcba/twin.js";
 import { LIBRARY } from "../pcba/library.js";
 import { WORDS_BM } from "./demo_bm_words.js";
@@ -109,7 +111,7 @@ export function busbarSizing() {
 export function bmProject() {
   const p = { dw: "project/1", id: "bm-8s8p-21700", name: "BM 8s8p - 21700", author: "DesignWizard.ai",
     description: "Module de batterie 8s8p en cellules 21700 : 8 CORE 1S8P en série, côte à côte, chacun avec sa carte de mesure posée dessus. Douzième itération : le CORE refait — busbar laminé industriel sur le dessus, soudures laser dessinées, joints plans pressés par les ressorts du couvercle, capteurs dans le support du bas.",
-    parts: [JSON.parse(JSON.stringify(CELL))], assemblies: [], boards: [coreBoard()], drawing: { words: WORDS_BM }, physics: [busbarSizing(), returnSizing(I_CORE), screwHolding(), ...heatCalcs(CASE_L)], log: [] };
+    parts: [JSON.parse(JSON.stringify(CELL))], assemblies: [], boards: [coreBoard(), bmsBoard()], drawing: { words: WORDS_BM }, physics: [busbarSizing(), returnSizing(I_CORE), screwHolding(), ...heatCalcs(CASE_L)], log: [] };
   const layout = contactLayout(CORE_X, D), z = stackOf({ H, ins: INS_T, t: BB_T, w: WRAP_T });
   const o = { X: CORE_X, Y: CORE_Y, H, t: BB_T, ins: INS_T, w: WRAP_T, e: GAP, grid: D, gap: GAP, rows: ROWS };
   const contacts = busbarContacts(layout, { Y: CORE_Y, ins: INS_T, t: BB_T, H, top: z.zF1 }), flex = coreFlex({ ...o, top: STACK, floor: FLOOR_T });
@@ -127,5 +129,8 @@ export function bmProject() {
   const board = p.boards[0], twin = p.parts.find((x) => x.id === board.part);
   twin.name = "Carte de CORE 1S8P"; twin.function = "La carte de mesure du CORE, posée sur le busbar laminé : 8 températures, la tension du CORE, l'équilibrage, RS-485 isolé.";
   p.assemblies = [moduleAssembly(), coreAssembly(twin.id, flex), top.assembly(), bottom.assembly, jointAssembly(layout)];
+  const bms = p.parts.find((x) => x.id === p.boards[1].part);
+  bms.name = "BMS central du module"; bms.function = "Le BMS central : interroge les 8 cartes de CORE par la chaîne RS-485, lit le courant du module, commande le contacteur et dit l'état au véhicule par CAN. Pas encore posé : le logement du couvercle du fond est trop petit.";
+  putBoard(p, BMS_BOARD_ID); putBoard(p, p.boards[0].id);      // the lab table : the central BMS and one CORE board, linked by the four wires of the chain
   return p;
 }

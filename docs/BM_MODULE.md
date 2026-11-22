@@ -610,6 +610,36 @@ l'air enfermé et de la paroi de PC (le modèle est **optimiste**) ; la chaleur 
 connecteur ; un calcul transitoire par la Simulation ; un essai d'arrachement d'une vis dans le PC extrudé ; le fluage du PC chaud sous
 350 N ; la tenue des vis du fond dans les entretoises ; aucun exemple publié n'a validé la formule d'arrachement (la page n'en donne pas).
 
+## Itération 14 — le BMS central : sa carte, de ses fonctions à son cuivre
+
+L'architecture de JP (21 novembre) : « le BMS central interroge les cartes (« mesurez maintenant » diffusé, puis une réponse par carte),
+juge et agit — contactors, état envoyé au véhicule : normal, dératé, urgence, arrêt » ; le 22 novembre : le couvercle du fond « contient
+peut-être le BMS ». Source : `tools/gen_demo_bms.mjs` écrit la carte (`web/js/demo/demo_bms_data.js`, `demo_bms_data2.js`), lue par
+`web/js/demo/demo_bms.js` ; essais : `tests/node/bm_bms.test.mjs`.
+
+**La carte `BMS-CENTRAL-PCBA`**, 85 × 62 mm, 4 couches, 92 composants, 52 nets — **tout routé** (201 liaisons), contrôles électrique et de
+layout sans erreur (trois avertissements : une piste de masse plus étroite que le courant ne le demande, deux condensateurs de découplage à
+plus de 4 mm de leur broche). Ses fonctions, chacune un groupe de blocs de l'outil :
+
+- **S'alimenter sur le 12 V du véhicule** — bornier, protection d'entrée, abaisseur 12 → 5 V, régulateur 3,3 V, surveillance ;
+- **Interroger les 8 cartes de CORE** — la même chaîne que sur chaque CORE : alimentation isolée 5 V / 1 W (**cette carte alimente le
+  côté bus de toute la chaîne**, comme JP l'a choisi), isolateur numérique, émetteur-récepteur RS-485 côté isolé, terminaison et
+  polarisation ici ; le connecteur porte A, B, +5V_ISO, GND_ISO ;
+- **Lire le courant du module** — un capteur à effet Hall en boucle fermée posé sur la barre de retour, **hors carte** (le bloc de mesure
+  isolée de l'outil s'arrête à 20 A ; le module en porte 360), son connecteur et un filtre vers le convertisseur ;
+- **Commander le contacteur** — commande de bobine côté bas, 12 V ; son contact auxiliaire relu par une entrée protégée ;
+- **Dire l'état au véhicule** — CAN, terminaison, self de mode commun ;
+- **Juger et décider** — le microcontrôleur et une mémoire de réglages et de défauts ; **la machine à états vient ensuite** (le seuil de
+  dératation est le courant que le module fermé tient, itération 13).
+
+**Dans le projet** : une carte du produit, avec son jumeau mécanique (`BMS-CENTRAL-PCBA-PCB`) ; **sur la table du labo avec une carte de
+CORE** (`#/elab/table`), les quatre fils de la chaîne reliés d'office — les deux cartes portent les mêmes noms de nets.
+
+**Pas fait** : la carte n'est **pas posée** dans le module — le logement gardé dans le couvercle du fond (30 × 48 mm, itération 11 b) est
+trop petit : **à décider**, agrandir le logement ou mettre la carte le long du boîtier ; les composants ne sont pas choisis (brochages des
+séries génériques de l'outil) ; la précharge, l'HVIL, la mesure directe de la tension du module (aujourd'hui la somme des 8 CORE) ; la
+chaîne réelle à 9 nœuds dans le Labo (la table relie une carte de CORE, pas huit) ; les essais du Labo de la carte entière.
+
 ## Ce qu'il contient
 
 | Élément | Ce que c'est | Où |
