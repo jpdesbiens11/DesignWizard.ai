@@ -90,7 +90,7 @@ test("the notebook of the board : ticks, passes and the notes of a step are kept
   b = { ...b, lab: setNote(b, key, "power", "Le courant monte à 12 mA.") };
   const back = fromDwiz(toDwiz(b)), LB = labOf(back); assert.deepEqual(LB.ticks, labOf(b).ticks); assert.deepEqual(LB.passes, labOf(b).passes); assert.deepEqual(LB.notes, labOf(b).notes);
   assert.match(toDwiz(b), /\n\s*tick /); assert.match(toDwiz(b), /\n\s*pass /);
-  assert.deepEqual(labOf({ lab: { ticks: [{ test: 3 }, { test: "a", step: 4 }], passes: [{ test: "a", step: "s" }] } }), { gears: [], readings: [], skips: [], notes: [], ticks: [], passes: [] }, "what is not whole is dropped");
+  assert.deepEqual(labOf({ lab: { ticks: [{ test: 3 }, { test: "a", step: 4 }], passes: [{ test: "a", step: "s" }] } }), { gears: [], readings: [], skips: [], notes: [], moves: [], ticks: [], passes: [] }, "what is not whole is dropped");
 });
 
 test("a reading is typed in the unit one reads it in", () => {

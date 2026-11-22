@@ -16,7 +16,9 @@ const pts = (a) => a.map((p) => `${p[0]},${p[1]}`).join(" ");
 function heat(a) { const x = Math.max(0, Math.min(1, a)), mix = (p, q, t) => Math.round(p + (q - p) * t), c = x < 0.5 ? [mix(122, 255, x * 2), mix(84, 150, x * 2), mix(40, 20, x * 2)] : [255, mix(150, 40, (x - 0.5) * 2), mix(20, 20, (x - 0.5) * 2)]; return `rgb(${c[0]},${c[1]},${c[2]})`; }
 const LED = { rouge: "#ff3b30", verte: "#34d058", jaune: "#ffd60a", orange: "#ff9f0a", bleue: "#3b9bff", blanche: "#f5f7fa" };
 
-/** The board. → { show(R, o), light(frame), mark(points, box), bread(on), onView(fn), partNode(ref), destroy() }
+/** The board. → { show(R, o), light(frame), mark(points, box), bread(on), unlock(on, move), onView(fn), partNode(ref), destroy() }
+    unlock(on, move) : the set-up unlocked — a lead of an instrument is taken by its dot and dropped on a pad of the board ; move(gear, role, { ref, pin }) is told
+           (the Labo checks it, keeps it, and simulates the test again with it). Locked, nothing moves : the view only pans and zooms.
     bread(on) : the breadboard beside the board (pcba/lab_breadboard.js) — each point of the instruments brought out by its jumper to its
            own row, the leads in the holes of that row ; what the hand does on the board (a button, the cell) stays marked on the board
     R : the resolved board (pcba/model.js resolveBoard) ; o : { focus: Set of references under test (the rest is dimmed) }
@@ -27,8 +29,8 @@ export function labBoard(host) {
   host.classList.add("lab-board");
   const root = svg("svg", { class: "lab-svg", preserveAspectRatio: "xMidYMid meet", role: "img", "aria-label": "La carte vue de dessus : les pistes et les composants s'allument avec le courant" }), world = svg("g", { transform: "scale(1,-1)" }), tags = el("div", { class: "lab-tags" });
   root.append(svg("defs", null, svg("filter", { id: "lab-glow", x: "-50%", y: "-50%", width: "200%", height: "200%" }, svg("feGaussianBlur", { stdDeviation: 0.7, result: "b" }), svg("feMerge", null, svg("feMergeNode", { in: "b" }), svg("feMergeNode", { in: "SourceGraphic" })))), world); host.append(root, tags);
-  let tracks = new Map(), parts = new Map(), vb = null, vb0 = null, drag = null, marked = [], bb = null, name = "", bread = false, layout = null;
-  const marks = svg("g", { class: "lab-marks" }); root.append(marks);
+  let tracks = new Map(), parts = new Map(), vb = null, vb0 = null, drag = null, marked = [], bb = null, name = "", bread = false, layout = null, pads = [], free = false, moveFn = null, taken = null;
+  const marks = svg("g", { class: "lab-marks" }), ghost = svg("g", { class: "lab-ghost" }); root.append(marks, ghost);
   /* the marks are drawn in what one sees : they keep their size on the screen whatever the zoom */
   /* what one sees when everything is fitted : the board, and the breadboard beside it */
   function fitted() { const B = bread && layout && layout.box ? [Math.min(bb[0], layout.box[0]), Math.min(bb[1], layout.box[1]), Math.max(bb[2], layout.box[2]), Math.max(bb[3], layout.box[3])] : bb, m = 3; return [B[0] - m, -B[3] - m, B[2] - B[0] + 2 * m, B[3] - B[1] + 2 * m]; }
@@ -36,10 +38,11 @@ export function labBoard(host) {
     const twice = new Map();      // several leads on the same pad (the black tip of the meter where the supply's − already is) : their labels fan out
     on.forEach((p, i) => { const x = p.at.x, y = -p.at.y, vx = x - cx, vy = y - cy - 0.6 * Math.hypot(x - cx, y - cy), n = Math.hypot(vx, vy), d0 = n > 1e-6 ? [vx / n, vy / n] : DIR[i % 4], at = `${x},${y}`, j = twice.get(at) || 0, turn = j ? (j % 2 ? 1 : -1) * Math.ceil(j / 2) * 0.75 : 0;
        twice.set(at, j + 1); const d = [d0[0] * Math.cos(turn) - d0[1] * Math.sin(turn), d0[0] * Math.sin(turn) + d0[1] * Math.cos(turn)], bx = x + d[0] * 9 * u, by = y + d[1] * 9 * u,      // each label leaves away from the others, and upward
-       g = svg("g", { class: "lab-mark", "data-mark": `${p.ref}.${p.pin}`, "data-lead": p.lead, ...(p.gear ? { "data-gear": p.gear } : {}) });
+       g = svg("g", { class: "lab-mark", "data-mark": `${p.ref}.${p.pin}`, "data-lead": p.lead, ...(p.gear ? { "data-gear": p.gear } : {}), ...(p.role ? { "data-role": p.role } : {}), ...(p.movable ? { "data-movable": "" } : {}) });
       g.append(svg("circle", { cx: x, cy: y, r: 2.6 * u, class: "lab-mark-halo", "stroke-width": 1.5 * u }), svg("circle", { cx: x, cy: y, r: 2.6 * u, class: "lab-mark-ring", stroke: p.color, "stroke-width": 0.8 * u }), svg("line", { x1: x + d[0] * 2.6 * u, y1: y + d[1] * 2.6 * u, x2: bx, y2: by, class: "lab-mark-lead", "stroke-width": 0.5 * u }),
         svg("circle", { cx: bx, cy: by, r: 3.1 * u, fill: p.color, class: "lab-mark-dot", "stroke-width": 0.5 * u }), svg("text", { x: bx, y: by + 1.25 * u, "text-anchor": "middle", "font-size": 3.6 * u, class: "lab-mark-letter" }, p.label),
-        svg("text", { x: bx + (d[0] >= 0 ? 4 : -4) * u, y: by + 0.9 * u, "text-anchor": d[0] >= 0 ? "start" : "end", "font-size": 2.5 * u, "stroke-width": 0.55 * u, class: "lab-mark-pin" }, `${p.ref} · ${p.pin}`)); marks.append(g); }); }
+        svg("text", { x: bx + (d[0] >= 0 ? 4 : -4) * u, y: by + 0.9 * u, "text-anchor": d[0] >= 0 ? "start" : "end", "font-size": 2.5 * u, "stroke-width": 0.55 * u, class: "lab-mark-pin" }, `${p.ref} · ${p.pin}`)); marks.append(g); });
+    if (free) for (const m of marks.querySelectorAll(".lab-mark[data-movable]")) m.classList.add("can-move"); }
   /* the bar of the view (core/view_bar.js) : − % + , « Ajuster », the magnifier ; 100 % is the board fitted in the window */
   const zoomBy = (k) => { if (!vb) return; const w = vb[2] * k, h = vb[3] * k; vb = [vb[0] + (vb[2] - w) / 2, vb[1] + (vb[3] - h) / 2, w, h]; setVb(); };
   const bar = viewBar({ label: "la carte du banc", zoomOut: () => zoomBy(1.25), zoomIn: () => zoomBy(1 / 1.25), fit: () => { if (vb0) { vb = [...vb0]; setVb(); } }, text: () => (vb && vb0 ? `${Math.round((100 * vb0[2]) / vb[2])} %` : "100 %"), fitTip: "Ajuster à la fenêtre : toute la carte se voit" });
@@ -50,9 +53,20 @@ export function labBoard(host) {
   root.addEventListener("pointerdown", (e) => { if (!vb) return; root.setPointerCapture(e.pointerId); drag = { x: e.clientX, y: e.clientY, vb: [...vb] }; });
   root.addEventListener("pointermove", (e) => { if (!drag) return; const r = root.getBoundingClientRect(), k = Math.max(drag.vb[2] / r.width, drag.vb[3] / r.height); vb = [drag.vb[0] - (e.clientX - drag.x) * k, drag.vb[1] - (e.clientY - drag.y) * k, vb[2], vb[3]]; setVb(); });
   root.addEventListener("pointerup", () => { drag = null; });
+  /* a lead taken by its dot (the set-up unlocked) : it follows the pointer, the pad under it lights up, the drop moves it there — Escape lets it go */
+  const toView = (e) => { const q = root.createSVGPoint(); q.x = e.clientX; q.y = e.clientY; return q.matrixTransform(root.getScreenCTM().inverse()); };
+  const padAt = (x, y) => { const u = vb ? Math.max(vb[2], vb[3]) / 100 : 1; let best = null, d0 = Math.max(1.5, 3 * u); for (const p of pads) { const d = Math.hypot(p.x - x, p.y - y); if (d < d0) { d0 = d; best = p; } } return best; };
+  const letGo = () => { taken = null; ghost.replaceChildren(); root.classList.remove("taking"); };
+  marks.addEventListener("pointerdown", (e) => { if (!free || e.button !== 0) return; const m = e.target.closest(".lab-mark.can-move"); if (!m) return; e.stopPropagation(); e.preventDefault(); const d = m.querySelector(".lab-mark-dot");
+    taken = { gear: m.dataset.gear, role: m.dataset.role, from: m.dataset.mark, x: +d.getAttribute("cx"), y: +d.getAttribute("cy"), color: d.getAttribute("fill") }; root.setPointerCapture(e.pointerId); root.classList.add("taking"); });
+  root.addEventListener("pointermove", (e) => { if (!taken) return; const q = toView(e), p = padAt(q.x, -q.y), u = Math.max(vb[2], vb[3]) / 100; taken.pad = p;
+    ghost.replaceChildren(svg("line", { x1: taken.x, y1: taken.y, x2: q.x, y2: q.y, stroke: taken.color, "stroke-width": 0.6 * u, "stroke-dasharray": `${1.5 * u} ${u}`, class: "lab-ghost-line" }), svg("circle", { cx: q.x, cy: q.y, r: 2.4 * u, fill: taken.color, class: "lab-ghost-dot", "stroke-width": 0.5 * u }),
+      ...(p ? [svg("circle", { cx: p.x, cy: -p.y, r: 2.8 * u, class: "lab-ghost-pad", "stroke-width": 0.7 * u }), svg("text", { x: p.x + 3.6 * u, y: -p.y - 2.4 * u, "font-size": 3 * u, "stroke-width": 0.6 * u, class: "lab-ghost-text" }, `${p.ref}.${p.n ?? p.name}`)] : [])); });
+  root.addEventListener("pointerup", () => { if (!taken) return; const t = taken; letGo(); if (t.pad && moveFn && `${t.pad.ref}.${t.pad.n ?? t.pad.name}` !== t.from) moveFn(t.gear, t.role, { ref: t.pad.ref, pin: String(t.pad.n ?? t.pad.name) }); });
+  const onEsc = (e) => { if (taken && e.key === "Escape") letGo(); }; window.addEventListener("keydown", onEsc);
   return {
     show(R, o = {}) {
-      world.replaceChildren(); tags.replaceChildren(); tracks = new Map(); parts = new Map(); const focus = o.focus || null; bb = R.bbox; name = o.name || name; marked = []; layout = null;
+      world.replaceChildren(); tags.replaceChildren(); tracks = new Map(); parts = new Map(); const focus = o.focus || null; bb = R.bbox; pads = R.pads || []; name = o.name || name; marked = []; layout = null;
       vb = fitted(); vb0 = [...vb]; setVb();
       world.append(svg("polygon", { points: pts(R.outline), class: "lab-fr4" }));
       const copper = svg("g", { class: "lab-copper" }), bodies = svg("g", { class: "lab-parts" }); world.append(copper, bodies);
@@ -80,8 +94,9 @@ export function labBoard(host) {
     /** a part of the board, as drawn : its group (for a hand that presses it) */
     partNode(ref) { const p = parts.get(ref); return p ? p.g : null; },
     mark(points = [], box = null) { marked = points || []; layout = bread && bb ? breadLayout(marked, bb, { board: name }) : null; if (bb) { vb0 = fitted(); vb = box && !bread ? [box[0], -box[3], box[2] - box[0], box[3] - box[1]] : [...vb0]; } if (vb) setVb(); },
+    unlock(on, move) { free = !!on; if (move) moveFn = move; root.classList.toggle("is-free", free); if (!free) letGo(); drawMarks(); return free; },
     bread(on) { if (on === undefined) return bread; bread = !!on; root.classList.toggle("is-bread", bread); this.mark(marked, null); return bread; },
-    destroy() { root.remove(); tags.remove(); },
+    destroy() { window.removeEventListener("keydown", onEsc); root.remove(); tags.remove(); },
   };
 }
 

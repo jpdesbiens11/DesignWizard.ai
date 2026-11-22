@@ -49,13 +49,17 @@ export function powerTree(board, C = boardCircuit(board)) {
 
 /* ---------- the bench of a whole board : a supply on what comes from outside, probes on its rails ---------- */
 function makeBoardBench(board, env = {}) {
-  const C = boardCircuit(board, env), els = C.els, log = [], at = (x) => (x === "0" || x === "GND" || x === C.ground ? "0" : C.nets[x] ?? x), tree = powerTree(board, C);
+  const C = boardCircuit(board, env), els = C.els, log = [], tree = powerTree(board, C);
+  /* a net of the board, or a pad of it (« R3.2 », a lead moved by hand) : the node of its net */
+  const at = (x) => { if (x === "0" || x === "GND" || x === C.ground) return "0"; if (C.nets[x] !== undefined) return C.nets[x]; if (/^[^.\s]+\.[^\s]+$/.test(String(x))) { const n = (board.nets || []).find((q) => (q.pins || []).includes(x)); if (n) return at(n.name); } return x; };
+  const mv = (gear, role) => ((env.moves || {})[gear] || {})[role] || null, moved = (to, ref) => ({ ...(to ? { atTo: to } : {}), ...(ref ? { atRef: ref } : {}) });
   const B = { board, C, els, log, at, tree, env, built: { parts: C.parts, nets: (board.nets || []).map((n) => ({ name: n.name })), ports: {} },
     supply(net, v, o = {}) { const g = (env.gear || {})[`supply:${net}`] || {}, free = typeof v === "number" && v >= 0 && (!o.wave || o.wave.kind === "step");      // a setting made ON the instrument (pcba/lab_gear.js), as on the bench of a block
       if (free && Number.isFinite(g.v) && g.v >= 0) { v = g.v; if (o.wave) o = { ...o, wave: { ...o.wave, high: g.v } }; } if (Number.isFinite(g.ilim) && g.ilim > 0) o = { ...o, ilim: g.ilim };
-      const id = `PS_${net}`, mid = `${id}_o`; els.push({ t: "V", id, a: mid, b: "0", v: o.wave || v }, { t: "R", id: `${id}:r`, a: mid, b: at(net), r: o.rs ?? 0.05 }); log.push({ instr: "supply", to: net, v: typeof v === "number" ? v : null, ilim: o.ilim || null, note: o.note || "", ref: "GND", free, ...((free && Number.isFinite(g.v)) || Number.isFinite(g.ilim) ? { set: true } : {}) }); return id; },
-    sink(net, i, o = {}) { const id = `LOAD_${net}`; els.push({ t: "I", id, a: at(net), b: "0", i }); log.push({ instr: "load", to: net, i: typeof i === "number" ? i : null, wave: typeof i === "number" ? null : i, toRef: "GND", note: o.note || "" }); return id; },
-    probe(ch, net, o = {}) { log.push({ instr: "scope", ch, to: net, ref: "GND", ac: !!o.ac, note: o.note || "" }); return { at: net, ref: null, label: o.label || net, ac: !!o.ac }; },
+      const id = `PS_${net}`, mid = `${id}_o`, mp = mv(`supply:${net}`, "plus"), mm = mv(`supply:${net}`, "minus"); els.push({ t: "V", id, a: mid, b: mm ? at(mm) : "0", v: o.wave || v }, { t: "R", id: `${id}:r`, a: mid, b: at(mp || net), r: o.rs ?? 0.05 }); log.push({ instr: "supply", to: net, v: typeof v === "number" ? v : null, ilim: o.ilim || null, note: o.note || "", ref: "GND", free, ...((free && Number.isFinite(g.v)) || Number.isFinite(g.ilim) ? { set: true } : {}) , ...moved(mp, mm) }); return id; },
+    sink(net, i, o = {}) { const id = `LOAD_${net}`, ma = mv(`load:${net}`, "load"), mb = mv(`load:${net}`, "loadBack"); els.push({ t: "I", id, a: at(ma || net), b: mb ? at(mb) : "0", i }); log.push({ instr: "load", to: net, i: typeof i === "number" ? i : null, wave: typeof i === "number" ? null : i, toRef: "GND", note: o.note || "", ...moved(ma, mb) }); return id; },
+    probe(ch, net, o = {}) { const m = { ...((env.moves || {}).meter || {}), ...((env.moves || {}).scope || {}) }, mt = m[ch === 2 ? "probe2" : "probe"] || null, mr = m.clip || null;
+      log.push({ instr: "scope", ch, to: net, ref: "GND", ac: !!o.ac, note: o.note || "", ...moved(mt, mr) }); return { at: mt || net, ref: mr, label: mt ? `${o.label || net} → ${mt}` : o.label || net, ac: !!o.ac }; },
     press(pin, note) { log.push({ instr: "press", to: pin, note: note || "" }); }, cell(pin, note) { log.push({ instr: "cell", to: pin, note: note || "" }); } };
   return B;
 }

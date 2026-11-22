@@ -72,7 +72,7 @@ test("every instrument of every test of every block : drawn, its cords leave fro
 
 test("wired : the strip above the board, settings as undoable steps, the test run again when the notebook changes, the button pressed in the view", () => {
   const screen = read("web/js/modules/elab.js"), strip = read("web/js/modules/elab_bench.js"), view = read("web/js/modules/elab_view.js");
-  assert.match(screen, /benchStrip\(bench, bench, pcb/); assert.match(screen, /setGear\(b, key\(\), g\.key/); assert.match(screen, /JSON\.stringify\(gearEnv\(board\(\), key\(\)\)\) !== st\.gearSig\) run\(\)/, "a setting, or its undo, runs the test again");
+  assert.match(screen, /benchStrip\(bench, bench, pcb/); assert.match(screen, /setGear\(b, key\(\), g\.key/); assert.match(screen, /benchSig = \(\) => JSON\.stringify\(\[gearEnv\(board\(\), key\(\)\), movesOf\(board\(\), key\(\)\)\]\)/); assert.match(screen, /benchSig\(\) !== st\.gearSig\) run\(\)/, "a setting, a moved lead, or its undo, runs the test again");
   assert.match(screen, /pressable\(pcb\.partNode/); assert.match(screen, /gears: mine\.gears/, "an answer of an AI does not rewrite the bench");
   assert.match(strip, /checkKnob\(g\.kind/); assert.match(strip, /CIRCUIT_NOTE/); assert.match(strip, /lab-cord/); assert.match(view, /onView\(fn\)/); assert.match(view, /partNode\(ref\)/);
   assert.match(read("web/js/core/dwiz_names.js"), /gears: \{ word: "gear"/); assert.match(read("web/css/pcba.css"), /\.lab-gear-row/);

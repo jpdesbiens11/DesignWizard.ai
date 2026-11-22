@@ -29,7 +29,7 @@ export function drawBread(g, L) {
   /* the leads of the instruments, in the holes of their row, and their tags at its end */
   for (const r of L.rows) {
     for (const l of r.leads) { const x = l.hole[0], y = -l.hole[1];
-      root.append(svg("g", { class: "lab-mark lab-bb-lead", "data-mark": `${l.ref}.${l.pin}`, "data-lead": l.lead, "data-gear": l.gear }, svg("circle", { cx: x, cy: y, r: h * 0.44, fill: l.color, class: "lab-mark-dot", "stroke-width": f * 0.1 }),
+      root.append(svg("g", { class: "lab-mark lab-bb-lead", "data-mark": `${l.ref}.${l.pin}`, "data-lead": l.lead, "data-gear": l.gear, ...(l.role ? { "data-role": l.role } : {}), ...(l.movable ? { "data-movable": "" } : {}) }, svg("circle", { cx: x, cy: y, r: h * 0.44, fill: l.color, class: "lab-mark-dot", "stroke-width": f * 0.1 }),
         svg("text", { x, y: y + f * 0.3, "text-anchor": "middle", "font-size": f * 0.82, class: "lab-mark-letter" }, l.label))); }
     const tags = svg("text", { x: L.cols.gear, y: -r.y + f * 0.34, "font-size": f * 0.92, class: "lab-bb-gear" });
     r.leads.forEach((l, i) => tags.append(svg("tspan", { fill: l.color === "#111827" ? "#1f2937" : l.color, "data-gear": l.gear }, `${i ? "  " : ""}${l.tag}`))); root.append(tags); }

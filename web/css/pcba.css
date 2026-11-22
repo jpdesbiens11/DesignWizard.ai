@@ -171,7 +171,11 @@ table.data .kv td:first-child { font-weight: 650; }
 .lab-table-row, .lab-cable-row { display: flex; align-items: center; gap: .4rem; padding: .25rem .5rem; border-left: 3px solid var(--g); margin: .2rem 0; font-size: .82rem; } .lab-cable-row.sel { background: color-mix(in srgb, var(--g) 10%, transparent); } .lab-cable-row.off { opacity: .55; } .lab-cable-row small { display: block; color: var(--muted); } .lab-cable-row small.bad { color: #b91c1c; }
 .lab-table-key i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--g); margin-right: .3rem; vertical-align: middle; }
 /* the breadboard beside the board (modules/elab_bread.js) : a pale body, its rows, the tags of the points and of the instruments */
-.lab-viewmode { position: absolute; top: .5rem; left: .6rem; z-index: 6; margin: 0; box-shadow: 0 1px 4px rgba(0,0,0,.18); }
+.lab-view-tools { position: absolute; top: .5rem; left: .6rem; z-index: 6; display: flex; gap: .4rem; align-items: center; flex-wrap: wrap; } .lab-viewmode { margin: 0; box-shadow: 0 1px 4px rgba(0,0,0,.18); } .lab-lock .btn { box-shadow: 0 1px 4px rgba(0,0,0,.18); }
+/* the set-up unlocked : a lead is taken by its dot (modules/elab_view.js unlock) */
+.lab-svg.is-free .lab-mark.can-move { cursor: grab; } .lab-svg.is-free .lab-mark.can-move .lab-mark-dot { stroke: #facc15; stroke-dasharray: .6 .4; } .lab-svg.taking, .lab-svg.taking * { cursor: grabbing !important; }
+.lab-ghost-dot { stroke: #fff; opacity: .9; } .lab-ghost-pad { fill: none; stroke: #facc15; } .lab-ghost-text { fill: #fff; stroke: #06120c; paint-order: stroke; font-weight: 700; } .lab-ghost { pointer-events: none; }
+.gear-fixed.moved { color: #b45309; }
 .lab-bb-body { fill: #f4f0e4; stroke: #c9bc98; } .lab-bb-title { fill: #5b5240; font-weight: 700; }
 .lab-bb-strip { stroke: #ddd3b8; stroke-linecap: round; } .lab-bb-strip.ground { stroke: #c7d2e4; } .lab-bb-hole { fill: #3b3528; }
 .lab-bb-tag { fill: #1f2937; font-weight: 600; } .lab-bb-tag .ref { font-weight: 800; } .lab-bb-tag .sig { fill: #475569; } .lab-bb-gear { font-weight: 700; }

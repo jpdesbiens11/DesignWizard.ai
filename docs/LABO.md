@@ -113,6 +113,37 @@ la sortie d'une piste routée (tout droit, un couloir par piste). Choix maison :
 plaque réelle à 2,54 mm ; la plaque n'existe pas sur le vrai banc tant qu'on ne l'y pose pas — c'est une façon de
 voir les liaisons, et le montage de la fiche reste celui des points de la carte.
 
+### Déplacer un cordon : montage verrouillé, déverrouillé
+
+Demande de JP (22 novembre 2026 : « permettre les changements de connexion à la souris… même si officiellement la
+majeure partie seront faits par AI, peut-être lock / unlock setup… un expert HW designer pourra jouer avec les réglages
+en connaissance de cause »).
+
+- À côté de « Plaque d'essai · Carte », **« Montage verrouillé »** : le montage est celui de l'essai, et il l'est à
+  chaque ouverture du Labo. Un clic le **déverrouille** (« Montage déverrouillé ») : les pastilles des cordons qui se
+  déplacent prennent un liseré jaune.
+- **Prendre un cordon par sa pastille, le poser sur une pastille de la carte** — sur la carte comme sur la plaque
+  d'essai. Pendant le geste, un trait pointillé suit la souris, la pastille visée s'entoure de jaune et son nom
+  s'écrit (« C9.1 ») ; lâcher hors d'une pastille, ou Échap, ne change rien.
+- Se déplacent : les deux bornes d'une **alimentation**, le point chaud et le retour d'un **générateur**, les deux bouts
+  d'une **charge**, les **sondes**, la **pince de masse** et le − d'une sonde différentielle, les pointes du
+  **multimètre**. Ne se déplacent pas : un composant d'essai (sa place est celle de l'essai), la pile, le doigt.
+- **L'outil refuse, et dit pourquoi** (`checkMove` de `web/js/pcba/lab_gear.js`) : une pastille reliée à rien ; une
+  pastille hors du bloc à l'essai (seul son circuit est simulé — « La carte entière » relie les blocs) ; les deux bornes
+  d'une alimentation ou d'un générateur sur le même net (un court-circuit franc) ; les deux bouts d'une charge sur le
+  même net ; **la pince de masse de l'oscilloscope ailleurs que sur la masse** (elle est reliée à la terre).
+- Un cordon posé est **une étape annulable du carnet de la carte** (`board.lab.moves` : l'essai, l'appareil, le rôle du
+  cordon, la pastille — `setMove`, `movesOf`, `movesEnv` de `web/js/pcba/lab_plan.js`) ; l'essai est **simulé de
+  nouveau** avec ce montage (le banc lit `env.moves`), la fiche dit où est le cordon, le plan suit. Une source déplacée
+  change le circuit : les valeurs attendues suivent. Une sonde déplacée ne change rien au circuit : **sa courbe suit,
+  les relevés de la fiche restent ceux de l'essai**, et le guide le dit.
+- La carte de l'appareil dit « Cordon déplacé à la main » ; sa flèche de retour remet le montage **et** le réglage de
+  l'essai. Une réponse d'IA ne déplace pas un cordon (le réimport garde ceux de la carte).
+
+Usage suivi : le montage verrouillé / déverrouillé de la table du Labo (§ 1 ter) et le glisser-déposer d'une
+extrémité de fil des outils de saisie de schéma. Choix maison : le cordon se pose sur une pastille, jamais dans le
+vide ; le clavier ne déplace pas un cordon (à faire si le besoin vient).
+
 ## 1 ter. La table : plusieurs cartes sur le même banc
 
 Demande de JP (20 novembre 2026, point 6) : « Labo à plusieurs cartes : deux vues à bascule — la table et le schéma des

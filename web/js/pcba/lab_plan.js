@@ -79,7 +79,7 @@ export function testSheet(tpl, testId, given = {}, o = {}) {
 function boardAccess(board) {
   const pinOf = (name) => { if (/^[A-Z]+\d+\.[^.]+$/.test(String(name))) return String(name).split("."); const net = (board.nets || []).find((n) => n.name === (name === "0" ? "GND" : name)); if (!net || !(net.pins || []).length) return null; return (net.pins.find((p) => /^TP/.test(p)) || net.pins.find((p) => /^J\d/.test(p)) || net.pins.find((p) => /^(R|C)\d/.test(p)) || net.pins[0]).split("."); };
   return Object.assign(textOf, { pick: (name) => { const x = pinOf(name); return x ? { ref: x[0], pin: String(x[1]), signal: String(name) } : null; } });
-  function textOf(name) { if (name === "GND" || name === "0") return "la masse de la carte (GND)"; const net = (board.nets || []).find((n) => n.name === name); if (!net || !(net.pins || []).length) return `le signal ${name}`;
+  function textOf(name) { if (name === "GND" || name === "0") return "la masse de la carte (GND)"; if (/^[A-Z]+\d+\.[^.]+$/.test(String(name)) && !(board.nets || []).some((n) => n.name === name)) { const [r, pin] = String(name).split("."); return `la broche ${pin} de ${r}`; } const net = (board.nets || []).find((n) => n.name === name); if (!net || !(net.pins || []).length) return `le signal ${name}`;
     const pick = net.pins.find((p) => /^TP/.test(p)) || net.pins.find((p) => /^J\d/.test(p)) || net.pins.find((p) => /^(R|C)\d/.test(p)) || net.pins[0], [ref, pin] = pick.split(".");      // a test point is made for a probe ; an input has only its connector
     return `${name} — ${/^J/.test(ref) ? `broche ${pin} du connecteur ${ref}` : /^TP/.test(ref) ? `point de test ${ref}` : `patte ${pin} de ${ref}`}`; }
 }
@@ -90,11 +90,14 @@ export function boardSheet(board, testId, o = {}) {
 }
 /* a sheet, from what a run gave : R (the result), test, where(name) → how to reach a signal, o : { id, tpl, P, name, refs } */
 function sheetFrom(R, test, where, o) {
+  /* a probe moved by hand : its channel says the pad of the BOARD it is on, not the name the block gives it */
+  for (const e of (R.log || []).filter((x) => x.instr === "scope" && x.atTo)) { const ch = e.ch === 2 ? R.ch2 : R.ch1, q = where.pick ? where.pick(e.atTo) : null; if (ch && q && typeof ch.label === "string") ch.label = ch.label.replace(`→ ${e.atTo}`, `→ ${q.ref}.${q.pin}`); }
   const P = o.P || {}, tpl = o.tpl, refs = o.refs, N = NATURES.find((n) => n.id === test.nature), setup = [], settings = [], steps = [], scoped = test.gear.includes("scope"), gen = (R.log || []).some((e) => e.instr === "generator" || e.instr === "logic");
   /* THE CLIP OF AN OSCILLOSCOPE IS EARTHED : it goes on a ground, or where a source of the test already has its return — never on a live point. A voltage between two
      live points (the two ends of a motor winding) is `float` : a differential probe, or two probes and their difference. */
   const other = (e) => (e.ref && e.ref !== "GND" ? e.ref : e.toRef && e.toRef !== "GND" ? e.toRef : "GND"), returns = new Set((R.log || []).filter((e) => /^(supply|generator|logic)$/.test(e.instr)).map(other)), floats = (e) => e.instr === "scope" && !!e.ref && !/GND/i.test(e.ref) && !returns.has(e.ref);
-  for (const e of R.log || []) {
+  for (const e0 of R.log || []) {
+    const e = e0.atTo || e0.atRef ? { ...e0, to: e0.atTo || e0.to, ...(e0.atRef ? (e0.instr === "load" ? { toRef: e0.atRef } : { ref: e0.atRef }) : {}) } : e0;      // a lead moved by hand : the set-up says where it now is
     const ref = e.ref && e.ref !== "GND" ? where(e.ref) : "la masse (GND)";
     if (e.instr === "supply") { setup.push(`Alimentation de laboratoire : le + sur ${where(e.to)}, le − sur ${ref}.${e.note ? ` (${e.note}.)` : ""}`); settings.push(`Alimentation de ${e.to} : ${e.v !== null ? `${fr(e.v)} V` : "voir la note du montage"}${e.ilim ? `, limite de courant ${eng(e.ilim, "A")}` : ""} — réglée SORTIE COUPÉE.`); }
     else if (e.instr === "generator") { setup.push(`${e.logic ? "Signal logique (générateur de fonctions, sortie 50 Ω, ou une sortie du microcontrôleur)" : "Générateur de fonctions"} : le point chaud sur ${where(e.to)}, la masse sur ${ref}.${e.note ? ` (${e.note}.)` : ""}`); settings.push(`Générateur sur ${e.to} : ${wave(e.wave)}${e.set ? " — réglé sur l'appareil" : ""}.`); }
@@ -116,7 +119,7 @@ function sheetFrom(R, test, where, o) {
      In a test done with a multimeter : a time or a frequency cannot be read with it — the row asks for an oscilloscope, and is not owed ; and each curve of the
      screen that has settled is READ — its end is the number the multimeter shows (`end` : the channel). A curve that still moves at its end is what one sweeps by hand. */
   const pick = where.pick || (() => null), meter = !test.noSim && !scoped && R.kind === "tran", M = R.measures.map((m) => (meter && /^(s|Hz)$/.test(m.unit) && !m.needs ? { ...m, needs: "un oscilloscope", scope: true } : m));
-  if (meter) for (const e of (R.log || []).filter((x) => x.instr === "scope" && (!x.ref || x.ref === "GND"))) { const ch = e.ch === 2 ? R.ch2 : R.ch1; if (!ch || !ch.y || !ch.y.length || M.some((m) => m.unit === "V" && (m.at || []).length === 1 && m.at[0] === e.to)) continue;
+  if (meter) for (const e of (R.log || []).filter((x) => x.instr === "scope" && (!x.ref || x.ref === "GND") && !x.atRef).map((x) => (x.atTo ? { ...x, to: x.atTo } : x))) { const ch = e.ch === 2 ? R.ch2 : R.ch1; if (!ch || !ch.y || !ch.y.length || M.some((m) => m.unit === "V" && (m.at || []).length === 1 && m.at[0] === e.to)) continue;
     const z = measure(ch.y, 0.8); if (z.pp > Math.max(0.02, 0.02 * Math.abs(z.mean))) continue; M.push({ label: `Tension sur ${e.to}, une fois établie`, unit: "V", value: Math.abs(z.mean) < 1e-3 ? 0 : z.mean, design: null, gap: null, at: [e.to], end: e.ch || 1 }); }
   const rows = [...M.filter((m) => !m.needs), ...M.filter((m) => m.needs)].map((m) => ({ label: m.label, unit: m.unit, expected: m.value, points: (m.at || []).map(pick).filter(Boolean), band: test.noSim ? { text: "moins de 1 Ω", low: 0, high: 1 } : band(m), design: m.design, gap: m.gap, ...(m.under !== undefined || m.idle ? { ceiling: true } : {}), ...(m.needs ? { optional: true, needs: m.needs } : {}), ...(m.scope ? { scope: true } : {}), ...(m.end ? { end: m.end } : {}), ...(m.pair ? { pair: true } : {}), ...(m.before ? { before: true } : {}) }));
   /* the steps : the same skeleton for every test, then what this one reads */
@@ -140,7 +143,7 @@ function sheetFrom(R, test, where, o) {
     ...(test.nature === "bus" ? ["Aucune réponse : vérifiez d'abord l'alimentation du composant, puis les rappels, puis l'adresse ; un bus ne se dépanne pas à l'analyseur avant d'avoir regardé ses niveaux à l'oscilloscope."] : []),
     "La valeur est hors de la plage : notez-la telle quelle, refaites la mesure une fois, puis comparez les pièces montées à la nomenclature (une résistance d'une décade trop haute donne exactement ce genre d'écart)."];
   /* the same set-up, as data : which instrument, on which pin — what a screen needs to POINT at the board instead of naming a pin (pcba/lab_manip.js) */
-  const links = (R.log || []).filter((e) => e.to).map((e) => ({ instr: e.instr, ch: e.ch || null, to: e.to, at: pick(e.to), back: other(e), backAt: pick(other(e)), v: e.v ?? null, ilim: e.ilim ?? null, r: e.r ?? null, ...(e.instr === "generator" && e.free && R.kind !== "ac" ? { high: e.high ?? null, low: e.low ?? null, freq: e.freq ?? null } : {}), ...(e.instr === "generator" && R.kind === "ac" ? { sweep: true } : {}), ac: !!e.ac, logic: !!e.logic, note: e.note || "", ...(e.free && !(e.instr === "generator" && R.kind === "ac") ? { free: true } : {}), ...(e.set ? { set: true } : {}), ...(floats(e) ? { float: true } : {}) }));
+  const links = (R.log || []).filter((e) => e.to).map((e) => ({ instr: e.instr, ch: e.ch || null, to: e.to, at: pick(e.atTo || e.to), back: e.atRef || other(e), backAt: pick(e.atRef || other(e)), ...(e.atTo ? { movedTo: true } : {}), ...(e.atRef ? { movedBack: true } : {}), v: e.v ?? null, ilim: e.ilim ?? null, r: e.r ?? null, ...(e.instr === "generator" && e.free && R.kind !== "ac" ? { high: e.high ?? null, low: e.low ?? null, freq: e.freq ?? null } : {}), ...(e.instr === "generator" && R.kind === "ac" ? { sweep: true } : {}), ac: !!e.ac, logic: !!e.logic, note: e.note || "", ...(e.free && !(e.instr === "generator" && R.kind === "ac") ? { free: true } : {}), ...(e.set ? { set: true } : {}), ...(floats(e) ? { float: true } : {}) }));
   return { id: o.id || "", tpl, test: test.id, title: test.title, nature: N, block: o.name, refs, links, noSim: !!test.noSim, why: test.why, expect: R.expect || test.expect, gear: test.gear.map((g) => INSTRUMENTS[g]), gearIds: test.gear, setup, settings, steps, rows, table: R.table || null, traps, learn: test.learn, notes: R.notes || [], minutes: MINUTES[test.nature] || 15, result: R, ok: R.ok };
 }
 /* the order one tests a board in : what feeds first, then what thinks, what measures, what drives, what talks, what signals */
@@ -151,12 +154,12 @@ export function boardSheets(board) { return sheetJobs(board).map(jobSheet).filte
     [{ id, blockId, tpl, test, title, name, params, refs }], in the order of the bench. Nothing is simulated here. */
 export function sheetJobs(board) {
   const blocks = (board.blocks || []).filter((b) => BLOCKS[b.template]).sort((a, b) => ORDER.indexOf(BLOCKS[a.template].category) - ORDER.indexOf(BLOCKS[b.template].category)), out = [];
-  for (const b of blocks) { const refs = Object.fromEntries((board.parts || []).filter((p) => p.block === b.id && p.local).map((p) => [p.local, p.ref])); for (const t of blockTests(b.template)) out.push({ id: `E-${String(out.length + 1).padStart(2, "0")}`, blockId: b.id, tpl: b.template, test: t.id, title: t.title, name: `${b.name || BLOCKS[b.template].name} (${b.id})`, params: b.params || {}, refs, gear: gearEnv(board, testKey(b.id, t.id)) }); }
-  for (const t of boardTests(board)) out.push({ id: `E-${String(out.length + 1).padStart(2, "0")}`, blockId: BOARD_KEY, board, test: t.id, title: t.title, name: "Carte entière", gear: gearEnv(board, testKey(BOARD_KEY, t.id)) });      // last : the blocks together, once each one is right
+  for (const b of blocks) { const refs = Object.fromEntries((board.parts || []).filter((p) => p.block === b.id && p.local).map((p) => [p.local, p.ref])); for (const t of blockTests(b.template)) out.push({ id: `E-${String(out.length + 1).padStart(2, "0")}`, blockId: b.id, tpl: b.template, test: t.id, title: t.title, name: `${b.name || BLOCKS[b.template].name} (${b.id})`, params: b.params || {}, refs, gear: gearEnv(board, testKey(b.id, t.id)), moves: movesEnv(board, testKey(b.id, t.id), refs) }); }
+  for (const t of boardTests(board)) out.push({ id: `E-${String(out.length + 1).padStart(2, "0")}`, blockId: BOARD_KEY, board, test: t.id, title: t.title, name: "Carte entière", gear: gearEnv(board, testKey(BOARD_KEY, t.id)), moves: movesEnv(board, testKey(BOARD_KEY, t.id), null) });      // last : the blocks together, once each one is right
   return out;
 }
 /** The sheet of one of those : the test is simulated here. */
-export function jobSheet(job) { const env = job.gear && Object.keys(job.gear).length ? { gear: job.gear } : null;      // what was set on the instruments of this test : its sheet is the bench as it is set
+export function jobSheet(job) { const has = (x) => x && Object.keys(x).length, env = has(job.gear) || has(job.moves) ? { ...(has(job.gear) ? { gear: job.gear } : {}), ...(has(job.moves) ? { moves: job.moves } : {}) } : null;      // what was set on the instruments of this test : its sheet is the bench as it is set
   if (job.board) return boardSheet(job.board, job.test, { id: job.id, ...(env ? { env } : {}) }); const s = testSheet(job.tpl, job.test, job.params, { refs: job.refs, name: job.name, id: job.id, ...(env ? { env } : {}) }); return s ? { ...s, blockId: job.blockId } : null; }
 /** Where the lab of a board stands, WITHOUT simulating anything — for a report : { tests, off, measured (tests with a reading), readings, notes, text }. */
 export function labSummary(board) {
@@ -226,7 +229,12 @@ export function labGuide(board) {
 export const testKey = (blockId, testId) => `${blockId}/${testId}`;
 /* what an instrument can be set to : a supply (v, ilim), a load (r), a generator (high, low, freq — pcba/lab_gear.js KNOBS) */
 const GEAR_KEYS = ["v", "ilim", "r", "high", "low", "freq"];
+/** The leads one may move by hand on the bench (JP, 22 novembre : « permettre les changements de connexion à la souris… lock / unlock setup ») :
+    the role of a lead in its instrument — the + and − of a supply, the hot point and the return of a generator, the two ends of a load,
+    the probes, the ground clip and the − of a differential probe. */
+export const MOVE_ROLES = ["plus", "minus", "hot", "back", "load", "loadBack", "probe", "probe2", "clip", "probeRef"];
 export function labOf(board) { const l = (board && board.lab) || {}, list = (x) => (Array.isArray(x) ? x.filter((r) => r && typeof r.test === "string") : []); return { gears: list(l.gears).filter((r) => typeof r.gear === "string" && /^(supply|load|generator):/.test(r.gear)).map((r) => ({ test: r.test, gear: r.gear, ...GEAR_KEYS.reduce((a, k) => (Number.isFinite(Number(r[k])) && r[k] !== null && r[k] !== "" ? { ...a, [k]: Number(r[k]) } : a), {}) })), readings: list(l.readings).filter((r) => typeof r.what === "string" && Number.isFinite(Number(r.value))).map((r) => ({ test: r.test, what: r.what, value: Number(r.value) })), skips: list(l.skips).map((r) => ({ test: r.test })), notes: list(l.notes).filter((r) => typeof r.text === "string" && r.text.trim()).map((r) => ({ test: r.test, text: r.text.trim(), ...(typeof r.step === "string" && r.step ? { step: r.step } : {}) })),
+  moves: list(l.moves).filter((r) => typeof r.gear === "string" && MOVE_ROLES.includes(r.role) && /^[^.\s]+\.[^\s]+$/.test(String(r.to || ""))).map((r) => ({ test: r.test, gear: r.gear, role: r.role, to: String(r.to) })),
   ticks: list(l.ticks).filter((r) => typeof r.step === "string").map((r) => ({ test: r.test, step: r.step, ...(r.when ? { when: String(r.when) } : {}) })), passes: list(l.passes).filter((r) => typeof r.step === "string" && typeof r.by === "string" && r.by.trim()).map((r) => ({ test: r.test, step: r.step, by: r.by.trim(), why: String(r.why || "").trim(), ...(r.when ? { when: String(r.when) } : {}) })) }; }
 /** A step of the bench ticked (or unticked) : → the new lab block */
 export function setTick(board, key, step, on, when = "") { const l = labOf(board), rest = l.ticks.filter((r) => !(r.test === key && r.step === step)); return { ...l, ticks: on ? [...rest, { test: key, step, ...(when ? { when } : {}) }] : rest }; }
@@ -243,6 +251,20 @@ export function setGear(board, key, gear, patch) {
   const l = labOf(board), rest = l.gears.filter((g) => !(g.test === key && g.gear === gear)), cur = l.gears.find((g) => g.test === key && g.gear === gear) || {}, next = { test: key, gear };
   if (patch) for (const k of GEAR_KEYS) { const v = k in patch ? patch[k] : cur[k]; if (v !== null && v !== undefined && Number.isFinite(Number(v))) next[k] = Number(v); }
   return { ...l, gears: Object.keys(next).length > 2 ? [...rest, next] : rest };
+}
+/** A lead of an instrument moved by hand to a pad of the board (« REF.pin ») — to null : back where the test puts it ; role null : every lead of that instrument back. */
+export function setMove(board, key, gear, role, to) {
+  const l = labOf(board), rest = l.moves.filter((m) => !(m.test === key && m.gear === gear && (role === null || role === undefined || m.role === role)));
+  return { ...l, moves: to && role ? [...rest, { test: key, gear, role, to: String(to) }] : rest };
+}
+/** The leads moved for a test, in the words of the board : { gear: { role: "REF.pin" } } */
+export function movesOf(board, key) { const out = {}; for (const m of labOf(board).moves.filter((x) => x.test === key)) (out[m.gear] = out[m.gear] || {})[m.role] = m.to; return out; }
+/** The same, in the words of the circuit simulated : the pads of a block named by its own parts (refs : local id → reference on the board) ;
+    the whole board (refs null) keeps the references of the board. A pad outside the block is left out : its circuit does not have it. */
+export function movesEnv(board, key, refs) {
+  const back = refs ? Object.fromEntries(Object.entries(refs).map(([local, ref]) => [ref, local])) : null, out = {};
+  for (const [gear, roles] of Object.entries(movesOf(board, key))) for (const [role, to] of Object.entries(roles)) { const dot = to.indexOf("."), ref = to.slice(0, dot), name = back ? (back[ref] ? `${back[ref]}.${to.slice(dot + 1)}` : null) : to; if (name) (out[gear] = out[gear] || {})[role] = name; }
+  return out;
 }
 export const skipped = (board, key) => labOf(board).skips.some((r) => r.test === key);
 export function setSkip(board, key, off) { const l = labOf(board), rest = l.skips.filter((r) => r.test !== key); return { ...l, skips: off ? [...rest, { test: key }] : rest }; }

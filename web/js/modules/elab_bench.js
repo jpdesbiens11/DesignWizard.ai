@@ -34,9 +34,9 @@ export function benchStrip(host, layer, pcb, o = {}) {
         const c = checkKnob(g.kind, k.k, Number(raw.replace(",", ".")) / shown.k); if (!c.ok) { toast(c.text, "warn", 5000); input.value = fr(k.value * shown.k); return; } o.set(g, k.k, c.value); };
       input.addEventListener("change", apply); input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); input.blur(); } if (e.key === "Escape") { input.value = fr(Number.isFinite(k.value) ? k.value * shown.k : null); input.blur(); } });
       face.append(input, el("span", { class: "gear-unit", "data-unit": k.k, style: { left: `${at[0] + at[2] + 2}px`, top: `${at[1] + 3}px` } }, shown.u)); }
-    const head = el("div", { class: "gear-head" }, el("b", null, g.name), el("small", null, g.kind === "scope" ? `voie${(g.channels || []).length > 1 ? "s" : ""} ${(g.channels || [1]).join(", ")}` : `sur ${g.to}`), g.set ? btn("", () => o.reset(g), { small: true, icon: "undo", tip: "Revenir au réglage que propose l'essai", cls: "gear-reset" }) : null);
-    const note = g.fixed ? el("p", { class: "gear-fixed" }, icon("info"), " ", g.fixed) : el("p", { class: "gear-fixed set" }, icon("wizard"), g.set ? " Réglée ici : l'essai suit ce réglage." : " Tapez la valeur sur l'écran de l'appareil.");
-    return el("div", { class: `gear-card${g.set ? " is-set" : ""}`, "data-gear": g.key, "data-kind": g.kind }, head, note, face);      // the face last : its jacks at the bottom of the card, where the cords leave
+    const head = el("div", { class: "gear-head" }, el("b", null, g.name), el("small", null, g.kind === "scope" ? `voie${(g.channels || []).length > 1 ? "s" : ""} ${(g.channels || [1]).join(", ")}` : `sur ${g.to}`), g.set || g.moved ? btn("", () => o.reset(g), { small: true, icon: "undo", tip: g.moved ? "Revenir au montage et au réglage que propose l'essai" : "Revenir au réglage que propose l'essai", cls: "gear-reset" }) : null);
+    const note = g.moved ? el("p", { class: "gear-fixed set moved" }, icon("link"), " Cordon déplacé à la main : l'essai est simulé avec ce montage.") : g.fixed ? el("p", { class: "gear-fixed" }, icon("info"), " ", g.fixed) : el("p", { class: "gear-fixed set" }, icon("wizard"), g.set ? " Réglée ici : l'essai suit ce réglage." : " Tapez la valeur sur l'écran de l'appareil.");
+    return el("div", { class: `gear-card${g.set || g.moved ? " is-set" : ""}`, "data-gear": g.key, "data-kind": g.kind }, head, note, face);      // the face last : its jacks at the bottom of the card, where the cords leave
   };
   /* the cords : from the jack of each instrument to the dot of its point on the board, in the colour of the lead */
   function draw() {
@@ -59,7 +59,7 @@ export function benchStrip(host, layer, pcb, o = {}) {
     show(sheet) {
       gear = sheet && !sheet.noSim ? benchGear(sheet) : []; row.replaceChildren(); row.hidden = !gear.length;
       if (gear.length) row.append(...gear.map(card), el("p", { class: "gear-circuit" }, icon("chip"), " ", CIRCUIT_NOTE, " ", o.pcbaHref ? el("a", { href: o.pcbaHref }, "Ouvrir le PCBA") : null));
-      return gear.flatMap((g) => g.leads.filter((l) => l.ref).map((l) => ({ ...l, gear: g.key })));      // the points to mark on the board (each with its instrument)
+      return gear.flatMap((g) => g.leads.filter((l) => l.ref).map((l) => ({ ...l, gear: g.key, ...(g.movable ? { movable: true } : {}) })));      // the points to mark on the board (each with its instrument)
     },
     /** the button of the board held, or released : its drawing follows */
     pressed(on) { down = !!on; for (const c of row.querySelectorAll('.gear-card[data-kind="press"]')) { const g = gear.find((x) => x.key === c.dataset.gear), old = c.querySelector(".gear-pic"); if (g && old) old.replaceWith(gearPic({ ...g, down }, `${g.name} — ${g.to}`)); } later(); },

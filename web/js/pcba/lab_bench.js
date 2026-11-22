@@ -36,6 +36,8 @@ function makeBench(tpl, P, env = {}) {
   const at = (x) => (x === "0" || x === "GND" ? "0" : String(x).includes(".") ? C.node(x) : built.ports[x] ? C.nets[built.ports[x].net] : C.nets[x] ?? x);
   const volts = (name) => { const n = built.nets.find((q) => q.name === (built.ports[name] ? built.ports[name].net : name)); return n ? n.voltage || 0 : 0; };
   const calc = (re) => { const c = (built.calc || []).find((x) => re.test(x.label)); return c ? { value: Number(c.value), unit: c.unit, text: c.text, label: c.label } : null; };
+  /* a lead moved by hand on the bench (pcba/lab_plan.js setMove → env.moves : { gear: { role: "part.pin" } }) : the instrument is wired there */
+  const mv = (gear, role) => ((env.moves || {})[gear] || {})[role] || null, moved = (to, ref) => ({ ...(to ? { atTo: to } : {}), ...(ref ? { atRef: ref } : {}) });
   const B = { tpl, P, built, C, els, log, at, volts, calc, env,
     /** A lab supply on a port : its voltage, or a wave (a ramp at power-up) ; ilim is written in the plan. */
     supply(name, v, o = {}) {
@@ -44,8 +46,8 @@ function makeBench(tpl, P, env = {}) {
       const g = (env.gear || {})[`supply:${name}`] || {}, free = typeof v === "number" && v >= 0 && (!o.wave || o.wave.kind === "step");
       if (free && Number.isFinite(g.v) && g.v >= 0) { v = g.v; if (o.wave) o = { ...o, wave: { ...o.wave, high: g.v } }; }
       if (Number.isFinite(g.ilim) && g.ilim > 0) o = { ...o, ilim: g.ilim };
-      const id = `PS_${name}`, n = at(name), mid = `${id}_o`; els.push({ t: "V", id, a: mid, b: o.ref ? at(o.ref) : "0", v: o.wave || v }, { t: "R", id: `${id}:r`, a: mid, b: n, r: o.rs ?? 0.05 });
-      log.push({ instr: "supply", to: name, v: typeof v === "number" ? v : null, ilim: o.ilim || null, note: o.note || "", ref: o.ref || "GND", free, ...((free && Number.isFinite(g.v)) || Number.isFinite(g.ilim) ? { set: true } : {}) }); return id; },
+      const id = `PS_${name}`, mp = mv(`supply:${name}`, "plus"), mm = mv(`supply:${name}`, "minus"), n = at(mp || name), mid = `${id}_o`; els.push({ t: "V", id, a: mid, b: mm ? at(mm) : o.ref ? at(o.ref) : "0", v: o.wave || v }, { t: "R", id: `${id}:r`, a: mid, b: n, r: o.rs ?? 0.05 });
+      log.push({ instr: "supply", to: name, v: typeof v === "number" ? v : null, ilim: o.ilim || null, note: o.note || "", ref: o.ref || "GND", free, ...((free && Number.isFinite(g.v)) || Number.isFinite(g.ilim) ? { set: true } : {}), ...moved(mp, mm) }); return id; },
     /** Every supply the block needs, at its nominal voltage. → { port: id } */
     power(o = {}) { const out = {}; for (const [k, p] of Object.entries(built.ports)) if (p.dir === "power_in" && !(o.skip || []).includes(k)) { const v = volts(k) || P.vdd || 3.3; out[k] = B.supply(k, v, { ilim: o.ilim, wave: o.rise ? { kind: "step", low: 0, high: v, delay: o.delay || 0, rise: o.rise } : null }); } return out; },
     /** A generator (50 Ω) on a port or a pin. */
@@ -57,16 +59,16 @@ function makeBench(tpl, P, env = {}) {
       let set = false;
       if (free && [g.high, g.low, g.freq].some((x) => Number.isFinite(x))) { const L = levels(wave), high = Number.isFinite(g.high) ? g.high : L.high, low = Number.isFinite(g.low) ? g.low : L.low, freq = Number.isFinite(g.freq) && g.freq > 0 ? g.freq : wave.freq;
         wave = wave.kind === "sine" ? { ...wave, offset: (high + low) / 2, amp: (high - low) / 2, freq } : { ...wave, high, low, freq }; set = true; }
-      const id = `FG_${name}`, mid = `${id}_o`; els.push({ t: "V", id, a: mid, b: o.ref ? at(o.ref) : "0", v: wave }, { t: "R", id: `${id}:r`, a: mid, b: at(name), r: o.rs ?? 50 });
-      log.push({ instr: "generator", to: name, wave, note: o.note || "", ref: o.ref || "GND", free, ...(free ? { ...levels(wave), freq: wave.freq } : {}), ...(set ? { set: true } : {}) }); return id; },
+      const id = `FG_${name}`, mid = `${id}_o`, mh = mv(`generator:${name}`, "hot"), mb = mv(`generator:${name}`, "back"); els.push({ t: "V", id, a: mid, b: mb ? at(mb) : o.ref ? at(o.ref) : "0", v: wave }, { t: "R", id: `${id}:r`, a: mid, b: at(mh || name), r: o.rs ?? 50 });
+      log.push({ instr: "generator", to: name, wave, note: o.note || "", ref: o.ref || "GND", free, ...(free ? { ...levels(wave), freq: wave.freq } : {}), ...(set ? { set: true } : {}), ...moved(mh, mb) }); return id; },
     /** A logic signal, as the microcontroller would give it (it stands in for a pin that is not there yet). */
-    logic(name, wave, o = {}) { const id = `MCU_${name}`, mid = `${id}_o`; els.push({ t: "V", id, a: mid, b: "0", v: wave }, { t: "R", id: `${id}:r`, a: mid, b: at(name), r: 30 }); log.push({ instr: o.instr || "generator", to: name, wave, logic: true, note: o.note || "" }); return id; },
+    logic(name, wave, o = {}) { const id = `MCU_${name}`, mid = `${id}_o`, k = `${o.instr || "generator"}:${name}`, mh = mv(k, "hot"), mb = mv(k, "back"); els.push({ t: "V", id, a: mid, b: mb ? at(mb) : "0", v: wave }, { t: "R", id: `${id}:r`, a: mid, b: at(mh || name), r: 30 }); log.push({ instr: o.instr || "generator", to: name, wave, logic: true, note: o.note || "", ...moved(mh, mb) }); return id; },
     load(name, r, o = {}) { const g = (env.gear || {})[`load:${name}`] || {}, set = Number.isFinite(g.r) && g.r > 0; if (set) r = g.r;      // a load set on the instrument (pcba/lab_gear.js)
-      const id = `LOAD_${name}`; els.push({ t: "R", id, a: at(name), b: at(o.to || "0"), r }); log.push({ instr: "load", to: name, r, toRef: o.to || "GND", note: o.note || "", free: true, ...(set ? { set: true } : {}) }); return id; },
+      const id = `LOAD_${name}`, ma = mv(`load:${name}`, "load"), mb = mv(`load:${name}`, "loadBack"); els.push({ t: "R", id, a: at(ma || name), b: at(mb || o.to || "0"), r }); log.push({ instr: "load", to: name, r, toRef: o.to || "GND", note: o.note || "", free: true, ...(set ? { set: true } : {}), ...moved(ma, mb) }); return id; },
     /** A load that draws a current (the electronic load in constant-current mode), which may step. */
-    sink(name, i, o = {}) { const id = `LOAD_${name}`; els.push({ t: "I", id, a: at(name), b: at(o.to || "0"), i }); log.push({ instr: "load", to: name, i: typeof i === "number" ? i : null, wave: typeof i === "number" ? null : i, toRef: o.to || "GND", note: o.note || "" }); return id; },
+    sink(name, i, o = {}) { const id = `LOAD_${name}`, ma = mv(`load:${name}`, "load"), mb = mv(`load:${name}`, "loadBack"); els.push({ t: "I", id, a: at(ma || name), b: at(mb || o.to || "0"), i }); log.push({ instr: "load", to: name, i: typeof i === "number" ? i : null, wave: typeof i === "number" ? null : i, toRef: o.to || "GND", note: o.note || "", ...moved(ma, mb) }); return id; },
     /** A winding : a resistance and an inductance in series, between two points (a motor, a coil, a valve). */
-    coil(a, b, r, l, note) { const id = `COIL_${a}`, mid = `${id}_m`; els.push({ t: "R", id, a: at(a), b: mid, r }, { t: "L", id: `${id}:l`, a: mid, b: at(b), l }); log.push({ instr: "load", to: a, toRef: b, r, l, note: note || "" }); return id; },
+    coil(a, b, r, l, note) { const id = `COIL_${a}`, mid = `${id}_m`, ma = mv(`load:${a}`, "load"), mb = mv(`load:${a}`, "loadBack"); els.push({ t: "R", id, a: at(ma || a), b: mid, r }, { t: "L", id: `${id}:l`, a: mid, b: at(mb || b), l }); log.push({ instr: "load", to: a, toRef: b, r, l, note: note || "", ...moved(ma, mb) }); return id; },
     cap(name, c, note) { els.push({ t: "C", id: `CB_${name}`, a: at(name), b: "0", c }); log.push({ instr: "wire", to: name, c, note: note || "" }); },
     res(a, b, r, note) { const id = `RB_${a}_${b}`; els.push({ t: "R", id, a: at(a), b: at(b), r }); log.push({ instr: "wire", to: a, toRef: b, r, note: note || "" }); return id; },
     /** A pull-up to a bench rail (a bus that has none on this block). */
@@ -77,7 +79,9 @@ function makeBench(tpl, P, env = {}) {
     press(name, note) { log.push({ instr: "press", to: name, note: note || "" }); },
     /** The cell of the board itself feeds the circuit (no supply of the bench) : it goes in its holder once the board is checked. name : its + pin. */
     cell(name, note) { log.push({ instr: "cell", to: name, note: note || "" }); },
-    probe(ch, name, o = {}) { log.push({ instr: "scope", ch, to: name, ref: o.ref || "GND", ac: !!o.ac, note: o.note || "" }); return { at: name, ref: o.ref || null, label: o.label || name, ac: !!o.ac }; },
+    /** A probe. Moved by hand (env.moves.scope or .meter) : the probe of its channel, the ground clip of the probes on the ground, the − of a differential probe. */
+    probe(ch, name, o = {}) { const m = { ...((env.moves || {}).meter || {}), ...((env.moves || {}).scope || {}) }, mt = m[ch === 2 ? "probe2" : "probe"] || null, rets = new Set(log.filter((e) => /^(supply|generator|logic)$/.test(e.instr)).map((e) => e.ref || "GND")), float = !!o.ref && !/GND/i.test(o.ref) && !rets.has(o.ref), mr = (float ? m.probeRef : m.clip) || null;      // floating as the sheet says it : not on a ground, nor where a source has its return
+      log.push({ instr: "scope", ch, to: name, ref: o.ref || "GND", ac: !!o.ac, note: o.note || "", ...moved(mt, mr) }); return { at: mt || name, ref: mr || o.ref || null, label: mt ? `${o.label || name} → ${mt}` : o.label || name, ac: !!o.ac }; },
     hasPull(name) { const n = at(name); return els.some((e) => e.t === "R" && (e.a === n || e.b === n) && e.r < 5e4); },
   };
   return B;

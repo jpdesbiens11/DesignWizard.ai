@@ -13,8 +13,8 @@ import { resolveBoard } from "../pcba/model.js";
 import { LIBRARY } from "../pcba/library.js";
 import { BLOCKS, BLOCK_CATEGORIES } from "../pcba/blocks.js";
 import { NATURES, blockTests, eng } from "../pcba/lab_bench.js";
-import { testSheet, boardSheets, boardSheet, sheetJobs, jobSheet, expectedText, gapText, labPlanDoc, labGuide, labOf, setReading, setSkip, skipped, verdict, labStatus, testKey, gearEnv, setGear } from "../pcba/lab_plan.js";
-import { benchGear, gearWords, pressFrames } from "../pcba/lab_gear.js";
+import { testSheet, boardSheets, boardSheet, sheetJobs, jobSheet, expectedText, gapText, labPlanDoc, labGuide, labOf, setReading, setSkip, skipped, verdict, labStatus, testKey, gearEnv, setGear, setMove, movesEnv, movesOf } from "../pcba/lab_plan.js";
+import { benchGear, gearWords, pressFrames, checkMove, moveWords } from "../pcba/lab_gear.js";
 import { benchStrip, pressable } from "./elab_bench.js";
 import { labBoard, scope, bode } from "./elab_view.js";
 import { screenToBench } from "../pcba/lab_plain.js";
@@ -69,13 +69,27 @@ function render(main, args) {
   const setMode = (m, keep = true) => { pcb.bread(m === "bread"); for (const b of viewMode.children) { const on = b.dataset.mode === m; b.setAttribute("aria-checked", String(on)); b.tabIndex = on ? 0 : -1; b.classList.toggle("on", on); } if (keep) try { localStorage.setItem(VIEW_KEY, m); } catch { /* private window */ } strip.redraw(); };
   viewMode.append(...modes.map(([m, label, tip, ic]) => el("button", { type: "button", role: "radio", "data-mode": m, "data-tip": tip, style: { "--g": "#0f766e" }, onClick: () => setMode(m) }, icon(ic), el("span", null, label))));
   viewMode.addEventListener("keydown", (e) => { if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) return; e.preventDefault(); const i = modes.findIndex(([m]) => pcb.bread() === (m === "bread")), m = modes[(i + 1) % modes.length][0]; setMode(m); viewMode.querySelector(`[data-mode="${m}"]`).focus(); });
-  boardHost.append(viewMode);
+  /* the set-up : LOCKED on opening (JP, 22 novembre : « la majeure partie seront faits par AI… lock / unlock setup… un expert HW designer pourra jouer
+     en connaissance de cause ») ; unlocked, a lead is taken by its dot and dropped on a pad — the tool refuses what would harm the board, and says why */
+  const lockSlot = el("span", { class: "lab-lock" });
+  const drawLock = () => lockSlot.replaceChildren(btn(st.free ? "Montage déverrouillé" : "Montage verrouillé", () => { st.free = !st.free; pcb.unlock(st.free, moveLead); drawLock(); }, { small: true, primary: st.free, icon: st.free ? "edit" : "lock",
+    tip: st.free ? "Prenez un cordon par sa pastille de couleur et posez-le sur une autre pastille de la carte : l'essai est simulé de nouveau avec ce montage. Ce qui abîmerait la carte est refusé. Cliquer pour verrouiller." : "Le montage est celui de l'essai. Cliquer pour le déverrouiller et déplacer un cordon à la souris — en connaissance de cause." }));
+  boardHost.append(el("div", { class: "lab-view-tools" }, viewMode, lockSlot));
   /* the instruments of the test, drawn above the board, set on their front, their cords run to the board (modules/elab_bench.js) */
   const strip = benchStrip(bench, bench, pcb, { pcbaHref: `#/pcba/${encodeURIComponent(id)}`,
     set: (g, k, v) => { const K = g.knobs.find((x) => x.k === k); store.updateBoard(id, (b) => { b.lab = setGear(b, key(), g.key, { [k]: v }); }, `Banc : ${g.name} sur ${g.to} — ${K ? K.label.toLowerCase() : k} ${v === null ? "de l'essai" : "réglée"}`); },
-    reset: (g) => store.updateBoard(id, (b) => { b.lab = setGear(b, key(), g.key, null); }, `Banc : ${g.name} sur ${g.to} — réglage de l'essai`) });
-  setMode(saved === "board" ? "board" : "bread", false);
-  let unpress = () => {};
+    reset: (g) => store.updateBoard(id, (b) => { b.lab = setGear(b, key(), g.key, null); b.lab = setMove(b, key(), g.key, null, null); }, `Banc : ${g.name} sur ${g.to} — montage et réglage de l'essai`) });
+  /* a lead dropped on a pad : checked (pcba/lab_gear.js checkMove), kept in the notebook of the board in one undoable step, the test simulated again */
+  function moveLead(gearKey, role, pad) {
+    const s = st.sheet, b = cur(), B = board(); if (!s || !b) return; const g = benchGear(s).find((x) => x.key === gearKey); if (!g) return;
+    const netOf = (pin) => (B.nets || []).find((n) => (n.pins || []).includes(pin)) || null, pin = `${pad.ref}.${pad.pin}`, net = netOf(pin), ground = !!net && (net.class === "ground" || /^(GND|0|AGND|PGND|DGND|VSS|GND_?ISO)$/i.test(net.name));
+    const pair = { plus: "minus", minus: "plus", hot: "back", back: "hot", load: "loadBack", loadBack: "load" }[role], other = pair && g.leads.find((l) => l.role === pair && l.ref), otherNet = other ? (netOf(`${other.ref}.${other.pin}`) || {}).name || null : null;
+    const c = checkMove(g, role, { ref: pad.ref, pin: pad.pin, net: net ? net.name : null, ground }, { inBlock: b.whole ? true : Object.values(refsOf(b)).includes(pad.ref), otherNet });
+    if (!c.ok) { toast(c.text, "warn", 7000); return; }
+    store.updateBoard(id, (x) => { x.lab = setMove(x, key(), gearKey, role, pin); }, `Banc : ${g.name} — cordon déplacé sur ${pin}`);
+  }
+  setMode(saved === "board" ? "board" : "bread", false); drawLock();
+  let unpress = () => {}; const benchSig = () => JSON.stringify([gearEnv(board(), key()), movesOf(board(), key())]);
   /* the instruments on the board : their points marked, a button of the board pressed by a click on it */
   function wireBench() {
     unpress(); unpress = () => {}; const s = st.sheet; if (!s) return; const pts = strip.show(s), R = resolveBoard(board(), LIBRARY); if (pts.length) pcb.mark(placedPoints(R, { points: pts }).points, null);
@@ -106,7 +120,7 @@ function render(main, args) {
   /* runs the test of the block on the simulated bench — under the veil, for the longer ones */
   function run() {
     const b = cur(); if (!b || !st.test) return; veil.set(`Essai simulé : ${b.whole ? "la carte entière" : BLOCKS[b.template].name}…`, {}); setStatus("Simulation…", "busy");
-    const gear = gearEnv(board(), key()), env = Object.keys(gear).length ? { gear } : null; st.gearSig = JSON.stringify(gear);      // what was set on the instruments of this test (modules/elab_bench.js)
+    const gear = gearEnv(board(), key()), moves = movesEnv(board(), key(), b.whole ? null : refsOf(b)), env = Object.keys(gear).length || Object.keys(moves).length ? { ...(Object.keys(gear).length ? { gear } : {}), ...(Object.keys(moves).length ? { moves } : {}) } : null; st.gearSig = benchSig();      // what was set on the instruments of this test, and the leads moved by hand (modules/elab_bench.js)
     setTimeout(() => { if (!st.alive) return; let sheet = null; try { sheet = b.whole ? boardSheet(board(), st.test, env ? { env } : {}) : testSheet(b.template, st.test, b.params || {}, { refs: refsOf(b), name: `${b.name || BLOCKS[b.template].name} (${b.id})`, ...(env ? { env } : {}) }); } catch (e) { toast(`Essai : ${e.message}`, "error", 8000); }
       veil.set(""); if (!sheet) { setStatus("Essai impossible", "error"); return; } st.sheet = { ...sheet, blockId: b.id }; st.q = 0; st.netMap = b.whole ? {} : Object.fromEntries(sheet.result.built.nets.map((n) => [n.name, netOf(b, sheet.result.built, n.name)]));
       setStatus(sheet.ok ? "Essai simulé" : "Essai non abouti", sheet.ok ? "done" : "error"); pcb.show(resolveBoard(board(), LIBRARY), b.whole ? { name: board().name || id } : { focus: new Set(Object.values(refsOf(b))), name: board().name || id }); wireBench(); centre(); renderRight(); renderLeft(); paint(); tell(); }, 30);
@@ -126,6 +140,7 @@ function render(main, args) {
   }
   const guide = () => { const out = labGuide(board()).map((g) => ({ ...g })), s = st.sheet; if (s) { if (!s.ok) out.unshift({ level: "error", text: `${s.title} : la simulation n'a pas abouti — le montage de cet essai est à revoir.`, field: "lab" });
       for (const t of gearWords(benchGear(s))) out.push({ level: "tip", text: `Banc — ${t}`, field: "lab" });
+      for (const t of moveWords(benchGear(s))) out.push({ level: "tip", text: `Banc — ${t}`, field: "lab" });
       const k = key(), L = labOf(board()); for (const r of s.rows) { const x = L.readings.find((q) => q.test === k && q.what === r.label); if (x && verdict(r, x.value) === "out") out.unshift({ level: "warn", text: `${s.title} — « ${r.label} » : ${eng(x.value, r.unit)} mesuré, hors de la plage attendue (${r.band.text}).`, field: "lab", go: () => { st.tab = "read"; renderRight(); const f = right.querySelector(`[data-read="${CSS.escape(r.label)}"]`); if (f) nudge(f); } }); } }
     return out; };
   const tell = () => setGuide(guide());
@@ -158,7 +173,7 @@ function render(main, args) {
     const area = el("textarea", { rows: 9, placeholder: "Collez la réponse de l'assistant : elle contient la carte dans un bloc ```dwiz." }), out = el("div"); let next = null;
     const ok = btn("Appliquer ces changements", () => { if (!next) return; applyAnswer([`board:${id}`], `Labo de ${id} : notes et mises de côté reprises d'une IA`, () => store.updateBoard(id, (b) => { b.lab = next; }, "Labo : notes de l'IA")); m.close(); toast("Notes et mises de côté reprises de la réponse de l'IA.", "success"); }, { primary: true, icon: "check", disabled: true });
     area.addEventListener("input", () => { next = null; ok.disabled = true; out.replaceChildren(); if (!area.value.trim()) return;
-      try { const doc = aiRead(area.value); if (!doc || !doc.lab) throw new Error("La réponse ne contient pas de bloc « lab »."); const mine = labOf(board()), theirs = labOf(doc), d = { ...theirs, gears: mine.gears, readings: mine.readings, ticks: mine.ticks, passes: mine.passes, notes: [...theirs.notes.filter((n) => !n.step), ...mine.notes.filter((n) => n.step)] }, diff = aiDiff(mine, d);      // what was read, ticked, let pass and noted at the bench is the lab's : an answer cannot rewrite it
+      try { const doc = aiRead(area.value); if (!doc || !doc.lab) throw new Error("La réponse ne contient pas de bloc « lab »."); const mine = labOf(board()), theirs = labOf(doc), d = { ...theirs, gears: mine.gears, moves: mine.moves, readings: mine.readings, ticks: mine.ticks, passes: mine.passes, notes: [...theirs.notes.filter((n) => !n.step), ...mine.notes.filter((n) => n.step)] }, diff = aiDiff(mine, d);      // what was read, ticked, let pass and noted at the bench is the lab's : an answer cannot rewrite it
         out.append(el("p", null, diff.length ? `${diff.length} changement(s) :` : "Aucun changement."), el("ul", { class: "decisions" }, diff.slice(0, 30).map((x) => el("li", null, `${x.path} — ${x.text}`)))); if (diff.length) { next = d; ok.disabled = false; }
       } catch (e) { out.append(el("p", { class: "form-error" }, e.message)); } });
     const m = modal("Réimporter les notes du laboratoire depuis une IA", [field("Réponse de l'assistant", area), out, el("div", { class: "form-actions" }, btn("Annuler", () => m.close()), ok)], { wide: true });
@@ -211,7 +226,7 @@ function render(main, args) {
   const onKey = (e) => { if (e.key === " " && !/^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(document.activeElement && document.activeElement.tagName) && st.sheet) { e.preventDefault(); st.playing = !st.playing; centre(); } };
   document.addEventListener("keydown", onKey);
   const off = store.on("change", () => { if (!store.board(id)) { go("#/elab"); return; } if (st.block && !cur()) { st.block = null; st.sheet = null; } renderLeft(); renderRight(); tell(); paint();
-    if (st.sheet && key() && JSON.stringify(gearEnv(board(), key())) !== st.gearSig) run(); });      // a setting made on an instrument, or taken back by « Annuler » : the test is simulated again with the bench as it is
+    if (st.sheet && key() && benchSig() !== st.gearSig) run(); });      // a setting made on an instrument, or taken back by « Annuler » : the test is simulated again with the bench as it is
   pcb.show(resolveBoard(board(), LIBRARY), { name: board().name || id }); renderLeft(); renderRight(); tell(); st.raf = requestAnimationFrame(tick);
   const lively = (b, natures) => blockTests(b.template).some((t) => natures.includes(t.nature)), cyc = blocks().find((b) => blockTests(b.template).some((t) => t.id === "ripple")), first = cyc || blocks().find((b) => lively(b, ["dynamic", "bus"])) || blocks().find((b) => lively(b, ["function", "frequency", "static"])) || blocks()[0]; if (first) pick(first.id, cyc ? "ripple" : undefined);      // it opens on a test where something moves — a chopper first : tracks that beat, a square wave, a ripple
   view._lab = { st, run, labStatus: () => labStatus(board(), st.sheets || (st.sheets = boardSheets(board()))) };      // for whoever inspects the page (tests, the console)

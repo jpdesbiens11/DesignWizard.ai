@@ -33,7 +33,11 @@ const FIXED = {
 /** What never changes on the bench, and where it does : the circuit itself. */
 export const CIRCUIT_NOTE = "Le circuit vient du PCBA : ses composants et leurs valeurs se changent dans le PCBA, pas sur le banc.";
 
-const lead = (lead, at, signal) => ({ lead, signal: signal || "", ...(at && at.ref ? { ref: at.ref, pin: at.pin } : {}) });
+/* a lead : its colour and letter (`lead`, pcba/lab_manip.js LEADS), its ROLE in the instrument — what moving it by hand changes in the circuit
+   (pcba/lab_plan.js MOVE_ROLES) —, the point of the board it is on, and whether it was moved there by hand */
+const lead = (lead, at, signal, role, moved) => ({ lead, role: role || lead, signal: signal || "", ...(at && at.ref ? { ref: at.ref, pin: at.pin } : {}), ...(moved ? { moved: true } : {}) });
+/** What can be moved by hand on the bench : the leads of a supply, a generator, a load, the probes. A test component, the cell, a finger cannot. */
+const MOVABLE = new Set(["supply", "generator", "load", "scope", "meter"]);
 /** The key of an instrument in the notebook : its kind and the signal its + goes to (« supply:VIN »). */
 export const gearKey = (instr, to) => `${instr}:${to}`;
 
@@ -44,23 +48,46 @@ export function benchGear(sheet) {
   const push = (x) => { if (seen.has(x.key)) return; seen.add(x.key); out.push({ v: null, ilim: null, r: null, set: false, knobs: [], fixed: "", ...x }); };
   for (const l of L.filter((x) => x.instr === "supply")) {
     const free = !!l.free, knobs = KNOBS.supply.filter((k) => free || k.k === "ilim").map((k) => ({ ...k, value: l[k.k] }));
-    push({ key: gearKey("supply", l.to), kind: "supply", name: NAMES.supply, to: l.to, v: l.v, ilim: l.ilim, set: !!l.set, knobs, fixed: free ? "" : FIXED.shape, leads: [lead("minus", l.backAt, l.back), lead("plus", l.at, l.to)] });
+    push({ key: gearKey("supply", l.to), kind: "supply", name: NAMES.supply, to: l.to, v: l.v, ilim: l.ilim, set: !!l.set, knobs, fixed: free ? "" : FIXED.shape, leads: [lead("minus", l.backAt, l.back, "minus", l.movedBack), lead("plus", l.at, l.to, "plus", l.movedTo)] });
   }
   for (const l of L.filter((x) => x.instr === "cell")) push({ key: gearKey("cell", l.to), kind: "cell", name: NAMES.cell, to: l.to, fixed: FIXED.cell, leads: [lead("plus", l.at, l.to)] });
   for (const l of L.filter((x) => x.instr === "load" || x.instr === "wire")) {
     const free = l.instr === "load" && !!l.free && Number.isFinite(l.r);
-    push({ key: gearKey(l.instr, l.to), kind: l.instr === "load" ? "load" : "wire", name: NAMES[l.instr], to: l.to, r: l.r, set: !!l.set, knobs: free ? KNOBS.load.map((k) => ({ ...k, value: l.r })) : [], fixed: free ? "" : l.instr === "wire" ? FIXED.wire : FIXED.sink, leads: [lead("load", l.at, l.to), lead("load", l.backAt, l.back)] });
+    push({ key: gearKey(l.instr, l.to), kind: l.instr === "load" ? "load" : "wire", name: NAMES[l.instr], to: l.to, r: l.r, set: !!l.set, knobs: free ? KNOBS.load.map((k) => ({ ...k, value: l.r })) : [], fixed: free ? "" : l.instr === "wire" ? FIXED.wire : FIXED.sink, leads: [lead("load", l.at, l.to, "load", l.movedTo), lead("load", l.backAt, l.back, "loadBack", l.movedBack)] });
   }
   for (const l of L.filter((x) => x.instr === "generator" || x.instr === "logic")) { const free = l.instr === "generator" && !l.logic && !!l.free;      // a plain sine or square : its levels and its frequency turn on its front
     push({ key: gearKey(l.instr, l.to), kind: "generator", name: NAMES[l.instr], to: l.to, high: free ? l.high : null, low: free ? l.low : null, freq: free ? l.freq : null, set: !!l.set,
-      knobs: free ? KNOBS.generator.map((k) => ({ ...k, value: l[k.k] })) : [], fixed: free ? "" : l.sweep ? FIXED.sweep : FIXED[l.instr], leads: [lead("back", l.backAt, l.back), lead("hot", l.at, l.to)] }); };
+      knobs: free ? KNOBS.generator.map((k) => ({ ...k, value: l[k.k] })) : [], fixed: free ? "" : l.sweep ? FIXED.sweep : FIXED[l.instr], leads: [lead("back", l.backAt, l.back, "back", l.movedBack), lead("hot", l.at, l.to, "hot", l.movedTo)] }); };
   const probes = L.filter((x) => x.instr === "scope").filter((l, i, a) => a.findIndex((q) => q.to === l.to) === i);
   if (probes.length && scoped) { const ground = probes.find((p) => p.backAt && !p.float);
     push({ key: "scope", kind: "scope", name: NAMES.scope, to: probes[0].to, fixed: FIXED.scope, channels: probes.map((p) => p.ch || 1),
-      leads: [...(ground ? [lead("clip", ground.backAt, ground.back)] : []), ...probes.map((p) => lead(p.ch === 2 ? "probe2" : "probe", p.at, p.to)), ...probes.filter((p) => p.float).map((p) => lead("probeRef", p.backAt, p.back))] }); }
-  else if (probes.length) { const p = probes[0]; push({ key: "meter", kind: "meter", name: NAMES.meter, to: p.to, fixed: FIXED.meter, leads: [lead("black", p.backAt, p.back), lead("red", p.at, p.to)] }); }
+      leads: [...(ground ? [lead("clip", ground.backAt, ground.back, "clip", ground.movedBack)] : []), ...probes.map((p) => lead(p.ch === 2 ? "probe2" : "probe", p.at, p.to, null, p.movedTo)), ...probes.filter((p) => p.float).map((p) => lead("probeRef", p.backAt, p.back, "probeRef", p.movedBack))] }); }
+  else if (probes.length) { const p = probes[0]; push({ key: "meter", kind: "meter", name: NAMES.meter, to: p.to, fixed: FIXED.meter, leads: [lead("black", p.backAt, p.back, "clip", p.movedBack), lead("red", p.at, p.to, p.ch === 2 ? "probe2" : "probe", p.movedTo)] }); }
   for (const l of L.filter((x) => x.instr === "press")) push({ key: gearKey("press", l.to), kind: "press", name: NAMES.press, to: l.to, fixed: FIXED.press, leads: [lead("part", l.at, l.to)] });
+  for (const g of out) { g.movable = MOVABLE.has(g.kind) && !(g.kind === "generator" && g.key.startsWith("logic:")); g.moved = g.leads.some((x) => x.moved); }
   return out;
+}
+
+/** Can this lead go to that pad ? The tool refuses what would harm the board or mean nothing, and says why (JP : « l'outil refuse l'incompatible
+    en disant pourquoi »). g : the instrument (benchGear) ; role : the lead ; target : { ref, pin, net (name, or null), ground } ; o : { inBlock (the pad is in
+    the circuit simulated), otherNet (the net of the other end of the same instrument) } → { ok, text } */
+export function checkMove(g, role, target, o = {}) {
+  if (!g || !g.movable) return { ok: false, text: g && g.kind === "press" ? "Le doigt appuie sur le bouton de la carte : il ne se déplace pas." : g && g.kind === "cell" ? "La pile va dans son support : elle ne se déplace pas." : "Ce cordon est celui de l'essai : il ne se déplace pas." };
+  if (!g.leads.some((l) => l.role === role)) return { ok: false, text: "Ce cordon n'est pas sur cet appareil." };
+  if (!target || !target.ref) return { ok: false, text: "Posez le cordon sur une pastille de la carte." };
+  if (!target.net) return { ok: false, text: `${target.ref}.${target.pin} n'est relié à rien sur la carte : un cordon posé là ne mesure et n'alimente rien.` };
+  if (o.inBlock === false) return { ok: false, text: `${target.ref} n'est pas dans le bloc à l'essai : seul son circuit est simulé ici. Pour relier deux blocs, choisissez « La carte entière ».` };
+  if (g.kind === "scope" && role === "clip" && !target.ground) return { ok: false, text: "La pince de masse de l'oscilloscope est reliée à la terre : elle ne se pose que sur la masse de la carte, jamais sur un point vivant — ce serait un court-circuit. Pour une tension entre deux points vivants : une sonde différentielle." };
+  const pair = { plus: "minus", minus: "plus", hot: "back", back: "hot", load: "loadBack", loadBack: "load" }[role];
+  if (pair && o.otherNet && o.otherNet === target.net) return { ok: false, text: g.kind === "load" ? `Les deux bouts de la charge sur le même net (${target.net}) : elle ne verrait aucune tension.` : `Les deux bornes de ${g.kind === "supply" ? "l'alimentation" : "du générateur"} sur le même net (${target.net}) : un court-circuit franc de sa sortie.` };
+  return { ok: true, text: "" };
+}
+
+/** What the leads moved by hand change, in sentences for the guide : the circuit is simulated with them. */
+export function moveWords(gear) {
+  return gear.filter((g) => g.moved).flatMap((g) => g.leads.filter((l) => l.moved).map((l) => ["probe", "probe2", "clip", "probeRef"].includes(l.role)
+    ? `${g.name} : ${l.role === "clip" ? "la pince de masse" : l.role === "probeRef" ? "le − de la sonde" : `la sonde de la voie ${l.role === "probe2" ? 2 : 1}`} déplacée sur ${l.ref}.${l.pin} — la courbe suit ; les relevés de la fiche restent ceux de l'essai.`
+    : `${g.name} sur ${g.to} : ${l.role === "minus" || l.role === "back" || l.role === "loadBack" ? "le retour" : "le cordon"} déplacé sur ${l.ref}.${l.pin} — le circuit est simulé avec lui ; les valeurs attendues suivent.`));
 }
 
 /** A value typed on an instrument, checked against what the tool accepts. → { ok, value (SI), text (why not, in words) } */
