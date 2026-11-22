@@ -42,7 +42,7 @@ function drawingDoc(p, k, host) {
   const d = p.drawing || {}, texts = k.of === "part" ? partTexts(host, p) : drawingTexts(p, `assembly:${k.id}`), w = d.words || {};
   return { dw: "drawing/1", id: k.id, of: k.of, title: host.name || host.id, sheet: Object.fromEntries(SHEET_KEYS.filter((x) => d[x] !== undefined).map((x) => [x, d[x]])),
     words: Object.fromEntries(texts.map((t) => [t, w[t] || ""])), notes: [...(host.notes || [])],
-    ...(k.of === "part" ? { section: host.section ?? null, characteristics: { ...(host.characteristics || {}) }, details: clone(host.details || []) } : {}) };
+    ...(k.of === "part" ? { section: host.section ?? null, characteristics: { ...(host.characteristics || {}) } } : {}), details: clone(host.details || []) };      // detail views : on a part and on an assembly
 }
 function drawingCheck(p, k, d) {
   const out = [], block = (text) => out.push({ severity: "block", text }), warn = (text) => out.push({ severity: "warn", text }), s = d.sheet || {};
@@ -82,8 +82,8 @@ function drawingApply(p, k, d) {
     if (d.section === null || d.section === undefined) delete host.section; else host.section = clone(d.section);
     const ch = Object.fromEntries(Object.entries(d.characteristics || {}).filter(([, v]) => v && v !== "normal"));
     if (Object.keys(ch).length) host.characteristics = ch; else delete host.characteristics;
-    if (Array.isArray(d.details) && d.details.length) host.details = clone(d.details).map((x) => ({ ...x, id: x.id || `det-${x.letter}` })); else delete host.details;
   }
+  if (Array.isArray(d.details) && d.details.length) host.details = clone(d.details).map((x) => ({ ...x, id: x.id || `det-${x.letter}` })); else delete host.details;
 }
 
 /* ---------- the load cases ---------- */

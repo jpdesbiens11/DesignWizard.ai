@@ -49,14 +49,28 @@ export function detailLines(view, d) {
   for (const k of ["visible", "smooth", "hidden"]) out[k] = (view[k] || []).flatMap((seg) => clipCircle(seg.pts || seg, d.at, d.r)).map((pts) => ({ pts }));
   return out;
 }
-/** Draw a detail : its lines at scale k, the top-left corner of its circle at (x, y) ; the circle thin ; DETAIL D and its scale under it. */
-export function drawDetail(sheet, view, d, x, y, k, hidden) {
+/** The dimensions a detail shows (ASME Y14.5 : a dimension is given once — where it reads best) : a linear dimension of its view whose two
+    points fall inside its circle leaves the view for the detail. dims : the dimensions of the drawing (draw/dim_model.js). → [dim] */
+export function dimsInDetail(d, dims) {
+  const inside = (p) => Array.isArray(p) && Math.hypot(p[0] - d.at[0], p[1] - d.at[1]) <= d.r + 1e-9;
+  return (dims || []).filter((x) => x && x.on === d.view && (x.kind === "detail" || x.kind === "pattern") && !x.leader && (x.dir === "h" || x.dir === "v") && inside(x.p1) && inside(x.p2));
+}
+/** The room a detail takes on the sheet, its dimensions included : { w, h, below (under the circle, before its label), right }. */
+export function detailRoom(d, dims) {
+  const D = 2 * d.r * d.scale, mine = dimsInDetail(d, dims), nh = mine.filter((x) => x.dir === "h").length, nv = mine.length - nh, below = nh ? 8 + 8 * nh : 0, right = nv ? 10 + 9 * nv : 0;
+  return { w: D + 4 + right, h: D + 12 + below, below, right, dims: mine };
+}
+/** A place set by hand (dragged on the sheet) : the top-left corner of the detail, kept on the detail (`place`), inside the frame. */
+export const placeOf = (d, frame, w, h) => (Array.isArray(d.place) && d.place.length === 2 && d.place.every(Number.isFinite) ? { x: Math.min(Math.max(frame.x + 2, d.place[0]), frame.x + frame.w - w - 2), y: Math.min(Math.max(frame.y + 2, d.place[1]), frame.y + frame.h - h - 2) } : null);
+/** Draw a detail : its lines at scale k, the top-left corner of its circle at (x, y) ; the circle thin ; DETAIL D and its scale under it
+    (under its dimensions too : o.below). */
+export function drawDetail(sheet, view, d, x, y, k, hidden, o = {}) {
   const T = (p) => [x + (p[0] - (d.at[0] - d.r)) * k, y + ((d.at[1] + d.r) - p[1]) * k], L = detailLines(view, d);
   const lines = (list, st) => { for (const s of list) if (s.pts.length > 1) sheet.polyline(s.pts.map(T), st); };
   if (hidden) lines(L.hidden, { ...STYLE.hidden, w: 0.2, color: "#555555" });
   lines(L.smooth, { w: LW.fine, color: "#444444" }); lines(L.visible, { w: LW.visible, cap: "round" });
   sheet.circle(x + d.r * k, y + d.r * k, d.r * k, { w: LW.thin, color: "#333333" });
-  viewLabel(sheet, x + d.r * k, y + 2 * d.r * k + 5, `DETAIL ${d.letter}`, `SCALE ${scaleName(k)}`, { size: 3.6 });
+  viewLabel(sheet, x + d.r * k, y + 2 * d.r * k + 5 + (o.below || 0), `DETAIL ${d.letter}`, `SCALE ${scaleName(k)}`, { size: 3.6 });
   return T;
 }
 /** On the view it comes from : the circle (a phantom line) and its letter, outside the circle toward the upper right. T : the transform of that view, s : its scale. */
@@ -93,6 +107,7 @@ export function detailCheck(list) {
     if (!(Number.isFinite(d.r) && d.r > 0)) out.push(`${w} : « r » est le rayon de la zone, en mm, positif.`);
     if (!DETAIL_SCALES.some((s) => Math.abs(s[0] - d.scale) < 1e-9)) out.push(`${w} : « scale » est une échelle normalisée (${DETAIL_SCALES.map((s) => s[0]).join(", ")}).`);
     if (d.on !== undefined && typeof d.on !== "boolean") out.push(`${w} : « on » est vrai ou faux.`);
+    if (d.place !== undefined && !(Array.isArray(d.place) && d.place.length === 2 && d.place.every(Number.isFinite))) out.push(`${w} : « place » est le coin [x, y] de la vue sur la feuille, en mm — ou rien, et elle se place seule.`);
   });
   return out;
 }

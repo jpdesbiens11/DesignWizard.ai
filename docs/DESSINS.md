@@ -110,7 +110,26 @@ grande que la feuille, et se change sur la ligne du détail.
 essaie à une ou deux échelles plus petites ; sinon, les vues gardent leur échelle et le détail passe sur une feuille à
 part, « DETAIL VIEWS », et le guide le dit. Chaque détail est gardé sur la pièce (`details`), dans le plan de sa vue :
 il suit la pièce et l'échelle de la feuille ; il se met à Off, se copie (la copie naît à Off), se retire — chaque
-changement une étape annulable. Un détail montre les traits de sa vue ; les cotes restent sur les vues et aux tableaux.
+changement une étape annulable.
+
+**Les cotes d'un détail** (JP, 22 novembre, point 5 : « des cotes dans une vue de détail ») : une cote linéaire dont les
+deux points tombent dans le cercle d'un détail **se donne sur le détail**, et seulement là — une cote se donne une fois,
+là où elle se lit le mieux (ASME Y14.5 ; `dimsInDetail`, `detailRoom`). Les cotes horizontales sous le cercle, les
+verticales à sa droite, avec leur bulle et leur classe ; DETAIL D et son échelle passent sous elles. Le détail prend
+donc un peu plus de place : il arrive que les vues descendent d'une échelle de plus. Une cote par repère (un rayon) et
+une cote qui sort du cercle restent sur la vue d'origine. La ligne du détail, dans la marge de droite, dit combien il
+en porte.
+
+**Un détail se déplace à la main** : sur la première feuille, appuyez sur un détail, glissez, relâchez — il reste où on
+l'a mis (`place`, sur le détail, ramenée dans le cadre ; `detailMover` de `modules/drawing_sheet_ui.js`), une étape
+annulable ; « ↻ » sur sa ligne le remet là où la feuille est blanche. **Les vues projetées ne se déplacent pas** : de
+face, de dessus et de droite restent alignées, comme l'usage le veut (ASME Y14.3, ISO 128) — un détail, lui, se place
+librement.
+
+**Un dessin d'assemblage a ses vues de détail** (JP, point 5) : le même outil, « Choisir une zone », sur une vue de
+l'ensemble ; le détail se pose dans le blanc de toute la feuille — hors des vues, de leurs bulles et cotes, de la vue
+isométrique, de la nomenclature, des notes et du cartouche — ou là où on le glisse ; sans place, le guide le dit. Il
+est gardé sur l'assemblage (`details`) et voyage dans l'aller-retour IA de la feuille.
 
 ## Le cartouche et les textes de la feuille
 
@@ -236,8 +255,8 @@ porte le nom de la variante. Numéro de pièce, révision et classes de cotes re
   les profils quelconques gardent leurs cotes au tableau.
 - Les tolérances dimensionnelles viennent du bloc de tolérances générales et des ajustements des interfaces ; pas de
   tolérance saisie cote par cote.
-- Une seule coupe, plane, parallèle à une face ; pas de coupe brisée ni de demi-coupe. Une vue de détail montre les
-  traits de sa vue, sans cote ; un dessin d'assemblage n'a pas encore de vue de détail. Une pièce à
+- Une seule coupe, plane, parallèle à une face ; pas de coupe brisée ni de demi-coupe. Une vue de détail porte les
+  cotes linéaires entières de sa zone ; une cote par repère reste sur sa vue ; un détail d'assemblage n'a pas de cote. Une pièce à
   plusieurs corps est dessinée sans coupe si le noyau ne parvient pas à la couper. Quand les tableaux débordent, la feuille le dit et
   renvoie à la liste des cotes.
 - Le dessin natif envoyé à Onshape reste au format A3 ; seul le PDF est en tabloïd.

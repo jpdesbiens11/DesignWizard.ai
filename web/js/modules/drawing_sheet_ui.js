@@ -54,7 +54,8 @@ export function detailSection(part, info, update, pick, picking) {
     el("div", { class: "form-actions" }, btn(picking ? "Tracez le cercle sur la feuille… (Échap)" : "Choisir une zone", pick, { small: true, primary: !picking, icon: "search", tip: "Puis, sur la feuille : appuyez au centre de la zone, glissez jusqu'au rayon, relâchez. Échap annule.", cls: "detail-pick" })),
     list.map((d) => { const on = d.on !== false, w = where.get(d.id);
       return el("div", { class: "detail-row" + (on ? "" : " off"), "data-field": `detail:${d.id}` }, onOff(on, (v) => update((p) => { const x = (p.details || []).find((q) => q.id === d.id); if (x) { if (v) delete x.on; else x.on = false; } }, `détail ${d.letter} ${v ? "On" : "Off"}`), `La vue de détail ${d.letter}`),
-        badge(d.letter, "info"), el("span", { class: "grow small" }, `sur ${VIEW[d.view] || d.view}${w && w.sheet > 1 ? ` · feuille ${w.sheet}` : ""}`),
+        badge(d.letter, "info"), el("span", { class: "grow small" }, `sur ${VIEW[d.view] || d.view}${w && w.sheet > 1 ? ` · feuille ${w.sheet}` : ""}${w && w.dims && w.dims.length ? ` · ${w.dims.length} cote${w.dims.length > 1 ? "s" : ""}` : ""}`),
+        d.place ? iconBtn("refresh", `Le détail ${d.letter} a été placé à la main : le remettre où la feuille est blanche`, () => update((p) => { const x = (p.details || []).find((q) => q.id === d.id); if (x) delete x.place; }, `détail ${d.letter} replacé seul`)) : null,
         el("select", { "aria-label": `Échelle du détail ${d.letter}`, onChange: (e) => update((p) => { const x = (p.details || []).find((q) => q.id === d.id); if (x) x.scale = +e.target.value; }, `détail ${d.letter} à ${scaleName(+e.target.value)}`) },
           DETAIL_SCALES.map(([k, n]) => el("option", { value: k, selected: Math.abs(k - d.scale) < 1e-9 }, n))),
         iconBtn("copy", `Copier le détail ${d.letter} (la copie naît à Off)`, () => update((p) => { const c = copyDetail(p, d); if (c) p.details.push(c); }, `détail ${d.letter} copié`)),
@@ -89,6 +90,23 @@ export function detailPicker(center, info, done, stop) {
   const end = () => { center.removeEventListener("pointerdown", down, true); center.removeEventListener("pointermove", move, true); center.removeEventListener("pointerup", up, true); document.removeEventListener("keydown", key, true); center.classList.remove("pick-zone"); stop(); };
   center.addEventListener("pointerdown", down, true); center.addEventListener("pointermove", move, true); center.addEventListener("pointerup", up, true); document.addEventListener("keydown", key, true); center.classList.add("pick-zone");
   return end;
+}
+/** A detail view moved by hand (the usage of the modellers : a detail, a section or an auxiliary view is dragged where one wants it ; the
+    projected views stay aligned — ASME Y14.3, ISO 128 — and do not move). Press on a detail of the first sheet, drag, release : done(id, [x, y])
+    gets the top-left corner, in mm of the sheet. A detail that cannot be moved there is kept inside the frame by the layout. → a function that removes it. */
+export function detailMover(center, info, done) {
+  let drag = null;
+  const first = () => center.querySelector(".sheet-view"), toSheet = (svg, e) => { const m = svg.getScreenCTM(); if (!m) return null; const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse()); return [p.x, p.y]; };
+  const hit = (e) => { const svg = first(), I = info(); if (!svg || !I || !e.target.closest || e.target.closest(".sheet-view") !== svg || center.classList.contains("pick-zone")) return null; const p = toSheet(svg, e); if (!p) return null;
+    const d = (I.details || []).find((x) => x.sheet === 1 && p[0] >= x.box.x && p[0] <= x.box.x + x.box.w && p[1] >= x.box.y && p[1] <= x.box.y + x.box.h); return d ? { d, p, svg } : null; };
+  const down = (e) => { if (e.button !== 0) return; const h = hit(e); if (!h) return; e.stopPropagation(); e.preventDefault();
+    const r = document.createElementNS("http://www.w3.org/2000/svg", "rect"); for (const [k, v] of Object.entries({ x: h.d.box.x, y: h.d.box.y, width: h.d.box.w, height: h.d.box.h, fill: "rgba(37,99,235,.08)", stroke: "#2563eb", "stroke-width": 0.5, "stroke-dasharray": "3 1.5" })) r.setAttribute(k, v);
+    h.svg.append(r); drag = { ...h, r, dx: 0, dy: 0 }; try { center.setPointerCapture(e.pointerId); } catch (err) { /* gone */ } };
+  const move = (e) => { if (!drag) { const h = hit(e); center.classList.toggle("over-detail", !!h); return; } const q = toSheet(drag.svg, e); if (!q) return; drag.dx = q[0] - drag.p[0]; drag.dy = q[1] - drag.p[1]; drag.r.setAttribute("x", drag.d.box.x + drag.dx); drag.r.setAttribute("y", drag.d.box.y + drag.dy); };
+  const up = (e) => { if (!drag) return; e.stopPropagation(); const g = drag; drag = null; g.r.remove(); if (Math.hypot(g.dx, g.dy) < 1) return; done(g.d.id, [Math.round((g.d.box.x + g.dx) * 10) / 10, Math.round((g.d.box.y + g.dy) * 10) / 10]); };
+  const key = (e) => { if (e.key === "Escape" && drag) { drag.r.remove(); drag = null; } };
+  center.addEventListener("pointerdown", down, true); center.addEventListener("pointermove", move, true); center.addEventListener("pointerup", up, true); document.addEventListener("keydown", key, true);
+  return () => { center.removeEventListener("pointerdown", down, true); center.removeEventListener("pointermove", move, true); center.removeEventListener("pointerup", up, true); document.removeEventListener("keydown", key, true); };
 }
 /** A new detail from a zone drawn on the sheet : the next letter, the scale twice that of the sheet or more. */
 export function detailFrom(part, zone, sheetScale) { return newDetail(part, { ...zone, scale: detailScaleFor(sheetScale) }); }

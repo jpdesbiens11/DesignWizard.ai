@@ -12,7 +12,7 @@ import { SvgSheet } from "../../web/js/draw/svg.js";
 import { composeDrawing, viewRequest, PAPER } from "../../web/js/draw/part_drawing.js";
 import { uosOf, uosLines, uosNote, uosIssues, uosCheck, UOS_EXAMPLE } from "../../web/js/draw/uos.js";
 import { Room, placeLabel, placeBox } from "../../web/js/draw/sheet_room.js";
-import { clipCircle, newDetail, copyDetail, nextLetter, detailCheck, detailIssues, detailScaleFor, DETAIL_LETTERS } from "../../web/js/draw/detail_view.js";
+import { clipCircle, newDetail, copyDetail, nextLetter, detailCheck, detailIssues, detailScaleFor, DETAIL_LETTERS, dimsInDetail, detailRoom, placeOf } from "../../web/js/draw/detail_view.js";
 import { moreDoc, moreCheck, moreApply } from "../../web/js/core/ai_more.js";
 import { aiRead } from "../../web/js/core/ai_loop.js";
 import { toDwiz } from "../../web/js/core/dwiz.js";
@@ -65,7 +65,13 @@ test("on the sheet : the details take the white room, the views go down a scale 
   for (const [name, v] of Object.entries(one.info.layout.boxes)) assert.ok(clear(one.info.details[0].box, v), `the detail stays off the ${name} view`);
   for (const g of one.info.gdt) assert.ok(clear(one.info.details[0].box, g.box), `the detail and the frame of ${g.name} do not overlap`);
   const two = draw([{ id: "det-D", letter: "D", view: "top", at: [12, 12], r: 12, scale: 4 }, { id: "det-E", letter: "E", view: "front", at: [110, 14], r: 9, scale: 2 }]);
-  assert.equal(two.info.scale, "1:2", "two large details : the views go down one scale, by themselves"); assert.ok(two.info.details.every((x) => x.sheet === 1));
+  assert.equal(two.info.scale, "1:2.5", "two large details, one with the dimension it shows : the views go down, by themselves"); assert.ok(two.info.details.every((x) => x.sheet === 1));
+  /* a dimension whose two points fall inside a detail is given on the detail — once (ASME Y14.5) */
+  assert.deepEqual(two.info.details[0].dims, ["iface:IF1:v"]); assert.ok(two.info.onView.includes("iface:IF1:v")); assert.equal(two.info.onView.filter((k) => k === "iface:IF1:v").length, 1, "given once");
+  assert.deepEqual(one.info.details[0].dims, [], "a detail with no whole dimension inside shows none");
+  /* a detail moved by hand stays where it was put — inside the frame */
+  const hand = draw([{ id: "det-D", letter: "D", view: "top", at: [12, 12], r: 6, scale: 2, place: [30, 160] }]); assert.deepEqual([hand.info.details[0].box.x, hand.info.details[0].box.y, hand.info.details[0].hand], [30, 160, true]);
+  const far = draw([{ id: "det-D", letter: "D", view: "top", at: [12, 12], r: 6, scale: 2, place: [9000, -50] }]), F = far.info.layout.frame, fb = far.info.details[0].box; assert.ok(fb.x + fb.w <= F.x + F.w && fb.y >= F.y, "a place off the sheet is brought back inside the frame");
   const big = draw([{ id: "det-D", letter: "D", view: "top", at: [80, 55], r: 60, scale: 4 }]);
   assert.equal(big.info.scale, "1:1.5", "no room even smaller : the views keep their scale…"); assert.equal(big.info.details[0].sheet, 3); assert.equal(big.info.sheets, 3); assert.match(big.pages[2], /DETAIL VIEWS — DRV-BASE/);
   const off = draw([{ id: "det-D", letter: "D", view: "top", at: [12, 12], r: 6, scale: 2, on: false }], { ...UOS_EXAMPLE, sure: true });
@@ -91,4 +97,12 @@ test("wired : the screen edits the block, the notes and the details in the right
   assert.match(scr, /uos: uosOf\(d\), notesOff: d\.notesOff/); assert.match(scr, /field\("Titre"/); assert.match(scr, /field\("Date"/);
   assert.match(ui, /getScreenCTM\(\)/); assert.match(ui, /e\.key === "Escape"/); assert.match(ui, /class: "detail-pick"|cls: "detail-pick"/);
   assert.match(read("draw/asm_drawing.js"), /uos: \{ lines: uosLines\(U/);
+});
+
+test("the dimensions a detail shows, the room it takes, a place set by hand ; an answer may set the place", () => {
+  const d = { id: "det-D", letter: "D", view: "top", at: [10, 10], r: 5, scale: 2 }, dims = [{ key: "a", on: "top", kind: "detail", dir: "h", p1: [8, 9], p2: [12, 9] }, { key: "b", on: "top", kind: "detail", dir: "v", p1: [9, 7], p2: [9, 12] }, { key: "c", on: "top", kind: "detail", dir: "h", p1: [8, 9], p2: [20, 9] }, { key: "d", on: "front", kind: "detail", dir: "h", p1: [8, 9], p2: [12, 9] }, { key: "e", on: "top", kind: "detail", leader: [10, 10] }];
+  assert.deepEqual(dimsInDetail(d, dims).map((x) => x.key), ["a", "b"], "both points inside, on its view, a linear dimension");
+  const R = detailRoom(d, dims); assert.equal(R.w, 20 + 4 + 10 + 9); assert.equal(R.h, 20 + 12 + 8 + 8); assert.equal(R.below, 16);
+  const frame = { x: 10, y: 10, w: 400, h: 260 }; assert.deepEqual(placeOf({ ...d, place: [50, 60] }, frame, 30, 30), { x: 50, y: 60 }); assert.equal(placeOf(d, frame, 30, 30), null); assert.deepEqual(placeOf({ ...d, place: [-5, 500] }, frame, 30, 30), { x: 12, y: 238 });
+  assert.deepEqual(detailCheck([{ ...d, place: [40, 50] }]), []); assert.equal(detailCheck([{ ...d, place: "here" }]).length, 1);
 });

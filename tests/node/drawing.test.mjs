@@ -164,6 +164,11 @@ test("an assembly drawing numbers its parts with balloons and carries the parts 
   const svgEn = new SvgSheet({ width: PAPER.TABLOID[0], height: PAPER.TABLOID[1], title: asm.id }); composeAssemblyDrawing(svgEn, { asm, project: DEMO_DRIVE, views, bbox, rows, centers, mass: 464, opts: { date: "2026-01-01", say: sayWith(DEMO_DRIVE.drawing.words) } }); const textEn = svgEn.toString(0);
   for (const t of ["Base du boîtier", "Carte de puissance", "Variateur compact — assemblage général"]) { assert.ok(text.includes(t)); assert.ok(!textEn.includes(t), `${t} is said in English`); } for (const t of ["Housing base", "Power board", "Extruded heat sink", "Compact drive — general assembly", "Compact 400 V motor drive (demonstration)"]) assert.ok(textEn.includes(t), t);
   assert.ok(text.includes("Socket head cap screw") && textEn.includes("Socket head cap screw"));
+  /* a detail view on an assembly drawing (JP) : a circle on a view, enlarged where the sheet is white — off the views, the parts list, the notes */
+  const Bf = L.bounds.front, withDet = { ...asm, details: [{ id: "det-D", letter: "D", view: "front", at: [(Bf.x0 + Bf.x1) / 2, (Bf.y0 + Bf.y1) / 2], r: 12, scale: 1 }] }, svgD = new SvgSheet({ width: PAPER.TABLOID[0], height: PAPER.TABLOID[1], title: asm.id });
+  const infoD = composeAssemblyDrawing(svgD, { asm: withDet, project: DEMO_DRIVE, views, bbox, rows, centers, mass: 464, opts: { date: "2026-01-01" } }), textD = svgD.toString(0);
+  assert.equal(infoD.details.length, 1); assert.match(textD, />DETAIL D</); assert.ok(Number.isFinite(infoD.scaleK) && infoD.layout.transforms.front && infoD.layout.boxes.top, "what the tool that draws a zone needs");
+  for (const k of ["views", "bom", "notes", "iso"]) assert.ok(clear(infoD.details[0].box, infoD.layout[k]), `the detail stays off the ${k}`);
   const spread = placeBalloons([{ item: 1, p: [50, 50] }, { item: 2, p: [50.2, 50.1] }, { item: 3, p: [80, 50] }], { x: 20, y: 30, w: 60, h: 40 });
   for (let i = 0; i < spread.length; i++) for (let j = i + 1; j < spread.length; j++) assert.ok(Math.hypot(spread[i].b[0] - spread[j].b[0], spread[i].b[1] - spread[j].b[1]) >= 9, "two balloons never touch");
   assert.ok(spread.every((x) => x.b[0] < 20 - 5 || x.b[0] > 80 + 5 || x.b[1] < 30 - 5 || x.b[1] > 70 + 5), "balloons stand outside the view");

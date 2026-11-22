@@ -7,7 +7,9 @@
    listed are those of this level. The same sheet can list every part through the levels instead (data.rows says which).
    Pure layout code (browser and Node). */
 
-import { LW, dimLinear, drawBorder, drawTitleBlock, drawNotes, drawTable, drawRevisionTable, viewLabel, TITLE_BLOCK_H } from "./drafting.js";
+import { LW, dimLinear, drawBorder, drawTitleBlock, drawNotes, drawTable, drawRevisionTable, viewLabel, TITLE_BLOCK_H, TITLE_BLOCK_W, TOL_BLOCK_W } from "./drafting.js";
+import { liveDetails, drawDetail, markDetail, detailRoom, placeOf } from "./detail_view.js";
+import { Room, placeBox } from "./sheet_room.js";
 import { liveAsm } from "../core/asm_live.js";
 import { bounds, drawView, balloon, notesHeight } from "./part_drawing.js";
 import { uosOf, uosLines, UOS_STD } from "./uos.js";
@@ -81,6 +83,23 @@ function composeSheet(sheet, data) {
   drawTitleBlock(sheet, frame, { title: `${say(asm.name) || asm.id}${o.variant ? ` — VARIANT ${say(o.variant)}` : ""}`, partNumber: asm.id, revision: asm.revision || "A", material: "Assembly", finish: "—", mass: massOf(data.mass || 0),
     scale: scale[1], sheet: "1/1", size: "B (11 × 17)", drawnBy: o.drawnBy || "", checkedBy: o.checkedBy || "", approvedBy: o.approvedBy || "", date: o.date || "", company: o.organisation || "DesignWizard.ai", project: say((project && project.name) || ""),
     projection: third ? "third" : "first", units: drawingUnit(), status: o.status || "Preliminary", uos: { lines: uosLines(U, drawingUnit() === "in"), example: !U.sure, std: UOS_STD } });
-  return { scale: scale[1], notes, autoNotes: auto, uos: U, items: parts.map((r) => ({ item: r.item, id: r.id, kind: r.kind, view: where[centerKey(r)] || null })), dims: dims.map(([label, value, k]) => ({ n: k, label, value })), bom: shown.length,
-    layout: { notes: { x: frame.x + 4, y: notesY, w: notesW, h: nH }, iso: isoBox, views: { x: fx, y: y0, w: bw, h: bh }, bom: { x: colX, y: frame.y + frame.h - TITLE_BLOCK_H - th, w: RIGHT_W, h: th }, area, frame } };
+  /* detail views (JP : « une vue de détail sur un dessin d'assemblage ») : as on a part, a circle drawn on a view becomes a view of its own, in the
+     white room left — the views, their balloons and dimensions, the iso view, the parts list, the notes and the title block are not white ;
+     a detail dragged on the sheet stays where it was put. One that finds no room is said (detailsLeft), not drawn over the rest. */
+  const white = new Room(2 * frame.x + frame.w, 2 * frame.y + frame.h), details = []; let detailsLeft = 0;
+  const bomY = frame.y + frame.h - TITLE_BLOCK_H - th;      // the right column : the revisions on top, the iso view, then the parts list — white between them
+  white.rect(fx - 32, y0 - 32, bw + 64, bh + 64); white.rect(frame.x + frame.w - 150, frame.y, 150, revH + 2); white.rect(isoBox.x - 2, isoBox.y - 2, isoBox.w + 4, isoBox.h + 4); white.rect(colX - 2, bomY - 8, RIGHT_W + 2, th + 8); white.rect(frame.x, notesY - 2, notesW + 4, nH + 4);
+  white.rect(frame.x + frame.w - TITLE_BLOCK_W - TOL_BLOCK_W, frame.y + frame.h - TITLE_BLOCK_H, TITLE_BLOCK_W + TOL_BLOCK_W, TITLE_BLOCK_H);
+  for (const d of liveDetails(asm)) {
+    if (!views[d.view] || !T[d.view]) continue;
+    const R = detailRoom(d, []), hand = placeOf(d, frame, R.w, R.h), at = hand || placeBox(white, R.w, R.h, T[d.view](d.at), { x: frame.x + 2, y: frame.y + 2, w: frame.w - 4, h: frame.h - 4 });
+    markDetail(sheet, T[d.view], d, s);
+    if (!at) { detailsLeft++; continue; }
+    drawDetail(sheet, views[d.view], d, at.x + 2, at.y + 1, d.scale, false); white.rect(at.x, at.y, R.w, R.h);
+    details.push({ letter: d.letter, id: d.id, view: d.view, sheet: 1, box: { x: at.x, y: at.y, w: R.w, h: R.h }, dims: [], hand: !!hand });
+  }
+  const boxes = { top: { x: fx, y: topY, w: B.top.w * s, h: B.top.h * s }, front: { x: fx, y: frontY, w: B.front.w * s, h: B.front.h * s }, right: { x: rightX, y: frontY, w: B.right.w * s, h: B.right.h * s } };
+  const transforms = { front: { ox: fx, oy: frontY, s, x0: B.front.x0, y1: B.front.y1 }, top: { ox: fx, oy: topY, s, x0: B.top.x0, y1: B.top.y1 }, right: { ox: rightX, oy: frontY, s, x0: B.right.x0, y1: B.right.y1 } };
+  return { scale: scale[1], scaleK: s, details, detailsLeft, notes, autoNotes: auto, uos: U, items: parts.map((r) => ({ item: r.item, id: r.id, kind: r.kind, view: where[centerKey(r)] || null })), dims: dims.map(([label, value, k]) => ({ n: k, label, value })), bom: shown.length,
+    layout: { notes: { x: frame.x + 4, y: notesY, w: notesW, h: nH }, iso: isoBox, views: { x: fx, y: y0, w: bw, h: bh }, bom: { x: colX, y: frame.y + frame.h - TITLE_BLOCK_H - th, w: RIGHT_W, h: th }, area, frame, boxes, transforms, bounds: { front: B.front, top: B.top, right: B.right } } };
 }

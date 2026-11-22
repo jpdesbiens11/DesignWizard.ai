@@ -12,7 +12,7 @@
 import { PAPER, STYLE, LW, dimLinear, centerMark, featureControlFrame, fcfWidth, datumFeature, viewLabel, drawBorder, drawTitleBlock, drawNotes, drawTable, drawRevisionTable, leaderNote, sectionArrows, arrowHead, fitText, TITLE_BLOCK_H, TITLE_BLOCK_W, TOL_BLOCK_W } from "./drafting.js";
 import { uosOf, uosLines, uosNote, UOS_STD } from "./uos.js";
 import { Room, inked, dry, placeLabel, placeBox } from "./sheet_room.js";
-import { liveDetails, drawDetail, markDetail } from "./detail_view.js";
+import { liveDetails, drawDetail, markDetail, detailRoom, placeOf } from "./detail_view.js";
 import { hatch } from "./hatch.js";
 import { interfaceType, patternPoints } from "../cad/interfaces.js";
 import { materialOrDefault, PROCESSES, processName } from "../cad/materials.js";
@@ -182,12 +182,15 @@ function composeSheet(sheet0, data, minIdx = 0) {
   }
   /* detail dimensions first : each design parameter where its operation shows it ; a radius is told by a leader from its corner.
      Then the basic dimensions of the bolt patterns take the rows that are left ; the others go to the table, which the standard allows for a group. */
-  for (const d of dims.filter((x) => x.kind === "detail")) {
+  /* a dimension whose two points fall inside the zone of a detail is given on the detail — once (ASME Y14.5) */
+  const roomOf = new Map(liveDetails(spec).filter((x) => views[x.view]).map((x) => [x.id, detailRoom(x, dims)])), moved = new Map();
+  for (const [id, R] of roomOf) for (const dd of R.dims) if (!moved.has(dd.key)) moved.set(dd.key, id);
+  for (const d of dims.filter((x) => x.kind === "detail" && !moved.has(x.key))) {
     if (!d.leader) { place(d, T[d.on](d.p1), T[d.on](d.p2), d.on, slotsOf(d)); continue; }
     const from = T[d.on](d.leader), to = [from[0] + 7, from[1] + 8], note = leaderNote(sheet, from, to, [dimText(d)], { size: 3.2 });
     balloon(sheet, [note.x + note.width + 1.5 + BAL_R, to[1]], d.n); if (d.cls === "sc" || d.cls === "csc") classSymbol(sheet, note.x + note.width + 2 * BAL_R + 3, to[1], d.cls); onView.push(d.key);
   }
-  for (const d of dims.filter((x) => x.kind === "pattern")) place(d, T[d.on](d.p1), T[d.on](d.p2), d.on, slotsOf(d));
+  for (const d of dims.filter((x) => x.kind === "pattern" && !moved.has(x.key))) place(d, T[d.on](d.p1), T[d.on](d.p2), d.on, slotsOf(d));
   /* the section A-A : in the row of the top view, clear of its dimensions, at the scale of the sheet when it fits — its cut face hatched,
      its plane shown on the top view with the arrows of the look */
   let section = null;
@@ -230,7 +233,7 @@ function composeSheet(sheet0, data, minIdx = 0) {
     return shown.length;
   };
   left += holeDims.length - tableOf("HOLE TABLE", holeDims, [{ title: "Tags", width: 22 }, { title: "Hole", width: 28 }, { title: "Description", width: 88 }], (d) => [d.tags, dimText(d), d.label], stackX, gy, holeDims.length);
-  const defs = dims.filter((d) => d.table === "def" || ((d.kind === "pattern" || d.kind === "detail") && !onView.includes(d.key)));
+  const defs = dims.filter((d) => d.table === "def" || ((d.kind === "pattern" || d.kind === "detail") && !onView.includes(d.key) && !moved.has(d.key)));
   if (left) sheet.text(stackX, Math.min(gy + holesH, frame.y + frame.h - bandH - 4), `… and ${left} more feature(s): see the 3D model.`, { size: 2.3, font: "italic" });
   drawNotes(sheet, frame.x + 4, notesY, notesW, notes, { title: "NOTES", size: 2.3 });
   viewLabel(sheet, fx + B.front.w * s / 2, frontY + B.front.h * s + 10 + 8 * (used["front:h"] || 1) + 5, "", `SCALE ${scale[1]}`);
@@ -244,13 +247,18 @@ function composeSheet(sheet0, data, minIdx = 0) {
   /* detail views : each in the white room left, as near as it can to the view it comes from ; its circle and its letter on that view */
   const T2 = { front: { ox: fx, oy: frontY, s, x0: B.front.x0, y1: B.front.y1 }, top: { ox: fx, oy: topY, s, x0: B.top.x0, y1: B.top.y1 }, right: { ox: rightX, oy: frontY, s, x0: B.right.x0, y1: B.right.y1 } };
   const details = [], later = [];
+  /* a detail drawn with the dimensions it shows : under its circle the horizontal ones, right of it the vertical ones, its label under them */
+  const withDims = (sh, d, x, y) => { const R = roomOf.get(d.id), Td = drawDetail(sh, views[d.view], d, x + 2, y + 1, d.scale, o.hidden !== false, { below: R.below }), k = d.scale, cx = x + 2 + d.r * k, cy = y + 1 + d.r * k, r = d.r * k; let ih = 0, iv = 0;
+    for (const dd of R.dims) { const P1 = Td(dd.p1), P2 = Td(dd.p2), h = dd.dir === "h", off = h ? cy + r - Math.max(P1[1], P2[1]) + 6 + 8 * ih++ : cx + r - Math.max(P1[0], P2[0]) + 6 + 9 * iv++;
+      annotate(sh, dd, dimLinear(sh, P1, P2, { dir: dd.dir, offset: off, text: dimText(dd) })); onView.push(dd.key); }
+    return R; };
   for (const d of liveDetails(spec)) {
     if (!views[d.view] || !T[d.view]) continue;
-    const D = 2 * d.r * d.scale, w = D + 4, h = D + 12, c = T[d.view](d.at), at = placeBox(room, w, h, c, area);
+    const R = roomOf.get(d.id), w = R.w, h = R.h, c = T[d.view](d.at), hand = placeOf(d, frame, w, h), at = hand || placeBox(room, w, h, c, area);      // a detail dragged on the sheet stays where it was put
     markDetail(sheet, T[d.view], d, s);
     if (!at) { later.push(d); continue; }
-    drawDetail(sheet, views[d.view], d, at.x + 2, at.y + 1, d.scale, o.hidden !== false); room.rect(at.x, at.y, w, h);
-    details.push({ letter: d.letter, id: d.id, view: d.view, sheet: 1, box: { x: at.x, y: at.y, w, h } });
+    withDims(sheet, d, at.x, at.y); room.rect(at.x, at.y, w, h);
+    details.push({ letter: d.letter, id: d.id, view: d.view, sheet: 1, box: { x: at.x, y: at.y, w, h }, dims: R.dims.map((x) => x.key), hand: !!hand });
   }
   /* geometric tolerances : a feature control frame for each, its leader on the feature it controls — a hole pattern on one of its holes
      (« 4X » and the tags say the rest), a surface on its edge — put where the sheet is white, as near as it can */
@@ -295,8 +303,8 @@ function composeSheet(sheet0, data, minIdx = 0) {
     sheet0.newPage(); drawBorder(sheet0, { confidential: o.confidential }); drawRevisionTable(sheet0, frame.x + frame.w, frame.y, revs.slice(-4), { align: "right" });
     sheet0.text(frame.x + 6, frame.y + 9, `DETAIL VIEWS — ${spec.id} ${say(spec.name) || ""}`.trim(), { size: 4.2, font: "bold" });
     let x = frame.x + 8, y = frame.y + 18, rowH = 0;
-    for (const d of later) { const D = 2 * d.r * d.scale, w = D + 4, h = D + 12; if (x + w > frame.x + frame.w - 4) { x = frame.x + 8; y += rowH + 6; rowH = 0; }
-      drawDetail(sheet0, views[d.view], d, x + 2, y + 1, d.scale, o.hidden !== false); details.push({ letter: d.letter, id: d.id, view: d.view, sheet: sheets, box: { x, y, w, h } }); x += w + 8; rowH = Math.max(rowH, h); }
+    for (const d of later) { const R = roomOf.get(d.id), w = R.w, h = R.h; if (x + w > frame.x + frame.w - 4) { x = frame.x + 8; y += rowH + 6; rowH = 0; }
+      withDims(sheet0, d, x, y); details.push({ letter: d.letter, id: d.id, view: d.view, sheet: sheets, box: { x, y, w, h }, dims: R.dims.map((q) => q.key) }); x += w + 8; rowH = Math.max(rowH, h); }
     block(sheets, sheet0);
   }
   const boxes = { top: { x: fx, y: topY, w: B.top.w * s, h: B.top.h * s }, front: { x: fx, y: frontY, w: B.front.w * s, h: B.front.h * s }, right: { x: rightX, y: frontY, w: B.right.w * s, h: B.right.h * s } };
