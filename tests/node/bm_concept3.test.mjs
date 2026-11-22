@@ -15,9 +15,12 @@ const near = (a, b, msg, tol = 1e-3) => assert.ok(Math.abs(a - b) < tol, `${msg}
 
 test("the history : concept 3 is a branch of MAIN (P1), beside concept 2 ; it is concept 1 with its joints changed", () => {
   const p = bmProject({ branch: "c3" }), h = p.history, names = branchNames(h);
-  assert.deepEqual(h.points.map((x) => [x.id, x.parent, names.get(x.id)]), [["P1", null, "MAIN"], ["P2", "P1", "concept 2 - consumer product interface"], ["P3", "P1", C3_BRANCH], ["P4", "P3", C3_BRANCH]]);
-  assert.equal(h.head, "P4", "the home card opens on the tip of concept 3"); assert.equal(bmProject().history.head, "P1", "by default, MAIN"); assert.equal(bmProject({ branch: true }).history.head, "P2");
+  assert.deepEqual(h.points.map((x) => [x.id, x.parent, names.get(x.id)]), [["P1", null, "MAIN"], ["P2", "P1", "concept 2 - consumer product interface"], ["P3", "P1", C3_BRANCH], ["P4", "P3", C3_BRANCH], ["P5", "P4", C3_BRANCH]]);
+  assert.equal(h.head, "P5", "the home card opens on the tip of concept 3");
   const main = rebuild(h, "P1"), ids = (d) => d.parts.map((x) => x.id);
+  /* the top end shortened (JP, by menu : « Raccourcir le bout haut ») : no backing plate on the + terminal, the casing shorter */
+  const cas = (d) => d.parts.find((x) => x.id === "BM-CASING").params.L.value; near(cas(main) - cas(p), 4.75, "4.75 mm shorter than concept 1");
+  assert.ok(!p.parts.find((x) => x.id === "BM-TERM-POS").bodies.appui, "the pressure plate bears on the copper"); assert.ok(rebuild(h, "P4").parts.find((x) => x.id === "BM-TERM-POS").bodies.appui, "P4 keeps it"); assert.equal(bmProject().history.head, "P1", "by default, MAIN"); assert.equal(bmProject({ branch: true }).history.head, "P2");
   assert.deepEqual(ids(p).filter((id) => !ids(main).includes(id)), ["BM3-LAMELLES", "BM3-DISCS", "BM3-LAMELLES-HAUT"]); assert.deepEqual(ids(main).filter((id) => !ids(p).includes(id)), ["BM-SPRING-PLATE", "BM-SPRING-PAD-A", "BM-SPRING-PAD-B"]);
   const first = rebuild(h, "P3"); assert.ok(first.parts.some((x) => x.id === "BM-SPRING-PAD-A"), "the first jet keeps the pads of concept 1 : the lid is its own point");
   const lam = p.parts.find((x) => x.id === "BM-BB-LAM"); for (const f of ["lame", "oreille_plus", "machoire_int", "machoire_ext", "fond_pince"]) assert.ok(lam.features.some((x) => x.id === f), f);

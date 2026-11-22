@@ -817,8 +817,19 @@ P4) : **le côté sous tension est femelle**, comme l'usage le veut — couvercl
   deux (A puis B). Sa mâchoire sous 14 ponts à 30 N : 0,039 mm de flèche, 81 MPa (même avertissement de poutre courte).
 - **Vérifié par les essais** : rien ne traverse rien au bout haut ; chaque lame du pont est entre ses deux bandes et les couvre.
 
+**Le bout haut raccourci** (JP, par menu : « Raccourcir le bout haut », v0.180.0 — point P5 de la branche) : **4,75 mm de moins**, le
+boîtier coupé à 454,65 mm.
+
+- **Plus de plaque d'appui** sur la borne + : la plaque de pression, isolante (PA66-GF30), appuie directement sur son cuivre.
+- **La languette du busbar de retour** vient juste derrière la borne, à 1,8 mm (la pile peut s'allonger de 0,8 mm : il reste 1 mm d'air
+  entre deux pièces qui ne sont pas au même potentiel couvercle ouvert), et passe dans une **fenêtre de la plaque de pression** (0,5 mm d'air
+  autour). La pince B, l'âme du pont, le couvercle, l'anneau, ses lèvres et la came suivent ; la fenêtre du fond du boîtier aussi.
+- Ce qui fixe encore la longueur : la pince B (la bande a 12 mm de large dans le sens de l'entrée), l'âme du pont (4 mm), puis l'anneau (6 mm) et
+  le couvercle (3 mm) hors du boîtier. Pour gagner plus, il faudrait loger l'anneau dans le boîtier — à proposer.
+- **Vérifié par les essais** : rien ne traverse rien au bout haut ; les lames du pont restent entre leurs bandes.
+
 **Pas fait, à itérer ensemble** : l'effort pour entrer une lame (non publié dans ce qui a été lu : fabricant ou mesure) ; la tenue de la
-brasure au cyclage thermique ; l'effort pour fermer le couvercle (deux lames à la fois, que la came donne) ; raccourcir le bout haut, maintenant que les rondelles ne prennent que 3 mm et que le pont n'a plus de ressorts ; « couvercles debout » est lu comme les couvercles du concept 1, aux deux bouts du module
+brasure au cyclage thermique ; l'effort pour fermer le couvercle (deux lames à la fois, que la came donne) ; loger l'anneau du haut dans le boîtier pour gagner encore de la longueur ; les fils des plages LV de la borne + à travers la plaque de pression ; « couvercles debout » est lu comme les couvercles du concept 1, aux deux bouts du module
 (à confirmer) ; l'échauffement du module fermé (le calcul du concept 1 n'est pas repris : ses joints étaient plans) ; l'isolation du joint
 (l'assemblage « Joint entre deux CORE » n'a pas la pince).
 

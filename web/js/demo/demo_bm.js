@@ -196,6 +196,34 @@ function withConceptThree(p) {
   topLidC3(p, env, DISC);
   addPoint(p, { kind: "manual", branch: C3_BRANCH, label: "Concept 3 — couvercle du haut : pinces côté module, pont rigide", when: "2026-11-22T19:00:00.000Z", by: "DesignOrbit.ai",
     note: "Choix de JP par menu : « Couvercle du haut », puis « Pinces côté module ». La borne + et la languette de retour portent chacune une pince en creux ; le couvercle, un pont de cuivre rigide à deux lames. Plus de shunt souple ni de ressort de plot." });
+  const cut = shortTopC3(p, env, DISC);
+  addPoint(p, { kind: "manual", branch: C3_BRANCH, label: `Concept 3 — bout haut raccourci de ${String(cut).replace(".", ",")} mm`, when: "2026-11-22T20:00:00.000Z", by: "DesignOrbit.ai",
+    note: `Choix de JP par menu : « Raccourcir le bout haut ». La plaque de pression appuie directement sur la borne + (plus de plaque d'appui) ; la languette de retour passe dans une fenêtre de la plaque, juste derrière la borne ; le boîtier perd ${String(cut).replace(".", ",")} mm.` });
+}
+
+/** Concept 3, the top end shortened (JP, by menu : « Raccourcir le bout haut ») : the backing plate of the + terminal goes — the insulating pressure
+    plate bears on its copper ; the tab of the return busbar stands right behind it, 1.8 mm away (the stack may grow 0.8 mm), through a window of
+    the plate ; fork B, the web of the bridge, the cap, the ring, the lips and the cam follow ; the casing is cut shorter. → the length gained (mm) */
+function shortTopC3(p, env, DISC) {
+  const land = r6(8 * CORE_PITCH - (INS_T + BB_T) + 2), TAB = r6(land + 1.8), web0 = r6(TAB + 4 + 14.5 + 0.4), end = r6(web0 + 4 - 6), caseL = r6(end - CASE_Y0), cut = r6(CASE_L - caseL);
+  const top = topEnd({ env, lipX1: 92.4, land, plate0: land, end, y0: CASE_Y0 - 16, tab: TAB }), L = top.layout, K = lidForks({ rootA: land, rootB: L.tab1, cap: L.ring1 }), find = (id) => p.parts.find((x) => x.id === id);
+  const pos = JSON.parse(JSON.stringify(find("BM-TERM-POS"))), ret = top.parts.find((x) => x.id === "BM-RETURN-BB"), S = L.springs.plate;
+  pos.features = pos.features.filter((f) => f.body !== "appui"); delete pos.bodies.appui;
+  pos.notes = [...pos.notes.filter((n) => !/^Cuivre de/.test(n)), "Concept 3, bout haut raccourci : plus de plaque d'appui — la plaque de pression, isolante, appuie directement sur le cuivre de la borne ; ses plages LV passent par la plaque (fils non dessinés)."];
+  ret.features.push(...lidForkFeatures(K, K.B, "main", "b"));
+  ret.notes = [...ret.notes.filter((n) => !/plot B se pose/.test(n)), `Concept 3 : la languette est à ${String(TAB).replace(".", ",")} mm, 1,8 mm derrière la borne + (la pile peut s'allonger de 0,8 mm : il reste 1 mm d'air), à travers une fenêtre de la plaque de pression ; au dos, la pince B reçoit la lame B du pont du couvercle.`];
+  const casing = casingPart({ L: caseL, env }); casing.plan = { paths: casingPaths(caseL, env) };
+  const win = casing.features.find((f) => f.id === "fenetre_retour"); win.at[1] = r6(TAB - CASE_Y0 - 0.6); win.size[1] = r6(caseL + 1 - win.at[1]);
+  casing.notes = [...casing.notes, `Concept 3 : la cavité s'élargit de ${r6(F3.jawOut[1] - CORE_ENV.x1)} mm au bout +X pour les pinces ; les nervures de ce côté font face à leur mâchoire extérieure, 0,5 mm de jeu.`, `Concept 3, bout haut raccourci : coupé à ${String(caseL).replace(".", ",")} mm, ${String(cut).replace(".", ",")} mm de moins qu'au concept 1.`];
+  const plate = pressPlateC3(L, S, DISC), B = L.bar;
+  plate.features.push({ op: "box", id: "fenetre_retour", name: "Fenêtre de la languette du busbar de retour", mode: "cut", at: [r6(B.x0 - 0.5), r6(L.plate0 - 0.1), -3.1], size: [r6(50 + 1), 3.2, r6(L.tabTop + 1 + 3.1)] });
+  plate.notes = [...plate.notes, "Bout haut raccourci : elle appuie directement sur la borne + ; la languette du busbar de retour passe dans sa fenêtre, 0,5 mm d'air autour."];
+  const fresh = new Map([...top.parts.filter((x) => ["BM-LID-RING-TOP", "BM-LID-TOP", "BM-LATCH-CAM"].includes(x.id)), pos, ret, casing, plate, bridgeC3(K), lidBandsPart(K)].map((x) => [x.id, x]));
+  p.parts = p.parts.map((x) => fresh.get(x.id) || x);
+  const lid = p.assemblies.find((a) => a.id === "BM-LID-TOP-ASM");
+  lid.instances = lid.instances.map((i) => (i.part === "BM3-DISCS" ? { ...i, placement: at([i.placement.t[0], r6(L.ring1 - DISC), i.placement.t[2]]) } : i));
+  p.description = p.description.replace(/ Premier jet, à itérer\.$/, ` Bout haut raccourci de ${String(cut).replace(".", ",")} mm. À itérer.`);
+  return cut;
 }
 
 /** Concept 3, its top lid (JP, by menu : « Couvercle du haut », « Pinces côté module ») : fork A on the back of the + terminal, fork B on the tab of
