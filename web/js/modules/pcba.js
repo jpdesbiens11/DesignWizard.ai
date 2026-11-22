@@ -3,6 +3,7 @@
    review — drawn as a diagram that shows where the board stands. The views a user of a classic ECAD tool expects
    (schematic, layers, stack-up, rules, net classes, bill of materials, outputs) stay one click away at all times. */
 
+import { BOARD_ROLES, roleOf, setRole } from "../pcba/board_role.js";
 import { el, clear, icon, btn, badge, toast, svg, promptBox, confirmBox } from "../core/dom.js";
 import { registerModule, go, setGuide } from "../core/app.js";
 import { store } from "../core/store.js";
@@ -26,6 +27,13 @@ import { OUTPUT_STEPS, CLASSIC } from "./pcba_out.js";
 
 const STEPS = { ...DESIGN_STEPS, ...OUTPUT_STEPS };
 const ui = { step: null, classic: null, layers: null, ref: null, net: null, fn: null, kind: "PDR", focus: null };
+/* the role of the board : « Produit » or « Banc d'essai » — a segmented control (radiogroup : a click, or the arrows) ; what each means in its tip */
+function roleSwitch(board, set) {
+  const cur = roleOf(board), keys = Object.keys(BOARD_ROLES);
+  const g = el("div", { class: "role-switch", role: "radiogroup", "aria-label": "Rôle de la carte", onKeydown: (e) => { const d = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0; if (!d) return; e.preventDefault(); set(keys[(keys.indexOf(cur) + d + keys.length) % keys.length]); } },
+    keys.map((k) => { const R = BOARD_ROLES[k], on = k === cur; return el("button", { type: "button", role: "radio", "aria-checked": on ? "true" : "false", tabindex: on ? "0" : "-1", class: on ? "on" : "", style: { "--g": R.color }, "data-role": k, "data-tip": `${R.fr} — ${R.says}`, onClick: () => { if (!on) set(k); } }, icon(R.icon), el("span", null, k === "product" ? "Produit" : "Banc d'essai")); }));
+  return g;
+}
 export const pcbaUi = ui;
 
 /** Everything the panels read, computed once per redraw. */
@@ -92,7 +100,7 @@ function render(main, args) {
     clear(head);
     head.append(el("div", { class: "pcba-title" }, icon("chip"),
       store.boards.length > 1 ? el("select", { "aria-label": "Carte", onChange: (e) => { ui.ref = ui.net = ui.fn = null; go(`#/pcba/${encodeURIComponent(e.target.value)}`); } }, store.boards.map((b) => el("option", { value: b.id, selected: b.id === id }, `${b.id} — ${b.name || ""}`))) : el("b", null, `${board.id} — ${board.name || ""}`),
-      badge(`rév. ${board.revision || "A"}`), el("span", { class: "grow" }),
+      badge(`rév. ${board.revision || "A"}`), roleSwitch(board, (k) => store.updateBoard(id, (b) => { setRole(b, k); }, `Carte ${id} : ${BOARD_ROLES[k].fr.toLowerCase()}`)), el("span", { class: "grow" }),
       el("a", { class: "btn btn-small", href: `#/elab/${encodeURIComponent(id)}`, "data-lab": "", "data-tip": "Laboratoire : essayer cette carte sur un banc simulé — pistes qui s'allument, oscilloscopes — et sortir son plan de test fonctionnel" }, icon("sensor"), "Labo"),
       firstButton(true), rs485Button(true), coreButton(true), btn("", () => createFrom(emptyBoard("PCBA-001", "Nouvelle carte")), { small: true, icon: "plus", tip: "Nouvelle carte" }),
       btn("", async () => { if (await confirmBox("Retirer la carte", `Retirer ${board.id} du projet ?`, "Retirer", true)) { store.removeBoard(id); go("#/pcba"); } }, { small: true, icon: "trash", tip: "Retirer cette carte du projet" })));

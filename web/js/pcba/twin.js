@@ -3,6 +3,7 @@
    thickness and the mounting holes (its bolt-pattern interface) ; the board gives back its components as envelopes
    with their heights and its nets with their voltages, for the 3-D view, the isolation analysis and the simulation. */
 
+import { roleOf } from "./board_role.js";
 import { resolveParams, evalDeep } from "../cad/expr.js";
 import { patternPoints } from "../cad/interfaces.js";
 import { clearanceHole, thread } from "../cad/standards.js";
@@ -59,6 +60,7 @@ export function syncTwins(project, lib = {}, only = null) {
     let part = b.part ? parts.find((p) => p.id === b.part) : null;
     if (part && (part.family !== "pcb" || !part.pcb)) continue;                 // tied by hand to another kind of part : left alone
     if (!part) {
+      if (roleOf(b) === "bench") continue;                                       // a board of the test bench is a tool : no twin is born for it (pcba/board_role.js)
       if (!(b.parts || []).some((p) => p.at)) continue;                           // nothing placed yet : no envelope to give
       const tw = twinPart({ ...b, part: null }, lib); let id = tw.id, n = 2; while (parts.some((p) => p.id === id)) id = `${tw.id}-${n++}`;
       parts.push({ ...tw, id }); b.part = id; out.push({ board: b.id, part: id, made: true }); continue;

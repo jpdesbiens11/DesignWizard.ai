@@ -3,6 +3,7 @@
    (pcba/board_iso.js) ; this module gives the screen its menu « Ce que l'on analyse », the potentials of the board, what the analysis
    looks at, and the bodies in the view. Nothing is decided here : the distances are those of the common engine (analysis/cc_paths.js). */
 
+import { productBoards } from "../pcba/board_role.js";
 import { el } from "../core/dom.js";
 import { go } from "../core/app.js";
 import { store } from "../core/store.js";
@@ -38,7 +39,7 @@ export function showBoard(viewer, scene, colorOf) {
 /** The menu « Ce que l'on analyse » : the boards, then the assemblies — one list, grouped by nature. kind : "board" | "asm" */
 export function subjectPicker(kind, id) {
   const groups = [
-    { label: "Cartes (PCBA) — une carte seule", color: "#16a34a", items: store.boards.map((b) => ({ id: `board:${b.id}`, title: b.name || b.id, sub: `${b.id} · son cuivre réel`, icon: "chip" })) },
+    { label: "Cartes (PCBA) — une carte seule", color: "#16a34a", items: productBoards(store.project).map((b) => ({ id: `board:${b.id}`, title: b.name || b.id, sub: `${b.id} · son cuivre réel`, icon: "chip" })) },
     { label: "Assemblages — le produit monté", color: "#475569", items: store.assemblies.map((a) => ({ id: `asm:${a.id}`, title: a.name || a.id, sub: `${a.id} · ${(a.instances || []).length} élément(s)`, icon: "assembly" })) },
   ].filter((g) => g.items.length);
   const pick = pickList({ label: "Ce que l'on analyse", value: `${kind}:${id}`, groups, empty: "Ni carte ni assemblage", onPick: (v) => go(v.startsWith("board:") ? `#/creepage/board/${enc(v.slice(6))}` : `#/creepage/${enc(v.slice(4))}`) });

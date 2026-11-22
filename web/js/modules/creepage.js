@@ -5,6 +5,7 @@
    Paths are drawn in red: full line = clearance [clr] through air, dashed = creepage [crp] along the surfaces.
    A board alone is its real copper — pads, tracks, vias of the two outer layers — grouped by potential (pcba/board_iso.js). */
 
+import { productBoards } from "../pcba/board_role.js";
 import { el, clear, icon, btn, badge, field, toast, fmt, modal, table } from "../core/dom.js";
 import { registerModule, go, setStatus, setGuide } from "../core/app.js";
 import { netsOf, isolationGuide } from "../analysis/cc_guide.js";
@@ -65,7 +66,7 @@ export function judge(req, meas) {
 function render(main, args) {
   /* what is analysed : an assembly (#/creepage/<id>) or one board alone (#/creepage/board/<id>) ; a project that only has boards opens on its first */
   const wantBoard = args[0] === "board", b0 = wantBoard ? store.board(args[1]) : null, a0 = !wantBoard && args[0] ? store.assembly(args[0]) : null;
-  const onBoard = !!b0 || (!a0 && !store.assemblies.length && store.boards.length > 0), id = onBoard ? (b0 || store.boards[0]).id : a0 ? a0.id : (store.assemblies[0] && store.assemblies[0].id) || null;
+  const prod = productBoards(store.project), onBoard = !!b0 || (!a0 && !store.assemblies.length && prod.length > 0), id = onBoard ? (b0 || prod[0]).id : a0 ? a0.id : (store.assemblies[0] && store.assemblies[0].id) || null;
   const left = el("aside", { class: "side" }), right = el("aside", { class: "side right" }), view = el("div");
   const root = el("div", { class: "studio" }, left, view, right);
   root.style.setProperty("--left-w", "320px"); root.style.setProperty("--right-w", "500px");

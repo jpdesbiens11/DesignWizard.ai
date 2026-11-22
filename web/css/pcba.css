@@ -158,3 +158,7 @@ table.data .kv td:first-child { font-weight: 650; }
 .lab-cord { fill: none; stroke-width: 2.4; stroke-linecap: round; opacity: .92; } .lab-cord-halo { fill: none; stroke: #fff; stroke-width: 5; opacity: .65; stroke-linecap: round; } .lab-cord-plug { stroke: #fff; stroke-width: 1.5; }
 .lab-part.pressable { cursor: pointer; } .lab-part.pressable .lab-body { stroke: #0891b2; stroke-width: .5; } .lab-part.pressable:focus { outline: none; } .lab-part.pressable:focus .lab-body { stroke: #f59e0b; stroke-width: .7; }
 .lab-part.held .lab-body { fill: #0891b2 !important; fill-opacity: 1 !important; }
+/* the role of a board : Produit · Banc d'essai (modules/pcba.js roleSwitch) */
+.role-switch { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; margin-left: .4rem; }
+.role-switch button { display: inline-flex; align-items: center; gap: .25rem; white-space: nowrap; padding: .15rem .6rem; font-size: .78rem; border: 0; background: var(--surface); color: var(--muted); cursor: pointer; }
+.role-switch button.on { background: color-mix(in srgb, var(--g) 16%, var(--surface)); color: var(--g); font-weight: 700; } .role-switch button .icon { width: 14px; height: 14px; }

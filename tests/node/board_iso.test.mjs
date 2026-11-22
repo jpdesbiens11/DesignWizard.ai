@@ -112,7 +112,7 @@ test("the screen offers a board or an assembly ; the stairs, the guide, the repo
   assert.equal(g.length, 1); assert.equal(g[0].level, "error"); assert.match(g[0].text, /B1 — isolation de la carte seule : 1 paire en défaut — 24 V ↔ 0 V \(clearance 0,29 mm pour 0,5 requis\)/);
   assert.match(boardIsolationGuide({ ...bad, isolation: { results: [{ a: "400 V", b: "0 V", ok: true }] } })[0].text, /résultats périmés/);
   const issue = projectIssues({ ...p, boards: [bad] }).find((x) => x.screen === "creepage" && x.ref === "B1"); assert.ok(issue && issue.hash === "#/creepage/board/B1" && issue.si, "the guide of the project leads to the board");
-  const rep = read("web/js/modules/report.js"); assert.match(rep, /\[\.\.\.store\.assemblies, \.\.\.store\.boards\]\.flatMap/); assert.match(rep, /Isolation de la carte seule — /);
+  const rep = read("web/js/modules/report.js"); assert.match(rep, /\[\.\.\.store\.assemblies, \.\.\.productBoards\(store\.project\)\]\.flatMap/, "the boards of the product only (pcba/board_role.js)"); assert.match(rep, /Isolation de la carte seule — /);
   for (const id of ["board-iso", "board-functional"]) { const m = METHODS.find((x) => x.id === id); assert.ok(m && m.group === "isolation" && m.doc === "docs/PCBA.md", id); }
   assert.match(METHODS.find((x) => x.id === "board-iso").check, /0,35 mm/); assert.match(read("docs/PCBA.md"), /## Isolation d'une carte seule/);
   assert.ok(NEWS.some((n) => n.id === "iso-board" && /creepage/.test(n.where)), "what is new is tagged on the screen");

@@ -11,6 +11,7 @@ import { flatAsm, topOf, isSub } from "./asm_levels.js";
 import { moldPlan, moldGuide } from "./mold_plan.js";
 import { boardGuide } from "../pcba/guide.js";
 import { netsOf, isolationGuide, boardIsolationGuide } from "../analysis/cc_guide.js";
+import { productBoards, roleIssues } from "../pcba/board_role.js";
 
 const paramValue = (p) => (p !== null && typeof p === "object" ? p.value : p);
 const GEOMETRY = ["features", "stock", "folded", "extrusion", "pcb", "step", "busbar"];
@@ -93,7 +94,8 @@ export function projectIssues(project) {
   }
   for (const a of asms) out.push(...assemblyIssues(a, byId, (id) => asms.find((x) => x.id === id) || null));
   for (const a of asms) out.push(...isolationGuide(a, netsOf(flatAsm(a, (id) => asms.find((x) => x.id === id) || null) || a, (id) => byId.get(id))).map((x) => ({ ...x, si: true, screen: "creepage", ref: a.id, hash: `#/creepage/${encodeURIComponent(a.id)}` })));      // a calculation : its lines stay in millimetres
-  for (const b of project.boards || []) out.push(...boardIsolationGuide(b).map((x) => ({ ...x, si: true, screen: "creepage", ref: b.id, hash: `#/creepage/board/${encodeURIComponent(b.id)}` })));      // a board analysed alone : what its last analysis left open
+  out.push(...roleIssues(project).map((x) => ({ ...x, screen: "pcba", hash: `#/pcba/${encodeURIComponent(x.ref)}` })));      // a bench board mounted in the product
+  for (const b of productBoards(project)) out.push(...boardIsolationGuide(b).map((x) => ({ ...x, si: true, screen: "creepage", ref: b.id, hash: `#/creepage/board/${encodeURIComponent(b.id)}` })));      // a board analysed alone : what its last analysis left open
   out.push(...teamIssues(project));
   for (const b of project.boards || []) out.push(...boardGuide(b).map((x) => ({ ...x, screen: "pcba", ref: b.id, hash: `#/pcba/${encodeURIComponent(b.id)}/${x.step}` })));      // what a board shows of itself ; its screen adds what its checks find
   if (asms.length) { const placed = new Set(asms.flatMap((a) => (a.instances || []).map((i) => i.part)));      // in an assembly, at whatever level : a part of a sub-assembly is an instance of that sub-assembly
