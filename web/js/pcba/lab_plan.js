@@ -71,7 +71,7 @@ function accessOf(built, refOf) {
     o : { refs: { local id → reference on the board }, name (the name of the block on the board), id (its number in the plan) }
     → { id, title, nature, block, why, expect, gear, setup: [text], settings: [text], steps: [text], rows: [{ label, expected, band, design, gap }], table, traps: [text], learn, notes, minutes, result } */
 export function testSheet(tpl, testId, given = {}, o = {}) {
-  const T = BLOCKS[tpl], R = runTest(tpl, testId, given), test = R.test; if (!T || !test) return null;
+  const T = BLOCKS[tpl], R = runTest(tpl, testId, given, o.env ? { env: o.env } : {}), test = R.test; if (!T || !test) return null;      // o.env : what was set on the instruments (pcba/lab_gear.js)
   const P = R.P || blockParams(T, given), built = R.built || T.build(P), refOf = (local) => (o.refs && o.refs[local]) || local;
   return sheetFrom(R, test, accessOf(built, refOf), { id: o.id, tpl, P, name: o.name || T.name, refs: built.parts.map((p) => refOf(p.id)).join(", ") });
 }
@@ -85,7 +85,7 @@ function boardAccess(board) {
 }
 /** The sheet of a test of the WHOLE board (pcba/lab_board.js) : the same sheet, its set-up said on the nets of the board. */
 export function boardSheet(board, testId, o = {}) {
-  const R = runBoardTest(board, testId), test = R.test; if (!test) return null;
+  const R = runBoardTest(board, testId, o.env ? { env: o.env } : {}), test = R.test; if (!test) return null;
   return { ...sheetFrom(R, test, boardAccess(board), { id: o.id, tpl: null, P: {}, name: "Carte entière", refs: "toute la carte" }), blockId: BOARD_KEY, board: true };
 }
 /* a sheet, from what a run gave : R (the result), test, where(name) → how to reach a signal, o : { id, tpl, P, name, refs } */
@@ -140,7 +140,7 @@ function sheetFrom(R, test, where, o) {
     ...(test.nature === "bus" ? ["Aucune réponse : vérifiez d'abord l'alimentation du composant, puis les rappels, puis l'adresse ; un bus ne se dépanne pas à l'analyseur avant d'avoir regardé ses niveaux à l'oscilloscope."] : []),
     "La valeur est hors de la plage : notez-la telle quelle, refaites la mesure une fois, puis comparez les pièces montées à la nomenclature (une résistance d'une décade trop haute donne exactement ce genre d'écart)."];
   /* the same set-up, as data : which instrument, on which pin — what a screen needs to POINT at the board instead of naming a pin (pcba/lab_manip.js) */
-  const links = (R.log || []).filter((e) => e.to).map((e) => ({ instr: e.instr, ch: e.ch || null, to: e.to, at: pick(e.to), back: other(e), backAt: pick(other(e)), v: e.v ?? null, ilim: e.ilim ?? null, r: e.r ?? null, ac: !!e.ac, logic: !!e.logic, note: e.note || "", ...(floats(e) ? { float: true } : {}) }));
+  const links = (R.log || []).filter((e) => e.to).map((e) => ({ instr: e.instr, ch: e.ch || null, to: e.to, at: pick(e.to), back: other(e), backAt: pick(other(e)), v: e.v ?? null, ilim: e.ilim ?? null, r: e.r ?? null, ac: !!e.ac, logic: !!e.logic, note: e.note || "", ...(e.free ? { free: true } : {}), ...(e.set ? { set: true } : {}), ...(floats(e) ? { float: true } : {}) }));
   return { id: o.id || "", tpl, test: test.id, title: test.title, nature: N, block: o.name, refs, links, noSim: !!test.noSim, why: test.why, expect: R.expect || test.expect, gear: test.gear.map((g) => INSTRUMENTS[g]), gearIds: test.gear, setup, settings, steps, rows, table: R.table || null, traps, learn: test.learn, notes: R.notes || [], minutes: MINUTES[test.nature] || 15, result: R, ok: R.ok };
 }
 /* the order one tests a board in : what feeds first, then what thinks, what measures, what drives, what talks, what signals */
@@ -151,12 +151,13 @@ export function boardSheets(board) { return sheetJobs(board).map(jobSheet).filte
     [{ id, blockId, tpl, test, title, name, params, refs }], in the order of the bench. Nothing is simulated here. */
 export function sheetJobs(board) {
   const blocks = (board.blocks || []).filter((b) => BLOCKS[b.template]).sort((a, b) => ORDER.indexOf(BLOCKS[a.template].category) - ORDER.indexOf(BLOCKS[b.template].category)), out = [];
-  for (const b of blocks) { const refs = Object.fromEntries((board.parts || []).filter((p) => p.block === b.id && p.local).map((p) => [p.local, p.ref])); for (const t of blockTests(b.template)) out.push({ id: `E-${String(out.length + 1).padStart(2, "0")}`, blockId: b.id, tpl: b.template, test: t.id, title: t.title, name: `${b.name || BLOCKS[b.template].name} (${b.id})`, params: b.params || {}, refs }); }
-  for (const t of boardTests(board)) out.push({ id: `E-${String(out.length + 1).padStart(2, "0")}`, blockId: BOARD_KEY, board, test: t.id, title: t.title, name: "Carte entière" });      // last : the blocks together, once each one is right
+  for (const b of blocks) { const refs = Object.fromEntries((board.parts || []).filter((p) => p.block === b.id && p.local).map((p) => [p.local, p.ref])); for (const t of blockTests(b.template)) out.push({ id: `E-${String(out.length + 1).padStart(2, "0")}`, blockId: b.id, tpl: b.template, test: t.id, title: t.title, name: `${b.name || BLOCKS[b.template].name} (${b.id})`, params: b.params || {}, refs, gear: gearEnv(board, testKey(b.id, t.id)) }); }
+  for (const t of boardTests(board)) out.push({ id: `E-${String(out.length + 1).padStart(2, "0")}`, blockId: BOARD_KEY, board, test: t.id, title: t.title, name: "Carte entière", gear: gearEnv(board, testKey(BOARD_KEY, t.id)) });      // last : the blocks together, once each one is right
   return out;
 }
 /** The sheet of one of those : the test is simulated here. */
-export function jobSheet(job) { if (job.board) return boardSheet(job.board, job.test, { id: job.id }); const s = testSheet(job.tpl, job.test, job.params, { refs: job.refs, name: job.name, id: job.id }); return s ? { ...s, blockId: job.blockId } : null; }
+export function jobSheet(job) { const env = job.gear && Object.keys(job.gear).length ? { gear: job.gear } : null;      // what was set on the instruments of this test : its sheet is the bench as it is set
+  if (job.board) return boardSheet(job.board, job.test, { id: job.id, ...(env ? { env } : {}) }); const s = testSheet(job.tpl, job.test, job.params, { refs: job.refs, name: job.name, id: job.id, ...(env ? { env } : {}) }); return s ? { ...s, blockId: job.blockId } : null; }
 /** Where the lab of a board stands, WITHOUT simulating anything — for a report : { tests, off, measured (tests with a reading), readings, notes, text }. */
 export function labSummary(board) {
   const jobs = sheetJobs(board), L = labOf(board), keys = new Set(jobs.map((j) => testKey(j.blockId, j.test))), off = jobs.filter((j) => skipped(board, testKey(j.blockId, j.test))).length, readings = L.readings.filter((r) => keys.has(r.test)), measured = new Set(readings.map((r) => r.test)).size, notes = L.notes.filter((n) => keys.has(n.test)).length;
@@ -223,7 +224,7 @@ export function labGuide(board) {
                  ticks: [{ test, step, when? }] (a step of the bench done), passes: [{ test, step, by, why, when? }] (a supervisor let it pass) }
    A note with a step is what one wrote at the bench on that step ; without, a remark of a review. */
 export const testKey = (blockId, testId) => `${blockId}/${testId}`;
-export function labOf(board) { const l = (board && board.lab) || {}, list = (x) => (Array.isArray(x) ? x.filter((r) => r && typeof r.test === "string") : []); return { readings: list(l.readings).filter((r) => typeof r.what === "string" && Number.isFinite(Number(r.value))).map((r) => ({ test: r.test, what: r.what, value: Number(r.value) })), skips: list(l.skips).map((r) => ({ test: r.test })), notes: list(l.notes).filter((r) => typeof r.text === "string" && r.text.trim()).map((r) => ({ test: r.test, text: r.text.trim(), ...(typeof r.step === "string" && r.step ? { step: r.step } : {}) })),
+export function labOf(board) { const l = (board && board.lab) || {}, list = (x) => (Array.isArray(x) ? x.filter((r) => r && typeof r.test === "string") : []); return { gears: list(l.gears).filter((r) => typeof r.gear === "string" && /^(supply|load):/.test(r.gear)).map((r) => ({ test: r.test, gear: r.gear, ...["v", "ilim", "r"].reduce((a, k) => (Number.isFinite(Number(r[k])) && r[k] !== null && r[k] !== "" ? { ...a, [k]: Number(r[k]) } : a), {}) })), readings: list(l.readings).filter((r) => typeof r.what === "string" && Number.isFinite(Number(r.value))).map((r) => ({ test: r.test, what: r.what, value: Number(r.value) })), skips: list(l.skips).map((r) => ({ test: r.test })), notes: list(l.notes).filter((r) => typeof r.text === "string" && r.text.trim()).map((r) => ({ test: r.test, text: r.text.trim(), ...(typeof r.step === "string" && r.step ? { step: r.step } : {}) })),
   ticks: list(l.ticks).filter((r) => typeof r.step === "string").map((r) => ({ test: r.test, step: r.step, ...(r.when ? { when: String(r.when) } : {}) })), passes: list(l.passes).filter((r) => typeof r.step === "string" && typeof r.by === "string" && r.by.trim()).map((r) => ({ test: r.test, step: r.step, by: r.by.trim(), why: String(r.why || "").trim(), ...(r.when ? { when: String(r.when) } : {}) })) }; }
 /** A step of the bench ticked (or unticked) : → the new lab block */
 export function setTick(board, key, step, on, when = "") { const l = labOf(board), rest = l.ticks.filter((r) => !(r.test === key && r.step === step)); return { ...l, ticks: on ? [...rest, { test: key, step, ...(when ? { when } : {}) }] : rest }; }
@@ -233,6 +234,14 @@ export function setPass(board, key, step, by, why = "", when = "") { const l = l
 export function setNote(board, key, step, text) { const l = labOf(board), rest = l.notes.filter((r) => !(r.test === key && r.step === step)); return { ...l, notes: String(text || "").trim() ? [...rest, { test: key, step, text: String(text).trim() }] : rest }; }
 /** Writes a reading (value null : takes it away). → the new lab block */
 export function setReading(board, key, what, value) { const l = labOf(board), rest = l.readings.filter((r) => !(r.test === key && r.what === what)); return { ...l, readings: value === null || value === "" || !Number.isFinite(Number(value)) ? rest : [...rest, { test: key, what, value: Number(value) }] }; }
+/** What was set on the instruments of a test (pcba/lab_gear.js), as the simulated bench reads it : { "supply:VIN": { v, ilim }, "load:OUT": { r } }. */
+export function gearEnv(board, key) { const out = {}; for (const g of labOf(board).gears.filter((x) => x.test === key)) { const { test, gear, ...v } = g; void test; out[gear] = v; } return out; }
+/** A setting made on an instrument : patch { v?, ilim?, r? } — a value null takes that setting back to what the test proposes ; patch null takes them all back. */
+export function setGear(board, key, gear, patch) {
+  const l = labOf(board), rest = l.gears.filter((g) => !(g.test === key && g.gear === gear)), cur = l.gears.find((g) => g.test === key && g.gear === gear) || {}, next = { test: key, gear };
+  if (patch) for (const k of ["v", "ilim", "r"]) { const v = k in patch ? patch[k] : cur[k]; if (v !== null && v !== undefined && Number.isFinite(Number(v))) next[k] = Number(v); }
+  return { ...l, gears: Object.keys(next).length > 2 ? [...rest, next] : rest };
+}
 export const skipped = (board, key) => labOf(board).skips.some((r) => r.test === key);
 export function setSkip(board, key, off) { const l = labOf(board), rest = l.skips.filter((r) => r.test !== key); return { ...l, skips: off ? [...rest, { test: key }] : rest }; }
 /** A reading against what was expected : "ok", "out", or "none" when nothing was read. */

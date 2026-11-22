@@ -38,14 +38,22 @@ function makeBench(tpl, P, env = {}) {
   const calc = (re) => { const c = (built.calc || []).find((x) => re.test(x.label)); return c ? { value: Number(c.value), unit: c.unit, text: c.text, label: c.label } : null; };
   const B = { tpl, P, built, C, els, log, at, volts, calc, env,
     /** A lab supply on a port : its voltage, or a wave (a ramp at power-up) ; ilim is written in the plan. */
-    supply(name, v, o = {}) { const id = `PS_${name}`, n = at(name), mid = `${id}_o`; els.push({ t: "V", id, a: mid, b: o.ref ? at(o.ref) : "0", v: o.wave || v }, { t: "R", id: `${id}:r`, a: mid, b: n, r: o.rs ?? 0.05 }); log.push({ instr: "supply", to: name, v: typeof v === "number" ? v : null, ilim: o.ilim || null, note: o.note || "", ref: o.ref || "GND" }); return id; },
+    supply(name, v, o = {}) {
+      /* a setting made ON the instrument (the Labo, pcba/lab_gear.js : env.gear) : the voltage of a plain or stepped-up supply, its current limit ;
+         a supply whose wave is the test (a ramp, a dip) or that is reversed on purpose keeps the test's own */
+      const g = (env.gear || {})[`supply:${name}`] || {}, free = typeof v === "number" && v >= 0 && (!o.wave || o.wave.kind === "step");
+      if (free && Number.isFinite(g.v) && g.v >= 0) { v = g.v; if (o.wave) o = { ...o, wave: { ...o.wave, high: g.v } }; }
+      if (Number.isFinite(g.ilim) && g.ilim > 0) o = { ...o, ilim: g.ilim };
+      const id = `PS_${name}`, n = at(name), mid = `${id}_o`; els.push({ t: "V", id, a: mid, b: o.ref ? at(o.ref) : "0", v: o.wave || v }, { t: "R", id: `${id}:r`, a: mid, b: n, r: o.rs ?? 0.05 });
+      log.push({ instr: "supply", to: name, v: typeof v === "number" ? v : null, ilim: o.ilim || null, note: o.note || "", ref: o.ref || "GND", free, ...((free && Number.isFinite(g.v)) || Number.isFinite(g.ilim) ? { set: true } : {}) }); return id; },
     /** Every supply the block needs, at its nominal voltage. → { port: id } */
     power(o = {}) { const out = {}; for (const [k, p] of Object.entries(built.ports)) if (p.dir === "power_in" && !(o.skip || []).includes(k)) { const v = volts(k) || P.vdd || 3.3; out[k] = B.supply(k, v, { ilim: o.ilim, wave: o.rise ? { kind: "step", low: 0, high: v, delay: o.delay || 0, rise: o.rise } : null }); } return out; },
     /** A generator (50 Ω) on a port or a pin. */
     gen(name, wave, o = {}) { const id = `FG_${name}`, mid = `${id}_o`; els.push({ t: "V", id, a: mid, b: o.ref ? at(o.ref) : "0", v: wave }, { t: "R", id: `${id}:r`, a: mid, b: at(name), r: o.rs ?? 50 }); log.push({ instr: "generator", to: name, wave, note: o.note || "", ref: o.ref || "GND" }); return id; },
     /** A logic signal, as the microcontroller would give it (it stands in for a pin that is not there yet). */
     logic(name, wave, o = {}) { const id = `MCU_${name}`, mid = `${id}_o`; els.push({ t: "V", id, a: mid, b: "0", v: wave }, { t: "R", id: `${id}:r`, a: mid, b: at(name), r: 30 }); log.push({ instr: o.instr || "generator", to: name, wave, logic: true, note: o.note || "" }); return id; },
-    load(name, r, o = {}) { const id = `LOAD_${name}`; els.push({ t: "R", id, a: at(name), b: at(o.to || "0"), r }); log.push({ instr: "load", to: name, r, toRef: o.to || "GND", note: o.note || "" }); return id; },
+    load(name, r, o = {}) { const g = (env.gear || {})[`load:${name}`] || {}, set = Number.isFinite(g.r) && g.r > 0; if (set) r = g.r;      // a load set on the instrument (pcba/lab_gear.js)
+      const id = `LOAD_${name}`; els.push({ t: "R", id, a: at(name), b: at(o.to || "0"), r }); log.push({ instr: "load", to: name, r, toRef: o.to || "GND", note: o.note || "", free: true, ...(set ? { set: true } : {}) }); return id; },
     /** A load that draws a current (the electronic load in constant-current mode), which may step. */
     sink(name, i, o = {}) { const id = `LOAD_${name}`; els.push({ t: "I", id, a: at(name), b: at(o.to || "0"), i }); log.push({ instr: "load", to: name, i: typeof i === "number" ? i : null, wave: typeof i === "number" ? null : i, toRef: o.to || "GND", note: o.note || "" }); return id; },
     /** A winding : a resistance and an inductance in series, between two points (a motor, a coil, a valve). */

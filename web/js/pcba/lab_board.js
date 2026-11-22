@@ -51,7 +51,9 @@ export function powerTree(board, C = boardCircuit(board)) {
 function makeBoardBench(board, env = {}) {
   const C = boardCircuit(board, env), els = C.els, log = [], at = (x) => (x === "0" || x === "GND" || x === C.ground ? "0" : C.nets[x] ?? x), tree = powerTree(board, C);
   const B = { board, C, els, log, at, tree, env, built: { parts: C.parts, nets: (board.nets || []).map((n) => ({ name: n.name })), ports: {} },
-    supply(net, v, o = {}) { const id = `PS_${net}`, mid = `${id}_o`; els.push({ t: "V", id, a: mid, b: "0", v: o.wave || v }, { t: "R", id: `${id}:r`, a: mid, b: at(net), r: o.rs ?? 0.05 }); log.push({ instr: "supply", to: net, v: typeof v === "number" ? v : null, ilim: o.ilim || null, note: o.note || "", ref: "GND" }); return id; },
+    supply(net, v, o = {}) { const g = (env.gear || {})[`supply:${net}`] || {}, free = typeof v === "number" && v >= 0 && (!o.wave || o.wave.kind === "step");      // a setting made ON the instrument (pcba/lab_gear.js), as on the bench of a block
+      if (free && Number.isFinite(g.v) && g.v >= 0) { v = g.v; if (o.wave) o = { ...o, wave: { ...o.wave, high: g.v } }; } if (Number.isFinite(g.ilim) && g.ilim > 0) o = { ...o, ilim: g.ilim };
+      const id = `PS_${net}`, mid = `${id}_o`; els.push({ t: "V", id, a: mid, b: "0", v: o.wave || v }, { t: "R", id: `${id}:r`, a: mid, b: at(net), r: o.rs ?? 0.05 }); log.push({ instr: "supply", to: net, v: typeof v === "number" ? v : null, ilim: o.ilim || null, note: o.note || "", ref: "GND", free, ...((free && Number.isFinite(g.v)) || Number.isFinite(g.ilim) ? { set: true } : {}) }); return id; },
     sink(net, i, o = {}) { const id = `LOAD_${net}`; els.push({ t: "I", id, a: at(net), b: "0", i }); log.push({ instr: "load", to: net, i: typeof i === "number" ? i : null, wave: typeof i === "number" ? null : i, toRef: "GND", note: o.note || "" }); return id; },
     probe(ch, net, o = {}) { log.push({ instr: "scope", ch, to: net, ref: "GND", ac: !!o.ac, note: o.note || "" }); return { at: net, ref: null, label: o.label || net, ac: !!o.ac }; },
     press(pin, note) { log.push({ instr: "press", to: pin, note: note || "" }); }, cell(pin, note) { log.push({ instr: "cell", to: pin, note: note || "" }); } };
@@ -111,7 +113,8 @@ export function boardTests(board) { const T = powerTree(board); return T.inputs.
     and its nets by their name on the board ; board : true. */
 export function runBoardTest(board, testId, o = {}) {
   const test = boardTests(board).find((x) => x.id === testId); if (!test) return { ok: false, kind: "none", error: "Essai inconnu." };
-  const B = makeBoardBench(board, o.env || (test.env ? test.env() : {})), plan = test.wire(B), sim = transient({ els: B.els }, plan.run), out = tranResult(B, plan, test, {}, sim);
+  /* what the test writes (a press), then what was set on the instruments (env.gear) */
+  const B = makeBoardBench(board, { ...(test.env ? test.env() : {}), ...(o.env || {}) }), plan = test.wire(B), sim = transient({ els: B.els }, plan.run), out = tranResult(B, plan, test, {}, sim);
   return { ...out, board: true, tree: B.tree, notes: [...B.C.notes, "Carte entière : le programme du microcontrôleur ne tourne pas, ses broches ne commandent rien ; le courant de repos des circuits intégrés n'est pas simulé."] };
 }
 export { eng };

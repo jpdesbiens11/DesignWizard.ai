@@ -174,13 +174,13 @@ test("the plan ends on the board as a whole : the same sheet, said on the nets o
   /* a reading of the whole board is kept like any other */
   const key = testKey(BOARD_KEY, "powerup"), b2 = { ...board, lab: setReading(board, key, "Tension du rail +5V", 5.02) }; assert.match(toDwiz(b2), /\n {2}reading BOARD\/powerup what="Tension du rail \+5V" value=5\.02\n/); assert.deepEqual(labOf(fromDwiz(toDwiz(b2))), labOf(b2)); assert.equal(labStatus(b2, sheets).rows.find((r) => r.key === key).state, "part");
   assert.match(labSummary(board).text, /^26 essai\(s\) au plan/);
-  const screen = read("web/js/modules/elab.js"); assert.match(screen, /data: \{ "data-block": BOARD_KEY \}, run: \(\) => pick\(BOARD_KEY\)/); assert.match(screen, /b\.whole \? boardSheet\(board\(\), st\.test\) : testSheet\(/); assert.match(screen, /b\.whole \? local : st\.netMap\[local\]/);
+  const screen = read("web/js/modules/elab.js"); assert.match(screen, /data: \{ "data-block": BOARD_KEY \}, run: \(\) => pick\(BOARD_KEY\)/); assert.match(screen, /b\.whole \? boardSheet\(board\(\), st\.test, env \? \{ env \} : \{\}\) : testSheet\(/); assert.match(screen, /b\.whole \? local : st\.netMap\[local\]/);
   assert.doesNotMatch(read("web/js/pcba/lab_board.js"), /\bdocument\.[a-zA-Z]|\bwindow\.[a-zA-Z]|\bfetch\(/, "pure");
 });
 
 test("what the lab keeps on a board : readings, tests set aside, notes — and where it stands", () => {
   const board = demoBoard(), sheets = boardSheets(board), s = sheets.find((x) => x.tpl === "ldo" && x.test === "levels"), key = testKey(s.blockId, s.test), row = s.rows[0];
-  assert.deepEqual(labOf({}), { readings: [], skips: [], notes: [], ticks: [], passes: [] }); assert.deepEqual(labOf({ lab: { readings: [{ test: "a", what: "x", value: "3.5" }, { test: 3 }, { test: "a", what: "y", value: "z" }], skips: "no", notes: [{ test: "a", text: "  " }, { test: "a", text: " vu " }] } }), { readings: [{ test: "a", what: "x", value: 3.5 }], skips: [], notes: [{ test: "a", text: "vu" }], ticks: [], passes: [] });
+  assert.deepEqual(labOf({}), { gears: [], readings: [], skips: [], notes: [], ticks: [], passes: [] }); assert.deepEqual(labOf({ lab: { readings: [{ test: "a", what: "x", value: "3.5" }, { test: 3 }, { test: "a", what: "y", value: "z" }], skips: "no", notes: [{ test: "a", text: "  " }, { test: "a", text: " vu " }] } }), { gears: [], readings: [{ test: "a", what: "x", value: 3.5 }], skips: [], notes: [{ test: "a", text: "vu" }], ticks: [], passes: [] });
   assert.equal(verdict(row, null), "none"); assert.equal(verdict(row, row.expected), "ok"); assert.equal(verdict(row, row.expected * 1.5), "out"); assert.equal(verdict(row, row.band.high), "ok"); assert.equal(verdict({ band: { low: 3, high: 3 } }, 3), "ok"); assert.equal(verdict({ band: { low: 3, high: 3 } }, 2), "out");
   let st = labStatus(board, sheets); assert.equal(st.total, sheets.length); assert.equal(st.todo, sheets.length); assert.equal(st.ok + st.out + st.off, 0);
   let b = { ...board, lab: setReading(board, key, row.label, row.expected) }; assert.equal(labStatus(b, sheets).rows.find((r) => r.key === key).state, s.rows.length > 1 ? "part" : "ok");

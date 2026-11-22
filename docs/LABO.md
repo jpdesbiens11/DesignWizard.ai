@@ -43,6 +43,40 @@ mêmes que ceux que la fiche demande de régler sur le vrai.
 
 C'est une image du fonctionnement, pas une carte thermique : un composant rouge n'est pas un composant chaud.
 
+## 1 bis. Le banc au-dessus de la carte : régler sur l'appareil
+
+Demande de JP (20 novembre 2026, point 6) : « dans un lab, c'est intéressant de bien montrer comment les trucs sont
+connectés… chaque appareil dessiné, ses cordons tirés jusqu'aux points de la carte, et ses réglages changés SUR
+l'appareil — pas dans une section du volet de gauche ; ce qui ne se règle pas ici (le circuit vient du PCBA) est dit ».
+
+- **Les appareils de l'essai** sont dessinés en bandeau au-dessus de la carte, dans l'ordre du banc : ce qui alimente,
+  ce qui charge, ce qui envoie un signal, ce qui lit, ce que l'on fait à la main (`benchGear` de
+  `web/js/pcba/lab_gear.js`, lu des liaisons de la fiche).
+- **Un cordon par fil**, de la borne de l'appareil (dessinée : + et − d'une alimentation, COM et VΩ d'un multimètre,
+  CH1 et CH2 d'un oscilloscope) jusqu'au point de la carte où il est pincé, de la couleur du fil ; le point est
+  marqué sur la carte comme dans la manipulation (anneau, lettre, broche écrite en petit). Plusieurs fils sur la même
+  pastille s'écartent en éventail. Les cordons suivent le zoom et le déplacement de la vue.
+- **Ce qui se règle se tape sur l'écran de l'appareil** : la tension et la limite de courant d'une alimentation, la
+  résistance d'une charge. Entrée applique, Échap rend la valeur affichée, un champ vidé revient à ce que l'essai
+  propose ; ↺ sur la carte de l'appareil revient à tout ce que l'essai propose. Chaque réglage est **une étape
+  annulable** du carnet de la carte (`gear`) et l'essai est **simulé de nouveau** avec lui : les courbes, les valeurs
+  attendues, la fiche, la manipulation et le plan de test suivent (le plan est le banc tel qu'il est réglé). Une
+  valeur hors de ce que le banc accepte (0 à 60 V, 1 mA à 10 A, 0,1 Ω à 10 MΩ) est refusée et dite.
+- **Ce qui ne se règle pas le dit**, sur l'appareil même : une source dont la forme EST l'essai (une rampe, un creux,
+  une tension inversée) garde sa forme — seule sa limite se règle ; le générateur, l'oscilloscope, le multimètre, un
+  composant d'essai, la pile, une charge à courant programmé. Et, au bout du bandeau : **le circuit vient du PCBA** —
+  ses composants et leurs valeurs se changent dans le PCBA, pas sur le banc (lien « Ouvrir le PCBA »).
+- **Un bouton de la carte s'appuie d'un clic dans la vue** : tenir le clic (ou la barre d'espace, le bouton ayant le
+  focus) montre l'instant de la simulation où il est tenu — la DEL s'allume, l'état « Bouton appuyé » s'affiche, le
+  doigt dessiné appuie — ; relâcher montre l'instant où il ne l'est pas (`pressFrames`). C'est la simulation que
+  l'essai a jouée, avec l'appui qu'il écrit : le clic choisit l'instant montré, il ne relance rien.
+- Le guide dit, en conseil, chaque appareil réglé autrement que l'essai le propose : « les valeurs attendues suivent
+  ce réglage ». Une réponse d'IA ne change pas les réglages du banc (le réimport garde ceux de la carte).
+
+Usage suivi : la face avant d'un appareil de banc — la valeur se tape là où l'afficheur la montre ; un cordon va de la
+borne de l'appareil au point où il est pincé. Choix maison : les cordons dessinés par-dessus l'écran, de la carte de
+l'appareil à la carte électronique.
+
 ## 2. Les essais
 
 Chaque bloc de la bibliothèque (45 gabarits, `web/js/pcba/blocks.js`) a ses essais (92 en tout,
@@ -145,6 +179,8 @@ lab
   l'unité affichée (3,3 mA, pas 0,0033 A) ; chaque relevé est une étape annulable.
 - `skip` — un essai mis à **Off** : gardé, avec ses relevés, mais hors du plan (règle « On / Off et copies »).
 - `note` — une remarque sur un essai, montrée sur sa fiche ; avec `step`, ce que l'on a noté au banc sur une étape.
+- `gear` — un réglage fait sur un appareil du banc (`bloc/essai`, l'appareil — `supply:VDD`, `load:OUT` —, et `v`,
+  `ilim` ou `r`). Voir § 1 bis.
 - `tick` — une étape du banc faite (`bloc/essai`, l'étape, l'heure) ; `pass` — un superviseur a laissé passer une
   étape (qui, pourquoi, l'heure). Voir § 4 bis.
 
@@ -348,6 +384,14 @@ sur la carte est laissé de côté, et c'est dit.
   1100 px ; le PDF d'un essai téléchargé depuis l'écran. Le cahier : l'image d'une étape et ses marques, une case
   par relevé, le cahier vide puis rempli, le document passé dans l'écrivain de PDF. **Non vérifié** : le plein écran du navigateur lui-même (le robot ne le déclenche pas), le toucher, une
   tablette, la dictée ; aucun étudiant n'a déroulé un essai avec.
+- **Le banc réglé sur l'appareil** (§ 1 bis) — vérifié par les tests (`tests/node/lab_gear.test.mjs`) : les appareils
+  de chaque essai de chaque bloc, chacun avec son dessin, une borne par fil, et un réglage ou la phrase qui dit
+  pourquoi il n'en a pas ; le refus d'une valeur hors plage ; le carnet (`gear`) gardé, rendu, et dans le `.dwiz` ;
+  l'essai simulé de nouveau avec le réglage (plus de volts, plus de courant), le plan qui suit, la carte entière
+  aussi ; une rampe qui reste celle de l'essai ; les instants appuyé et relâché d'un bouton. Essayé dans Chromium sur
+  la première carte : bandeau, cinq cordons, bouton tenu (DEL allumée) puis relâché, 4,5 V tapés sur l'alimentation
+  (2,05 → 4,65 mA attendus), Ctrl + Z qui revient à 3 V et relance l'essai, aucune erreur. **Non vérifié** : le
+  toucher, un bandeau de plus de cinq appareils sur un petit écran, un lecteur d'écran.
 - **Non vérifié** : aucune carte réelle n'a été mesurée pour comparer — ni les valeurs, ni les plages. Les
   comportements typiques et les niveaux des bus sont écrits de mémoire, sans relecture d'une fiche technique ni d'une
   norme (registre des sources : `lab-devices` « usage », `lab-bus` « à vérifier »). Le plan n'a pas été déroulé par
