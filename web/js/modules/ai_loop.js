@@ -16,6 +16,8 @@ import { isSub, holds } from "../core/asm_levels.js";
 import { snapshotLists, journalChange } from "../core/ai_door.js";
 import { aiTargetOf, addressOf } from "../core/stairs.js";
 import { journalBox } from "./ai_journal.js";
+import { disturbs } from "../core/ai_disturb.js";
+import { disturbBox } from "./ai_disturb_ui.js";
 import { moreKey, moreDoc, moreCheck, moreApply, moreLabel, MORE_HELP } from "../core/ai_more.js";
 
 /* What an answer changes goes back to « Brouillon IA » in the review ledger, inside the very step that applies it. */
@@ -102,6 +104,7 @@ export function openAiLoop(opts) {
       out.append(el("p", null, el("b", null, diff.length ? `${diff.length} changement(s)` : "Aucun changement"), " ", ...["added", "changed", "removed"].map((k) => { const n = diff.filter((d) => d.kind === k).length; return n ? badge(`${n} ${{ added: "ajout(s)", changed: "modification(s)", removed: "retrait(s)" }[k]}`, { added: "ok", changed: "warn", removed: "danger" }[k]) : null; })));
       out.append(el("ul", { class: "small" }, diff.slice(0, 60).map((d) => el("li", { class: `ai-${d.kind}` }, d.text)), diff.length > 60 ? el("li", { class: "muted" }, `… et ${diff.length - 60} autres`) : null));
       for (const n of notes) out.append(el("p", { class: `atelier-hint ${n.severity === "info" ? "" : "warn"}` }, n.text));
+      if (opts.disturb && diff.length) out.append(disturbBox(opts.disturb(doc)));      // what the change does to the rest of the product (core/ai_disturb.js)
       const dr = opts.draft ? opts.draft(JSON.parse(JSON.stringify(doc))) : null;      // an essai à blanc : what would arrive as a draft, which standards the answer names
       if (dr && dr.drafts.length) out.append(el("p", { class: "atelier-hint" }, `${dr.drafts.length} élément(s) de l'arbre fonctionnel arriveront en « Brouillon IA » (${dr.drafts.slice(0, 8).map((x) => x.key).join(", ")}${dr.drafts.length > 8 ? "…" : ""}) : à confirmer par un humain avant la revue.`));
       if (dr && dr.norms.length) out.append(el("p", { class: "atelier-hint warn" }, `Normes citées par l'IA : ${dr.norms.join(", ")}. Aucune n'est tenue pour référence tant que vous n'avez pas confirmé son édition et sa clause.`));
@@ -131,7 +134,8 @@ export async function openAiLoopFor(key, more = {}) {
   const extra = moreTarget(key), targets = extra ? [extra, ...aiTargets()] : aiTargets(), t = targets.find((x) => x.key === key) || targets[targets.length - 1], o = await t.open();
   const apply = o.apply, own = t.key === "project" ? null : [t.key];           // the project marks its own changes, artefact by artefact
   let dlg = null;
-  dlg = openAiLoop({ ...o, ecoKey: t.host || t.key, from: addressOf(location.hash).key, apply: (d) => { applying = own; journaling = { before: snapshotLists(store.project), ask: dlg ? dlg.ask.value : "" }; try { return apply(d); } finally { applying = null; journaling = null; } }, help: [...(o.help || []), ...(more.help || [])], context: more.context || "", targets, target: t.key });
+  const art = /^(part|assembly|board):(.+)$/.exec(t.key), disturb = art ? (d) => disturbs(store.project, art[1], art[2], d) : null;
+  dlg = openAiLoop({ ...o, disturb, ecoKey: t.host || t.key, from: addressOf(location.hash).key, apply: (d) => { applying = own; journaling = { before: snapshotLists(store.project), ask: dlg ? dlg.ask.value : "" }; try { return apply(d); } finally { applying = null; journaling = null; } }, help: [...(o.help || []), ...(more.help || [])], context: more.context || "", targets, target: t.key });
   if (more.ask && dlg) dlg.ask.value = more.ask;                                // the note of the review becomes the request
   return dlg;
 }

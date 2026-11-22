@@ -3,7 +3,7 @@
    set aside, and where each thing goes (core/ai_door.js). One click applies the plan as ONE undoable step ; the journal goes
    back to before an answer. The tool calls no AI : the person carries the instruction, and brings the answer back. */
 
-import { el, icon, btn, toast, copyText, download } from "../core/dom.js";
+import { el, icon, btn, toast, copyText, download, onOff } from "../core/dom.js";
 import { store } from "../core/store.js";
 import { setGuide } from "../core/app.js";
 import { toDwiz } from "../core/dwiz.js";
@@ -13,6 +13,8 @@ import { stampText } from "../core/brand.js";
 import { dwizFileName } from "../core/dwiz_names.js";
 import { SCOPES, doorPrompt, readAnswer, planAnswer, planWords, planApplies, applyPlan } from "../core/ai_door.js";
 import { journalBox } from "./ai_journal.js";
+import { planDisturbs, acceptRows } from "../core/ai_disturb.js";
+import { disturbBox } from "./ai_disturb_ui.js";
 import { partHash, asmHash } from "../core/shop_levels.js";
 import { withoutHistory } from "../core/history.js";
 
@@ -22,6 +24,8 @@ const MARK = { create: "+", modify: "~", same: "=", skip: "!" }, COLOR = { creat
 export function doorIssues(s) {
   const out = [];
   if (!String(s.ask || "").trim()) out.push({ level: "todo", text: "Dites en une phrase ce que vous voulez : la consigne se construit autour.", field: "ask" });
+  if (s.rows && s.rows.some((r) => r.off)) out.push({ level: "tip", text: `${s.rows.filter((r) => r.off).length} artéfact(s) refusé(s) : ${s.rows.some((r) => r.offBy) ? "ce qui en dépend l'est aussi, et c'est dit sur sa ligne ; " : ""}le reste sera appliqué.`, field: "plan" });
+  if (s.rows && s.dist && [...s.dist.entries()].some(([k, L]) => L.some((x) => x.level === "break") && s.rows.some((r) => `${r.kind}:${r.id}` === k && !r.off))) out.push({ level: "warn", text: "Une modification acceptée rompt quelque chose ailleurs dans le produit : c'est dit sous sa ligne — refusez-la, ou appliquez-la et réparez ensuite.", field: "plan" });
   if (s.rows && s.rows.some((r) => r.action === "skip")) out.push({ level: "check", text: "Une partie de la réponse est écartée : la raison est dite sur sa ligne. Le reste peut être appliqué.", field: "plan" });
   if (s.errors && s.errors.length) out.push({ level: "error", text: `Réponse illisible — ${s.errors.map((e) => `${e.from} : ${e.message}`).join(" ; ")}`, field: "answer" });
   if (!s.rows && !(s.errors || []).length) out.push({ level: "tip", text: "Rapportez la réponse de l'IA — un fichier .dwiz, .json ou .zip, ou le texte collé : rien n'entre dans le projet avant votre accord.", field: "answer" });
@@ -58,7 +62,9 @@ export function aiDoor(main) {
         btn("Le dossier (.zip)", folder, { icon: "download", disabled: !st.ask.trim(), tip: "La consigne et le projet entier (.dwiz), pour un assistant à qui l'on donne des fichiers" })));
   }
   /* 3 — the answer, and what it would do */
-  const take = (texts, skipped = []) => { const r = readAnswer(texts); st.done = null; st.errors = r.errors; st.skipped = skipped; st.rows = r.docs.length ? planAnswer(store.project, r.docs) : null; draw3(); advise(); };
+  const take = (texts, skipped = []) => { const r = readAnswer(texts); st.done = null; st.errors = r.errors; st.skipped = skipped; st.rows = r.docs.length ? planAnswer(store.project, r.docs) : null; st.dist = st.rows ? planDisturbs(store.project, st.rows) : null; draw3(); advise(); };      // what each modified artefact disturbs elsewhere (core/ai_disturb.js)
+  /* accepted artefact by artefact : a refusal takes with it what needs the refused creation ; taking one back gives back what it had taken */
+  const accept = (r, on) => { st.rows = acceptRows(st.rows.map((x) => (x === r ? { ...x, off: !on, offBy: undefined } : x.offBy ? { ...x, off: false, offBy: undefined } : x))); draw3(); advise(); };
   async function read(files) {
     const texts = [], skipped = [];
     for (const f of files) {
@@ -68,7 +74,7 @@ export function aiDoor(main) {
     st.files = [...files].map((f) => f.name); take(texts, skipped);
   }
   function apply() {
-    const rows = st.rows, n = rows.filter((r) => r.action === "create" || r.action === "modify").length; let entry = null;
+    const rows = st.rows.filter((r) => !r.off), n = rows.filter((r) => r.action === "create" || r.action === "modify").length; let entry = null;      // only what is accepted is applied
     store.commit(`Réponse d'IA appliquée : ${planWords(rows)}`, (x) => { entry = applyPlan(x, rows, { ask: st.ask }); });
     toast(`${n} artéfact${n > 1 ? "s" : ""} appliqué${n > 1 ? "s" : ""} — une seule étape : Ctrl + Z, ou le journal ci-dessous, revient à avant.`, "success", 6000);
     /* one stays here : opening a new assembly mates it at once, which would put steps between the answer and its undo */
@@ -92,12 +98,16 @@ export function aiDoor(main) {
     for (const e of st.errors) kids.push(el("p", { class: "form-error" }, `${e.from} : ${e.message}`));
     for (const s of st.skipped) kids.push(el("p", { class: "muted small" }, `Laissé de côté — ${s.name} : ${s.why}.`));
     if (st.rows) {
-      kids.push(el("p", { class: "ai-label", "data-door": "plan" }, `Ce que la réponse ferait — ${planWords(st.rows)}`),
-        ...st.rows.map((r) => el("div", { class: `ai-art ${r.action}`, style: { "--g": COLOR[r.action] || (r.nature ? r.nature.color : "#475569") }, "data-art": r.id },
-          el("span", { class: "s", "aria-hidden": "true" }, MARK[r.action]), el("span", { class: "n" }, icon(r.kind === "assembly" ? "assembly" : r.kind === "board" ? "chip" : r.kind === "drawing" ? "drawing" : r.nature ? r.nature.icon : "part"), r.name, el("small", null, r.id)), el("span", { class: "w" }, r.where),
-          el("small", { class: "d" }, r.action === "skip" ? `Écarté${r.kind === "assembly" ? "" : "e"} — ${r.why}` : r.detail))),
-        el("div", { class: "form-actions ai-apply" }, btn("Tout refuser", () => { st.rows = null; st.files = []; st.errors = []; st.skipped = []; draw3(); advise(); }, { tip: "Ne rien appliquer : le projet reste tel qu'il est" }),
-          el("span", { class: "grow" }), btn("Appliquer — une étape annulable", apply, { primary: true, icon: "check", disabled: !planApplies(st.rows), tip: planApplies(st.rows) ? "Créer et modifier ce que l'aperçu annonce, d'un seul coup" : "Rien à appliquer dans cette réponse" })));
+      const kept = st.rows.filter((r) => !r.off), nOff = st.rows.length - kept.length, can = (r) => r.action === "create" || r.action === "modify";
+      kids.push(el("p", { class: "ai-label", "data-door": "plan" }, `Ce que la réponse ferait — ${planWords(kept)}${nOff ? ` · ${nOff} refusé${nOff > 1 ? "s" : ""}` : ""}`),
+        ...st.rows.map((r) => { const D = st.dist ? st.dist.get(`${r.kind}:${r.id}`) || [] : [];
+          return el("div", { class: `ai-art ${r.action}${r.off ? " off" : ""}`, style: { "--g": COLOR[r.action] || (r.nature ? r.nature.color : "#475569") }, "data-art": r.id },
+            can(r) ? onOff(!r.off, (on) => accept(r, on), r.name, r.off ? (r.offBy ? `Refusé avec ${r.offBy}, dont il dépend — remettez ${r.offBy} pour le reprendre` : "Refusé : il ne sera pas appliqué — cliquer pour l'accepter") : "Accepté : il sera appliqué — cliquer pour le refuser") : el("span", { class: "s", "aria-hidden": "true" }, MARK[r.action]),
+            el("span", { class: "n" }, icon(r.kind === "assembly" ? "assembly" : r.kind === "board" ? "chip" : r.kind === "drawing" ? "drawing" : r.nature ? r.nature.icon : "part"), r.name, el("small", null, r.id)), el("span", { class: "w" }, r.where),
+            el("small", { class: "d" }, r.action === "skip" ? `Écarté${r.kind === "assembly" ? "" : "e"} — ${r.why}` : r.off ? (r.offBy ? `Refusé avec ${r.offBy}, dont il dépend.` : "Refusé : le projet garde ce qu'il a.") : r.detail),
+            r.action === "modify" && !r.off ? disturbBox(D, { compact: true, links: true, project: store.project }) : null); }),
+        el("div", { class: "form-actions ai-apply" }, btn("Tout refuser", () => { st.rows = null; st.dist = null; st.files = []; st.errors = []; st.skipped = []; draw3(); advise(); }, { tip: "Ne rien appliquer : le projet reste tel qu'il est" }),
+          el("span", { class: "grow" }), btn("Appliquer — une étape annulable", apply, { primary: true, icon: "check", disabled: !planApplies(kept), tip: planApplies(kept) ? "Créer et modifier ce que l'aperçu accepte, d'un seul coup" : "Rien d'accepté à appliquer" })));
     }
     c3.replaceChildren(...kids);
   }

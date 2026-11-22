@@ -78,6 +78,36 @@ Chaque fichier s'ouvre à l'écran avant de partir (« Ce que contient le paquet
 d'interface, et de finir par **« Ce que cela dérange »**. La réponse revient par le bouton « IA » d'un écran ou par la
 porte « Avec l'IA » de l'Atelier : aperçu, une étape annulable, journal, et un point de restauration posé tout seul.
 
+## 5 bis. À l'import : ce que cela dérange, accepté artéfact par artéfact
+
+Demande de JP (points 2 et 9 c, 20 novembre 2026) : « à l'import, l'aperçu actuel plus "ce que cela dérange" —
+interfaces qui ne s'accordent plus, accouplements rompus, écarts de DFx, cas à relancer, dessins à refaire —, accepté
+artéfact par artéfact ».
+
+Quand une réponse d'IA MODIFIE un artéfact du projet, l'aperçu dit aussi ce que ce changement fait au reste du produit,
+lu du projet lui-même (`disturbs` de `web/js/core/ai_disturb.js`, pur), en trois niveaux, chacun avec sa couleur et son
+pictogramme :
+
+| Niveau | Ce qu'il veut dire | Exemples |
+|---|---|---|
+| **Rompu** | ce qui tenait ne tient plus | une interface qu'une autre pièce porte encore disparaît ; un accouplement nomme une interface que la pièce n'a plus ; un relevé du Labo appartient à un bloc retiré ; un nouveau point « à corriger » du guide |
+| **À refaire** | à relancer ou à refaire | le calcul analytique qui lit la pièce ; sa simulation (le cas et ses essais) ; ses vues de détail tracées sur l'ancienne forme ; l'isolation d'un assemblage ou d'une carte ; les essais du Labo des blocs changés |
+| **À regarder** | rien n'est faux, quelque chose a bougé | une interface partagée qui change ; l'assemblage qui monte la pièce ; le jumeau d'une carte ; une révision gelée ou libérée (le changement ira dans une nouvelle révision) ; les occurrences retirées d'un assemblage |
+
+Un nouveau nom ou une note ne déplace aucune géométrie : rien n'est signalé. Le contenu est comparé sans tenir compte
+de l'ordre des clés (un `.dwiz` relu écrit les siennes dans son ordre). Un artéfact NOUVEAU ne dérange rien de ce qui
+existe : ce qu'il demande est vérifié par l'aperçu.
+
+- **Dans la porte « Avec l'IA »** (`#/shop/ai`) : sous chaque ligne modifiée, sa boîte ; chaque ligne qui crée ou
+  modifie a son interrupteur **On / Off** — l'artéfact est accepté ou refusé, un par un. Refuser une création refuse
+  avec elle ce qui en dépend (un assemblage qui la monte, la feuille de dessin d'un assemblage refusé : `acceptRows`), et
+  la ligne le dit ; la reprendre rend ce qu'elle avait emporté. Seul ce qui est accepté est appliqué, en une étape
+  annulable, au journal. Le guide dit qu'une modification acceptée rompt quelque chose.
+- **Dans la boucle commune de chaque écran** (bouton « IA » : une pièce, un assemblage, une carte) : la même boîte sous
+  la liste des changements (`disturbBox` de `modules/ai_disturb_ui.js`).
+
+Rien n'est décidé par l'outil : il dit où regarder. Les lignes d'un écran de page mènent à l'artéfact visé.
+
 ## 6. Ce qui est vérifié, ce qui ne l'est pas
 
 Vérifié par des essais (`tests/node/eco.test.mjs`) : la carte sur la démonstration (montage, clés, accouplements,
@@ -85,14 +115,20 @@ jumeau, calcul, cas), ce qu'un changement dérange (proche et lointain), les rè
 numéros jamais redonnés), le cadre (seulement les procédés employés, l'isolation dite « saisie »), la consigne et les
 fichiers (sans historique, STEP remplacé, aucune adresse). Essayé dans Chromium sur la démonstration.
 
+« Ce que cela dérange » (`tests/node/ai_disturb.test.mjs`) : interface qui disparaît ou change, accouplement rompu,
+calcul, cas, vues de détail, révision gelée, occurrences retirées, assemblage parent, jumeau d'une carte, relevés
+orphelins ; la même pièce relue d'un `.dwiz` ne dérange rien ; un refus emporte ce qui en dépend. Essayé dans Chromium
+sur la démonstration du boîtier : la porte (DRV-BASE sans une de ses interfaces : deux « rompu » ; la pièce nouvelle
+refusée emporte l'assemblage qui la monte, puis reprise) et la boucle d'une pièce (DRV-COVER : deux « rompu »).
+
 **Pas essayé** : une vraie réponse d'assistant sur un paquet ; la façon dont un assistant lit `cadre.md` quand il est
 long (le DFx de la démonstration en fait environ 20 ko). Le logiciel ne dit pas sur quelle carte il tourne : la carte
 ne le relie à rien.
 
 ## 7. Reste
 
-- **(c) « Ce que cela dérange » à l'import** : après une réponse, ce que l'outil trouve dérangé — interfaces qui ne
-  s'accordent plus, accouplements rompus, écarts de DFx, cas à relancer, dessins à refaire —, accepté artéfact par
-  artéfact.
+- ~~(c) « Ce que cela dérange » à l'import~~ — fait (v0.157.0, § 5 bis). Reste : les cartes et les feuilles de dessin
+  acceptées une à une dans la boucle commune du projet entier ; un changement de cote dans une interface comparé à ce
+  que porte la pièce d'en face (aujourd'hui : « à regarder »).
 - Les cartes et le logiciel dans une réponse de la porte « Avec l'IA ».
 - Relier le logiciel à la carte dont il prend les broches.

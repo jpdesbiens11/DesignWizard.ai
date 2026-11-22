@@ -440,7 +440,7 @@ table.mate-facts { width: 100%; font-size: .8rem; } table.mate-facts thead { dis
 .ai-drop { display: grid; place-items: center; gap: .2rem; width: 100%; padding: .9rem .6rem; border: 2px dashed color-mix(in srgb, var(--graphite) 40%, transparent); border-radius: var(--r-card); background: none; color: var(--muted); font: inherit; font-size: .84rem; text-align: center; cursor: pointer; } .ai-drop b { color: var(--ink); overflow-wrap: anywhere; } .ai-drop .sk-icon { width: 1.6rem; height: 1.6rem; }
 .ai-drop:hover, .ai-drop.over { border-color: var(--graphite); background: color-mix(in srgb, var(--acc) 12%, var(--surface)); }
 .ai-paste-row { display: flex; align-items: flex-end; gap: .5rem; margin-top: .5rem; } .ai-paste-row .ai-paste { flex: 1; min-width: 0; }
-.ai-art { display: grid; grid-template-columns: 1.3rem minmax(0, 1fr) auto; gap: .1rem .45rem; align-items: center; margin-top: .25rem; padding: .3rem .45rem; border-left: 4px solid var(--g); border-radius: 6px; background: color-mix(in srgb, var(--g) 7%, var(--surface)); font-size: .86rem; }
+.ai-art { display: grid; grid-template-columns: minmax(1.3rem, auto) minmax(0, 1fr) auto; gap: .1rem .45rem; align-items: center; margin-top: .25rem; padding: .3rem .45rem; border-left: 4px solid var(--g); border-radius: 6px; background: color-mix(in srgb, var(--g) 7%, var(--surface)); font-size: .86rem; }
 .ai-art .s { color: var(--g); font-weight: 800; text-align: center; } .ai-art .n { display: flex; align-items: center; gap: .4rem; min-width: 0; overflow-wrap: anywhere; } .ai-art .n .sk-icon { flex: none; width: .95rem; height: .95rem; color: var(--g); } .ai-art .n small { color: var(--muted); font-size: .72rem; }
 .ai-art .w { color: var(--g); font-size: .74rem; font-weight: 700; white-space: nowrap; } .ai-art .d { grid-column: 2 / 4; color: var(--muted); font-size: .76rem; overflow-wrap: anywhere; } .ai-art.skip .d { color: var(--danger); }
 .ai-apply { margin-top: .7rem; padding-top: .6rem; border-top: 1.2px dashed var(--line); } .ai-apply .grow { flex: 1; }
@@ -474,3 +474,12 @@ button.chip.sim-chip { border: 0; font: inherit; font-size: .8rem; cursor: point
 .fab-step .grow { flex: 1; display: flex; flex-direction: column; min-width: 0; } .fab-step .grow b { font-size: .84rem; } .fab-step .grow small { color: var(--muted); font-size: .74rem; }
 .fab-step .icon-btn { padding: 0 .1rem; } .fab-step .icon-btn:first-of-type .sk-icon { transform: rotate(-90deg); }
 .btn.flip .sk-icon { transform: rotate(180deg); }
+/* what an answer of an AI disturbs elsewhere (modules/ai_disturb_ui.js) : grouped by level, a colour and a pictogram each */
+.ai-disturb { margin: .45rem 0 .2rem; padding: .45rem .6rem; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); font-size: .82rem; }
+.ai-disturb.compact { grid-column: 1 / -1; margin: .3rem 0 0; font-size: .78rem; }
+.ai-disturb.none { display: flex; align-items: center; gap: .3rem; color: #15803d; border-style: dashed; }
+.ai-disturb-head { margin: 0 0 .3rem; display: flex; align-items: center; gap: .25rem; flex-wrap: wrap; }
+.ai-disturb-group { display: grid; grid-template-columns: 7.2rem 1fr; gap: .4rem; align-items: start; padding: .2rem 0 .2rem .45rem; border-left: 3px solid var(--g); margin: .25rem 0; }
+.ai-disturb-tag { display: inline-flex; align-items: center; gap: .2rem; font-weight: 700; color: var(--g); white-space: nowrap; }
+.ai-disturb-group ul { margin: 0; padding-left: 1rem; } .ai-disturb-group li { margin: .1rem 0; } .ai-disturb-group a { color: inherit; }
+.ai-art.off { opacity: .55; } .ai-art.off .d { font-style: italic; }
