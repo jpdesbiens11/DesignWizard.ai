@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Busbars : laying a hole, a terminal or a contact with the mouse, helped. The three tools of the view arm
+/* DynamiteOrbit — Busbars : laying a hole, a terminal or a contact with the mouse, helped. The three tools of the view arm
    the placer (core/view_place.js) : the face of the leg under the pointer shows its 5 mm grid, the centre line catches the
    feature, the dimensions and the coordinates follow, a click drops it. A feature already there is picked up again by a
    two-second hold, or from its card. Here too : the card of a through hole, and the position of the chosen connection,

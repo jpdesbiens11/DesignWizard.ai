@@ -1,4 +1,4 @@
-/* DesignWizard.ai — lists as trees : what a screen has many of is filed by state or by type, each group with its colour, each
+/* DynamiteOrbit — lists as trees : what a screen has many of is filed by state or by type, each group with its colour, each
    item with its number, its few words and the colour of its group — the same look as the tree of the mates (Assembly) and
    of the load case (Simulation). Three models here : the pairs of nets of the Isolation by verdict, the dimensions of a
    drawing by nature, the findings of a board by severity. Pure : a screen draws the tree (modules/state_tree.js). */

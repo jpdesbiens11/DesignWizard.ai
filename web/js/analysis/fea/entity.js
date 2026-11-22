@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the real geometry as the place of a condition. The mesh is cubes ; a support or a load is set on the product
+/* DynamiteOrbit — the real geometry as the place of a condition. The mesh is cubes ; a support or a load is set on the product
    itself : one of its faces (plane, cylindrical, sloped, inside a housing…), one of its edges, one of its points. This finds what of
    the mesh carries it :
      a face  { tris }  — the triangles of the face (9 numbers each, outward winding) → the exposed faces of the cubes that lie on it

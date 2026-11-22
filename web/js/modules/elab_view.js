@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Labo, what one LOOKS at : the board seen from above, whose tracks and parts light up as the simulated
+/* DynamiteOrbit — Labo, what one LOOKS at : the board seen from above, whose tracks and parts light up as the simulated
    current runs through them (demande de JP : « les traces et composantes doivent s'allumer comme si c'étaient des lumières,
    en orange ou rouge, et flasher pendant les cycles actifs… on veut voir le changement d'état clairement ») ; two
    oscilloscopes — the signal put in, the signal that comes out — with a cursor that runs along the trace ; and, for a test

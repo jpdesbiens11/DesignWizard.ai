@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the formulas of the workbooks, electrical : the busbar (its temperature found by a bisection laid out in
+/* DynamiteOrbit — the formulas of the workbooks, electrical : the busbar (its temperature found by a bisection laid out in
    the sheet « Solveur » : Joule heating against convection and radiation), the PCB trace of IPC-2221, the short pulse of
    Onderdonk. mm, µm, A, nΩ·m, °C. */
 

@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the other moulded parts of the Shop companion, beside the shell that holds things :
+/* DynamiteOrbit — the other moulded parts of the Shop companion, beside the shell that holds things :
    - the COVER that matches its housing : the same outline and corner radii, a locating lip that drops inside the rim,
      clearance holes on the housing's bosses — or hooks that snap into its windows ;
    - the CLIPS : a cantilever blade sized by its strain, ε = 1.5 × thickness × deflection / length² ;

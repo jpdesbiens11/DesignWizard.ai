@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Onshape: connect the account (API keys kept on this computer by the local server), choose the
+/* DynamiteOrbit — Onshape: connect the account (API keys kept on this computer by the local server), choose the
    document, review what will be created, then send the assembly: STEP converted to native Part Studios and Assembly,
    each drawing as a PDF tab AND as a native Onshape drawing attached to its part, plus the part properties. */
 

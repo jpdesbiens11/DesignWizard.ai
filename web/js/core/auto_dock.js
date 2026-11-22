@@ -1,4 +1,4 @@
-/* DesignWizard.ai — where the panel of the automatic rotation stands (point 17, JP, 20 novembre 2026 : « le menu de rotation automatique se
+/* DynamiteOrbit — where the panel of the automatic rotation stands (point 17, JP, 20 novembre 2026 : « le menu de rotation automatique se
    déplace — une poignée — ou se range en onglet de la marge de droite, montrer / cacher »). The usage followed : a floating tool palette of
    the desktop tools — dragged by its title bar, docked into the side panel by a button, undocked by the same button. Where it stands is kept
    in this browser (dw.auto.place) : the next rotation opens where the last one was left. The right margin shows and hides as every margin

@@ -1,4 +1,4 @@
-/* DesignWizard.ai — PCBA: the document of a complete electronic board ("DW board/1") and its resolved geometry.
+/* DynamiteOrbit — PCBA: the document of a complete electronic board ("DW board/1") and its resolved geometry.
    Every other module of the brick (library, synthesis, placement, routing, rules, fabrication files, review) reads
    and writes these two shapes and nothing else.
 

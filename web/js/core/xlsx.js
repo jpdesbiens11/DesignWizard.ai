@@ -1,4 +1,4 @@
-/* DesignWizard.ai — a spreadsheet (.xlsx, Office Open XML) written by hand from a neutral workbook model : sheets of
+/* DynamiteOrbit — a spreadsheet (.xlsx, Office Open XML) written by hand from a neutral workbook model : sheets of
    cells — text, numbers, FORMULAS that stay alive in Excel and LibreOffice —, named cells, a few styles (title, heading,
    the yellow of a cell to fill, the result, the verdict), limits on what a cell accepts, a verdict that changes colour,
    pictures and line charts. An .xlsx is a ZIP of XML parts, stored here without compression.
@@ -71,7 +71,7 @@ function chartXml(ch) {
 function drawingXml(sh, rids) {
   const at = (tag, [c, r]) => `<xdr:${tag}><xdr:col>${c}</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>${r}</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:${tag}>`, out = []; let id = 1;
   for (const p of sh.pictures || []) { const cx = Math.round(p.w * EMU), cy = Math.round(p.h * EMU), n = ++id;
-    out.push(`<xdr:oneCellAnchor>${at("from", [p.col || 0, p.row || 0])}<xdr:ext cx="${cx}" cy="${cy}"/><xdr:pic><xdr:nvPicPr><xdr:cNvPr id="${n}" name="${esc(p.name || "DesignWizard.ai")}"/><xdr:cNvPicPr><a:picLocks noChangeAspect="1"/></xdr:cNvPicPr></xdr:nvPicPr><xdr:blipFill><a:blip r:embed="${rids.shift()}"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill><xdr:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr></xdr:pic><xdr:clientData/></xdr:oneCellAnchor>`); }
+    out.push(`<xdr:oneCellAnchor>${at("from", [p.col || 0, p.row || 0])}<xdr:ext cx="${cx}" cy="${cy}"/><xdr:pic><xdr:nvPicPr><xdr:cNvPr id="${n}" name="${esc(p.name || "DynamiteOrbit")}"/><xdr:cNvPicPr><a:picLocks noChangeAspect="1"/></xdr:cNvPicPr></xdr:nvPicPr><xdr:blipFill><a:blip r:embed="${rids.shift()}"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill><xdr:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr></xdr:pic><xdr:clientData/></xdr:oneCellAnchor>`); }
   for (const c of sh.charts || []) { const n = ++id;
     out.push(`<xdr:twoCellAnchor>${at("from", c.from)}${at("to", c.to)}<xdr:graphicFrame macro=""><xdr:nvGraphicFramePr><xdr:cNvPr id="${n}" name="Graphique ${n - 1}"/><xdr:cNvGraphicFramePr/></xdr:nvGraphicFramePr><xdr:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></xdr:xfrm><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart"><c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" r:id="${rids.shift()}"/></a:graphicData></a:graphic></xdr:graphicFrame><xdr:clientData/></xdr:twoCellAnchor>`); }
   return `${HEAD}<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="${DML}" xmlns:r="${REL}">${out.join("")}</xdr:wsDr>`;

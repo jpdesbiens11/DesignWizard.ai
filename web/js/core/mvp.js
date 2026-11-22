@@ -1,4 +1,4 @@
-/* DesignWizard.ai — MVP iterations and their gate reviews. A product converges through as many iterations as it needs :
+/* DynamiteOrbit — MVP iterations and their gate reviews. A product converges through as many iterations as it needs :
    each one aims at a maturity level (TRL), is FROZEN when it is ready (a snapshot of every artefact, of the dimensions,
    the functions and the interfaces), goes through at least one REVIEW — a detailed package read by an AI, or a session in
    front of colleagues — and is CLOSED with a decision. The next MVP opens only then. Between two frozen iterations the

@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the hand calculation before the simulation. A good analyst never launches a finite-element model
+/* DynamiteOrbit — the hand calculation before the simulation. A good analyst never launches a finite-element model
    without first estimating the answer with a simple equivalent model (a beam, a bar, a thermal resistance): it says
    what to expect, and it is what the simulation is checked against. This module reads the load case, picks the
    equivalent model, takes the REAL cross-section from the mesh at the support, and writes the calculation step by

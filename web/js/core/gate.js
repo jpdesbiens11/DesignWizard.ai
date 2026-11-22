@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the door of the hosted demo. On the user's own machine the application opens at once. On a
+/* DynamiteOrbit — the door of the hosted demo. On the user's own machine the application opens at once. On a
    hosted page it asks for a Google sign-in and lets in the accounts approved by the administrator (core/access.js).
    Nothing is sent anywhere but to Google; the e-mail address never leaves the browser — only its fingerprint is
    compared with the public list, or shown so the visitor can ask for access. */
@@ -15,7 +15,7 @@ export function gate() {
     const body = el("div", { class: "gate-body" });
     const box = el("div", { class: "gate", role: "dialog", "aria-modal": "true", "aria-label": "Accès à la démo" },
       el("div", { class: "gate-card" }, el("img", { class: "gate-logo", src: "img/brand.svg", alt: "" }),
-        el("h1", null, "DesignWizard", el("i", null, ".ai")), el("p", { class: "gate-by" }, "by DynamiteAgile™ — démo sur invitation"), body,
+        el("h1", null, "Dynamite", el("i", null, "Orbit")), el("p", { class: "gate-by" }, "by DynamiteAgile™ — démo sur invitation"), body,
         el("p", { class: "gate-foot" }, el("a", { class: "btn btn-small", href: "vitrine.html" }, "Découvrir le projet"), el("a", { class: "btn btn-small btn-primary gh", href: `https://github.com/${CONFIG.repo}`, target: "_blank", rel: "noopener noreferrer", "data-tip": "Le code source, sous licence MIT" }, "GitHub"))));
     document.body.append(box);
     const google = (label, choose) => btn(label, () => go(choose), { primary: !choose, icon: choose ? "refresh" : "lock" });
@@ -27,7 +27,7 @@ export function gate() {
           el("p", { class: "muted" }, "En attendant, l'application complète fonctionne sur votre poste, sans compte : clonez le dépôt et lancez « python designwizard.py »."));
         return;
       }
-      body.append(...[el("p", null, "La démo est ouverte aux comptes Google approuvés. Connectez-vous pour entrer : vos fichiers restent dans votre propre Google Drive, dans un dossier « DesignWizard.ai »."),
+      body.append(...[el("p", null, "La démo est ouverte aux comptes Google approuvés. Connectez-vous pour entrer : vos fichiers restent dans votre propre Google Drive, dans un dossier « DynamiteOrbit »."),
         message ? el("p", { class: "form-error" }, message) : null, el("div", { class: "gate-actions" }, google("Se connecter avec Google", false)),
         el("p", { class: "muted small" }, "Permissions demandées : votre adresse (pour vérifier l'accès) et les seuls fichiers créés par cette application.")].filter(Boolean));       // append() would write a missing message as the word « null »
     }

@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the design review ledger. Every artefact of a project — part, assembly, board, analysis — is
+/* DynamiteOrbit — the design review ledger. Every artefact of a project — part, assembly, board, analysis — is
    in one of a few states : it came from an AI and nobody has read it (« Brouillon IA »), it has never been reviewed,
    the reviewer asks for a change (« À réviser », with a note), or it is reviewed. A reviewed artefact remembers its
    signature : when its content changes afterwards — by hand or through an AI — it says so, and approving it again

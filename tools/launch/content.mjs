@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the launch kit : what the one-page sheet and the ready-to-post texts say, in French and in English (kit de
+/* DynamiteOrbit — the launch kit : what the one-page sheet and the ready-to-post texts say, in French and in English (kit de
    lancement, demande de JP). One source for both : tools/launch_kit.mjs writes the files, tests/node/launch_kit.test.mjs holds the rules.
    The rules are those of the film (docs/VIDEO.md) : every sentence is something the tool does ; no time saved, no figure of gain —
    nobody measured one ; the project is said as it is, free software in active development ; no name of a living person, no brand of
@@ -8,8 +8,8 @@
 export const LANGS = ["fr", "en"];
 const L = (fr, en) => ({ fr, en });
 
-export const LINKS = { site: "https://jpdesbiens11.github.io/DesignWizard.ai/vitrine.html", demo: "https://jpdesbiens11.github.io/DesignWizard.ai/", code: "https://github.com/jpdesbiens11/DesignWizard.ai" };
-export const BRAND_FOOT = L("DesignWizard.ai™ by DynamiteAgile™ · Co-Intelligence WorkFlow™ — logiciel libre, licence MIT", "DesignWizard.ai™ by DynamiteAgile™ · Co-Intelligence WorkFlow™ — free software, MIT licence");
+export const LINKS = { site: "https://jpdesbiens11.github.io/DynamiteOrbit/vitrine.html", demo: "https://jpdesbiens11.github.io/DynamiteOrbit/", code: "https://github.com/jpdesbiens11/DynamiteOrbit" };
+export const BRAND_FOOT = L("DynamiteOrbit™ by DynamiteAgile™ · Co-Intelligence WorkFlow™ — logiciel libre, licence MIT", "DynamiteOrbit™ by DynamiteAgile™ · Co-Intelligence WorkFlow™ — free software, MIT licence");
 
 /* ---------- the one-page sheet ---------- */
 /** Its three groups — what one does with the tool — each with its colour ; each step a pictogram (an icon of the application), a short
@@ -19,8 +19,8 @@ export const SHEET = {
   slogan: L(["La conception,", "sans les détours."], ["Design,", "without the detours."]),
   promise: L("De l'intention à la pièce, de la pièce au système.", "From intent to part, from part to system."),
   story: L(
-    ["Une pièce commence par une question : à quoi sert-elle ?", "Vous le savez — mais il faut le redire au modeleur, au calcul, au dessin, à la commande.", "DesignWizard.ai retient la réponse une fois, et s'en sert partout."],
-    ["A part begins with a question: what is it for?", "You know — yet you repeat it to the modeller, the solver, the drawing, the order.", "DesignWizard.ai remembers the answer once, and uses it everywhere."]),
+    ["Une pièce commence par une question : à quoi sert-elle ?", "Vous le savez — mais il faut le redire au modeleur, au calcul, au dessin, à la commande.", "DynamiteOrbit retient la réponse une fois, et s'en sert partout."],
+    ["A part begins with a question: what is it for?", "You know — yet you repeat it to the modeller, the solver, the drawing, the order.", "DynamiteOrbit remembers the answer once, and uses it everywhere."]),
   shot: { img: "assemblage", caption: L("Un écran réel de l'outil : l'assemblage, ses accouplements et sa nomenclature.", "A real screen of the tool: the assembly, its mates and its bill of materials.") },
   groups: [
     { key: "design", color: "#0c66e4", title: L("Concevoir", "Design"), steps: [
@@ -54,7 +54,7 @@ export const POSTS = [
 
 Vous le savez. Mais il faut le redire — au modeleur, au logiciel de calcul, au dessin, au dossier de commande. À chaque logiciel, la même intention, réexpliquée.
 
-DesignWizard.ai part de l'autre bout. On dit une fois ce que la pièce relie, de quoi elle est faite et comment on la fabrique. L'outil s'en souvient, et s'en sert partout :
+DynamiteOrbit part de l'autre bout. On dit une fois ce que la pièce relie, de quoi elle est faite et comment on la fabrique. L'outil s'en souvient, et s'en sert partout :
 → la forme, et sa gamme de fabrication ;
 → les règles de fabrication, vérifiées pendant que l'on conçoit ;
 → l'assemblage, où les pièces s'accouplent par leurs interfaces ;
@@ -73,7 +73,7 @@ La bande-annonce est ci-dessous. La démonstration et le code sont en commentair
 
 You know the answer. Yet you repeat it — to the modeller, to the solver, to the drawing, to the order package. One intent, explained again to every tool.
 
-DesignWizard.ai starts from the other end. You say once what the part connects, what it is made of and how it is made. The tool remembers, and uses it everywhere:
+DynamiteOrbit starts from the other end. You say once what the part connects, what it is made of and how it is made. The tool remembers, and uses it everywhere:
 → the shape, and its manufacturing routing;
 → the manufacturing rules, checked while you design;
 → the assembly, where parts mate through their interfaces;
@@ -94,19 +94,19 @@ The teaser is below. The demonstration and the code are in the comments.
   { id: "court", where: L("Réseau professionnel — le rappel, une semaine après", "Professional network — the reminder, a week later"), attach: L("La bande-annonce, ou une capture d'écran de l'assemblage.", "The teaser, or a screenshot of the assembly."),
     fr: `Une pièce commence par une question : à quoi sert-elle ?
 
-DesignWizard.ai la retient une fois, et s'en sert de la première forme au dossier de commande : la gamme, l'assemblage, le calcul, le dessin.
+DynamiteOrbit la retient une fois, et s'en sert de la première forme au dossier de commande : la gamme, l'assemblage, le calcul, le dessin.
 
 Logiciel libre, dans le navigateur. Trente secondes pour voir.`,
     en: `A part begins with a question: what is it for?
 
-DesignWizard.ai remembers it once, and uses it from the first shape to the order package: the routing, the assembly, the calculation, the drawing.
+DynamiteOrbit remembers it once, and uses it from the first shape to the order package: the routing, the assembly, the calculation, the drawing.
 
 Free software, in the browser. Thirty seconds to see.` },
   { id: "bref", max: 280, where: L("Message court (280 caractères)", "Short message (280 characters)"), attach: L("La bande-annonce.", "The teaser."),
-    fr: `Une pièce commence par une question : à quoi sert-elle ? DesignWizard.ai retient la réponse, de la première forme au dossier de commande. Logiciel libre (MIT), dans le navigateur. ${LINKS.site}`,
-    en: `A part begins with a question: what is it for? DesignWizard.ai remembers the answer, from the first shape to the order package. Free software (MIT), in the browser. ${LINKS.site}` },
+    fr: `Une pièce commence par une question : à quoi sert-elle ? DynamiteOrbit retient la réponse, de la première forme au dossier de commande. Logiciel libre (MIT), dans le navigateur. ${LINKS.site}`,
+    en: `A part begins with a question: what is it for? DynamiteOrbit remembers the answer, from the first shape to the order package. Free software (MIT), in the browser. ${LINKS.site}` },
   { id: "communaute", where: L("Communauté technique, forum, discussions du dépôt", "Technical community, forum, repository discussions"), attach: L("Le lien du dépôt ; une capture d'écran au besoin.", "The link to the repository; a screenshot if needed."),
-    fr: `DesignWizard.ai — concevoir une pièce mécatronique à partir de son intention (logiciel libre, MIT)
+    fr: `DynamiteOrbit — concevoir une pièce mécatronique à partir de son intention (logiciel libre, MIT)
 
 L'idée : une pièce se décrit d'abord par ce qu'elle relie (ses interfaces), sa matière et son procédé. La géométrie, la gamme de fabrication, les règles de fabrication, l'assemblage, les dessins et le dossier de commande en découlent, et se mettent à jour ensemble.
 
@@ -120,7 +120,7 @@ Comment c'est fait :
 Ce que nous cherchons : des mécaniciens, des électroniciens et des développeurs pour casser la démonstration et dire où — une règle de fabrication, un matériau, un modèle de calcul simple, un export qui manque.
 
 Le dépôt : ${LINKS.code}`,
-    en: `DesignWizard.ai — designing a mechatronic part from its intent (free software, MIT)
+    en: `DynamiteOrbit — designing a mechatronic part from its intent (free software, MIT)
 
 The idea: a part is first described by what it connects (its interfaces), its material and its process. The geometry, the manufacturing routing, the manufacturing rules, the assembly, the drawings and the order package follow from that, and stay up to date together.
 
@@ -139,7 +139,7 @@ The repository: ${LINKS.code}` },
 
 Bonjour,
 
-Je travaille sur DesignWizard.ai, un outil de conception mécatronique libre qui part de l'intention d'une pièce — ce qu'elle relie, sa matière, son procédé — plutôt que d'une esquisse. La fiche jointe le résume en une page.
+Je travaille sur DynamiteOrbit, un outil de conception mécatronique libre qui part de l'intention d'une pièce — ce qu'elle relie, sa matière, son procédé — plutôt que d'une esquisse. La fiche jointe le résume en une page.
 
 J'aimerais ton regard de praticien : un parcours guidé d'une heure sur la démonstration, puis une fiche de retours — ce qui t'a arrêté, ce qui t'a semblé faux, ce qui manque. Je ne cherche pas des compliments, je cherche où ça accroche.
 
@@ -150,7 +150,7 @@ Merci,`,
 
 Hello,
 
-I am working on DesignWizard.ai, a free mechatronic design tool that starts from the intent of a part — what it connects, its material, its process — rather than from a sketch. The attached sheet sums it up on one page.
+I am working on DynamiteOrbit, a free mechatronic design tool that starts from the intent of a part — what it connects, its material, its process — rather than from a sketch. The attached sheet sums it up on one page.
 
 I would like a practitioner's eye: a guided one-hour path on the demonstration, then a feedback sheet — what stopped you, what looked wrong, what is missing. I am not after compliments, I am after where it catches.
 
@@ -158,8 +158,8 @@ If you are in, tell me when, and I will open the access.
 
 Thank you,` },
   { id: "alt", where: L("Texte de remplacement de la bande-annonce (accessibilité)", "Alternative text of the teaser (accessibility)"), attach: L("Se colle dans le champ « texte alternatif » de la vidéo.", "Goes in the “alternative text” field of the video."),
-    fr: "Bande-annonce de trente secondes. Sur un papier quadrillé, une phrase : « Six logiciels autour d'une pièce. » Puis des écrans de l'outil DesignWizard.ai se suivent : une pièce décrite par ses interfaces, un boîtier dont une cote change, un petit véhicule à quatre roues dont l'assemblage s'ouvre, une simulation en couleurs, un dessin coté. La marque DesignWizard.ai clôt la séquence.",
-    en: "A thirty-second teaser. On squared paper, a sentence: “Six tools around one part.” Then screens of the DesignWizard.ai tool follow one another: a part described by its interfaces, a housing with a dimension changing, a small four-wheeled vehicle whose assembly opens, a simulation in colours, a dimensioned drawing. The DesignWizard.ai mark closes the sequence." },
+    fr: "Bande-annonce de trente secondes. Sur un papier quadrillé, une phrase : « Six logiciels autour d'une pièce. » Puis des écrans de l'outil DynamiteOrbit se suivent : une pièce décrite par ses interfaces, un boîtier dont une cote change, un petit véhicule à quatre roues dont l'assemblage s'ouvre, une simulation en couleurs, un dessin coté. La marque DynamiteOrbit clôt la séquence.",
+    en: "A thirty-second teaser. On squared paper, a sentence: “Six tools around one part.” Then screens of the DynamiteOrbit tool follow one another: a part described by its interfaces, a housing with a dimension changing, a small four-wheeled vehicle whose assembly opens, a simulation in colours, a dimensioned drawing. The DynamiteOrbit mark closes the sequence." },
 ];
 /** Lines to open or close a message with : the two of the film, then three of the same thread. */
 export const TAGLINES = [
@@ -190,7 +190,7 @@ const GAIN = [/\d+\s*%/gu, word("\\d+\\s*(?:x|×|fois)"), word("fois plus|times 
 export const gainClaims = (text) => GAIN.flatMap((re) => String(text).match(re) || []);
 /** The texts to post as Markdown, both languages, each under its title. */
 export function postsMarkdown(date) {
-  const out = [`# DesignWizard.ai — textes de publication · ready-to-post texts`, "", `${date} · kit de lancement. Chaque texte : où il va, ce que l'on y joint, puis le français et l'anglais.`, "", "## Mode d'emploi · how to use", "", ...USAGE.fr.map((x) => `- ${x}`), "", ...USAGE.en.map((x) => `- ${x}`), ""];
+  const out = [`# DynamiteOrbit — textes de publication · ready-to-post texts`, "", `${date} · kit de lancement. Chaque texte : où il va, ce que l'on y joint, puis le français et l'anglais.`, "", "## Mode d'emploi · how to use", "", ...USAGE.fr.map((x) => `- ${x}`), "", ...USAGE.en.map((x) => `- ${x}`), ""];
   for (const p of POSTS) out.push(`## ${p.where.fr} · ${p.where.en}`, "", `_À joindre : ${p.attach.fr} · Attach: ${p.attach.en}_`, "", "### Français", "", "```text", p.fr, "```", "", "### English", "", "```text", p.en, "```", "");
   out.push("## Phrases d'accroche · taglines", "", "| Français | English |", "|---|---|", ...TAGLINES.map((t) => `| ${t.fr} | ${t.en} |`), "");
   return out.join("\n");

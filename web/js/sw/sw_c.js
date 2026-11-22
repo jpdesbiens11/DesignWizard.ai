@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Logiciel : the C of a design, WRITTEN BY THE TOOL from its objects (sw/sw_objects.js, sw/sw_design.js) — a library,
+/* DynamiteOrbit — Logiciel : the C of a design, WRITTEN BY THE TOOL from its objects (sw/sw_objects.js, sw/sw_design.js) — a library,
    modules and a file structure (demande de JP : « des objets visuels… qui se codent tout seuls en librairie, module et structure de
    fichiers pour un CPU de BMS embarqué »).
      lib/        one module per KIND of object the design uses : its step, in whole numbers — the same step the browser simulates

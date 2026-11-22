@@ -1,4 +1,4 @@
-/* DesignWizard.ai — DFM / DFA / DFx core: the Finding type, declarative auto-fix patches ("spell-checker for CAD"),
+/* DynamiteOrbit — DFM / DFA / DFx core: the Finding type, declarative auto-fix patches ("spell-checker for CAD"),
    the score of a list of findings and a mesh wall-thickness probe. No kernel, no DOM: runs in the browser and in Node.
 
    Finding = {

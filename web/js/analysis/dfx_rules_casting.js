@@ -1,4 +1,4 @@
-/* DesignWizard.ai — DFM rules: metal casting — high pressure die casting, low pressure die casting, permanent mold and
+/* DynamiteOrbit — DFM rules: metal casting — high pressure die casting, low pressure die casting, permanent mold and
    sand casting (CST-). Wall limits come from the alloy (materials.js `wall`), or from the process when it has its own ; the other figures are the usual ones of foundry design guides — the
    foundry's own advice prevails. A cast part is a near-net shape : threads, bores and seating faces are machined
    afterwards, and the rules say so. */

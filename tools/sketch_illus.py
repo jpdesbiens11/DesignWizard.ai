@@ -1,4 +1,4 @@
-"""Illustrations of DesignWizard.ai (see tools/make_sketch_assets.py): home page journey and empty state. No text."""
+"""Illustrations of DynamiteOrbit (see tools/make_sketch_assets.py): home page journey and empty state. No text."""
 from sketch_marks import ART, BASE, BRIM, HAT, HL, INK, cross, draw_art
 from sketch_rough import Pen, scaled, sparkle, star_points
 

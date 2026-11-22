@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the artefact at the centre of a page zooms (demande de JP). A sheet — a drawing — was fitted to the width of
+/* DynamiteOrbit — the artefact at the centre of a page zooms (demande de JP). A sheet — a drawing — was fitted to the width of
    the centre and stayed so : a note in small type could not be read without the PDF. A centre that holds sheets now zooms : Ctrl +
    wheel (or a pinch) about the pointer, the buttons − and + of a small bar, a click on the percentage to fit the width again ; once
    larger than the centre, the sheet is dragged, or scrolled. The zoom is kept for the visit of the screen.

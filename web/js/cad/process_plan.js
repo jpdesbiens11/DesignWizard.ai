@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the detailed manufacturing routing of a part, written for the discussion with a supplier : phase
+/* DynamiteOrbit — the detailed manufacturing routing of a part, written for the discussion with a supplier : phase
    by phase — station, work holding, operations with their tools and their checks — then the characteristics the
    interfaces ask to hold and the questions worth asking before the order. It is built on the routing of cad/shop.js
    (operations in shop order) and proposes ; the supplier's own routing prevails. */

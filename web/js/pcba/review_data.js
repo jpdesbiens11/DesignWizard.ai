@@ -1,4 +1,4 @@
-/* DesignWizard.ai — PCBA: everything a design review reads, gathered from the board in one call — the functional
+/* DynamiteOrbit — PCBA: everything a design review reads, gathered from the board in one call — the functional
    structure, the blocks with their sizing, the checks, the routing figures, the fabrication package. */
 
 import { resolveBoard, boardBom, libraryOf } from "./model.js";

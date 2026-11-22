@@ -1,4 +1,4 @@
-/* DesignWizard.ai — « Partager », drawn (point 17, JP, 20 novembre 2026 : « Partager sur chaque artéfact — un lien vers l'élément, ou une
+/* DynamiteOrbit — « Partager », drawn (point 17, JP, 20 novembre 2026 : « Partager sur chaque artéfact — un lien vers l'élément, ou une
    version numérique choisie au clic »). One button, at the same place on every studio : the head of the left panel, right after « IA »
    (installed once, like the stairs : core/stairs_ui.js). It opens a menu : the link of the element ; the files the screen already makes, read
    from its own export buttons and grouped by nature (core/share.js) — a click there presses that button, so each file keeps its own making

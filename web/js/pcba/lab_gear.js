@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Labo, the bench as instruments one SETS (point 6, JP, 20 novembre 2026 : « chaque appareil dessiné, ses cordons
+/* DynamiteOrbit — Labo, the bench as instruments one SETS (point 6, JP, 20 novembre 2026 : « chaque appareil dessiné, ses cordons
    tirés jusqu'aux points de la carte, et ses réglages changés SUR l'appareil — pas dans une section du volet de gauche ; ce qui ne se
    règle pas ici (le circuit vient du PCBA) est dit »).
    A sheet of the plan (pcba/lab_plan.js) knows, as data, which instrument goes on which pin (`links`). This file turns them into the

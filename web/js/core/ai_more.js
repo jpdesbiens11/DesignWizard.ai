@@ -1,4 +1,4 @@
-/* DesignWizard.ai — three more artefacts for the AI round trip (point 2 of the roadmap : « la feuille d'un dessin, un cas de charge, un
+/* DynamiteOrbit — three more artefacts for the AI round trip (point 2 of the roadmap : « la feuille d'un dessin, un cas de charge, un
    réglage d'isolation comme artéfacts de la boucle »). The Dessins, Simulation and Isolation screens hand over what they show — not the part
    behind them : the drawing sheet of a part or an assembly, the load cases of a part or an assembly, the isolation settings of an assembly or a
    board. Each travels as a small document of its own kind (drawing/1, loadcase/1, isolation/1) with the id of what it belongs to ; the answer is

@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the side panels of a studio. The border between a panel and the view is dragged to give the panel
+/* DynamiteOrbit — the side panels of a studio. The border between a panel and the view is dragged to give the panel
    room ; a panel hides and comes back with one button, always in sight on its border (also : a double click or Enter
    on the border, Ctrl + B for the left panel). The widths and what is hidden are kept in the browser and SHARED by every
    screen : a panel widened in one module has the same width in the next. The studio lays itself out from --left-w and

@@ -1,4 +1,4 @@
-"""Module marks of DesignWizard.ai (see tools/make_sketch_assets.py; the logo is in tools/sketch_logo.py).
+"""Module marks of DynamiteOrbit (see tools/make_sketch_assets.py; the logo is in tools/sketch_logo.py).
 
 ART maps a key to a drawing on the same 24-unit grid as the icons: a list of (shape, role). Roles:
   "s" graphite stroke · "t" thin graphite stroke · "d" thin dashed graphite stroke

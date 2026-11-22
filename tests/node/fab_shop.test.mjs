@@ -60,7 +60,7 @@ test("the deck for the supplier : one slide each, its picture, its text, the box
   for (const name of ["[Content_Types].xml", "ppt/presentation.xml", "ppt/slides/slide1.xml", "ppt/slides/slide2.xml", "ppt/media/image1.png", "ppt/theme/theme1.xml", "ppt/slideMasters/slideMaster1.xml", "ppt/slideLayouts/slideLayout1.xml"]) assert.ok(text.includes(name), name);
   assert.ok(!text.includes("ppt/media/image2"), "a slide without a picture has none");
   assert.ok(text.includes("Scier &lt;à&gt; la longueur &amp; ébavurer".normalize()) || text.includes("Scier &lt;"), "the text is escaped");
-  assert.ok(/DesignWizard\.ai/.test(text) && /CONFIDENTIEL/.test(text), "the mark and the note on the slides");
+  assert.ok(/DynamiteOrbit/.test(text) && /CONFIDENTIEL/.test(text), "the mark and the note on the slides");
 });
 
 test("wired : the last screen of Mécanique, its stairs and its AI, the news, the register, the routing's AI told of the order", () => {

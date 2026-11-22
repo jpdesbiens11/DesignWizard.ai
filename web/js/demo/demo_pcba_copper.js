@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the demonstration board, written by tools/gen_demo_pcba.mjs : the control board of the compact drive,
+/* DynamiteOrbit — the demonstration board, written by tools/gen_demo_pcba.mjs : the control board of the compact drive,
    from its functions to its copper, in the .dwiz format. Do not edit by hand : change the tool and run it again. */
 
 export const DEMO_PCBA_COPPER = `# Le cuivre — plans, pistes et vias

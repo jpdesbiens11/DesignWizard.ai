@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Dessins : the English of what the project writes on a sheet. A drawing is written in English ; the
+/* DynamiteOrbit — Dessins : the English of what the project writes on a sheet. A drawing is written in English ; the
    name of a part, of an interface, the label of a parameter, a finish, a note are the project's own words, often French.
    This dialog lists the texts the sheet in view writes and takes their English, one line each — or hands the list to an AI
    as one would to a technician, and reads its answer back for the human to check before saving (one undoable step).

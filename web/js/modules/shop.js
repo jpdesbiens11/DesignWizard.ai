@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the Shop (« Atelier » in French): a part is born from its design intent, the way a craftsman works. No sketch, no plane:
+/* DynamiteOrbit — the Shop (« Atelier » in French): a part is born from its design intent, the way a craftsman works. No sketch, no plane:
    the user says what the part is for, what it connects to (interfaces, by their shape), what it is made of and which
    raw stock is taken from the rack. The shop companion writes the part at once — smallest envelope carrying the
    interfaces, commercial thickness, routing sheet — and shows it live. The same intent can be handed to Claude. */

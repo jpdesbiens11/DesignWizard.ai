@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the clips of the film, shot on the running application : frames of the real screens while something moves.
+/* DynamiteOrbit — the clips of the film, shot on the running application : frames of the real screens while something moves.
    Not part of the application and not run by the tests : it needs Playwright and a running local server on an empty data folder.
      python3 designwizard.py --port 8130 --no-browser --data <an empty folder>
      node tools/film_shots.mjs http://127.0.0.1:8130 <clips folder> [names, comma separated]

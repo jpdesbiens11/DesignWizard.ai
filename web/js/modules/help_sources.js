@@ -1,11 +1,11 @@
-/* DesignWizard.ai — Aide : where the tools take their methods, conventions and standards from. Grouped by nature, a colour
+/* DynamiteOrbit — Aide : where the tools take their methods, conventions and standards from. Grouped by nature, a colour
    and a pictogram per group ; each line is closed until it is clicked, then says what the reference covers, what the tool
    takes from it and how it was checked. The words come from core/methods.js. Route : #/help/sources[/<group or id>]. */
 
 import { el, icon } from "../core/dom.js";
 import { METHOD_GROUPS, METHOD_KINDS, METHOD_HOW, METHODS, methodsByGroup, methodCounts } from "../core/methods.js";
 
-const REPO = "https://github.com/jpdesbiens11/DesignWizard.ai";
+const REPO = "https://github.com/jpdesbiens11/DynamiteOrbit";
 const howBadge = (how) => { const h = METHOD_HOW[how] || METHOD_HOW.none; return el("span", { class: `badge badge-${h.tone} src-how`, "data-tip": h.text }, h.label); };
 
 function item(m, open) {

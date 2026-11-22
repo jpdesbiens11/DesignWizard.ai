@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Logiciel : the page of linked tiles (choix de JP, sur maquette : « Tuiles reliées » — entrées à gauche, sorties à
+/* DynamiteOrbit — Logiciel : the page of linked tiles (choix de JP, sur maquette : « Tuiles reliées » — entrées à gauche, sorties à
    droite, un fil d'une sortie à une entrée). One tile per object, its colour that of its nature ; a wire is a curve from an output to
    an input — dashed when it carries the value of the step before. Each output shows what it is worth at the instant of the timeline.
    What it follows : a node editor as block-diagram tools have them — a tile is dragged by its head ; a wire is made by a click on an

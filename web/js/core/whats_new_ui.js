@@ -1,4 +1,4 @@
-/* DesignWizard.ai — what is new, shown on the screens (core/whats_new.js holds the lines and the review). Installed once :
+/* DynamiteOrbit — what is new, shown on the screens (core/whats_new.js holds the lines and the review). Installed once :
    the element a line names carries a small mark, « Nouveau » — or « Vu » once the line is ticked : the mark stays, it is the
    trace of the review. A button of the top bar says how many lines are left and opens their list : « Montrer » leads to the
    element, the box ticks the line, « Passer à une nouvelle revue » puts the marks away until the next version.

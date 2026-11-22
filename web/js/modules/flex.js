@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Circuits flexibles : a polyimide strip folded where the product asks, its tracks — one per function —
+/* DynamiteOrbit — Circuits flexibles : a polyimide strip folded where the product asks, its tracks — one per function —
    and its sensors. Left, the strip, its legs and the functions it carries. In the view, the mouse says where a sensor sits :
    right click on a flat face lays a temperature probe or a voltage tap there, a click moves the chosen one, the arrows
    nudge it, V sends it to the other face, Delete removes it. Right, the sensors and every track with what it can carry.
@@ -24,7 +24,7 @@ import { renderTree, kindTiles } from "./flex_tree.js";
 const KEYS = [["Clic droit sur une face", "Poser une sonde de température ou une prise de tension"], ["Clic sur une face", "Y déplacer le capteur choisi"], ["← → ↑ ↓", "Pousser le capteur de 1 mm (Maj : 5 mm · Alt : 0,1 mm)"], ["V", "L'envoyer sur l'autre face (verso)"], ["Tab · Suppr", "Capteur suivant · retirer le capteur choisi"]];
 const fr = (x, d = 2) => fmt(x, d);
 /** What goes to an AI : the definition alone, behind a short request ; the answer brings the definition back. */
-const request = (spec) => ["Tu es l'assistant de conception de DesignWizard.ai. Voici un circuit flexible : seul son bloc « flex » se modifie, la géométrie sera réécrite par la plateforme.",
+const request = (spec) => ["Tu es l'assistant de conception de DynamiteOrbit. Voici un circuit flexible : seul son bloc « flex » se modifie, la géométrie sera réécrite par la plateforme.",
   "ENTREVUE — pose-moi au plus cinq questions, une à la fois : quelles fonctions relier, quels courants, où mesurer une température ou une tension, comment le circuit se raccorde à la carte. Puis résume en trois lignes et attends mon accord.",
   "RÉPONSE ATTENDUE — un seul bloc ```dwiz avec la pièce entière, bloc « flex » à jour : « tracks » (net, fn, w en mm, i en A), « sensors » (id, kind temp ou volt, leg, side 1 ou -1, s, y, net), « legs » (L, bend 90 ou -90), W, t, r. Garde les identifiants des capteurs existants. Après le bloc, liste ce que tu as changé.",
   "", toDwiz(spec).trimEnd()].join("\n");

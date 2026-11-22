@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Physique, thermal: 1-D conduction through a stack, junction temperature chain, plate-fin heat
+/* DynamiteOrbit — Physique, thermal: 1-D conduction through a stack, junction temperature chain, plate-fin heat
    sink in natural and forced convection, lumped thermal mass. Inputs in mm, mm2, cm2, W, °C, K/W, g; SI inside. */
 
 import { G0, SIGMA_SB, n, sheet, num, out, bisect, tempCheck, GEO, CRIT } from "./models_core.js";

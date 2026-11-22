@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Labo : the electronics lab, before the board exists (demande de JP : « un laboratoire d'électronique virtuel
+/* DynamiteOrbit — Labo : the electronics lab, before the board exists (demande de JP : « un laboratoire d'électronique virtuel
    pour pré-tester les cartes avant de les faire fabriquer… avec les mêmes setup »). Left, the bench : the board, the block
    under test, the test, how fast it plays. Centre, what one looks at : the board whose tracks and parts light up with the
    current, and two oscilloscopes — what goes in, what comes out — or the transfer function. Right, what one gets : the
@@ -165,7 +165,7 @@ function render(main, args) {
       if (!sheets.length) return; const d = manipDoc(b, R, sheets, { date: new Date(), project: { id: store.project.id, name: store.project.name } }); download(`${d.name}.pdf`, pdfDoc({ ...d, kind: "Manipulations en laboratoire", ...docMeta() }), "application/pdf"); toast(`Manipulations : ${sheets.length} essai${sheets.length > 1 ? "s" : ""}, enregistré.`, "success", 5000);
     } catch (e) { toast(`Manipulations : ${e.message}`, "error", 8000); }
   }
-  const request = () => { const b = board(), s = st.sheet; return ["Tu es l'assistant de conception de DesignWizard.ai. Voici une carte électronique et, plus bas, la fiche d'un essai de laboratoire préparé par simulation. Seul le bloc « lab » de la carte se modifie.",
+  const request = () => { const b = board(), s = st.sheet; return ["Tu es l'assistant de conception de DynamiteOrbit. Voici une carte électronique et, plus bas, la fiche d'un essai de laboratoire préparé par simulation. Seul le bloc « lab » de la carte se modifie.",
     "TA TÂCHE — relis l'essai comme le ferait un ingénieur d'essais : ce qui manque au montage, une étape risquée, une valeur attendue qui te paraît fausse, un essai à mettre de côté. Dis-le en quelques lignes, puis attends mon accord.",
     "RÉPONSE ATTENDUE — un seul bloc ```dwiz avec la carte entière, bloc « lab » à jour : une ligne « note » par remarque (test = « bloc/essai », text = ta remarque en une phrase), une ligne « skip » par essai à mettre de côté (test). Ne change ni les pièces, ni les nets, ni les relevés (lignes « reading » : ce sont des mesures faites au laboratoire).",
     "", s ? `ESSAI — ${s.block} : ${s.title} (${key()})\nPourquoi : ${s.why}\nÀ quoi s'attendre : ${s.expect}\nMontage :\n- ${s.setup.join("\n- ")}\nRelevés attendus :\n- ${s.rows.map((r) => `${r.label} : ${expectedText(r)} (${r.ceiling ? "plafond : " : "plage "}${r.band.text})`).join("\n- ")}` : "", "", toDwiz(b).trimEnd()].join("\n"); };

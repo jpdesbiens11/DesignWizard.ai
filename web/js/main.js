@@ -1,4 +1,4 @@
-/* DesignWizard.ai by DynamiteAgile — entry point: registers the tools, wires the global helpers, starts the shell. */
+/* DynamiteOrbit by DynamiteAgile — entry point: registers the tools, wires the global helpers, starts the shell. */
 
 import { app, start, go } from "./core/app.js";
 import { store } from "./core/store.js";

@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Logiciel : the TRACE drawn (cycle en V, « 1 Exigences ») — three columns, as a requirements tool shows its trace :
+/* DynamiteOrbit — Logiciel : the TRACE drawn (cycle en V, « 1 Exigences ») — three columns, as a requirements tool shows its trace :
    the requirements (a colour per kind), the tiles that carry them out (a colour per nature), the tests that prove them (green passed, red
    failed, grey not run). A line goes from a requirement to each of its tiles and to each test that names it. The requirement chosen keeps
    its lines lit, the rest fades ; a tile no requirement asks for is outlined in amber. A box is a button : a click chooses it. The page

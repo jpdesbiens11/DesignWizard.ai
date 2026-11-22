@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Physique : the small diagram of each hand calculation (no text inside the SVG). The same drawing is the
+/* DynamiteOrbit — Physique : the small diagram of each hand calculation (no text inside the SVG). The same drawing is the
    2D view of the model in the studio and, small, the pictogram of its tile in the list of models : a designer recognises
    a cantilever, a bolt or a row of fins faster than he reads their names. */
 

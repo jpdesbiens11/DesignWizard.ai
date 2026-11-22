@@ -1,4 +1,4 @@
-/* DesignWizard.ai — where the tools take their methods, conventions and standards from, and how each was checked. One
+/* DynamiteOrbit — where the tools take their methods, conventions and standards from, and how each was checked. One
    register for the whole platform : the Help screen shows it, grouped by nature, each line closed until it is clicked.
    The level of checking is the repository's own statement — never more than what was done : a standard that was not
    read is said so, a value typed from a published table is « to verify », a rule of thumb is a rule of thumb.

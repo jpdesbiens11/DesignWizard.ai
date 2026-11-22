@@ -1,4 +1,4 @@
-/* DesignWizard.ai — PCBA: a single-stroke font for silkscreen and assembly drawings. Each glyph is drawn on a grid
+/* DynamiteOrbit — PCBA: a single-stroke font for silkscreen and assembly drawings. Each glyph is drawn on a grid
    4 wide and 6 high ; a stroke is a string of digit pairs « xy ». Lower case reads as upper case ; an unknown
    character is a small box. The strokes are drawn with a round pen, like every line of a Gerber file. */
 

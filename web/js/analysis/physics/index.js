@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Physique: library of recognised, simple analytical models (« does the physics behind this part
+/* DynamiteOrbit — Physique: library of recognised, simple analytical models (« does the physics behind this part
    work? »). Each model is a closed-form hand calculation with its validity limits and its reference book: it answers
    80 % of the question in a second; a finite-element run or a test answers the rest.
      MODELS, model(id), defaults(id), run(id, inputs), prefill(id, { spec, built }), partContext(spec, built) */

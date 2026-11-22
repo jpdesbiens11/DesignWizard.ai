@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Labo, the TABLE : several boards on one bench (point 6, JP, 20 novembre 2026). Two views at a switch : « Table » — the
+/* DynamiteOrbit — Labo, the TABLE : several boards on one bench (point 6, JP, 20 novembre 2026). Two views at a switch : « Table » — the
    boards laid side by side as they are (their outline, their connectors where they are), the cables between them, the lab supply drawn above
    and corded to the board it feeds ; « Schéma des liaisons » — one column per board, its connector pins in rows, the cables between them.
    In both, a click on a pin, then on a pin of another board, lays a cable — checked first : the tool refuses the incompatible and says why

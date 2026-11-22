@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Logiciel : the pages of the centre that are read rather than drawn — the sheet of the CPU, the start-up and the memory,
+/* DynamiteOrbit — Logiciel : the pages of the centre that are read rather than drawn — the sheet of the CPU, the start-up and the memory,
    the code, and the loading into the CPU (demande de JP : « on ne voit pas le code final… l'important, c'est de voir le package final, puis de
    savoir comment il serait téléchargé dans le microprocesseur… tester la routine de démarrage, l'initialisation, la mémoire »).
    Each page is a column one reads from top to bottom : what it is in plain words, then the facts — a figure read in a document says its page,

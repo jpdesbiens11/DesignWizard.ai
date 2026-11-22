@@ -1,4 +1,4 @@
-/* DesignWizard.ai — hatching : the lines that fill the cut face of a section. The outlines are given as polylines (closed or
+/* DynamiteOrbit — hatching : the lines that fill the cut face of a section. The outlines are given as polylines (closed or
    not, in any order) ; a point is inside when a ray from it crosses them an odd number of times, so holes stay white without
    having to be told apart. Pure. */
 

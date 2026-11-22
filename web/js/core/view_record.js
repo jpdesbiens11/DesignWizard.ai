@@ -1,4 +1,4 @@
-/* DesignWizard.ai — an animation of a 3D view, recorded (point 17, JP, 20 novembre 2026 : « une animation s'enregistre et se télécharge, pour
+/* DynamiteOrbit — an animation of a 3D view, recorded (point 17, JP, 20 novembre 2026 : « une animation s'enregistre et se télécharge, pour
    une revue de conception »). What the view shows is copied, frame by frame, onto a canvas of its own, the mark of the platform burnt in at
    the top and what is shown at the bottom ; the browser records it (MediaRecorder, WebM) ; when it stops, the file goes out through
    download(). The view keeps its drawing buffer (core/viewer.js : preserveDrawingBuffer), so the copy is what the screen shows. Used by the

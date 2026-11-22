@@ -1,4 +1,4 @@
-/* DesignWizard.ai — a spreadsheet formula read the way a spreadsheet reads it, so that the platform can check, without a
+/* DynamiteOrbit — a spreadsheet formula read the way a spreadsheet reads it, so that the platform can check, without a
    spreadsheet, that a workbook that is alive says what it says itself : numbers, texts, names and cells, + - * / ^ &,
    comparisons, and the few functions the workbooks use. The rules are the spreadsheet's own, not JavaScript's : a minus
    sign binds before a power (-2^2 = 4), powers read from the left (2^3^2 = 64), a division by zero is an ERROR (#DIV/0!)

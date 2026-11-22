@@ -1,4 +1,4 @@
-/* DesignWizard.ai — PCBA: Gerber writer (RS-274X with X2 attributes), from the primitives of art.js.
+/* DynamiteOrbit — PCBA: Gerber writer (RS-274X with X2 attributes), from the primitives of art.js.
    Format : millimetres, absolute, 4 integer and 6 decimal digits (%FSLAX46Y46*%). Standard apertures only — circle,
    rectangle, obround — flashed (D03) for lands, drawn (D01) with a circle for tracks, G36/G37 regions for polygons,
    %LPC*% for the primitives that remove copper. No arc is needed : rounded outlines are already chords. */
@@ -18,7 +18,7 @@ function guid(text) {
 /** A Gerber file. opts : { function: "Copper,L1,Top" | "Soldermask,Top" | "Legend,Top" | "Paste,Top" | "Profile,NP" | "Other,…",
     polarity, project, revision, date (Date), software, nets (write the net of each copper object) }. */
 export function gerber(prims, opts = {}) {
-  const head = ["%TF.GenerationSoftware,DesignWizard.ai,PCBA,1*%", `%TF.CreationDate,${(opts.date || new Date(0)).toISOString().replace(/\.\d+Z$/, "+00:00")}*%`,
+  const head = ["%TF.GenerationSoftware,DynamiteOrbit,PCBA,1*%", `%TF.CreationDate,${(opts.date || new Date(0)).toISOString().replace(/\.\d+Z$/, "+00:00")}*%`,
     `%TF.ProjectId,${safe(opts.project || "carte")},${guid(opts.project || "carte")},${safe(opts.revision || "A")}*%`, "%TF.SameCoordinates,Original*%",
     `%TF.FileFunction,${opts.function || "Other,Dessin"}*%`, `%TF.FilePolarity,${opts.polarity || "Positive"}*%`, "%FSLAX46Y46*%", "%MOMM*%", "G01*"];
   const aps = new Map(), body = [];

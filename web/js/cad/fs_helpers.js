@@ -1,4 +1,4 @@
-/* DesignWizard.ai — FeatureScript export (see featurescript.js), FeatureScript side: reserved names, text escaping, and
+/* DynamiteOrbit — FeatureScript export (see featurescript.js), FeatureScript side: reserved names, text escaping, and
    the source of the helper functions written at the end of a generated script (only those the script uses). They compute
    in Onshape what the part language decides from the built geometry: level of a face when "start" is not given, depth of
    a through hole, faces opened by a shell, edges of a fillet; and they draw the profiles whose shape depends on the
@@ -182,7 +182,7 @@ function dwPlanarFaces(context is Context, body is Query, direction is Vector) r
     }
     return qUnion(result);
 }`,
-  edges: `/* Arêtes d'un corps selon les critères de DesignWizard.ai (ils se combinent) :
+  edges: `/* Arêtes d'un corps selon les critères de DynamiteOrbit (ils se combinent) :
    byDir : arêtes droites parallèles à sel.dir ; byFace : arêtes dans le plan extérieur du corps le long de sel.axis
    (ou au niveau sel.level si byLevel) ; byBox : milieu dans la boîte sel.box ; byNear : milieu à moins de sel.tol de sel.near. */
 function dwSelectEdges(context is Context, body is Query, sel is map) returns Query

@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Assemblage : a mate, shown. When a joint is chosen, the view shows what it is made of — every screw with
+/* DynamiteOrbit — Assemblage : a mate, shown. When a joint is chosen, the view shows what it is made of — every screw with
    its head, its insert or its nut, every dowel pin, the shaft of a fit, the outline of the contact area — inside its two
    parts made see-through, with the frame of the interface ; its card shows the joint in section and the facts that
    define it, side A and side B. One code for every kind of interface : core/mate_view.js. */

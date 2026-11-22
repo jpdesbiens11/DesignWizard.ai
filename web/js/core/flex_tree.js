@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the branched flexible circuit : a wide core, flat, and branches of their own widths that leave it along
+/* DynamiteOrbit — the branched flexible circuit : a wide core, flat, and branches of their own widths that leave it along
    X or Y and fold up (Z+) or down (Z−) toward the points they serve. A branch ends in a temperature probe, a voltage tap,
    a tongue that slips into a clipped slot, or bare pads. A rigid board can sit on the core or under it — the usual case :
    the core is the layer under a rigid board, and its branches run to the measuring points of the product.

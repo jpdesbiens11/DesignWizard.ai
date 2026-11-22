@@ -1,4 +1,4 @@
-/* DesignWizard.ai — builds a part from its spec (the part language, see docs/PART_LANGUAGE.md).
+/* DynamiteOrbit — builds a part from its spec (the part language, see docs/PART_LANGUAGE.md).
    spec = { dw:"part/1", id, name, family, process, material, params, features[], interfaces[], extrusion?, pcb?, bodies?, elec? }
    Order: parameters -> raw stock and Shop verbs rewritten to kernel features (shop.js) -> family blocks
    (extrusion, pcb) -> features -> interfaces -> features placed after {op:"interfaces"}. */

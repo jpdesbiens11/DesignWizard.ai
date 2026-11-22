@@ -1,4 +1,4 @@
-/* DesignWizard.ai — PCBA screen: the pen. In the detailed layout the designer finishes by hand what the router
+/* DynamiteOrbit — PCBA screen: the pen. In the detailed layout the designer finishes by hand what the router
    leaves : a click on a pad starts a track of its net, each click adds a corner (0, 45 or 90 degrees, snapped to the
    copper of the net or to the grid), V drops a via and changes layer, a click on copper of the same net ends it.
    The stretch under the cursor is green when it respects the rules of the net and red when it does not — and what

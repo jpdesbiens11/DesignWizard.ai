@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the look of a part on screen : the colour and the shade its designer gives it to tell the parts apart,
+/* DynamiteOrbit — the look of a part on screen : the colour and the shade its designer gives it to tell the parts apart,
    how see-through it is, the pattern laid on it (a camouflage) and how it answers light (its sheen). A visual aid, not a property
    of the product : it is not a finish, it goes on no drawing.
    look = { color: "#rrggbb", opacity: 0.2 … 1, pattern: "camo-forest", sheen: "matte" } — each one optional. It is held by a part

@@ -1,4 +1,4 @@
-/* DesignWizard.ai — what an answer of an AI DISTURBS, before it is applied (points 2 and 9 c of the plan agreed with JP : « à l'import,
+/* DynamiteOrbit — what an answer of an AI DISTURBS, before it is applied (points 2 and 9 c of the plan agreed with JP : « à l'import,
    l'aperçu actuel plus "ce que cela dérange" — interfaces qui ne s'accordent plus, accouplements rompus, écarts de DFx, cas à relancer,
    dessins à refaire —, accepté artéfact par artéfact »).
    The preview of an answer says what it creates and changes (core/ai_door.js planAnswer, the diff of the common loop). This file says what

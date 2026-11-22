@@ -1,4 +1,4 @@
-/* DesignWizard.ai — PCBA: the artwork of every layer of a resolved board — what the screen draws, what the Gerber
+/* DynamiteOrbit — PCBA: the artwork of every layer of a resolved board — what the screen draws, what the Gerber
    files hold and what the review report prints, from one single description.
    A primitive is, in board millimetres (Y up) :
      { t: "pad", x, y, w, h, shape, net, ref, pin, clear }     a flashed land

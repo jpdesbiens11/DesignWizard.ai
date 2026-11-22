@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the guardrails of co-intelligence, the same as on the DynamiteAgile platform : what comes back
+/* DynamiteOrbit — the guardrails of co-intelligence, the same as on the DynamiteAgile platform : what comes back
    from an AI is a draft until a human says otherwise (« Brouillon IA »), and a standard an AI names is not a
    reference until a human has confirmed its edition and its clause. markAiDraft() tags what an answer adds or
    changes ; confirmDraft() lifts the tag ; draftsOf() lists what is still waiting — a design review does not pass

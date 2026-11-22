@@ -1,4 +1,4 @@
-/* DesignWizard.ai — Logiciel en cycle en V (modules/sw_vband.js, sw_req.js, sw_verify.js, sw_trace_map.js, sw_release.js). */
+/* DynamiteOrbit — Logiciel en cycle en V (modules/sw_vband.js, sw_req.js, sw_verify.js, sw_trace_map.js, sw_release.js). */
 .swv-page { display: flex; flex-direction: column; height: calc(100vh - var(--topbar-h) - var(--levels-h, 0px)); } .swv-body { flex: 1; min-height: 0; height: auto; }
 .swv-top { padding: .2rem .8rem .1rem; border-bottom: 1.5px solid color-mix(in srgb, var(--graphite) 16%, transparent); background: color-mix(in srgb, var(--surface) 70%, transparent); }
 .swv-band { display: block; width: 100%; max-width: 1180px; height: auto; max-height: 128px; margin: 0 auto; }

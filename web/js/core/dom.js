@@ -1,4 +1,4 @@
-/* DesignWizard.ai — DOM helpers (same habits as DynamiteAgile): nodes are built with el() and textContent,
+/* DynamiteOrbit — DOM helpers (same habits as DynamiteAgile): nodes are built with el() and textContent,
    never innerHTML on data. el() ignores null / undefined / false children. */
 
 import { stampText } from "./brand.js";
