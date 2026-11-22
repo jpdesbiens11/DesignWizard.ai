@@ -16,7 +16,7 @@ export const BRAND_FOOT = L("DesignOrbit.ai™ by DynamiteAgile™ · Co-Intelli
     title and one line. */
 export const SHEET = {
   kicker: L("Logiciel libre · Licence MIT · Dans votre navigateur", "Free software · MIT licence · In your browser"),
-  slogan: L(["La conception,", "sans les détours."], ["Design,", "without the detours."]),
+  slogan: L(["On construit la fusée", "en volant."], ["We build the rocket", "in flight."]),
   promise: L("De l'intention à la pièce, de la pièce au système.", "From intent to part, from part to system."),
   story: L(
     ["Une pièce commence par une question : à quoi sert-elle ?", "Vous le savez — mais il faut le redire au modeleur, au calcul, au dessin, à la commande.", "DesignOrbit.ai retient la réponse une fois, et s'en sert partout."],
@@ -161,10 +161,9 @@ Thank you,` },
     fr: "Bande-annonce de trente secondes. Sur un papier quadrillé, une phrase : « Six logiciels autour d'une pièce. » Puis des écrans de l'outil DesignOrbit.ai se suivent : une pièce décrite par ses interfaces, un boîtier dont une cote change, un petit véhicule à quatre roues dont l'assemblage s'ouvre, une simulation en couleurs, un dessin coté. La marque DesignOrbit.ai clôt la séquence.",
     en: "A thirty-second teaser. On squared paper, a sentence: “Six tools around one part.” Then screens of the DesignOrbit.ai tool follow one another: a part described by its interfaces, a housing with a dimension changing, a small four-wheeled vehicle whose assembly opens, a simulation in colours, a dimensioned drawing. The DesignOrbit.ai mark closes the sequence." },
 ];
-/** Lines to open or close a message with : the two of the film, then three of the same thread. */
+/** Lines to open or close a message with : the one of the film, then three of the same thread. */
 export const TAGLINES = [
-  L("La conception, sans les détours.", "Design, without the detours."),
-  L("Moins de clics. Plus de conception.", "Fewer clicks. More engineering."),
+  L("On construit la fusée en volant.", "We build the rocket in flight."),
   L("Une pièce commence par une question.", "A part begins with a question."),
   L("L'outil qui retient le pourquoi.", "The tool that remembers why."),
   L("Dites-le une fois.", "Say it once."),

@@ -25,8 +25,8 @@
 
 ## 00:15 → 00:23 — DesignOrbit.ai
 
-- **À l'écran** : La conception, sans les détours. · De l'intention à la pièce, de la pièce au système.
-- **On screen**: Design, without the detours. · From intent to part, from part to system.
+- **À l'écran** : On construit la fusée en volant. · De l'intention à la pièce, de la pièce au système.
+- **On screen**: We build the rocket in flight. · From intent to part, from part to system.
 
 | Temps · time | La voix raconte | The voice tells |
 |---|---|---|
@@ -138,8 +138,8 @@
 
 ## 02:41 → 02:50 — Fin · End
 
-- **À l'écran** : Moins de clics. Plus de conception. · Ouvrez la démo.
-- **On screen**: Fewer clicks. More engineering. · Open the demo.
+- **À l'écran** : On construit la fusée en volant. · Ouvrez la démo.
+- **On screen**: We build the rocket in flight. · Open the demo.
 
 | Temps · time | La voix raconte | The voice tells |
 |---|---|---|

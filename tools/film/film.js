@@ -9,8 +9,8 @@ const q = new URLSearchParams(location.search), lang = q.get("lang") === "en" ? 
 const stage = document.getElementById("stage"), scale = Number(q.get("scale")) || 1; stage.style.transform = `scale(${scale})`; document.documentElement.lang = lang;
 const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
 const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v)), smooth = (x) => { const v = clamp(x); return v * v * (3 - 2 * v); }, mix = (a, b, k) => a + (b - a) * k;
-/* « La conception, sans les détours. » : the last words of a slogan are the ones under the highlighter */
-const marked = (text) => { const p = el("span"), cut = text.lastIndexOf(",") > 0 ? text.lastIndexOf(",") + 1 : text.indexOf(". ") > 0 ? text.indexOf(". ") + 1 : 0; p.append(text.slice(0, cut), el("mark", null, text.slice(cut).trim())); if (cut) p.insertBefore(document.createTextNode(" "), p.lastChild); return p; };
+/* « On construit la fusée en volant. » : the last words of a slogan are the ones under the highlighter */
+const marked = (text) => { const p = el("span"), cut = text.lastIndexOf(",") > 0 ? text.lastIndexOf(",") + 1 : text.indexOf(". ") > 0 ? text.indexOf(". ") + 1 : text.split(" ").length > 3 ? text.lastIndexOf(" ", text.lastIndexOf(" ") - 1) + 1 : 0; p.append(text.slice(0, cut), el("mark", null, text.slice(cut).trim())); if (cut) p.insertBefore(document.createTextNode(" "), p.lastChild); return p; };
 const FW = 1136, FH = 710, clips = await fetch(`${clipsAt}/clips.json`).then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
 const brand = () => { const b = el("div", "fm-brand"), i = el("img"); i.src = "/web/img/logo/mark.svg"; i.alt = ""; const n = el("span"); n.append("DesignOrbit", el("i", null, ".ai")); b.append(i, n); return b; };
 

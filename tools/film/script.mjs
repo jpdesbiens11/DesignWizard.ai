@@ -13,8 +13,8 @@ export const FPS = 24, W = 1600, H = 900;
 export const LANGS = ["fr", "en"];
 /** The two lines the film opens and closes on. */
 export const SLOGANS = {
-  open: { fr: "La conception, sans les détours.", en: "Design, without the detours." },
-  close: { fr: "Moins de clics. Plus de conception.", en: "Fewer clicks. More engineering." },
+  open: { fr: "On construit la fusée en volant.", en: "We build the rocket in flight." },
+  close: { fr: "On construit la fusée en volant.", en: "We build the rocket in flight." },
 };
 const L = (fr, en) => ({ fr, en });
 /* a picture or a clip inside a scene : what is framed at its start and at its end — [centre x, centre y (0…1 of the picture), zoom (1 = whole picture)] */
@@ -92,7 +92,7 @@ export const CUES = [
 ];
 
 /** Everything the film writes on screen in a language : what the voice does not read out. */
-export const shownTexts = (lang) => SCENES.flatMap((s) => [s.big, s.small, s.slogan, s.station, s.title, ...(s.chips || [])].filter(Boolean).map((x) => x[lang]));
+export const shownTexts = (lang) => [...new Set(SCENES.flatMap((s) => [s.big, s.small, s.slogan, s.station, s.title, ...(s.chips || [])].filter(Boolean).map((x) => x[lang])))];
 /** A text as it is compared : lower case, punctuation gone. */
 export const plain = (text) => text.toLowerCase().replace(/[^\p{L}\p{N}']+/gu, " ").trim();
 /** The on-screen texts (two words or more) that a cue says word for word : none, in a narration that tells instead of reading. */
