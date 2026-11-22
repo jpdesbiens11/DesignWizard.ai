@@ -36,7 +36,7 @@ export function lidForces(I = 360) {
     end (the end of the casing) } → numbers */
 export function topLayout(o) {
   const S = caseSection(o.env), G = 0, cav = S.cavity, c0 = caseSection().cavity;      // iteration 12 : the pads lie on their faces ; c0 : the cavity of concept 1, where the lips stay
-  const L = { lipX: [c0.x0, o.lipX1 ?? c0.x1], out: { x0: r3(S.ports[0][0] - S.R), x1: r3(S.ports[1][0] + S.R) }, land: o.land, end: o.end, padA: r3(o.land + G), plate0: r3(o.land + 3), tab: r3(o.end - 10.3), ring1: r3(o.end + 6), cap1: r3(o.end + 9), S, G, cav };
+  const L = { lipX: [c0.x0, o.lipX1 ?? c0.x1], out: { x0: r3(S.ports[0][0] - S.R), x1: r3(S.ports[1][0] + S.R) }, land: o.land, end: o.end, padA: r3(o.land + G), plate0: r3(o.land + 3), tab: r3(o.tab ?? o.end - 10.3), ring1: r3(o.end + 6), cap1: r3(o.end + 9), S, G, cav };
   /* iteration 12 : the tab of the return busbar 1.7 mm nearer the lid — pad B lies on it where it stood on its louvred strip */
   L.plate1 = r3(L.plate0 + 3); L.padA1 = r3(L.padA + 3); L.tab1 = r3(L.tab + 4); L.padB = r3(L.tab1 + G); L.padB1 = r3(L.padB + 3.6); L.strap1 = r3(L.padB1 + 4);
   L.lip0 = r3(L.end - 9); L.lip1 = r3(L.lip0 + 3); L.arm1 = r3(L.lip1 + 3);

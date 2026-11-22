@@ -15,10 +15,11 @@ const near = (a, b, msg, tol = 1e-3) => assert.ok(Math.abs(a - b) < tol, `${msg}
 
 test("the history : concept 3 is a branch of MAIN (P1), beside concept 2 ; it is concept 1 with its joints changed", () => {
   const p = bmProject({ branch: "c3" }), h = p.history, names = branchNames(h);
-  assert.deepEqual(h.points.map((x) => [x.id, x.parent, names.get(x.id)]), [["P1", null, "MAIN"], ["P2", "P1", "concept 2 - consumer product interface"], ["P3", "P1", C3_BRANCH]]);
-  assert.equal(h.head, "P3"); assert.equal(bmProject().history.head, "P1", "by default, MAIN"); assert.equal(bmProject({ branch: true }).history.head, "P2");
+  assert.deepEqual(h.points.map((x) => [x.id, x.parent, names.get(x.id)]), [["P1", null, "MAIN"], ["P2", "P1", "concept 2 - consumer product interface"], ["P3", "P1", C3_BRANCH], ["P4", "P3", C3_BRANCH]]);
+  assert.equal(h.head, "P4", "the home card opens on the tip of concept 3"); assert.equal(bmProject().history.head, "P1", "by default, MAIN"); assert.equal(bmProject({ branch: true }).history.head, "P2");
   const main = rebuild(h, "P1"), ids = (d) => d.parts.map((x) => x.id);
-  assert.deepEqual(ids(p).filter((id) => !ids(main).includes(id)), ["BM3-LAMELLES", "BM3-DISCS"]); assert.deepEqual(ids(main).filter((id) => !ids(p).includes(id)), ["BM-SPRING-PLATE"]);
+  assert.deepEqual(ids(p).filter((id) => !ids(main).includes(id)), ["BM3-LAMELLES", "BM3-DISCS", "BM3-LAMELLES-HAUT"]); assert.deepEqual(ids(main).filter((id) => !ids(p).includes(id)), ["BM-SPRING-PLATE", "BM-SPRING-PAD-A", "BM-SPRING-PAD-B"]);
+  const first = rebuild(h, "P3"); assert.ok(first.parts.some((x) => x.id === "BM-SPRING-PAD-A"), "the first jet keeps the pads of concept 1 : the lid is its own point");
   const lam = p.parts.find((x) => x.id === "BM-BB-LAM"); for (const f of ["lame", "oreille_plus", "machoire_int", "machoire_ext", "fond_pince"]) assert.ok(lam.features.some((x) => x.id === f), f);
   assert.ok(!main.parts.find((x) => x.id === "BM-BB-LAM").features.some((x) => x.id === "lame"), "MAIN keeps concept 1");
   const k = (id) => p.physics.find((c) => c.id === id);
@@ -48,5 +49,12 @@ test("concept 3 builds, and nothing goes through anything ; each blade sits in t
     assert.ok(lam[4] >= bi[4] + 0.5, `blade ${n} covers its bands along Y`);
   }
   const neg = body("borne_moins", "plaque"), b1 = body("core1~lamelles", "bande_int"); near(neg[3], F3.blade[1], "the − terminal has a blade"); near(b1[3], F3.blade[0], "in the fork of CORE 1"); assert.ok(neg[4] >= b1[4] + 0.5, "its blade covers the bands");
-  near(CORE_PITCH, 50.9, "the pitch is that of concept 1 : no length added"); K.flush && K.flush();
+  near(CORE_PITCH, 50.9, "the pitch is that of concept 1 : no length added");
+  /* the top lid (JP : « Pinces côté module ») : each blade of the rigid bridge in its fork, between its two bands */
+  for (const tag of ["a", "b"]) {
+    const bl = body("couvercle_haut~pont", "pont"), lo = body("couvercle_haut~lamelles_haut", `bande_${tag}_bas`), hi = body("couvercle_haut~lamelles_haut", `bande_${tag}_haut`);
+    const blade = K.bbox(K.common(inst.find((x) => x.id === "couvercle_haut~pont").bodies[0].shape, K.box([0, lo[1], lo[5]], [120, lo[4], hi[2]])));
+    near(blade[2], lo[5], `blade ${tag} on its lower band`); near(blade[5], hi[2], `blade ${tag} under its upper band`); assert.ok(bl[1] < lo[1], `blade ${tag} covers its bands`);
+  }
+  K.flush && K.flush();
 });

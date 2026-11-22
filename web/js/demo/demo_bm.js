@@ -42,7 +42,9 @@ import { screwHolding, heatCalcs } from "./demo_bm_heat.js";
 import { conceptTwo, camLayout, camCalc } from "./demo_bm_c2.js";
 import { ENV3, laminateC3, louvrePart, terminalsC3, lidForcesC3, pressPlateC3, discPart, calcsC3, F3 } from "./demo_bm_c3.js";
 import { CORE_ENV } from "./demo_bm_case.js";
-import { addPoint, restoreInto, putDefinition, withoutHistory } from "../core/history.js";
+import { lidForks, lidForkFeatures, bridgeC3, lidBandsPart } from "./demo_bm_c3_lid.js";
+import { run as runCalc, sessionDefaults as calcDefaults } from "../analysis/physics/index.js";
+import { addPoint, restoreInto, putDefinition, withoutHistory, tipOf } from "../core/history.js";
 
 /** The branch of concept 2 (JP, 22 novembre : « commence un point de sauvegarde du MAIN et fait une branche parallèle (concept 2 - consumer
     product interface) »). */
@@ -148,7 +150,7 @@ export function bmProject(opts = {}) {
   putBoard(p, BMS_BOARD_ID); putBoard(p, p.boards[0].id);
   p.software = [moduleDesign()];
   withConceptTwo(p, true); withConceptThree(p);
-  restoreInto(p, opts.branch === "c3" ? "P3" : opts.branch ? "P2" : "P1");      // the software of the central BMS : its state machine, run on its bench, written in C      // the lab table : the central BMS and one CORE board, linked by the four wires of the chain
+  restoreInto(p, opts.branch === "c3" ? tipOf(p.history, C3_BRANCH).id : opts.branch ? "P2" : "P1");      // the software of the central BMS : its state machine, run on its bench, written in C      // the lab table : the central BMS and one CORE board, linked by the four wires of the chain
   return p;
 }
 
@@ -191,5 +193,35 @@ function withConceptThree(p) {
   p.description = `Concept 3 « blade and fork » : le concept 1 entier, mais chaque joint entre deux CORE est une lame dans une pince à deux bandes à lamelles — l'effort de contact reste dans la pince, la pile n'est plus pressée pour ses contacts ; rondelles ressorts au couvercle du haut ; boîtier ${r6(F3.jawOut[1] - CORE_ENV.x1)} mm plus large au bout +X. Premier jet, à itérer.`;
   addPoint(p, { kind: "manual", branch: C3_BRANCH, label: "Concept 3 — premier jet : lame dans une pince", when: "2026-11-22T18:00:00.000Z", by: "DesignWizard.ai",
     note: "Choix de JP par menu : lame dans une pince, à partir du concept 1 complet. Joints entre CORE et bornes en lame et pince à bandes à lamelles ; rondelles ressorts au couvercle ; boîtier élargi au bout +X." });
+  topLidC3(p, env, DISC);
+  addPoint(p, { kind: "manual", branch: C3_BRANCH, label: "Concept 3 — couvercle du haut : pinces côté module, pont rigide", when: "2026-11-22T19:00:00.000Z", by: "DynamiteOrbit",
+    note: "Choix de JP par menu : « Couvercle du haut », puis « Pinces côté module ». La borne + et la languette de retour portent chacune une pince en creux ; le couvercle, un pont de cuivre rigide à deux lames. Plus de shunt souple ni de ressort de plot." });
+}
+
+/** Concept 3, its top lid (JP, by menu : « Couvercle du haut », « Pinces côté module ») : fork A on the back of the + terminal, fork B on the tab of
+    the return busbar (brought 6.6 mm nearer the stack, the window of the casing with it), a rigid bridge with two blades in the lid ; the
+    springs and the strap of the pads gone ; the disc springs alone hold the stack. */
+function topLidC3(p, env, DISC) {
+  const end = r6(CASE_Y0 + CASE_L), TAB = 413.5, top = topEnd({ env, lipX1: 92.4, land: r6(8 * CORE_PITCH - (INS_T + BB_T) + 2), end, y0: CASE_Y0 - 16, tab: TAB }), L = top.layout;
+  const K = lidForks({ rootA: L.land, rootB: L.tab1, cap: L.ring1 }), find = (id) => p.parts.find((x) => x.id === id), P7 = r6(7 * CORE_PITCH);
+  const pos = JSON.parse(JSON.stringify(find("BM-TERM-POS"))), ret = top.parts.find((x) => x.id === "BM-RETURN-BB");
+  pos.features.push(...lidForkFeatures(K, K.A, "plaque", "a", -P7));
+  pos.notes = [...pos.notes.filter((n) => !/plot A du couvercle/.test(n)), "Concept 3 : au dos, en haut, la pince A — deux mâchoires horizontales et leurs bandes à lamelles — reçoit la lame A du pont du couvercle ; couvercle retiré, elle reste en retrait."];
+  ret.features.push(...lidForkFeatures(K, K.B, "main", "b"));
+  ret.notes = [...ret.notes.filter((n) => !/plot B se pose/.test(n)), `Concept 3 : la languette est à ${r6(L.tab)} mm (6,6 mm plus près de la pile qu'au concept 1) ; au dos, la pince B reçoit la lame B du pont du couvercle.`];
+  const casing = JSON.parse(JSON.stringify(find("BM-CASING"))), win = casing.features.find((f) => f.id === "fenetre_retour");
+  win.at[1] = r6(L.tab - CASE_Y0 - 0.6); win.size[1] = r6(CASE_L + 1 - win.at[1]);
+  const F = lidForcesC3(64 * C.mass[0] / 1000, { stack: 4 * 175, pads: 0 }), disc = discPart(DISC, F.stack / 4);
+  const fresh = new Map([pos, ret, casing, bridgeC3(K), disc].map((x) => [x.id, x]));
+  p.parts = [...p.parts.filter((x) => !["BM-SPRING-PAD-A", "BM-SPRING-PAD-B"].includes(x.id)).map((x) => fresh.get(x.id) || x), lidBandsPart(K)];
+  const lid = p.assemblies.find((a) => a.id === "BM-LID-TOP-ASM");
+  lid.instances = [...lid.instances.filter((i) => !/^ressort_[ab]\d/.test(i.id)), { id: "lamelles_haut", part: "BM3-LAMELLES-HAUT", fixed: true, placement: at([0, 0, 0]) }];
+  const n = Math.floor((K.bandX[1] - K.bandX[0]) / K.p + 1e-9), keep = (id, name, model, part, inputs, why) => { const r = runCalc(model, { ...calcDefaults(model), ...inputs }); return { id, name, model, part, inputs: r.inputs, values: r.values, checks: r.checks, verdict: r.verdict, when: "2026-11-22T19:00:00.000Z", why }; };
+  p.physics = [...p.physics.filter((c) => c.id !== "phy-bm3-screws"), ...calcsC3(I_CORE, F).filter((c) => c.id === "phy-bm3-screws"),
+    keep("phy-bm3-lidfork", `Pinces du couvercle du haut — 2 bandes × ${n} lamelles chacune, ${I_CORE} A`, "louvre_strip", "BM3-LAMELLES-HAUT", { strips: 2, L: K.bandX[1] - K.bandX[0], p: K.p, Il: F3.band.Il, Rl: F3.band.Rl, Fl: F3.band.Fl, h: F3.band.h, tol: 0.05, I: I_CORE },
+      `Une pince du bout haut (A ou B) : deux bandes de ${K.bandX[1] - K.bandX[0]} mm contre les deux faces d'une lame du pont. Le courant du module passe par les deux, l'une après l'autre : la boucle en compte deux fois la résistance.`),
+    keep("phy-bm3-lidjaw", `Mâchoire d'une pince du bout haut — ${n} lamelles à ${F3.band.F112[1]} N`, "beam_cantilever_udl", "BM-TERM-POS", { mat: "CU-C110", L: K.A.mouth, section: "rect", b: K.x[1] - K.x[0], h: F3.jawIn[1] - F3.jawIn[0] - F3.groove, F: n * F3.band.F112[1], dlim: 0.1, sf: 1.5 },
+      `Les mâchoires des pinces du bout haut sont encastrées à leur racine — le dos de la borne + ou de la languette — et libres à la bouche : ${K.A.mouth} mm de long, ${K.x[1] - K.x[0]} mm de large, ${r6(F3.jawIn[1] - F3.jawIn[0] - F3.groove)} mm derrière le logement. Charge : ${n} ponts à ${F3.band.F112[1]} N, le plus fort de la fiche de la 112 ; flèche admise 0,1 mm.`)];
+  p.description = p.description.replace("rondelles ressorts au couvercle du haut", "au couvercle du haut, un pont rigide à deux lames dans les pinces de la borne + et du busbar de retour, et des rondelles ressorts");
 }
 const r6 = (v) => Math.round(v * 1e6) / 1e6;

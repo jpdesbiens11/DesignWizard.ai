@@ -152,7 +152,9 @@ plus bas, avec sa version. Une revue de la liste se fait à chaque reprise de s�
    plus large, pas inchangé (`demo/demo_bm_c3.js`, `docs/BM_MODULE.md`). **Cette conversation ne parle que de conception** (JP : « plus de
    conversation mêlée framework et conception… surveille-moi ») : une demande sur l'application va dans une tâche à part.
    ~~**Pince détaillée**~~ (JP, par menu) — fait (v0.176.0) : logements des bandes, chanfreins d'entrée, talon brasé, effort des lamelles lu
-   (Weftron 112 : 5–30 N par pont), mâchoire vérifiée ; l'effort d'insertion n'est pas publié dans ce qui a été lu. Suite proposée par menu.
+   (Weftron 112 : 5–30 N par pont), mâchoire vérifiée ; l'effort d'insertion n'est pas publié dans ce qui a été lu.
+   ~~**Couvercle du haut**~~ (JP, par menu : « Pinces côté module ») — fait (v0.177.0) : pince A sur la borne +, pince B sur la languette de
+   retour, pont rigide à deux lames dans le couvercle, plus de shunt ni de ressorts de plot. Suite proposée par menu (raccourcir le bout haut…).
 5. **Icônes : remplacer le chapeau de sorcier** par une alternative du monde des fusées, puis toutes les icônes (JP, 22 novembre) — framework.
    Priorité, par menu : « Tâche à part, maintenant » — lancée par JP depuis sa carte, dans une autre conversation ; pas dans celle de conception.
 
