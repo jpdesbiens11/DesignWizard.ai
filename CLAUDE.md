@@ -160,7 +160,9 @@ plus bas, avec sa version. Une revue de la liste se fait à chaque reprise de s�
    ~~**Pince détaillée**~~ (JP, par menu) — fait (v0.176.0) : logements des bandes, chanfreins d'entrée, talon brasé, effort des lamelles lu
    (Weftron 112 : 5–30 N par pont), mâchoire vérifiée ; l'effort d'insertion n'est pas publié dans ce qui a été lu.
    ~~**Couvercle du haut**~~ (JP, par menu : « Pinces côté module ») — fait (v0.179.0) : pince A sur la borne +, pince B sur la languette de
-   retour, pont rigide à deux lames dans le couvercle, plus de shunt ni de ressorts de plot. Suite proposée par menu (raccourcir le bout haut…).
+   retour, pont rigide à deux lames dans le couvercle, plus de shunt ni de ressorts de plot.
+   ~~**Raccourcir le bout haut**~~ (JP, par menu) — fait (v0.180.0) : plus de plaque d'appui sur la borne +, la languette de retour dans une
+   fenêtre de la plaque de pression ; 4,75 mm de moins. Suite proposée par menu.
 5. ~~**Icônes : remplacer le chapeau de sorcier** par une alternative du monde des fusées, puis toutes les icônes (JP, 22 novembre) — framework.~~ — fait (v0.178.0, voir plus bas).
    Priorité, par menu : « Tâche à part, maintenant » — lancée par JP depuis sa carte, dans une autre conversation ; pas dans celle de conception.
 
