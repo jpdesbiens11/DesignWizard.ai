@@ -382,6 +382,71 @@ Ce que la bande demande à la face d'en face (planéité, rugosité N6) se spéc
 **Pas fait** : la languette de la plage et son encoche, la pose et la tenue de la queue (collage), la carte qui reçoit les pistes, un
 essai de résistance du joint réel et de l'échauffement à 360 A, le modèle d'un îlot LV (résistance non publiée).
 
+## Itération 10 — le boîtier extrudé le long des 8 CORE, et les deux bornes du module
+
+Demandes de JP (22 novembre, par menu puis par message) : « fil LV et isolation des îlots, puis boîtier et borne du module » ; « un
+boîtier extrudé en plastique le long des 8 modules qui contient ces 8 derniers » ; « l'interface des 2 couvercles est vissée au casing
+central (des trous sont extrudés dans la section centrale et des vis autotaraudeuses se font des filets au premier assemblage) ». Source :
+`web/js/demo/demo_bm_case.js` ; essais : `tests/node/bm_case.test.mjs`.
+
+**Ce qui a été lu** : la recommandation de conception de la vis pour plastiques **EVO PT** (EJOT), imprimée sur la page de son licencié
+Semblex (« The Evolution of Direct Fastening into Plastic », section « Simple and universal design recommendation ») — trou **0,85 × d1
+± 0,05 mm** mesuré en haut du trou, profondeur d'installation **2 × d1 ou plus**, lamage **1,05 × d1** sur **0,1 × d1**. Les fiches du
+fabricant lui-même n'ont pas pu être ouvertes (son site refuse les lectures automatiques). **Pas lu** : le diamètre du bossage (aucun
+rapport n'est imprimé sur cette page), la tenue à l'arrachement et le couple dans le PC (le fabricant les calcule avec son outil, EVO
+CALC), les valeurs d'un extrudeur pour cette section.
+
+**Le boîtier** (`BM-CASING`, polycarbonate d'une nuance V-0 à choisir, extrusion plastique) :
+
+- **La section est dessinée autour du CORE**, mesuré sur ses pièces : la carte fait la largeur (0 à 92,8 mm), les panneaux du flex sont
+  à 0,7 et 92,1 mm, le flex passe sous le CORE à −3,8 mm, le plus haut composant est à 80,3 mm. Cavité de 95,8 × 87,5 mm : 1,5 mm
+  à côté de la carte, 1,7 mm au-dessus des composants. Paroi de **2,5 mm** partout (la règle de l'outil pour un plastique dont le cercle
+  circonscrit dépasse 150 mm) ; section de 100,8 × 100 mm hors lobes, coupée à **473 mm**.
+- **Le CORE ne touche que des rails et des nervures** : deux rails au fond, à 23,2 mm de chaque côté du milieu, 0,5 mm sous le flex ;
+  quatre nervures de côté, là où les supports de cellules sont derrière les panneaux du flex (z = 3 et 66 mm), à 0,5 mm du flex. Les
+  nervures font 3 mm de large : plus larges, la paroi et la nervure faisaient 4,2 mm au plus épais, au-delà des 4 mm qu'une section
+  plastique tient sans retassure (règle EXT-12 de l'outil, vue et corrigée).
+- **Les vis des couvercles** : les coins de la cavité sont pris (la carte en haut, le pli du flex en bas), donc chaque coin porte un
+  **lobe** dehors, avec un **trou fermé** et une paroi de 2,5 mm autour — un canal ouvert en « C » s'écarterait sous la vis (choix de
+  l'outil). Vis **EVO PT 40** (d1 = 4 mm) : le trou vient d'extrusion à Ø2,8 ; il est **percé à Ø3,3, alésé à Ø3,4 ± 0,05 sur 12 mm
+  et lamé Ø4,2 × 0,4 mm** à chaque bout, là où la vis travaille — une section extrudée ne tient d'usage que ± 0,3 mm (Ø2,8 + 0,3 reste
+  sous le perçage : l'outil coupe toujours). La vis forme son filet au premier vissage. Une interface « motif de vis » par bout attend
+  les couvercles de l'itération 11. La règle de l'outil le rappelle : un filet formé dans un plastique supporte peu de démontages — un
+  insert si le couvercle doit s'ouvrir souvent.
+- **Le canal du busbar de retour**, fermé, sous le fond : 51 × 5 mm pour une barre de **50 × 4 mm**. Calcul gardé dans le projet (modèle
+  « busbar » de l'outil, barre seule à l'air libre) : 360 A sur 460 mm, **53,4 °C** sous 60 °C, 1,8 A/mm² — dans son canal fermé
+  l'échauffement réel est plus fort, à vérifier avec le module fermé. La **quille** qui porte le canal et les **quatre lobes** guident
+  aussi le module dans sa cavité ou sa station de recharge.
+- **Ce que l'outil en dit** (DFx) : aucune erreur ; un avertissement, **six creux fermés** (la cavité, le canal, quatre trous) — une
+  filière à mandrin et un calibrage, à discuter avec l'extrudeur, avec la planéité des grandes parois. 736 g, 1,56 kg/m, 12 pièces par
+  barre de 6 m.
+- **Dans l'atelier de fab, le boîtier se joue** : extrudé et coupé, puis ses deux bouts usinés — avant-trou, alésoir, lamage — **le long
+  d'un parcours écrit par une IA** (Claude, exemple de démonstration), lu et vérifié par l'outil comme tout parcours.
+
+**Les bornes du module** (pièces de spécialiste, comme le busbar laminé ; elles ne se jouent pas dans l'atelier de fab) :
+
+- **La borne −** (`BM-TERM-NEG`, au fond, dans le sous-assemblage `BM-TERM-NEG-ASM`) : une plaque de cuivre de 2 mm, argentée là où
+  les bandes appuient, qui porte **ce que porte une jambe +** — deux bandes HV dans leur cadre, quatre butées, quatre îlots LV surélevés
+  et leurs bandes dorées — et presse la jambe − du CORE 1 à l'écart de travail. Ses îlots amènent le RS-485 du BMS central dans la
+  chaîne : un fil par îlot passe la plaque d'appui (itération 11).
+- **La borne +** (`BM-TERM-POS`, en haut) : une face plane **comme une jambe −**, où appuient les bandes et les butées du CORE 8 ; ses
+  plages LV affleurent. Les huit cartes sont identiques et **sans terminaison** (bloc RS-485 du PCBA : terminaison « non ») : la
+  **terminaison de 120 Ω du bout de la chaîne se pose ici**, entre les plages A et B ; l'autre est au BMS central.
+- Chacune a une **plaque d'appui isolante** de 3 mm (PA66-GF30, exemple) qui transmet l'effort de la pile au couvercle sans conduire, et,
+  en haut au dos, une **plage de liaison nue avec deux goujons sertis M6** (exemple) pour le conducteur du couvercle : vers le contacteur
+  et le connecteur au fond, vers le busbar de retour en haut.
+
+**Vérifié par les essais** : la section contient le CORE avec les jeux dits ; les trous suivent la recommandation lue ; le boîtier se
+construit sans erreur et un seul avertissement ; **aucune interférence** entre le boîtier, les bornes et les pièces des CORE (le boîtier
+contre le CORE 1, la section étant la même partout ; chaque borne contre son CORE) ; les bandes de la borne − touchent la jambe − du
+CORE 1, la borne + est posée sur les bandes du CORE 8 ; la gamme du boîtier et ses parcours sans alerte. **Le module compte 206
+pièces.**
+
+**Pas fait** : les couvercles, le busbar de retour, le latch rotatif et le contacteur (itération 11) ; l'effort que le couvercle doit
+garder sur la pile (au moins 154 N par joint, la somme des lamelles, pour que les butées portent) et la tenue des vis à l'arrachement ;
+la dépouille et les tolérances réelles de la section, la planéité des grandes parois, le frottement du flex sur les rails à la pose
+(un film ou des patins à décider) ; la terminaison posée sur la borne + ; l'échauffement du module fermé.
+
 ## Ce qu'il contient
 
 | Élément | Ce que c'est | Où |
@@ -398,7 +463,9 @@ essai de résistance du joint réel et de l'échauffement à 360 A, le modèle d
 | Bandes de contact LV | `BM-LAM-LV` : courte bande à lamelles dorée, quatre par CORE, sur les plages surélevées des îlots + | Pièces |
 | CORE 1S8P | `BM-CORE-ASM` : 8 cellules en deux rangées de 4, le support du haut, le support du bas et ses rondelles, le busbar laminé, le flex en boîte et ses 8 queues, la carte dessus, 2 bandes HV, leur cadre, 4 butées, 4 bandes LV — 24 pièces | Assemblage |
 | Joint entre deux CORE | `BM-JOINT-ASM` : le busbar de deux CORE voisins et ce qui est entre eux, chaque conducteur à son potentiel — pour l'écran Isolation | Assemblage |
-| BM 8s8p - 21700 | `BM-8S8P-ASM` : 8 CORE côte à côte, tous dans le même sens | Assemblage |
+| Boîtier extrudé du module | `BM-CASING` : polycarbonate extrudé, 473 mm ; deux rails, quatre nervures, quatre lobes et leurs trous de vis, le canal du busbar de retour (itération 10) | Pièces |
+| Bornes du module | `BM-TERM-NEG` (avec ses contacts, `BM-TERM-NEG-ASM`) et `BM-TERM-POS` : cuivre, plaque d'appui, îlots LV, goujons vers les couvercles (itération 10) | Pièces ; Assemblage |
+| BM 8s8p - 21700 | `BM-8S8P-ASM` : 8 CORE côte à côte, tous dans le même sens, la borne − avant le CORE 1, la borne + après le CORE 8, le boîtier autour — 206 pièces | Assemblage |
 
 ## La géométrie, telle que dessinée
 
@@ -411,6 +478,8 @@ essai de résistance du joint réel et de l'échauffement à 360 A, le modèle d
   au suivant avec 1 mm de cuivre ; itération 2 : 51,4 mm avec 2 mm ; itération 4 : 50,9 mm, le papier aramide de 0,25 mm
   remplaçant l'isolant de 0,5 mm ; itération 6 : 51,25 mm — les deux jambes ne se touchent plus, ce sont les butées des
   contacts qui portent ; itération 8 : 51,5 mm, les rondelles de butée de 0,6 mm ; itération 9 : 52,6 mm, l'écart de 1,7 mm des bandes à lamelles).
+- **Le boîtier** court le long de Y, de −29 à 444 mm dans le repère du module (le CORE 1 à l'origine) : 11 mm au-delà des goujons de
+  chaque borne, la place des couvercles — un exemple jusqu'à l'itération 11. Sa section est dessinée dans le plan X Z du repère d'un CORE.
 - La jambe + s'arrête à 5 mm du bas, la jambe − à 5 mm du haut : aucune des deux ne frôle la plaque de l'autre polarité
   de son propre CORE (exemple, paramètre `z0`).
 
@@ -423,7 +492,7 @@ modèle simple. Les pièces sont posées à leur place (« fixe »), sans accoup
 CTN ↔ busbar ne sont pas encore des interfaces appariées, d'où les « interfaces sans jumelle » que l'écran signale.
 
 **Pas encore dessiné** : les languettes de soudure minces (les bossages en tiennent la place) ; le chant du cuivre aux
-petits bouts, nu ; la dépouille du support de cellules ; les bornes du module (B+ au bout du dernier CORE, B− au bout du premier) ; le boîtier longitudinal ; le BMS
+petits bouts, nu ; la dépouille du support de cellules ; les couvercles du boîtier, le busbar de retour, le latch rotatif, le contacteur ; le BMS
 central, ses connecteurs et le faisceau RS-485.
 
 **Non vérifié** : l'échauffement réel du cuivre dans le module fermé (le modèle est une barre seule à l'air libre) ; la

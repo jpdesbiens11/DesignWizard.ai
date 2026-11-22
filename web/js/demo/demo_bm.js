@@ -11,8 +11,10 @@
    the flex delivered flat and folded into a box, a thermistor under the centre of each cell through its washer (demo_bm_lam.js,
    demo_bm_box.js) ; 5 — the bottom holder with a floor and its washers molded in (demo_bm_holder.js, coreBase) ; 6 — the 4 contacts between
    two CORE, springs pressed to their stops ; 7 — the HV contact elastic, the laser marking ; 8 — the HV crown crimped under its stop washer ; 9 — louvred
-   contact strips modelled on real ones, four LV contacts, their flex tails, the joint for the Isolation screen (demo_bm_contacts.js). Thicknesses, windows and holes are EXAMPLES (said on each part) ; the
-   casing, the central BMS and the connectors are not drawn yet.
+   contact strips modelled on real ones, four LV contacts, their flex tails, the joint for the Isolation screen (demo_bm_contacts.js) ; 10 — the casing
+   extruded in polycarbonate along the 8 CORE, its screw ports for the two lids, the channel of the return busbar, the two terminals of the module
+   (demo_bm_case.js). Thicknesses, windows and holes are EXAMPLES (said on each part) ; the lids, the return busbar, the central BMS and the
+   connectors are not drawn yet (iteration 11).
    Frame of a CORE : X along a row of 4 (92.8 mm), Y across the two rows (46.4 mm), Z up ; the cells stand on z = 0. Every part of the
    CORE is drawn in that frame, so its place in the CORE is the origin (the cells and the board excepted). */
 
@@ -27,6 +29,7 @@ import { coreBox, FLEX_T, FLEX_X0, NTC_H } from "./demo_bm_box.js";
 import { coreLaminate, INS_T, WRAP_T } from "./demo_bm_lam.js";
 import { coreHolder, coreBase } from "./demo_bm_holder.js";
 import { GAP as JOINT_GAP, STRIPS, contactLayout, stripPart, cagePart, stopPart, busbarContacts, contactSizing } from "./demo_bm_contacts.js";
+import { casingPart, terminalParts, returnSizing, casingPaths } from "./demo_bm_case.js";
 
 /* Iteration 2 (JP, 21 novembre : « garder les L pressés » ; « le max de courant continu des 21700 P45B de Molicel, en décharge et en charge,
    la valeur la plus élevée — on est en 8s8p avec 8 CORE » ; then the flex in G). The cell is the Molicel INR-21700-P45B of the library, its
@@ -78,10 +81,23 @@ function jointAssembly(layout) {
     isolation: { nets: [{ name: "N7", kind: "dc", voltage: V(7) }, { name: "+5V_ISO", kind: "dc", voltage: 5 }, { name: "RS485_A", kind: "dc", voltage: 5 }, { name: "RS485_B", kind: "dc", voltage: 5 }, { name: "GND_ISO", kind: "dc", voltage: 0 }],
       params: { pollution_degree: 2, altitude_m: 2000, ovc: "I", field: "A", level: "functional" }, overrides: ov } };
 }
-/** The module : 8 CORE side by side along Y, all the same way round ; the + leg of each on the − leg of the next. */
+/* Iteration 10 : the casing runs from 11 mm beyond the studs of the − terminal to 11 mm beyond those of the + terminal — the room of the lids,
+   an example until iteration 11 draws them. */
+export const CASE_Y0 = -29, CASE_L = 473;
+/** The − terminal of the module, with what its face carries : the strips, their frame, the stops and the LV strips of a + leg, one pitch before
+    CORE 1 (every part in the frame of CORE 1). */
+function terminalAssembly(layout) {
+  const core = coreAssembly("—", { part: { id: "—" }, z: 0 }, layout), keep = new Set(["hv1", "hv2", "cadre", "but1", "but2", "but3", "but4", "lv1", "lv2", "lv3", "lv4"]);
+  const moved = core.instances.filter((x) => keep.has(x.id)).map((x) => ({ ...x, placement: at([x.placement.t[0], Math.round((x.placement.t[1] - CORE_PITCH) * 1e6) / 1e6, x.placement.t[2]]) }));
+  return { dw: "assembly/1", id: "BM-TERM-NEG-ASM", name: "Borne − du module, avec ses contacts", instances: [{ id: "borne", part: "BM-TERM-NEG", fixed: true, placement: at([0, 0, 0]) }, ...moved], mates: [] };
+}
+/** The module : 8 CORE side by side along Y, all the same way round ; the + leg of each on the − leg of the next ; the − terminal before CORE 1,
+    the + terminal after CORE 8, the casing around them all. */
 function moduleAssembly() {
   return { dw: "assembly/1", id: "BM-8S8P-ASM", name: "BM 8s8p - 21700",
-    instances: Array.from({ length: 8 }, (_, k) => ({ id: `core${k + 1}`, asm: "BM-CORE-ASM", fixed: true, placement: at([0, k * CORE_PITCH, 0]) })), mates: [] };
+    instances: [{ id: "boitier", part: "BM-CASING", fixed: true, placement: at([0, CASE_Y0, 0]) }, { id: "borne_moins", asm: "BM-TERM-NEG-ASM", fixed: true, placement: at([0, 0, 0]) },
+      ...Array.from({ length: 8 }, (_, k) => ({ id: `core${k + 1}`, asm: "BM-CORE-ASM", fixed: true, placement: at([0, k * CORE_PITCH, 0]) })),
+      { id: "borne_plus", part: "BM-TERM-POS", fixed: true, placement: at([0, Math.round(7 * CORE_PITCH * 1e6) / 1e6, 0]) }], mates: [] };
 }
 
 /** The calculation that sized the copper, kept in the project under the name of the laminated busbar : the analytic model of the tool (a bar in
@@ -95,15 +111,18 @@ export function busbarSizing() {
 /** The project, new each time : the CORE board with its mechanical twin, the parts of the CORE, the CORE and the module. */
 export function bmProject() {
   const p = { dw: "project/1", id: "bm-8s8p-21700", name: "BM 8s8p - 21700", author: "DesignWizard.ai",
-    description: "Module de batterie 8s8p en cellules 21700 : 8 CORE 1S8P en série, côte à côte, chacun avec sa carte de mesure posée dessus. Neuvième itération : les contacts entre deux CORE en bandes à lamelles, quatre contacts LV, à itérer.",
-    parts: [JSON.parse(JSON.stringify(CELL))], assemblies: [], boards: [coreBoard()], drawing: { words: WORDS_BM }, physics: [busbarSizing(), ...contactSizing(I_CORE)], log: [] };
+    description: "Module de batterie 8s8p en cellules 21700 : 8 CORE 1S8P en série, côte à côte, chacun avec sa carte de mesure posée dessus. Dixième itération : le boîtier extrudé le long des 8 CORE et les deux bornes du module, à itérer.",
+    parts: [JSON.parse(JSON.stringify(CELL))], assemblies: [], boards: [coreBoard()], drawing: { words: WORDS_BM }, physics: [busbarSizing(), ...contactSizing(I_CORE), returnSizing(I_CORE)], log: [] };
   const layout = contactLayout(CORE_X), contacts = busbarContacts(layout, { Y: CORE_Y, ins: INS_T, t: BB_T });
   const o = { X: CORE_X, Y: CORE_Y, H, t: BB_T, ins: INS_T, w: WRAP_T, floor: FLOOR_T, e: GAP, grid: D, gap: GAP, rows: ROWS, lv: layout.lv }, box = coreBox(o), hold = { X: CORE_X, Y: CORE_Y, grid: D, gap: GAP, h: HOLDER_H };
   p.parts.push(coreLaminate({ ...o, taps: box.taps, contacts, round: 1.8 }), box.part, coreHolder(hold), coreBase({ ...hold, floor: FLOOR_T, below: BB_T + WRAP_T - NTC_H, washer: { d: 5 } }),
     stripPart("hv", layout.hv[0].x, layout.hv[0].z0, contacts.faces.plus), cagePart(layout, contacts.faces.plus), stopPart(layout.stops[0], contacts.faces.plus), stripPart("lv", layout.lv[0].x, layout.lv[0].z - STRIPS.lv.L / 2, contacts.faces.lv));
+  const ends = terminalParts({ X: CORE_X, Y: CORE_Y, ins: INS_T, t: BB_T, gap: JOINT_GAP }), casing = casingPart({ L: CASE_L });
+  casing.plan = { paths: casingPaths(CASE_L) };
+  p.parts.push(casing, ends.neg, ends.pos);
   syncTwins(p, LIBRARY);
   const board = p.boards[0], twin = p.parts.find((x) => x.id === board.part);
   twin.name = "Carte de CORE 1S8P"; twin.function = "La carte de mesure du CORE, posée sur le busbar laminé : 8 températures, la tension du CORE, l'équilibrage, RS-485 isolé.";
-  p.assemblies = [moduleAssembly(), coreAssembly(twin.id, box, layout), jointAssembly(layout)];
+  p.assemblies = [moduleAssembly(), coreAssembly(twin.id, box, layout), terminalAssembly(layout), jointAssembly(layout)];
   return p;
 }

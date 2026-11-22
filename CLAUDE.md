@@ -395,8 +395,17 @@ fabrication virtuel)** — faits (v0.142.0 à v0.145.0) ; le projet BM bonifié 
    à 1,7 mm (pas 52,6 mm) ; **quatre îlots LV** par jambe, une courte bande dorée de type LAV côté + ; **les queues du flex** montent du dessous à
    chaque îlot, autour du pli arrondi du conducteur − ; un modèle analytique nouveau, `louvre_strip` (22 lamelles, 880 A, 13,6 µΩ, 4,9 mV) ;
    l'assemblage **« Joint entre deux CORE »** pour l'Isolation, mesuré par un essai (`demo/demo_bm_contacts.js`, `docs/BM_MODULE.md`). Reste :
-   reporter les pistes de chaîne dans le PCBA de la carte, la languette de la plage et son encoche, un essai du joint réel ; puis les
-   itérations 10 (boîtier extrudé, bornes) et 11 (busbar de retour, couvercles, latch, vis).
+   reporter les pistes de chaîne dans le PCBA de la carte, la languette de la plage et son encoche, un essai du joint réel.
+   **Itération 10 (v0.148.0)**, JP par menu : « Itération 10 » — **le boîtier extrudé** (`demo/demo_bm_case.js`, `BM-CASING`) : polycarbonate,
+   paroi de 2,5 mm, section dessinée autour du CORE mesuré sur ses pièces, les CORE sur deux rails et quatre nervures (0,5 mm de jeu) ; un lobe
+   à chaque coin et son **trou fermé pour une vis pour plastiques** (EVO PT 40 : trou 0,85 × d1 ± 0,05, prise 2 × d1, lamage 1,05 × d1 × 0,1 × d1 —
+   recommandation publiée, lue sur la page du licencié ; le site du fabricant refuse les lectures automatiques), venu d'extrusion à Ø2,8 puis
+   percé, alésé et lamé à chaque bout ; sous le fond, le **canal du busbar de retour** (50 × 4 mm, calcul gardé, 53 °C à l'air libre) ; la quille
+   et les lobes guident le module dans sa cavité ; dans l'atelier de fab, les bouts s'usinent le long d'un parcours écrit par une IA. **Les deux
+   bornes** (`BM-TERM-NEG` et ses contacts, `BM-TERM-POS`) : la − porte ce que porte une jambe +, la + est plane comme une jambe − et reçoit la
+   terminaison de 120 Ω du bus (les 8 cartes n'en ont pas) ; plaque d'appui isolante, goujons M6 vers les couvercles. Aucune interférence ;
+   206 pièces. Reste : l'itération 11 (busbar de retour, couvercles, latch, contacteur, effort sur la pile et tenue des vis), la terminaison
+   posée, le frottement du flex sur les rails à la pose, les tolérances réelles de la section.
 21. ~~**Logiciel : pas à pas, simulation en direct, code visible, chargement**~~ — fait (v0.124.0 ; demande de JP du 20
    novembre, sur l'écran `#/sw`) : sept étapes, entrées et sorties dites sur chaque tuile, la fiche du CPU au centre avec
    un lien par page, le guide dans le volet, l'essai de démarrage et la mémoire, la simulation en direct, le code à l'écran,
