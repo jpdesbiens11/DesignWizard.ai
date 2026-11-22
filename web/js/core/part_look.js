@@ -64,13 +64,12 @@ export function shownLook(spec, materialColor, materialOpacity = 1) {
   return { color: l.color || validHex(materialColor) || "#b9c6ce", opacity: l.opacity ?? materialOpacity ?? 1, pattern: l.pattern, sheen: l.sheen || DEFAULT_SHEEN, own: hasLook(l) };
 }
 /** Sets or clears the look of a part or of an instance, in place. patch : { color, opacity, pattern, sheen } — null clears one. A plain
-    colour chosen takes the pattern away (one paint at a time) ; an opaque part keeps no opacity, a satin one no sheen. */
+    colour chosen takes the pattern away (one paint at a time). What is chosen is kept as said — « Opaque » (opacity 1) covers a see-through
+    material (polycarbonate, PMMA, film) and, on an instance, the transparency of the part ; « Satiné » on an instance covers the sheen of the part. */
 export function setLook(holder, patch = {}) {
   const cur = lookOf(holder), next = { color: "color" in patch ? validHex(patch.color) : cur.color, opacity: "opacity" in patch ? clampOpacity(patch.opacity) : cur.opacity,
     pattern: "pattern" in patch ? validPattern(patch.pattern) : cur.pattern, sheen: "sheen" in patch ? validSheen(patch.sheen) : cur.sheen };
   if ("color" in patch && next.color && !("pattern" in patch)) next.pattern = null;
-  if (next.opacity !== null && next.opacity >= 1) next.opacity = null;
-  if (next.sheen === DEFAULT_SHEEN) next.sheen = null;
   if (!hasLook(next)) delete holder.look;
   else holder.look = { ...(next.color ? { color: next.color } : {}), ...(next.opacity !== null ? { opacity: next.opacity } : {}), ...(next.pattern ? { pattern: next.pattern } : {}), ...(next.sheen ? { sheen: next.sheen } : {}) };
   return holder;
@@ -86,7 +85,7 @@ export function lookWords(look) {
   const l = tidyLook(look), out = [];
   if (l.pattern) out.push(`Camouflage ${PATTERNS[l.pattern].label}`); else if (l.color) out.push(colorName(l.color));
   if (l.sheen) out.push(SHEENS[l.sheen].fr.toLowerCase());
-  if (l.opacity !== null) out.push(l.opacity <= 0.45 ? "transparent" : "voilé");
+  if (l.opacity !== null) out.push(l.opacity >= 1 ? "opaque" : l.opacity <= 0.45 ? "transparent" : "voilé");
   return out.join(", ");
 }
 /** A colour of its own for every part that has none : colours in turn, then their light and dark shades, so that neighbours in

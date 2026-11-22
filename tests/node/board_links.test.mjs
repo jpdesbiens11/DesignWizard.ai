@@ -46,7 +46,11 @@ test("steps down : the exact reverse of the step up — a board to its PCBA, a P
   // up and down answer each other
   assert.equal(stairOf("pcba", ["B1"], p).hash, "#/pcb/B1-PCB"); assert.equal(stairOf("elab", ["B1"], p).hash, "#/pcba/B1");
   assert.equal(stairOf("fea", ["BRKT"], p).hash, "#/parts/BRKT"); assert.equal(stairOf("assembly", ["SUB"], p).hash, "#/assembly/TOP");
-  // an assembly holds many parts : its step up does not lead back to one
+  // a top assembly is made from parts (JP, 22 novembre : « pas de bouton ici pour retourner au module pièce ») : its step up leads to the part one came from, else its first part
+  const top = stairOf("assembly", ["TOP"], p); assert.ok(top && /^#\/[a-z_]+\//.test(top.hash) && !top.hash.startsWith("#/assembly/"), JSON.stringify(top)); assert.match(top.tip, /Monter d'un niveau/);
+  assert.equal(stairOf("assembly", ["TOP"], p, { lastPart: "BRKT" }).hash, "#/parts/BRKT"); assert.match(stairOf("assembly", ["TOP"], p, { lastPart: "BRKT" }).tip, /d'où vous venez/);
+  assert.equal(stairOf("assembly", ["TOP"], p, { lastPart: "NOT-THERE" }).hash, top.hash, "a part this assembly does not hold : its first part");
+  // an assembly holds many parts : the steps down to it are not checked for the way back
   for (const [key, args] of [["pcb", ["B1-PCB"]], ["pcba", ["B1"]], ["parts", ["BRKT"]]]) for (const d of downOf(key, args, p).filter((x) => !x.hash.startsWith("#/assembly/"))) { const [k, ...a] = d.hash.replace(/^#\//, "").split("/"), up = stairOf(k, a, p); assert.ok(up && up.hash === `#/${key}/${args[0]}`, `${d.hash} leads back up to #/${key}/${args[0]} (${up && up.hash})`); }
   const ui = read("web/js/core/stairs_ui.js"); assert.match(ui, /stair-downs/); assert.match(ui, /e\.key !== "ArrowDown"/); assert.match(ui, /\.stair-btn:not\(\.down\)/, "the cleanup of the step up leaves the steps down alone");
   assert.match(read("web/css/nav.css"), /\.stair-btn\.down::after \{ content: "↓"/); assert.match(read("web/js/modules/pcb.js"), /data-twin-of/);

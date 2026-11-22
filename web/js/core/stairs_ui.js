@@ -6,12 +6,17 @@
 import { el, icon } from "./dom.js";
 import { store } from "./store.js";
 import { stairOf, downOf, aiTargetOf, addressOf } from "./stairs.js";
+import { levelsOf } from "./shop_levels.js";
 
 /** The button of a step. s : what stairOf gives. */
 export function stairButton(s, o = {}) {
   return el("a", { class: "btn btn-small stair-btn" + (o.label ? " with-label" : ""), href: s.hash, "data-stair": s.hash, "data-icon": s.icon, "aria-label": s.tip, "data-tip": `${s.tip}${o.keys ? " (Alt + ↑)" : ""}`, style: s.color ? { "--g": s.color } : null }, icon(s.icon), o.label ? el("span", null, o.label) : null);
 }
-export const currentStair = () => { const { key, args } = addressOf(location.hash); return stairOf(key, args, store.project); };
+/* the part last opened in its studio : the step up from its assembly leads back to it (core/stairs.js stairOf, « assembly ») */
+let lastPart = null;
+export const currentStair = () => { const { key, args } = addressOf(location.hash), s = stairOf(key, args, store.project, { lastPart });
+  const lv = store.project ? levelsOf(key, args, store.project) : null; if (lv && lv.part) lastPart = lv.part.id;
+  return s; };
 /** The buttons of the steps down : the same pictograms, an arrow pointing down — after the step up and the « IA » button, in the head of the left panel. */
 export const downButton = (s) => el("a", { class: "btn btn-small stair-btn down", href: s.hash, "data-down": s.hash, "data-icon": s.icon, "aria-label": s.tip, "data-tip": s.tip, style: s.color ? { "--g": s.color } : null }, icon(s.icon));
 export const currentDowns = () => { const { key, args } = addressOf(location.hash); return downOf(key, args, store.project); };

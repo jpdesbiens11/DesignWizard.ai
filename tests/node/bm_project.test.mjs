@@ -29,6 +29,7 @@ import { flatAsm, partCounts } from "../../web/js/core/asm_levels.js";
 import { candidates } from "../../web/js/core/assembly_logic.js";
 import { toDwiz, fromDwiz } from "../../web/js/core/dwiz.js";
 import { kernel } from "./kernel_helper.mjs";
+import { downOf } from "../../web/js/core/stairs.js";
 
 const read = (f) => readFileSync(new URL(`../../${f}`, import.meta.url), "utf8");
 const near = (a, b, msg, tol = 1e-6) => assert.ok(Math.abs(a - b) < tol, `${msg} : ${a} ≠ ${b}`);
@@ -212,5 +213,6 @@ test("wired : the example on the home page, the English of its drawings, the .dw
   assert.deepEqual(wordsLeft(p.drawing.words, texts), []); assert.deepEqual(wordsUnused(p), []);
   const back = fromDwiz(toDwiz(p)); assert.equal(back.assemblies.length, 6); assert.equal(back.boards[0].id, "CORE-1S8P-PCBA"); assert.equal(back.physics[0].model, "busbar");
   assert.match(read("web/js/modules/home.js"), /"data-example": "bm"/);
+  assert.deepEqual(downOf("assembly", ["BM-8S8P-ASM"], p).map((d) => d.label), ["CORE 1S8P", "Isolation", "Dessin"], "one button for the sub-assemblies (JP : « juste un bouton assemblage, pas 4 ») — the CORE, which comes most often");
   for (const re of [/Itération 11 b/, /contacteur/, /connecteur d'échange/i, /Itération 11/, /came quart de tour/i, /sectionneur/i, /Itération 10/, /EVO PT/, /boîtier extrudé/i, /borne −/i, /52,6 mm/, /Itération 9/, /lamelles/, /LOUVER_tron 112/, /Itération 8/, /sertie/, /Itération 6/, /couronne de lames/i, /butée/, /support de cellules/i, /busbar laminé/i, /flex en boîte/i, /rondelle/i, /2K/, /Itération 5/]) assert.match(read("docs/BM_MODULE.md"), re);
 });

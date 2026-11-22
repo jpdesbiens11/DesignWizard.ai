@@ -149,7 +149,8 @@ d'Ariane + plancher », « onglets dans l'outil ».
   pictogramme de là où l'on arrive, avec une petite flèche vers le haut. Le Labo monte au PCBA de sa carte ; la
   Simulation, un dessin, un calcul attaché à une pièce, les points DFx d'une pièce montent à la pièce ; l'Isolation, le
   Studio photo, les Étiquettes, le dessin d'un assemblage montent à l'assemblage ; un sous-assemblage monte à
-  l'assemblage qui le porte ; une pièce monte à sa nature, une nature à l'Atelier. **Alt + ↑** fait de même. Une page
+  l'assemblage qui le porte ; un assemblage de tête monte à la pièce d'où l'on vient (sinon à sa première pièce : JP,
+  22 novembre) ; une pièce monte à sa nature, une nature à l'Atelier. **Alt + ↑** fait de même. Une page
   sans volet la porte dans son en-tête. C'est le bouton « dossier parent » d'un explorateur ; **une seule marche à la
   fois est un choix maison**, dit ici : sauter plusieurs niveaux, c'est le rôle des menus de la barre du haut et des
   chevrons du fil d'Ariane. Un écran n'a rien à déclarer : il lui suffit d'un volet de gauche avec son `.side-head`,

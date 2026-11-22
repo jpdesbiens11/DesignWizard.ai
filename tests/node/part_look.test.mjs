@@ -2,7 +2,7 @@
    mistaken for a change of the design. */
 import test from "node:test";
 import assert from "node:assert/strict";
-import { HUES, SHADES, OPACITIES, validHex, mix, shade, lighter, darker, luminance, palette, colorName, lookOf, shownLook, setLook, autoLooks } from "../../web/js/core/part_look.js";
+import { HUES, SHADES, OPACITIES, validHex, mix, shade, lighter, darker, luminance, palette, colorName, lookOf, shownLook, setLook, overLook, lookWords, autoLooks } from "../../web/js/core/part_look.js";
 import { signature } from "../../web/js/core/review.js";
 import { toDwiz, fromDwiz } from "../../web/js/core/dwiz.js";
 import { kernel } from "./kernel_helper.mjs";
@@ -29,10 +29,18 @@ test("a part keeps what its designer chose ; nothing is kept for an opaque part 
   const p = { id: "P-1", material: "AL6061-T6" };
   assert.deepEqual(lookOf(p), { color: null, opacity: null, pattern: null, sheen: null }); assert.deepEqual(shownLook(p, "#b9c6ce"), { color: "#b9c6ce", opacity: 1, pattern: null, sheen: "satin", own: false });
   setLook(p, { color: "#3D86E6" }); assert.deepEqual(p.look, { color: "#3d86e6" }); assert.deepEqual(shownLook(p, "#b9c6ce"), { color: "#3d86e6", opacity: 1, pattern: null, sheen: "satin", own: true });
-  setLook(p, { opacity: 0.6 }); assert.deepEqual(p.look, { color: "#3d86e6", opacity: 0.6 }); setLook(p, { opacity: 1 }); assert.deepEqual(p.look, { color: "#3d86e6" });
+  setLook(p, { opacity: 0.6 }); assert.deepEqual(p.look, { color: "#3d86e6", opacity: 0.6 }); setLook(p, { opacity: 1 }); assert.deepEqual(p.look, { color: "#3d86e6", opacity: 1 }, "« Opaque » is kept : it covers a see-through material"); setLook(p, { opacity: null });
   setLook(p, { opacity: 0.01 }); assert.equal(p.look.opacity, 0.2, "never invisible"); setLook(p, { color: null }); assert.deepEqual(p.look, { opacity: 0.2 }); assert.equal(shownLook(p, "#b9c6ce").color, "#b9c6ce");
   setLook(p, { opacity: null }); assert.equal("look" in p, false); setLook(p, { color: "not a colour" }); assert.equal("look" in p, false);
   assert.deepEqual(lookOf({ look: { color: "zzz", opacity: "0.5", pattern: "tartan", sheen: 3 } }), { color: null, opacity: null, pattern: null, sheen: null });
+});
+
+test("« Opaque » is a choice that holds : on a part of a see-through material, and on an instance over a see-through part (JP : the casing)", () => {
+  const part = { id: "BM-CASING", material: "PC", look: { color: "#cfe4f2", opacity: 0.35 } }, inst = { id: "boitier", part: "BM-CASING" };
+  setLook(inst, { color: "#1f2933", opacity: 1 }); assert.deepEqual(inst.look, { color: "#1f2933", opacity: 1 });
+  assert.deepEqual(overLook(part.look, inst.look), { color: "#1f2933", pattern: null, opacity: 1, sheen: null }, "the assembly wins : opaque and dark");
+  setLook(part, { opacity: 1 }); assert.equal(shownLook(part, "#cfe4f2", 0.55).opacity, 1, "the part opaque over its polycarbonate");
+  assert.equal(lookWords({ opacity: 1 }), "opaque"); assert.equal(lookWords({ opacity: 0.3 }), "transparent");
 });
 
 test("one colour per part : the parts without a colour get one each, different, and the chosen ones stay", () => {
