@@ -24,6 +24,11 @@ test("the history : concept 3 is a branch of MAIN (P1), beside concept 2 ; it is
   const k = (id) => p.physics.find((c) => c.id === id);
   assert.equal(k("phy-bm3-fork").verdict, "ok"); assert.ok(k("phy-bm3-fork").values.Irat >= 360 * 3, "the lamellae of a fork carry three times the 360 A");
   assert.equal(k("phy-bm3-blade").verdict, "ok", "the blade at 2.5 mm holds the criterion of the busbar model");
+  /* the fork in detail (JP, by menu : « Pince détaillée ») : the housings of the bands, the lead-ins, the brazed heel ; the jaw under the strongest force of the sheet */
+  for (const f of ["logement_int", "logement_ext", "talon"]) assert.ok(lam.features.some((x) => x.id === f), f);
+  assert.equal(lam.features.find((x) => x.id === "lame").op, "extrude", "the blade drawn with its nose"); assert.equal(lam.features.find((x) => x.id === "machoire_int").profile.poly.length, 5, "the jaw with its mouth chamfer");
+  near(F3.jawIn[1] - F3.louvIn[0], F3.groove, "the band stands in its housing"); near(F3.blade[0] - F3.jawIn[1], F3.play, "0.5 mm of air between a jaw and the blade");
+  const jaw = k("phy-bm3-jaw"); assert.ok(jaw.checks.every((c) => c.ok), JSON.stringify(jaw.checks)); assert.equal(jaw.inputs.F, 16 * 30, "16 plates at 30 N, the most the sheet of the 112 gives"); assert.ok(jaw.values.delta < 0.1);
 });
 
 test("concept 3 builds, and nothing goes through anything ; each blade sits in the next fork, between its two bands", async () => {

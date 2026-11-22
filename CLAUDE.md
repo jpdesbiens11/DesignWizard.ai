@@ -151,8 +151,10 @@ plus bas, avec sa version. Une revue de la liste se fait à chaque reprise de s�
    de 2,5 mm au bout +X de chaque jambe +, une pince à deux bandes à lamelles sur chaque jambe −, rondelles ressorts au couvercle, boîtier 10 mm
    plus large, pas inchangé (`demo/demo_bm_c3.js`, `docs/BM_MODULE.md`). **Cette conversation ne parle que de conception** (JP : « plus de
    conversation mêlée framework et conception… surveille-moi ») : une demande sur l'application va dans une tâche à part.
-5. **Icônes : remplacer le chapeau de sorcier** par une alternative du monde des fusées, puis toutes les icônes (JP, 22 novembre) — framework :
-   tâche à part, proposée à JP en carte ; ne pas la faire dans la conversation de conception.
+   ~~**Pince détaillée**~~ (JP, par menu) — fait (v0.176.0) : logements des bandes, chanfreins d'entrée, talon brasé, effort des lamelles lu
+   (Weftron 112 : 5–30 N par pont), mâchoire vérifiée ; l'effort d'insertion n'est pas publié dans ce qui a été lu. Suite proposée par menu.
+5. **Icônes : remplacer le chapeau de sorcier** par une alternative du monde des fusées, puis toutes les icônes (JP, 22 novembre) — framework.
+   Priorité, par menu : « Tâche à part, maintenant » — lancée par JP depuis sa carte, dans une autre conversation ; pas dans celle de conception.
 
 **Réponses de l'interview** (JP, 22 novembre, par menu — les quatre choix conseillés) : les CORE **en ligne, pressés**, comme des piles D
 dans une lampe — le + de l'un contre le − du suivant, la pile pressée par la poignée du haut, le retour du courant le long du boîtier ; sur la
