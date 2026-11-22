@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the film : one stage of 1600 × 900, drawn from the time alone (film.js) — no animation runs by itself, so that a frame
+/* DesignOrbit.ai — the film : one stage of 1600 × 900, drawn from the time alone (film.js) — no animation runs by itself, so that a frame
    is the same whenever it is drawn. The colours and the paper are those of the platform (web/css/app.css). */
 .film-page { margin: 0; overflow: hidden; background: #fcfbf7; }
 .stage { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; transform-origin: 0 0; overflow: hidden; font-family: "Inter Display", Inter, var(--font); color: var(--ink-strong);

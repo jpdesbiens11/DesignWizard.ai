@@ -1,4 +1,4 @@
-/* DesignWizard.ai — the film, drawn from the time alone. window.filmSeek(t) puts every scene, picture, chip and caption where it stands at
+/* DesignOrbit.ai — the film, drawn from the time alone. window.filmSeek(t) puts every scene, picture, chip and caption where it stands at
    t seconds, and resolves when the picture of that instant is decoded : the renderer (tools/film_render.mjs) then takes the frame.
    ?lang=fr|en chooses the words ; ?clips=<url> the folder of the clips filmed on the platform ; ?captions=0 leaves the subtitles out (for
    the day a voice says them) ; ?scale= fits the stage of 1600 × 900 into the window. */
@@ -12,13 +12,13 @@ const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v)), smooth = (x) => 
 /* « La conception, sans les détours. » : the last words of a slogan are the ones under the highlighter */
 const marked = (text) => { const p = el("span"), cut = text.lastIndexOf(",") > 0 ? text.lastIndexOf(",") + 1 : text.indexOf(". ") > 0 ? text.indexOf(". ") + 1 : 0; p.append(text.slice(0, cut), el("mark", null, text.slice(cut).trim())); if (cut) p.insertBefore(document.createTextNode(" "), p.lastChild); return p; };
 const FW = 1136, FH = 710, clips = await fetch(`${clipsAt}/clips.json`).then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
-const brand = () => { const b = el("div", "fm-brand"), i = el("img"); i.src = "/web/img/logo/mark.svg"; i.alt = ""; const n = el("span"); n.append("DesignWizard", el("i", null, ".ai")); b.append(i, n); return b; };
+const brand = () => { const b = el("div", "fm-brand"), i = el("img"); i.src = "/web/img/logo/mark.svg"; i.alt = ""; const n = el("span"); n.append("DesignOrbit", el("i", null, ".ai")); b.append(i, n); return b; };
 
 const built = SCENES.map((s) => {
   const node = el("section", `scene ${s.kind === "shot" ? "shot" : s.kind === "words" ? "words" : "logo-card"}`), parts = { node, pics: [], chips: [] };
   if (s.kind === "words") { const big = el("p", "big"); big.append(marked(s.big[lang])); node.append(big, el("p", "small", s.small[lang])); }
   else if (s.kind === "logo" || s.kind === "end") {
-    const m = el("img", "mark"); m.src = "/web/img/logo/mark.svg"; m.alt = ""; const name = el("p", "name"); name.append("DesignWizard", el("i", null, ".ai"));
+    const m = el("img", "mark"); m.src = "/web/img/logo/mark.svg"; m.alt = ""; const name = el("p", "name"); name.append("DesignOrbit", el("i", null, ".ai"));
     const slogan = el("p", "slogan"); slogan.append(marked(s.slogan[lang]));
     node.append(m, name, el("p", "by", "by DynamiteAgile™"), slogan, el("p", "small", s.small[lang]));
     if (s.kind === "end") node.append(el("p", "legal", `${MARK} · ${lang === "fr" ? "logiciel libre, licence MIT" : "open source, MIT licence"}`));
