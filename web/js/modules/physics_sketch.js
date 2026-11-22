@@ -38,6 +38,8 @@ const SKETCH = {
   louvre: () => [bx(20, 78, 200, 14, { fill: "currentColor", op: 0.16 }), bx(20, 18, 200, 14, { fill: "currentColor", op: 0.08 }), ...Array.from({ length: 9 }, (_, k) => pa(`M${38 + k * 20} 78 L${50 + k * 20} 32`, { c: ACC, w: 2.2 })),
     arrow(4, 85, 26, 85), arrow(214, 25, 238, 25), arrow(120, 4, 120, 16)],
   pin: () => [plates(), bx(114, 36, 12, 44, { fill: ACC, op: 0.45, r: 4 })],
+  plasticscrew: () => [bx(84, 40, 72, 64, { fill: "currentColor", op: 0.14 }), bx(30, 92, 180, 12, { fill: "currentColor", op: 0.14 }), bx(112, 26, 16, 64, { fill: "currentColor", op: 0.5 }), bx(98, 18, 44, 8, { fill: "currentColor", op: 0.5 }),
+    ...Array.from({ length: 6 }, (_, k) => pa(`M108 ${36 + k * 9} L132 ${41 + k * 9}`, { c: ACC, w: 1.4 })), arrow(120, 16, 120, 0)],
   pipe: () => [pipeWalls(), pa("M70 40 Q118 55 70 70", { c: ACC }), ...[46, 55, 64].map((y) => arrow(70, y, y === 55 ? 92 : 84, y)), arrow(150, 55, 214, 55), ln(118, 30, 118, 80, { dash: "3 4", w: 1 })],
   orifice: () => [pipeWalls(), bx(116, 38, 6, 12, { fill: "currentColor", op: 0.5 }), bx(116, 60, 6, 12, { fill: "currentColor", op: 0.5 }), pa("M40 44 Q100 44 119 52 Q140 54 200 46", { c: ACC, w: 1.2 }), pa("M40 66 Q100 66 119 58 Q140 56 200 64", { c: ACC, w: 1.2 }), arrow(126, 55, 190, 55)],
   wall: () => [bx(74, 18, 34, 74, { fill: "currentColor", op: 0.2 }), bx(108, 18, 9, 74, { fill: ACC, op: 0.45 }), bx(117, 18, 50, 74, { fill: "currentColor", op: 0.08 }), arrow(24, 55, 70, 55), arrow(171, 55, 216, 55), pa("M74 28 L108 36 L117 62 L167 76", { dash: "4 4", w: 1.2 })],

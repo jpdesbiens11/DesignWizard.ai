@@ -79,4 +79,11 @@ const louvreStrip = {
   flags: [],
 };
 
-export const XL_JOINTS = { bolted_joint: bolt, press_fit: pressfit, dowel_pin: pin, spring_stop: springStop, louvre_strip: louvreStrip };
+/* the screw in a plastic boss : F = Ss π Dp L, Ss = St / √3 (Engineers Edge) */
+const plasticScrew = {
+  helpers: [],
+  outputs: { Ss: "{St}/SQRT(3)", A: "PI()*{Dp}*{L}", F_pull: "{o:Ss}*{o:A}", sf_pull: upTo999("{o:F_pull}", "{F}"), F_max: "{o:F_pull}/{sf}", L_Dp: "{L}/{Dp}", Db_d: "{Db}/{d}" },
+  checks: [{ label: "Effort par vis vs effort d'arrachement", unit: "N", value: "{F}", limit: "{o:F_pull}", sf: "{sf}" }],
+  flags: [{ label: "Prise (≥ 2,5 Dp)", f: 'IF({L}<2.5*{Dp},"NON : le couple de foirage ne plafonne que vers 2,5 Dp","Oui")' }, { label: "Bossage (≈ 2,5 d)", f: 'IF({Db}<2.5*{d},"NON : un bossage mince peut fendre","Oui")' }],
+};
+export const XL_JOINTS = { bolted_joint: bolt, press_fit: pressfit, dowel_pin: pin, spring_stop: springStop, louvre_strip: louvreStrip, plastic_screw: plasticScrew };

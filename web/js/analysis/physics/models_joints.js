@@ -226,4 +226,34 @@ const louvreStrip = { id: "louvre_strip", domain: "joints", sketch: "louvre", ti
     return S.set({ n: nl, Irat, R, dU, P, F, use: Irat > 0 ? i.I / Irat * 100 : 999, hLo, hHi });
   } };
 
-export const JOINTS = [bolt, pressfit, pin, springStop, louvreStrip];
+/* ---------- a thread-forming screw in a plastic boss (JP, 22 novembre 2026 : the screws of the lids of the BM go into the extruded polycarbonate
+   « des vis autotaraudeuses y font leurs filets au premier assemblage ») : the pull-out force as one public page prints it, F = Ss π Dp L with
+   Ss = St / √3 (Engineers Edge, « Self Tapping Screws Installation Design », read on 22 November 2026) ; its rules of thumb said as warnings —
+   the engaged length where the stripping torque levels off (about 2.5 Dp), the boss of about 2.5 d. The page prints no worked example. ---------- */
+const plasticScrew = { id: "plastic_screw", domain: "joints", sketch: "plasticscrew", title: "Thread-forming screw in a plastic boss (pull-out)", fr: "Vis autotaraudeuse dans un bossage plastique (arrachement)",
+  question: "La vis tient-elle dans le plastique sans arracher le filet qu'elle y a formé ?",
+  inputs: [num("d", "Diamètre nominal de la vis d", "mm", 4, 1, 20, 0.1, GEO), num("Dp", "Diamètre sur flancs Dp (le trou égale Dp)", "mm", 3.4, 0.5, 20, 0.05, GEO),
+    num("L", "Longueur de filet en prise L", "mm", 10, 0.5, 100, 0.5, GEO), num("Db", "Diamètre extérieur du bossage", "mm", 10, 1, 100, 0.5, GEO),
+    num("F", "Effort axial par vis F", "N", 200, 0, 1e6, 10, LOAD), num("St", "Limite élastique en traction du plastique", "MPa", 62, 1, 500, 1, MAT), num("sf", "Coefficient de sécurité demandé", "", 3, 1, 20, 0.1, CRIT)],
+  outputs: [out("Ss", "Cisaillement admis St / √3", "MPa"), out("A", "Aire cisaillée π Dp L", "mm²"), out("F_pull", "Effort d'arrachement", "N"), out("sf_pull", "Marge à l'arrachement", ""),
+    out("F_max", "Effort admissible par vis (au coefficient demandé)", "N"), out("L_Dp", "Prise rapportée au diamètre sur flancs L / Dp", ""), out("Db_d", "Bossage rapporté à la vis Db / d", "")],
+  assumptions: ["Arrachement : le plastique se cisaille le long du cylindre de diamètre Dp sur la longueur en prise — F = Ss π Dp L, avec Ss = St / √3 (Engineers Edge, page « Self Tapping Screws Installation Design »).",
+    "Le trou du bossage égale le diamètre sur flancs de la vis (même page) ; le filet est formé sur toute la longueur L.",
+    "Charge axiale statique, à la température où St est donnée : le fluage sous charge tenue et la chaleur abaissent la tenue — d'où un coefficient demandé plus fort que pour un métal (3 par défaut : un exemple, choix de l'outil).",
+    "Ni le couple de vissage, ni le couple de foirage, ni la pression du filet sur la paroi du bossage ne sont calculés."],
+  validity: "Plastique ductile, vis pour plastiques à filet formant, charge axiale statique ; la page ne donne ni coefficient de sécurité ni exemple chiffré.",
+  reference: "Engineers Edge — Self Tapping Screws Installation Design (page web lue le 22 novembre 2026)",
+  fill: {},
+  compute(i) {
+    const S = sheet(), Ss = i.St / Math.sqrt(3), A = PI * i.Dp * i.L, F_pull = Ss * A, L_Dp = i.L / i.Dp, Db_d = i.Db / i.d;
+    S.step(`Cisaillement admis : Ss = St / √3 = ${n(i.St)} / 1,732 = ${n(Ss)} MPa (Engineers Edge).`);
+    S.step(`Aire cisaillée : A = π Dp L = π × ${n(i.Dp)} × ${n(i.L)} = ${n(A)} mm².`);
+    S.step(`Effort d'arrachement : F = Ss A = ${n(Ss)} × ${n(A)} = ${n(F_pull)} N${i.F > 0 ? `, pour ${n(i.F)} N par vis : marge ${n(F_pull / i.F, 3)}` : ""}.`);
+    if (i.Dp >= i.d) S.warn("Le diamètre sur flancs est au moins le diamètre de la vis : vérifier les deux valeurs.");
+    if (L_Dp < 2.5) S.warn(`Prise de ${n(L_Dp, 3)} Dp : selon la page, le couple de foirage ne plafonne que vers 2,5 Dp — une prise plus longue laisse plus de marge au vissage.`);
+    if (Db_d < 2.5) S.warn(`Bossage de ${n(Db_d, 3)} d : la page conseille environ 2,5 fois le diamètre de la vis — un bossage plus mince peut fendre sous la pression du filet formé.`);
+    S.check("Effort par vis vs effort d'arrachement", i.F, F_pull, "N", { sf: i.sf });
+    return S.set({ Ss, A, F_pull, sf_pull: i.F > 0 ? Math.min(999, F_pull / i.F) : 999, F_max: F_pull / i.sf, L_Dp, Db_d });
+  } };
+
+export const JOINTS = [bolt, pressfit, pin, springStop, louvreStrip, plasticScrew];

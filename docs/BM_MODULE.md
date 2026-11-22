@@ -568,6 +568,48 @@ toucher le fond de chaque cellule — la cellule se pose sur son capteur.
   et brasées au bord de la carte (`BM-TAP-NI-P`, `BM-TAP-NI-M`).
 - Le CORE compte **18 pièces**, le module **171** ; aucune interférence dans un CORE, entre deux CORE, ni aux deux bouts (essais).
 
+## Itération 13 — l'effort sur la pile et la tenue des vis, l'échauffement du module fermé
+
+Demande de JP (22 novembre, la reprise du projet BM) : « effort sur la pile et tenue des vis, échauffement du module fermé ». Source :
+`web/js/demo/demo_bm_heat.js` ; trois calculs gardés dans le projet (écran Analytique, sous la pièce `BM-CASING`) ; essais :
+`tests/node/bm_heat.test.mjs`.
+
+**Les efforts** (`lidForces`, inchangés depuis l'itération 12) : 4 × 200 N de ressorts sur la pile, 2 × 150 N sur chaque plot, soit
+**1 400 N** sur l'anneau du couvercle du haut et **350 N par vis** (195 N à l'itération 11, avant les plots pressés) ; l'anneau du fond
+reçoit la pile et le plot A, 1 100 N, soit 275 N par vis.
+
+**La tenue des vis** — un nouveau modèle analytique, **`plastic_screw`** (« Vis autotaraudeuse dans un bossage plastique ») : l'effort
+d'arrachement **F = Ss π Dp L avec Ss = St / √3**, tel que l'imprime une page publique lue le 22 novembre (Engineers Edge, « Self
+Tapping Screws Installation Design ») ; la limite élastique du plastique vient du média (PC, 62 MPa), jamais du clavier. Pour les vis
+EVO PT 40 : le trou de 3,4 mm (0,85 d1, lu) tient lieu du diamètre sur flancs — la page dit que le trou égale ce diamètre —, une
+prise de 8 mm (2 d1, le minimum lu), le lobe du boîtier (Ø 8,4 mm) pour le bossage. Résultat : **3 060 N à l'arrachement pour 350 N,
+une marge de 8,7** (au coefficient demandé de 3, choix de l'outil : le PC flue sous une charge tenue, et il chauffe). Le modèle dit aussi
+deux choses : la prise de 8 mm est sous les 2,5 Dp où la page voit plafonner le couple de foirage (une vis plus longue, 10 mm, y
+arrive — le trou est alésé sur 12 mm) ; **le lobe est plus mince que les 2,5 d que la page conseille pour un bossage** (Ø 10 mm, soit
+3,3 mm de paroi autour du trou au lieu de 2,5) — il peut fendre au premier vissage. **À décider** : grossir les lobes à Ø 10 mm.
+
+**L'échauffement du module fermé** — le modèle « Masse thermique » (Incropera, chap. 5), les 64 cellules comme masse (médium
+« Cellule Li-ion cylindrique (homogénéisée) » de la base : 1 000 J/kg·K, valeurs d'usage), le boîtier dehors comme surface
+(1 924 cm²) dans l'air calme (h = 10 W/m²·K) à 40 °C, la limite de la surface des cellules en décharge (80 °C, fiche p. 3). Ce qui
+chauffe à 360 A :
+
+| Source | Puissance | Comment elle est comptée |
+|---|---|---|
+| 64 cellules, 45 A chacune | 1 037 W | 8 mΩ, la résistance AC de la fiche (1 kHz) : une **borne basse** — en courant continu, elle est plus forte |
+| 9 joints plans (borne − / CORE 1, 7 entre CORE, CORE 8 / borne +) | 15,5 W | Holm à 1 100 N : une **borne haute** |
+| Deux plots du couvercle du haut | 6,6 W | Holm à 300 N : une borne haute |
+| Busbar de retour 50 × 4 × 460 mm | 5,1 W | cuivre à 20 °C |
+
+**À 360 A, la surface des cellules atteint 80 °C en 175 s** (environ 3 min), alors qu'une décharge complète à ce courant dure 6 min :
+le module fermé, sans refroidissement, **ne tient pas le courant maximal de ses cellules pendant une décharge**. Le courant qu'il tient
+**pour toujours** dans l'air calme à 40 °C : **98 A** (79,5 W évacués à 80 °C), gardé comme **95 A en continu** (11,9 A par cellule).
+C'est une entrée pour la machine à états du BMS central : au-delà, l'état « dératé » limite la durée ou le courant.
+
+**Pas fait** : la résistance des cellules en courant continu (à mesurer, ou à lire sur une fiche plus complète) ; la résistance de
+l'air enfermé et de la paroi de PC (le modèle est **optimiste**) ; la chaleur des busbars laminés des CORE, du contacteur et du
+connecteur ; un calcul transitoire par la Simulation ; un essai d'arrachement d'une vis dans le PC extrudé ; le fluage du PC chaud sous
+350 N ; la tenue des vis du fond dans les entretoises ; aucun exemple publié n'a validé la formule d'arrachement (la page n'en donne pas).
+
 ## Ce qu'il contient
 
 | Élément | Ce que c'est | Où |

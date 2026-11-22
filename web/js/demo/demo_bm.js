@@ -35,6 +35,7 @@ import { contactLayout, busbarContacts, lvContactPart, tapParts, lvBody } from "
 import { casingPart, terminalParts, returnSizing, casingPaths } from "./demo_bm_case.js";
 import { topEnd } from "./demo_bm_lid.js";
 import { bottomEnd } from "./demo_bm_bottom.js";
+import { screwHolding, heatCalcs } from "./demo_bm_heat.js";
 
 /* Iteration 2 (JP, 21 novembre : « garder les L pressés » ; « le max de courant continu des 21700 P45B de Molicel, en décharge et en charge,
    la valeur la plus élevée — on est en 8s8p avec 8 CORE » ; then the flex in G). The cell is the Molicel INR-21700-P45B of the library, its
@@ -108,7 +109,7 @@ export function busbarSizing() {
 export function bmProject() {
   const p = { dw: "project/1", id: "bm-8s8p-21700", name: "BM 8s8p - 21700", author: "DesignWizard.ai",
     description: "Module de batterie 8s8p en cellules 21700 : 8 CORE 1S8P en série, côte à côte, chacun avec sa carte de mesure posée dessus. Douzième itération : le CORE refait — busbar laminé industriel sur le dessus, soudures laser dessinées, joints plans pressés par les ressorts du couvercle, capteurs dans le support du bas.",
-    parts: [JSON.parse(JSON.stringify(CELL))], assemblies: [], boards: [coreBoard()], drawing: { words: WORDS_BM }, physics: [busbarSizing(), returnSizing(I_CORE)], log: [] };
+    parts: [JSON.parse(JSON.stringify(CELL))], assemblies: [], boards: [coreBoard()], drawing: { words: WORDS_BM }, physics: [busbarSizing(), returnSizing(I_CORE), screwHolding(), ...heatCalcs(CASE_L)], log: [] };
   const layout = contactLayout(CORE_X, D), z = stackOf({ H, ins: INS_T, t: BB_T, w: WRAP_T });
   const o = { X: CORE_X, Y: CORE_Y, H, t: BB_T, ins: INS_T, w: WRAP_T, e: GAP, grid: D, gap: GAP, rows: ROWS };
   const contacts = busbarContacts(layout, { Y: CORE_Y, ins: INS_T, t: BB_T, H, top: z.zF1 }), flex = coreFlex({ ...o, top: STACK, floor: FLOOR_T });

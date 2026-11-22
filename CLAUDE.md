@@ -457,6 +457,11 @@ fabrication virtuel)** — faits (v0.142.0 à v0.145.0) ; le projet BM bonifié 
    une pastille de mousse dessous ; **la tension** par deux languettes de nickel. 18 pièces par CORE, 171 dans le module, aucune
    interférence. Reste : un essai de résistance d'un joint plan réel, la soudure sur l'épaule (Molicel), le formage des cônes, la
    rondelle ondulée des plages LV, les plages crénelées et les trous de la carte (PCBA), l'échauffement du module fermé.
+   **Itération 13 (v0.163.0)** — la reprise demandée : la tenue des vis des couvercles par un nouveau modèle, `plastic_screw` (F = Ss π Dp L,
+   Ss = St / √3, page Engineers Edge lue ; aucun exemple publié, `NONE`) — 3 060 N pour 350 N par vis, mais un lobe de Ø 8,4 mm sous les
+   2,5 d conseillés (**à décider** : Ø 10 mm) ; l'échauffement du module fermé par la « masse thermique » (`demo/demo_bm_heat.js`) — à 360 A,
+   80 °C à la surface des cellules en 175 s, 95 A tenus pour toujours dans l'air calme (optimiste, cellules comptées au plus bas). Reste :
+   la carte BMS centrale et sa machine à états (le seuil de dératation vient de là), la résistance DC des cellules, un essai d'arrachement.
    **JP, 22 novembre, ensuite** : « après itération 12, svp corriger l'interface avec les points restants » — une fois l'itération 12 publiée,
    reprendre les points d'interface restants (les « Reste » de cette liste qui touchent l'interface), sans menu entre eux.
    **JP, 22 novembre, par menu : « les 4 pts en ordre svp, en continu »** — dans cet ordre, chacun publié, sans menu entre eux : (1) le point 17
