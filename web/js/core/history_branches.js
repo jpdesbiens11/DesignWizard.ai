@@ -29,11 +29,12 @@ function settle(h, base, pieces) {
 }
 const mergedSet = (h) => new Map(((h && h.points) || []).filter((p) => p.merged).map((p) => [p.merged, p.id]));      // a point taken into MAIN → the merge point
 
-/** Where a branch starts from, for a merge : walking back from its last point, the first point that is on MAIN or already merged into it. → point | null */
-export function baseOf(h, name) {
+/** Where a branch starts from, for a merge : walking back from its last point (or from the point `from`), the first point that is on MAIN or
+    already merged into it. → point | null */
+export function baseOf(h, name, from = null) {
   if (name === MAIN) return null;
   const names = branchNames(h), merged = mergedSet(h), seen = new Set();
-  for (let p = tipOf(h, name); p && !seen.has(p.id); p = pointOf(h, p.parent)) { seen.add(p.id); if (names.get(p.id) === MAIN || merged.has(p.id)) return p; }
+  for (let p = from ? pointOf(h, from) : tipOf(h, name); p && !seen.has(p.id); p = pointOf(h, p.parent)) { seen.add(p.id); if (names.get(p.id) === MAIN || merged.has(p.id)) return p; }
   return null;
 }
 /** The branches, MAIN first. → [{ name, points, tip, fork, by, dropped, here, ahead (points not yet in MAIN), base, mergedAt, imported }] */
@@ -60,9 +61,11 @@ export function branchLayout(h) {
 
 /** What merging a branch into MAIN would do, in one block. → { branch, tip, main, base, take, lost, kept, offs, doc, nothing } | null
     take : what comes from the branch (added or changed) ; lost : what MAIN had changed too, and gives up ; kept : what the branch took out
-    and MAIN keeps ; offs : the instances that come back at Off ; doc : the product after the merge. */
-export function mergePlan(h, name) {
-  const tip = name !== MAIN && tipOf(h, name), main = tipOf(h, MAIN), base = baseOf(h, name);
+    and MAIN keeps ; offs : the instances that come back at Off ; doc : the product after the merge. at : a point of the branch to merge up to
+    (JP, 22 novembre : « à partir du point d'une branche, on merge avec le MAIN ») — its last point when omitted ; the points after it stay in
+    the branch. */
+export function mergePlan(h, name, at = null) {
+  const pick = at && pointOf(h, at), tip = name !== MAIN && (pick && branchNames(h).get(pick.id) === name ? pick : at ? null : tipOf(h, name)), main = tipOf(h, MAIN), base = tip && baseOf(h, name, tip.id);
   if (!tip || !main || !base) return null;
   const B = new Map(base.tree), T = new Map(tip.tree), M = new Map(main.tree), texts = h.objects, extra = {}, R = new Map(main.tree);
   const take = [], lost = [], kept = [], offs = [];

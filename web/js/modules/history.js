@@ -16,8 +16,8 @@ import { registerModule, setGuide } from "../core/app.js";
 import { guideBox } from "../core/guide.js";
 import { toDwiz } from "../core/dwiz.js";
 import { historyOf, pointOf, addPoint, restoreInto, sinceThen, diffTrees, changeCount, setDropped, weight, pointProject, contextOf, historyGuide, POINT_KINDS, ART_KINDS, MAIN, nextBranch, branchNames } from "../core/history.js";
-import { freeName, startBranch, branchSuggestion } from "../core/history_branches.js";
-import { branchSection, branchGuide } from "./history_branches_ui.js";
+import { freeName, startBranch, branchSuggestion, mergePlan } from "../core/history_branches.js";
+import { branchSection, branchGuide, openMerge } from "./history_branches_ui.js";
 import { historyTree } from "./history_tree.js";
 
 const VERB = { added: ["ajouté", "#16a34a"], removed: ["retiré", "#dc2626"], changed: ["modifié", "#b45309"] };
@@ -126,9 +126,15 @@ function render(main, args) {
     clear(right);
     if (!pt) { right.append(el("div", { class: "side-head" }, el("h2", null, "Un point")), el("p", { class: "muted small side-scroll" }, "Choisissez un point dans l'arbre : ce qu'il garde, son journal, ce qui a changé depuis, et le retour.")); return; }
     const K = POINT_KINDS[pt.kind] || POINT_KINDS.manual, c = pt.context || {}, here = pt.id === h.head, others = (h.points || []).filter((x) => x.id !== pt.id);
+    /* a point of a branch : « Fusionner dans MAIN » up to it, always there — primary when the branch brings something (JP, 22 novembre : « il
+       manque un bouton pour qu'à partir du point d'une branche on merge avec le MAIN ») */
+    const br = branchNames(h).get(pt.id), plan = br && br !== MAIN ? (() => { try { return mergePlan(h, br, pt.id); } catch (e) { return null; } })() : null, brings = !!plan && !plan.nothing || (here && changeCount(sinceThen(p, pt.id)) > 0);
+    const merge = br && br !== MAIN ? tagged(btn("Fusionner dans MAIN", () => openMerge(br, { changeList, pick: (id) => { st.sel = id; mark(); draw(); requestAnimationFrame(() => tree.focus(id)); } }, pt.id),
+      { primary: brings, icon: "branch", tip: brings ? `Ce que « ${br} » a changé jusqu'à ${pt.id} passe dans MAIN, d'un bloc — l'aperçu d'abord, une étape annulable ; vous revenez sur MAIN` : `Rien à fusionner : jusqu'à ${pt.id}, « ${br} » garde le produit tel que MAIN l'a` }), { historyMergePoint: pt.id }) : null;
     right.append(el("div", { class: "side-head" }, el("h2", null, `${pt.id} — ${pt.label}`)),
       el("div", { class: "side-actions" }, el("div", { class: "side-actions-row" },
-        btn("Revenir à ce point", () => goBack(pt.id), { primary: true, icon: "undo", disabled: here && !changeCount(sinceThen(p, pt.id)), tip: here ? "Vous êtes déjà ici ; revenir défait ce qui a changé depuis" : "Le produit redevient celui de ce point — une étape annulable" }),
+        merge,
+        btn("Revenir à ce point", () => goBack(pt.id), { primary: !merge || !brings, icon: "undo", disabled: here && !changeCount(sinceThen(p, pt.id)), tip: here ? "Vous êtes déjà ici ; revenir défait ce qui a changé depuis" : "Le produit redevient celui de ce point — une étape annulable" }),
         tagged(btn("Nouvelle branche ici", () => openFork(pt.id), { icon: "branch", tip: "Partir de ce point dans une branche nommée, à côté : la branche d'où elle part ne bouge pas ; elle se fusionne dans MAIN quand elle est prête" }), { historyFork: pt.id }),
         btn(".dwiz", () => takeAway(pt.id), { icon: "download", tip: "Ce point comme un projet complet, qui s'ouvre seul" }))));
     const body = el("div", { class: "side-scroll" }); right.append(body);

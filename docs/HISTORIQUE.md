@@ -99,6 +99,12 @@ branche se fusionne d'un bloc** ; une pièce que le côté qui l'emporte n'a pas
   « Travailler sur cette branche » passent de l'une à l'autre ; « Fusionner dans MAIN » ne paraît que lorsque la branche
   apporte quelque chose. C'est l'usage d'un client de gestion de versions (créer une branche sur un commit, puis
   basculer de l'une à l'autre) ; `startBranch` et `branchSuggestion` de `web/js/core/history_branches.js`.
+- **« Fusionner dans MAIN » depuis un point de branche** (JP, 22 novembre : « il manque un bouton pour qu'à partir du point
+  d'une branche on merge avec le MAIN pour revenir dans le chemin principal après des tests concluants ») : dans la marge de
+  droite de tout point d'une branche, le bouton est toujours là — en bleu quand la branche apporte quelque chose, sinon il
+  dit pourquoi il n'y a rien à fusionner. Il fusionne **jusqu'à ce point** : les points d'après restent dans la branche
+  (`mergePlan(h, nom, point)`) ; l'aperçu d'abord, une étape annulable, puis « vous êtes ici » revient sur MAIN, au point de
+  fusion. Le bouton de la section « Les branches » fusionne la branche entière.
 - **L'arbre** : une colonne par branche, **MAIN au centre** — autant de colonnes à sa gauche qu'à sa droite —, plus
   épaisse, nommée en tête ; les autres branches s'ouvrent à droite, puis à gauche, dans l'ordre où elles naissent, et
   leur nom est écrit sur leur dernier point. Un point de fusion reçoit une seconde ligne, en tirets, depuis le bout de

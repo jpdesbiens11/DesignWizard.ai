@@ -9,7 +9,7 @@
 import { el, btn, toast, modal, field } from "../core/dom.js";
 import { store } from "../core/store.js";
 import { fromDwiz } from "../core/dwiz.js";
-import { MAIN, historyOf, pointOf, addPoint, putDefinition, sinceThen, changeCount, contextOf } from "../core/history.js";
+import { MAIN, historyOf, pointOf, addPoint, putDefinition, sinceThen, changeCount, contextOf, tipOf } from "../core/history.js";
 import { branchList, branchLayout, mergePlan, importPlan, importBranch, freeName } from "../core/history_branches.js";
 import { laneColor } from "./history_tree.js";
 
@@ -39,34 +39,36 @@ export function branchSection(h, ctx) {
     el("ul", { class: "hist-branch-list", "data-history-branches": "" }, B.map((b) => {
       const tip = pointOf(h, b.tip), main = b.name === MAIN, color = laneColor(lanes, b.name);
       const meta = main ? `${plural(b.points.length, "point", "points")} · la branche principale` : [`part de ${b.fork || "—"}`, b.by ? `par ${b.by}` : "", b.imported ? "importée" : "",
-        brings(h, b) ? `${plural(b.ahead, "point", "points")} pas encore dans MAIN` : b.ahead && !b.mergedAt ? "rien de changé encore" : b.mergedAt ? `fusionnée (${b.mergedAt})` : "rien de neuf pour MAIN", b.dropped ? "abandonnée" : ""].filter(Boolean).join(" · ");
+        brings(h, b) ? `${plural(b.ahead, "point", "points")} pas encore dans MAIN` : b.ahead && !b.mergedAt ? "rien de changé encore par rapport à MAIN" : b.mergedAt ? `fusionnée (${b.mergedAt})` : "rien de neuf pour MAIN", b.dropped ? "abandonnée" : ""].filter(Boolean).join(" · ");
       return el("li", { class: `${main ? "main" : ""}${b.dropped ? " dropped" : ""}`, style: `--lane:${color}`, "data-branch": b.name },
         el("span", { class: "hist-branch-name" }, b.name), b.here ? el("span", { class: "muted small" }, " · vous êtes ici") : null,
         el("span", { class: "hist-branch-meta" }, meta, ` — bout : ${tip.id} ${tip.label}`),
         el("div", { class: "hist-branch-acts" },
           b.here && h.head === b.tip ? null : btn(main ? "Revenir à MAIN" : "Travailler sur cette branche", () => ctx.goTo(b.tip), { small: true, icon: "branch", tip: `Le produit redevient celui du bout de « ${b.name} » (${b.tip}) ; les points suivants iront dans cette branche` }),
-          !main && !b.dropped && brings(h, b) ? tag(btn("Fusionner dans MAIN", () => openMerge(b.name, ctx), { small: true, primary: true, icon: "branch", tip: "Voir ce qui passerait dans MAIN, puis fusionner d'un bloc (une étape annulable)" }), { historyMerge: b.name }) : null,
+          !main && !b.dropped ? tag(btn("Fusionner dans MAIN", () => openMerge(b.name, ctx), { small: true, primary: brings(h, b), icon: "branch", tip: brings(h, b) ? "Voir ce qui passerait dans MAIN, puis fusionner d'un bloc (une étape annulable)" : "Rien à fusionner pour l'instant : la branche garde le produit tel que MAIN l'a" }), { historyMerge: b.name }) : null,
           main || b.here ? null : btn(b.dropped ? "Reprendre" : "Abandonner", () => ctx.drop(b.tip, !b.dropped), { small: true, tip: b.dropped ? "La branche redevient une branche comme les autres" : "La mettre de côté : elle reste gardée, pâle dans l'arbre" })));
     })), importRow(ctx));
 }
 
 /** « Fusionner dans MAIN » : the preview, then one undoable step and a merge point. What « ici » has that no point keeps is kept first by a
     point « Avant la fusion », on its own branch — the preview already counts it. */
-export function openMerge(name, ctx) {
+export function openMerge(name, ctx, at = null) {
   const p = store.project, h = historyOf(p), head = pointOf(h, h.head), pending = head ? changeCount(sinceThen(p, head.id)) : 0;
   const trial = pending ? JSON.parse(JSON.stringify(p)) : p; if (pending) addPoint(trial, { kind: "before", label: "Avant la fusion" });
-  const plan = mergePlan(historyOf(trial), name); if (!plan || plan.nothing) { toast(`« ${name} » n'a rien que MAIN n'ait déjà.`, "info", 4000); return; }
+  const last = tipOf(h, name), upTo = !at || (last && at === last.id) || (at === (head && head.id) && pending) ? null : at;      // the last point, or « ici » with changes (its « Avant la fusion » point carries them) : the whole branch
+  const plan = mergePlan(historyOf(trial), name, upTo);
+  if (!plan || plan.nothing) { toast(`Rien à fusionner : depuis qu'elle a quitté MAIN, « ${name} »${upTo ? ` (jusqu'à ${upTo})` : ""} garde le produit tel que MAIN l'a. Changez quelque chose, posez un point dans la branche, puis fusionnez.`, "info", 8000); return; }
   const go = () => {
     m.close();
     if (pending) store.writeHistory("Point avant la fusion", (x) => addPoint(x, { kind: "before", label: `Avant la fusion de « ${name} »`, context: contextOf(x) }));
-    const real = mergePlan(historyOf(store.project), name);
+    const real = mergePlan(historyOf(store.project), name, upTo);
     store.commit(`Fusion de « ${name} » dans MAIN`, (x) => { putDefinition(x, real.doc); });
     let pt = null; store.writeHistory("Fusion dans MAIN", (x) => { historyOf(x).head = real.main; pt = addPoint(x, { kind: "merge", branch: MAIN, merged: real.tip, label: `Fusion de « ${name} »`, by: (x.team && x.team.owner) || "", context: contextOf(x) }).point; });
     if (pt) ctx.pick(pt.id);
     toast(`« ${name} » est dans MAIN (${pt ? pt.id : ""}).${real.offs.length ? ` ${plural(real.offs.length, "pièce revient", "pièces reviennent")} à Off, grisée${real.offs.length > 1 ? "s" : ""} : activez-les dans l'Assemblage pour les replacer.` : ""} Ctrl + Z défait la fusion.`, "success", 8000);
   };
   const m = modal(`Fusionner « ${name} » dans MAIN`, [
-    el("p", { class: "small" }, `La branche part de ${plan.base}. Ce qu'elle a changé depuis passe dans MAIN, d'un bloc ; ce qu'elle n'a pas touché reste comme MAIN l'a. Une étape, annulable par Ctrl + Z ; un point de fusion se pose sur MAIN.`),
+    el("p", { class: "small" }, `La branche part de ${plan.base}${upTo ? ` ; elle est fusionnée jusqu'à ${plan.tip} — les points d'après restent dans la branche` : ""}. Ce qu'elle a changé depuis passe dans MAIN, d'un bloc ; ce qu'elle n'a pas touché reste comme MAIN l'a. Une étape, annulable par Ctrl + Z ; un point de fusion se pose sur MAIN.`),
     pending ? el("p", { class: "small" }, `${plural(pending, "changement", "changements")} qu'aucun point ne garde ${pending > 1 ? "seront d'abord gardés" : "sera d'abord gardé"} par un point « Avant la fusion ».`) : null,
     el("p", { class: "hist-merge-group" }, `Ce qui vient de « ${name} » — ${plan.take.length}`), ctx.changeList(asGroup(plan.take), 40),
     plan.lost.length ? el("div", { "data-merge-lost": "" }, el("p", { class: "hist-merge-group warn" }, `MAIN l'avait changé aussi — sa version est remplacée (${plan.lost.length})`), ctx.changeList({ added: [], removed: [], changed: plan.lost }, 40)) : null,

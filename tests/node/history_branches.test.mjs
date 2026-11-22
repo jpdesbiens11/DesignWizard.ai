@@ -112,6 +112,15 @@ test("« Nouvelle branche ici » on the last point of MAIN : a branch beside it 
   assert.equal(startBranch(project(), "x"), null, "no point, no branch");
 });
 
+test("merging from a point of a branch : up to that point — the points after it stay in the branch ; the last point is the whole branch", () => {
+  const p = story(), h = historyOf(p);
+  const upTo = mergePlan(h, "Couvercle", "P3"), whole = mergePlan(h, "Couvercle"), same = mergePlan(h, "Couvercle", "P4");
+  assert.equal(upTo.tip, "P3"); assert.equal(whole.tip, "P4"); assert.equal(same.tip, "P4"); assert.equal(upTo.base, "P1");
+  assert.equal(upTo.doc.parts.find((x) => x.id === "DW-0002").name, "Couvercle", "up to P3 : the lid as it was then");
+  assert.equal(whole.doc.parts.find((x) => x.id === "DW-0002").name, "Couvercle embouti", "the whole branch : the lid renamed");
+  assert.equal(mergePlan(h, "Couvercle", "P2"), null, "a point of another branch is not a point of this one");
+});
+
 test("a branch opened from an older point, its name taken : a free one ; a branch that changed nothing brings nothing to MAIN", () => {
   const p = project(); addPoint(p, { label: "A", when: at() }); addPoint(p, { label: "B", kind: "manual", when: at() });
   restoreInto(p, "P1"); const a = startBranch(p, "Essai", { when: at() }); assert.equal(a.parent, "P1"); assert.equal(a.branch, "Essai");
@@ -123,7 +132,7 @@ test("a branch opened from an older point, its name taken : a free one ; a branc
 test("wired : the screen, the tree, the sources, the news, the documents", () => {
   const ui = read("web/js/modules/history.js") + read("web/js/modules/history_branches_ui.js");
   assert.match(ui, /mergePlan/); assert.match(ui, /importPlan/); assert.match(ui, /historyMerge:/); assert.match(ui, /data-history-import/);
-  assert.match(ui, /startBranch/); assert.match(ui, /historyFork:/); assert.match(ui, /historyForkHere:/); assert.match(ui, /Nouvelle branche ici/);
+  assert.match(ui, /startBranch/); assert.match(ui, /historyMergePoint:/); assert.match(ui, /historyFork:/); assert.match(ui, /historyForkHere:/); assert.match(ui, /Nouvelle branche ici/);
   assert.match(read("web/js/modules/history_tree.js"), /branchLayout/); assert.match(read("web/js/modules/history_tree.js"), /data-lane/);
   assert.match(read("docs/HISTORIQUE.md"), /MAIN/); assert.match(read("docs/HISTORIQUE.md"), /Nouvelle branche ici/); assert.match(read("CLAUDE.md"), /history_branches\.js/);
 });
