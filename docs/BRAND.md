@@ -19,6 +19,7 @@ le produit s'appelle désormais **DesignOrbit.ai** et son monde est celui des fu
 | L1. Compas-fusée | Les deux branches du compas forment le corps de la fusée ; une coiffe jaune à hublot à la place de l'étincelle. | Proposée : la plus sobre. |
 | L2. Fusée au pivot | Une petite fusée complète posée sur le pivot ; le compas trace son orbite. | Proposée : un peu fine à 16 px. |
 | **L3. Sur sa trajectoire** | Le compas trace l'orbite (l'arc bleu) ; la fusée le quitte, inclinée, sur une trajectoire pointillée qui part du bord de l'orbite. | **Retenue par JP** : la plus dynamique, l'orbite du nom. |
+| C. L'éclair mis en orbite (v0.177.0, DynamiteOrbit) | Le carré jaune et l'éclair de la famille DynamiteAgile, une orbite bleue, une étincelle orange. | Remplacée par JP en v0.178.0. |
 | A. Compas-chapeau (avant) | Le compas dont les branches formaient un chapeau de magicien, une étincelle au pivot. | Remplacée le 22 novembre 2026. |
 
 ### Construction (grille de 64, module 8)

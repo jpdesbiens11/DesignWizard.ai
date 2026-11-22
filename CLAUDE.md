@@ -6,7 +6,7 @@ https://jpdesbiens11.github.io/DynamiteOrbit.ai/ — des adresses, pas le nom du
 casser : le dossier « DesignWizard.ai » du Google Drive de JP (communications), le format `.dwiz`, les réglages gardés du
 navigateur (`dw.*`), le fichier `designwizard.py`, le film et la bande-annonce tant que leur voix n'est pas refaite.
 
-Consignes permanentes de JP (propriétaire du dépôt). Elles s'appliquent à toute session.
+Consignes permanentes de JP (propriétaire du dépôt). Elles s'appliquent à toute session. (Le nom DynamiteOrbit, posé en v0.174.0 parce que DesignWizard.ai était pris, et son symbole « l'éclair mis en orbite » de v0.177.0 sont remplacés en v0.178.0 par DesignOrbit.ai et la fusée du compas — JP, par menu, après qu'on lui eut montré le nom déjà publié.)
 
 ## Façon de travailler
 
@@ -138,17 +138,18 @@ premier) ; on descend « Prochaines actions » dans l'ordre ; ce qui est fait se
 plus bas, avec sa version. Une revue de la liste se fait à chaque reprise de séance.
 
 **Prochaines actions** (dans l'ordre)
-1. **Interview de JP** : son idée pour l'interface des batteries avec le boîtier — ce que c'est, ce qu'elle fait avec
+1. **Pivot du nom et de la marque** (JP, 22 novembre) — **nom : DesignOrbit.ai** depuis v0.178.0 (JP, par menu, dans la tâche des icônes ; avant : « nom fixé : DynamiteOrbit », par menu ; dynamiteorbit.ca réservé par JP, déployé sur ce domaine dans environ deux semaines, à la fin de ses travaux de cadre). Dans ce chat : le cadre, le nom et la marque seulement, aucune conception. ~~Renommer le produit partout~~ — fait (v0.174.0) : ce qui se lit change ; le format .dwiz, les clés `dw.`, les numéros DW-, les noms de fichiers et les dossiers Drive (retrouvés par leur propriété) restent ; le film et le teaser gardent l'ancien nom tant que leur voix n'est pas enregistrée de nouveau. **Reste, dans l'ordre** : ~~(a) JP renomme le dépôt GitHub~~ — fait : `jpdesbiens11/DynamiteOrbit.ai` (tout le matériel et le code y vont), démo à https://jpdesbiens11.github.io/DynamiteOrbit.ai/ ; (b) **le nouveau visuel** — planche d'identité v1 (https://claude.ai/artifact/7AzCdNsEq7rQseozYGKvz9) : « Dynamite » orange, le carré jaune au trait d'encre, le carnet quadrillé de DynamiteAgile, l'altitude en km (la mine descend en mètres, la fusée monte) ; JP : « commençons avec les éléments actuels, on finetunera » — **seuls les éléments visuels et les couleurs changent, pour un design uniforme et attrayant pour les jeunes ingénieurs et ingénieures ; rien du contenu technique ni de la place des fonctions de l'interface** ; ~~le symbole « l'éclair mis en orbite » (piste C)~~ — fait (v0.177.0), puis remplacé par JP (v0.178.0) : la fusée quitte le compas sur sa trajectoire (L3) ; l'idée « bâtir la fusée en plein vol vers les étoiles » dans le ton et la présentation ; (c) la voix du film et du teaser enregistrée de nouveau ; (d) recherche CIPO pour le nom retenu (DESIGNORBIT) ; dynamiteorbit.ca, réservé par JP, ne correspond plus au nom — à lui de voir.
+2. **Interview de JP** : son idée pour l'interface des batteries avec le boîtier — ce que c'est, ce qu'elle fait avec
    l'interface des blocs (les CORE, le + et le −), l'analogie sur laquelle on s'appuie ; et les couvercles du fond et du
    haut retravaillés « comme les produits grand public, plus compacts ». Attendre ses autres idées avant de construire.
-2. ~~**Historique : effacer un point de sauvegarde** un à un — les points d'après se rattachent au point d'avant ; une
+3. ~~**Historique : effacer un point de sauvegarde** un à un — les points d'après se rattachent au point d'avant ; une
    branche qui n'avait que ce point meurt et l'on revient à MAIN~~ — fait (v0.170.0 : « Effacer ce point », `deletePlan`, `deletePoint`).
-3. ~~**BM — concept 2** : un point de sauvegarde de MAIN, puis une branche parallèle **« concept 2 - consumer product
+4. ~~**BM — concept 2** : un point de sauvegarde de MAIN, puis une branche parallèle **« concept 2 - consumer product
    interface »**~~ — premier jet fait (v0.171.0 : `demo/demo_bm_c2.js`, `withConceptTwo` ; P1 « Concept 1 » sur MAIN, P2 sur la branche ;
    la carte de l'accueil ouvre la branche). **À itérer avec JP** : les capteurs de température (la face − est un contact), les prises de
    tension, la chaîne RS-485 d'un CORE à l'autre, les barres du couvercle du fond, les rampes de la came, les vis et les joints.
 
-4. **BM — concept 3** (JP, 22 novembre, après la came détaillée du concept 2 — « le concept 2 n'est pas correct ») : une 3e branche, partie
+5. **BM — concept 3** (JP, 22 novembre, après la came détaillée du concept 2 — « le concept 2 n'est pas correct ») : une 3e branche, partie
    du concept 1 (MAIN) : cellules PERPENDICULAIRES à l'axe d'insertion du module, comme au concept 1 ; les CORE s'assemblent l'un à l'autre,
    contacts face à face, − contre +, DANS l'axe d'insertion (comme au concept 1) ; y mettre des contacts haute puissance à lames ; couvercles
    debout. Commencer SIMPLE, puis complexifier ensemble. Pas de ressorts de produit grand public (2–3 A) : des ressorts fins et compacts,
@@ -156,8 +157,10 @@ plus bas, avec sa version. Une revue de la liste se fait à chaque reprise de s�
    de 2,5 mm au bout +X de chaque jambe +, une pince à deux bandes à lamelles sur chaque jambe −, rondelles ressorts au couvercle, boîtier 10 mm
    plus large, pas inchangé (`demo/demo_bm_c3.js`, `docs/BM_MODULE.md`). **Cette conversation ne parle que de conception** (JP : « plus de
    conversation mêlée framework et conception… surveille-moi ») : une demande sur l'application va dans une tâche à part.
-5. **Icônes : remplacer le chapeau de sorcier** par une alternative du monde des fusées, puis toutes les icônes (JP, 22 novembre) — framework :
-   tâche à part, proposée à JP en carte ; ne pas la faire dans la conversation de conception.
+   ~~**Pince détaillée**~~ (JP, par menu) — fait (v0.176.0) : logements des bandes, chanfreins d'entrée, talon brasé, effort des lamelles lu
+   (Weftron 112 : 5–30 N par pont), mâchoire vérifiée ; l'effort d'insertion n'est pas publié dans ce qui a été lu. Suite proposée par menu.
+5. ~~**Icônes : remplacer le chapeau de sorcier** par une alternative du monde des fusées, puis toutes les icônes (JP, 22 novembre) — framework.~~ — fait (v0.178.0, voir plus bas).
+   Priorité, par menu : « Tâche à part, maintenant » — lancée par JP depuis sa carte, dans une autre conversation ; pas dans celle de conception.
 
 **Réponses de l'interview** (JP, 22 novembre, par menu — les quatre choix conseillés) : les CORE **en ligne, pressés**, comme des piles D
 dans une lampe — le + de l'un contre le − du suivant, la pile pressée par la poignée du haut, le retour du courant le long du boîtier ; sur la
@@ -180,7 +183,7 @@ de course et goupille de butée, butée à aiguilles ou rondelle bronze / PTFE v
 rotation), réaction axiale reprise par un circlip ou un épaulement, clavette ajustée (pas de jeu au retour). Lecture : un CORE est déjà
 une « grosse pile » (8 cellules en parallèle, + sur la face des calottes, − sur celle des fonds).
 
-**Fait (v0.176.0)** — **Icônes et logo du monde des fusées, nom DesignOrbit.ai** (JP, 22 novembre, par menus) : le chapeau de
+**Fait (v0.178.0)** — **Icônes et logo du monde des fusées, nom DesignOrbit.ai** (JP, 22 novembre, par menus) : le chapeau de
 sorcier (icône `wizard`) devient une **tour de lancement et sa fusée** ; **toutes les icônes** suivent une seule famille, la
 « ligne de mission » (`mission()` de `tools/sketch_icons.py` : coins de panneau arrondis, mêmes noms, mêmes sens) ; **Le.Carnet
 garde son crayonné** ; le logo devient **L3 — la fusée quitte le compas sur sa trajectoire**, une seule figure (`LOGO`,
