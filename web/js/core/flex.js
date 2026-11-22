@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the flexible circuit : a thin polyimide strip, folded where the product asks, that carries tracks —
+/* DesignOrbit.ai — the flexible circuit : a thin polyimide strip, folded where the product asks, that carries tracks —
    one per function it connects — and small sensors along its way : temperature probes pressed on what they watch, voltage
    taps welded on a busbar or a cell. It ends in a stiffened tail that enters a connector of the library, or is soldered
    on a rigid board. The designer gives the strip, its legs, the functions to carry and where the sensors sit ; the tracks

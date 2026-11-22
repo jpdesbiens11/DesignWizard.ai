@@ -1,4 +1,4 @@
-/* DynamiteOrbit — creepage: the shortest path along the insulating surfaces between the conductors of two nets ("the ant").
+/* DesignOrbit.ai — creepage: the shortest path along the insulating surfaces between the conductors of two nets ("the ant").
    Graph on the surfaces of the insulators: the big triangles are bisected (edges ≤ 5 × step), Steiner points are put on
    the triangle edges (spacing ≤ step) and all the points on the boundary of a triangle see each other in a straight line.
    - sources / targets: surface points in contact with a conductor of net A / B (distance ≤ contactTol); a leg that leaves

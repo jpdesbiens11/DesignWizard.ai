@@ -1,4 +1,4 @@
-/* DynamiteOrbit — docs/VALIDATION.md, written from the reference cases themselves : every case is replayed, and the table says
+/* DesignOrbit.ai — docs/VALIDATION.md, written from the reference cases themselves : every case is replayed, and the table says
    what the source prints, what the tool finds and the gap. A test holds the file to what this script writes.
      node tools/validation_doc.mjs          writes docs/VALIDATION.md
      import { validationDoc }               the text, for the test */

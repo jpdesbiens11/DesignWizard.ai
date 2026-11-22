@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the mates of an assembly as a tree, by health : broken first, then to check, then sound. Each mate
+/* DesignOrbit.ai — the mates of an assembly as a tree, by health : broken first, then to check, then sound. Each mate
    has its number, the two parts it joins and the colour of its state — the same in the tree and on its label in the 3D
    view. The labels of a state show when its eye is open (what is wrong shows by default, what is sound stays quiet) ; the
    selected mate always shows. Pure : the Assembly screen draws the tree, the view takes the same colours. */

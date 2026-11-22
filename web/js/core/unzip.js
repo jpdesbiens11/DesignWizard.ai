@@ -1,4 +1,4 @@
-/* DynamiteOrbit — reading a .zip (the folder an assistant hands back : several .dwiz or JSON files in one archive).
+/* DesignOrbit.ai — reading a .zip (the folder an assistant hands back : several .dwiz or JSON files in one archive).
    The counterpart of core/zip.js, which writes one. No dependency : the central directory is read by hand, and a compressed
    entry is inflated by the browser itself (DecompressionStream, « deflate-raw »). Only what the door of the Shop needs :
    entries stored or deflated, no encryption, no ZIP64 ; an entry too large, or of another kind, is reported and left. */

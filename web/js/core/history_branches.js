@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the BRANCHES of the history : drawn side by side with MAIN in the centre, a branch merged into MAIN in ONE block, and the
+/* DesignOrbit.ai — the BRANCHES of the history : drawn side by side with MAIN in the centre, a branch merged into MAIN in ONE block, and the
    work of a teammate read from their file as a branch of its own (demande de JP, 21 novembre 2026 : « faire des branches visuellement en
    parallèle et de pouvoir les merger ensemble au MAIN (la branche du centre)… des designs différents en équipe en parallèle (même si
    certaines pièces ne sont pas dans certaines variantes… elle apparaît en grisé et est désactivée mais on peut l'activer) » ; choices

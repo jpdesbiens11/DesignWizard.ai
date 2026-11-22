@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the line of a folder in a list (core/folders.js says what a folder is). One look for every list : a chevron,
+/* DesignOrbit.ai — the line of a folder in a list (core/folders.js says what a folder is). One look for every list : a chevron,
    the pictogram of a folder, its name, how many entries it holds — and, at the end of the line, what applies to all of them.
    A click folds or unfolds ; with Ctrl or Shift it chooses every entry of the folder, as it would choose a line. */
 

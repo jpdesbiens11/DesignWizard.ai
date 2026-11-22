@@ -1,4 +1,4 @@
-/* DynamiteOrbit — artefacts: what a part or an assembly hands to the rest of the industry. One generator for the
+/* DesignOrbit.ai — artefacts: what a part or an assembly hands to the rest of the industry. One generator for the
    downloads, for the project tree in Google Drive and for the report:
      part      .dwiz (source) · STEP AP214 · STL · DXF (views) · DXF (flat outline, plate and sheet) · DXF (flat pattern
                with bend lines, folded sheet) · PDF drawing ·

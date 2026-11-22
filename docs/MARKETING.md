@@ -11,16 +11,16 @@ rapport.
 **une instance**, sur une **face plane** ou **enroulée sur un cylindre**.
 
 ```
-label E1 sticker name="Autocollant DynamiteOrbit" inst=coque_centrale w=420 h=120 turn=90
+label E1 sticker name="Autocollant DesignOrbit.ai" inst=coque_centrale w=420 h=120 turn=90
   on p=[101.6, 0, 760] axis=[0, 0, 1] c=[0, 0, 0] r=101.6
-  art type=logo text=DynamiteOrbit sub="by DynamiteAgile™" ink="#26323f" paper="#ffffff" shape=round
+  art type=logo text=DesignOrbit.ai sub="by DynamiteAgile™" ink="#26323f" paper="#ffffff" shape=round
 ```
 
 - **Son genre** (`kind`), sur trois tuiles : *autocollant* (vinyle posé à la main), *plaque signalétique* (rivetée ou
   collée), *marquage direct* (gravé ou tampographié, sans épaisseur).
 - **Sa taille** en millimètres (`w`, `h`) et sa **rotation** (`turn`, en degrés) : sur un cylindre, 0 se lit autour,
   90 le long de l'axe.
-- **Son motif** (`art`), sur trois tuiles : la **marque DynamiteOrbit** (le sigle, et le nom à côté quand
+- **Son motif** (`art`), sur trois tuiles : la **marque DesignOrbit.ai** (le sigle, et le nom à côté quand
   l'étiquette est assez large), un **texte** (une ligne, une seconde plus petite, ajustées à la largeur), une **image**
   que vous apportez (PNG, JPEG ou SVG, gardée dans le projet). Encre, fond, forme (angles vifs, coins arrondis, bouts
   ronds).
@@ -45,7 +45,7 @@ porteuse disparue de l'assemblage ; plus petit texte sous 2 mm ; encre et fond d
 étiquettes revenues demandent, avant d'appliquer en une étape annulable. La pose (`inst`, `on`) n'est jamais reprise
 de la réponse : elle reste celle de la souris.
 
-**Dans l'exemple de la fusée** : l'autocollant DynamiteOrbit, 420 × 120 mm, enroulé sur la coque centrale et lu le
+**Dans l'exemple de la fusée** : l'autocollant DesignOrbit.ai, 420 × 120 mm, enroulé sur la coque centrale et lu le
 long de la fusée.
 
 ### Limites des étiquettes

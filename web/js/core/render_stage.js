@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the stage of the photo studio : the product in a set (core/photo_sets.js), under lamps one places
+/* DesignOrbit.ai — the stage of the photo studio : the product in a set (core/photo_sets.js), under lamps one places
    (core/photo_lights.js), in perspective, with the finish of each part and its labels. The mouse turns around it (drag),
    comes closer (wheel), slides (right drag or Shift + drag) ; a click says which part is under the pointer ; a lamp of the
    view is taken and pulled around the product. While something moves, one frame is drawn ; as soon as nothing does, the
@@ -7,7 +7,7 @@
 
 import * as THREE from "../../vendor/three/three.module.min.js";
 import { patternPixels, boxUv, cameraFor } from "./render_looks.js";
-import { LOGO, MARK, drawLogo } from "./brand.js";
+import { LOGO, MARK, drawLogoCanvas } from "./brand.js";
 import { PATTERNS } from "./look_patterns.js";
 import { patternTexture as lookTexture } from "./look_paint.js";
 import { SETS, validSet } from "./photo_sets.js";
@@ -146,11 +146,10 @@ export class RenderStage {
       let done = 0; for (; done < n; done++) { this._frame(done, n, w, h); if (done % 3 === 2 || done === n - 1) { if (o.onStep) o.onStep(done + 1, n); await tick(); if (!this.alive || (o.stop && o.stop())) break; } }
       if (done >= n && this.alive) {
         this.accum.present(); out = document.createElement("canvas"); out.width = w; out.height = h; const g = out.getContext("2d"); g.drawImage(this.canvas, 0, 0, w, h);
-        const s = Math.max(22, Math.round(Math.min(w, h) * 0.042)), x = Math.round(s * 0.7), y = h - Math.round(s * 1.7), k = s / LOGO.size, P = (px, py) => [x + px * k, y + py * k];
+        const s = Math.max(22, Math.round(Math.min(w, h) * 0.042)), x = Math.round(s * 0.7), y = h - Math.round(s * 1.7);
         const under = g.getImageData(x, y, Math.min(w - x, s * 7), s).data; let lum = 0; for (let i = 0; i < under.length; i += 4) lum += 0.2126 * under[i] + 0.7152 * under[i + 1] + 0.0722 * under[i + 2]; lum /= (under.length / 4) * 255;
         const inkc = lum < 0.5 ? "#f2f4f6" : LOGO.ink;                                    // the mark is written light on a dark ground, dark on a light one
-        g.lineCap = "round"; g.lineJoin = "round";
-        drawLogo({ polyline: (pts, st) => { g.beginPath(); pts.forEach(([px, py], i) => (i ? g.lineTo(px, py) : g.moveTo(px, py))); if (st.close) g.closePath(); if (st.fill) { g.fillStyle = st.fill; g.fill(); } g.strokeStyle = st.color; g.lineWidth = st.w; g.stroke(); } }, x, y, s, { ink: inkc });
+        drawLogoCanvas(g, x, y, s, inkc);
         g.fillStyle = inkc; g.globalAlpha = 0.86; g.font = `600 ${Math.round(s * 0.4)}px Helvetica, Arial, sans-serif`; g.textBaseline = "middle"; g.fillText(MARK, x + s * 1.2, y + s * 0.5); g.globalAlpha = 1;
       }
     } finally {

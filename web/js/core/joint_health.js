@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the health of the joints. A joint is two interfaces mated ; it is HEALTHY when the two sides still say
+/* DesignOrbit.ai — the health of the joints. A joint is two interfaces mated ; it is HEALTHY when the two sides still say
    the same thing and the geometry agrees with them, TO CHECK when something drifted or sits at the edge of good practice,
    BROKEN when it cannot be assembled as drawn. Pure : reads the assembly, the built parts, the solver result and the
    interferences found — no kernel call. The verdict is a help to fine-tune a fit quickly, not a calculation of strength. */

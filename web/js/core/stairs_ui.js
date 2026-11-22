@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the step up, drawn (core/stairs.js says where it leads) : one small button, the pictogram of where it leads,
+/* DesignOrbit.ai — the step up, drawn (core/stairs.js says where it leads) : one small button, the pictogram of where it leads,
    at the SAME place on every screen — the head of the left panel, right after its title ; on a page without panels, the head of
    the page. Installed once : a screen declares nothing, it only needs a left panel with a `.side-head` (or a `.page-head`).
    The usage it follows : the « up » button of a file explorer, next to the address. */

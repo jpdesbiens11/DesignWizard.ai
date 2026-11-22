@@ -1,4 +1,4 @@
-/* DynamiteOrbit — Itérations MVP : the readiness scale on the page. Nine tiles in three coloured steps, a pictogram per
+/* DesignOrbit.ai — Itérations MVP : the readiness scale on the page. Nine tiles in three coloured steps, a pictogram per
    level ; the chosen level opens under them with its official definitions (quoted, with the French beside), what has to
    be shown to claim it, and two examples — one automotive, one aerospace. The references close the page : what was
    read, what was not. The words come from core/trl.js. */

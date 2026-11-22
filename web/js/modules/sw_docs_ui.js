@@ -1,4 +1,4 @@
-/* DynamiteOrbit — Logiciel : the two documents, at hand (cycle en V) — the specification of the requirements on the step « 1 Exigences », the
+/* DesignOrbit.ai — Logiciel : the two documents, at hand (cycle en V) — the specification of the requirements on the step « 1 Exigences », the
    report of verification on « 6 Vérification », both on « 7 Livraison ». One row : the document's name, « Word », « PDF ». The content is
    sw/sw_docs.js ; what every document of the platform carries (title block, title page, approvals, the note) is added here by docMeta. */
 

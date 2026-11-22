@@ -103,7 +103,7 @@ l'autre. `debut` : avant la première station ; `fin` : après la dernière.
 
 En ligne, la page est toujours celle de la dernière version publiée. Une copie datée — le PDF, le fichier HTML autonome
 (une seule page, qui s'ouvre sans réseau) et les notes du présentateur — va dans le Google Drive du projet, dans
-« DynamiteOrbit » → « Communications et marketing » → `Présentations`. La plus récente reste en tête du dossier ; celle
+« DesignOrbit.ai » → « Communications et marketing » → `Présentations`. La plus récente reste en tête du dossier ; celle
 qu'elle remplace descend dans « Versions précédentes ». Les communications et le matériel marketing vont à côté, chacun
 dans le sous-dossier de son sujet, à mesure qu'ils sont produits.
 

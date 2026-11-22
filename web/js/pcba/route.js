@@ -1,4 +1,4 @@
-/* DynamiteOrbit — PCBA: the automatic router. A maze router on a grid (A*) : one net after the other, each
+/* DesignOrbit.ai — PCBA: the automatic router. A maze router on a grid (A*) : one net after the other, each
    connection from the copper of the net already laid to the nearest group of pads still apart, on any copper layer,
    changing layer through a via. Tracks follow the width and the clearance of their net class ; a net that owns a
    plane only needs a short stub and a via from each surface-mount pad. What it lays is marked `auto` ; manual and

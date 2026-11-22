@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the formulas of the workbooks, joints : the metric bolted joint (thread and class read from the tables
+/* DesignOrbit.ai — the formulas of the workbooks, joints : the metric bolted joint (thread and class read from the tables
    of the model), the press fit of Lamé, the dowel pin in shear. A check that only makes sense with a load (an axial effort,
    a shear effort, a tapped hole) wakes up when its yellow cell is filled. mm, N, N·m, GPa, MPa, µm. */
 

@@ -1,4 +1,4 @@
-/* DynamiteOrbit — Logiciel : the battery the embedded software is tried against, before the boards and the pack exist
+/* DesignOrbit.ai — Logiciel : the battery the embedded software is tried against, before the boards and the pack exist
    (demande de JP : « on embarque un logiciel… et on simule l'interface avec le matériel »). This is the PLANT of the bench :
    cells in series in modules (a « BM »), modules in series in a pack, three contactors and a precharge resistor, the capacitor
    of the vehicle side, a load and a charger. It is deliberately simple — one resistance and one open-circuit curve per cell,

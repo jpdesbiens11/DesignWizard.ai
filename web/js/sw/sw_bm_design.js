@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the software of the central BMS of the module BM 8s8p (architecture de JP, 21 novembre 2026 : « le BMS central interroge
+/* DesignOrbit.ai — the software of the central BMS of the module BM 8s8p (architecture de JP, 21 novembre 2026 : « le BMS central interroge
    les cartes, juge et agit — contactors, état envoyé au véhicule : normal, dératé, urgence, arrêt (contactors ouverts) »). Drawn as objects one
    links, like any design of the Logiciel group ; its heart is a « Module state machine ». The thresholds are examples, to confirm — the derating
    current is the one the closed module carries for ever (95 A, demo/demo_bm_heat.js). What arrives from the chain of CORE boards — the highest

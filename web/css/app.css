@@ -1,4 +1,4 @@
-/* DynamiteOrbit by DynamiteAgile — stylesheet. Default theme « Le.Carnet »: engineer's notebook paper, graphite ink,
+/* DesignOrbit.ai by DynamiteAgile — stylesheet. Default theme « Le.Carnet »: engineer's notebook paper, graphite ink,
    highlighter accents per tool (--acc), pencil-drawn rectangles, offset shadows. Every colour, radius and shadow used below
    is a token: the other themes (css/themes.css, html[data-theme]) only redefine tokens. Local resources only, no web font. */
 
@@ -75,7 +75,7 @@ a { color: var(--primary); }
 .brand img, .brand-logo { width: 38px; height: 38px; flex: none; transition: transform .45s var(--ease-pop); }
 .brand:hover :is(img, .brand-logo) { transform: rotate(-8deg) scale(1.08); }
 .brand-name { display: flex; flex-direction: column; line-height: 1.05; }
-.brand-name b { font-size: 1.08rem; letter-spacing: -.01em; color: #e0602f; }
+.brand-name b { font-size: 1.08rem; letter-spacing: -.01em; }
 .brand-name b i { font-style: normal; color: var(--primary); }
 .brand-name small { font-size: .68rem; color: var(--muted); font-family: var(--hand); }
 .tabs { display: flex; gap: .05rem; flex: 1; min-width: 0; align-items: center; }       /* three groups : nothing to scroll, and a panel that flips down must not be cut */

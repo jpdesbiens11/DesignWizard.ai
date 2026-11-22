@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the variants of a part, and of an assembly, in the left panel. A family that differs a little is kept in one
+/* DesignOrbit.ai — the variants of a part, and of an assembly, in the left panel. A family that differs a little is kept in one
    document : the state it is in — for a part, which operations are made and what its parameters are worth ; for an assembly, which
    parts are on — is kept under a name, and a click on a name brings the whole cousin back, in one step that Ctrl + Z undoes.
    Each variant has its drawing, without changing the document (the sheet says which variant it shows).

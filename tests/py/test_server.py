@@ -33,7 +33,7 @@ CSP = ("default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://account
        "base-uri 'self'; form-action 'self'")
 STEP = """ISO-10303-21;
 HEADER;
-FILE_DESCRIPTION(('DynamiteOrbit test'),'2;1');
+FILE_DESCRIPTION(('DesignOrbit.ai test'),'2;1');
 FILE_SCHEMA(('AUTOMOTIVE_DESIGN'));
 ENDSEC;
 DATA;
@@ -218,7 +218,7 @@ class ProjectTests(unittest.TestCase):
     def test_ping(self):
         status, body = api("GET", "/api/ping")
         self.assertEqual(status, 200)
-        self.assertEqual((body["ok"], body["app"], body["mode"]), (True, "DynamiteOrbit", "server"))
+        self.assertEqual((body["ok"], body["app"], body["mode"]), (True, "DesignOrbit.ai", "server"))
         self.assertIn("version", body)
         self.assertIn("connected", body["onshape"])
         self.assertEqual(req("HEAD", "/api/ping")[2], b"")
@@ -529,7 +529,7 @@ console.log(JSON.stringify({ available: await api.available(), plan: planPush(jo
         texts = [a["note"]["contents"] for a in drawing["annotations"]]
         self.assertEqual(texts[:3], ["NOTES :", "1. Ébavurer toutes les arêtes", "2. ISO 2768-mK"])
         self.assertEqual(texts[-2], "⌖ ⌀0.2 | A | B")
-        self.assertIn("Co-Intelligence WorkFlow™ — document généré par DynamiteOrbit", texts[-1])   # the note of the platform closes the block of notes
+        self.assertIn("Co-Intelligence WorkFlow™ — document généré par DesignOrbit.ai", texts[-1])   # the note of the platform closes the block of notes
         self.assertTrue(all(a["type"] == "Onshape::Note" for a in drawing["annotations"]))
         ys = [a["note"]["position"]["coordinate"][1] for a in drawing["annotations"]]
         self.assertEqual(ys, sorted(ys, reverse=True))

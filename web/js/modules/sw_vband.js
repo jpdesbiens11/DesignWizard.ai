@@ -1,4 +1,4 @@
-/* DynamiteOrbit — Logiciel : what the seven screens of the group share (choix cliqué de JP, 21 novembre 2026 : « Cycle en V »).
+/* DesignOrbit.ai — Logiciel : what the seven screens of the group share (choix cliqué de JP, 21 novembre 2026 : « Cycle en V »).
    THE V, drawn above every screen of the group as the flow of the PCBA is drawn above its screen : the left branch goes down (define, design,
    simulate the model), the code sits at the bottom, the right branch goes up (prove, deliver) ; the steps made for each other are joined by a
    dashed line — the requirements and the verification that proves them, the design and the simulation that tries it. Each box says where its

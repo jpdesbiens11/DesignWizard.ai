@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the C driver of the RS-485 link, WRITTEN BY THE TOOL from its model (sw/rs485_link.js) : the same frame,
+/* DesignOrbit.ai — the C driver of the RS-485 link, WRITTEN BY THE TOOL from its model (sw/rs485_link.js) : the same frame,
    the same CRC, the same silent intervals — and a test program that replays the frames printed by others, so that the C
    compiled on any computer gives back what the model gives (the back-to-back test the roadmap asks for, in small).
    Plain C99 : no allocation, fixed-width types, no library of a maker. It is a SKELETON : the four functions that touch

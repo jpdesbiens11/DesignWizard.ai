@@ -1,4 +1,4 @@
-/* DynamiteOrbit — PCBA: the connectors of the electrical library, ready for a board. Each series that sits on a board
+/* DesignOrbit.ai — PCBA: the connectors of the electrical library, ready for a board. Each series that sits on a board
    (cad/connector_series.js) comes in its usual numbers of circuits, with the land pattern of the series — its pitch, its
    rows, its holes — and the ratings of the family (cad/elec_library.js). Maker and series are named in text, as a
    reference of compatibility ; the price is a typical one, an example. The data sheet of the part bought prevails. */

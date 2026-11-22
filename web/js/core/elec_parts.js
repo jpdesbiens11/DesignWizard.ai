@@ -1,4 +1,4 @@
-/* DynamiteOrbit — parts taken from the electrical library : a connector or a cell becomes a part of the project, with its
+/* DesignOrbit.ai — parts taken from the electrical library : a connector or a cell becomes a part of the project, with its
    electrical role and its interfaces, ready to be placed in the assembly. A connector is MODELLED FROM ITS SERIES : the
    generators of cad/connector_models.js rebuild it from the dimensions its maker publishes (cad/connector_series.js) —
    our own geometry, with the size, the look and the colour of the series ; the part says how those dimensions were

@@ -1,4 +1,4 @@
-/* DynamiteOrbit — 2D engineering-drawing kit: abstract Sheet + everything the two backends (pdf.js, svg.js)
+/* DesignOrbit.ai — 2D engineering-drawing kit: abstract Sheet + everything the two backends (pdf.js, svg.js)
    must agree on: font metrics (Adobe core-14 AFM widths), WinAnsi text handling, style / text resolution,
    arc → Bézier conversion and JPEG header parsing.
    Units are millimetres, origin top-left, y down (like SVG). Angles are degrees, 0 = +x, positive toward +y

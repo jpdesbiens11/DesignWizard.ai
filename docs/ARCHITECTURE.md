@@ -1,4 +1,4 @@
-# Architecture de DynamiteOrbit
+# Architecture de DesignOrbit.ai
 
 Version 0.1.0 — première itération. Ce document dit comment la plateforme est faite, où se trouve quoi, ce qui est
 vérifié, ce qui ne l'est pas, et ce qui est prévu ensuite.

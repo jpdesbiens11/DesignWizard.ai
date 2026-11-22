@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the Shop companion for an EXTRUDED PROFILE. The designer says what goes inside — boards that slide
+/* DesignOrbit.ai — the Shop companion for an EXTRUDED PROFILE. The designer says what goes inside — boards that slide
    in grooves, things that rest flat, things that just need room — and what the profile meets : each interface has its
    identity and must mate in the profile. The section then draws itself with the extruder's rules of thumb : one wall
    chosen for the size of the section, grooves made by two ribs no deeper than three times their width, a rib under

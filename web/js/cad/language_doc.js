@@ -1,7 +1,7 @@
-/* DynamiteOrbit — reference of the part language ("DW part/1"), single source for docs/PART_LANGUAGE.md and for the
+/* DesignOrbit.ai — reference of the part language ("DW part/1"), single source for docs/PART_LANGUAGE.md and for the
    generic interview prompt given to Claude (or any other assistant). Keep it exact: the builder accepts what is written here. */
 
-export const LANGUAGE_REFERENCE = String.raw`# DynamiteOrbit part language — DW part/1
+export const LANGUAGE_REFERENCE = String.raw`# DesignOrbit.ai part language — DW part/1
 
 A part is ONE JSON object. Units: millimetres, degrees, grams. Axes: X to the right, Y to the back, Z up.
 Every number may be an expression of the part parameters: "L/2 - 10", "max(t, 2)", "W - 2*wall".

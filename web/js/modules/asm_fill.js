@@ -1,4 +1,4 @@
-/* DynamiteOrbit — fill a cavity in the assembly : choose the housing, the filler and the level ; the kernel takes the room
+/* DesignOrbit.ai — fill a cavity in the assembly : choose the housing, the filler and the level ; the kernel takes the room
    left by everything already in place, and the result becomes a part of the assembly — with its volume, its mass, its
    place in the bill of materials. Done again in one click when the parts around it move. */
 

@@ -1,4 +1,4 @@
-/* DynamiteOrbit — demonstration project: a compact 400 V motor drive (mechatronic system with power, control,
+/* DesignOrbit.ai — demonstration project: a compact 400 V motor drive (mechatronic system with power, control,
    sensors, a CPU, two PCBs, a moulded housing, an extruded heat sink, a laser-cut insulator, a printed bracket). Every part starts from its interfaces;
    the assembly mates itself from them. The HV+ / HV- gap on the power board is deliberately a little short, so the
    isolation analysis has something to find (parameter "gapHV" of DRV-PWR-PCB). */
@@ -131,7 +131,7 @@ const FOOT = {
 };
 
 export const DEMO_DRIVE = {
-  dw: "project/1", id: "demo-variateur", name: "Variateur compact 400 V (démonstration)", author: "DynamiteOrbit",
+  dw: "project/1", id: "demo-variateur", name: "Variateur compact 400 V (démonstration)", author: "DesignOrbit.ai",
   description: "Système mécatronique de démonstration : boîtier moulé, carte de puissance 400 V, carte de contrôle avec CPU et capteurs, dissipateur extrudé. Chaque pièce part de ses interfaces ; l'assemblage se monte seul.",
   parts: withPaths([BASE, COVER, PWR, CTRL, SINK, ISO, BRACKET, FOOT]),      // the heat sink carries the tool path an AI wrote for the fabrication shop (demo_paths.js)
   assemblies: [{ dw: "assembly/1", id: "DRV-ASM", name: "Variateur compact — assemblage général",

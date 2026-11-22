@@ -1,4 +1,4 @@
-/* DynamiteOrbit — PCBA: the two layouts of a board.
+/* DesignOrbit.ai — PCBA: the two layouts of a board.
    floorplan() is the CONCEPTUAL layout : one zone per function block, blocks that share nets side by side, blocks
    that hold imposed parts (connectors fixed by the mechanical design) around those parts.
    placeParts() is the first step of the DETAILED layout : inside each zone the largest part first, then every other

@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the part studio under the mouse. The model itself is the control panel : a click selects a face,
+/* DesignOrbit.ai — the part studio under the mouse. The model itself is the control panel : a click selects a face,
    an edge or a point (Ctrl + click adds one or takes it out) and says what it measures ; a right click offers what
    makes sense where the cursor is — a hole, a pocket, a boss or an interface on a face, a fillet or a chamfer on
    the edges chosen, the operation behind a hole, a cut at that level, the view from that face ; the usual keys do

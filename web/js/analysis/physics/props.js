@@ -1,4 +1,4 @@
-/* DynamiteOrbit — Physique: engineering properties of the materials of cad/materials.js and of the usual fluids.
+/* DesignOrbit.ai — Physique: engineering properties of the materials of cad/materials.js and of the usual fluids.
    TYPICAL values of each family (room temperature, the usual temper or a dry / as-moulded plastic): they size a part,
    they do not certify it. The data sheet of the grade actually bought prevails.
    E GPa · nu · Re (yield, Rp0.2), Rm, fatigue (endurance hint) MPa · cte µm/m.K · k W/m.K · cp J/kg.K · rho kg/m3 ·

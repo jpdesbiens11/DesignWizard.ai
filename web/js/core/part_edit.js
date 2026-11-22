@@ -1,4 +1,4 @@
-/* DynamiteOrbit — editing helpers shared by the studios: generic forms for a feature or an interface of the part
+/* DesignOrbit.ai — editing helpers shared by the studios: generic forms for a feature or an interface of the part
    language, with values typed as numbers, expressions or small JSON fragments. */
 
 import { el, field, btn, modal, toast, icon } from "./dom.js";

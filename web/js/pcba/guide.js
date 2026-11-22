@@ -1,4 +1,4 @@
-/* DynamiteOrbit — PCBA : what a board still asks for, said to the guide of the top bar. Two lists, both pure.
+/* DesignOrbit.ai — PCBA : what a board still asks for, said to the guide of the top bar. Two lists, both pure.
    boardGuide(board) — what the board itself shows, cheap enough to run for every board of a project at every redraw : functions without a
    solution, drafts of an AI to read, an outline without size, parts to place, a high-voltage net without its voltage.
    boardChecksGuide(board, r) — what the checks found, read from results the screen has already computed : electrical rules, zones,

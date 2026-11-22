@@ -1,4 +1,4 @@
-/* DynamiteOrbit — flat pattern of a folded sheet-metal part, as a DXF the laser and the press brake both read.
+/* DesignOrbit.ai — flat pattern of a folded sheet-metal part, as a DXF the laser and the press brake both read.
    Layers : CUT (outline, holes, cut-outs — what the laser cuts), BEND (bend lines, centre linetype — never cut),
    NOTES (direction, angle and inside radius of each bend ; thickness, k factor and bend allowance of the whole sheet).
    The bend allowance comes from a typical k factor : the note says so, the shop corrects it for its tooling. */
@@ -28,7 +28,7 @@ export function foldedDxf(built, features = []) {
   const F = built && built.facts && built.facts.folded;
   if (!F) throw new Error("DXF du développé : cette pièce n'a pas de bloc « folded » (tôle pliée).");
   const flat = F.flat, H = flatHoles(F, built.facts.holes), C = flatCutouts(F, features), label = [built.id, built.name].filter(Boolean).join(" ");
-  const doc = new DxfDoc({ comment: `DynamiteOrbit - flat pattern${label ? " of " + label : ""} - thickness ${n3(F.t)} mm - inside radius ${n3(F.r)} mm - k ${n3(F.k)} (typical) - 1:1, units: millimetres` });
+  const doc = new DxfDoc({ comment: `DesignOrbit.ai - flat pattern${label ? " of " + label : ""} - thickness ${n3(F.t)} mm - inside radius ${n3(F.r)} mm - k ${n3(F.k)} (typical) - 1:1, units: millimetres` });
   doc.layer("CUT", 1, "CONTINUOUS"); doc.layer("BEND", 5, "CENTER"); doc.layer("NOTES", 8, "CONTINUOUS");
   doc.polyline(flat.outline, "CUT", true);
   for (const h of H.list) doc.circle(h.x, h.y, h.d / 2, "CUT");

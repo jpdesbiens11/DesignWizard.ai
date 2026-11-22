@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the ECOSYSTEM of a product, packed for an AI (point 9 b of the plan agreed with JP : « voir un projet pièce / assemblage /
+/* DesignOrbit.ai — the ECOSYSTEM of a product, packed for an AI (point 9 b of the plan agreed with JP : « voir un projet pièce / assemblage /
    PCBA / logiciel / DFx comme un écosystème balancé sur des compromis » ; choices clicked on 20 November : the frame given to the AI is the rules
    the tool already checks, plus those the project writes).
    What a single artefact cannot say, the package says : WHAT DEPENDS ON WHAT (the map — an assembly mounts a part, two parts share an interface
@@ -122,7 +122,7 @@ export function ecoBrief(project, o = {}, map = ecoMap(project)) {
     o.questions ? "4. Pose-moi tes questions d'abord, une à la fois, avant de rendre quoi que ce soit." : "4. Si une information manque, dis-le plutôt que de l'inventer ; une valeur que tu proposes est un exemple à confirmer.",
     "5. Rends SEULEMENT les artéfacts que tu crées ou modifies, chacun complet, en .dwiz (une ligne « dwiz … » en tête) : garde les id et les clés (key) des interfaces ; une pièce importée en STEP ne se modifie pas.",
     "6. Termine par « Ce que cela dérange » : les artéfacts qui dépendent de ce que tu as changé, et ce qu'il faut y revoir (interfaces, accouplements, DFx, cas à relancer, dessins à refaire).", "",
-    "## Comment la réponse revient", "", "La personne rapporte ta réponse dans DynamiteOrbit : le bouton « IA » de l'écran pour un artéfact, ou la porte « Avec l'IA » de l'Atelier pour plusieurs pièces et assemblages (.dwiz, .json ou .zip). Elle voit un aperçu, applique en une étape annulable ; un point de restauration se pose tout seul.", ""].join("\n");
+    "## Comment la réponse revient", "", "La personne rapporte ta réponse dans DesignOrbit.ai : le bouton « IA » de l'écran pour un artéfact, ou la porte « Avec l'IA » de l'Atelier pour plusieurs pièces et assemblages (.dwiz, .json ou .zip). Elle voit un aperçu, applique en une étape annulable ; un point de restauration se pose tout seul.", ""].join("\n");
 }
 
 const md = (rows) => rows.join("\n");

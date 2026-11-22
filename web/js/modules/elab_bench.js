@@ -1,4 +1,4 @@
-/* DynamiteOrbit — Labo, the bench above the board : each instrument of the test drawn, its cords run to the points of the board, its
+/* DesignOrbit.ai — Labo, the bench above the board : each instrument of the test drawn, its cords run to the points of the board, its
    settings typed ON its front (point 6, JP, 20 novembre 2026 : « chaque appareil dessiné, ses cordons tirés jusqu'aux points de la carte,
    et ses réglages changés SUR l'appareil — pas dans une section du volet de gauche ; ce qui ne se règle pas ici est dit »).
    The usage followed : the front panel of a bench instrument — the value typed where the display shows it, Enter or leaving the field

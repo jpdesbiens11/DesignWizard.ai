@@ -1,4 +1,4 @@
-/* DynamiteOrbit — Accueil: projects, the two demonstration projects, and the journey from the design intent to the report. */
+/* DesignOrbit.ai — Accueil: projects, the two demonstration projects, and the journey from the design intent to the report. */
 
 import { el, icon, btn, toast, modal, promptBox, confirmBox, fmt } from "../core/dom.js";
 import { pageVeil } from "../core/busy.js";
@@ -70,7 +70,7 @@ async function loadDemo(seed, target) {
     go(target);
   } catch (e) { veil.set(""); if (!(e && e.cancelled) && !off) { toast(e.message || String(e), "error", 7000); setStatus("Prêt", ""); } } finally { loading = false; }
 }
-const HVB_PROJECT = { dw: "project/1", id: "demo-hvb", name: "DEMO-HVB — busbars 800 V (référence creepage)", author: "DynamiteOrbit",
+const HVB_PROJECT = { dw: "project/1", id: "demo-hvb", name: "DEMO-HVB — busbars 800 V (référence creepage)", author: "DesignOrbit.ai",
   description: "Le produit d'exemple de la formation Creepage & Clearance : distances connues par construction (16,56 / 26 mm entre HV+ et HV-).", parts: DEMO_HVB_PARTS, assemblies: [DEMO_HVB_ASSEMBLY], drawing: { words: WORDS_HVB }, log: [] };
 
 function render(main) {
@@ -79,7 +79,7 @@ function render(main) {
   const p = store.project;
   page.append(el("section", { class: "hero" },
     el("div", null, el("p", { class: "hero-title" }, "De l'", el("mark", null, "intention"), " à la pièce, de la pièce au système."),
-      el("p", null, "DynamiteOrbit réinvente la conception mécatronique : une pièce naît de son intention — ses interfaces, sa matière, sa matière première — comme dans l'atelier d'un artisan. Les assemblages se montent d'eux-mêmes, la physique se vérifie par des modèles simples, et les règles DFM, DFA et d'isolation s'appliquent dès la première minute. Libre, sous licence MIT."),
+      el("p", null, "DesignOrbit.ai réinvente la conception mécatronique : une pièce naît de son intention — ses interfaces, sa matière, sa matière première — comme dans l'atelier d'un artisan. Les assemblages se montent d'eux-mêmes, la physique se vérifie par des modèles simples, et les règles DFM, DFA et d'isolation s'appliquent dès la première minute. Libre, sous licence MIT."),
       el("div", { class: "form-actions", style: { justifyContent: "flex-start" } },
         btn("Charger la démonstration « Variateur 400 V »", () => loadDemo(DEMO_DRIVE, "#/assembly/DRV-ASM"), { primary: true, icon: "sparkle", tip: "Boîtier moulé, deux PCB, dissipateur extrudé : tout est déjà relié par ses interfaces" }),
         btn("Premier design avec une IA…", () => app.firstDesign(), { icon: "wizard", tip: "Décrivez le produit : l'assistant de votre choix mène l'entrevue et rend un premier design complet — pièces, assemblage, carte, analyses — à passer en revue ici" }),
@@ -103,7 +103,7 @@ function render(main) {
     el("h3", null, icon(app.modules.get(key).icon), ` ${i + 1}. ${title}`), el("p", { class: "muted", style: { margin: 0, fontSize: ".86rem" } }, text)))));
 
   const head = el("div", { class: "page-head" }, el("div", { class: "grow" }, el("h1", null, "Projets"),
-    el("p", { class: "muted" }, store.mode === "server" ? "Projets enregistrés sur ce poste par le serveur local." : store.mode === "drive" ? "Vos projets vivent dans votre Google Drive, un dossier par produit sous « DynamiteOrbit » : pièces, assemblages, analyses, rapports et commandes y sont rangés par numéro." : "Mode navigateur : les projets restent dans ce navigateur. Exportez-les (menu Projet) pour les partager ou les sauvegarder.")));
+    el("p", { class: "muted" }, store.mode === "server" ? "Projets enregistrés sur ce poste par le serveur local." : store.mode === "drive" ? "Vos projets vivent dans votre Google Drive, un dossier par produit sous « DesignOrbit.ai » : pièces, assemblages, analyses, rapports et commandes y sont rangés par numéro." : "Mode navigateur : les projets restent dans ce navigateur. Exportez-les (menu Projet) pour les partager ou les sauvegarder.")));
   page.append(head);
   const grid = el("div", { class: "grid" });
   page.append(grid);

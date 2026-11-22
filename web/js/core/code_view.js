@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the preview / code switch of the top bar, as in a chat with Claude : one click and the screen gives way
+/* DesignOrbit.ai — the preview / code switch of the top bar, as in a chat with Claude : one click and the screen gives way
    to the code of what it shows — FeatureScript and .dwiz — ready to copy for Onshape or for an AI ; one click back and the
    screen is there again, untouched. Alt + C switches ; Escape comes back. */
 
@@ -19,7 +19,7 @@ export function mountCodeSwitch(app) {
     panel.replaceChildren(el("div", { class: "code-head" }, el("div", { class: "grow" }, el("b", null, e.label), el("small", { class: "muted" }, ` — ${src.text.split("\n").length} lignes`)),
       el("div", { class: "subtabs", style: { margin: 0, border: 0 } }, sources.map((s) => el("button", { class: "subtab" + (s.key === tab ? " active" : ""), type: "button", onClick: () => { tab = s.key; draw(); } }, s.label))),
       btn("Copier", () => copy(src.text, `${src.label} copié.`), { small: true, icon: "copy", tip: src.key === "fs" ? "Pour un Feature Studio d'Onshape" : "Le texte tel quel" }),
-      btn("Copier pour une IA", () => copy(aiCodePrompt(store.project, e, src), "Copié avec sa consigne : l'entrevue à mener, et la réponse attendue pour revenir dans DynamiteOrbit."), { small: true, icon: "sparkle", primary: true, tip: "Le code précédé d'une consigne courte : comment mener l'entrevue, et sous quelle forme répondre" }),
+      btn("Copier pour une IA", () => copy(aiCodePrompt(store.project, e, src), "Copié avec sa consigne : l'entrevue à mener, et la réponse attendue pour revenir dans DesignOrbit.ai."), { small: true, icon: "sparkle", primary: true, tip: "Le code précédé d'une consigne courte : comment mener l'entrevue, et sous quelle forme répondre" }),
       btn("", () => download(src.file, src.text, "text/plain;charset=utf-8"), { small: true, icon: "download", tip: `Télécharger ${src.file}` })),
       el("ul", { class: "code-notes" }, src.notes.map((n) => el("li", null, n))), el("pre", { class: "code-text", tabindex: "0" }, src.text));
   }

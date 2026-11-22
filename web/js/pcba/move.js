@@ -1,4 +1,4 @@
-/* DynamiteOrbit — PCBA: a sub-circuit moves as one brick, and the board stays connected.
+/* DesignOrbit.ai — PCBA: a sub-circuit moves as one brick, and the board stays connected.
    moveGroup() moves a set of parts — a block, or a single part — as a rigid body, with the copper that joins only
    them (their own nets, their fan-out to a plane). The copper that tied them to the rest of the board goes, back to
    the last junction that still serves the others ; the copper of other nets the brick now sits on goes too. What

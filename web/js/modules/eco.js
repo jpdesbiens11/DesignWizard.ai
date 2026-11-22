@@ -1,4 +1,4 @@
-/* DynamiteOrbit — Écosystème : the whole product packed for an AI, with the request framed by the screen one comes from (point 9 b of the
+/* DesignOrbit.ai — Écosystème : the whole product packed for an AI, with the request framed by the screen one comes from (point 9 b of the
    plan agreed with JP). Route : #/eco[/<artefact key>[/<screen>]] — the « IA » dialogue of every screen leads here with what it shows.
    The same three places as every studio. Left, what one gives : the artefact handed over (a list one can search), the interview — what one
    wants, what must not move, how one will know it worked, all fields the system's dictation can type in —, the kinds of link shown, what the

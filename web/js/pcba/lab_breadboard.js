@@ -1,4 +1,4 @@
-/* DynamiteOrbit — Labo, the breadboard (JP, 22 novembre 2026, on a capture of the Labo : « une vue breadboard plus clean… voir
+/* DesignOrbit.ai — Labo, the breadboard (JP, 22 novembre 2026, on a capture of the Labo : « une vue breadboard plus clean… voir
    clairement ce qui se connecte où sur la carte en laissant sortir les traces vers le breadboard de manière clean et en connectant
    les instruments sur les pins du breadboard bien identifiés par tag de carte et d'équipement »).
    Each point of the board an instrument touches is brought out, by its own jumper, to its own row of a breadboard set beside the

@@ -1,4 +1,4 @@
-/* DynamiteOrbit — PCBA: a small reader for the Gerber and Excellon files this application writes — enough to check
+/* DesignOrbit.ai — PCBA: a small reader for the Gerber and Excellon files this application writes — enough to check
    a fabrication file before it leaves : units, format, apertures, what is flashed, drawn and filled, and where.
    It is not a general viewer : arcs, macros and step-and-repeat are refused with a clear message. */
 

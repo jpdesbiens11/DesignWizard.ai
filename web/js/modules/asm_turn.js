@@ -1,4 +1,4 @@
-/* DynamiteOrbit — Assemblage : the handle that turns the chosen part (demande de JP : « tourner une pièce elle-même… avec une
+/* DesignOrbit.ai — Assemblage : the handle that turns the chosen part (demande de JP : « tourner une pièce elle-même… avec une
    poignée dans la vue, au lieu de taper un angle »). Round the part chosen, a ring about the axis it can turn on — the vertical for
    a part placed by hand, the normal of its joint for a part a joint holds — and, on the ring, a round grip. Dragging the grip turns
    the part as the hand goes round the axis : 5° a notch, 15° with Shift, free with Alt ; everything that hangs on it follows, live

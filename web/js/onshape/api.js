@@ -1,4 +1,4 @@
-// DynamiteOrbit - browser client of the local server API (python designwizard.py).
+// DesignOrbit.ai - browser client of the local server API (python designwizard.py).
 // Onshape forbids direct browser calls (no CORS): everything goes through /api/onshape/* of the
 // local server, which holds the API keys. Every function resolves with the JSON payload of the
 // server (without the `ok` flag) and throws Error(message in French) on {ok:false} or network failure.
@@ -13,7 +13,7 @@ export function configure({ baseUrl, headers } = {}) {
   availability = null;
 }
 
-const NO_SERVER = 'Le serveur local DynamiteOrbit ne répond pas. Correctif : lancez « python designwizard.py » '
+const NO_SERVER = 'Le serveur local DesignOrbit.ai ne répond pas. Correctif : lancez « python designwizard.py » '
   + 'puis ouvrez http://127.0.0.1:8070/ (Onshape et l\'enregistrement des projets en ont besoin).';
 
 const enc = (s) => encodeURIComponent(String(s));
@@ -75,7 +75,7 @@ export function available({ force = false } = {}) {
   if (!availability || force) {
     const isFile = typeof location !== 'undefined' && location.protocol === 'file:' && !cfg.baseUrl;
     availability = isFile ? Promise.resolve(false)
-      : ping().then((p) => p.app === 'DynamiteOrbit' && p.mode === 'server', () => false);
+      : ping().then((p) => p.app === 'DesignOrbit.ai' && p.mode === 'server', () => false);
   }
   return availability;
 }

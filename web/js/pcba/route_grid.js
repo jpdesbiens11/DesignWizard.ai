@@ -1,4 +1,4 @@
-/* DynamiteOrbit — PCBA: the routing grid. One node every `g` millimetres on every copper layer. For the net being
+/* DesignOrbit.ai — PCBA: the routing grid. One node every `g` millimetres on every copper layer. For the net being
    routed, a node is BLOCKED when a track centred there would come closer to foreign copper, a hole or the board edge
    than the rules allow ; a node is VIA-BLOCKED when a via there would. The search itself (route.js) only reads
    these maps. */

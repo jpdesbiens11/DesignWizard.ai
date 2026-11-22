@@ -1,4 +1,4 @@
-/* DynamiteOrbit — a thin folded part, seen flat (JP, 21 novembre 2026 : « voir des pièces minces pliées dans la forme finale de la pièce
+/* DesignOrbit.ai — a thin folded part, seen flat (JP, 21 novembre 2026 : « voir des pièces minces pliées dans la forme finale de la pièce
    à plat, et que les lignes des plis soient visibles… on verra le flex PCB à plat en changeant la vue de la pièce, et on peut revenir à
    plier »). The usual way of the mechanical modelers : a « flat » state of a sheet-metal part, the bend lines drawn on it with their notes
    (UP / DOWN, the angle, the inside radius). Four kinds of parts unfold :

@@ -1,4 +1,4 @@
-/* DynamiteOrbit — Aide : the glossary. The screens name every technical term as the trade names it, in English ; here
+/* DesignOrbit.ai — Aide : the glossary. The screens name every technical term as the trade names it, in English ; here
    each one has its French equivalent, grouped by nature with a colour and a pictogram, and a box to look one up in either
    language. The words come from core/terms.js. Route : #/help/terms. */
 

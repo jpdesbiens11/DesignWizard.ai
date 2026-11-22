@@ -1,4 +1,4 @@
-/* DynamiteOrbit — BM 8s8p - 21700, CONCEPT 3 « blade and fork », on its own branch, started from concept 1 (MAIN) (JP, 22 novembre 2026 :
+/* DesignOrbit.ai — BM 8s8p - 21700, CONCEPT 3 « blade and fork », on its own branch, started from concept 1 (MAIN) (JP, 22 novembre 2026 :
    « cellules perpendiculaires à l'axe d'insertion du module, comme au concept 1 ; les CORE s'assemblent l'un à l'autre, contacts face à face,
    − contre +, dans l'axe d'insertion ; y mettre des contacts haute puissance à lames ; couvercles debout ; commencer simple… pas de ressorts de
    produit grand public : des ressorts fins et compacts, aucune place en longueur » ; his choices by menu : « Lame dans une pince », and the
@@ -98,8 +98,8 @@ export function terminalsC3(neg, pos, o) {
 
 /** The forces of the top lid in concept 3 (examples) : the disc springs only hold the stack ; the pads of the bridge are those of concept 1. m : the
     mass of the stack (kg, its cells only — the lower bound) → { stack, padA, padB, total, perScrew, joint, g } */
-export function lidForcesC3(m) {
-  const stack = 4 * 100, padA = 2 * 150, padB = 2 * 150, total = stack + padA + padB, joint = stack + padA;
+export function lidForcesC3(m, o = {}) {
+  const stack = o.stack ?? 4 * 100, padA = o.pads ?? 2 * 150, padB = o.pads ?? 2 * 150, total = stack + padA + padB, joint = stack + padA;
   return { stack, padA, padB, total, perScrew: total / 4, joint, g: joint / (m * 9.81) };
 }
 /** The pressure plate of concept 3 : the plate of concept 1 and four columns toward the cap, a pilot on each for its disc springs. L : the layout of
@@ -133,5 +133,5 @@ export function calcsC3(I, F) {
   keep("phy-bm3-jaw", `Mâchoire de la pince — ${nb} lamelles à ${F3.band.F112[1]} N`, "beam_cantilever_udl", "BM-BB-LAM", { mat: "CU-C110", L: F3.y.depth - F3.y.bottom, section: "rect", b: F3.z.jaw[1] - F3.z.jaw[0], h: F3.jawIn[1] - F3.jawIn[0] - F3.groove, F: nb * F3.band.F112[1], dlim: 0.1, sf: 1.5 },
     `La mâchoire extérieure ne tient que par le fond de la pince : une poutre encastrée de ${F3.y.depth - F3.y.bottom} mm, de la hauteur de la pince, épaisse de ce qui reste derrière le logement (${fr(F3.jawIn[1] - F3.jawIn[0] - F3.groove)} mm). Charge : ${nb} ponts à ${F3.band.F112[1]} N, le plus fort de la fiche de la 112. Flèche admise 0,1 mm : la bande doit rester entre 1,5 et 1,9 mm, la lame et la pince étant à ± 0,05 mm.`),
   keep("phy-bm3-screws", `Vis des couvercles dans le boîtier — ${F.perScrew} N par vis`, "plastic_screw", "BM-CASING", { mat: "PC", d: 4, Dp: 3.4, L: 8, Db: 8.4, F: F.perScrew, sf: 3 },
-    `Concept 3 : la pile n'est plus pressée pour ses contacts ; les rondelles en donnent ${F.stack} N, les plots du pont ${F.padA + F.padB} N — ${F.total} N sur l'anneau du haut, ${F.perScrew} N par vis EVO PT 40. Même trou, même prise et même lobe qu'au concept 1 ; coefficient de 3 (le PC flue sous charge tenue).`)];
+    `Concept 3 : la pile n'est plus pressée pour ses contacts ; les rondelles en donnent ${F.stack} N${F.padA + F.padB ? `, les plots du pont ${F.padA + F.padB} N` : " (le pont du couvercle n'est plus pressé : ses lames glissent dans leurs pinces)"} — ${F.total} N sur l'anneau du haut, ${F.perScrew} N par vis EVO PT 40. Même trou, même prise et même lobe qu'au concept 1 ; coefficient de 3 (le PC flue sous charge tenue).`)];
 }

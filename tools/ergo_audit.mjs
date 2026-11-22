@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the ergonomics audit : opens every screen of the application at three window sizes (laptop, desk, large)
+/* DesignOrbit.ai — the ergonomics audit : opens every screen of the application at three window sizes (laptop, desk, large)
    on the demonstration project, and lists what gets in the way of reading and clicking — a page that overflows, a text cut
    by an ellipsis, a button with neither name nor tooltip, a target under 22 px, a control cut by the edge of the window, a
    field with no label ; it also counts the drop-down lists of each screen. Not part of the application and not run by the

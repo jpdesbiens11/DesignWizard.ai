@@ -1,4 +1,4 @@
-/* DynamiteOrbit — DFM rules: CNC milling and CNC turning (3-axis mill / lathe, standard tooling).
+/* DesignOrbit.ai — DFM rules: CNC milling and CNC turning (3-axis mill / lathe, standard tooling).
    Limits are the usual published guidance (Protolabs Network / Hubs, Xometry, Machinery's Handbook); values marked
    "règle de pouce" are rules of thumb to confirm with the machine shop. */
 

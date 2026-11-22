@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the .dwiz file format: every object of a mechatronic product as plain text that an engineer, a
+/* DesignOrbit.ai — the .dwiz file format: every object of a mechatronic product as plain text that an engineer, a
    shop and an AI read the same way. One instruction per line, most important first; « # » starts a comment.
 
      dwiz part/1 DW-0042 "Support du capteur"            the first line says what the file is
@@ -112,7 +112,7 @@ function docLines(doc) {
 export function toDwiz(doc) {
   const docs = Array.isArray(doc) ? doc : [doc], blocks = [];
   for (const d of docs) { const [lines, tail] = docLines(d); blocks.push(lines.join("\n")); for (const t of tail) blocks.push(docLines(t)[0].join("\n")); }
-  blocks[0] = blocks[0].replace("\n", "\n# DynamiteOrbit — fichier .dwiz : une instruction par ligne, « # » commente, les lignes en retrait précisent la ligne du dessus.\n");
+  blocks[0] = blocks[0].replace("\n", "\n# DesignOrbit.ai — fichier .dwiz : une instruction par ligne, « # » commente, les lignes en retrait précisent la ligne du dessus.\n");
   return `${blocks.join("\n\n\n")}\n`;
 }
 

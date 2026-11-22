@@ -1,4 +1,4 @@
-/* DynamiteOrbit — PCBA: the functional structure of a board, the way a functional analysis draws it : what enters
+/* DesignOrbit.ai — PCBA: the functional structure of a board, the way a functional analysis draws it : what enters
    the system on the left, what leaves it on the right, the blocks in between, and the flows that join them —
    energy (supply nets) and information (signal nets). It is read from the board itself : a block is a sub-system,
    a connector is the boundary, a net shared by two blocks is a flow, from the pin that drives it to the pins that

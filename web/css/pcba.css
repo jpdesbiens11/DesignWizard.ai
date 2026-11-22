@@ -1,4 +1,4 @@
-/* DynamiteOrbit — PCBA screen : the flow diagram, the board canvas, the functional tree, the classic views. */
+/* DesignOrbit.ai — PCBA screen : the flow diagram, the board canvas, the functional tree, the classic views. */
 .pcba { display: flex; flex-direction: column; height: calc(100vh - var(--topbar-h)); }
 .pcba-head { padding: .35rem .8rem .2rem; border-bottom: 1.5px solid color-mix(in srgb, var(--graphite) 16%, transparent); background: color-mix(in srgb, var(--surface) 70%, transparent); }
 .pcba-title { display: flex; align-items: center; gap: .5rem; font-size: .95rem; } .pcba-title .grow { flex: 1; } .pcba-title select { max-width: 26rem; }

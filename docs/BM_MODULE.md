@@ -799,10 +799,26 @@ le concept 1 tel quel.
   (modèle « poutre encastrée, charge répartie », gardé sur la branche). Le modèle avertit que la poutre est courte (L / h = 8) : la flèche
   réelle est un peu plus grande — la marge de 2 la couvre.
 
+**Le couvercle du haut** (JP, par menu : « Couvercle du haut », puis « Pinces côté module », v0.179.0 — un second point sur la branche,
+P4) : **le côté sous tension est femelle**, comme l'usage le veut — couvercle retiré, le cuivre du module reste en retrait.
+
+- **La pince A** au dos de la borne +, en haut (au-dessus de sa plaque d'appui), **la pince B** au dos de la languette du busbar de retour :
+  chacune deux mâchoires horizontales de 3,2 mm, 58 mm de large, avec le logement de sa bande et une bouche chanfreinée, ouvertes vers le
+  couvercle. Leurs mâchoires sont encastrées à la racine (le dos de la borne ou de la languette).
+- **Le pont du couvercle est rigide** : deux lames horizontales de 2,5 × 58 mm (145 mm²) et une âme de 4 × 52 mm contre le couvercle, d'une
+  pièce. Fermer le couvercle branche les deux. Les lames **glissent** dans leurs pinces : la pile des 8 CORE peut être plus longue ou plus
+  courte (la lame A garde 1,5 mm de jeu au fond de sa pince), le pont ne le sent pas — **le shunt souple et les quatre ressorts des plots
+  sont partis**. L'âme laisse passer l'arbre de la came.
+- **La languette de retour vient 6,6 mm plus près de la pile** (y = 413,5 mm), pour que la pince B tienne avant le couvercle ; la fenêtre du
+  fond du boîtier la suit.
+- **Les rondelles ressorts tiennent seules la pile** : 4 × 175 N = 700 N (exemple), de quoi la tenir jusqu'à environ 15 g le long du module
+  (cellules seules) ; 175 N par vis de l'anneau (350 au concept 1).
+- **Les calculs, gardés** : une pince du bout haut — 2 bandes × 14 lamelles = 28, 1 120 A assignés, 10,7 µΩ, 3,9 mV ; la boucle en traverse
+  deux (A puis B). Sa mâchoire sous 14 ponts à 30 N : 0,039 mm de flèche, 81 MPa (même avertissement de poutre courte).
+- **Vérifié par les essais** : rien ne traverse rien au bout haut ; chaque lame du pont est entre ses deux bandes et les couvre.
+
 **Pas fait, à itérer ensemble** : l'effort pour entrer une lame (non publié dans ce qui a été lu : fabricant ou mesure) ; la tenue de la
-brasure au cyclage thermique ; le pont du couvercle du haut — ses plots
-sont encore plans, pressés par des ressorts à spires : ils pourraient devenir lame et pince eux aussi ; raccourcir le couvercle du haut,
-maintenant que les rondelles ne prennent que 3 mm ; « couvercles debout » est lu comme les couvercles du concept 1, aux deux bouts du module
+brasure au cyclage thermique ; l'effort pour fermer le couvercle (deux lames à la fois, que la came donne) ; raccourcir le bout haut, maintenant que les rondelles ne prennent que 3 mm et que le pont n'a plus de ressorts ; « couvercles debout » est lu comme les couvercles du concept 1, aux deux bouts du module
 (à confirmer) ; l'échauffement du module fermé (le calcul du concept 1 n'est pas repris : ses joints étaient plans) ; l'isolation du joint
 (l'assemblage « Joint entre deux CORE » n'a pas la pince).
 

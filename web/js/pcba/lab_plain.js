@@ -1,4 +1,4 @@
-/* DynamiteOrbit — Labo, said plainly (demande de JP : « je ne comprends pas exactement comment faire les manips comme
+/* DesignOrbit.ai — Labo, said plainly (demande de JP : « je ne comprends pas exactement comment faire les manips comme
    ingénieur mécanique ou étudiant : une partie est encore cryptique, sûrement pour un pro du domaine… simplifier et
    expliquer comme à un enfant de 16 ans… il semble y avoir des différences entre les mesures virtuelles du labo et ce
    qui est demandé dans le labo réel : expliquer pourquoi, comme à un enfant de 16 ans »).

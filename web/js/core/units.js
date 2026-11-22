@@ -1,4 +1,4 @@
-/* DynamiteOrbit — units : what is shown, in the system the designer reads. Inside, nothing changes — every tool keeps its
+/* DesignOrbit.ai — units : what is shown, in the system the designer reads. Inside, nothing changes — every tool keeps its
    SI practical units (mm, N, MPa, kPa, °C) and the project file stays SI ; this module converts at the edges only : a value
    to show, a value typed.
    Two systems. « SI ». « Imperial », an engineering hybrid : the inch and the pound-force with what derives from them — in²,

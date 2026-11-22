@@ -1,4 +1,4 @@
-/* DynamiteOrbit — the guide : what a screen tells the designer while he works. A screen computes its list with a pure
+/* DesignOrbit.ai — the guide : what a screen tells the designer while he works. A screen computes its list with a pure
    function (what is missing, what is odd, what to do next) and hands it here ; the guide draws it the same way everywhere —
    the most serious first, a word for its level, one line each, a click that takes the designer to the place — and marks
    the fields that wait for a value so that they blink until they are entered.

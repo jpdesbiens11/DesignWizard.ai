@@ -1,4 +1,4 @@
-/* DynamiteOrbit — diagrams as draw.io files (the open mxGraph XML, uncompressed) : boxes and arrows that stay
+/* DesignOrbit.ai — diagrams as draw.io files (the open mxGraph XML, uncompressed) : boxes and arrows that stay
    editable in diagrams.net, one page per diagram.
    page = { name, nodes: [{ id, x, y, w, h, text, style }], edges: [{ from, to, text, style }] } ; text may hold line breaks. */
 
@@ -9,7 +9,7 @@ export const LINK = "edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=9;e
 
 /** The file. → text (.drawio) */
 export function drawio(pages) {
-  const out = ['<?xml version="1.0" encoding="UTF-8"?>', '<mxfile host="DynamiteOrbit" type="device">'];
+  const out = ['<?xml version="1.0" encoding="UTF-8"?>', '<mxfile host="DesignOrbit.ai" type="device">'];
   pages.forEach((p, k) => {
     const ids = new Set(p.nodes.map((n) => String(n.id))), w = Math.max(827, ...p.nodes.map((n) => n.x + n.w + 40)), h = Math.max(583, ...p.nodes.map((n) => n.y + n.h + 40));
     out.push(`  <diagram id="p${k + 1}" name="${xml(p.name)}">`, `    <mxGraphModel dx="${Math.round(w)}" dy="${Math.round(h)}" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" page="1" pageWidth="${Math.round(w)}" pageHeight="${Math.round(h)}">`, "      <root>", '        <mxCell id="0"/>', '        <mxCell id="1" parent="0"/>');
