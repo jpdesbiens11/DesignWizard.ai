@@ -15,7 +15,7 @@ const near = (a, b, msg, tol = 1e-3) => assert.ok(Math.abs(a - b) < tol, `${msg}
 
 test("the history : concept 3 is a branch of MAIN (P1), beside concept 2 ; it is concept 1 with its joints changed", () => {
   const p = bmProject({ branch: "c3" }), h = p.history, names = branchNames(h);
-  assert.deepEqual(h.points.map((x) => [x.id, x.parent, names.get(x.id)]), [["P1", null, "MAIN"], ["P2", "P1", "concept 2 - consumer product interface"], ["P3", "P1", C3_BRANCH], ["P4", "P3", C3_BRANCH], ["P5", "P4", C3_BRANCH], ["P6", "P5", C3_BRANCH], ["P7", "P6", C3_BRANCH]]);
+  assert.deepEqual(h.points.slice(0, 7).map((x) => [x.id, x.parent, names.get(x.id)]), [["P1", null, "MAIN"], ["P2", "P1", "concept 2 - consumer product interface"], ["P3", "P1", C3_BRANCH], ["P4", "P3", C3_BRANCH], ["P5", "P4", C3_BRANCH], ["P6", "P5", C3_BRANCH], ["P7", "P6", C3_BRANCH]]);
   assert.equal(h.head, "P7", "the home card opens on the tip of concept 3");
   const main = rebuild(h, "P1"), ids = (d) => d.parts.map((x) => x.id);
   /* the top end shortened (JP, by menu : « Raccourcir le bout haut ») : no backing plate on the + terminal, the casing shorter */

@@ -857,6 +857,35 @@ brasure au cyclage thermique ; l'effort pour fermer le couvercle (deux lames à 
 (à confirmer) ; l'échauffement du module fermé (le calcul du concept 1 n'est pas repris : ses joints étaient plans) ; l'isolation du joint
 (l'assemblage « Joint entre deux CORE » n'a pas la pince).
 
+## Concept 4 — « flat louvred faces » (branche de l'historique, partie du concept 3)
+
+Question de JP (22 novembre 2026) : « comment on s'assure que les employés d'usine ne s'électrocutent pas puisque tu as une grosse patte non
+protégée… je pensais que des contacts flexibles sur les faces des busbars est plus simple que des grosses pins de busbars pliées ». Trois idées lui
+ont été montrées en image (la lame d'aujourd'hui, des faces planes à lamelles, des douilles et une navette) ; son choix, par menu : **« Faces planes à
+lamelles »**, en 4e concept. Source : `web/js/demo/demo_bm_c4.js` (`conceptFour`), `withConceptFour` de `demo_bm.js` ; essais :
+`tests/node/bm_concept4.test.mjs`. Point P8, parti de P7 (le concept 3 avec ses bouts raccourcis) ; la carte de l'accueil ouvre cette branche.
+
+**Le danger, dit juste** : un CORE seul a 4,2 V au plus, la pile 33,6 V — l'électrocution n'est pas le risque ; le risque, c'est le court-circuit
+d'un CORE (un outil, une bague entre sa face + et sa face −) : brûlure, arc. Une lame qui dépasse de 15 mm s'accroche ; une face plate, non.
+
+- **Rien ne dépasse d'un CORE** : sur la jambe −, **deux rainures de 1,2 mm** dans le cuivre reçoivent chacune une **bande à lamelles**
+  (`BM4-LAMELLES`, 12 × 51 mm, 14 lamelles), au ras d'un **cadre isolant de 0,5 mm** (PA66-GF30) qui couvre la face et laisse des fenêtres aux bandes
+  et aux plages LV. La jambe + est une **face plate**.
+- **Deux CORE pressés** : le cadre de l'un se pose sur la face + de l'autre — c'est la butée — et chaque bande travaille à **1,7 mm**, entre le fond
+  de sa rainure et la face +. **Pas : 51,4 mm** (0,5 de plus qu'au concept 1 : le cadre).
+- **Plus de pince au bout +X** : la section du boîtier est celle du concept 1 — **10 mm de moins en largeur** qu'au concept 3.
+- **Les bornes** : la − est une face plate (comme une jambe +), la + a des rainures, un cadre et deux bandes (comme une jambe −).
+- **Les bouts** : ceux du concept 3 (P7) — shunt fixe borne + → retour, sans pont ; sans entretoises en bas — et le bout haut redescend, n'étant
+  plus tenu par une pince : **boîtier de 426,5 mm, 32,9 mm de moins qu'au concept 1** (0,75 mm de plus qu'au concept 3).
+- **La pile est serrée de nouveau** : les rondelles du couvercle du haut donnent 700 N ; un joint demande 196 N de lamelles (2 × 14 × 7 N).
+- **Le calcul, gardé** : 2 bandes × 14 lamelles = 28, **1 120 A** assignés pour 360 A, 10,7 µΩ, **3,9 mV**. La jambe − garde 144,8 mm² aux
+  rainures, 2,49 A/mm² (critère 2,5).
+- **Vérifié par les essais** : toutes les pièces se construisent ; rien ne traverse rien (CORE 1, 2, 7, 8, les deux bouts, le boîtier) ; la bande
+  et le cadre du joint 1 et de la borne + sont sur la face + d'avant, la bande à 1,7 mm.
+
+**À revoir** : les plages LV ne se touchent plus d'office (le cadre les écarte de 0,5 mm : la plage du côté + doit monter sur sa rondelle) ; les
+marques laser « HV − » sont sous le cadre ; l'effort et la tenue des cadres sous 700 N (PA66) ; un essai de résistance du joint réel.
+
 ## Ce qu'il contient
 
 | Élément | Ce que c'est | Où |

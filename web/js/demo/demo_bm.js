@@ -43,8 +43,9 @@ import { conceptTwo, camLayout, camCalc } from "./demo_bm_c2.js";
 import { ENV3, laminateC3, louvrePart, terminalsC3, lidForcesC3, pressPlateC3, discPart, calcsC3, F3 } from "./demo_bm_c3.js";
 import { CORE_ENV } from "./demo_bm_case.js";
 import { lidForks, lidForkFeatures, bridgeC3, lidBandsPart } from "./demo_bm_c3_lid.js";
+import { conceptFour } from "./demo_bm_c4.js";
 import { run as runCalc, sessionDefaults as calcDefaults } from "../analysis/physics/index.js";
-import { addPoint, restoreInto, putDefinition, withoutHistory, tipOf } from "../core/history.js";
+import { addPoint, restoreInto, putDefinition, withoutHistory, tipOf, rebuild } from "../core/history.js";
 
 /** The branch of concept 2 (JP, 22 novembre : « commence un point de sauvegarde du MAIN et fait une branche parallèle (concept 2 - consumer
     product interface) »). */
@@ -52,6 +53,9 @@ export const C2_BRANCH = "concept 2 - consumer product interface";
 /** The branch of concept 3 (JP, 22 novembre : « une 3e branche, partie du concept 1… contacts haute puissance à lames… commencer simple ») ;
     his choices by menu : « Lame dans une pince », from the whole of concept 1. */
 export const C3_BRANCH = "concept 3 - blade and fork";
+/** The branch of concept 4 (JP, 22 novembre : « on doit penser à une 4e idée plus sécuritaire… des contacts flexibles sur les faces des busbars » ;
+    by menu : « Faces planes à lamelles » ; « concept 4 »), from the tip of concept 3. */
+export const C4_BRANCH = "concept 4 - flat louvred faces";
 
 /* Iteration 2 (JP, 21 novembre : « garder les L pressés » ; « le max de courant continu des 21700 P45B de Molicel, en décharge et en charge,
    la valeur la plus élevée — on est en 8s8p avec 8 CORE » ; then the flex in G). The cell is the Molicel INR-21700-P45B of the library, its
@@ -149,8 +153,9 @@ export function bmProject(opts = {}) {
   bms.name = "BMS central du module"; bms.function = "Le BMS central : interroge les 8 cartes de CORE par la chaîne RS-485, lit le courant du module, commande le contacteur et dit l'état au véhicule par CAN. Pas encore posé : le logement du couvercle du fond est trop petit.";
   putBoard(p, BMS_BOARD_ID); putBoard(p, p.boards[0].id);
   p.software = [moduleDesign()];
-  withConceptTwo(p, true); withConceptThree(p);
-  restoreInto(p, opts.branch === "c3" ? tipOf(p.history, C3_BRANCH).id : opts.branch ? "P2" : "P1");      // the software of the central BMS : its state machine, run on its bench, written in C      // the lab table : the central BMS and one CORE board, linked by the four wires of the chain
+  withConceptTwo(p, true); withConceptThree(p); withConceptFour(p);
+  const tip = { c3: C3_BRANCH, c4: C4_BRANCH }[opts.branch];
+  restoreInto(p, tip ? tipOf(p.history, tip).id : opts.branch ? "P2" : "P1");      // the software of the central BMS : its state machine, run on its bench, written in C      // the lab table : the central BMS and one CORE board, linked by the four wires of the chain
   return p;
 }
 
@@ -228,6 +233,13 @@ function bottomShortC3(p, env) {
   const mod = p.assemblies.find((a) => a.id === "BM-8S8P-ASM"), box = mod.instances.find((i) => i.id === "boitier"); box.placement = at([0, Y0, 0]);
   p.description = p.description.replace(/Bout haut raccourci de [\d,]+ mm\./, `Bouts haut et bas raccourcis : ${frC(CASE_L - caseL)} mm de moins sur le boîtier.`);
   return gain;
+}
+/** Concept 4, on its branch from the tip of concept 3 : the joints made of flat faces and louvred bands recessed in the − face (demo_bm_c4.js). */
+function withConceptFour(p) {
+  const P1 = rebuild(p.history, "P1"), L = contactLayout(CORE_X, D), z = stackOf({ H, ins: INS_T, t: BB_T, w: WRAP_T });
+  const r = conceptFour(p, { P1, X: CORE_X, Y: CORE_Y, ins: INS_T, t: BB_T, H, zM1: z.zM1, I: I_CORE, caseL1: CASE_L, pitch1: CORE_PITCH, at, lvx: L.lv.map((c) => c.x) });
+  addPoint(p, { kind: "manual", branch: C4_BRANCH, label: "Concept 4 — premier jet : faces planes à lamelles, rien ne dépasse", when: "2026-11-22T23:00:00.000Z", by: "DesignOrbit.ai",
+    note: `Choix de JP par menu : « Faces planes à lamelles » (sa question : les employés qui manipulent les CORE). Plus de lame ni de pince : deux bandes à lamelles encastrées dans la face −, au ras d'un cadre isolant ; face + plate. Pas ${frC(r.pitch)} mm, boîtier ${frC(r.caseL)} mm.` });
 }
 const frC = (v) => String(Math.round(v * 100) / 100).replace(".", ",");
 

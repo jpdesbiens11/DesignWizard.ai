@@ -169,7 +169,11 @@ plus bas, avec sa version. Une revue de la liste se fait à chaque reprise de s�
    les changements à l'écran ; fini le texte seul pour expliquer du visuel »** — chaque itération se présente en images annotées (coupe avant /
    après calculée sur le modèle, changements pointés).
    ~~**Bout bas, même méthode**~~ (JP, par menu) — fait (v0.182.0) : plus d'entretoises, l'anneau du fond sur la plaque d'appui de la borne − ;
-   20,75 mm de moins, 33,65 mm de moins qu'au concept 1 au total. Suite proposée par menu.
+   20,75 mm de moins, 33,65 mm de moins qu'au concept 1 au total.
+6. **BM — concept 4** (JP, 22 novembre : « comment on s'assure que les employés d'usine ne s'électrocutent pas… une 4e idée plus sécuritaire…
+   des contacts flexibles sur les faces des busbars » ; trois idées montrées en image, choix par menu : « Faces planes à lamelles ») — premier jet
+   fait (v0.183.0, `demo/demo_bm_c4.js`) : rien ne dépasse d'un CORE, bandes encastrées dans la face − au ras d'un cadre isolant, face + plate ;
+   pas 51,4 mm, largeur du concept 1, boîtier 32,9 mm plus court qu'au concept 1. À revoir : les plages LV (écart de 0,5 mm). Suite proposée par menu.
 5. ~~**Icônes : remplacer le chapeau de sorcier** par une alternative du monde des fusées, puis toutes les icônes (JP, 22 novembre) — framework.~~ — fait (v0.178.0, voir plus bas).
    Priorité, par menu : « Tâche à part, maintenant » — lancée par JP depuis sa carte, dans une autre conversation ; pas dans celle de conception.
 
