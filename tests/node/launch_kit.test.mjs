@@ -53,7 +53,7 @@ test("kit — what it says of the project is what the project is : free, in deve
     assert.doesNotMatch(all, /\b(?:Onshape|SolidWorks|Fusion ?360|CATIA|Inventor|Google|Microsoft|LinkedIn|Twitter|Facebook|Instagram)\b/i, `${l} : the name of another product`);
     assert.doesNotMatch(all, /\b(?:révolutionn\w+|revolutionar\w+|n° ?1|numéro un|world-class|best-in-class|le meilleur|the best)\b/i, `${l} : a claim nobody can hold`);
   }
-  assert.match(LINKS.demo, /^https:\/\/[a-z0-9.-]+\/DynamiteOrbit\/$/); assert.match(LINKS.code, /^https:\/\/github\.com\//); assert.ok(read("web/vitrine.html").includes(LINKS.code), "the links are those of the showcase page");
+  assert.match(LINKS.demo, /^https:\/\/[a-z0-9.-]+\/DynamiteOrbit\.ai\/$/); assert.match(LINKS.code, /^https:\/\/github\.com\//); assert.ok(read("web/vitrine.html").includes(LINKS.code), "the links are those of the showcase page");
   assert.match(POSTS.find((p) => p.id === "liens").fr, new RegExp(LINKS.demo.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
 });
 

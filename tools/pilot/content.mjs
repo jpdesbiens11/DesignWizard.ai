@@ -5,7 +5,7 @@
    `words` of its station — which the robot looks for on the real screen. A label that changes makes the walk fail, not the tester.
    No figure of gain, no time saved : nobody measured one — the trial is there to find out. Pure. */
 
-export const LINKS = { demo: "https://jpdesbiens11.github.io/DynamiteOrbit/", code: "https://github.com/jpdesbiens11/DynamiteOrbit", issue: "https://github.com/jpdesbiens11/DynamiteOrbit/issues/new/choose" };
+export const LINKS = { demo: "https://jpdesbiens11.github.io/DynamiteOrbit.ai/", code: "https://github.com/jpdesbiens11/DynamiteOrbit.ai", issue: "https://github.com/jpdesbiens11/DynamiteOrbit.ai/issues/new/choose" };
 export const PILOT = { minutes: 60, title: "Essai pilote", subtitle: "Une heure avec DynamiteOrbit, sur la démonstration « Variateur compact 400 V »",
   aim: "Savoir où un nouveau venu hésite, ce qu'il comprend seul et ce qui lui manque en premier. Ce n'est pas un examen de la personne : c'est l'outil que l'on essaie.",
   honest: "L'outil est un logiciel libre en développement actif. Rien de ce qu'il calcule ne remplace la vérification d'un ingénieur ; chaque méthode dit dans l'Aide ce qui a été lu, testé ou repris de mémoire." };

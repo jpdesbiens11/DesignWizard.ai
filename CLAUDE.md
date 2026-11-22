@@ -1,6 +1,6 @@
-# DesignWizard.ai — consignes pour Claude
+# DynamiteOrbit (anciennement DesignWizard.ai) — consignes pour Claude
 
-Consignes permanentes de JP (propriétaire du dépôt). Elles s'appliquent à toute session.
+Consignes permanentes de JP (propriétaire du dépôt). **Le produit s'appelle DynamiteOrbit** (v0.174.0, 22 novembre 2026 : DesignWizard.ai était pris), de la famille DynamiteAgile — « de la mine souterraine vers le ciel » : on bâtit la fusée en plein vol vers les étoiles. Les dossiers Drive « DesignWizard.ai » gardent leur nom. Elles s'appliquent à toute session.
 
 ## Façon de travailler
 
@@ -31,7 +31,7 @@ Consignes permanentes de JP (propriétaire du dépôt). Elles s'appliquent à to
    `web/version.json` (ce que la page ouverte lit pour annoncer une mise à jour — `web/js/core/update_check.js`) et l'en-tête
    du README ; un test les compare.
 3. Le flux « Publier la démo » (`.github/workflows/pages.yml`) rejoue les tests et pousse `web/` sur `gh-pages` ;
-   la démo est à https://jpdesbiens11.github.io/DesignWizard.ai/. Vérifier que le flux a réussi et que la page répond.
+   la démo est à https://jpdesbiens11.github.io/DynamiteOrbit.ai/ (dépôt renommé par JP le 22 novembre : `jpdesbiens11/DynamiteOrbit.ai`). Vérifier que le flux a réussi et que la page répond.
 4. Ne jamais forcer `main`. La branche `gh-pages` est réécrite par le flux : ne pas y travailler.
 
 ## Règles du projet
@@ -53,7 +53,7 @@ Consignes permanentes de JP (propriétaire du dépôt). Elles s'appliquent à to
   se présente groupé par nature, chaque groupe avec sa couleur, chaque élément avec un pictogramme qui montre le concept
   et un titre court ; le détail vient ensuite. Les studios gardent tous la même structure : volet de gauche (ce que l'on
   entre), centre (ce que l'on regarde), volet de droite (ce que l'on choisit et ce que l'on obtient).
-- **La marque sur tous les documents** (demande de JP) : tout ce que la plateforme produit — PDF, Word, texte, CSV, DXF, STEP, STL, Gerber, perçage, FeatureScript, `.dwiz`, JSON, ce qui part vers Drive ou vers Onshape, la présentation — porte le visuel de DesignWizard.ai là où le format le permet et la note « DesignWizard.ai™ by DynamiteAgile™ · Co-Intelligence WorkFlow™ — document généré par DesignWizard.ai. La version électronique fait foi ; la version imprimée est pour référence. » (`web/js/core/brand.js`, une seule source). Les livrables à lire (PDF, Word, dessins) portent en plus la **note de confidentialité** du projet et suivent le **gabarit des documents** : cartouche d'en-tête encadré sur chaque page (marque, titre, n° de document, révision, date, page), page de titre avec approbation et journal des révisions (`core/pdfdoc.js`, `core/docx.js`, `docIdentity`). Un écran enregistre un fichier par `download()`, jamais par un `Blob` à lui. Tout nouvel export naît avec la marque ; voir `docs/BRAND.md`.
+- **La marque sur tous les documents** (demande de JP) : tout ce que la plateforme produit — PDF, Word, texte, CSV, DXF, STEP, STL, Gerber, perçage, FeatureScript, `.dwiz`, JSON, ce qui part vers Drive ou vers Onshape, la présentation — porte le visuel de DynamiteOrbit là où le format le permet et la note « DynamiteOrbit™ by DynamiteAgile™ · Co-Intelligence WorkFlow™ — document généré par DynamiteOrbit. La version électronique fait foi ; la version imprimée est pour référence. » (`web/js/core/brand.js`, une seule source). Les livrables à lire (PDF, Word, dessins) portent en plus la **note de confidentialité** du projet et suivent le **gabarit des documents** : cartouche d'en-tête encadré sur chaque page (marque, titre, n° de document, révision, date, page), page de titre avec approbation et journal des révisions (`core/pdfdoc.js`, `core/docx.js`, `docIdentity`). Un écran enregistre un fichier par `download()`, jamais par un `Blob` à lui. Tout nouvel export naît avec la marque ; voir `docs/BRAND.md`.
 - **Un média, pas une valeur** (demande de JP) : dans les modèles analytiques, une propriété de matière ou de fluide ne se tape pas — elle vient d'un **média connu** choisi dans la base (`web/js/analysis/physics/media.js`, écran `#/media`), affichée à côté, non modifiable. Menus : solides d'abord, puis liquides, puis gaz, par groupe et par nom. Tout nouveau modèle déclare ses médias (`MODEL_MEDIA`) ; tout nouveau média dit d'où viennent ses valeurs (`basis`) ; voir `docs/MEDIAS.md`.
 - **Termes techniques en anglais** (demande de JP) : tout terme technique — procédé, opération, forme, interface, matière première, vocabulaire du mold (draft, parting line, slide, gate, riser…), soudage, revêtement, finition — se montre **en anglais, comme le métier le nomme** ; l'explication autour reste en français. Chaque table de vocabulaire donne `label` (anglais, ce que les écrans et les documents montrent) et `fr` (l'équivalent, pour le glossaire de l'Aide : `web/js/core/terms.js`). Toute nouvelle brique apporte ses termes avec les deux noms ; voir `docs/TERMES.md`.
 - **Ce qui est nouveau se voit, le temps d'une revue** (demande de JP : « tague-moi ce qui est nouveau dans l'interface entre les versions pour faciliter la revue humaine… quand on passe à une nouvelle revue seulement cache les tags, sinon laisse-les actifs, pour la traçabilité ») : **toute version qui change un écran ajoute ses lignes à `NEWS`** (`web/js/core/whats_new.js`) — ce qui est nouveau, en une phrase, l'écran (`where`) et l'élément (`sel`) ; un essai tient que la version qui tourne a ses lignes et que l'élément existe. L'élément porte alors une marque « Nouveau » (un calque au-dessus de la page, `core/whats_new_ui.js`, installé une fois) ; le bouton à l'étoile de la barre du haut en tient la liste. **Une ligne cochée « vu » garde sa marque**, en vert ; seul « Passer à une nouvelle revue » les range, et la revue rangée se rouvre. Voir `docs/ERGONOMIE.md`.
@@ -132,17 +132,18 @@ premier) ; on descend « Prochaines actions » dans l'ordre ; ce qui est fait se
 plus bas, avec sa version. Une revue de la liste se fait à chaque reprise de séance.
 
 **Prochaines actions** (dans l'ordre)
-1. **Interview de JP** : son idée pour l'interface des batteries avec le boîtier — ce que c'est, ce qu'elle fait avec
+1. **Pivot du nom et de la marque** (JP, 22 novembre) — **nom fixé : DynamiteOrbit** (par menu ; dynamiteorbit.ca réservé par JP, déployé sur ce domaine dans environ deux semaines, à la fin de ses travaux de cadre). Dans ce chat : le cadre, le nom et la marque seulement, aucune conception. ~~Renommer le produit partout~~ — fait (v0.174.0) : ce qui se lit change ; le format .dwiz, les clés `dw.`, les numéros DW-, les noms de fichiers et les dossiers Drive (retrouvés par leur propriété) restent ; le film et le teaser gardent l'ancien nom tant que leur voix n'est pas enregistrée de nouveau. **Reste, dans l'ordre** : ~~(a) JP renomme le dépôt GitHub~~ — fait : `jpdesbiens11/DynamiteOrbit.ai` (tout le matériel et le code y vont), démo à https://jpdesbiens11.github.io/DynamiteOrbit.ai/ ; (b) **le nouveau visuel** — planche d'identité v1 (https://claude.ai/artifact/7AzCdNsEq7rQseozYGKvz9) : « Dynamite » orange, le carré jaune au trait d'encre, le carnet quadrillé de DynamiteAgile, l'altitude en km (la mine descend en mètres, la fusée monte) ; JP : « commençons avec les éléments actuels, on finetunera » — **seuls les éléments visuels et les couleurs changent, pour un design uniforme et attrayant pour les jeunes ingénieurs et ingénieures ; rien du contenu technique ni de la place des fonctions de l'interface** ; le symbole « l'éclair mis en orbite » (piste C) d'office, facile à changer ; le logo des documents (`tools/sketch_logo.py`, compas-chapeau de sorcier) refait ; l'idée « bâtir la fusée en plein vol vers les étoiles » dans le ton et la présentation ; (c) la voix du film et du teaser enregistrée de nouveau ; (d) recherche CIPO pour DYNAMITEORBIT.
+2. **Interview de JP** : son idée pour l'interface des batteries avec le boîtier — ce que c'est, ce qu'elle fait avec
    l'interface des blocs (les CORE, le + et le −), l'analogie sur laquelle on s'appuie ; et les couvercles du fond et du
    haut retravaillés « comme les produits grand public, plus compacts ». Attendre ses autres idées avant de construire.
-2. ~~**Historique : effacer un point de sauvegarde** un à un — les points d'après se rattachent au point d'avant ; une
+3. ~~**Historique : effacer un point de sauvegarde** un à un — les points d'après se rattachent au point d'avant ; une
    branche qui n'avait que ce point meurt et l'on revient à MAIN~~ — fait (v0.170.0 : « Effacer ce point », `deletePlan`, `deletePoint`).
-3. ~~**BM — concept 2** : un point de sauvegarde de MAIN, puis une branche parallèle **« concept 2 - consumer product
+4. ~~**BM — concept 2** : un point de sauvegarde de MAIN, puis une branche parallèle **« concept 2 - consumer product
    interface »**~~ — premier jet fait (v0.171.0 : `demo/demo_bm_c2.js`, `withConceptTwo` ; P1 « Concept 1 » sur MAIN, P2 sur la branche ;
    la carte de l'accueil ouvre la branche). **À itérer avec JP** : les capteurs de température (la face − est un contact), les prises de
    tension, la chaîne RS-485 d'un CORE à l'autre, les barres du couvercle du fond, les rampes de la came, les vis et les joints.
 
-4. **BM — concept 3** (JP, 22 novembre, après la came détaillée du concept 2 — « le concept 2 n'est pas correct ») : une 3e branche, partie
+5. **BM — concept 3** (JP, 22 novembre, après la came détaillée du concept 2 — « le concept 2 n'est pas correct ») : une 3e branche, partie
    du concept 1 (MAIN) : cellules PERPENDICULAIRES à l'axe d'insertion du module, comme au concept 1 ; les CORE s'assemblent l'un à l'autre,
    contacts face à face, − contre +, DANS l'axe d'insertion (comme au concept 1) ; y mettre des contacts haute puissance à lames ; couvercles
    debout. Commencer SIMPLE, puis complexifier ensemble. Pas de ressorts de produit grand public (2–3 A) : des ressorts fins et compacts,

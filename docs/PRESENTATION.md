@@ -1,6 +1,6 @@
 # La présentation guidée
 
-`web/presentation.html` — en ligne : https://jpdesbiens11.github.io/DynamiteOrbit/presentation.html
+`web/presentation.html` — en ligne : https://jpdesbiens11.github.io/DynamiteOrbit.ai/presentation.html
 
 Une présentation en pages, pour les **concepteurs, techniciens et ingénieurs en mécatronique** qui travaillent avec les
 outils traditionnels. Elle part de la conception d'aujourd'hui (six outils autour d'une pièce, des vérifications qui

@@ -5,7 +5,7 @@
 import { el, icon } from "../core/dom.js";
 import { METHOD_GROUPS, METHOD_KINDS, METHOD_HOW, METHODS, methodsByGroup, methodCounts } from "../core/methods.js";
 
-const REPO = "https://github.com/jpdesbiens11/DynamiteOrbit";
+const REPO = "https://github.com/jpdesbiens11/DynamiteOrbit.ai";
 const howBadge = (how) => { const h = METHOD_HOW[how] || METHOD_HOW.none; return el("span", { class: `badge badge-${h.tone} src-how`, "data-tip": h.text }, h.label); };
 
 function item(m, open) {

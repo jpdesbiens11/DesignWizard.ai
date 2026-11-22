@@ -33,7 +33,7 @@ test("the kit promises nothing nobody measured, and says what was not checked", 
   assert.deepEqual(gainClaims(pilotTexts()), []); assert.doesNotMatch(pilotTexts(), /gagn(e|ez|er) du temps|plus vite|fois plus|\d+ ?%/i);
   const md = pilotMarkdown(); assert.match(md, /n'a encore été suivi par personne d'autre que son auteur et son robot/); assert.match(md, /Les durées sont une estimation/); assert.match(md, /Rien n'a été mesuré sur le temps gagné ou perdu/);
   assert.match(PILOT.honest, /ne remplace la vérification d'un ingénieur/); assert.doesNotMatch(pilotTexts(), /@[a-z0-9.-]+\.[a-z]{2,}/i, "no address");
-  assert.equal(LINKS.demo, "https://jpdesbiens11.github.io/DynamiteOrbit/");
+  assert.equal(LINKS.demo, "https://jpdesbiens11.github.io/DynamiteOrbit.ai/");
 });
 
 test("the guide of the repository is the path, word for word ; the old guide points to it", () => {

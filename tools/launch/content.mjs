@@ -8,7 +8,7 @@
 export const LANGS = ["fr", "en"];
 const L = (fr, en) => ({ fr, en });
 
-export const LINKS = { site: "https://jpdesbiens11.github.io/DynamiteOrbit/vitrine.html", demo: "https://jpdesbiens11.github.io/DynamiteOrbit/", code: "https://github.com/jpdesbiens11/DynamiteOrbit" };
+export const LINKS = { site: "https://jpdesbiens11.github.io/DynamiteOrbit.ai/vitrine.html", demo: "https://jpdesbiens11.github.io/DynamiteOrbit.ai/", code: "https://github.com/jpdesbiens11/DynamiteOrbit.ai" };
 export const BRAND_FOOT = L("DynamiteOrbit™ by DynamiteAgile™ · Co-Intelligence WorkFlow™ — logiciel libre, licence MIT", "DynamiteOrbit™ by DynamiteAgile™ · Co-Intelligence WorkFlow™ — free software, MIT licence");
 
 /* ---------- the one-page sheet ---------- */

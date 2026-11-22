@@ -9,7 +9,7 @@ les autres exemples, et comment envoyer son avis.
 ## Installer
 
 ```bash
-git clone https://github.com/jpdesbiens11/DynamiteOrbit.git
+git clone https://github.com/jpdesbiens11/DynamiteOrbit.ai.git
 ```
 
 ```bash
@@ -23,7 +23,7 @@ python designwizard.py
 Python 3.9 ou plus récent, rien d'autre. Le serveur n'écoute que sur votre poste (`127.0.0.1`). Vos projets sont
 enregistrés dans le dossier `data/`, qui n'est jamais envoyé sur GitHub. `Ctrl + C` arrête le serveur.
 
-L'outil s'ouvre aussi en ligne, sans rien installer : <https://jpdesbiens11.github.io/DynamiteOrbit/> — connexion Google,
+L'outil s'ouvre aussi en ligne, sans rien installer : <https://jpdesbiens11.github.io/DynamiteOrbit.ai/> — connexion Google,
 puis accès sur approbation (l'écran montre une empreinte d'accès et un bouton « Demander l'accès » ; voir
 [GOOGLE.md](GOOGLE.md)).
 
@@ -64,7 +64,7 @@ serpentin ; une **coupe** (bouton de la vue) montre l'intérieur.
 
 ## Donner son avis
 
-Ouvrez un ticket : <https://github.com/jpdesbiens11/DynamiteOrbit/issues/new/choose> — trois gabarits : *Retour
+Ouvrez un ticket : <https://github.com/jpdesbiens11/DynamiteOrbit.ai/issues/new/choose> — trois gabarits : *Retour
 d'essai*, *Bogue*, *Idée*. Joignez si possible :
 
 - le projet exporté (menu **Projet → Exporter le projet (.json)**) ;
