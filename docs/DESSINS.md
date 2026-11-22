@@ -116,8 +116,9 @@ changement une étape annulable.
 deux points tombent dans le cercle d'un détail **se donne sur le détail**, et seulement là — une cote se donne une fois,
 là où elle se lit le mieux (ASME Y14.5 ; `dimsInDetail`, `detailRoom`). Les cotes horizontales sous le cercle, les
 verticales à sa droite, avec leur bulle et leur classe ; DETAIL D et son échelle passent sous elles. Le détail prend
-donc un peu plus de place : il arrive que les vues descendent d'une échelle de plus. Une cote par repère (un rayon) et
-une cote qui sort du cercle restent sur la vue d'origine. La ligne du détail, dans la marge de droite, dit combien il
+donc un peu plus de place : il arrive que les vues descendent d'une échelle de plus. **Une cote par repère** (un rayon
+de coin) dont le point tombe dans le cercle **se donne aussi sur le détail** (v0.167.0) : sa flèche part du coin agrandi,
+sa note et sa bulle à droite du détail, l'une sous l'autre. Une cote qui sort du cercle reste sur la vue d'origine. La ligne du détail, dans la marge de droite, dit combien il
 en porte.
 
 **Un détail se déplace à la main** : sur la première feuille, appuyez sur un détail, glissez, relâchez — il reste où on

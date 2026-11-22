@@ -249,7 +249,11 @@ function composeSheet(sheet0, data, minIdx = 0) {
   const details = [], later = [];
   /* a detail drawn with the dimensions it shows : under its circle the horizontal ones, right of it the vertical ones, its label under them */
   const withDims = (sh, d, x, y) => { const R = roomOf.get(d.id), Td = drawDetail(sh, views[d.view], d, x + 2, y + 1, d.scale, o.hidden !== false, { below: R.below }), k = d.scale, cx = x + 2 + d.r * k, cy = y + 1 + d.r * k, r = d.r * k; let ih = 0, iv = 0;
-    for (const dd of R.dims) { const P1 = Td(dd.p1), P2 = Td(dd.p2), h = dd.dir === "h", off = h ? cy + r - Math.max(P1[1], P2[1]) + 6 + 8 * ih++ : cx + r - Math.max(P1[0], P2[0]) + 6 + 9 * iv++;
+    let il = 0;
+    for (const dd of R.dims) { if (dd.leader) {      // a radius : its leader from its corner on the detail, its note right of the detail, one under the other
+        const from = Td(dd.leader), to = [cx + r + R.side + 6, cy - r + 4 + 8 * il++], note = leaderNote(sh, from, to, [dimText(dd)], { size: 3.2 });
+        balloon(sh, [note.x + note.width + 1.5 + BAL_R, to[1]], dd.n); if (dd.cls === "sc" || dd.cls === "csc") classSymbol(sh, note.x + note.width + 2 * BAL_R + 3, to[1], dd.cls); onView.push(dd.key); continue; }
+      const P1 = Td(dd.p1), P2 = Td(dd.p2), h = dd.dir === "h", off = h ? cy + r - Math.max(P1[1], P2[1]) + 6 + 8 * ih++ : cx + r - Math.max(P1[0], P2[0]) + 6 + 9 * iv++;
       annotate(sh, dd, dimLinear(sh, P1, P2, { dir: dd.dir, offset: off, text: dimText(dd) })); onView.push(dd.key); }
     return R; };
   for (const d of liveDetails(spec)) {

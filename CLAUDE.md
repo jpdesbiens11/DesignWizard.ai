@@ -168,7 +168,7 @@ fabrication virtuel)** — faits (v0.142.0 à v0.145.0) ; le projet BM bonifié 
    de la feuille (position, planéité, profil), vue de détail tracée sur la feuille, vues qui se replacent seules, tout cela
    dans l'aller-retour IA ; la loupe était déjà à côté du zoom (v0.125.0). **Fait (v0.158.0)** : une vue de détail sur un dessin
    d'assemblage ; les cotes linéaires entières d'une zone données sur son détail (une fois, ASME Y14.5) ; un détail déplacé
-   à la main (les vues projetées restent alignées). Reste : les cotes par repère (rayons) dans un détail ; la liste des cotes
+   à la main (les vues projetées restent alignées). Les cotes par repère (rayons) dans un détail : fait (v0.167.0). Reste : la liste des cotes
    en anglais du bloc pour un dessin ISO.
 6. **Cartes** : chaque PCBA a son PCB (la carte comme pièce mécanique) **créé et tenu à jour d'office**, et c'est lui qui
    entre dans l'assemblage ; chaque carte a un **rôle** — « Produit » ou « Banc d'essai » — seules les premières entrent

@@ -69,6 +69,10 @@ test("on the sheet : the details take the white room, the views go down a scale 
   /* a dimension whose two points fall inside a detail is given on the detail — once (ASME Y14.5) */
   assert.deepEqual(two.info.details[0].dims, ["iface:IF1:v"]); assert.ok(two.info.onView.includes("iface:IF1:v")); assert.equal(two.info.onView.filter((k) => k === "iface:IF1:v").length, 1, "given once");
   assert.deepEqual(one.info.details[0].dims, [], "a detail with no whole dimension inside shows none");
+  /* a radius told by a leader, its corner inside the zone : given on the detail too, once */
+  const three = draw([{ id: "det-R", letter: "D", view: "top", at: [154, 6], r: 8, scale: 2 }]);
+  assert.ok(three.info.details[0].dims.includes("param:rc"), "the corner radius goes to the detail"); assert.equal(three.info.onView.filter((k) => k === "param:rc").length, 1, "given once");
+  assert.match(three.pages[0], />DETAIL D</);
   /* a detail moved by hand stays where it was put — inside the frame */
   const hand = draw([{ id: "det-D", letter: "D", view: "top", at: [12, 12], r: 6, scale: 2, place: [30, 160] }]); assert.deepEqual([hand.info.details[0].box.x, hand.info.details[0].box.y, hand.info.details[0].hand], [30, 160, true]);
   const far = draw([{ id: "det-D", letter: "D", view: "top", at: [12, 12], r: 6, scale: 2, place: [9000, -50] }]), F = far.info.layout.frame, fb = far.info.details[0].box; assert.ok(fb.x + fb.w <= F.x + F.w && fb.y >= F.y, "a place off the sheet is brought back inside the frame");
@@ -101,8 +105,9 @@ test("wired : the screen edits the block, the notes and the details in the right
 
 test("the dimensions a detail shows, the room it takes, a place set by hand ; an answer may set the place", () => {
   const d = { id: "det-D", letter: "D", view: "top", at: [10, 10], r: 5, scale: 2 }, dims = [{ key: "a", on: "top", kind: "detail", dir: "h", p1: [8, 9], p2: [12, 9] }, { key: "b", on: "top", kind: "detail", dir: "v", p1: [9, 7], p2: [9, 12] }, { key: "c", on: "top", kind: "detail", dir: "h", p1: [8, 9], p2: [20, 9] }, { key: "d", on: "front", kind: "detail", dir: "h", p1: [8, 9], p2: [12, 9] }, { key: "e", on: "top", kind: "detail", leader: [10, 10] }];
-  assert.deepEqual(dimsInDetail(d, dims).map((x) => x.key), ["a", "b"], "both points inside, on its view, a linear dimension");
-  const R = detailRoom(d, dims); assert.equal(R.w, 20 + 4 + 10 + 9); assert.equal(R.h, 20 + 12 + 8 + 8); assert.equal(R.below, 16);
+  assert.deepEqual(dimsInDetail(d, dims).map((x) => x.key), ["a", "b", "e"], "both points inside, on its view, a linear dimension ; a radius whose corner falls inside, by its leader");
+  assert.deepEqual(dimsInDetail(d, [...dims, { key: "far", on: "top", kind: "detail", leader: [30, 30] }]).map((x) => x.key), ["a", "b", "e"], "a corner outside the zone stays on the view");
+  const R = detailRoom(d, dims); assert.equal(R.w, 20 + 4 + 10 + 9 + 34, "the note of the leader takes room right of the detail"); assert.equal(R.h, 20 + 12 + 8 + 8); assert.equal(R.below, 16);
   const frame = { x: 10, y: 10, w: 400, h: 260 }; assert.deepEqual(placeOf({ ...d, place: [50, 60] }, frame, 30, 30), { x: 50, y: 60 }); assert.equal(placeOf(d, frame, 30, 30), null); assert.deepEqual(placeOf({ ...d, place: [-5, 500] }, frame, 30, 30), { x: 12, y: 238 });
   assert.deepEqual(detailCheck([{ ...d, place: [40, 50] }]), []); assert.equal(detailCheck([{ ...d, place: "here" }]).length, 1);
 });

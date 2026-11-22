@@ -53,12 +53,16 @@ export function detailLines(view, d) {
     points fall inside its circle leaves the view for the detail. dims : the dimensions of the drawing (draw/dim_model.js). → [dim] */
 export function dimsInDetail(d, dims) {
   const inside = (p) => Array.isArray(p) && Math.hypot(p[0] - d.at[0], p[1] - d.at[1]) <= d.r + 1e-9;
-  return (dims || []).filter((x) => x && x.on === d.view && (x.kind === "detail" || x.kind === "pattern") && !x.leader && (x.dir === "h" || x.dir === "v") && inside(x.p1) && inside(x.p2));
+  /* a linear dimension whose two points fall inside ; a dimension told by a leader (a radius) whose point falls inside */
+  return (dims || []).filter((x) => x && x.on === d.view && (x.kind === "detail" || x.kind === "pattern") && (x.leader ? inside(x.leader) : (x.dir === "h" || x.dir === "v") && inside(x.p1) && inside(x.p2)));
 }
 /** The room a detail takes on the sheet, its dimensions included : { w, h, below (under the circle, before its label), right }. */
+/* the room a leader and its note take beside a detail (mm of the sheet) */
+export const LEADER_W = 34;
 export function detailRoom(d, dims) {
-  const D = 2 * d.r * d.scale, mine = dimsInDetail(d, dims), nh = mine.filter((x) => x.dir === "h").length, nv = mine.length - nh, below = nh ? 8 + 8 * nh : 0, right = nv ? 10 + 9 * nv : 0;
-  return { w: D + 4 + right, h: D + 12 + below, below, right, dims: mine };
+  const D = 2 * d.r * d.scale, mine = dimsInDetail(d, dims), nh = mine.filter((x) => !x.leader && x.dir === "h").length, nv = mine.filter((x) => !x.leader && x.dir === "v").length, nl = mine.length - nh - nv;
+  const below = nh ? 8 + 8 * nh : 0, side = nv ? 10 + 9 * nv : 0, right = side + (nl ? LEADER_W : 0);      // the leaders, right of the vertical dimensions, one under the other
+  return { w: D + 4 + right, h: Math.max(D + 12 + below, nl * 8 + 8 + below), below, right, side, dims: mine };
 }
 /** A place set by hand (dragged on the sheet) : the top-left corner of the detail, kept on the detail (`place`), inside the frame. */
 export const placeOf = (d, frame, w, h) => (Array.isArray(d.place) && d.place.length === 2 && d.place.every(Number.isFinite) ? { x: Math.min(Math.max(frame.x + 2, d.place[0]), frame.x + frame.w - w - 2), y: Math.min(Math.max(frame.y + 2, d.place[1]), frame.y + frame.h - h - 2) } : null);
