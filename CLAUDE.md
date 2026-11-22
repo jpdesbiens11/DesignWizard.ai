@@ -148,6 +148,10 @@ face − de chaque CORE, des **bandes à lamelles** (le + reste une plaque rigid
 face double lobe** (rampe 4–7° auto-bloquante, plateau et goupille de fin de course, poignée repliable à plat) ; **couvercle du bas actif**
 (connecteur d'échange, contacteur, carte BMS, logement agrandi), **couvercle du haut = la poignée et sa plaque de pression**, sans électronique.
 
+~~**Prochaine action** (JP, 22 novembre, par menu : « Capteurs et tension ») : remettre la mesure au CORE 2.0~~ — fait (v0.172.0 : le flex des
+thermistances entre les deux rangées, les prises de tension `BM2-TAP-P` / `BM2-TAP-M`). Ensuite, dans l'ordre proposé (à reprioriser par
+menu) : la chaîne RS-485 d'un CORE à l'autre, la came et la poignée détaillées, le couvercle du fond câblé.
+
 **En attente** (de JP) : ses autres idées, s'il en a. **Idées
 reçues pour le concept 2** (22 novembre, documents de JP lus, chiffres non vérifiés — ce sont ses notes de recherche, aucune fiche lue) :
 (1) le **compartiment à piles grand public** — piles en baies alternées, une **plaque de retour** d'une seule tôle relie le + d'une pile au

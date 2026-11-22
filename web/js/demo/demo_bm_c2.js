@@ -86,6 +86,39 @@ function bandPart() {
     notes: [`Enveloppe à la hauteur de travail : ${BAND.l} × ${BAND.w} × ${fr(BAND.h)} mm, pas de ${fr(BAND.pitch)} mm — ${camLayout().lamellae} lamelles (exemple d'après les fiches lues à l'itération 9 : Weftron LOUVER_tron 112, une lamelle Stäubli MULTILAM LA-CU à 40 A et 7 N).`,
       `Deux bandes par joint : ${camLayout().amps} A de lamelles pour 360 A, ${camLayout().joint} N à pousser.`] });
 }
+/* ---------- the sensors and the voltage taps (JP, 22 novembre, par menu : « Capteurs et tension ») ----------
+   The − face is now a contact : the thermistors leave it. A flex slides between the two rows of cells, in their gap of 3 mm, from one holder to
+   the other ; a thermistor on a thermal pad bears on the flank of every cell — four upward on the upper row, four downward on the lower one ;
+   its tail rises along the side of the CORE, in the play of the casing, to a tongue under the edge of the board. Two nickel-plated tabs take the
+   voltage of the + and − plates up to the underside of the board, at its two ends. */
+export const SENSE = (() => {
+  const { rows, cols, H, X, Z, board } = C2, r = C2.CELL_D / 2, low = r3(rows[0] + r), high = r3(rows[1] - r), mid = r3((low + high) / 2), ft = 0.2;
+  return { low, high, f0: r3(mid - ft / 2), f1: r3(mid + ft / 2), y0: 9, y1: r3(H - 9), tail: { y0: 30, y1: 40, x0: r3(X + 0.2), x1: r3(X + 0.4) }, pad: 3, cols, H, X, Z, zb: r3(Z + board.gap), tab: 0.3 };
+})();
+function sensorFlexPart() {
+  const S = SENSE, ymid = r3((S.y0 + S.y1) / 2), tongue = r3(S.zb - 0.2);
+  return part("BM2-NTC-FLEX", "Flex des thermistances du CORE 2.0", { family: "flex", process: "purchased", material: "PI-FILM",
+    bodies: { flex: { material: "PI-FILM", kind: "insulator", label: "Flex polyimide" }, ntc: { material: "THERMAL-PAD", kind: "insulator", label: "Thermistances sur leurs pastilles thermiques" } },
+    features: [box("bande", "Bande entre les rangées", [3, S.y0, S.f0], [r3(S.X - 3 + 0.4), r3(S.y1 - S.y0), r3(S.f1 - S.f0)], { body: "flex" }),
+      box("queue", "Queue, le long du flanc", [S.tail.x0, S.tail.y0, S.f0], [r3(S.tail.x1 - S.tail.x0), r3(S.tail.y1 - S.tail.y0), r3(tongue + 0.2 - S.f0)], { body: "flex" }),
+      box("languette", "Languette sous le bord de la carte", [r3(S.X - 6), S.tail.y0, tongue], [r3(S.tail.x1 - S.X + 6), r3(S.tail.y1 - S.tail.y0), 0.2], { body: "flex" }),
+      ...S.cols.map((x, i) => box(`ntc_haut_${i + 1}`, `Thermistance ${i + 5}, rangée du haut`, [r3(x - S.pad / 2), r3(ymid - S.pad / 2), S.f1], [S.pad, S.pad, r3(S.high - S.f1)], { body: "ntc" })),
+      ...S.cols.map((x, i) => box(`ntc_bas_${i + 1}`, `Thermistance ${i + 1}, rangée du bas`, [r3(x - S.pad / 2), r3(ymid - S.pad / 2), S.low], [S.pad, S.pad, r3(S.f0 - S.low)], { body: "ntc" }))],
+    function: "Mesure la température des 8 cellules : une thermistance sur le flanc de chacune, à mi-longueur — la face − est un contact, elle n'en porte plus.",
+    notes: [`Glissé entre les deux rangées, dans leur jeu de ${fr(S.high - S.low)} mm ; les pastilles thermiques (${S.pad} × ${S.pad} mm, exemple) touchent chaque cellule sur sa génératrice.`,
+      "La queue monte dans le jeu de 1,5 mm entre le CORE et le boîtier et finit en languette sous le bord de la carte, où un connecteur FPC ou des pastilles la reçoivent (à dessiner dans le PCBA).",
+      "Pas encore vérifié : le temps de réponse à travers la pastille, l'usure du flex quand on glisse le CORE dans le boîtier."] });
+}
+function tapPart(sign) {
+  const S = SENSE, t = S.tab, y = sign > 0 ? S.H : -t, ylo = sign > 0 ? r3(S.H + t - 14) : -t, yhi = sign > 0 ? r3(S.H + t) : 14, zp = r3(C2.plate.z1);
+  return part(sign > 0 ? "BM2-TAP-P" : "BM2-TAP-M", sign > 0 ? "Prise de tension CORE+" : "Prise de tension CORE−", { family: "contact", process: "purchased", material: CU,
+    bodies: { main: { material: CU, kind: "conductor", net: sign > 0 ? "CORE+" : "CORE-", label: "Languette de cuivre nickelé" } },
+    features: [box("montee", "Montée depuis la plaque", [40, y, zp], [10, t, r3(S.zb - 0.3 - zp)]), box("retour", "Retour sous la carte", [40, ylo, r3(S.zb - 0.3)], [10, r3(yhi - ylo), 0.3])],
+    function: `Amène la tension de la plaque ${sign > 0 ? "+" : "−"} sous la carte, à son bout ${sign > 0 ? "+" : "−"}.`,
+    notes: ["Cuivre nickelé de 0,3 mm, 10 mm de large (exemple), soudé au bord de la plaque ; sa pastille sous la carte est à dessiner dans le PCBA.",
+      "La tension se mesure équilibrage coupé, comme au concept 1 ; la chute dans la plaque, à 360 A, est hors de la mesure : la prise est sur la plaque, pas sur une cellule."] });
+}
+
 /** The CORE 2.0, in its own frame : the − plate at y = 0, the + plate at y = H ; boardPart : the twin of the CORE board. */
 export function coreTwoAssembly(boardPart) {
   const { cols, rows, H, BAND, bands, board, Z } = C2, at = (t) => ({ t: t.map(r3), r: [0, 0, 0] });
@@ -94,6 +127,7 @@ export function coreTwoAssembly(boardPart) {
     { id: "support_bas", part: "BM2-HOLDER", fixed: true, placement: at([0, 0, 0]) }, { id: "support_haut", part: "BM2-HOLDER", fixed: true, placement: at([0, r3(H - 8), 0]) },
     { id: "plaque_plus", part: "BM2-PLUS", fixed: true, placement: at([0, 0, 0]) }, { id: "plaque_moins", part: "BM2-MINUS", fixed: true, placement: at([0, 0, 0]) },
     ...bands.map(([z0], k) => ({ id: `bande_${k + 1}`, part: "BM2-BAND", fixed: true, placement: at([r3((C2.X - BAND.l) / 2), r3(-C2.PT - BAND.h), z0]) })),
+    { id: "flex_ntc", part: "BM2-NTC-FLEX", fixed: true, placement: at([0, 0, 0]) }, { id: "prise_plus", part: "BM2-TAP-P", fixed: true, placement: at([0, 0, 0]) }, { id: "prise_moins", part: "BM2-TAP-M", fixed: true, placement: at([0, 0, 0]) },
     ...(boardPart ? [{ id: "carte", part: boardPart, fixed: true, placement: at([0, board.y, r3(Z + board.gap)]) }] : [])], mates: [] };
 }
 
@@ -182,7 +216,7 @@ function topLidParts() {
 
 /** Every part of concept 2, and its assemblies. boards : { core (the twin of the CORE board), bms (the twin of the central BMS board) } */
 export function conceptTwo(boards = {}) {
-  const parts = [cellPart(), holderPart(), platePart(+1), platePart(-1), bandPart(), casingPart(), returnPart(), terminalPart(), backingPart(), ...bottomLidParts(), ...topLidParts()];
+  const parts = [cellPart(), holderPart(), platePart(+1), platePart(-1), bandPart(), sensorFlexPart(), tapPart(+1), tapPart(-1), casingPart(), returnPart(), terminalPart(), backingPart(), ...bottomLidParts(), ...topLidParts()];
   const at = (t) => ({ t: t.map(r3), r: [0, 0, 0] }), T = C2.top, B = C2.bottom;
   const lidTop = { dw: "assembly/1", id: "BM2-LID-TOP-ASM", name: "Couvercle du haut à poignée (concept 2)", instances: [
     ...C2.bands.map(([z0], k) => ({ id: `bande_${k + 1}`, part: "BM2-BAND", fixed: true, placement: at([r3((C2.X - C2.BAND.l) / 2), T.yPlus8, z0]) })),

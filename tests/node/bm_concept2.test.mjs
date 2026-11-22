@@ -6,7 +6,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { bmProject, C2_BRANCH } from "../../web/js/demo/demo_bm.js";
-import { C2, camLayout, conceptTwo } from "../../web/js/demo/demo_bm_c2.js";
+import { C2, camLayout, conceptTwo, SENSE } from "../../web/js/demo/demo_bm_c2.js";
 import { branchNames, rebuild } from "../../web/js/core/history.js";
 import { buildPart } from "../../web/js/cad/build.js";
 import { flatAsm } from "../../web/js/core/asm_levels.js";
@@ -51,9 +51,22 @@ test("concept 2 builds, and nothing goes through anything : CORE 1, 2 and 8, the
   const box = (id) => K.bbox(inst.find((x) => x.id === id).bodies[0].shape);
   near(box("core2~bande_1")[1], C2.H + C2.PT, "the bands of CORE 2 on the + plate of CORE 1"); near(box("core2~bande_1")[4], box("core1~plaque_plus")[4], "as high as its bosses : the stop");
   near(box("couvercle_haut~bande_1")[1], C2.top.yPlus8, "the bands of the pressure plate on the + plate of CORE 8"); near(box("couvercle_haut~plaque_cu")[1], box("core8~plaque_plus")[4], "the pressure plate on the bosses of CORE 8");
-  near(box("shunt")[2], box("retour")[5], "the strap on the return busbar"); K.flush && K.flush();
+  near(box("shunt")[2], box("retour")[5], "the strap on the return busbar");
+  /* the sensors and the taps (JP : « Capteurs et tension ») : a pad on the flank of each cell, the flex under the board, the taps from the plates to the board */
+  const flex = inst.find((x) => x.id === "core1~flex_ntc"), ntc = K.bbox(flex.bodies.find((b) => b.name === "ntc").shape), carte = K.bbox(inst.find((x) => x.id === "core1~carte").bodies[0].shape);
+  near(ntc[2], SENSE.low, "the lower pads on the lower row"); near(ntc[5], SENSE.high, "the upper pads under the upper row");
+  near(K.bbox(flex.bodies.find((b) => b.name === "flex").shape)[5], carte[2], "the tongue of the flex under the edge of the board");
+  for (const [id, plate] of [["core1~prise_plus", "core1~plaque_plus"], ["core1~prise_moins", "core1~plaque_moins"]]) { const t = box(id); near(t[5], carte[2], `${id} under the board`); near(t[2], box(plate)[5] > t[2] ? C2.plate.z1 : C2.plate.z1, `${id} from the edge of its plate`); }
+  K.flush && K.flush();
+});
+
+test("eight thermistors, one on the flank of every cell, four up and four down ; the − face holds none", () => {
+  const p = bmProject(), c2 = conceptTwo({ core: p.boards[0].part }), flex = c2.parts.find((x) => x.id === "BM2-NTC-FLEX"), ntc = flex.features.filter((f) => f.body === "ntc");
+  assert.equal(ntc.length, 8); assert.equal(ntc.filter((f) => /haut/.test(f.id)).length, 4);
+  assert.ok(SENSE.high - SENSE.low >= 3, "the flex slides in the gap between the rows"); assert.ok(c2.parts.some((x) => x.id === "BM2-TAP-P") && c2.parts.some((x) => x.id === "BM2-TAP-M"));
+  assert.ok(c2.assemblies.find((a) => a.id === "BM2-CORE-ASM").instances.some((i) => i.part === "BM2-NTC-FLEX"));
 });
 
 test("said in the documentation", () => {
-  const d = read("docs/BM_MODULE.md"); for (const re of [/Concept 2/, /consumer product interface/, /bandes à lamelles/, /came/]) assert.match(d, re);
+  const d = read("docs/BM_MODULE.md"); for (const re of [/Concept 2/, /consumer product interface/, /bandes à lamelles/, /came/, /thermistances/, /prises de tension/]) assert.match(d, re);
 });

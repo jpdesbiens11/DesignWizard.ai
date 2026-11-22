@@ -714,8 +714,17 @@ de JP) et leurs trous pour vis EVO PT 40, coupé à 623,3 mm.
 (CORE 1, 2 et 8, les deux bouts, le boîtier) ; les bandes d'un CORE sont sur la plaque + du précédent, aussi hautes que
 ses bossages ; le shunt est sur le busbar de retour.
 
-**Pas encore dessiné, à itérer** : les capteurs de température (la face − est maintenant un contact — les placer sur le
-flanc des cellules, sous la carte) ; les prises de tension ; la chaîne RS-485 d'un CORE à l'autre ; les barres du
+**Les capteurs et la tension** (JP, par menu : « Capteurs et tension », v0.172.0) : la face − étant un contact, les
+thermistances la quittent. Un **flex des thermistances** (polyimide 0,2 mm) glisse entre les deux rangées de cellules, dans
+leur jeu de 3,15 mm, d'un support à l'autre : huit **thermistances** sur leur pastille thermique de 3 × 3 mm (exemple),
+quatre vers le haut sur la rangée du haut, quatre vers le bas sur la rangée du bas, chacune contre la génératrice de sa
+cellule, à mi-longueur. Sa queue monte dans le jeu de 1,5 mm entre le CORE et le boîtier et finit en languette sous le
+bord de la carte (le connecteur FPC ou les pastilles sont à dessiner dans le PCBA). Deux **prises de tension** en cuivre
+nickelé de 0,3 × 10 mm montent du bord des plaques + et − et reviennent sous la carte, à ses deux bouts. Vérifié par
+l'essai : chaque pastille touche sa cellule, la languette et les prises touchent le dessous de la carte, rien ne traverse
+rien. Non vérifié : le temps de réponse à travers la pastille, l'usure du flex quand on glisse le CORE.
+
+**Pas encore dessiné, à itérer** : la chaîne RS-485 d'un CORE à l'autre ; les barres du
 couvercle du fond (contacteur → connecteur) ; les rampes de la came (seuls les plateaux sont dessinés) ; les vis, les
 joints d'étanchéité, la nervuration des couvercles ; l'échauffement de la pile couchée.
 
