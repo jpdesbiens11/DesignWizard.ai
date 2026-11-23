@@ -47,11 +47,14 @@ figcaption { margin-top: 7px; font-size: 7.3pt; color: var(--muted); text-align:
 .box p { font-size: 8pt; line-height: 1.4; }
 .chips { display: flex; flex-wrap: wrap; gap: 5px; } .chips span { font-family: "JetBrains Mono", "DejaVu Sans Mono", monospace; font-size: 7.6pt; font-weight: 600; border: 1.2px solid var(--ink); border-radius: 6px; padding: 2px 7px; background: var(--surface); }
 .call { background: var(--ink-strong); border: 0; color: #fff; } .call h3 { color: #ffd23f; }
+.call { display: grid; grid-template-columns: 1fr auto; gap: 0 .12in; align-items: center; } .call h3 { grid-column: 1 / -1; }
+.qr { display: grid; justify-items: center; gap: 3px; } .qr svg { width: .92in; height: .92in; border-radius: 5px; display: block; } .qr span { font-size: 6.4pt; font-weight: 700; color: #ffd23f; white-space: nowrap; }
 .call dl { display: grid; gap: 5px; } .call dt { font-size: 7.6pt; font-weight: 700; } .call dd { font-family: "JetBrains Mono", "DejaVu Sans Mono", monospace; font-size: 6.5pt; color: #cfe0ff; white-space: nowrap; margin-top: 1px; }
 footer { display: flex; justify-content: space-between; gap: .2in; margin-top: .13in; font-size: 6.7pt; color: var(--muted); }
 `;
 
-/** The page. o : { icons (the sprite of web/img/icons.svg, as text), logo (an inline SVG), shot (the address of the screenshot), date } */
+/** The page. o : { icons (the sprite of web/img/icons.svg, as text), logo (an inline SVG), shot (the address of the screenshot), date,
+    qr (web/img/qr/home.svg as text : bottom right, in the box of the links) } */
 export function sheetHtml(lang, o) {
   const S = SHEET, t = (x) => esc(typo(x[lang], lang)), [first, second] = S.slogan[lang];
   const group = (g) => `<section class="group" style="--c:${g.color}"><h2>${t(g.title)}</h2><div class="steps">${g.steps.map((s) => `<div class="step"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-${s.icon}"/></svg></div><div><b>${t(s.title)}</b><span>${t(s.text)}</span></div></div>`).join("")}</div></section>`;
@@ -66,7 +69,7 @@ export function sheetHtml(lang, o) {
   <div class="foot">
     <div class="box"><h3>${t(S.out.title)}</h3><div class="chips">${S.out.items.map((x) => `<span>${esc(x)}</span>`).join("")}</div></div>
     <div class="box"><h3>${t(S.status.title)}</h3><p>${t(S.status.text)}</p></div>
-    <div class="box call"><h3>${t(S.call.title)}</h3><dl>${S.call.rows.map(([label, key]) => `<div><dt>${t(label)}</dt><dd>${esc(short(LINKS[key]))}</dd></div>`).join("")}</dl></div>
+    <div class="box call"><h3>${t(S.call.title)}</h3><dl>${S.call.rows.map(([label, key]) => `<div><dt>${t(label)}</dt><dd>${esc(short(LINKS[key]))}</dd></div>`).join("")}</dl>${o.qr ? `<div class="qr">${o.qr}<span>${t(S.scan)}</span></div>` : ""}</div>
   </div>
   <footer><span>${t(BRAND_FOOT)}</span><span>${esc(o.date)}</span></footer>
 </div></body></html>`;

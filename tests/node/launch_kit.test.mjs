@@ -83,3 +83,9 @@ test("kit — the texts to post as Markdown, and the tool that writes the files 
   assert.match(teaser, /trim=start=\$\{s\.a\}:end=\$\{s\.b\}/, "the picture is cut from the film, not drawn again"); assert.match(teaser, /teaserSrt\(lang\)/);
   const doc = read("docs/LANCEMENT.md"); for (const w of ["Bande-annonce", "Fiche-une-page", "Textes-de-publication", "tools/launch_kit.mjs", "tools/film_teaser.mjs", "Aucun chiffre de gain"]) assert.ok(doc.includes(w), `docs/LANCEMENT.md : ${w}`);
 });
+
+test("the QR code of the sheet and of the film opens the welcome page : the address it carries is LINKS.home (remade by tools/make_qr.py)", () => {
+  const svg = readFileSync(new URL("../../web/img/qr/home.svg", import.meta.url), "utf8");
+  assert.match(svg, /viewBox="0 0 \d+ \d+"/, "it scales"); assert.equal((svg.match(/<desc>([^<]*)<\/desc>/) || [])[1], LINKS.home, "the code says the address the kit gives");
+  assert.match(LINKS.home, /^https:\/\/[^ ]+\/#\/home$/);
+});

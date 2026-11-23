@@ -26,7 +26,7 @@ const { chromium } = createRequire(import.meta.url)("playwright"), browser = awa
 const icons = readFileSync(at("web/img/icons.svg"), "utf8"), shot = pathToFileURL(at(`web/img/tour/${SHEET.shot.img}.jpg`)).href;
 for (const l of LANGS) {
   const page = await browser.newPage({ viewport: { width: 816, height: 1056 }, deviceScaleFactor: 2 }), html = join(out, `fiche_${l}.html`);
-  writeFileSync(html, sheetHtml(l, { icons, logo: logoSvg(44), shot, date }));      // a file, so that the picture of the screen is read from the disk
+  writeFileSync(html, sheetHtml(l, { icons, logo: logoSvg(44), shot, date, qr: readFileSync(join(root, "web/img/qr/home.svg"), "utf8") }));      // a file, so that the picture of the screen is read from the disk
   await page.goto(pathToFileURL(html).href); await page.evaluate(() => document.fonts.ready);
   const over = await page.evaluate(() => { const p = document.querySelector(".page"); return p.scrollHeight - p.clientHeight; });
   if (over > 1) throw new Error(`the sheet (${l}) runs ${over} px past its page : shorten a line in tools/launch/content.mjs`);

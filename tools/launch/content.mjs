@@ -8,7 +8,9 @@
 export const LANGS = ["fr", "en"];
 const L = (fr, en) => ({ fr, en });
 
-export const LINKS = { site: "https://jpdesbiens11.github.io/DynamiteOrbit.ai/vitrine.html", demo: "https://jpdesbiens11.github.io/DynamiteOrbit.ai/", code: "https://github.com/jpdesbiens11/DynamiteOrbit.ai" };
+/** home : the welcome page (videos and marketing) that the QR code of the sheet and of the film opens — web/img/qr/home.svg, made by
+    tools/make_qr.py ; a test holds that both say the same address. Change it, and remake the code, when the platform moves to its domain. */
+export const LINKS = { home: "https://jpdesbiens11.github.io/DynamiteOrbit.ai/#/home", site: "https://jpdesbiens11.github.io/DynamiteOrbit.ai/vitrine.html", demo: "https://jpdesbiens11.github.io/DynamiteOrbit.ai/", code: "https://github.com/jpdesbiens11/DynamiteOrbit.ai" };
 export const BRAND_FOOT = L("DesignOrbit.ai™ by DynamiteAgile™ · Co-Intelligence WorkFlow™ — logiciel libre, licence MIT", "DesignOrbit.ai™ by DynamiteAgile™ · Co-Intelligence WorkFlow™ — free software, MIT licence");
 
 /* ---------- the one-page sheet ---------- */
@@ -43,6 +45,7 @@ export const SHEET = {
   status: { title: L("Où en est le projet", "Where the project stands"),
     text: L("En développement actif. Une démonstration est en ligne (accès sur demande), avec ses exemples complets. L'outil dit d'où viennent ses méthodes et ses valeurs — et ce qui n'a pas été vérifié.",
       "In active development. A demonstration is online (access on request), with its complete examples. The tool says where its methods and values come from — and what has not been verified.") },
+  scan: L("Scannez : vidéos et démo", "Scan: videos and demo"),
   call: { title: L("Voir, essayer, contribuer", "See, try, contribute"), rows: [[L("La plateforme en vidéo", "The platform on video"), "site"], [L("La démonstration", "The demonstration"), "demo"], [L("Le code source", "The source code"), "code"]] },
 };
 

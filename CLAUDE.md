@@ -29,6 +29,10 @@ Consignes permanentes de JP (propriétaire du dépôt). Elles s'appliquent à to
   le rangement et tient le journal. Les autres dossiers de « DesignOrbit.ai » (projets, pièces, révisions) et son
   LISEZ-MOI sont l'arbre de travail de l'application : ne rien y déposer ni y déplacer. Le connecteur Drive refuse un
   fichier de plus de 3 Mo environ : le dire à JP, ne pas contourner sans son accord.
+  **Code QR** (JP, 23 novembre, comme le poster de DynamiteAgile) : en bas à droite de la fiche d'une page et sur l'image de fin du film
+  et des bandes-annonces, il ouvre le portail d'accueil (`LINKS.home` de `tools/launch/content.mjs`, aujourd'hui
+  `…/DynamiteOrbit.ai/#/home`) ; l'image est `web/img/qr/home.svg`, faite par `tools/make_qr.py` (segno) et tenue égale à `LINKS.home` par
+  un essai. **Au déploiement sur le vrai domaine** : changer `LINKS.home`, refaire le code, puis la fiche, le film et les bandes-annonces.
 
 ## Publier (routine)
 

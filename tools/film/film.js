@@ -21,7 +21,7 @@ const built = SCENES.map((s) => {
     const m = el("img", "mark"); m.src = "/web/img/logo/mark.svg"; m.alt = ""; const name = el("p", "name"); name.append("DesignOrbit", el("i", null, ".ai"));
     const slogan = el("p", "slogan"); slogan.append(marked(s.slogan[lang]));
     node.append(m, name, el("p", "by", "by DynamiteAgile™"), slogan, el("p", "small", s.small[lang]));
-    if (s.kind === "end") node.append(el("p", "legal", `${MARK} · ${lang === "fr" ? "logiciel libre, licence MIT" : "open source, MIT licence"}`));
+    if (s.kind === "end") { const qr = el("div", "qr"), code = el("img"); code.src = "/web/img/qr/home.svg"; code.alt = ""; qr.append(code, el("span", null, lang === "fr" ? "Scannez : vidéos et démo" : "Scan: videos and demo")); node.append(el("p", "legal", `${MARK} · ${lang === "fr" ? "logiciel libre, licence MIT" : "open source, MIT licence"}`), qr); }   // the QR code of the welcome page, bottom right, as on the sheet (web/img/qr/home.svg)
   } else {
     const frame = el("div", "frame"), side = el("div", "fm-side");
     for (const m of s.media) { const pic = el("div", "pic"), img = el("img"); img.alt = ""; if (m.img) img.src = `/web/img/tour/${m.img}.jpg`; pic.append(img); frame.append(pic); parts.pics.push({ m, pic, img, shown: m.img ? img.src : "" }); }

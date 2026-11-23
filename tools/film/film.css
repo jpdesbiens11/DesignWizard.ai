@@ -16,6 +16,7 @@
 .logo-card .by { margin: -14px 0 0; font-size: 24px; color: var(--muted); }
 .logo-card .slogan { margin: 14px 0 0; font-size: 52px; font-weight: 650; letter-spacing: -.8px; }
 .logo-card .small { margin: 0; font-size: 30px; color: var(--ink-soft); }
+.logo-card .qr { position: absolute; right: 72px; bottom: 96px; display: grid; justify-items: center; gap: 8px; } .logo-card .qr img { width: 176px; height: 176px; border-radius: 10px; border: 2px solid var(--graphite); background: #fff; } .logo-card .qr span { font-size: 17px; font-weight: 700; color: var(--muted); }
 .logo-card .legal { position: absolute; left: 0; right: 0; bottom: 122px; margin: 0; font-size: 17px; color: var(--muted); }
 /* a screen of the platform, framed — the names carry « fm- » where the platform's stylesheet already has a class of that name */
 .shot .frame { position: absolute; left: 44px; top: 84px; width: 1136px; height: 710px; overflow: hidden; border-radius: 16px; background: #fff; border: 2px solid var(--graphite); box-shadow: 9px 10px 0 rgba(38, 50, 63, .16); }
