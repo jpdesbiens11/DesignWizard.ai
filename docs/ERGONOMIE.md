@@ -88,6 +88,13 @@ Les modèles sont purs et testés (`web/js/core/trees.js`, `tests/node/trees.tes
   du module et des icônes dans la marge de gauche ») : sous la tête de tout volet de gauche, deux lignes — le projet (un clic
   ouvre l'Atelier), puis ce que l'écran montre, le même artéfact que le bouton « IA » confie (`whereOf` de
   `web/js/core/where.js`, pur ; posé une fois par `core/where_ui.js`). Un nouvel écran n'a rien à déclarer.
+- **La tour de lancement** (JP, 23 novembre, par menu, parmi quatre idées : la tour, le tableau de mission, la carte radar,
+  les projets ouverts) : le bouton « Tour » de la ligne « où suis-je » ouvre une tour lue du pied vers le haut — le projet
+  (le pas de tir), l'assemblage de tête, ses sous-assemblages, la pièce (ou la carte, son PCB, le logiciel), puis l'écran
+  où l'on est, la fusée allumée « ici ». Chaque étage est un lien ; une pastille dit ce que le guide y trouve (rouge : à
+  corriger ou à entrer, orange : à vérifier, gris : conseil). La chaîne est celle du « where-used » d'un outil de PDM : le
+  premier assemblage de tête qui tient l'artéfact (`towerOf`, `usedPath` de `web/js/core/tower.js`, purs). Ouverte ou
+  repliée, elle le reste d'un écran à l'autre (`dw.tower`).
 - **Physique · Simulation** : une seule tuile du menu Mécanique (JP : « ils le sont déjà dans leur interface ») — `also` et
   `tiles` d'un groupe de `NAV` : la Simulation allume la tuile Physique, la barre dit « Mécanique · Simulation ».
 - **Taille des icônes du haut** (JP, 23 novembre : « agrandir un petit peu (ratio 1.25, 1.5) les icônes du haut de page…

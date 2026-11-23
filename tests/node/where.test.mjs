@@ -19,3 +19,20 @@ test("drawn once under the head of every left panel ; Physique and Simulation sh
   assert.match(app, /installWhere\(\);/); assert.match(ui, /side\.after\(el\("div", \{ class: "where-line"/); assert.match(ui, /!h\.closest\("\.side\.right, \.split\.right"\)/);
   assert.match(app, /tiles: \{ physics: \{ label: "Physique · Simulation"/);
 });
+
+import { towerOf, usedPath } from "../../web/js/core/tower.js";
+const T = { name: "Prod", parts: [{ id: "P", name: "Plaque", process: "laser" }, { id: "Q", name: "Cale" }],
+  assemblies: [{ id: "TOP", name: "Tête", instances: [{ id: "i1", asm: "SUB" }, { id: "i2", part: "Q" }] }, { id: "SUB", name: "Bloc", instances: [{ id: "s1", part: "P" }] }],
+  boards: [{ id: "B", name: "Carte", part: "Q" }] };
+
+test("the launch tower : the project at the foot, the assemblies that hold the artefact, the artefact, the screen at the top", () => {
+  assert.deepEqual(usedPath(T, { part: "P" }).map((a) => a.id), ["TOP", "SUB"], "from the top assembly down to the one that holds the part");
+  assert.deepEqual(usedPath(T, { asm: "SUB" }).map((a) => a.id), ["TOP"]); assert.equal(usedPath(T, { asm: "TOP" }), null);
+  const f = towerOf("drawings", ["P"], T, { screen: "Dessins", hash: "#/drawings/P", issues: [{ ref: "P", level: "warn" }, { ref: "P", level: "tip" }] });
+  assert.deepEqual(f.map((x) => x.kind), ["Projet", "Assemblage", "Sous-assemblage", "Pièce", "Écran"]); assert.ok(f[0].pad && f[4].here && !f[3].here);
+  assert.equal(f[3].light, "warn"); assert.equal(f[3].count, 1); assert.equal(f[1].hash, "#/assembly/TOP");
+  const own = towerOf("assembly", ["SUB"], T, { screen: "Assemblage" }); assert.deepEqual(own.map((x) => x.label), ["Prod", "Tête", "Bloc"], "its own studio adds no screen floor"); assert.ok(own[2].here);
+  assert.deepEqual(towerOf("elab", ["B"], T, { screen: "Labo" }).map((x) => x.kind), ["Projet", "Assemblage", "Carte (PCB)", "Carte (PCBA)", "Écran"], "a board stands on its twin part");
+  assert.equal(towerOf("home", [], T), null); assert.equal(towerOf("parts", ["P"], null), null);
+  const ui = readFileSync(new URL("../../web/js/core/where_ui.js", import.meta.url), "utf8"); assert.match(ui, /const KEY = "dw\.tower"/); assert.match(ui, /"aria-expanded": open \? "true" : "false"/);
+});
