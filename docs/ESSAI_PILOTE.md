@@ -24,7 +24,7 @@ L'outil est un logiciel libre en développement actif. Rien de ce qu'il calcule 
 | 2 | L'Atelier : une pièce née de l'intention | Mécanique › 1 Atelier | 12 – 20 min |
 | 3 | Une pièce : ses cotes, ses règles, son dossier | Mécanique › 2 Pièces | 20 – 26 min |
 | 4 | Le calcul à la main | Mécanique › 5 Physique | 26 – 31 min |
-| 5 | La simulation, après l'estimation | Mécanique › 6 Simulation | 31 – 37 min |
+| 5 | La simulation, après l'estimation | Mécanique › 5 Physique · Simulation, onglet Simulation | 31 – 37 min |
 | 6 | L'isolation électrique | Électronique › 4 Isolation | 37 – 42 min |
 | 7 | La carte électronique et son Labo | Électronique › 2 PCBA, puis 3 Labo | 42 – 49 min |
 | 8 | Le dessin | Mécanique › 4 Dessins | 49 – 53 min |
@@ -104,9 +104,9 @@ Total : 60 minutes.
 
 ### 5. La simulation, après l'estimation — 6 min
 
-*Mécanique › 6 Simulation.* Lancer un calcul par éléments finis, et le recouper avec une estimation.
+*Mécanique › 5 Physique · Simulation, onglet Simulation.* Lancer un calcul par éléments finis, et le recouper avec une estimation.
 
-1. Ouvrez la Simulation ; la Base du boîtier est choisie, avec son « Cas de charge ».
+1. Ouvrez la tuile Physique · Simulation, puis l'onglet Simulation ; la Base du boîtier est choisie, avec son « Cas de charge ».
 2. Un champ clignote : la pression est un exemple que l'outil a inventé. Tapez la vôtre, ou gardez-la par le bouton « Garder 0.002 MPa » à côté du champ. Tant que ce n'est pas fait, l'action attend.
 3. Lisez « Avant de calculer — l'estimation à la main » : l'ordre de grandeur attendu, avant tout calcul.
 4. « Lancer la simulation » : un voile dit ce qui se fait et depuis combien de temps ; son bouton d'annulation arrête vraiment.

@@ -17,13 +17,13 @@ const find = (sel) => { for (const n of document.querySelectorAll(sel)) if (!n.c
 const later = () => { if (!queued) { queued = true; requestAnimationFrame(draw); } };
 function shown(node, r) {
   if (!(r.width > 0 && r.height > 0) || r.bottom < 4 || r.top > innerHeight - 4 || r.right < 4 || r.left > innerWidth - 4) return false;
-  const x = Math.min(innerWidth - 2, Math.max(2, r.left + Math.min(r.width / 2, 40))), y = Math.min(innerHeight - 2, Math.max(2, r.top + Math.min(r.height / 2, 14))), hit = document.elementFromPoint(x, y);
+  const x = Math.min(innerWidth - 2, Math.max(2, r.left + Math.min(r.width / 2, 40))), y = Math.min(innerHeight - 2, Math.max(2, r.top + Math.min(r.height / 2, 14))), hit = document.elementsFromPoint(x, y).find((e) => !e.closest("#news-layer"));      // the mark itself is not the element : a mark over a small element would hide it, then show it again — it flickered (JP, 23 novembre)
   return !!hit && (node.contains(hit) || hit.contains(node));
 }
 function draw() {
   queued = false; if (!layer) return;
   const want = new Map();
-  for (const n of lines()) { if (n.seen) continue; const node = find(n.sel); if (!node) continue; const r = node.getBoundingClientRect(); if (shown(node, r)) want.set(n.id, { n, r }); }
+  for (const n of lines()) { if (n.seen || n.noMark) continue; const node = find(n.sel); if (!node) continue; const r = node.getBoundingClientRect(); if (shown(node, r)) want.set(n.id, { n, r }); }
   for (const f of [...layer.children]) if (!want.has(f.dataset.news)) f.remove();
   for (const [id, { n, r }] of want) {
     let f = layer.querySelector(`[data-news="${id}"]`);

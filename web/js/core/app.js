@@ -19,20 +19,21 @@ import { installBoardNames, boardNamePicker } from "./board_names_ui.js";
 import { installStepper } from "./stepper.js";
 import { installFolds } from "./fold.js";
 import { installStairs } from "./stairs_ui.js";
+import { installWhere } from "./where_ui.js";
 import { installShare } from "./share_ui.js";
 import { installPanelKeep } from "./panel_keep.js";
 import { installLoupe } from "./loupe.js";
 import { installUpdateCheck, updateButton } from "./update_check.js";
 import { installWhatsNew, newsButton } from "./whats_new_ui.js";
 
-export const APP_VERSION = "0.185.0";
+export const APP_VERSION = "0.186.0";
 /** What every document of the open project carries beside its content : approval names, organisation, confidentiality note, extraction stamp (core/brand.js). */
 export const docMeta = (when = new Date()) => docIdentity(store.project, when, APP_VERSION);
 const modules = new Map();
 /* the tools of the top bar, by discipline (demande de JP : « des drop down visuels, ou flip down, par groupes de modules de conception — du haut jusqu'à la
    simulation — par discipline ») : each group flips down its screens, from the one where one designs to the one where one simulates */
 export const NAV = [
-  { id: "mech", label: "Mécanique", icon: "part", color: "#2563eb", hint: "De l'intention à la simulation", keys: ["shop", "parts", "assembly", "drawings", "physics", "fea", "fab"] },
+  { id: "mech", label: "Mécanique", icon: "part", color: "#2563eb", hint: "De l'intention à la simulation", keys: ["shop", "parts", "assembly", "drawings", "physics", "fab"], also: { fea: "physics" }, tiles: { physics: { label: "Physique · Simulation", sub: "Calcul à la main, puis éléments finis" } } },
   { id: "elec", label: "Électronique", icon: "chip", color: "#16a34a", hint: "De la carte nue au banc d'essai", keys: ["pcb", "pcba", "elab", "creepage"] },
   { id: "soft", label: "Logiciel", icon: "code", color: "#0891b2", hint: "Le cycle en V, des exigences au paquet livré", keys: ["swreq", "swarch", "sw", "swsim", "swcode", "swtest", "swrel"] },
   { id: "product", label: "Produit", icon: "report", color: "#7c3aed", hint: "Règles, revue, dossier", keys: ["dfx", "review", "report", "history", "eco"] },
@@ -94,7 +95,7 @@ function topbar() {
     const b = el("button", { class: "tab nav-group", type: "button", "data-group": G.id, "data-key": "", "aria-haspopup": "true", "aria-expanded": "false", "data-tip": `${G.label} — ${G.hint.toLowerCase()}`, style: `--tab-acc:${G.color}`, onClick: () => {
       const open = wrap.querySelector(".menu"); document.querySelectorAll(".menu").forEach((m) => m.remove()); document.querySelectorAll(".nav-group").forEach((x) => x.setAttribute("aria-expanded", "false")); if (open) return;
       const list = G.keys.map((k) => [k, modules.get(k)]).filter(([, m]) => m), pop = el("div", { class: "menu nav-pop", role: "menu", "aria-label": G.label, style: `--dom:${G.color}` }, el("p", { class: "nav-hint" }, icon(G.icon), el("b", null, G.label), el("small", null, G.hint)),
-        list.map(([k, m], i) => el("a", { class: "nav-tile" + (b.dataset.key === k ? " on" : ""), href: `#/${k}`, role: "menuitem", "data-nav": k, onClick: close }, el("span", { class: "nav-step", "aria-hidden": "true" }, String(i + 1)), icon(m.icon), el("span", { class: "nav-text" }, el("b", null, m.label), el("small", null, String(m.tip || "").split(/ : | — |\. /)[0])))));
+        list.map(([k, m], i) => el("a", { class: "nav-tile" + (b.dataset.key === k ? " on" : ""), href: `#/${k}`, role: "menuitem", "data-nav": k, onClick: close }, el("span", { class: "nav-step", "aria-hidden": "true" }, String(i + 1)), icon(m.icon), el("span", { class: "nav-text" }, el("b", null, (G.tiles && G.tiles[k] || m).label), el("small", null, G.tiles && G.tiles[k] ? G.tiles[k].sub : String(m.tip || "").split(/ : | — |\. /)[0])))));
       wrap.append(pop); b.setAttribute("aria-expanded", "true"); const first = pop.querySelector(".nav-tile.on") || pop.querySelector(".nav-tile"); if (first) first.focus();
       pop.addEventListener("keydown", (e) => { const t = [...pop.querySelectorAll(".nav-tile")], i = t.indexOf(document.activeElement); if (e.key === "ArrowDown") { e.preventDefault(); t[(i + 1) % t.length].focus(); } else if (e.key === "ArrowUp") { e.preventDefault(); t[(i - 1 + t.length) % t.length].focus(); } });
     } }, icon(G.icon), el("span", { class: "nav-name" }, G.label), icon("chevron-down", "nav-chev"));
@@ -208,7 +209,7 @@ function route() {
   document.documentElement.dataset.module = key;
   const shown = key === "mvp" || key === "team" || key === "plm" ? "review" : key === "render" || key === "labels" ? "assembly" : key === "media" ? "physics" : SHOP_SCREENS.has(key) ? "shop" : key;      // a screen reached from another lights the one it belongs to
   document.querySelectorAll(".tab").forEach((t) => { if (!t.dataset.group) { t.classList.toggle("active", t.dataset.key === shown); return; }
-    const G = NAV.find((g) => g.id === t.dataset.group), on = !!G && G.keys.includes(shown), n = t.querySelector(".nav-name"); t.classList.toggle("active", on); t.dataset.key = on ? shown : ""; if (n) n.textContent = on && modules.get(shown) ? `${G.label} · ${modules.get(shown).label}` : G ? G.label : ""; });
+    const G = NAV.find((g) => g.id === t.dataset.group), on = !!G && (G.keys.includes(shown) || !!(G.also && G.also[shown])), n = t.querySelector(".nav-name"); t.classList.toggle("active", on); t.dataset.key = on ? (G.also && G.also[shown]) || shown : ""; if (n) n.textContent = on && modules.get(shown) ? `${G.label} · ${modules.get(shown).label}` : G ? G.label : ""; });
   document.querySelectorAll(".topbar .nav-pop").forEach((m) => m.remove());
   const m = modules.get(key);
   document.title = `${m.label} · DesignOrbit.ai`;
@@ -230,6 +231,7 @@ export async function start() {
   installFolds();        // the groups of every side panel fold on a click on their title
   installWhatsNew({ running: APP_VERSION });       // what a version changed carries a mark on the screen, for as long as its review is open (core/whats_new.js)
   installBoardNames();       // the names of the trade for a board, mapped on everything that is drawn (core/board_names.js)
+  installWhere();      // where am I : the project, then what the screen shows, under the head of every left panel (core/where.js)
   installStairs({ ai: (key) => app.aiLoop && app.aiLoop(key) });       // the step up of every screen, and its « IA » button : one pictogram at the head of the left panel, towards what the screen is made from
   installShare();       // « Partager » on every studio : the link of the element, the files the screen makes, an animation of its 3D view (core/share_ui.js)
   installPanelKeep();    // a panel drawn anew keeps its place, and the cursor its field

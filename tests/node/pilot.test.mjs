@@ -19,7 +19,7 @@ test("the path : eleven stations that make one hour, each with a goal, steps, so
 });
 
 test("the path is held to the screen : every label a step names is one the robot looks for, on a screen that exists", () => {
-  const groups = new Set(NAV.flatMap((g) => g.keys)); let named = 0;
+  const groups = new Set(NAV.flatMap((g) => [...g.keys, ...Object.keys(g.also || {})])); let named = 0;      // a screen reached by the tab of a tile (Simulation, under Physique · Simulation) is of the top bar
   for (const s of STATIONS) { const words = wordsOf(s); for (const q of s.steps.flatMap(quoted)) { named++; assert.ok(words.includes(q), `${s.id} : « ${q} » is named in a step, and the robot does not look for it`); }
     for (const c of s.checks) { assert.ok(c.words.length >= 1, s.id); if (c.go) { const key = c.go.slice(2).split("/")[0]; assert.ok(existsSync(new URL(`../../web/js/modules/${key}.js`, import.meta.url)), `${s.id} → ${c.go}`); assert.ok(key === "home" || groups.has(key), `${c.go} is a screen of the top bar`); } else assert.ok(c.click, `${s.id} : a check goes somewhere or clicks something`); } }
   assert.ok(named >= 60, `${named} labels named`); assert.deepEqual(quoted("cliquez « A », puis « B c »"), ["A", "B c"]);

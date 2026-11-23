@@ -84,6 +84,12 @@ Les modèles sont purs et testés (`web/js/core/trees.js`, `tests/node/trees.tes
 - **Taille de l'affichage** : menu du compte (l'icône de personne) → « Taille de l'affichage », cinq pas de 90 à
   150 %. Tout suit — textes, boutons, étiquettes des vues 3D, barre du haut — parce que tout est en `rem` ; les volets
   s'élargissent avec leur texte. Le choix est gardé par le navigateur et appliqué avant le premier affichage.
+- **Où suis-je** (JP, 23 novembre : « un rappel du projet / pièce-assy ou autre artéfact où on est… toujours sous le titre
+  du module et des icônes dans la marge de gauche ») : sous la tête de tout volet de gauche, deux lignes — le projet (un clic
+  ouvre l'Atelier), puis ce que l'écran montre, le même artéfact que le bouton « IA » confie (`whereOf` de
+  `web/js/core/where.js`, pur ; posé une fois par `core/where_ui.js`). Un nouvel écran n'a rien à déclarer.
+- **Physique · Simulation** : une seule tuile du menu Mécanique (JP : « ils le sont déjà dans leur interface ») — `also` et
+  `tiles` d'un groupe de `NAV` : la Simulation allume la tuile Physique, la barre dit « Mécanique · Simulation ».
 - **Taille des icônes du haut** (JP, 23 novembre : « agrandir un petit peu (ratio 1.25, 1.5) les icônes du haut de page…
   n'oublie pas les icônes de gauche et de droite en haut de la fenêtre ») : menu du compte → « Taille des icônes du
   haut », ou la page Compte ; × 1, × 1,25 (d'office), × 1,5, × 1,75. Grandissent : la barre du haut, le fil d'Ariane,

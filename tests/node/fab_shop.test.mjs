@@ -64,7 +64,7 @@ test("the deck for the supplier : one slide each, its picture, its text, the box
 });
 
 test("wired : the last screen of Mécanique, its stairs and its AI, the news, the register, the routing's AI told of the order", () => {
-  assert.match(read("web/js/core/app.js"), /keys: \["shop", "parts", "assembly", "drawings", "physics", "fea", "fab"\]/); assert.match(read("web/js/main.js"), /import "\.\/modules\/fab\.js";/);
+  assert.match(read("web/js/core/app.js"), /keys: \["shop", "parts", "assembly", "drawings", "physics", "fab"\], also: \{ fea: "physics" \}/); assert.match(read("web/js/main.js"), /import "\.\/modules\/fab\.js";/);
   const p = { parts: [{ id: "P1", name: "Pièce", process: "cnc_milling" }], assemblies: [], boards: [] };
   assert.equal(aiTargetOf("fab", ["P1"], p).key, "part:P1"); assert.match(stairOf("fab", ["P1"], p).hash, /P1/); assert.ok(downOf("parts", ["P1"], p).some((d) => d.hash === "#/fab/P1"));
   assert.ok(NEWS.some((n) => n.where === "#/fab")); assert.equal(methodById("fab-shop").how, "own");
