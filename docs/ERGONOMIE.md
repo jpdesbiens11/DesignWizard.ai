@@ -84,6 +84,14 @@ Les modèles sont purs et testés (`web/js/core/trees.js`, `tests/node/trees.tes
 - **Taille de l'affichage** : menu du compte (l'icône de personne) → « Taille de l'affichage », cinq pas de 90 à
   150 %. Tout suit — textes, boutons, étiquettes des vues 3D, barre du haut — parce que tout est en `rem` ; les volets
   s'élargissent avec leur texte. Le choix est gardé par le navigateur et appliqué avant le premier affichage.
+- **Taille des icônes du haut** (JP, 23 novembre : « agrandir un petit peu (ratio 1.25, 1.5) les icônes du haut de page…
+  n'oublie pas les icônes de gauche et de droite en haut de la fenêtre ») : menu du compte → « Taille des icônes du
+  haut », ou la page Compte ; × 1, × 1,25 (d'office), × 1,5, × 1,75. Grandissent : la barre du haut, le fil d'Ariane,
+  les onglets de travail, la tête des volets de gauche et de droite (marches, « IA », « Partager ») et leurs pastilles
+  ↑ ↓ ; le texte garde sa taille, les menus aussi. Chaque icône garde sa taille de base (`--ib`) multipliée par le ratio
+  (`--icon-scale`, `web/css/nav.css`) — le `zoom` CSS n'est pas appliqué à un `<svg>` par Chromium. À × 1,5 et × 1,75, la
+  barre du haut cède plus tôt (noms des groupes, mot d'état, nom de l'outil) : rien n'en sort de la page. Gardé dans
+  `dw.iconScale` (`web/js/core/theme.js`), appliqué avant le premier affichage.
 
 ## Poser à la souris, aidé
 

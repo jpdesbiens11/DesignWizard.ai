@@ -5,7 +5,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { AXES, triadOf, gridStep, gridOf, gridKey } from "../../web/js/core/view_grid.js";
-import { SCALES, scaleOf } from "../../web/js/core/theme.js";
+import { SCALES, scaleOf, ICON_SCALES, ICON_DEFAULT, iconScaleOf } from "../../web/js/core/theme.js";
 
 test("the triad : X, Y and Z as the camera sees them, the nearest drawn last", () => {
   // seen from above (the eye on +Z, X to the right, Y up the screen)
@@ -33,5 +33,10 @@ test("the size of what is shown : five steps, kept by the browser, applied befor
   assert.deepEqual(SCALES.map(([k]) => k), [90, 100, 115, 130, 150]); assert.deepEqual([scaleOf("130"), scaleOf(115), scaleOf("nope"), scaleOf(999), scaleOf(null)], [130, 115, 100, 100, 100]);
   const boot = readFileSync(new URL("../../web/js/boot.js", import.meta.url), "utf8"), css = readFileSync(new URL("../../web/css/app.css", import.meta.url), "utf8");
   assert.match(boot, /localStorage\.getItem\("dw\.scale"\)/); assert.match(boot, /\[90, 100, 115, 130, 150\]/, "the same five steps before the first paint"); assert.match(boot, /setProperty\("--ui-scale"/);
+  assert.deepEqual(ICON_SCALES.map(([k]) => k), [100, 125, 150, 175]); assert.equal(ICON_DEFAULT, 125);
+  assert.deepEqual([iconScaleOf("150"), iconScaleOf(100), iconScaleOf("x"), iconScaleOf(999)], [150, 100, 125, 125]);
+  assert.match(boot, /localStorage\.getItem\("dw\.iconScale"\)/); assert.match(boot, /\[100, 125, 150, 175\]/, "the same four ratios before the first paint"); assert.match(boot, /setProperty\("--icon-scale"/);
+  const nav = readFileSync(new URL("../../web/css/nav.css", import.meta.url), "utf8");
+  assert.match(nav, /:is\(\.topbar, #levels, \.side-head, \.page-head > \.stair-btn\) \.sk-icon[^{]*\{ width: calc\(var\(--ib, 20px\) \* var\(--icon-scale, 1\.25\)\)/, "the top bar, the levels and the heads of both panes follow the ratio");
   assert.match(css, /html \{[^}]*font-size: calc\(100% \* var\(--ui-scale, 1\)\)/); assert.match(css, /--topbar-h: calc\(56px \* var\(--ui-scale, 1\)\)/); assert.ok(!/body \{[^}]*font-size: \d+px/.test(css), "the text of the page is in rem : it follows the size");
 });

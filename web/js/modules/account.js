@@ -3,7 +3,7 @@
 
 import { el, clear, icon, btn, badge, field, toast, modal, copyText, download, fmt, debounce } from "../core/dom.js";
 import { pageVeil } from "../core/busy.js";
-import { registerModule, refresh, setStatus, rebuildShell } from "../core/app.js";
+import { registerModule, refresh, setStatus, rebuildShell, iconScaleRow } from "../core/app.js";
 import { store } from "../core/store.js";
 import { session, signIn, signOut, shortHash } from "../core/access.js";
 import { accessCard } from "./account_access.js";
@@ -121,6 +121,9 @@ function render(main) {
     const cur = currentTheme();
     theme.append(el("div", { class: "theme-grid" }, THEMES.map((t) => el("button", { class: "stock-card" + (t.key === cur ? " on" : ""), type: "button", "aria-pressed": t.key === cur ? "true" : "false", onClick: () => { applyTheme(t.key); rebuildShell(); } },
       icon("palette"), el("b", null, t.label), el("small", null, t.text)))));
+    theme.append(el("div", { class: "account-icon-scale" }, el("h3", null, "Taille des icônes du haut de la fenêtre"),
+      el("p", { class: "muted small" }, "La barre du haut, le fil d'Ariane, les onglets de travail et la tête des volets de gauche et de droite. Le texte garde sa taille ; ce navigateur garde le choix."),
+      iconScaleRow()));
   }
 
   const drawAccess = () => accessCard(access);      // the list of accounts, said clearly (modules/account_access.js)

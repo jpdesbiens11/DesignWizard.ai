@@ -33,3 +33,21 @@ export function applyScale(pct) {
   window.dispatchEvent(new Event("resize")); window.dispatchEvent(new CustomEvent("dw:scale", { detail: z }));
   return z;
 }
+
+/* ---------- the size of the icons at the top of the window (demande de JP, 23 novembre : « agrandir un petit peu (ratio 1.25,
+   1.5) les icônes du haut de page pour faciliter la navigation… n'oublie pas les icônes de gauche et de droite en haut de la
+   fenêtre ») : the top bar, the bar of the levels and of the work tabs, and the head of every side pane. A ratio, apart from
+   the size of the text : only the icons grow, their layout follows (CSS `zoom`, web/css/nav.css). 1.25 by default. ---------- */
+export const ICON_SCALES = [[100, "Normal", "× 1"], [125, "Grand", "× 1,25"], [150, "Très grand", "× 1,5"], [175, "Énorme", "× 1,75"]];
+export const ICON_DEFAULT = 125;
+const ICON_KEY = "dw.iconScale";
+export const iconScaleOf = (v) => { const n = parseInt(v, 10); return ICON_SCALES.some(([k]) => k === n) ? n : ICON_DEFAULT; };
+export function currentIconScale() { return iconScaleOf(Math.round(parseFloat(document.documentElement.style.getPropertyValue("--icon-scale") || String(ICON_DEFAULT / 100)) * 100)); }
+/** Sets the ratio of the icons at the top of the window (percent, one of ICON_SCALES) and keeps it in this browser. */
+export function applyIconScale(pct) {
+  const z = iconScaleOf(pct);
+  document.documentElement.style.setProperty("--icon-scale", String(z / 100)); document.documentElement.dataset.icons = String(z);      // the top bar gives way earlier (web/css/nav.css)
+  try { localStorage.setItem(ICON_KEY, String(z)); } catch (e) { /* private window : the ratio lasts for this page only */ }
+  window.dispatchEvent(new Event("resize")); window.dispatchEvent(new CustomEvent("dw:icon-scale", { detail: z }));
+  return z;
+}

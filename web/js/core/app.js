@@ -6,7 +6,7 @@ import { el, clear, icon, btn, toast, modal, installTips, download, confirmBox, 
 import { store } from "./store.js";
 import { kernel } from "../cad/client.js";
 import { session, signOut } from "./access.js";
-import { THEMES, currentTheme, applyTheme, SCALES, currentScale, applyScale } from "./theme.js";
+import { THEMES, currentTheme, applyTheme, SCALES, currentScale, applyScale, ICON_SCALES, currentIconScale, applyIconScale } from "./theme.js";
 import { toDwiz } from "./dwiz.js";
 import { dwizFileName } from "./dwiz_names.js";
 import { mountPanes, mountBottom } from "./panes.js";
@@ -25,7 +25,7 @@ import { installLoupe } from "./loupe.js";
 import { installUpdateCheck, updateButton } from "./update_check.js";
 import { installWhatsNew, newsButton } from "./whats_new_ui.js";
 
-export const APP_VERSION = "0.183.0";
+export const APP_VERSION = "0.184.0";
 /** What every document of the open project carries beside its content : approval names, organisation, confidentiality note, extraction stamp (core/brand.js). */
 export const docMeta = (when = new Date()) => docIdentity(store.project, when, APP_VERSION);
 const modules = new Map();
@@ -180,8 +180,16 @@ function accountMenu(menu, close) {
   const z = currentScale(), row = el("div", { class: "scale-row", role: "group", "aria-label": "Taille de l'affichage" }, SCALES.map(([k, label]) => el("button", { type: "button", class: k === z ? "on" : null, "aria-pressed": k === z ? "true" : "false", "data-tip": `${label} — ${k} %`, "data-scale": String(k), style: { fontSize: `${0.62 + (k - 90) * 0.011}rem` },
     onClick: (e) => { e.stopPropagation(); applyScale(k); for (const b of row.children) { const on = b.dataset.scale === String(k); b.classList.toggle("on", on); b.setAttribute("aria-pressed", on ? "true" : "false"); } } }, "A")));
   menu.append(el("hr"), el("div", { class: "menu-title" }, "Taille de l'affichage"), row);
+  menu.append(el("div", { class: "menu-title" }, "Taille des icônes du haut"), iconScaleRow());
   menu.append(el("hr"), el("div", { class: "menu-title", "data-raw": "" }, "Noms du métier (carte)"), boardNamePicker({ keep: true }));      // PCB · PCBA, PWB · CCA, or the words of the house : every screen and every document follows
   menu.append(el("hr"), el("div", { class: "menu-title" }, "Unités"), unitPicker({ keep: true }));      // SI or the imperial hybrid, and the unit of a pressure : the screens that show units follow
+}
+/** The ratio of the icons at the top of the window : four steps, each showing an icon at its own ratio ; used by the account
+    menu and by the « Compte » page. The row stays open, so that the eye can compare. */
+export function iconScaleRow() {
+  const z = currentIconScale(), row = el("div", { class: "scale-row icon-scale-row", role: "group", "aria-label": "Taille des icônes du haut de la fenêtre" }, ICON_SCALES.map(([k, label, ratio]) => el("button", { type: "button", class: k === z ? "on" : null, "aria-pressed": k === z ? "true" : "false", "data-tip": `${label} — ${ratio}`, "data-icon-scale": String(k),
+    onClick: (e) => { e.stopPropagation(); applyIconScale(k); for (const b of row.children) { const on = b.dataset.iconScale === String(k); b.classList.toggle("on", on); b.setAttribute("aria-pressed", on ? "true" : "false"); } } }, el("span", { class: "icon-scale-demo", style: { "--demo": String(k / 100) } }, icon("user")), el("small", null, ratio))));
+  return row;
 }
 function onshapeMenu(menu, close) {
   menu.append(el("div", { class: "menu-title" }, "Onshape"));
