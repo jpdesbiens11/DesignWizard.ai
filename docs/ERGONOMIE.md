@@ -635,14 +635,15 @@ sinon laisse-les actifs, pour la traçabilité et faciliter les checks croisés 
   dialogue, pas hors du défilement.
 - **Le bouton à l'étoile** de la barre du haut dit combien de lignes restent et ouvre leur liste : « Montrer » mène à
   l'élément, la case coche la ligne.
-- **Une ligne cochée garde sa marque**, qui passe au vert et dit « Vu » : c'est la trace de la revue. Rien ne disparaît
-  parce qu'on l'a regardé.
-- **Seul « Passer à une nouvelle revue » range les marques** : la version de départ de la revue devient la version qui
+- **Une ligne cochée « vu » perd sa marque à l'écran** (JP, 23 novembre, par menu : « Vu = disparaît » ; avant, la marque
+  restait en vert jusqu'à la revue suivante, et gênait) : la coche reste dans la liste, datée — c'est la trace de la revue ;
+  décocher fait revenir la marque, et « Montrer » mène encore à l'élément.
+- **« Passer à une nouvelle revue » range la liste** : la version de départ de la revue devient la version qui
   tourne, et la version suivante apportera les siennes. La revue rangée est gardée, avec ses coches, et se rouvre du même
   endroit.
 - Une première revue remonte de quatre versions. La revue est gardée dans le navigateur, comme les unités.
 - **Usage suivi** : la pastille « nouveau » d'une application après une mise à jour, et la liste de contrôle d'une revue.
-  Ce qui est propre à l'outil : la marque qui reste une fois vue.
+  Ce qui est propre à l'outil : la liste cochée qui reste, datée, jusqu'à la revue suivante.
 - **Non essayé** : au toucher ; une revue partagée entre deux postes (elle est locale au navigateur).
 
 ## Les noms du métier : la carte nue, la carte assemblée

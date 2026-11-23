@@ -48,6 +48,6 @@ test("the marks are on the screens : one layer above the page, a button in the t
   const ui = read("web/js/core/whats_new_ui.js"), app = read("web/js/core/app.js"), css = read("web/css/nav.css");
   assert.match(app, /installWhatsNew\(\{ running: APP_VERSION \}\)/); assert.match(app, /updateButton\(\), newsButton\(\)/); assert.match(read("web/js/modules/help.js"), /newsCard\(args\[0\] === "news"\)/);
   assert.match(ui, /id: "news-layer"/); assert.match(ui, /elementFromPoint/, "a mark shows only when its element can be seen"); assert.match(ui, /Passer à une nouvelle revue/); assert.match(ui, /Rouvrir la revue depuis la/);
-  assert.match(ui, /n\.seen \? "Vu" : "Nouveau"/, "a ticked line keeps its mark"); assert.ok(!/remove\(\)[^\n]*markSeen/.test(ui));
+  assert.match(ui, /if \(n\.seen\) continue;/, "a line ticked « vu » loses its mark on the screen (JP, 23 novembre)"); assert.ok(!/"Vu"/.test(ui)); assert.ok(!/remove\(\)[^\n]*markSeen/.test(ui));
   assert.match(css, /\.new-flag \{/); assert.match(css, /\.new-flag\.seen \{/); assert.match(css, /#news-layer \{ position: fixed; inset: 0; z-index: 60; pointer-events: none; \}/);
 });
