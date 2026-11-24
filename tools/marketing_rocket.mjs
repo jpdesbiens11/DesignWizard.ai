@@ -24,7 +24,7 @@ const shoot = async (scale) => {
   if (await p.locator(".modal").count()) { await p.locator(".modal").getByRole("button").first().click(); await wait(1200); }
   await p.goto(`${base}/#/assembly/FUS-ASM`);
   for (let i = 0; i < 300; i++) { await wait(200); if (i > 10 && !(await p.locator(".view-busy:not(.hidden)").count())) break; }
-  await wait(2500); await p.mouse.move(1430, 640);      // off the view : its edge band stays dark
+  await wait(2500); await p.mouse.move(1000, 88);      // on the empty strip under the bar : no edge band, no tooltip
   const png = await p.evaluate(async (V) => {
     const v = [...document.querySelectorAll("*")].find((n) => n._viewer)._viewer, rad = Math.PI / 180;
     v.view("iso"); v.dir.set(Math.cos(V.el * rad) * Math.cos(V.az * rad), Math.cos(V.el * rad) * Math.sin(V.az * rad), Math.sin(V.el * rad)).normalize();

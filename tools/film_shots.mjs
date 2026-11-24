@@ -12,7 +12,11 @@ import { createRequire } from "node:module"; import { mkdirSync, writeFileSync, 
 const { chromium } = createRequire(import.meta.url)("playwright");
 const base = process.argv[2], out = process.argv[3], only = process.argv[4] ? process.argv[4].split(",") : null, want = (n) => !only || only.includes(n);
 if (!base || !out) { console.error("usage : node tools/film_shots.mjs <base url> <clips folder> [names]"); process.exit(2); }
-const browser = await chromium.launch(), errors = [], page = await (await browser.newContext({ viewport: { width: 1600, height: 1000 }, deviceScaleFactor: 1 })).newPage();
+const browser = await chromium.launch(), errors = [], ctx = await browser.newContext({ viewport: { width: 1600, height: 1000 }, deviceScaleFactor: 1 });
+/* a clip shows the screens, not the « Nouveau » marks of a review : the review starts at the running version */
+const running = JSON.parse(readFileSync(new URL("../web/version.json", import.meta.url), "utf8")).version;
+await ctx.addInitScript((v) => { try { localStorage.setItem("dw.news.review", JSON.stringify({ base: v, seen: {} })); } catch (e) { /* the marks stay */ } }, running);
+const page = await ctx.newPage();
 page.on("pageerror", (e) => errors.push(String(e).slice(0, 200)));
 const wait = (ms) => page.waitForTimeout(ms), meta = existsSync(join(out, "clips.json")) ? JSON.parse(readFileSync(join(out, "clips.json"), "utf8")) : {}, name = (i) => `${String(i + 1).padStart(4, "0")}.jpg`;
 const shoot = async (dir, i) => page.screenshot({ path: join(out, dir, name(i)), type: "jpeg", quality: 88 });
