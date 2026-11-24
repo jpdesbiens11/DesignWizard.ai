@@ -133,3 +133,34 @@ svg.swb .swb-block.snapping .swb-body { stroke: var(--ok, #16a34a); stroke-width
 .swai-n { display: inline-grid; place-items: center; width: 2rem; height: 2rem; border-radius: 50%; background: var(--dom); color: #fff; font-weight: 800; }
 .swai-ico { width: 1.8rem; height: 1.8rem; color: var(--dom); }
 .swl-hil .btn { font-size: 1rem; padding: .5rem .9rem; }
+
+/* ---------- the PUZZLE view : three bands, jigsaw pieces, one link per pair (v0.191) ---------- */
+.sw-host:has(.swp) { background: var(--surface); }
+svg.swp .swp-band rect { fill: color-mix(in srgb, var(--dom) 6%, var(--surface)); stroke: color-mix(in srgb, var(--dom) 30%, transparent); stroke-width: 1.5; }
+svg.swp .swp-band circle { fill: var(--dom); } svg.swp .swp-band-n { fill: #fff; font-size: 15px; font-weight: 800; }
+svg.swp .swp-band-ico { color: var(--dom); } svg.swp .swp-band-t { fill: var(--dom); font-size: 17px; font-weight: 850; letter-spacing: .08em; }
+svg.swp .swp-piece { cursor: pointer; outline: none; transition: opacity .15s; }
+svg.swp .swp-body { fill: color-mix(in srgb, var(--dom) 13%, var(--surface)); stroke: var(--dom); stroke-width: 2.4; }
+svg.swp .swp-piece:hover .swp-body, svg.swp .swp-piece:focus-visible .swp-body { fill: color-mix(in srgb, var(--dom) 22%, var(--surface)); }
+svg.swp .swp-piece.sel .swp-body { stroke: var(--acc); stroke-width: 4; }
+svg.swp .swp-piece.lit .swp-body { fill: color-mix(in srgb, var(--dom) 32%, var(--surface)); }
+svg.swp .swp-piece.lit .swp-ico-bg { fill: var(--dom); } svg.swp .swp-piece.lit .swp-ico { color: #fff; }
+svg.swp .swp-ico-bg { fill: var(--surface); stroke: var(--dom); stroke-width: 2; } svg.swp .swp-ico { color: var(--dom); pointer-events: none; }
+svg.swp .swp-title { fill: var(--ink); font-size: 14px; font-weight: 750; pointer-events: none; }
+svg.swp .swp-lcd rect { fill: #0b1220; } svg.swp .swp-lcd .sw-val { fill: #4ade80; font-family: var(--mono, ui-monospace, monospace); font-size: 13px; font-weight: 700; pointer-events: none; }
+svg.swp .swp-lamp { fill: #334155; } svg.swp .swp-piece.lit .swp-lamp { fill: #22c55e; filter: drop-shadow(0 0 4px #22c55e); }
+svg.swp .swp-knob { fill: transparent; stroke: transparent; cursor: crosshair; } svg.swp .swp-knob:hover, svg.swp .swp-knob:focus-visible { stroke: var(--acc); stroke-width: 3; outline: none; }
+svg.swp .swp-piece.from .swp-body { stroke: var(--acc); stroke-width: 4; stroke-dasharray: 7 4; }
+svg.swp .swp-piece.can .swp-body { stroke: #16a34a; stroke-width: 3.5; animation: swb-blink .9s ease-in-out infinite alternate; }
+svg.swp .swp-piece.nope { opacity: .3; }
+svg.swp .swp-link { cursor: pointer; outline: none; } svg.swp .swp-hit { fill: none; stroke: transparent; stroke-width: 18; }
+svg.swp .swp-line { fill: none; stroke: color-mix(in srgb, var(--graphite) 45%, transparent); stroke-width: 4; stroke-linecap: round; }
+svg.swp .swp-link.back .swp-line { stroke-dasharray: 9 6; }
+svg.swp .swp-link.on .swp-line { stroke: #16a34a; stroke-width: 5; }
+svg.swp .swp-link.flow .swp-line { stroke: #ea580c; stroke-dasharray: 12 7; animation: swb-flow .6s linear infinite; }
+svg.swp .swp-link.sel .swp-line, svg.swp .swp-link:focus-visible .swp-line { stroke: var(--acc); stroke-width: 5.5; }
+svg.swp .swp-count { fill: var(--surface); stroke: color-mix(in srgb, var(--graphite) 45%, transparent); stroke-width: 1.5; } svg.swp .swp-count-t { fill: var(--ink); font-size: 11px; font-weight: 800; }
+@media (prefers-reduced-motion: reduce) { svg.swp .swp-link.flow .swp-line, svg.swp .swp-piece.can .swp-body { animation: none; } }
+.swp-switch { display: inline-flex; border: 1.5px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--surface); }
+.swp-switch button { border: 0; background: none; padding: .25rem .7rem; font: inherit; font-size: .8rem; font-weight: 650; color: var(--muted); cursor: pointer; } .swp-switch button.on { background: var(--acc); color: var(--on-acc, #fff); } .swp-switch button:focus-visible { outline: 2px solid var(--acc); outline-offset: -2px; }
+.swp-float { position: absolute; top: .55rem; left: 50%; transform: translateX(-50%); z-index: 7; box-shadow: 0 2px 6px rgb(0 0 0 / .1); }

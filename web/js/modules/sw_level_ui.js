@@ -33,3 +33,13 @@ export function stepPath(lv, cur, states, hash) {
         el("a", { class: `swl-step ${st.state}${on ? " on" : ""}`, href: hash(s.key), style: `--dom:${s.color}`, "aria-current": on ? "step" : null, "data-sw-path-step": s.key, "data-tip": `${s.says}${st.text ? ` — ${st.text}` : ""}` },
           el("span", { class: "swl-n" }, st.state === "done" ? "✓" : String(s.n)), icon(s.icon, "swl-ico"), el("b", null, s.kid))]; }).flat().filter(Boolean));
 }
+
+/* THE VIEW of the blocks (choix cliqué de JP, 24 novembre 2026 : « Casse-tête 2D, 1 lien ») : the puzzle for the novice and the intermediate, the
+   blocks and their keys for the expert — and a switch to see the other, kept by the browser (`dw.sw.view`). */
+const VKEY = "dw.sw.view";
+export function viewMode(lv = level()) { try { const v = localStorage.getItem(VKEY); if (v === "puzzle" || v === "blocks") return v; } catch (e) { /* no storage */ } return lv === "expert" ? "blocks" : "puzzle"; }
+export function viewSwitch(lv = level()) {
+  const cur = viewMode(lv), set = (v) => { try { localStorage.setItem(VKEY, v); } catch (e) { /* the view holds until the page is left */ } window.dispatchEvent(new HashChangeEvent("hashchange")); };
+  return el("div", { class: "swp-switch", role: "radiogroup", "aria-label": "La vue du logiciel", "data-sw-view": cur },
+    [["puzzle", "Casse-tête"], ["blocks", "Blocs détaillés"]].map(([k, t]) => el("button", { type: "button", role: "radio", class: k === cur ? "on" : "", "aria-checked": k === cur ? "true" : "false", "data-view": k, "data-tip": k === "puzzle" ? "Des pièces, un lien par paire : l'outil branche les bonnes interfaces en arrière-plan" : "Chaque bloc avec ses clés, chaque liaison avec son fil — pour l'expert", onClick: () => { if (k !== cur) set(k); } }, t)));
+}

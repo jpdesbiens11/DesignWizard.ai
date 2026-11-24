@@ -29,6 +29,8 @@ import { vBand, stepCard, swShell, vHash } from "./sw_vband.js";
 import { releaseList } from "./sw_release.js";
 import { docsSection } from "./sw_docs_ui.js";
 import { swCanvas } from "./sw_canvas.js";
+import { swPuzzle } from "./sw_puzzle_view.js";
+import { connectPieces } from "../sw/sw_puzzle.js";
 import { swBench } from "./sw_bench.js";
 import { sheet, aiText, reimport } from "./sw_sheet.js";
 import { cpuPage, startPage, codePage, loadPage } from "./sw_pages.js";
@@ -37,7 +39,7 @@ import { openHil } from "./sw_hil_ui.js";
 import { libraryPalette, reqImportSection, openImport } from "./sw_lib_ui.js";
 import { swRack } from "./sw_lab.js";
 import { shows, noviceOffers } from "../sw/sw_levels.js";
-import { level } from "./sw_level_ui.js";
+import { level, viewMode, viewSwitch } from "./sw_level_ui.js";
 import { VIEW, autoPlace } from "../sw/sw_blocks.js";
 import { DEVICES, devicePlacement } from "../sw/sw_devices.js";
 
@@ -58,7 +60,11 @@ function render(main, args, vkey) {
   const change = (label, fn) => store.commit(label, (p) => { p.software = p.software || []; if (!p.software[0]) return; fn(p.software[0]); });
   const host = el("div", { class: "sw-host" }), pageHost = el("div", { class: "sw-pagehost" }), replay = el("div", { class: "lab-bar sw-bar" }), liveBox = el("div", { class: "sw-livebox swlab bottom-pane", "data-bottom": "sw" }), rackHost = el("div", { class: "swlab-rackhost", hidden: true }), liveHost = el("div", { class: "sw-livehost" }), empty = el("div", { class: "page", hidden: true });
   liveBox.append(liveHost); view.append(empty, pageHost, rackHost, host, liveBox, replay);      // the panel of the bottom : its height is dragged at its top edge (core/panes.js mountBottom)
-  const canvas = swCanvas(host, { rank: rankOf, showRank: shows(lv, "rank"), tag: (o) => hwTag(store.project, design(), o),
+  const mode = viewMode(lv), make = mode === "puzzle" ? swPuzzle : swCanvas;      // the puzzle, one link per pair (sw/sw_puzzle.js) — or the blocks and their keys
+  const canvas = make(host, { rank: rankOf,
+    onConnect: (A, B) => { const d = design(), c = connectPieces(d, A, B); if (!c.wires.length) { toast("Ces deux pièces ne s'emboîtent pas : rien de ce que la première donne n'entre dans la seconde (ou ses entrées sont déjà prises).", "info", 6000); paint(); return; }
+      change(`Logiciel : ${A} relié à ${B}`, (x) => { for (const [id, prm] of Object.entries(c.set)) { const q = x.objects.find((z) => z.id === id); if (q) q.params = { ...(q.params || {}), ...prm }; } x.wires.push(...c.wires); });
+      toast(`Relié : ${c.wires.length} liaison${c.wires.length > 1 ? "s" : ""} branchée${c.wires.length > 1 ? "s" : ""} en arrière-plan (${c.wires.map((w) => `${split(w.from)[1]} → ${split(w.to)[1]}`).join(", ")}).`, "success", 4000); }, showRank: shows(lv, "rank"), tag: (o) => hwTag(store.project, design(), o),
     onArrange: () => { const d = design(); if (!d) return; const pos = flowLayout(d); change("Logiciel : blocs rangés de gauche à droite", (x) => { for (const o of x.objects) if (pos[o.id]) Object.assign(o, pos[o.id]); }); setTimeout(() => canvas.fit(), 0); },
     onPick: (s) => { st.sel = s; paint(); renderRight(); },
     onMove: (id, x, y) => { const d0 = design(), was = (d0.wires || []).filter((w) => (split(w.from)[0] === id || split(w.to)[0] === id) && docked(d0, w)), sn = snapAt(d0, id, x, y), at = sn || { x, y };      // keyed blocks (sw/sw_blocks.js snapAt)
@@ -71,6 +77,7 @@ function render(main, args, vkey) {
       const loops = order({ ...d, wires: [...d.wires.filter((w) => w.to !== to), { from, to }] }).loop.length > 0;
       change(`Logiciel : fil ${from} → ${to}`, (x) => { x.wires = x.wires.filter((w) => w.to !== to); x.wires.push({ from, to, ...(loops ? { delay: true } : {}) }); });
       toast(loops ? "Ce fil ferme une boucle : il porte la valeur du pas d'avant, comme le font les schémas-blocs. Un clic sur le fil pour le voir." : c.level ? c.text : "Fil posé.", loops || c.level ? "info" : "success", loops || c.level ? 7000 : 2200); } });
+  { const vs = viewSwitch(lv); vs.classList.add("swp-float"); host.append(vs); }      // casse-tête · blocs détaillés, over the page
   let R = null, bench = null, journalHost = null, run = null, rack = null;
   const files = () => { const d = design(); return d ? vPackage(d, cpuOf(d)) : []; };      // the C, and the requirements and the verification beside it (doc/)
   const valuesAt = () => (R ? Object.fromEntries(Object.entries(R.ports).map(([r, y]) => [r, y[Math.min(st.k, y.length - 1)]])) : null);

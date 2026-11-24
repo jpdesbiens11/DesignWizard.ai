@@ -284,3 +284,23 @@ novice, intermédiaire et expert » ; « tous les aspects physiques en unités d
   multimètre, au repos puis chaque entrée au-delà de son seuil ; **ce que la sortie doit lire vient du modèle** (le même pas que le C).
   Un net non relié est proposé par son nom (AIN0, DIN0, DOUT0) et dit comme tel ; relevés et notes dans `project.swLab`. Rien de cette
   procédure n'a tourné sur une vraie carte, et l'écran le dit.
+
+## 4 septies. La vue casse-tête, un seul lien par paire (v0.191.0)
+
+Demandes de JP, 24 novembre 2026 : « je déteste cette interface et ce graphique… une vue simplifiée du schéma bloc qui branche en
+arrière-plan ses bonnes interfaces, mais qui montre un seul lien en UI comme Node-RED pour les débutants… après un spaghetti de liens dans
+un gros LabVIEW, ça devient incompréhensible… des pièces de casse-tête aux interfaces compatibles » ; choix cliqué : « Casse-tête 2D, 1 lien ».
+
+- **Les pièces** (`sw/sw_puzzle.js` : `pieces`) : un capteur et le bloc qui le lit sont UNE pièce (« CTN · 30 °C ») ; une commande et la broche
+  qu'elle mène aussi (« Contactor · ACTIF ») ; tout autre bloc est une pièce. Le logiciel du BM : 18 blocs, 12 pièces.
+- **Trois bandes**, de gauche à droite : Capter, Décider (autant de colonnes que la chaîne a de pas), Agir (`puzzleLayout`).
+- **Un seul lien par paire** (`links`) : il remplace tous les fils entre deux pièces (le nombre est écrit dessus) ; il s'allume quand il
+  porte un 1, défile quand ce qu'il porte bouge ; un lien qui revient en arrière (la valeur du pas d'avant) est en tirets.
+- **Relier** : un clic sur le tenon d'une pièce, puis sur la pièce qu'elle nourrit ; l'outil branche en arrière-plan chaque entrée libre
+  qu'une sortie de la première peut nourrir (`connectPieces`), un bloc qui suit une unité prend celle de ce qu'on lui donne (avec une valeur
+  de référence de cette unité). Les pièces qui ne peuvent pas la prendre se grisent.
+- **La vue suit le niveau** : casse-tête pour le Novice et l'Intermédiaire, blocs détaillés pour l'Expert ; une bascule en haut du centre,
+  gardée par le navigateur (`dw.sw.view`). Le banc (étape Essayer) se lit sur les mêmes pièces.
+
+**Gardée en mémoire** (JP : « garde l'idée du 3D en mémoire, c'est super intéressant pour un concepteur mécanique ») : les mêmes pièces en 3D,
+empilées en couches comme un vrai objet — capteurs en bas, décisions au milieu, actions en haut —, une vue que l'on tourne comme une pièce.
