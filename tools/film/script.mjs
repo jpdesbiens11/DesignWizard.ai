@@ -38,7 +38,7 @@ export const SCENES = [
     media: [clip("variants", 0, 12, [0.3, 0.42, 1.28], [0.33, 0.4, 1.42])] },
   { id: "assembly", kind: "shot", t0: 68, t1: 90, station: L("Assemblage", "Assembly"), title: L("Les pièces se matent d'elles-mêmes", "Parts mate themselves"),
     chips: [{ at: 2.5, ...L("par leurs interfaces", "through their interfaces") }, { at: 7, ...L("une pièce change, l'assemblage suit", "change a part, the assembly follows") }, { at: 11.5, ...L("interférences vérifiées", "interferences checked") }, { at: 17, ...L("des modules dans l'assemblage", "modules inside the assembly") }],
-    media: [clip("rover", 0, 22, [0.47, 0.5, 1.2], [0.47, 0.5, 1.36])] },
+    media: [still("fusee", 0, 11, [0.5, 0.55, 1.12], [0.45, 0.6, 1.45]), clip("rover", 11, 22, [0.47, 0.5, 1.2], [0.47, 0.5, 1.36])] },      // the general view : the rocket (JP, 24 November) ; the exploded view : the Rover
   { id: "board", kind: "shot", t0: 90, t1: 104, station: L("Carte électronique", "Circuit board"), title: L("La carte : des fonctions aux fichiers de fabrication", "The board: from functions to fabrication files"),
     chips: [{ at: 2.5, ...L("même projet, mêmes interfaces", "same project, same interfaces") }, { at: 7, ...L("Gerber, perçage, placement", "Gerber, drill, placement") }],
     media: [still("pcba", 0, 7.5, [0.5, 0.5, 1], [0.5, 0.58, 1.4]), still("unites", 7.5, 14, [0.5, 0.55, 1.3], [0.45, 0.5, 1.5])] },

@@ -62,7 +62,7 @@ test("kit — the sheet : three groups by nature, each its colour, each step a p
   for (const g of SHEET.groups) { both(g.title, g.key); assert.ok(g.steps.length >= 3 && g.steps.length <= 4, `${g.key} : ${g.steps.length} steps`);
     for (const s of g.steps) { assert.ok(icons.includes(`id="i-${s.icon}"`), `no icon « ${s.icon} »`); both(s.title, s.icon); both(s.text, s.icon); for (const l of LANGS) { assert.ok(s.title[l].length <= 22, `${s.title[l]} : a short title`); assert.ok(s.text[l].length <= 100, `${s.text[l]} : one line`); } } }
   assert.equal(new Set(SHEET.groups.flatMap((g) => g.steps.map((s) => s.icon))).size, SHEET.groups.flatMap((g) => g.steps).length, "one pictogram a step");
-  assert.ok(existsSync(at(`web/img/tour/${SHEET.shot.img}.jpg`)), "the screen shown is a real screen of the guided presentation");
+  assert.ok(existsSync(at(`web/img/${SHEET.shot.img}`)), "the picture shown is made by the tool (a screen of the tour, or the rocket of tools/marketing_rocket.mjs)");
   for (const l of LANGS) {
     const html = sheetHtml(l, { icons: "<svg></svg>", logo: "<svg id=\"logo\"></svg>", shot: "shot.jpg", date: "2026-11-18" });
     assert.match(html, /^<!doctype html><html lang="(fr|en)">/); assert.ok(html.includes(BRAND_FOOT[l].replace(/&/g, "&amp;"))); assert.ok(html.includes("2026-11-18")); assert.ok(html.includes("@page { size: Letter; margin: 0; }"));

@@ -23,7 +23,7 @@ export const SHEET = {
   story: L(
     ["Une pièce commence par une question : à quoi sert-elle ?", "Vous le savez — mais il faut le redire au modeleur, au calcul, au dessin, à la commande.", "DynamiteOrbit.ai retient la réponse une fois, et s'en sert partout."],
     ["A part begins with a question: what is it for?", "You know — yet you repeat it to the modeller, the solver, the drawing, the order.", "DynamiteOrbit.ai remembers the answer once, and uses it everywhere."]),
-  shot: { img: "assemblage", caption: L("Un écran réel de l'outil : l'assemblage, ses accouplements et sa nomenclature.", "A real screen of the tool: the assembly, its mates and its bill of materials.") },
+  shot: { img: "marketing/fusee.png", cutout: true, caption: L("La fusée d'exemple, telle que l'Assemblage de l'outil la dessine — on la construit en plein vol.", "The example rocket, as the tool's Assembly draws it — we build the rocket in flight.") },
   groups: [
     { key: "design", color: "#0c66e4", title: L("Concevoir", "Design"), steps: [
       { icon: "intent", title: L("Intention", "Intent"), text: L("La pièce naît de ce qu'elle relie, de sa matière et de son procédé — sans esquisse.", "The part is born from what it connects, its material and its process — no sketch.") },

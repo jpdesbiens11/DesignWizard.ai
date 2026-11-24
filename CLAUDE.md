@@ -35,6 +35,13 @@ de v0.177.0 est remplacé en v0.178.0 par la fusée qui quitte le compas — JP,
   et des bandes-annonces, il ouvre le portail d'accueil (`LINKS.home` de `tools/launch/content.mjs`, aujourd'hui
   `…/DynamiteOrbit.ai/#/home`) ; l'image est `web/img/qr/home.svg`, faite par `tools/make_qr.py` (segno) et tenue égale à `LINKS.home` par
   un essai. **Au déploiement sur le vrai domaine** : changer `LINKS.home`, refaire le code, puis la fiche, le film et les bandes-annonces.
+  **La fusée du matériel** (JP, 24 novembre : « on bâtit la fusée en plein vol » ; vue choisie par menu) : la fusée d'exemple, vue de dessous,
+  qui monte en diagonale vers la droite comme celle du logo — la tuyère, les ailerons et un bout de coque coupé par le cadre ; elle est sur la
+  fiche d'une page (avec le code QR), la page de garde de la présentation, la vitrine et les cartes de marque du film (donc des bandes-annonces) ;
+  **les vues générales d'assemblage montrent la fusée** (la brique 6 de la présentation, le début de la scène « Assemblage » du film), **la vue
+  éclatée reste celle du Rover** (JP, même jour). Ce n'est pas un
+  dessin : `tools/marketing_rocket.mjs` la prend dans l'Assemblage de l'outil (`ROCKET_VIEW`) et écrit `web/img/marketing/fusee.png` (la vue
+  seule, transparente) et `web/img/tour/fusee.jpg` (l'écran). Le modèle change : relancer l'outil, puis la fiche, le film et les bandes-annonces.
 
 ## Publier (routine)
 

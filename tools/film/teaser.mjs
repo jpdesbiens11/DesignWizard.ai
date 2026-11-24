@@ -12,7 +12,7 @@ export const TEASER_CUTS = [
   { scene: "problem", from: 1.6, len: 3 },       // the sentence on paper : six tools around one part
   { scene: "shop", from: 1.8, len: 5 },          // the part is born from its intent
   { scene: "part", from: 1.2, len: 5 },          // a dimension climbs, the part follows
-  { scene: "assembly", from: 8, len: 5 },        // the Rover opens, by modules
+  { scene: "assembly", from: 14, len: 5 },       // the Rover opens, by modules
   { scene: "physics", from: 7.2, len: 4 },       // the simulation, cross-checked
   { scene: "drawings", from: 1.4, len: 3.6 },    // the drawing
   { scene: "end", from: 2.6, len: 6 },           // the name and its line

@@ -20,7 +20,8 @@ const built = SCENES.map((s) => {
   else if (s.kind === "logo" || s.kind === "end") {
     const m = el("img", "mark"); m.src = "/web/img/logo/mark.svg"; m.alt = ""; const name = el("p", "name"); name.append("DynamiteOrbit", el("i", null, ".ai"));
     const slogan = el("p", "slogan"); slogan.append(marked(s.slogan[lang]));
-    node.append(m, name, el("p", "by", "by DynamiteAgile™"), slogan, el("p", "small", s.small[lang]));
+    const rocket = el("img", "rocket"); rocket.src = "/web/img/marketing/fusee.png"; rocket.alt = "";      // the example rocket climbing in from the corner (tools/marketing_rocket.mjs)
+    node.append(rocket, m, name, el("p", "by", "by DynamiteAgile™"), slogan, el("p", "small", s.small[lang]));
     if (s.kind === "end") { const qr = el("div", "qr"), code = el("img"); code.src = "/web/img/qr/home.svg"; code.alt = ""; qr.append(code, el("span", null, lang === "fr" ? "Scannez : vidéos et démo" : "Scan: videos and demo")); node.append(el("p", "legal", `${MARK} · ${lang === "fr" ? "logiciel libre, licence MIT" : "open source, MIT licence"}`), qr); }   // the QR code of the welcome page, bottom right, as on the sheet (web/img/qr/home.svg)
   } else {
     const frame = el("div", "frame"), side = el("div", "fm-side");

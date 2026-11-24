@@ -12,6 +12,7 @@
 /* the name */
 .logo-card { display: grid; place-content: center; justify-items: center; gap: 22px; padding-bottom: 90px; text-align: center; }
 .logo-card img.mark { width: 150px; height: 150px; }
+.logo-card img.rocket { position: absolute; left: 24px; bottom: 70px; height: 420px; width: auto; -webkit-mask-image: linear-gradient(to bottom, transparent, #000 38%); mask-image: linear-gradient(to bottom, transparent, #000 38%); }
 .logo-card .name { margin: 0; font-size: 84px; font-weight: 780; letter-spacing: -2px; } .logo-card .name i { font-style: normal; color: var(--primary); }
 .logo-card .by { margin: -14px 0 0; font-size: 24px; color: var(--muted); }
 .logo-card .slogan { margin: 14px 0 0; font-size: 52px; font-weight: 650; letter-spacing: -.8px; }

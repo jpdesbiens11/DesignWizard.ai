@@ -49,6 +49,16 @@ n'est jamais dans le dépôt.
 
 ## La fiche et les textes
 
+**La fusée** (JP, 24 novembre : « on bâtit la fusée en plein vol ») : l'image de la fiche, de la page de garde de la présentation,
+de la vitrine et des cartes de marque du film est la fusée d'exemple de l'outil, prise dans son Assemblage — vue de dessous,
+montant vers la droite comme celle du logo, la tuyère, les ailerons et un bout de coque. Les vues générales d'assemblage (la brique 6 de
+la présentation, le début de la scène « Assemblage » du film) montrent aussi la fusée ; la vue éclatée reste celle du Rover. Elle se refait par :
+
+```bash
+node tools/marketing_rocket.mjs http://127.0.0.1:8130
+```
+
+
 Les mots sont à un seul endroit, `tools/launch/content.mjs` (la fiche, les textes, les phrases d'accroche, le mode
 d'emploi) ; la page est `tools/launch/sheet.mjs` — le papier quadrillé, l'encre, les pictogrammes et la marque de la
 plateforme. `tools/launch_kit.mjs` écrit tout :

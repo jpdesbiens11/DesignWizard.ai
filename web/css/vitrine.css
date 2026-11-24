@@ -44,6 +44,7 @@ nav a:not(.btn):hover { border-bottom-color: var(--hl-yellow); }
 
 main > section { padding: 2.6rem 0 .4rem; }
 .hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 2rem; align-items: center; padding-top: 2.2rem; }
+.hero-art { width: 100%; height: auto; max-height: 440px; object-fit: contain; object-position: 50% 0; -webkit-mask-image: linear-gradient(to bottom, transparent, #000 38%); mask-image: linear-gradient(to bottom, transparent, #000 38%); }      /* the example rocket (tools/marketing_rocket.mjs) */
 .kicker { font: 600 .78rem var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: .7rem; }
 .lead { font-size: 1.1rem; max-width: 60ch; }
 .intro { max-width: 78ch; color: var(--ink); }

@@ -32,6 +32,7 @@ h1 span { display: block; } h1 mark { background: linear-gradient(transparent 58
 figure { position: relative; } figure img { display: block; width: 100%; border: 1.5px solid var(--ink); border-radius: 9px; box-shadow: 5px 6px 0 rgba(23, 43, 77, .13); background: var(--surface); }
 figure::before, figure::after { content: ""; position: absolute; top: -13px; width: 58px; height: 18px; background: rgba(255, 210, 63, .82); border: 1px solid rgba(23, 43, 77, .18); z-index: 1; }
 figure::before { left: -14px; transform: rotate(-32deg); } figure::after { right: -14px; transform: rotate(32deg); }
+figure.cutout img { border: 0; border-radius: 0; box-shadow: none; background: none; aspect-ratio: 1.5; object-fit: cover; object-position: 30% 100%; } figure.cutout::before, figure.cutout::after { display: none; }
 figcaption { margin-top: 7px; font-size: 7.3pt; color: var(--muted); text-align: right; }
 .groups { display: grid; grid-template-columns: repeat(3, 1fr); gap: .17in; margin-top: .3in; flex: 1; }
 .group { background: var(--surface); border: 1.3px solid var(--line); border-top: 5px solid var(--c); border-radius: 9px; padding: .13in .14in .12in; display: flex; flex-direction: column; }
@@ -63,7 +64,7 @@ export function sheetHtml(lang, o) {
   <header>${o.logo}<div><div class="name">DynamiteOrbit<i>.ai</i></div><div class="by">by DynamiteAgile™</div></div><div class="kicker">${t(S.kicker)}</div></header>
   <div class="hero">
     <div><h1 style="font-size:${second.length > 17 ? 26 : 30}pt"><span>${esc(first)}</span><span><mark>${esc(second)}</mark></span></h1><p class="promise">${t(S.promise)}</p><div class="story">${S.story[lang].map((p) => `<p>${esc(typo(p, lang))}</p>`).join("")}</div></div>
-    <figure><img src="${o.shot}" alt=""><figcaption>${t(S.shot.caption)}</figcaption></figure>
+    <figure${S.shot.cutout ? ' class="cutout"' : ""}><img src="${o.shot}" alt=""><figcaption>${t(S.shot.caption)}</figcaption></figure>
   </div>
   <div class="groups">${S.groups.map(group).join("")}</div>
   <div class="foot">

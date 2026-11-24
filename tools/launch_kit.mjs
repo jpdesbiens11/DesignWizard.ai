@@ -23,7 +23,7 @@ const made = [], keep = (name, bytes) => { writeFileSync(join(out, name), bytes)
 
 /* ---------- the sheet : one page, both languages ---------- */
 const { chromium } = createRequire(import.meta.url)("playwright"), browser = await chromium.launch();
-const icons = readFileSync(at("web/img/icons.svg"), "utf8"), shot = pathToFileURL(at(`web/img/tour/${SHEET.shot.img}.jpg`)).href;
+const icons = readFileSync(at("web/img/icons.svg"), "utf8"), shot = pathToFileURL(at(`web/img/${SHEET.shot.img}`)).href;
 for (const l of LANGS) {
   const page = await browser.newPage({ viewport: { width: 816, height: 1056 }, deviceScaleFactor: 2 }), html = join(out, `fiche_${l}.html`);
   writeFileSync(html, sheetHtml(l, { icons, logo: logoSvg(44), shot, date, qr: readFileSync(join(root, "web/img/qr/home.svg"), "utf8") }));      // a file, so that the picture of the screen is read from the disk
