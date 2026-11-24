@@ -209,8 +209,8 @@ sorcier (icône `wizard`) devient une **tour de lancement et sa fusée** ; **tou
 « ligne de mission » (`mission()` de `tools/sketch_icons.py` : coins de panneau arrondis, mêmes noms, mêmes sens) ; **Le.Carnet
 garde son crayonné** ; le logo devient **L3 — la fusée quitte le compas sur sa trajectoire**, une seule figure (`LOGO`,
 `logoShapes` de `web/js/core/brand.js`, les mêmes nombres dans `tools/sketch_logo.py`, tenus égaux par un essai) ; le produit
-s'appelle **DynamiteOrbit.ai**. ~~Refaire la voix et les sous-titres du film et de la bande-annonce~~ — fait (22 novembre : image rendue de nouveau, voix ElevenLabs « Jessica » `cgSgspJ2msm6clMCkdW9`, FR et EN, bandes-annonces au Drive), ~~reprendre les captures de la visite (`web/img/tour`)~~ — fait, avec le matériel du dossier « Communications et marketing » refait au nom DynamiteOrbit.ai, renommer l'application sur l'écran de
-consentement de Google (Google Cloud Console : à faire par JP).
+s'appelle **DynamiteOrbit.ai**. ~~Refaire la voix et les sous-titres du film et de la bande-annonce~~ — fait (22 novembre : image rendue de nouveau, voix ElevenLabs « Jessica » `cgSgspJ2msm6clMCkdW9`, FR et EN, bandes-annonces au Drive), ~~reprendre les captures de la visite (`web/img/tour`)~~ — fait, avec le matériel du dossier « Communications et marketing » refait au nom DynamiteOrbit.ai, ~~renommer l'application sur l'écran de
+consentement de Google~~ — fait par JP (24 novembre : « DynamiteOrbit.ai » dans Branding, projet Google Cloud « DynamiteOrbit », toujours en mode Testing).
 
 **Un jour / peut-être** (les « Reste », à reprioriser à la demande)
 - BM : ~~**lobe des vis élargi à Ø 10 mm**~~ — fait dans le concept 2 (v0.171.0) ; ~~le logement de la carte BMS centrale~~ — réglé
