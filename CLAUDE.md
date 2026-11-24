@@ -1,6 +1,6 @@
 # DynamiteOrbit.ai — consignes pour Claude
 
-Le produit s'appelle **DynamiteOrbit.ai** — nom officiel et marque de JP (JP, 24 novembre 2026 : « DynamiteOrbit », posé le 22
+Le produit s'appelle **DynamiteOrbit.ai** — nom officiel et marque de JP (JP, 24 novembre 2026 : « DesignOrbit », posé le 22
 novembre, était une erreur ; anciennement DesignWizard.ai). Le « .ai » fait partie de la marque — il dit que ce n'est pas une
 application simple — même si le site est déployé sur un « .ca » ; **là où le « .ai » gêne** (dans une phrase dite, un titre
 court, un nom de fichier), on écrit **DynamiteOrbit**. Le dépôt GitHub s'appelle `jpdesbiens11/DynamiteOrbit.ai` et la démo est à
