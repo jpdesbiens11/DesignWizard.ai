@@ -15,7 +15,7 @@
    drag of the background pans, « Ajuster » fits. values() refreshes the displays without redrawing — a live run calls it often. */
 
 import { KINDS, portsOf } from "../sw/sw_objects.js";
-import { liveWires, split } from "../sw/sw_design.js";
+import { liveWires, split, unsure } from "../sw/sw_design.js";
 import { BLOCK, SIGNAL_TYPES, VALUE_SOURCES, VIEW, tagH, typeOf, keyPath, familyOf, blockBox, portY, valueChips, chipLayout, snapAt, docked } from "../sw/sw_blocks.js";
 import { viewBar, fitView, zoomView } from "../core/view_bar.js";
 import { DEVICES } from "../sw/sw_devices.js";
@@ -92,6 +92,7 @@ export function swCanvas(host, o = {}) {
       plugs.push(S("path", { d: `M ${q.x} ${q.y - A + 1.5} ${keyPath(type, q.x, q.y, 1, A - 1.5, K - 2)} Z`, class: "swb-plug", style: `--wt:${SIGNAL_TYPES[type].color}`, "data-plug": w.to }));
       if (w.delay) svg.append(S("text", { x: (p.x + q.x) / 2, y: (p.y + q.y) / 2 - 6, class: "sw-delay", "text-anchor": "middle" }, "pas d'avant")); }
     /* the blocks */
+    const ask = {}; for (const u of unsure(d)) ask[u.obj] = (ask[u.obj] || 0) + 1;
     for (const x of objs) { const b = blockBox(x), P = portsOf(x), F = familyOf(x.kind, x), Kd = KINDS[x.kind], Dv = x.device && DEVICES[x.device], tag = o.tag ? o.tag(x) : null, chips = VIEW.chips ? valueChips(x, d) : [], lit = P.out.some((p) => typeOf(p.unit) === "bool" && val(`${x.id}.${p.key}`) === 1);
       const g = S("g", { class: `swb-block sw-tile${sel && sel.obj === x.id ? " sel" : ""}${x.off ? " off" : ""}${lit ? " lit" : ""}`, "data-obj": x.id, "data-family": F.id, transform: `translate(${b.x} ${b.y})`, style: `--dom:${F.color}` });
       const choose = (e) => { e.stopPropagation(); if (o.onPick) o.onPick({ obj: x.id }); };
@@ -107,6 +108,9 @@ export function swCanvas(host, o = {}) {
         const up = () => { grip.removeEventListener("pointermove", mv); grip.removeEventListener("pointerup", up); if (moved && o.onMove) o.onMove(x.id, nx, ny); else if (o.onPick) o.onPick({ obj: x.id }); }; grip.addEventListener("pointermove", mv); grip.addEventListener("pointerup", up); });
       grip.addEventListener("keydown", (e) => { const step = { ArrowLeft: [-10, 0], ArrowRight: [10, 0], ArrowUp: [0, -10], ArrowDown: [0, 10] }[e.key]; if (step && o.onMove) { e.preventDefault(); o.onMove(x.id, Math.max(0, b.x + step[0]), Math.max(0, b.y + step[1])); } else if (e.key === "Enter" && o.onPick) o.onPick({ obj: x.id }); });
       g.append(grip);
+      /* « ? » at the corner : values still to approve — a click opens the questionnaire on this block (modules/sw_fix_ui.js) */
+      if (ask[x.id]) g.append(S("g", { class: "sw-ask", "data-sw-ask": x.id, tabindex: 0, role: "button", "aria-label": `${ask[x.id]} valeur${ask[x.id] > 1 ? "s" : ""} de ${x.name} à approuver`, transform: `translate(${b.w - 2} 2)`, onClick: (e) => { e.stopPropagation(); if (o.onAsk) o.onAsk(x.id); }, onKeydown: (e) => { if (e.key === "Enter" && o.onAsk) o.onAsk(x.id); } },
+        S("circle", { r: 11 }), S("text", { y: 4.5, "text-anchor": "middle" }, "?"), S("title", null, `${ask[x.id]} valeur${ask[x.id] > 1 ? "s" : ""} à approuver — cliquer pour le questionnaire`)));
       /* the ports : a key each ; an output shows what it is worth */
       const pendingType = pending ? (() => { const [pa, pk] = split(pending), src = O[pa] && portsOf(O[pa]).out.find((q) => q.key === pk); return src ? typeOf(src.unit) : null; })() : null;
       const port = (p, dir) => { const ref = `${x.id}.${p.key}`, y = portY(x, dir, p.key), type = typeOf(p.unit), v = val(ref), on = pending === ref, can = dir === "in" && pending && pendingType === type, nope = dir === "in" && pending && pendingType !== type, unit = p.unit !== "0/1" && p.unit !== p.label ? shownUnit(p.unit) : "";

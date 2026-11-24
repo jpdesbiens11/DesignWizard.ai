@@ -231,3 +231,29 @@ body.swm-own { margin: 0; background: #0b1220; }
 .swpb-row.on { border-color: #7c3aed; background: color-mix(in srgb, #7c3aed 7%, var(--surface)); } .swpb-row small { color: var(--muted); margin-right: auto; }
 .swpb textarea { width: 100%; box-sizing: border-box; font-family: var(--mono, ui-monospace, monospace); font-size: .78rem; margin: .3rem 0; }
 .swpb-out .ok { color: #15803d; font-weight: 650; }
+
+/* the import : where the requirements go, and the loose ends they would leave (modules/sw_lib_ui.js) */
+.swb-mode { display: flex; flex-wrap: wrap; gap: .4rem; margin: .4rem 0; } .swb-mode[hidden] { display: none; }
+.swb-mode button { border: 2px solid var(--line); border-radius: 999px; background: var(--surface); font: inherit; font-size: .85rem; padding: .3rem .8rem; cursor: pointer; } .swb-mode button.on { border-color: #0f766e; background: color-mix(in srgb, #0f766e 12%, var(--surface)); font-weight: 700; }
+.swb-loose { border-radius: 10px; padding: .45rem .7rem; margin: .5rem 0; border: 1.5px solid; } .swb-loose.ok { border-color: #16a34a; background: color-mix(in srgb, #16a34a 7%, var(--surface)); } .swb-loose.bad { border-color: #d97706; background: color-mix(in srgb, #d97706 8%, var(--surface)); }
+.swb-loose p { margin: 0 0 .25rem; font-weight: 650; } .swb-loose li.planned, .swb-loose li.none { color: var(--muted); }
+
+/* what is left to do : the counters over the page, the tour, the questionnaire, the « ? » of a block (modules/sw_fix_ui.js) */
+.swf-bar { position: absolute; top: .55rem; left: .7rem; z-index: 7; display: flex; gap: .4rem; } .swf-bar[hidden] { display: none; }
+.swf-bar .btn { box-shadow: 0 2px 6px rgb(0 0 0 / .1); } .swf-bar .swf-fix:not([disabled]) { border-color: #dc2626; color: #b91c1c; font-weight: 700; } .swf-bar .swf-ask:not([disabled]) { border-color: #d97706; color: #b45309; font-weight: 700; }
+.swf-q { display: inline-grid; place-items: center; width: 1.1rem; height: 1.1rem; border-radius: 50%; background: #d97706; color: #fff; font-size: .75rem; margin-right: .2rem; } .swf-ask[disabled] .swf-q { background: #16a34a; }
+svg .sw-ask { cursor: pointer; } svg .sw-ask circle { fill: #d97706; stroke: #fff; stroke-width: 2.5; } svg .sw-ask text { fill: #fff; font-weight: 800; font-size: 14px; pointer-events: none; } svg .sw-ask:focus-visible circle { stroke: #0f172a; }
+.swf-card { position: fixed; left: 50%; bottom: 1.2rem; transform: translateX(-50%); z-index: 70; width: min(30rem, calc(100vw - 2rem)); background: var(--surface); border: 2px solid var(--lv, #dc2626); border-left-width: 7px; border-radius: 14px; padding: .6rem .8rem .7rem; box-shadow: 0 14px 34px rgb(0 0 0 / .25); }
+.swf-head { display: flex; align-items: center; gap: .5rem; } .swf-head small { margin-left: auto; color: var(--muted); }
+.swf-chip { background: var(--lv, #dc2626); color: #fff; border-radius: 999px; padding: .1rem .6rem; font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+.swf-obj { display: flex; align-items: center; gap: .35rem; margin-top: .45rem; color: var(--dom); } .swf-obj .sk-icon { width: 1.1rem; height: 1.1rem; }
+.swf-card p { margin: .35rem 0 .55rem; font-size: .95rem; } .swf-nav { display: flex; gap: .4rem; justify-content: space-between; }
+.swf-quiz { position: fixed; right: 1.2rem; top: 5.5rem; z-index: 70; width: min(30rem, calc(100vw - 2rem)); max-height: calc(100vh - 7rem); overflow: auto; background: var(--surface); border: 2px solid var(--dom, #7c3aed); border-top-width: 7px; border-radius: 14px; padding: .7rem .9rem .8rem; box-shadow: 0 16px 38px rgb(0 0 0 / .28); }
+.swf-qhead { display: flex; align-items: center; gap: .6rem; } .swf-qhead h3 { margin: 0; font-size: 1.05rem; } .swf-qhead small { color: var(--dom); font-weight: 700; font-size: .72rem; text-transform: uppercase; }
+.swf-qico { display: grid; place-items: center; width: 2.4rem; height: 2.4rem; border-radius: 12px; background: color-mix(in srgb, var(--dom) 15%, var(--surface)); color: var(--dom); flex: none; } .swf-qico .sk-icon { width: 1.4rem; height: 1.4rem; }
+.swf-qhead .swf-approve { margin-left: auto; }
+.swf-rows { display: grid; gap: .5rem; margin: .4rem 0 .6rem; }
+.swf-row { display: grid; grid-template-columns: 1fr auto; gap: .15rem .7rem; padding: .45rem .55rem; border-radius: 10px; border: 1.5px dashed #d97706; } .swf-row.req { border-color: #16a34a; }
+.swf-row label { display: grid; } .swf-row label small { color: var(--muted); font-size: .76rem; } .swf-val { display: flex; align-items: center; gap: .3rem; } .swf-val input, .swf-val select { width: 7rem; }
+.swf-src { grid-column: 1 / -1; font-size: .72rem; } .swf-src.ref { color: #b45309; } .swf-src.req { color: #15803d; }
+.swf-qfoot { display: flex; align-items: center; gap: .4rem; } .swf-qfoot small { margin-right: auto; color: var(--muted); }

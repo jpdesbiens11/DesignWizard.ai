@@ -40,6 +40,7 @@ import { libraryPalette, reqImportSection, openImport } from "./sw_lib_ui.js";
 import { swRack } from "./sw_lab.js";
 import { swStory } from "./sw_story_ui.js";
 import { swMonitor } from "./sw_monitor_ui.js";
+import { swFix } from "./sw_fix_ui.js";
 import { moduleDesign } from "../sw/sw_bm_design.js";
 import { alarmSound } from "./sw_sound.js";
 import { shows, noviceOffers } from "../sw/sw_levels.js";
@@ -70,7 +71,7 @@ function render(main, args, vkey) {
       change(`Logiciel : ${A} relié à ${B}`, (x) => { for (const [id, prm] of Object.entries(c.set)) { const q = x.objects.find((z) => z.id === id); if (q) q.params = { ...(q.params || {}), ...prm }; } x.wires.push(...c.wires); });
       toast(`Relié : ${c.wires.length} liaison${c.wires.length > 1 ? "s" : ""} branchée${c.wires.length > 1 ? "s" : ""} en arrière-plan (${c.wires.map((w) => `${split(w.from)[1]} → ${split(w.to)[1]}`).join(", ")}).`, "success", 4000); }, showRank: shows(lv, "rank"), tag: (o) => hwTag(store.project, design(), o),
     onArrange: () => { const d = design(); if (!d) return; const pos = flowLayout(d); change("Logiciel : blocs rangés de gauche à droite", (x) => { for (const o of x.objects) if (pos[o.id]) Object.assign(o, pos[o.id]); }); setTimeout(() => canvas.fit(), 0); },
-    onPick: (s) => { st.sel = s; paint(); renderRight(); },
+    onPick: (s) => { st.sel = s; paint(); renderRight(); }, onAsk: (id) => fix.quiz(id),
     onMove: (id, x, y) => { const d0 = design(), was = (d0.wires || []).filter((w) => (split(w.from)[0] === id || split(w.to)[0] === id) && docked(d0, w)), sn = snapAt(d0, id, x, y), at = sn || { x, y };      // keyed blocks (sw/sw_blocks.js snapAt)
       const gone = was.filter((w) => !docked({ ...d0, objects: d0.objects.map((q) => (q.id === id ? { ...q, x: at.x, y: at.y } : q)) }, w));
       change(sn ? `Logiciel : ${id} emboîté` : gone.length ? `Logiciel : ${id} déboîté` : `Logiciel : ${id} déplacé`, (d) => { const o = d.objects.find((q) => q.id === id); if (!o) return; o.x = at.x; o.y = at.y;
@@ -82,6 +83,8 @@ function render(main, args, vkey) {
       change(`Logiciel : fil ${from} → ${to}`, (x) => { x.wires = x.wires.filter((w) => w.to !== to); x.wires.push({ from, to, ...(loops ? { delay: true } : {}) }); });
       toast(loops ? "Ce fil ferme une boucle : il porte la valeur du pas d'avant, comme le font les schémas-blocs. Un clic sur le fil pour le voir." : c.level ? c.text : "Fil posé.", loops || c.level ? "info" : "success", loops || c.level ? 7000 : 2200); } });
   { const vs = viewSwitch(lv); vs.classList.add("swp-float"); host.append(vs); }      // casse-tête · blocs détaillés, over the page
+  /* what is left to do, over the page : the tour of the problems, the questionnaire of the values (modules/sw_fix_ui.js) */
+  const fix = swFix({ design, problems: () => { const d = design(); return d ? [...problems(d, cpuOf(d)), ...hwProblems(store.project, d)] : []; }, pick: (id, field) => pick(id, field), change, show: (id) => { st.sel = { obj: id }; paint(); } }); host.append(fix.bar);
   let R = null, bench = null, journalHost = null, run = null, rack = null, story = null, monitor = null; const sound = alarmSound();
   const files = () => { const d = design(); return d ? vPackage(d, cpuOf(d)) : []; };      // the C, and the requirements and the verification beside it (doc/)
   const valuesAt = () => (R ? Object.fromEntries(Object.entries(R.ports).map(([r, y]) => [r, y[Math.min(st.k, y.length - 1)]])) : null);
@@ -114,7 +117,7 @@ function render(main, args, vkey) {
     if (d && V.key === "sim") { const hb = hostBoard(store.project, d), b = btn("Essayer sur la vraie carte", () => openHil(), { primary: true, icon: "chip", disabled: !hb, tip: hb ? `Pas à pas, comme la Manipulation en labo : la carte « ${hb.name || hb.id} » de l'Électronique, la sonde, l'alimentation, puis chaque entrée réglée et chaque sortie relevée — ce que le modèle attend, en volts` : "Aucune carte du produit avec un microcontrôleur : le PCBA de la carte de commande la donnera" });
       b.dataset.swHilOpen = ""; left.append(el("div", { class: "side-actions swl-hil" }, b)); }
     /* the software of the module BM, older than its monitoring : one click takes the version of the 24th of November (an undoable step) */
-    if (d && d.id === "BM-SW" && !(d.profiles || []).some((p) => p.id === "discharge")) { const u = btn("Mettre à jour le logiciel du BM", () => change("Logiciel du BM : témoin d'état, buzzer, pompe, profils de charge et de décharge, monitoring", (x) => { const n = moduleDesign(x.cpu); for (const k of ["objects", "wires", "scenario", "profiles", "monitor"]) x[k] = n[k]; delete x.profile; }), { small: true, icon: "refresh", tip: "La version du 24 novembre : témoin vert · jaune · rouge, buzzer, pompe eau-glycol, profils de charge et de décharge et la fenêtre « Monitoring du BM-SWAP ». Les exigences et les essais sont gardés ; une étape annulable." });
+    if (d && d.id === "BM-SW" && !(d.profiles || []).some((p) => p.id === "discharge")) { const u = btn("Mettre à jour le logiciel du BM", () => change("Logiciel du BM : témoin d'état, buzzer, pompe, profils de charge et de décharge, monitoring", (x) => { const n = moduleDesign(x.cpu); for (const k of ["objects", "wires", "scenario", "profiles", "monitor"]) x[k] = n[k]; delete x.profile; const ids = new Set(n.objects.map((q) => q.id)); for (const r of x.reqs || []) r.objs = (r.objs || []).filter((id) => ids.has(id)); }), { small: true, icon: "refresh", tip: "La version du 24 novembre : témoin vert · jaune · rouge, buzzer, pompe eau-glycol, profils de charge et de décharge et la fenêtre « Monitoring du BM-SWAP ». Les exigences et les essais sont gardés ; une étape annulable." });
       u.dataset.swBmUpdate = ""; left.append(el("div", { class: "side-actions" }, u)); }      // the software tried on its board (modules/sw_hil_ui.js)
     const scroll = el("div", { class: "side-scroll" }); left.append(scroll);
     scroll.append(stepCard(d, cpu, V.key, st.step, run, open));
@@ -183,11 +186,11 @@ function render(main, args, vkey) {
     rackHost.hidden = !rack;
     clear(liveHost); if (st.step === "live") { if (bench) liveHost.append(bench.bar, ...(story ? [story.line, story.bubble] : []), el("div", { class: "sw-lanes-box bottom-body" }, el("p", { class: "muted small" }, "CHRONOGRAMME · les dernières secondes — une voie par décision (verte à 0, rouge à 1) et par mesure (orange), comme un analyseur logique."), bench.chart)); else liveHost.append(el("p", { class: "form-error", "data-sw-live-blocked": "" }, `Le banc attend un logiciel sans erreur : ${errs[0] ? errs[0].text : ""}`)); }
     if (!onCanvas) pageHost.replaceChildren(centre(d));
-    renderLeft(); renderRight(); renderReplay(); paint(); setGuide(guide()); setStatus(ready(d, cpuOf(d)) ? "Logiciel prêt à écrire" : "Logiciel : à régler", ready(d, cpuOf(d)) ? "done" : "");
+    renderLeft(); renderRight(); renderReplay(); paint(); fix.refresh(); fix.bar.hidden = !CANVAS.has(st.step); setGuide(guide()); setStatus(ready(d, cpuOf(d)) ? "Logiciel prêt à écrire" : "Logiciel : à régler", ready(d, cpuOf(d)) ? "done" : "");
   }
   const off = store.on("change", () => { if (!st.alive) return; if (bench) { stopBench(); } all(); });
   all();
-  return () => { st.alive = false; off(); stopBench(); sound.dispose(); canvas.destroy(); setGuide([]); };
+  return () => { st.alive = false; off(); stopBench(); sound.dispose(); fix.dispose(); canvas.destroy(); setGuide([]); };
 }
 /* the five steps of the V this file draws : each a screen of the group Logiciel */
 for (const k of ["arch", "design", "sim", "code", "release"]) { const V = vstepOf(k); registerModule({ key: V.mod, label: V.title, icon: V.icon, tip: `${V.n}. ${V.long} — ${V.en}`, render: (main, args) => render(main, args, k) }); }

@@ -362,3 +362,33 @@ avec un ESS… ou une banque de profils de mission en .txt qui peuvent venir de 
 
 Non vérifié : le son sur Safari et Firefox, la fenêtre à part sur un vrai deuxième écran, un profil écrit par une vraie IA.
 
+## 4 decies. Des exigences sans bout libre, le tour guidé, le questionnaire (v0.194.0)
+
+Demandes de JP, 24 novembre 2026 : « voici un exemple de fichier de requis… s'assurer que tout est couvert par des blocs et des interfaces ? je l'ai
+essayé et il y a des bouts libres » ; « je ne vois pas les 9 choses à corriger, ce serait le fun d'avoir un tour guidé » ; « pour approuver les
+paramètres de chaque bloc, un questionnaire pop-up qui passe au travers de chaque bloc, avec un Approve en haut à droite et un Next… un « ? »
+dans le coin des blocs avec des entrées à confirmer » ; « des blocs non connectés comme le Buzzer… compléter le schéma ».
+
+- **Le format des exigences** (`sw/sw_req_import.js`) : un bloc à plusieurs entrées ou sorties les nomme toutes — `"inputs": { "a": "SWR-017",
+  "b": "SWR-018" }`, `"outputs": { "emergency": "emerg_flag" }` ; une source peut nommer le port d'un autre bloc (`"SWR-024.close"`). Sans
+  `inputs`, un bloc prend aussi les identifiants que sa phrase cite (« SWR-017 OR SWR-018 ») ; une source à plusieurs sorties donne la
+  première qui convient, et l'aperçu le dit. L'exigence de mise à l'échelle d'un signal déclaré est portée par le bloc de ce signal (plus de
+  second bloc sans entrée). Une exigence sur la période du logiciel est tenue par l'architecture. Le prompt demande « aucune entrée de bloc
+  sans fil, aucun signal inutilisé ».
+- **Les bouts libres** (`looseEnds`) : un signal lu par aucun bloc, une sortie commandée par aucun, une entrée de bloc reliée à rien, une
+  exigence dont le bloc est à venir ou qui n'en nomme aucun — dits dans l'aperçu de l'import, avant d'appliquer ; le guide dit aussi une
+  broche lue par aucun bloc. **Un fichier qui déclare ses signaux devient un logiciel neuf** (une étape annulable) ; « Compléter le
+  logiciel actuel » reste au choix — c'est ce mélange qui laissait des bouts libres.
+- **Le tour guidé** (`modules/sw_fix_ui.js`) : « n à corriger », en haut à gauche des blocs, prend les points du guide un à un — ce qui
+  cloche, en mots, « Aller au bloc », « Précédent », « Suivant » ; une chose corrigée sort de la liste.
+- **Le questionnaire** : « n valeurs à approuver » passe chaque bloc dont des valeurs sont à confirmer — valeurs tapées en V, A, °C, leur
+  origine (une exigence, ou la référence de l'outil) —, « Approuver » en haut à droite confirme le bloc (et ce qui a été tapé) en une étape
+  annulable, « Plus tard » le remet à la fin ; rouvert, il ne montre que ce qui reste. Un **« ? »** orange marque le coin de chaque bloc
+  (ou pièce du casse-tête) qui a des valeurs à approuver ; un clic ouvre le questionnaire sur lui.
+- **Le logiciel du BM** : « Mettre à jour le logiciel du BM » remplace un schéma d'avant la v0.193.0 (un Buzzer posé seul, par exemple) par
+  le schéma complet, sans bout libre ; les exigences qui nommaient des blocs disparus les perdent, et le guide les dit.
+
+Non vérifié : la version 2 du fichier d'exigences de JP n'entre pas au dépôt (c'est sa base d'essai) ; l'essai automatique utilise un fichier
+fabriqué. Les blocs « à venir » (protection rapide, état de charge, équilibrage, CAN, chien de garde, mémoire, pente, vraisemblance) laissent
+leurs exigences portées par rien, et c'est dit.
+

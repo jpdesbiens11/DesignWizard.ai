@@ -52,6 +52,7 @@ export function problems(d, cpu) {
   for (const [to, list] of Object.entries(into)) if (list.length > 1) say("error", `Deux fils arrivent sur la même entrée (${O[split(to)[0]].name}, « ${split(to)[1]} ») : une entrée n'écoute qu'une sortie.`, split(to)[0]);
   for (const w of W) { const c = wireCheck(d, w.from, w.to); if (c.level) say(c.level === "warn" ? "check" : "error", c.text, split(w.to)[0]); }
   for (const w of (d.wires || []).filter((x) => !W.includes(x) && byId(d)[split(x.from)[0]] && byId(d)[split(x.to)[0]])) say("error", `Un fil va vers un port qui n'existe pas (${w.from} → ${w.to}).`, split(w.to)[0]);
+  for (const o of objs) if ((KINDS[o.kind].pin === "ain" || KINDS[o.kind].pin === "din") && !W.some((w) => split(w.from)[0] === o.id)) say("check", `${o.name} : la broche est lue par aucun bloc — un bout libre.`, o.id);
   for (const o of objs) for (const p of portsOf(o).in) if (!p.free && !into[`${o.id}.${p.key}`]) say("error", `${o.name} : l'entrée « ${p.label} » n'est reliée à rien.`, o.id);
   const L = order(d).loop; if (L.length) say("error", `Des objets se suivent en boucle (${L.map((id) => O[id].name).join(", ")}) : l'un des fils de la boucle doit porter « la valeur du pas d'avant » — un clic sur le fil.`, L[0]);
   for (const o of objs) { const c = cfgOf(o); if (o.kind === "analog_in" && c.lo >= c.hi) say("error", `${o.name} : la plage vraisemblable est à l'envers (${c.lo} à ${c.hi}).`, o.id, "lo");

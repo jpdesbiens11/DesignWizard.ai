@@ -55,6 +55,7 @@ Rules :
 1. One requirement = one sentence with "shall", one kind, one way to verify it. Keep the document's own id when it has one.
 2. "block" is the block of the library that carries the requirement, from the list below ; when none fits, write the closest planned block id (${planned}) or leave "block" out — the requirement is kept, allocated to nothing.
 3. "input" names a signal id (dir "in") or the id of another requirement whose block feeds this one (a chain : measure → threshold → latch → command). "output" names a signal id (dir "out") the block drives.
+   A block with SEVERAL inputs or outputs names each one : "inputs": { "a": "SWR-017", "b": "SWR-018" } (the keys are the ports of the block below) and "outputs": { "emergency": "emerg_flag" } ; a source may name the port of another block : "SWR-024.close". Leave NO input of a block unwired and NO signal unused : every "in" signal is read by a block, every "out" signal is driven by one — the tool lists the loose ends.
 4. "values" uses the keys of the block below, in the units given ; you may also write a value with its unit as text ("4.25 V", "100 ms", "60 °C") — the tool converts V, A, °C, %, s.
 5. Signals : "analog" for a quantity read by a converter, "digital" for 0 / 1. Give min and max when the document gives a valid range.
 6. Never copy a figure from a standard or a datasheet the document does not quote.
@@ -108,6 +109,7 @@ function valueFor(p, raw, blockUnit) {
   return Math.round(Number(m[1].replace(",", ".")) * f);
 }
 
+const cfgUnit = (o) => (o.params && o.params.unit) || "mV";
 /** What an import would do to a design (or to a new one). → { design (the design as it would be), rows: [{ id, text, block, state ("made" | "planned" | "none"), values: [{ key, label, value, source }] }],
     signals: [{ id, name, dir, made: [ids] }], wires, notes: [text], counts: { reqs, blocks, fromReq, reference, planned } } */
 export function planImport(data, d0) {
@@ -141,6 +143,10 @@ export function planImport(data, d0) {
     const req = known || { id, text: String(r.text).trim(), kind: REQ_KINDS[r.kind] ? r.kind : "functional", verify: VERIFY[r.verify] ? r.verify : "test", objs: [], on: true, sure: false, ...(r.source ? { source: String(r.source) } : {}) }; if (!known) d.reqs.push(req);
     if (had) { const o = d.objects.find((x) => x.id === known.objs[0]); if (o && KINDS[o.kind]) feed[id] = { ref: `${o.id}.${KINDS[o.kind].ports.out[0].key}`, unit: portsOf(o).out[0].unit }; continue; }
     if (!kind) { if (planned) out.counts.planned++; continue; }
+    /* the scaling of a signal the file already declares : the requirement is carried by ITS block, not by a second one without an input */
+    const sig = kind === "analog_in" && r.input && feed[r.input] && d.objects.find((x) => `${x.id}.value` === feed[r.input].ref && x.kind === "analog_in");
+    if (sig) { for (const p of KINDS.analog_in.params) { const raw = r.values ? r.values[p.key] : undefined, v = raw === undefined ? null : valueFor(p, raw, cfgUnit(sig)); if (v === null) continue; sig.params = { ...(sig.params || {}), [p.key]: v }; sig.src = { ...(sig.src || {}), [p.key]: id }; out.counts.fromReq++; row.values.push({ key: p.key, label: p.label, value: v, source: "req" }); }
+      sig.req = sig.req || id; req.objs = [sig.id]; feed[id] = feed[r.input]; row.state = "made"; continue; }
     const K = KINDS[kind], src = r.input && feed[r.input], unitP = K.params.find((p) => p.key === "unit"), oid = fresh(r.name || `${kind}_${id}`), params = {}, sure = [], from = {};
     if (unitP && src && unitP.choices.includes(src.unit)) { params.unit = src.unit; sure.push("unit"); }
     const bu = params.unit || (unitP ? unitP.value : "");
@@ -150,15 +156,49 @@ export function planImport(data, d0) {
     d.objects.push({ id: oid, kind, name: r.name || `${K.label} — ${id}`, params, sure, src: from, req: id, x: 0, y: 0 }); req.objs = [oid]; out.counts.blocks++;
     feed[id] = { ref: `${oid}.${K.ports.out[0].key}`, unit: portsOf({ kind, params }).out[0].unit }; later.push({ r, oid, kind });
   }
-  /* the wires the requirements name : an input from a signal or a block before, an output to a pin */
+  /* the wires the requirements name : an input from a signal or a block before, an output to a pin.
+     « input » names one source ; « inputs » names several, by port ({ "b": "SWR-018" }) or in order ([...]) ; a source may name a port of a
+     block (« SWR-024.close ») ; « outputs » names the pins each output drives ({ "emergency": "emerg_flag" }). A gate or a latch that names
+     only one input takes the others from the ids its sentence quotes (« SWR-017 OR SWR-018 ») — the loose ends of a list written by hand. */
+  const resolve = (ref) => { const [id, port] = String(ref).split(/\.(?=[a-z_]+$)/); const f = feed[id]; if (!f || !port) return f;
+    const req = d.reqs.find((x) => x.id === id), o = req && d.objects.find((x) => x.id === (req.objs || [])[0]), P = o && portsOf(o).out.find((q) => q.key === port); return P ? { ref: `${o.id}.${port}`, unit: P.unit } : null; };
+  const wire = (oid, key, src, why) => { const w = { from: src.ref, to: `${oid}.${key}` }; if (d.wires.some((x) => x.to === w.to)) return false; d.wires.push(w); out.wires.push(w); return true; };
   for (const { r, oid, kind } of later) {
-    const o = d.objects.find((x) => x.id === oid), P = portsOf(o), src = r.input && feed[r.input];
-    if (r.input && !src) out.notes.push(`${r.id || oid} : l'entrée « ${r.input} » n'est ni un signal ni une exigence du fichier.`);
-    if (src) { const port = P.in.find((p) => p.unit === src.unit && !d.wires.some((w) => w.to === `${oid}.${p.key}`)); if (port) { const w = { from: src.ref, to: `${oid}.${port.key}` }; d.wires.push(w); out.wires.push(w); } else out.notes.push(`${r.id || oid} : aucune entrée de « ${KINDS[kind].label} » ne reçoit des ${src.unit}.`); }
-    if (r.output && sink[r.output]) { const port = P.out.find((p) => p.unit === "0/1"); if (port && !d.wires.some((w) => w.to === sink[r.output])) { const w = { from: `${oid}.${port.key}`, to: sink[r.output] }; d.wires.push(w); out.wires.push(w); } }
+    const o = d.objects.find((x) => x.id === oid), P = portsOf(o), free = (src) => P.in.find((p) => p.unit === src.unit && !d.wires.some((w) => w.to === `${oid}.${p.key}`));
+    const named = r.inputs && !Array.isArray(r.inputs) && typeof r.inputs === "object" ? Object.entries(r.inputs) : [];
+    const list = [...(r.input ? [r.input] : []), ...(Array.isArray(r.inputs) ? r.inputs : [])];
+    if (!named.length && !Array.isArray(r.inputs)) for (const m of String(r.text).match(/\b[A-Z][A-Z0-9]*-\d+\b/g) || []) if (m !== r.id && !list.includes(m) && feed[m]) list.push(m);
+    for (const [key, ref] of named) { const src = resolve(ref), port = P.in.find((p) => p.key === key);
+      if (!src) out.notes.push(`${r.id || oid} : l'entrée « ${ref} » n'est ni un signal ni une exigence du fichier.`); else if (!port) out.notes.push(`${r.id || oid} : « ${KINDS[kind].label} » n'a pas d'entrée « ${key} ».`); else if (port.unit !== src.unit) out.notes.push(`${r.id || oid} : l'entrée « ${key} » attend des ${port.unit}, « ${ref} » donne des ${src.unit}.`); else wire(oid, key, src); }
+    for (const ref of list) { const src = resolve(ref); if (!src) { out.notes.push(`${r.id || oid} : l'entrée « ${ref} » n'est ni un signal ni une exigence du fichier.`); continue; }
+      let port = free(src);
+      if (!port) { const [sid] = src.ref.split("."), so = d.objects.find((x) => x.id === sid), alt = so && portsOf(so).out.find((q) => P.in.some((p) => p.unit === q.unit && !d.wires.some((w) => w.to === `${oid}.${p.key}`)));      // a block with several outputs : the first that fits, said
+        if (alt) { const s2 = { ref: `${sid}.${alt.key}`, unit: alt.unit }; port = free(s2); if (port) { wire(oid, port.key, s2); out.notes.push(`${r.id || oid} : de « ${ref} », l'outil a pris la sortie « ${alt.key} » — à vérifier, ou à nommer (« ${ref}.${alt.key} »).`); continue; } } }
+      if (port) wire(oid, port.key, src); else out.notes.push(`${r.id || oid} : aucune entrée libre de « ${KINDS[kind].label} » ne reçoit des ${src.unit} (« ${ref} »).`); }
+    const outs = r.outputs && typeof r.outputs === "object" && !Array.isArray(r.outputs) ? Object.entries(r.outputs) : [];
+    if (r.output) { const port = P.out.find((p) => p.unit === "0/1" && !outs.some(([k]) => k === p.key)); if (port) outs.unshift([port.key, r.output]); }
+    for (const [key, sig] of outs) { const port = P.out.find((p) => p.key === key); if (!sink[sig]) { out.notes.push(`${r.id || oid} : la sortie « ${sig} » n'est pas un signal de sortie du fichier.`); continue; } if (!port) { out.notes.push(`${r.id || oid} : « ${KINDS[kind].label} » n'a pas de sortie « ${key} ».`); continue; }
+      if (!d.wires.some((w) => w.to === sink[sig])) { const w = { from: `${oid}.${key}`, to: sink[sig] }; d.wires.push(w); out.wires.push(w); } }
   }
+  out.loose = looseEnds(d, data);
   const pos = flowLayout(d); for (const o of d.objects) if (pos[o.id] && !(d0 && d0.objects.some((x) => x.id === o.id))) Object.assign(o, pos[o.id]);
   return { design: d, ...out };
+}
+
+/** The LOOSE ENDS of a software after an import (JP : « je l'ai essayé et il y a des bouts libres ») : a signal of the file read by no block, a
+    pin driven by none, an input of a block left unwired, a requirement no block carries (a block still to come, or none named).
+    → [{ kind: "signal-in" | "signal-out" | "input" | "planned" | "none", id, text }] */
+export function looseEnds(d, data = {}) {
+  const out = [], W = d.wires || [], objs = (d.objects || []).filter((o) => !o.off && KINDS[o.kind]);
+  for (const o of objs) { const K = KINDS[o.kind];
+    if (K.pin === "ain" || K.pin === "din") { if (!W.some((w) => w.from.startsWith(`${o.id}.`) && !objs.some((x) => x.kind === "analog_in" && w.to === `${x.id}.counts` && !W.some((v) => v.from.startsWith(`${x.id}.`))))) out.push({ kind: "signal-in", id: o.id, text: `${o.name} : lu par aucun bloc.` }); }
+    else if (K.pin === "dout") { if (!W.some((w) => w.to === `${o.id}.level`)) out.push({ kind: "signal-out", id: o.id, text: `${o.name} : aucun bloc ne la commande.` }); }
+    else for (const p of portsOf(o).in) if (!p.free && !W.some((w) => w.to === `${o.id}.${p.key}`)) out.push({ kind: "input", id: o.id, text: `${o.name} : l'entrée « ${p.label} » n'est reliée à rien.` }); }
+  /* a requirement on the period of the software is held by the architecture : the period of the design */
+  const byArch = (r) => { const m = /\b(?:period|période)\D{0,30}?(\d+)\s*ms\b/i.exec(r.text || ""); return !!m && Number(m[1]) === Number(d.period); };
+  for (const r of (d.reqs || []).filter((x) => x.on !== false && !(x.objs || []).length && !byArch(x))) { const src = (data.requirements || []).find((x) => x && String(x.id) === r.id), planned = src && src.block && LIBRARY.some((x) => x.planned && x.id === src.block);
+    out.push({ kind: planned ? "planned" : "none", id: r.id, text: planned ? `${r.id} : son bloc (« ${src.block} ») est à venir dans l'outil — l'exigence est gardée, portée par rien.` : `${r.id} : aucun bloc ne la porte — ${r.verify === "analysis" || r.verify === "review" ? "elle se vérifie par analyse ou revue." : "à porter par un bloc, ou à vérifier autrement."}` }); }
+  return out;
 }
 
 /** The prompt, with what the project already has : its requirements (their ids kept, so the answer allocates them instead of doubling them),

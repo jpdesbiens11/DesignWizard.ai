@@ -81,6 +81,8 @@ export const LIBRARY = [
   L("core", "pwm_out", "hw_out", "PWM output", "sortie à modulation", "Un rapport cyclique sur une broche de minuterie."),
   L("core", "uart_frame", "comm", "Serial frame (UART / RS-485)", "trame série", "Envoyer et recevoir une trame : la liaison existe déjà côté pilote (PCBA, interface matériel / logiciel)."),
   L("core", "can_msg", "comm", "CAN message", "message CAN", "Un message périodique vers le véhicule ou une autre carte."),
+  L("core", "rate_of_rise", "decide", "Rate-of-rise detector", "détecteur de pente", "Dire qu'une grandeur monte trop vite : une température qui grimpe de plus de 1 °C par seconde."),
+  L("core", "plausibility", "safety", "Plausibility check", "contrôle de vraisemblance", "Comparer deux mesures qui doivent s'accorder : la plus basse sous la plus haute, la somme des cellules et la tension du module."),
   L("core", "watchdog", "safety", "Watchdog", "chien de garde", "Le logiciel prouve qu'il tourne ; sinon, le CPU redémarre."),
   L("core", "nvm", "safety", "Non-volatile memory", "mémoire non volatile", "Garder un compteur, un défaut, un réglage à travers une coupure."),
   E("bms", "energy_counter"), E("bms", "module_state"), E("bms", "state_lamp"), E("bms", "contactor"),

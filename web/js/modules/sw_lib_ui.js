@@ -46,28 +46,44 @@ export function reqImportSection(o) {
     el("div", { class: "side-actions" }, copy, imp),
     el("p", { class: "small" }, el("span", { class: "swb-val req" }, "vert"), " donné par une exigence · ", el("span", { class: "swb-val ref" }, "ambre"), " valeur de référence à confirmer · ", el("span", { class: "swb-val sure" }, "bleu"), " confirmé"));
 }
+/* the loose ends the import would leave, said before anything is applied (sw/sw_req_import.js looseEnds) */
+const LOOSE = { "signal-in": "Signal lu par aucun bloc", "signal-out": "Sortie commandée par aucun bloc", input: "Entrée de bloc reliée à rien", planned: "Bloc encore à venir", none: "Exigence portée par aucun bloc" };
+function looseBox(list = []) {
+  const real = list.filter((x) => x.kind !== "planned" && x.kind !== "none"), rest = list.length - real.length;
+  return el("div", { class: `swb-loose ${real.length ? "bad" : "ok"}`, "data-sw-loose": String(real.length) },
+    el("p", null, icon(real.length ? "warning" : "check"), real.length ? ` ${real.length} bout${real.length > 1 ? "s" : ""} libre${real.length > 1 ? "s" : ""} : des signaux ou des entrées que le fichier ne relie pas.` : " Aucun bout libre : chaque signal est lu ou commandé, chaque entrée de bloc est reliée.", rest ? ` ${rest} exigence${rest > 1 ? "s" : ""} sans bloc qui tourne (à venir, ou à vérifier par analyse).` : ""),
+    list.length ? el("ul", { class: "small" }, list.map((x) => el("li", { class: x.kind }, el("b", null, LOOSE[x.kind]), " — ", x.text))) : null);
+}
 export function openImport(o) {
   const area = el("textarea", { rows: 10, placeholder: `Collez la réponse de l'assistant (un bloc \`\`\`json au format ${REQ_FORMAT}) ou l'export .csv des exigences de DynamiteAgile — ou ouvrez le fichier.`, "data-sw-req-text": "" }), out = el("div", { "data-sw-req-plan": "" });
   const file = el("input", { type: "file", accept: ".json,.csv,application/json,text/csv,text/plain", onChange: async (e) => { const f = e.target.files && e.target.files[0]; if (!f) return; area.value = await f.text(); read(); } });
-  let plan = null;
+  let plan = null, mode = null;
+  /* into the software there is, or a new software made of this file alone — what JP tried : a list merged into the BM left loose ends */
+  const modeBox = el("div", { class: "swb-mode", role: "radiogroup", "aria-label": "Où vont ces exigences", hidden: true });
+  const setMode = (m2) => { mode = m2; for (const b of modeBox.children) { const on = b.dataset.mode === m2; b.classList.toggle("on", on); b.setAttribute("aria-checked", on ? "true" : "false"); } read(true); };
+  for (const [k, t, tip] of [["new", "Un logiciel neuf, fait de ce fichier", "Le logiciel actuel est remplacé — une étape annulable (Ctrl + Z, ou « Revenir à avant » du journal)"], ["merge", "Compléter le logiciel actuel", "Ses blocs sont gardés ; une exigence déjà là (même identifiant) reçoit son bloc si elle n'en a pas"]])
+    modeBox.append(el("button", { type: "button", role: "radio", "data-mode": k, "data-tip": tip, onClick: () => setMode(k) }, t));
   const ok = btn("Poser les blocs", () => { if (!plan) return; apply(plan, `Logiciel : ${plan.counts.reqs} exigences importées`); m.close(); toast(`${plan.counts.blocks} blocs posés de gauche à droite, ${plan.counts.reqs} exigences à confirmer. Ctrl + Z pour revenir.`, "success", 6000); }, { primary: true, icon: "check", disabled: true }); ok.dataset.swReqApply = "";
-  function read() {
+  function read(keep) {
     plan = null; ok.disabled = true; out.replaceChildren(); if (!area.value.trim()) return; const r = parseReqs(area.value);
     if (!r.ok) { out.append(el("ul", { class: "form-error" }, r.errors.map((t) => el("li", null, t)))); return; }
-    plan = planImport(r.data, o.design()); ok.disabled = !plan.counts.reqs;
+    const d0 = o.design(); modeBox.hidden = !d0;
+    if (d0 && !keep) { const whole = Array.isArray(r.data.signals) && r.data.signals.length > 0; mode = whole ? "new" : "merge"; /* a file that declares its signals IS a software : a new one ; a bare list of requirements completes the one there is */ for (const b of modeBox.children) { const on = b.dataset.mode === mode; b.classList.toggle("on", on); b.setAttribute("aria-checked", on ? "true" : "false"); } }
+    plan = planImport(r.data, d0 && mode === "merge" ? d0 : null); if (d0 && mode === "new") plan.design.cpu = d0.cpu; ok.disabled = !plan.counts.reqs;
     const C = plan.counts, box = (n, t) => el("div", null, el("b", null, String(n)), el("span", null, t));
     out.append(...[el("div", { class: "swb-counts" }, box(C.reqs, "exigences"), box(C.blocks, "blocs posés"), box(plan.signals.length, "signaux de la carte"), box(C.fromReq, "valeurs données"), box(C.reference, "valeurs de référence"), box(C.planned, "blocs à venir")),
       r.from === "dynamiteagile" ? el("p", { class: "lab-note", "data-sw-agile": "" }, icon("check"), ` Export de DynamiteAgile lu. ${(r.notes || []).join(" ")} Aucun bloc n'est encore nommé : posez-les, ou passez la liste à l'IA (bouton « IA », étape 1).`) : null,
-      o.design() ? el("p", { class: "small" }, icon("info"), " Le logiciel existant est gardé : une exigence déjà là (même identifiant) n'est pas doublée — elle reçoit son bloc si elle n'en a pas.") : null,
+      o.design() && mode === "merge" ? el("p", { class: "small" }, icon("info"), " Le logiciel existant est gardé : une exigence déjà là (même identifiant) n'est pas doublée — elle reçoit son bloc si elle n'en a pas. Ses propres blocs et ceux du fichier ne se relient pas d'eux-mêmes : attendez-vous à des bouts libres.") : null,
+      looseBox(plan.loose),
       el("ul", { class: "swb-plan" }, plan.rows.map((row) => { const K = KINDS[row.block];
         return el("li", { class: row.state, "data-sw-plan-row": row.id }, el("b", null, row.id), " — ", row.text,
           el("div", { class: "small muted" }, row.state === "kept" ? "→ déjà là, avec son bloc : gardée telle quelle" : row.state === "made" ? `→ bloc « ${K.label} »` : row.state === "planned" ? `→ « ${row.block} » est à venir : l'exigence est gardée, allouée à rien` : "→ aucun bloc nommé : l'exigence est gardée"),
           row.values.length ? el("div", { class: "swb-vals" }, row.values.map((v) => el("span", { class: `swb-val ${v.source}`, title: v.source === "req" ? "Donnée par l'exigence" : "Valeur de référence du bloc : à confirmer" }, `${v.key} ${v.value}`))) : null); })),
       plan.notes.length ? el("ul", { class: "small", "data-sw-req-notes": String(plan.notes.length) }, plan.notes.map((t) => el("li", null, icon("warning"), " ", t))) : null].filter(Boolean));
   }
-  area.addEventListener("input", read);
+  area.addEventListener("input", () => read());
   const m = modal("Partir des exigences — format standard", [el("p", { class: "muted small" }, "Les exigences importées arrivent « à confirmer » : elles sont passées par un assistant, et la réponse d'un assistant ne confirme rien. Confirmer une exigence (étape 1) confirme les valeurs qu'elle donne."),
-    field("Réponse de l'assistant ou fichier", area), el("label", { class: "field" }, el("span", { class: "field-label" }, "Ou un fichier (.json, ou .csv de DynamiteAgile)"), file), out,
+    field("Réponse de l'assistant ou fichier", area), modeBox, el("label", { class: "field" }, el("span", { class: "field-label" }, "Ou un fichier (.json, ou .csv de DynamiteAgile)"), file), out,
     el("div", { class: "form-actions" }, btn("Copier le prompt", async () => toast((await copyText(reqPrompt())) ? "Prompt copié." : "Copie impossible.", "success"), { small: true, icon: "sparkle" }), btn("Annuler", () => m.close()), ok)], { wide: true });
   return m;
 }

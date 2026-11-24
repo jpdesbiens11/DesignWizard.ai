@@ -9,6 +9,7 @@
    of visual programming ; the view pans and zooms as every 2D view of the tool (core/view_bar.js). Same API as modules/sw_canvas.js. */
 
 import { KINDS } from "../sw/sw_objects.js";
+import { unsure } from "../sw/sw_design.js";
 import { BANDS, PIECE, pieces, links, puzzleLayout, connectPieces } from "../sw/sw_puzzle.js";
 import { physText } from "../sw/sw_units.js";
 import { viewBar, fitView, zoomView } from "../core/view_bar.js";
@@ -63,6 +64,7 @@ export function swPuzzle(host, o = {}) {
       if (l.wires.length > 1) { const mx = back ? (x1 + x2) / 2 : (x1 + x2) / 2, my = back ? Math.max(y1, y2) + PIECE.H : (y1 + y2) / 2; g.append(S("rect", { x: mx - 13, y: my - 10, width: 26, height: 20, rx: 10, class: "swp-count" }), S("text", { x: mx, y: my + 4.5, "text-anchor": "middle", class: "swp-count-t" }, `×${l.wires.length}`)); }
       svg.append(g); }
     /* the pieces */
+    const ask = {}; for (const u of unsure(d)) ask[u.obj] = (ask[u.obj] || 0) + 1;
     for (const p of P) { const q = at(p.id); if (!q) continue; const B = band(p.band), gives = L.some((l) => l.from === p.id) || p.band !== "act", takes = p.band !== "sense" || L.some((l) => l.to === p.id), v = p.show ? val(p.show.ref) : undefined, isBool = p.show && p.show.unit === "0/1";
       const cls = `swp-piece${sel && sel.obj && p.members.includes(sel.obj) ? " sel" : ""}${pending === p.id ? " from" : ""}${pend && pend.has(p.id) ? " can" : ""}${pend && !pend.has(p.id) && pending !== p.id ? " nope" : ""}${isBool && v === 1 ? " lit" : ""}`;
       const g = S("g", { class: cls, "data-piece": p.id, "data-obj": p.id, transform: `translate(${q.x} ${q.y})`, style: `--dom:${B.color}`, tabindex: 0, role: "button", "aria-label": `${p.title} — ${B.fr}`,
@@ -72,6 +74,9 @@ export function swPuzzle(host, o = {}) {
         S("text", { x: 64, y: 30, class: "swp-title" }, cut(p.title, 17)), p.title.length > 17 ? S("text", { x: 64, y: 47, class: "swp-title" }, cut(p.title.slice(16), 17)) : null,
         S("title", null, `${p.title} — ${KINDS[p.kind] ? KINDS[p.kind].fr : ""}${p.members.length > 1 ? ` (${p.members.length} blocs en arrière-plan)` : ""}`)].filter(Boolean));
       if (p.show) { const t = isBool ? (v === 1 ? "ACTIF" : "repos") : physText(v, p.show.unit); g.append(S("g", { class: `swp-lcd${isBool ? " bool" : ""}`, "data-lcd": p.show.ref }, S("rect", { x: 64, y: PIECE.H - 34, width: 112, height: 22, rx: 6 }), isBool ? S("circle", { cx: 77, cy: PIECE.H - 23, r: 5, class: "swp-lamp" }) : null, S("text", { x: isBool ? 88 : 72, y: PIECE.H - 18, class: "sw-val", "data-val": p.show.ref, "data-unit": p.show.unit }, t))); }
+      { const n = p.members.reduce((t, m) => t + (ask[m] || 0), 0), first = p.members.find((m) => ask[m]);      // « ? » : values of its blocks still to approve
+        if (n) g.append(S("g", { class: "sw-ask", "data-sw-ask": p.id, tabindex: 0, role: "button", "aria-label": `${n} valeur${n > 1 ? "s" : ""} de ${p.title} à approuver`, transform: `translate(${PIECE.W - 8} 6)`, onClick: (e) => { e.stopPropagation(); if (o.onAsk) o.onAsk(first); }, onKeydown: (e) => { if (e.key === "Enter" && o.onAsk) { e.stopPropagation(); o.onAsk(first); } } },
+          S("circle", { r: 12 }), S("text", { y: 5, "text-anchor": "middle" }, "?"), S("title", null, `${n} valeur${n > 1 ? "s" : ""} à approuver — cliquer pour le questionnaire`))); }
       if (gives) { const knob = S("circle", { cx: PIECE.W + KN * 0.95, cy: PIECE.H / 2, r: KN * 0.9, class: "swp-knob", tabindex: 0, role: "button", "aria-label": `Relier ${p.title} à une autre pièce : cliquez ici, puis sur la pièce qu'elle nourrit`,
           onClick: (e) => { e.stopPropagation(); pending = pending === p.id ? null : p.id; draw(...last); } }, S("title", null, "Cliquez ici, puis sur la pièce à nourrir : l'outil branche les bonnes interfaces")); g.append(knob); }
       svg.append(g); }
