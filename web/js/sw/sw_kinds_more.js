@@ -6,6 +6,7 @@
      logic      AND · OR · XOR · NOT of two decisions
      pid        a PI(D-less) regulator in whole numbers, its integral clamped (anti-windup) : the heart of a motor, a heater, a charger
      ramp       a rate limiter : a setpoint that may not jump
+     state_lamp the general state shown on three lamps : green (good), yellow (to watch), red (over a limit) — the colours of a traffic light
    Each is a step in whole numbers, written ONCE : the browser simulates it, sw/sw_c_more.js writes its C, and the C must print what this
    file gives (back to back). The figures are EXAMPLES, said as such — none is that of a component or of a project.
    Pure : no page. */
@@ -49,6 +50,10 @@ export const MORE_KINDS = {
       P("rate", "Pente maximale", 1000, "unités/s", "De combien la valeur peut changer en une seconde, au plus.", { min: 1, max: BIG })],
     init: () => ({ y: 0, primed: 0 }),
     step(s, c, i, dt) { if (!s.primed) { s.y = i.x; s.primed = 1; } else { const m = div(c.rate * dt, 1000), d = i.x - s.y; s.y += Math.max(-m, Math.min(m, d)); } return { y: s.y }; } },
+  state_lamp: { nature: "command", label: "Status lamp (green · yellow · red)", fr: "voyant d'état général", icon: "sparkle", text: "Montre l'état général sur trois témoins, comme un feu de circulation : vert, tout va bien ; jaune, une condition à surveiller (dératé) ; rouge, une limite dépassée (urgence, arrêt). Un seul témoin allumé à la fois.",
+    ports: { in: [{ key: "state", label: "state", unit: "state", min: 0, max: 3 }], out: [{ key: "green", label: "green", ...B }, { key: "yellow", label: "yellow", ...B }, { key: "red", label: "red", ...B }] },
+    params: [], init: () => ({}),
+    step(s, c, i) { const q = i.state; return { green: q === 0 ? 1 : 0, yellow: q === 1 ? 1 : 0, red: q >= 2 ? 1 : 0 }; } },
 };
 /** What a design of these kinds must check, for the guide. → [{ level, text, obj, field }] */
 export function moreProblems(o, c, period) {

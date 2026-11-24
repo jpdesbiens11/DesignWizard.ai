@@ -320,3 +320,45 @@ pop-up qui raconte les événements, et laisser le multi-graphe du logiciel en d
 - **À l'écran** (`modules/sw_story_ui.js`) : la ligne du temps sous les pièces, un numéro par événement, le curseur du banc qui court ;
   « Jouer le profil d'utilisation » repart de zéro en temps réel ; **la bulle** raconte l'événement puis coche les réponses quand le temps
   les atteint ; un clic sur un numéro rejoue jusqu'à lui. Le chronogramme reste dessous, ce que le logiciel commande en premier.
+
+## 4 nonies. Monitoring du BM-SWAP, profils de charge et de décharge (v0.193.0)
+
+Demandes de JP, 24 novembre 2026 : « des cas extrêmes au niveau tension et température de cellules qui déclenchent les limites et l'alarme, une
+LED d'état général (vert = bon, jaune = warning, rouge = over limit)… si on tombe à rouge, un son de buzzer dans le canal de son du PC, pas trop
+agressant… le contacteur ouvre 2 secondes dans le profil… un tableau de bord au pilote du BM qui allume des LED quand on a des conditions à
+surveiller, avec les valeurs… un pop-up ouvert / fermé, titre « Monitoring du BM-SWAP » » ; puis, sur une capture : « la fenêtre du profil cache
+les valeurs… jouer chaque partie une à la fois… Suivant… une pompe à WEG pour du cooling liquide » ; puis : « un profil de charge et un de
+décharge avec des événements critiques — comm, voltage, current, temperature —, un bouton pour passer de l'un à l'autre, réservés à un produit
+avec un ESS… ou une banque de profils de mission en .txt qui peuvent venir de l'IA ».
+
+- **Le témoin d'état** : un nouveau genre de bloc, `state_lamp` (`sw/sw_kinds_more.js`, son C `dw_lamp` dans `sw/sw_c_more.js`) — l'état
+  d'un module sur trois sorties, une seule allumée : vert (NORMAL), jaune (DÉRATÉ), rouge (URGENCE, ARRÊT). Prouvé dos à dos avec le logiciel
+  du BM.
+- **Le logiciel du BM** (`sw/sw_bm_design.js`) : la tension la plus basse en plus de la plus haute ; des seuils « à surveiller » (4,18 V,
+  3,10 V, 60 °C, 95 A en décharge et en charge) qui dératent, des limites (4,25 V, 2,80 V, 75 °C) qui retiennent un défaut et ouvrent le
+  contacteur ; un bouton d'acquittement ; trois DEL, un buzzer sur le rouge, une pompe de refroidissement eau-glycol (WEG, nouvelle brique
+  `pump` de `sw/sw_devices.js`) qui démarre à 45 °C. Tous les seuils sont des exemples, à confirmer. Un projet ouvert avant cette version
+  garde l'ancien logiciel : « Mettre à jour le logiciel du BM » (étape Essayer) le remplace en une étape annulable.
+- **Deux profils de mission** (`design.profiles`) : **Charge** et **Décharge**, chacun avec ses événements critiques au fil du temps — la
+  chaîne RS-485 qui se tait, une tension, un courant au-delà de ce que le module tient, une température — ; chaque cas rouge ouvre le
+  contacteur et quelqu'un acquitte **2 s plus tard** (en vrai, des millisecondes ; 2 s pour le voir). Un acquittement est une impulsion
+  (`pulse`), son relâchement un événement caché (`expandProfile`). La bascule Charge | Décharge n'apparaît que lorsque le logiciel garde
+  plusieurs profils : un produit avec un ESS les reçoit ; un autre produit joue celui que l'outil écrit, ou ceux qu'il importe.
+- **La banque** (`sw/sw_profiles.js`, `modules/sw_profile_bank.js`) : un profil est un **.txt**, une ligne par événement
+  (`t (s) | titre | ce qui arrive | variable = valeur unité ; …`), les variables étant les entrées du banc de ce logiciel, en unités de la
+  physique (V, A, °C). Le prompt pour une IA nomme ces variables, leurs unités et leurs plages, et prend la demande en une phrase ; à
+  l'import, chaque ligne fautive est dite avec sa raison (variable inconnue, unité, valeur hors de ce que la broche lit), et rien n'entre
+  avant « Ajouter à la banque » — une étape annulable. Un profil s'exporte en .txt et se relit à l'identique.
+- **« Suivant »** (`modules/sw_story_ui.js`) : un seul événement, le temps qui court jusqu'à ce que tout ce qu'il cause soit arrivé, puis
+  l'arrêt — on lit l'état, les valeurs et les sorties. **Le récit** est une bande sous la ligne du temps : il ne cache plus les pièces.
+- **La fenêtre « Monitoring du BM-SWAP »** (`sw/sw_monitor.js`, pur ; `modules/sw_monitor_ui.js`) : lue dans le logiciel, rien à déclarer
+  — l'état général en feu tricolore, une DEL par seuil (rouge s'il mène à un défaut, jaune s'il fait dératé ; un seuil qui ne fait que
+  démarrer une pompe est une action, rangée avec le produit), sa valeur en unités physiques et son seuil ; le contacteur, le défaut, la
+  chaîne, la pompe, le buzzer. Elle flotte, se déplace par sa barre de titre (place gardée), se ferme, ou s'ouvre dans sa propre fenêtre
+  pour un deuxième écran. Le titre vient du logiciel (`design.monitor.title`).
+- **Le son** (`modules/sw_sound.js`) : tant qu'un buzzer commandé par le logiciel sonne, l'ordinateur joue un carillon doux — deux notes
+  sinusoïdales descendantes, faibles, toutes les deux secondes —, fait par le navigateur (Web Audio), rien d'enregistré ; il se coupe dans
+  la fenêtre de monitoring, et le choix est gardé (`dw.sw.sound`). Un navigateur ne laisse une page faire du son qu'après un clic sur elle.
+
+Non vérifié : le son sur Safari et Firefox, la fenêtre à part sur un vrai deuxième écran, un profil écrit par une vraie IA.
+

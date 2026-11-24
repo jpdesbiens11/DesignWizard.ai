@@ -39,6 +39,9 @@ import { openHil } from "./sw_hil_ui.js";
 import { libraryPalette, reqImportSection, openImport } from "./sw_lib_ui.js";
 import { swRack } from "./sw_lab.js";
 import { swStory } from "./sw_story_ui.js";
+import { swMonitor } from "./sw_monitor_ui.js";
+import { moduleDesign } from "../sw/sw_bm_design.js";
+import { alarmSound } from "./sw_sound.js";
 import { shows, noviceOffers } from "../sw/sw_levels.js";
 import { level, viewMode, viewSwitch } from "./sw_level_ui.js";
 import { VIEW, autoPlace } from "../sw/sw_blocks.js";
@@ -79,7 +82,7 @@ function render(main, args, vkey) {
       change(`Logiciel : fil ${from} → ${to}`, (x) => { x.wires = x.wires.filter((w) => w.to !== to); x.wires.push({ from, to, ...(loops ? { delay: true } : {}) }); });
       toast(loops ? "Ce fil ferme une boucle : il porte la valeur du pas d'avant, comme le font les schémas-blocs. Un clic sur le fil pour le voir." : c.level ? c.text : "Fil posé.", loops || c.level ? "info" : "success", loops || c.level ? 7000 : 2200); } });
   { const vs = viewSwitch(lv); vs.classList.add("swp-float"); host.append(vs); }      // casse-tête · blocs détaillés, over the page
-  let R = null, bench = null, journalHost = null, run = null, rack = null, story = null;
+  let R = null, bench = null, journalHost = null, run = null, rack = null, story = null, monitor = null; const sound = alarmSound();
   const files = () => { const d = design(); return d ? vPackage(d, cpuOf(d)) : []; };      // the C, and the requirements and the verification beside it (doc/)
   const valuesAt = () => (R ? Object.fromEntries(Object.entries(R.ports).map(([r, y]) => [r, y[Math.min(st.k, y.length - 1)]])) : null);
   const guide = () => { const d = design(); return d ? [...problems(d, cpuOf(d)), ...hwProblems(store.project, d)].map((p) => ({ level: LEVEL[p.level] || "tip", text: p.text, field: "sw", go: p.obj ? () => pick(p.obj, p.field) : null })) : []; };
@@ -97,8 +100,10 @@ function render(main, args, vkey) {
   const add = (kind) => change(`Logiciel : ${KINDS[kind].label} posé`, (d) => { let n = 1; while (d.objects.some((o) => o.id === `${kind}_${n}`)) n++; const y = Math.max(20, ...d.objects.map((o) => (o.y || 0) + 150)); d.objects.push({ id: `${kind}_${n}`, kind, name: `${KINDS[kind].label} ${n}`, params: {}, sure: [], x: KINDS[kind].pin === "dout" ? 20 + 4 * 320 : KINDS[kind].pin ? 20 : 340, y }); st.sel = { obj: `${kind}_${n}` }; if (shows(lv, "autoPlace")) keyIn(d, `${kind}_${n}`); });
 
   /* ---------- the live bench : made when the step opens, gone when it closes ---------- */
-  const stopBench = () => { if (bench) { bench.dispose(); bench = null; } rack = null; rackHost.replaceChildren(); if (story) { story.dispose(); story.bubble.remove(); story = null; } };
-  function ensureBench() { if (bench) return; bench = swBench({ design, lanes: shows(lv, "lanes"), onFrame: () => { if (!bench) return; canvas.values(bench.values); if (rack) rack.refresh(); if (story) story.tick(); for (const td of right.querySelectorAll("[data-ref]")) td.textContent = fr(bench.values(td.dataset.ref)); }, onLog: () => { if (bench && journalHost && journalHost.isConnected) journalHost.replaceChildren(bench.journal()); } }); }
+  const stopBench = () => { if (bench) { bench.dispose(); bench = null; } rack = null; rackHost.replaceChildren(); if (story) { story.dispose(); story.bubble.remove(); story = null; } if (monitor) { monitor.dispose(); monitor = null; } sound.update(false); };
+  /* a buzzer the software commands, on : heard in the speakers of the computer (modules/sw_sound.js) */
+  const buzzing = () => { const d = design(); return !!(d && bench && d.objects.some((o) => !o.off && o.device === "buzzer" && bench.values(`${o.id}.level`))); };
+  function ensureBench() { if (bench) return; bench = swBench({ design, lanes: shows(lv, "lanes"), onFrame: () => { if (!bench) return; canvas.values(bench.values); if (rack) rack.refresh(); if (story) story.tick(); if (monitor) monitor.refresh(); sound.update(buzzing()); for (const td of right.querySelectorAll("[data-ref]")) td.textContent = fr(bench.values(td.dataset.ref)); }, onLog: () => { if (bench && journalHost && journalHost.isConnected) journalHost.replaceChildren(bench.journal()); } }); }
 
   function renderLeft() {
     clear(left); const d = design(), cpu = d ? cpuOf(d) : null;
@@ -107,7 +112,10 @@ function render(main, args, vkey) {
       { primary: true, small: true, icon: "download", disabled: !ok, tip: ok ? "Le paquet : la bibliothèque, les modules, la structure de fichiers, l'essai et la marche à suivre pour le CPU" : n ? `${n} valeur${n > 1 ? "s" : ""} d'exemple à confirmer d'abord — étape 3` : "Le guide dit ce qui manque" }); zipBtn.dataset.swZip = "";
       left.append(el("div", { class: "side-actions" }, zipBtn, btn("Copier pour une IA", async () => toast((await copyText(aiText(d))) ? "Copié : le logiciel, ses objets et la consigne." : "Copie impossible.", "success", 4000), { small: true, icon: "sparkle", tip: "Confier le logiciel à un assistant : objets, fils, CPU, consigne" }), btn("Réimporter…", () => reimport(design, change), { small: true, icon: "wizard", tip: "Aperçu des changements, puis une seule étape annulable" }))); }
     if (d && V.key === "sim") { const hb = hostBoard(store.project, d), b = btn("Essayer sur la vraie carte", () => openHil(), { primary: true, icon: "chip", disabled: !hb, tip: hb ? `Pas à pas, comme la Manipulation en labo : la carte « ${hb.name || hb.id} » de l'Électronique, la sonde, l'alimentation, puis chaque entrée réglée et chaque sortie relevée — ce que le modèle attend, en volts` : "Aucune carte du produit avec un microcontrôleur : le PCBA de la carte de commande la donnera" });
-      b.dataset.swHilOpen = ""; left.append(el("div", { class: "side-actions swl-hil" }, b)); }      // the software tried on its board (modules/sw_hil_ui.js)
+      b.dataset.swHilOpen = ""; left.append(el("div", { class: "side-actions swl-hil" }, b)); }
+    /* the software of the module BM, older than its monitoring : one click takes the version of the 24th of November (an undoable step) */
+    if (d && d.id === "BM-SW" && !(d.profiles || []).some((p) => p.id === "discharge")) { const u = btn("Mettre à jour le logiciel du BM", () => change("Logiciel du BM : témoin d'état, buzzer, pompe, profils de charge et de décharge, monitoring", (x) => { const n = moduleDesign(x.cpu); for (const k of ["objects", "wires", "scenario", "profiles", "monitor"]) x[k] = n[k]; delete x.profile; }), { small: true, icon: "refresh", tip: "La version du 24 novembre : témoin vert · jaune · rouge, buzzer, pompe eau-glycol, profils de charge et de décharge et la fenêtre « Monitoring du BM-SWAP ». Les exigences et les essais sont gardés ; une étape annulable." });
+      u.dataset.swBmUpdate = ""; left.append(el("div", { class: "side-actions" }, u)); }      // the software tried on its board (modules/sw_hil_ui.js)
     const scroll = el("div", { class: "side-scroll" }); left.append(scroll);
     scroll.append(stepCard(d, cpu, V.key, st.step, run, open));
     if (!d) return;
@@ -171,15 +179,15 @@ function render(main, args, vkey) {
     if (!d) { stopBench(); clear(empty); empty.append(el("div", { class: "empty" }, el("h2", null, "Le logiciel du BMS, par objets"), el("p", null, "Chaque chose que le CPU doit gérer est une tuile posée sur la page : elle connaît ses entrées, ses sorties, leurs plages. Vous reliez les tuiles ; l'outil écrit le C — une bibliothèque, des modules, leur structure de fichiers —, le fait tourner devant vous, et dit comment le charger dans le CPU."),
       el("div", { class: "form-actions" }, (() => { const b = btn("Partir de mes exigences…", () => openImport({ design }), { primary: true, icon: "upload", tip: "Le format standard : un assistant y convertit votre document, l'outil pose les blocs" }); b.dataset.swReqStart = ""; return b; })(),
       (() => { const b = btn("Partir de l'exemple", () => store.commit("Logiciel : exemple posé", (p) => { p.software = [demoDesign()]; }), { icon: "play" }); b.dataset.swDemo = ""; return b; })()))); renderLeft(); clear(right); setGuide([]); return; }
-    if (st.step === "live" && !errs.length) { ensureBench(); if (!rack && bench) { rack = swRack(bench, design); rackHost.replaceChildren(rack.node); } if (!story && bench) { story = swStory(bench, design, () => rack && rack.redraw()); host.append(story.bubble); } }      // the usage profile : its storyline, its bubble (modules/sw_story_ui.js) else stopBench();
+    if (st.step === "live" && !errs.length) { ensureBench(); if (!rack && bench) { rack = swRack(bench, design); rackHost.replaceChildren(rack.node); } if (!story && bench) { story = swStory(bench, design, () => rack && rack.redraw(), change); monitor = swMonitor(bench, design, sound); if (monitor) story.line.append(monitor.button); } } else stopBench();      // the usage profile : its storyline, its bubble (modules/sw_story_ui.js) ; the monitoring window (modules/sw_monitor_ui.js)
     rackHost.hidden = !rack;
-    clear(liveHost); if (st.step === "live") { if (bench) liveHost.append(bench.bar, ...(story ? [story.line] : []), el("div", { class: "sw-lanes-box bottom-body" }, el("p", { class: "muted small" }, "CHRONOGRAMME · les dernières secondes — une voie par décision (verte à 0, rouge à 1) et par mesure (orange), comme un analyseur logique."), bench.chart)); else liveHost.append(el("p", { class: "form-error", "data-sw-live-blocked": "" }, `Le banc attend un logiciel sans erreur : ${errs[0] ? errs[0].text : ""}`)); }
+    clear(liveHost); if (st.step === "live") { if (bench) liveHost.append(bench.bar, ...(story ? [story.line, story.bubble] : []), el("div", { class: "sw-lanes-box bottom-body" }, el("p", { class: "muted small" }, "CHRONOGRAMME · les dernières secondes — une voie par décision (verte à 0, rouge à 1) et par mesure (orange), comme un analyseur logique."), bench.chart)); else liveHost.append(el("p", { class: "form-error", "data-sw-live-blocked": "" }, `Le banc attend un logiciel sans erreur : ${errs[0] ? errs[0].text : ""}`)); }
     if (!onCanvas) pageHost.replaceChildren(centre(d));
     renderLeft(); renderRight(); renderReplay(); paint(); setGuide(guide()); setStatus(ready(d, cpuOf(d)) ? "Logiciel prêt à écrire" : "Logiciel : à régler", ready(d, cpuOf(d)) ? "done" : "");
   }
   const off = store.on("change", () => { if (!st.alive) return; if (bench) { stopBench(); } all(); });
   all();
-  return () => { st.alive = false; off(); stopBench(); canvas.destroy(); setGuide([]); };
+  return () => { st.alive = false; off(); stopBench(); sound.dispose(); canvas.destroy(); setGuide([]); };
 }
 /* the five steps of the V this file draws : each a screen of the group Logiciel */
 for (const k of ["arch", "design", "sim", "code", "release"]) { const V = vstepOf(k); registerModule({ key: V.mod, label: V.title, icon: V.icon, tip: `${V.n}. ${V.long} — ${V.en}`, render: (main, args) => render(main, args, k) }); }

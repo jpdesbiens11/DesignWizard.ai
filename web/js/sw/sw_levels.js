@@ -41,5 +41,5 @@ const SHOW = {
 export const shows = (level, what) => (SHOW[level] || SHOW[DEFAULT_LEVEL])[what];
 /** The blocks a novice is offered : sensors and actuators (they bring their pins), the common decisions, and the blocks of the domain the
     software already uses. kinds : the kinds of the design. → (library entry) → boolean */
-export const NOVICE_KINDS = new Set(["limit", "debounce", "on_delay", "logic", "fault_latch", "pid", "ramp"]);
+export const NOVICE_KINDS = new Set(["limit", "debounce", "on_delay", "logic", "fault_latch", "pid", "ramp", "state_lamp"]);
 export const noviceOffers = (kinds) => (x) => !x.planned && (x.device || NOVICE_KINDS.has(x.kind) || (x.pack !== "core" && x.pack !== "io" && kinds.has(x.kind)));

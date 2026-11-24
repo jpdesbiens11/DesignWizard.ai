@@ -15,6 +15,8 @@ const fr = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " ").replace("-", "
 const CONTACT = [["follows", "suit"], ["open", "coincé ouvert"], ["closed", "soudé"]];
 const JACKS = ["#dc2626", "#2563eb", "#16a34a", "#d97706", "#7c3aed", "#0891b2"];
 /** The rack. bench : the live bench (modules/sw_bench.js) ; design() → the design. → { node, refresh() } — refresh() reads the bench again without redrawing. */
+/* the colour of a lamp of the bench : a LED says its own (« verte », « jaune », « rouge »), a pump or a fan that runs is green, the rest red */
+const lampColour = (o) => { const n = String(o.name || "").toLowerCase(); if (o.device === "pump" || o.device === "fan") return "green"; if (o.device === "led") return /vert|green/.test(n) ? "green" : /jaune|yellow|ambre/.test(n) ? "yellow" : "red"; return "red"; };
 export function swRack(bench, design) {
   const node = el("div", { class: "swlab-rack", role: "group", "aria-label": "Le banc du logiciel : les instruments qui tiennent ses entrées, les témoins de ses sorties", "data-sw-rack": "" });
   const devOf = (id) => { const d = design(), o = d && d.objects.find((x) => x.id === id); return o && o.device ? DEVICES[o.device] : null; };
@@ -35,10 +37,10 @@ export function swRack(bench, design) {
       gear.append(el("i", { class: "swlab-jack", "aria-hidden": "true" })); node.append(gear); });
     const d = design(), outs = d ? d.objects.filter((o) => !o.off && KINDS[o.kind] && KINDS[o.kind].pin === "dout") : [];
     if (outs.length) node.append(el("div", { class: "swlab-gear swlab-panel", "data-sw-lamps": String(outs.length) }, el("h4", null, icon("power"), el("span", null, "Ce que le logiciel commande"), el("small", null, "témoins")),
-      el("div", { class: "swlab-outs" }, outs.map((o) => { const led = el("i", { class: "swlab-led red" }); lamps.push([`${o.id}.level`, led]); return el("span", { class: "swlab-out", "data-sw-lamp": o.id, title: o.device && DEVICES[o.device] ? DEVICES[o.device].text : o.name }, led, o.name.length > 26 ? `${o.name.slice(0, 25)}…` : o.name); }))));
+      el("div", { class: "swlab-outs" }, outs.map((o) => { const led = el("i", { class: `swlab-led ${lampColour(o)}` }), turns = o.device === "pump" || o.device === "fan"; lamps.push([`${o.id}.level`, led]); return el("span", { class: `swlab-out${turns ? " turns" : ""}`, "data-sw-lamp": o.id, title: o.device && DEVICES[o.device] ? DEVICES[o.device].text : o.name }, led, turns ? icon("refresh", "swlab-spin") : null, o.name.length > 26 ? `${o.name.slice(0, 25)}…` : o.name); }))));
     refresh();
   }
-  function refresh() { for (const [ref, led] of lamps) led.classList.toggle("on", bench.values(ref) === 1); }
+  function refresh() { for (const [ref, led] of lamps) { const on = bench.values(ref) === 1; led.classList.toggle("on", on); led.parentNode.classList.toggle("on", on); } }
   draw();
   return { node, refresh, redraw: draw };
 }

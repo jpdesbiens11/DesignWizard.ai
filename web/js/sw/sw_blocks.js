@@ -83,7 +83,7 @@ export const LIBRARY = [
   L("core", "can_msg", "comm", "CAN message", "message CAN", "Un message périodique vers le véhicule ou une autre carte."),
   L("core", "watchdog", "safety", "Watchdog", "chien de garde", "Le logiciel prouve qu'il tourne ; sinon, le CPU redémarre."),
   L("core", "nvm", "safety", "Non-volatile memory", "mémoire non volatile", "Garder un compteur, un défaut, un réglage à travers une coupure."),
-  E("bms", "energy_counter"), E("bms", "module_state"), E("bms", "contactor"),
+  E("bms", "energy_counter"), E("bms", "module_state"), E("bms", "state_lamp"), E("bms", "contactor"),
   L("bms", "soc", "acquire", "State of charge (coulomb counting)", "état de charge", "La charge restante, par le courant compté."),
   L("bms", "balancing", "act", "Passive balancing", "équilibrage passif", "Décharger la cellule la plus haute, sur ordre."),
   L("bms", "precharge", "act", "Precharge sequence", "précharge", "Fermer d'abord par une résistance, puis le contactor principal."),

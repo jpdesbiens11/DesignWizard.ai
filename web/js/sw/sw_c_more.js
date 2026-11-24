@@ -99,6 +99,20 @@ void dw_ramp_step(dw_ramp_t *s, const dw_ramp_cfg_t *c, int32_t x, uint32_t dt_m
     }
 }`,
     cfg: (c) => `{ ${c.rate} }`, call: (v, i, C) => `dw_ramp_step(&${v}, &${C}, ${i.x}, dt_ms);`, outs: { y: "y" } },
+  state_lamp: { mod: "dw_lamp", what: "the general state on three lamps : green, yellow, red",
+    h: `typedef struct { dw_bool green; dw_bool yellow; dw_bool red; } dw_lamp_t;
+
+void dw_lamp_init(dw_lamp_t *s);
+void dw_lamp_step(dw_lamp_t *s, int32_t state);`,
+    c: `void dw_lamp_init(dw_lamp_t *s) { s->green = 0U; s->yellow = 0U; s->red = 0U; }
+
+void dw_lamp_step(dw_lamp_t *s, int32_t state)
+{
+    s->green = (dw_bool)((state == 0) ? 1U : 0U);
+    s->yellow = (dw_bool)((state == 1) ? 1U : 0U);
+    s->red = (dw_bool)((state >= 2) ? 1U : 0U);
+}`,
+    call: (v, i) => `dw_lamp_step(&${v}, ${i.state});`, outs: { green: "green", yellow: "yellow", red: "red" } },
 };
 /** What a conventional block must do, as one sentence one can test. from(key) : the name of what feeds an input. → text or null */
 export function moreRequirement(o, c, from) {
@@ -107,5 +121,6 @@ export function moreRequirement(o, c, from) {
   if (o.kind === "logic") return c.op === "NOT" ? `${o.name} shall give the inverse of ${from("a")}.` : `${o.name} shall give ${from("a")} ${c.op} ${from("b")}.`;
   if (o.kind === "pid") return `${o.name} shall command, in per mille between ${c.umin} and ${c.umax}, ${c.kp}/1000 of the error between ${from("sp")} and ${from("pv")} (${c.unit}) plus its integral at ${c.ki}/1000 per second, the integral held within the same bounds.`;
   if (o.kind === "ramp") return `${o.name} shall follow ${from("x")} without changing by more than ${c.rate} ${c.unit} per second.`;
+  if (o.kind === "state_lamp") return `${o.name} shall light only its green lamp while ${from("state")} is NORMAL, only its yellow lamp while it is DERATED, and only its red lamp while it is EMERGENCY or STOP.`;
   return null;
 }

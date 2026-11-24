@@ -12,7 +12,7 @@ import { machine, order, liveWires, split } from "./sw_design.js";
 import { memoryPlan } from "./sw_c.js";
 
 const live = (d) => ((d && d.objects) || []).filter((o) => !o.off && KINDS[o.kind]);
-const WHAT = { pin_adc: "lit une voie du convertisseur", pin_din: "lit une broche d'entrée", pin_dout: "écrit une broche de sortie", analog_in: "met la mesure à l'échelle et dit si elle est vraisemblable", energy_counter: "compte l'énergie", limit: "compare au seuil", fault_latch: "retient le défaut", contactor: "décide de fermer ou d'ouvrir, et relit le contact" };
+const WHAT = { pin_adc: "lit une voie du convertisseur", pin_din: "lit une broche d'entrée", pin_dout: "écrit une broche de sortie", analog_in: "met la mesure à l'échelle et dit si elle est vraisemblable", energy_counter: "compte l'énergie", limit: "compare au seuil", fault_latch: "retient le défaut", contactor: "décide de fermer ou d'ouvrir, et relit le contact", state_lamp: "allume le témoin de l'état général" };
 
 /** The sequence of a start, in the order it happens. cpu : a CPU sheet. → [{ who: "cpu" | "hal" | "app" | "step", title, text, page?, items? }] */
 export function startSequence(d, cpu) {

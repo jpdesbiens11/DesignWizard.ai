@@ -37,6 +37,7 @@ export const DEVICES = {
   buzzer: { side: "actuator", icon: "warning", label: "Buzzer", fr: "avertisseur sonore", text: "Un avertisseur à oscillateur intégré : 1 le fait sonner." },
   valve: { side: "actuator", icon: "flow", label: "Solenoid valve", fr: "électrovanne", text: "Une vanne tout ou rien : 1 l'ouvre (ou la ferme, selon son type)." },
   heater: { side: "actuator", icon: "thermal", label: "Heater", fr: "élément chauffant", text: "Un chauffage tout ou rien, commandé par un transistor ou un relais statique." },
+  pump: { side: "actuator", icon: "refresh", label: "Coolant pump (WEG)", fr: "pompe de refroidissement eau-glycol", text: "Une pompe tout ou rien qui fait circuler l'eau-glycol (WEG) dans la plaque froide : 1 la met en marche." },
   fan: { side: "actuator", icon: "refresh", label: "Fan (on / off)", fr: "ventilateur", text: "Un ventilateur tout ou rien ; sa vitesse variable attend la sortie à modulation (à venir)." },
 };
 /** Planned devices : shown, never placed. */
