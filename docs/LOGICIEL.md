@@ -304,3 +304,19 @@ un gros LabVIEW, ça devient incompréhensible… des pièces de casse-tête aux
 
 **Gardée en mémoire** (JP : « garde l'idée du 3D en mémoire, c'est super intéressant pour un concepteur mécanique ») : les mêmes pièces en 3D,
 empilées en couches comme un vrai objet — capteurs en bas, décisions au milieu, actions en haut —, une vue que l'on tourne comme une pièce.
+
+## 4 octies. Le profil d'utilisation, raconté (v0.192.0)
+
+Demande de JP, 24 novembre 2026 : « pour la partie Essayer, un profil d'utilisation temporel avec des événements types qui arrivent et
+déclenchent le logiciel via le matériel, et dont on voit la réponse (feedback produit et logiciel)… superposer la storyline temporelle avec un
+pop-up qui raconte les événements, et laisser le multi-graphe du logiciel en dessous ».
+
+- **Le profil** (`sw/sw_story.js`) : des événements datés — ce qui arrive au produit, en mots, et ce que cela met sur les broches (`set`,
+  les entrées du banc). L'outil en écrit un pour tout logiciel (`autoProfile`) : la mise sous tension, puis chaque entrée au-delà du seuil
+  qui la lit et son retour, chaque entrée logique basculée et rendue ; **l'entrée qui verrouille un défaut vient en dernier** (sinon le
+  produit resterait à l'arrêt et l'on ne verrait plus rien). Un projet peut garder le sien (`design.profile`).
+- **Joué sur le modèle** (`playProfile`, le même pas que le C) : pour chaque événement, ce que le logiciel et le produit ont répondu — chaque
+  décision, l'état du module (NORMAL, DÉRATÉ, URGENCE, ARRÊT), ce que le logiciel commande sur la carte —, avec le temps écoulé.
+- **À l'écran** (`modules/sw_story_ui.js`) : la ligne du temps sous les pièces, un numéro par événement, le curseur du banc qui court ;
+  « Jouer le profil d'utilisation » repart de zéro en temps réel ; **la bulle** raconte l'événement puis coche les réponses quand le temps
+  les atteint ; un clic sur un numéro rejoue jusqu'à lui. Le chronogramme reste dessous, ce que le logiciel commande en premier.

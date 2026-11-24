@@ -34,6 +34,7 @@ export function swBench(o) {
     reset() { const was = st.running, keep = st.L ? { ...st.L.set } : {}; api.pause(); start(); if (st.L) for (const i of st.L.inputs) if (keep[i.id] !== undefined) liveSet(st.L, i.id, keep[i.id]); frame(true); if (was) api.play(); },
     set(id, v) { if (!st.L) return; liveSet(st.L, id, v); if (!st.running) frame(); },
     dispose() { api.pause(); },
+    setSpeed(v) { st.speed = v; st.rest = 0; frame(true); },      // a usage profile is played in real time (modules/sw_story_ui.js)
     /* the bench : what the pins read — one control per input pin */
     side() {
       const box = el("div", { class: "sw-bench", "data-sw-bench": "" }); if (!st.L) return box;
@@ -73,7 +74,9 @@ export function swBench(o) {
   function lanes() { const d = o.design(), out = []; if (!d) return out;
     for (const x of d.objects.filter((q) => !q.off && KINDS[q.kind])) for (const p of portsOf(x).out) { if (KINDS[x.kind].pin === "ain") continue; if (p.unit === "0/1") out.push({ ref: `${x.id}.${p.key}`, label: `${x.name} · ${p.label}`, bool: true }); else if (x.kind === "analog_in" || p.unit === "‰") out.push({ ref: `${x.id}.${p.key}`, label: `${x.name} (${shownUnit(p.unit)})`, bool: false, unit: p.unit }); }
     for (const x of d.objects.filter((q) => !q.off && KINDS[q.kind] && KINDS[q.kind].pin === "dout")) out.push({ ref: `${x.id}.level`, label: x.name, bool: true });
-    return out.slice(0, o.lanes || 14); }
+    /* what the software commands first, then what it decides, then what it measures : a short screen keeps what matters */
+    const rank = (l) => (d.objects.some((x) => KINDS[x.kind] && KINDS[x.kind].pin === "dout" && l.ref === `${x.id}.level`) ? 0 : l.bool && !/\.valid$/.test(l.ref) ? 1 : l.bool ? 3 : 2);
+    return out.map((l, i) => [l, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(([l]) => l).slice(0, o.lanes || 14); }
   function drawChart() {
     const L = st.L, ls = lanes(), H = 20, LBL = 190, w = Math.max(360, chart.clientWidth || 800), h = ls.length * H + 6, dpr = Math.min(2, window.devicePixelRatio || 1);
     if (chart.width !== Math.round(w * dpr) || chart.height !== Math.round(h * dpr)) { chart.width = Math.round(w * dpr); chart.height = Math.round(h * dpr); chart.style.height = `${h}px`; }

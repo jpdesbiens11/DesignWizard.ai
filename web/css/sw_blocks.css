@@ -164,3 +164,20 @@ svg.swp .swp-count { fill: var(--surface); stroke: color-mix(in srgb, var(--grap
 .swp-switch { display: inline-flex; border: 1.5px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--surface); }
 .swp-switch button { border: 0; background: none; padding: .25rem .7rem; font: inherit; font-size: .8rem; font-weight: 650; color: var(--muted); cursor: pointer; } .swp-switch button.on { background: var(--acc); color: var(--on-acc, #fff); } .swp-switch button:focus-visible { outline: 2px solid var(--acc); outline-offset: -2px; }
 .swp-float { position: absolute; top: .55rem; left: 50%; transform: translateX(-50%); z-index: 7; box-shadow: 0 2px 6px rgb(0 0 0 / .1); }
+
+/* ---------- the usage profile : the storyline under the pieces, the bubble over them (v0.192) ---------- */
+.sws-line { display: flex; align-items: center; gap: .7rem; padding: .3rem .8rem .5rem; }
+.sws-track { position: relative; flex: 1; height: 2.1rem; }
+.sws-rail { position: absolute; left: 0; right: 0; top: 50%; height: 4px; margin-top: -2px; border-radius: 4px; background: color-mix(in srgb, var(--graphite) 20%, transparent); }
+.sws-mark { position: absolute; top: 50%; transform: translate(-50%, -50%); width: 1.55rem; height: 1.55rem; border-radius: 50%; border: 2px solid #7c3aed; background: var(--surface); color: #7c3aed; font: inherit; font-size: .72rem; font-weight: 800; cursor: pointer; padding: 0; }
+.sws-mark.on { background: #7c3aed; color: #fff; box-shadow: 0 0 0 4px color-mix(in srgb, #7c3aed 25%, transparent); } .sws-mark:focus-visible { outline: 2.5px solid var(--acc); outline-offset: 2px; }
+.sws-cursor { position: absolute; top: 0; bottom: 0; width: 3px; margin-left: -1.5px; background: #dc2626; border-radius: 2px; pointer-events: none; }
+.sws-total { color: var(--muted); font-variant-numeric: tabular-nums; }
+.sws-bubble { position: absolute; right: 1rem; top: 3.2rem; z-index: 8; width: min(24rem, 46%); background: var(--surface); border: 2px solid #7c3aed; border-radius: 16px; padding: .6rem .8rem .7rem; box-shadow: 0 8px 24px rgb(0 0 0 / .18); }
+.sws-bubble::before { content: ""; position: absolute; left: -10px; top: 1.4rem; border: 9px solid transparent; border-right-color: #7c3aed; border-left: 0; }
+.sws-head { display: flex; align-items: center; gap: .45rem; } .sws-head small { flex: 1; color: var(--muted); }
+.sws-n { display: inline-grid; place-items: center; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: #7c3aed; color: #fff; font-weight: 800; font-size: .8rem; }
+.sws-bubble > b { display: block; font-size: 1.05rem; margin: .35rem 0 .15rem; } .sws-bubble > p { margin: 0 0 .4rem; font-size: .92rem; }
+.sws-answer { border-top: 1.4px dashed var(--line); padding-top: .35rem; } .sws-answer small { font-weight: 750; color: #0f766e; text-transform: uppercase; font-size: .68rem; letter-spacing: .04em; }
+.sws-answer ul { list-style: none; margin: .25rem 0 0; padding: 0; display: grid; gap: .15rem; font-size: .9rem; } .sws-answer li.wait { color: var(--muted); } .sws-answer li.seen { font-weight: 650; } .sws-answer em { color: var(--muted); font-style: normal; font-size: .8rem; }
+.sws-quiet { color: var(--muted); font-size: .86rem; margin: 0; }

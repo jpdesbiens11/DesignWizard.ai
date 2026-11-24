@@ -38,6 +38,7 @@ import { hwTag, hwProblems, flowLayout, snapAt, docked, hostBoard } from "../sw/
 import { openHil } from "./sw_hil_ui.js";
 import { libraryPalette, reqImportSection, openImport } from "./sw_lib_ui.js";
 import { swRack } from "./sw_lab.js";
+import { swStory } from "./sw_story_ui.js";
 import { shows, noviceOffers } from "../sw/sw_levels.js";
 import { level, viewMode, viewSwitch } from "./sw_level_ui.js";
 import { VIEW, autoPlace } from "../sw/sw_blocks.js";
@@ -78,7 +79,7 @@ function render(main, args, vkey) {
       change(`Logiciel : fil ${from} → ${to}`, (x) => { x.wires = x.wires.filter((w) => w.to !== to); x.wires.push({ from, to, ...(loops ? { delay: true } : {}) }); });
       toast(loops ? "Ce fil ferme une boucle : il porte la valeur du pas d'avant, comme le font les schémas-blocs. Un clic sur le fil pour le voir." : c.level ? c.text : "Fil posé.", loops || c.level ? "info" : "success", loops || c.level ? 7000 : 2200); } });
   { const vs = viewSwitch(lv); vs.classList.add("swp-float"); host.append(vs); }      // casse-tête · blocs détaillés, over the page
-  let R = null, bench = null, journalHost = null, run = null, rack = null;
+  let R = null, bench = null, journalHost = null, run = null, rack = null, story = null;
   const files = () => { const d = design(); return d ? vPackage(d, cpuOf(d)) : []; };      // the C, and the requirements and the verification beside it (doc/)
   const valuesAt = () => (R ? Object.fromEntries(Object.entries(R.ports).map(([r, y]) => [r, y[Math.min(st.k, y.length - 1)]])) : null);
   const guide = () => { const d = design(); return d ? [...problems(d, cpuOf(d)), ...hwProblems(store.project, d)].map((p) => ({ level: LEVEL[p.level] || "tip", text: p.text, field: "sw", go: p.obj ? () => pick(p.obj, p.field) : null })) : []; };
@@ -96,8 +97,8 @@ function render(main, args, vkey) {
   const add = (kind) => change(`Logiciel : ${KINDS[kind].label} posé`, (d) => { let n = 1; while (d.objects.some((o) => o.id === `${kind}_${n}`)) n++; const y = Math.max(20, ...d.objects.map((o) => (o.y || 0) + 150)); d.objects.push({ id: `${kind}_${n}`, kind, name: `${KINDS[kind].label} ${n}`, params: {}, sure: [], x: KINDS[kind].pin === "dout" ? 20 + 4 * 320 : KINDS[kind].pin ? 20 : 340, y }); st.sel = { obj: `${kind}_${n}` }; if (shows(lv, "autoPlace")) keyIn(d, `${kind}_${n}`); });
 
   /* ---------- the live bench : made when the step opens, gone when it closes ---------- */
-  const stopBench = () => { if (bench) { bench.dispose(); bench = null; } rack = null; rackHost.replaceChildren(); };
-  function ensureBench() { if (bench) return; bench = swBench({ design, lanes: shows(lv, "lanes"), onFrame: () => { if (!bench) return; canvas.values(bench.values); if (rack) rack.refresh(); for (const td of right.querySelectorAll("[data-ref]")) td.textContent = fr(bench.values(td.dataset.ref)); }, onLog: () => { if (bench && journalHost && journalHost.isConnected) journalHost.replaceChildren(bench.journal()); } }); }
+  const stopBench = () => { if (bench) { bench.dispose(); bench = null; } rack = null; rackHost.replaceChildren(); if (story) { story.dispose(); story.bubble.remove(); story = null; } };
+  function ensureBench() { if (bench) return; bench = swBench({ design, lanes: shows(lv, "lanes"), onFrame: () => { if (!bench) return; canvas.values(bench.values); if (rack) rack.refresh(); if (story) story.tick(); for (const td of right.querySelectorAll("[data-ref]")) td.textContent = fr(bench.values(td.dataset.ref)); }, onLog: () => { if (bench && journalHost && journalHost.isConnected) journalHost.replaceChildren(bench.journal()); } }); }
 
   function renderLeft() {
     clear(left); const d = design(), cpu = d ? cpuOf(d) : null;
@@ -170,9 +171,9 @@ function render(main, args, vkey) {
     if (!d) { stopBench(); clear(empty); empty.append(el("div", { class: "empty" }, el("h2", null, "Le logiciel du BMS, par objets"), el("p", null, "Chaque chose que le CPU doit gérer est une tuile posée sur la page : elle connaît ses entrées, ses sorties, leurs plages. Vous reliez les tuiles ; l'outil écrit le C — une bibliothèque, des modules, leur structure de fichiers —, le fait tourner devant vous, et dit comment le charger dans le CPU."),
       el("div", { class: "form-actions" }, (() => { const b = btn("Partir de mes exigences…", () => openImport({ design }), { primary: true, icon: "upload", tip: "Le format standard : un assistant y convertit votre document, l'outil pose les blocs" }); b.dataset.swReqStart = ""; return b; })(),
       (() => { const b = btn("Partir de l'exemple", () => store.commit("Logiciel : exemple posé", (p) => { p.software = [demoDesign()]; }), { icon: "play" }); b.dataset.swDemo = ""; return b; })()))); renderLeft(); clear(right); setGuide([]); return; }
-    if (st.step === "live" && !errs.length) { ensureBench(); if (!rack && bench) { rack = swRack(bench, design); rackHost.replaceChildren(rack.node); } } else stopBench();
+    if (st.step === "live" && !errs.length) { ensureBench(); if (!rack && bench) { rack = swRack(bench, design); rackHost.replaceChildren(rack.node); } if (!story && bench) { story = swStory(bench, design, () => rack && rack.redraw()); host.append(story.bubble); } }      // the usage profile : its storyline, its bubble (modules/sw_story_ui.js) else stopBench();
     rackHost.hidden = !rack;
-    clear(liveHost); if (st.step === "live") { if (bench) liveHost.append(bench.bar, el("div", { class: "sw-lanes-box bottom-body" }, el("p", { class: "muted small" }, "CHRONOGRAMME · les dernières secondes — une voie par décision (verte à 0, rouge à 1) et par mesure (orange), comme un analyseur logique."), bench.chart)); else liveHost.append(el("p", { class: "form-error", "data-sw-live-blocked": "" }, `Le banc attend un logiciel sans erreur : ${errs[0] ? errs[0].text : ""}`)); }
+    clear(liveHost); if (st.step === "live") { if (bench) liveHost.append(bench.bar, ...(story ? [story.line] : []), el("div", { class: "sw-lanes-box bottom-body" }, el("p", { class: "muted small" }, "CHRONOGRAMME · les dernières secondes — une voie par décision (verte à 0, rouge à 1) et par mesure (orange), comme un analyseur logique."), bench.chart)); else liveHost.append(el("p", { class: "form-error", "data-sw-live-blocked": "" }, `Le banc attend un logiciel sans erreur : ${errs[0] ? errs[0].text : ""}`)); }
     if (!onCanvas) pageHost.replaceChildren(centre(d));
     renderLeft(); renderRight(); renderReplay(); paint(); setGuide(guide()); setStatus(ready(d, cpuOf(d)) ? "Logiciel prêt à écrire" : "Logiciel : à régler", ready(d, cpuOf(d)) ? "done" : "");
   }
