@@ -41,6 +41,7 @@ import { swRack } from "./sw_lab.js";
 import { swStory } from "./sw_story_ui.js";
 import { swMonitor } from "./sw_monitor_ui.js";
 import { swFix } from "./sw_fix_ui.js";
+import { swBalance } from "./sw_balance_ui.js";
 import { moduleDesign } from "../sw/sw_bm_design.js";
 import { alarmSound } from "./sw_sound.js";
 import { shows, noviceOffers } from "../sw/sw_levels.js";
@@ -85,7 +86,7 @@ function render(main, args, vkey) {
   { const vs = viewSwitch(lv); vs.classList.add("swp-float"); host.append(vs); }      // casse-tête · blocs détaillés, over the page
   /* what is left to do, over the page : the tour of the problems, the questionnaire of the values (modules/sw_fix_ui.js) */
   const fix = swFix({ design, problems: () => { const d = design(); return d ? [...problems(d, cpuOf(d)), ...hwProblems(store.project, d)] : []; }, pick: (id, field) => pick(id, field), change, show: (id) => { st.sel = { obj: id }; paint(); } }); host.append(fix.bar);
-  let R = null, bench = null, journalHost = null, run = null, rack = null, story = null, monitor = null; const sound = alarmSound();
+  let R = null, bench = null, journalHost = null, run = null, rack = null, story = null, monitor = null, balance = null; const sound = alarmSound();
   const files = () => { const d = design(); return d ? vPackage(d, cpuOf(d)) : []; };      // the C, and the requirements and the verification beside it (doc/)
   const valuesAt = () => (R ? Object.fromEntries(Object.entries(R.ports).map(([r, y]) => [r, y[Math.min(st.k, y.length - 1)]])) : null);
   const guide = () => { const d = design(); return d ? [...problems(d, cpuOf(d)), ...hwProblems(store.project, d)].map((p) => ({ level: LEVEL[p.level] || "tip", text: p.text, field: "sw", go: p.obj ? () => pick(p.obj, p.field) : null })) : []; };
@@ -103,7 +104,7 @@ function render(main, args, vkey) {
   const add = (kind) => change(`Logiciel : ${KINDS[kind].label} posé`, (d) => { let n = 1; while (d.objects.some((o) => o.id === `${kind}_${n}`)) n++; const y = Math.max(20, ...d.objects.map((o) => (o.y || 0) + 150)); d.objects.push({ id: `${kind}_${n}`, kind, name: `${KINDS[kind].label} ${n}`, params: KINDS[kind].pin ? { [KINDS[kind].pin === "ain" ? "channel" : "pin"]: nextPin(d, KINDS[kind].pin) } : {}, sure: [], x: KINDS[kind].pin === "dout" ? 20 + 4 * 320 : KINDS[kind].pin ? 20 : 340, y }); st.sel = { obj: `${kind}_${n}` }; if (shows(lv, "autoPlace")) keyIn(d, `${kind}_${n}`); });
 
   /* ---------- the live bench : made when the step opens, gone when it closes ---------- */
-  const stopBench = () => { if (bench) { bench.dispose(); bench = null; } rack = null; rackHost.replaceChildren(); if (story) { story.dispose(); story.bubble.remove(); story = null; } if (monitor) { monitor.dispose(); monitor = null; } sound.update(false); };
+  const stopBench = () => { if (bench) { bench.dispose(); bench = null; } rack = null; rackHost.replaceChildren(); if (story) { story.dispose(); story.bubble.remove(); story = null; } if (monitor) { monitor.dispose(); monitor = null; } if (balance) { balance.dispose(); balance = null; } sound.update(false); };
   /* a buzzer the software commands, on : heard in the speakers of the computer (modules/sw_sound.js) */
   const buzzing = () => { const d = design(); return !!(d && bench && d.objects.some((o) => !o.off && o.device === "buzzer" && bench.values(`${o.id}.level`))); };
   function ensureBench() { if (bench) return; bench = swBench({ design, lanes: shows(lv, "lanes"), onFrame: () => { if (!bench) return; canvas.values(bench.values); if (rack) rack.refresh(); if (story) story.tick(); if (monitor) monitor.refresh(); sound.update(buzzing()); for (const td of right.querySelectorAll("[data-ref]")) td.textContent = fr(bench.values(td.dataset.ref)); }, onLog: () => { if (bench && journalHost && journalHost.isConnected) journalHost.replaceChildren(bench.journal()); } }); }
@@ -182,7 +183,7 @@ function render(main, args, vkey) {
     if (!d) { stopBench(); clear(empty); empty.append(el("div", { class: "empty" }, el("h2", null, "Le logiciel du BMS, par objets"), el("p", null, "Chaque chose que le CPU doit gérer est une tuile posée sur la page : elle connaît ses entrées, ses sorties, leurs plages. Vous reliez les tuiles ; l'outil écrit le C — une bibliothèque, des modules, leur structure de fichiers —, le fait tourner devant vous, et dit comment le charger dans le CPU."),
       el("div", { class: "form-actions" }, (() => { const b = btn("Partir de mes exigences…", () => openImport({ design }), { primary: true, icon: "upload", tip: "Le format standard : un assistant y convertit votre document, l'outil pose les blocs" }); b.dataset.swReqStart = ""; return b; })(),
       (() => { const b = btn("Partir de l'exemple", () => store.commit("Logiciel : exemple posé", (p) => { p.software = [demoDesign()]; }), { icon: "play" }); b.dataset.swDemo = ""; return b; })()))); renderLeft(); clear(right); setGuide([]); return; }
-    if (st.step === "live" && !errs.length) { ensureBench(); if (!rack && bench) { rack = swRack(bench, design); rackHost.replaceChildren(rack.node); } if (!story && bench) { story = swStory(bench, design, () => rack && rack.redraw(), change); monitor = swMonitor(bench, design, sound); if (monitor) story.line.append(monitor.button); } } else stopBench();      // the usage profile : its storyline, its bubble (modules/sw_story_ui.js) ; the monitoring window (modules/sw_monitor_ui.js)
+    if (st.step === "live" && !errs.length) { ensureBench(); if (!rack && bench) { rack = swRack(bench, design); rackHost.replaceChildren(rack.node); } if (!story && bench) { story = swStory(bench, design, () => rack && rack.redraw(), change); monitor = swMonitor(bench, design, sound); if (monitor) story.line.append(monitor.button); balance = swBalance(design); if (balance) story.line.append(balance.button); } } else stopBench();      // the usage profile : its storyline, its bubble (modules/sw_story_ui.js) ; the monitoring window (modules/sw_monitor_ui.js)
     rackHost.hidden = !rack;
     clear(liveHost); if (st.step === "live") { if (bench) liveHost.append(bench.bar, ...(story ? [story.line, story.bubble] : []), el("div", { class: "sw-lanes-box bottom-body" }, el("p", { class: "muted small" }, "CHRONOGRAMME · les dernières secondes — une voie par décision (verte à 0, rouge à 1) et par mesure (orange), comme un analyseur logique."), bench.chart)); else liveHost.append(el("p", { class: "form-error", "data-sw-live-blocked": "" }, `Le banc attend un logiciel sans erreur : ${errs[0] ? errs[0].text : ""}`)); }
     if (!onCanvas) pageHost.replaceChildren(centre(d));

@@ -85,9 +85,9 @@ export const LIBRARY = [
   L("core", "plausibility", "safety", "Plausibility check", "contrôle de vraisemblance", "Comparer deux mesures qui doivent s'accorder : la plus basse sous la plus haute, la somme des cellules et la tension du module."),
   L("core", "watchdog", "safety", "Watchdog", "chien de garde", "Le logiciel prouve qu'il tourne ; sinon, le CPU redémarre."),
   L("core", "nvm", "safety", "Non-volatile memory", "mémoire non volatile", "Garder un compteur, un défaut, un réglage à travers une coupure."),
-  E("bms", "energy_counter"), E("bms", "module_state"), E("bms", "state_lamp"), E("bms", "contactor"),
+  E("bms", "energy_counter"), E("bms", "module_state"), E("bms", "state_lamp"), E("bms", "balancing"), E("bms", "contactor"),
   L("bms", "soc", "acquire", "State of charge (coulomb counting)", "état de charge", "La charge restante, par le courant compté."),
-  L("bms", "balancing", "act", "Passive balancing", "équilibrage passif", "Décharger la cellule la plus haute, sur ordre."),
+
   L("bms", "precharge", "act", "Precharge sequence", "précharge", "Fermer d'abord par une résistance, puis le contactor principal."),
   L("bms", "imd", "safety", "Insulation monitor", "contrôle d'isolement", "Surveiller la résistance d'isolement du pack."),
   L("robot", "encoder", "hw_in", "Quadrature encoder", "codeur incrémental", "Une position et une vitesse à partir de deux voies A / B."),

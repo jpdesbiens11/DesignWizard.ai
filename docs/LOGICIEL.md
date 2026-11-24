@@ -410,3 +410,27 @@ tour menait au premier bloc, la voie en surbrillance. Trois défauts derrière :
   bobine du contacteur ; `LED_STATUS` : DEL verte) ; les autres sorties (DEL jaune et rouge, buzzer, pompe) et le bouton d'acquittement
   attendent des nets à ajouter au PCBA de la carte. « Mettre à jour le logiciel du BM » reprend cette version.
 
+## 4 duodecies. Charge et équilibrage passif (v0.196.0)
+
+Demande de JP, 24 novembre 2026 : « pour le profil de charge, on doit partir avec les batteries à 3,0 V (plage de 100 % de SOC de 2,5 V à 4,2 V)
+et aussi avoir une opération du mode de balancement passif visuel entre plusieurs cellules débalancées ; probablement que la charge ralentit
+pendant ce temps, et on passe de 0,1 C à 2 C, et on peut voir en mode accéléré ce que ça donne ».
+
+- **Le bloc « Passive balancing »** (`balancing`, `sw/sw_kinds_more.js`, son C `dw_balance`) : un bloc de cellules se décharge par sa
+  résistance tant qu'il dépasse le plus bas de plus de `delta` (20 mV), au-dessus de `v_min` (3,90 V), et seulement quand le pack ne se
+  décharge pas ; il s'arrête sous `hyst` (10 mV). C'est le SWR-043 d'un fichier d'exigences : ses clés sont celles du fichier. Le logiciel
+  du BM le porte (un par CORE dans la simulation).
+- **Le profil de charge** part de 3,0 V : 0,1 C, puis 2 C (72 A, le maximum de la fiche Molicel P45B : 9 A par cellule, 8 en parallèle),
+  l'équilibrage qui se branche à 4,19 V, la charge qui ralentit, la résistance qui se débranche sous 10 mV.
+- **La fenêtre « Charge et équilibrage »** (`sw/sw_balance.js`, pur ; `modules/sw_balance_ui.js`) : 8 CORE en série, chacun sa capacité et
+  son état de charge de départ (déséquilibrés, en exemple), une courbe de tension TYPIQUE (0 % = 2,5 V, 100 % = 4,2 V, écrite de mémoire),
+  une résistance par CORE (exemple). Le chargeur : 0,1 C pendant 2 min, montée à 2 C en 1 min, 2 C, **ralenti pendant qu'une résistance
+  décharge** (0,5 C d'office, réglable — 0,1 C allonge la charge de plusieurs heures), tension constante à 4,2 V sur le CORE le plus haut,
+  fin quand le courant tombe sous 0,05 C et que l'écart est sous le seuil. **Le logiciel décide** : le pas du bloc, une fois par CORE, sur
+  des tensions corrigées de la chute courant × résistance (sans cela, 2 C le fait battre autour de 3,90 V). À l'écran : une colonne par
+  CORE (niveau, tension, écart au plus bas, résistance allumée et son courant), le chargeur en A et en C, la phase, l'écart, la chaleur
+  dissipée, les tensions dans le temps ; ×1 à ×10 000.
+- **Ce qu'on y apprend** : à 0,5 A par résistance, rattraper quelques pour cent d'un CORE de 36 Ah prend des heures — l'essentiel de la
+  charge simulée est l'équilibrage en fin de charge. Non vérifié : la courbe et la résistance réelles de la P45B (fiche p. 3 : ≤ 8 mΩ à
+  1 kHz, pas une résistance en continu).
+

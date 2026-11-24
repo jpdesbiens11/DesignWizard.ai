@@ -6,6 +6,8 @@
      logic      AND · OR · XOR · NOT of two decisions
      pid        a PI(D-less) regulator in whole numbers, its integral clamped (anti-windup) : the heart of a motor, a heater, a charger
      ramp       a rate limiter : a setpoint that may not jump
+     balancing  passive balancing of ONE cell block : its bleed resistor on while it stands above the lowest by more than a delta, above a
+                floor voltage, and the pack is not discharging (run once per CORE)
      state_lamp the general state shown on three lamps : green (good), yellow (to watch), red (over a limit) — the colours of a traffic light
    Each is a step in whole numbers, written ONCE : the browser simulates it, sw/sw_c_more.js writes its C, and the C must print what this
    file gives (back to back). The figures are EXAMPLES, said as such — none is that of a component or of a project.
@@ -50,6 +52,13 @@ export const MORE_KINDS = {
       P("rate", "Pente maximale", 1000, "unités/s", "De combien la valeur peut changer en une seconde, au plus.", { min: 1, max: BIG })],
     init: () => ({ y: 0, primed: 0 }),
     step(s, c, i, dt) { if (!s.primed) { s.y = i.x; s.primed = 1; } else { const m = div(c.rate * dt, 1000), d = i.x - s.y; s.y += Math.max(-m, Math.min(m, d)); } return { y: s.y }; } },
+  balancing: { nature: "command", label: "Passive balancing", fr: "équilibrage passif", icon: "bolt", text: "Décharge un bloc de cellules par sa résistance tant qu'il dépasse le plus bas de plus de l'écart donné, au-dessus d'une tension minimale, et seulement quand le pack ne se décharge pas ; il s'arrête quand l'écart est revenu sous la moitié — l'hystérésis évite de battre. Un bloc par CORE.",
+    ports: { in: [{ key: "v", label: "cell block", unit: "mV", min: 0, max: 6000 }, { key: "low", label: "lowest", unit: "mV", min: 0, max: 6000 }, { key: "i", label: "current", unit: "mA", min: -1000000, max: 1000000, free: 1 }], out: [{ key: "bleed", label: "bleed", ...B }] },
+    params: [P("v_min", "Tension minimale pour équilibrer", 3900, "mV", "Sous cette tension, on n'équilibre pas : la courbe des cellules y dit mal leur état de charge.", { min: 0, max: 5000 }),
+      P("delta", "Écart qui déclenche", 20, "mV", "Le bloc se décharge tant qu'il dépasse le plus bas de plus de cet écart.", { min: 1, max: 1000 }),
+      P("hyst", "Écart de retour", 10, "mV", "Il s'arrête quand l'écart est revenu sous celui-ci.", { min: 0, max: 1000 })],
+    init: () => ({ on: 0 }),
+    step(s, c, i) { const d = i.v - i.low, ok = i.v >= c.v_min && i.i <= 0; if (!ok) s.on = 0; else if (!s.on && d > c.delta) s.on = 1; else if (s.on && d <= c.hyst) s.on = 0; return { bleed: s.on }; } },
   state_lamp: { nature: "command", label: "Status lamp (green · yellow · red)", fr: "voyant d'état général", icon: "sparkle", text: "Montre l'état général sur trois témoins, comme un feu de circulation : vert, tout va bien ; jaune, une condition à surveiller (dératé) ; rouge, une limite dépassée (urgence, arrêt). Un seul témoin allumé à la fois.",
     ports: { in: [{ key: "state", label: "state", unit: "state", min: 0, max: 3 }], out: [{ key: "green", label: "green", ...B }, { key: "yellow", label: "yellow", ...B }, { key: "red", label: "red", ...B }] },
     params: [], init: () => ({}),

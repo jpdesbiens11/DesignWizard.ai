@@ -99,6 +99,23 @@ void dw_ramp_step(dw_ramp_t *s, const dw_ramp_cfg_t *c, int32_t x, uint32_t dt_m
     }
 }`,
     cfg: (c) => `{ ${c.rate} }`, call: (v, i, C) => `dw_ramp_step(&${v}, &${C}, ${i.x}, dt_ms);`, outs: { y: "y" } },
+  balancing: { mod: "dw_balance", what: "passive balancing of one cell block",
+    h: `typedef struct { int32_t v_min; int32_t delta; int32_t hyst; } dw_balance_cfg_t;
+typedef struct { dw_bool on; } dw_balance_t;
+
+void dw_balance_init(dw_balance_t *s);
+void dw_balance_step(dw_balance_t *s, const dw_balance_cfg_t *c, int32_t v, int32_t low, int32_t i);`,
+    c: `void dw_balance_init(dw_balance_t *s) { s->on = 0U; }
+
+void dw_balance_step(dw_balance_t *s, const dw_balance_cfg_t *c, int32_t v, int32_t low, int32_t i)
+{
+    const int32_t d = v - low;
+    if ((v < c->v_min) || (i > 0)) { s->on = 0U; }
+    else if ((s->on == 0U) && (d > c->delta)) { s->on = 1U; }
+    else if ((s->on != 0U) && (d <= c->hyst)) { s->on = 0U; }
+    else { /* keeps what it holds */ }
+}`,
+    cfg: (c) => `{ ${c.v_min}, ${c.delta}, ${c.hyst} }`, call: (v, i, C) => `dw_balance_step(&${v}, &${C}, ${i.v}, ${i.low}, ${i.i});`, outs: { bleed: "on" } },
   state_lamp: { mod: "dw_lamp", what: "the general state on three lamps : green, yellow, red",
     h: `typedef struct { dw_bool green; dw_bool yellow; dw_bool red; } dw_lamp_t;
 
@@ -121,6 +138,7 @@ export function moreRequirement(o, c, from) {
   if (o.kind === "logic") return c.op === "NOT" ? `${o.name} shall give the inverse of ${from("a")}.` : `${o.name} shall give ${from("a")} ${c.op} ${from("b")}.`;
   if (o.kind === "pid") return `${o.name} shall command, in per mille between ${c.umin} and ${c.umax}, ${c.kp}/1000 of the error between ${from("sp")} and ${from("pv")} (${c.unit}) plus its integral at ${c.ki}/1000 per second, the integral held within the same bounds.`;
   if (o.kind === "ramp") return `${o.name} shall follow ${from("x")} without changing by more than ${c.rate} ${c.unit} per second.`;
+  if (o.kind === "balancing") return `${o.name} shall bleed its cell block while ${from("v")} stands above ${c.v_min} mV and above ${from("low")} by more than ${c.delta} mV, and the pack is not discharging (${from("i")} at or below 0) ; it shall stop once the gap is back to ${c.hyst} mV.`;
   if (o.kind === "state_lamp") return `${o.name} shall light only its green lamp while ${from("state")} is NORMAL, only its yellow lamp while it is DERATED, and only its red lamp while it is EMERGENCY or STOP.`;
   return null;
 }

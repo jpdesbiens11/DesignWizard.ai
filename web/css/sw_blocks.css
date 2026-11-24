@@ -257,3 +257,21 @@ svg .sw-ask { cursor: pointer; } svg .sw-ask circle { fill: #d97706; stroke: #ff
 .swf-row label { display: grid; } .swf-row label small { color: var(--muted); font-size: .76rem; } .swf-val { display: flex; align-items: center; gap: .3rem; } .swf-val input, .swf-val select { width: 7rem; }
 .swf-src { grid-column: 1 / -1; font-size: .72rem; } .swf-src.ref { color: #b45309; } .swf-src.req { color: #15803d; }
 .swf-qfoot { display: flex; align-items: center; gap: .4rem; } .swf-qfoot small { margin-right: auto; color: var(--muted); }
+
+/* Charge et équilibrage : one column per CORE, its resistor glowing while it bleeds (modules/sw_balance_ui.js) — dark, like the monitoring */
+.swm.swbal { width: min(48rem, calc(100vw - 1rem)); }
+.swbal-bar, .swbal-sets { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; padding: .5rem .8rem 0; } .swbal-bar select { width: auto; background: #1e293b; color: #e2e8f0; border: 1.5px solid #334155; border-radius: 8px; padding: .2rem .4rem; }
+.swbal-set { display: flex; align-items: center; gap: .3rem; color: #cbd5e1; font-size: .76rem; } .swbal-set input { width: 4.4rem; background: #0f172a; color: #f8fafc; border: 1.5px solid #334155; border-radius: 6px; padding: .15rem .3rem; } .swbal-set small { color: #94a3b8; }
+.swbal-body { padding: .5rem .8rem .8rem; }
+.swbal-head { display: grid; grid-template-columns: 1.6fr 1.4fr repeat(4, 1fr); gap: .4rem; margin-bottom: .55rem; }
+.swbal-head > div { background: #111c33; border: 1.5px solid #1e293b; border-radius: 10px; padding: .3rem .5rem; display: grid; position: relative; overflow: hidden; } .swbal-head small { color: #94a3b8; font-size: .66rem; text-transform: uppercase; letter-spacing: .05em; } .swbal-head b { color: #f8fafc; font-size: .98rem; }
+.swbal-phase.bal b { color: #fdba74; } .swbal-phase.cv b { color: #93c5fd; } .swbal-phase.done b { color: #86efac; } .swbal-fig b.warn { color: #fdba74; } .swbal-fig b.ok { color: #86efac; }
+.swbal-gauge span { color: #fbbf24; font-weight: 700; font-size: .78rem; } .swbal-gauge i { position: absolute; left: 0; bottom: 0; height: 4px; background: #fbbf24; }
+.swbal-cols { display: grid; grid-template-columns: repeat(8, 1fr); gap: .35rem; }
+.swbal-col { display: grid; justify-items: center; gap: .15rem; background: #111c33; border: 1.5px solid #1e293b; border-radius: 10px; padding: .35rem .2rem; font-size: .7rem; color: #cbd5e1; } .swbal-col.on { border-color: #f97316; }
+.swbal-col > small { color: #94a3b8; font-weight: 700; } .swbal-col b { font-family: var(--mono, ui-monospace, monospace); color: #f8fafc; font-size: .78rem; } .swbal-col span.hi { color: #fdba74; font-weight: 700; }
+.swbal-cell { position: relative; width: 2.1rem; height: 5.5rem; border: 2px solid #475569; border-radius: 6px; background: #020617; overflow: hidden; } .swbal-cell::before { content: ""; position: absolute; top: -6px; left: 30%; width: 40%; height: 4px; background: #475569; border-radius: 2px; }
+.swbal-cell i { position: absolute; left: 0; right: 0; bottom: 0; background: linear-gradient(#4ade80, #16a34a); } .swbal-cell span { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: .68rem; text-shadow: 0 1px 2px #000; }
+.swbal-res { display: grid; justify-items: center; } .swbal-zig { width: 2.4rem; height: .8rem; fill: none; stroke: #475569; stroke-width: 1.6; } .swbal-zig.on { stroke: #f97316; filter: drop-shadow(0 0 4px #f97316); } .swbal-col.on .swbal-res small { color: #fdba74; font-weight: 700; }
+.swbal-note { color: #94a3b8; font-size: .7rem; margin: .5rem 0 .4rem; } .swbal-chart { width: 100%; display: block; border-radius: 8px; border: 1.5px solid #1e293b; }
+@media (prefers-reduced-motion: reduce) { .swbal-zig.on { filter: none; } }

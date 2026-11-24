@@ -62,6 +62,7 @@ export function sayOutput(d, ref, to) {
   if (o && KINDS[o.kind].pin === "dout" && o.device === "buzzer") return `${name} : ${to ? "sonne" : "se tait"}`;
   if (o && KINDS[o.kind].pin === "dout" && (o.device === "pump" || o.device === "fan")) return `${name} : ${to ? "en marche" : "à l'arrêt"}`;
   if (o && KINDS[o.kind].pin === "dout") return `${D ? D.label : name} : ${to ? "commandé" : "relâché"}`;
+  if (o && o.kind === "balancing") return `${name} : ${to ? "la résistance de la CORE la plus haute est branchée" : "résistance débranchée"}`;
   if (o && o.kind === "state_lamp") return `${name} : ${{ green: "vert", yellow: "jaune", red: "rouge" }[key] || key}`;
   if (o && o.kind === "contactor" && key === "drive") return `${name} : ${to ? "fermé" : "ouvert"}`;
   if (o && o.kind === "limit") return `${name} : ${to ? "déclenché" : "relâché"}`;
