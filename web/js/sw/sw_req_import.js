@@ -64,8 +64,33 @@ ${blocks}
 `;
 }
 
-/** Reads a text (the JSON, or an answer with a \`\`\`json block). → { ok, data?, errors: [text] } */
+/* ---------- the list of DynamiteAgile : its Goldmine export, read as it is (« Exporter (.csv) » of the requirements) ---------- */
+/** A CSV text → rows of cells (quotes, doubled quotes, line breaks inside quotes). */
+export function csvRows(text) {
+  const s = String(text || "").replace(/^\uFEFF/, ""), rows = []; let row = [], cell = "", q = false;
+  for (let i = 0; i < s.length; i++) { const c = s[i];
+    if (q) { if (c === '"' && s[i + 1] === '"') { cell += '"'; i++; } else if (c === '"') q = false; else cell += c; }
+    else if (c === '"') q = true; else if (c === "," || c === ";") { row.push(cell); cell = ""; } else if (c === "\n" || c === "\r") { if (c === "\r" && s[i + 1] === "\n") i++; row.push(cell); rows.push(row); row = []; cell = ""; } else cell += c; }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  return rows.filter((r) => r.some((x) => String(x).trim()));
+}
+const AGILE_KIND = { functional: "functional", performance: "performance", interface: "interface", safety: "safety", "personnel safety": "safety", environmental: "robustness", "standard / regulatory": "functional" };
+const AGILE_VERIFY = { t: "test", test: "test", d: "test", demonstration: "test", a: "analysis", analysis: "analysis", i: "review", inspection: "review" };
+export const SW_ALLOC = /\b(sw|software|logiciel|firmware|fw|embedded|embarqu)/i;
+/** The requirements of a DynamiteAgile export (Goldmine), in the standard structure — the software ones when the list says which (its
+    « allocation » column), all of them otherwise, and said. No block is named : an assistant, or the person, allocates them. → { data, notes } or null */
+export function agileReqs(text) {
+  const rows = csvRows(text); if (rows.length < 2) return null; const head = rows[0].map((h) => String(h).trim().toLowerCase()), at = (r, k) => { const i = head.indexOf(k); return i < 0 ? "" : String(r[i] || "").trim(); };
+  if (!head.includes("statement") || !(head.includes("key") || head.includes("external_id"))) return null;
+  const all = rows.slice(1).filter((r) => at(r, "statement") && !/^need$/i.test(at(r, "kind"))), sw = all.filter((r) => SW_ALLOC.test(at(r, "allocation"))), pick = sw.length ? sw : all, notes = [];
+  notes.push(sw.length ? `${sw.length} exigence${sw.length > 1 ? "s" : ""} allouée${sw.length > 1 ? "s" : ""} au logiciel sur ${all.length} (colonne « allocation »).` : `Aucune exigence n'est allouée au logiciel dans la colonne « allocation » : les ${all.length} sont gardées — retirez celles qui ne sont pas du logiciel (On / Off).`);
+  return { notes, data: { format: REQ_FORMAT, system: { name: "Exigences de DynamiteAgile" }, signals: [], requirements: pick.map((r) => { const key = at(r, "key") || at(r, "external_id"), doc = at(r, "source_doc");
+    return { id: key, text: at(r, "statement") || at(r, "title"), kind: AGILE_KIND[at(r, "category").toLowerCase()] || "functional", verify: AGILE_VERIFY[at(r, "verification_method").toLowerCase()] || "test", source: `DynamiteAgile ${key}${doc ? ` · ${doc}` : ""}` }; }) } };
+}
+
+/** Reads a text (the JSON, or an answer with a \`\`\`json block, or a CSV export of DynamiteAgile). → { ok, data?, errors: [text], notes? } */
 export function parseReqs(text) {
+  const ag = /statement/i.test(String(text || "").split(/\r?\n/)[0] || "") ? agileReqs(text) : null; if (ag) return { ok: ag.data.requirements.length > 0, data: ag.data, errors: ag.data.requirements.length ? [] : ["Le fichier de DynamiteAgile ne contient aucune exigence."], notes: ag.notes, from: "dynamiteagile" };
   const s = String(text || ""), m = /```(?:json)?\s*([\s\S]*?)```/.exec(s), body = (m ? m[1] : s).trim(); let data;
   try { data = JSON.parse(body); } catch (e) { return { ok: false, errors: [`Ce n'est pas du JSON lisible : ${String(e.message || e).slice(0, 120)}`] }; }
   const errors = [];
@@ -107,10 +132,14 @@ export function planImport(data, d0) {
   /* one block per requirement that names one ; its values from the requirement, the others at the reference value */
   const reqIds = new Set(d.reqs.map((r) => r.id)), later = [];
   for (const r of data.requirements || []) {
-    if (!r || !r.text) continue; let id = String(r.id || `SWR-${String(d.reqs.length + 1).padStart(3, "0")}`); while (reqIds.has(id)) id = `${id}-b`; reqIds.add(id);
-    const kind = r.block && KINDS[r.block] && !KINDS[r.block].pin ? r.block : null, planned = !kind && r.block && LIBRARY.some((x) => x.planned && x.id === r.block);
-    const row = { id, text: String(r.text), block: r.block || "", state: kind ? "made" : planned ? "planned" : "none", values: [] }; out.rows.push(row); out.counts.reqs++;
-    const req = { id, text: String(r.text).trim(), kind: REQ_KINDS[r.kind] ? r.kind : "functional", verify: VERIFY[r.verify] ? r.verify : "test", objs: [], on: true, sure: false, ...(r.source ? { source: String(r.source) } : {}) }; d.reqs.push(req);
+    if (!r || !r.text) continue;
+    /* a requirement already in the software (the same id : a list from DynamiteAgile, sent back by an assistant with its blocks) is not doubled —
+       it receives its block if it has none yet, and keeps what it has otherwise */
+    const known = r.id ? d.reqs.find((x) => x.id === String(r.id)) : null; let id = known ? known.id : String(r.id || `SWR-${String(d.reqs.length + 1).padStart(3, "0")}`); if (!known) { while (reqIds.has(id)) id = `${id}-b`; reqIds.add(id); }
+    const kind = r.block && KINDS[r.block] && !KINDS[r.block].pin ? r.block : null, planned = !kind && r.block && LIBRARY.some((x) => x.planned && x.id === r.block), had = known && (known.objs || []).length;
+    const row = { id, text: String(r.text), block: r.block || "", state: had ? "kept" : kind ? "made" : planned ? "planned" : "none", values: [], known: !!known }; out.rows.push(row); out.counts.reqs++;
+    const req = known || { id, text: String(r.text).trim(), kind: REQ_KINDS[r.kind] ? r.kind : "functional", verify: VERIFY[r.verify] ? r.verify : "test", objs: [], on: true, sure: false, ...(r.source ? { source: String(r.source) } : {}) }; if (!known) d.reqs.push(req);
+    if (had) { const o = d.objects.find((x) => x.id === known.objs[0]); if (o && KINDS[o.kind]) feed[id] = { ref: `${o.id}.${KINDS[o.kind].ports.out[0].key}`, unit: portsOf(o).out[0].unit }; continue; }
     if (!kind) { if (planned) out.counts.planned++; continue; }
     const K = KINDS[kind], src = r.input && feed[r.input], unitP = K.params.find((p) => p.key === "unit"), oid = fresh(r.name || `${kind}_${id}`), params = {}, sure = [], from = {};
     if (unitP && src && unitP.choices.includes(src.unit)) { params.unit = src.unit; sure.push("unit"); }
@@ -130,4 +159,17 @@ export function planImport(data, d0) {
   }
   const pos = flowLayout(d); for (const o of d.objects) if (pos[o.id] && !(d0 && d0.objects.some((x) => x.id === o.id))) Object.assign(o, pos[o.id]);
   return { design: d, ...out };
+}
+
+/** The prompt, with what the project already has : its requirements (their ids kept, so the answer allocates them instead of doubling them),
+    the pins the software already reads or drives, and the nets of the board that reach the microcontroller. */
+export function reqPromptWith(d, board, nets = []) {
+  const reqs = ((d && d.reqs) || []).filter((r) => r.on !== false).map((r) => ({ id: r.id, text: r.text, kind: r.kind, verify: r.verify, allocated: (r.objs || []).length > 0 }));
+  const pins = ((d && d.objects) || []).filter((o) => KINDS[o.kind] && KINDS[o.kind].pin).map((o) => ({ id: o.id, name: o.name, kind: o.kind, net: (o.hw && o.hw.net) || "" }));
+  return `${reqPrompt()}
+THE PROJECT NOW (keep these ids ; for a requirement already "allocated", leave "block" out) :
+${JSON.stringify({ requirements: reqs, pins, board: board ? (board.name || board.id) : null, nets_of_the_microcontroller: nets.map((n) => `${n.net} (${n.pin})`) }, null, 1)}
+
+If the list above has requirements without a block, answer with the SAME ids and add "block", "input", "output" and "values" to each one the library can carry ; name the signals the board gives (use the nets above in "hw") ; leave the others without "block".
+`;
 }

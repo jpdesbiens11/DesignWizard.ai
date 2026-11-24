@@ -20,6 +20,7 @@ import { KINDS, NATURES, portsOf, cfgOf } from "./sw_objects.js";
 import { liveWires, order, split, confirmedReqs, wireCheck } from "./sw_design.js";
 import { productBoards } from "../pcba/board_role.js";
 import { DEVICES, DEVICES_PLANNED } from "./sw_devices.js";
+import { physText } from "./sw_units.js";
 
 /* ---------- the keys : one shape and one colour per type of signal ---------- */
 export const SIGNAL_TYPES = {
@@ -105,11 +106,15 @@ export const LIBRARY = [
 /* ---------- left to right : columns by the flow of the wires ---------- */
 export const BLOCK = { W: 230, HEAD: 32, TAG: 22, ROW: 26, CHIPS: 24, PAD: 10, COL: 320, GAP: 34 };
 /** The size of a block, and where its ports are. */
+/** What a block shows besides its name and its keys : its hardware tag, its value chips — a novice sees the block bare (sw/sw_levels.js).
+    One setting for the page, so that every block, every snap and every layout agree. */
+export const VIEW = { tags: true, chips: true };
+export const tagH = () => (VIEW.tags ? BLOCK.TAG : 4);
 export function blockBox(o) {
-  const P = portsOf(o), rows = Math.max(1, P.in.length, P.out.length), lines = chipLayout(o).reduce((m, c) => Math.max(m, c.row + 1), 0), chips = lines ? lines * 20 + 4 : 0;
-  return { x: o.x || 0, y: o.y || 0, w: BLOCK.W, h: BLOCK.HEAD + BLOCK.TAG + rows * BLOCK.ROW + chips + BLOCK.PAD, top: BLOCK.HEAD + BLOCK.TAG };
+  const P = portsOf(o), rows = Math.max(1, P.in.length, P.out.length), lines = VIEW.chips ? chipLayout(o).reduce((m, c) => Math.max(m, c.row + 1), 0) : 0, chips = lines ? lines * 20 + 4 : 0;
+  return { x: o.x || 0, y: o.y || 0, w: BLOCK.W, h: BLOCK.HEAD + tagH() + rows * BLOCK.ROW + chips + BLOCK.PAD, top: BLOCK.HEAD + tagH() };
 }
-export const portY = (o, dir, key) => { const p = portsOf(o)[dir], i = Math.max(0, p.findIndex((x) => x.key === key)); return BLOCK.HEAD + BLOCK.TAG + i * BLOCK.ROW + BLOCK.ROW / 2; };
+export const portY = (o, dir, key) => { const p = portsOf(o)[dir], i = Math.max(0, p.findIndex((x) => x.key === key)); return BLOCK.HEAD + tagH() + i * BLOCK.ROW + BLOCK.ROW / 2; };
 /** The column of each block, read from the wires : the board's inputs first, its outputs last, every other block one column after the
     latest block it reads (a wire that carries the value of the step before does not count). → { id: column } */
 export function columns(d) {
@@ -170,11 +175,32 @@ export function snapAt(d, id, x, y) {
   return wires.length ? { x: best.x, y: best.y, wires, with: B.id } : null;
 }
 
+/** Reference values of a block that takes the unit of what it is keyed to : an over-voltage of a cell is not an over-temperature. Examples, amber,
+    to confirm — typical figures, never those of a part. */
+export const REF_BY_UNIT = { limit: { mV: { trip: 4250, clear: 4150 }, mA: { trip: 100000, clear: 90000 }, "0.1 °C": { trip: 600, clear: 550 }, kPa: { trip: 800, clear: 750 }, "‰": { trip: 900, clear: 850 }, rpm: { trip: 3000, clear: 2800 } } };
+/** Where a NEW block goes for a novice (demande de JP : « fais des choix logiques… en mode novice ») : keyed to the latest free output of the same
+    key — an output no wire leaves yet, on the block furthest right —, at a place no other block holds. → { x, y, wires } or null (nothing fits). */
+export function autoPlace(d, id) {
+  const objs = (d.objects || []).filter((o) => !o.off && KINDS[o.kind]), M = objs.find((o) => o.id === id); if (!M) return null;
+  const used = new Set(liveWires(d).map((w) => w.from)), taken = new Set(liveWires(d).map((w) => w.to)), PM = portsOf(M), cands = [];
+  const free = (x, y) => { const me = { ...M, x, y }, a = blockBox(me); return objs.every((o) => { if (o.id === id) return true; const b = blockBox(o); return a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h + 6 <= b.y || b.y + b.h + 6 <= a.y; }); };
+  for (const B of objs) { if (B.id === id) continue; for (const o of portsOf(B).out) { if (used.has(`${B.id}.${o.key}`)) continue;
+    for (const i of PM.in) { if (taken.has(`${id}.${i.key}`)) continue;
+      /* a block whose unit follows a parameter (a threshold, a regulator) takes the unit of what it is keyed to : the logical choice */
+      const raw = (KINDS[M.kind].ports.in.find((p) => p.key === i.key) || {}).unit, U = KINDS[M.kind].params.find((p) => p.key === "unit"), unit = raw === "*" && U && U.choices.includes(o.unit) && o.unit !== i.unit ? o.unit : null;
+      const d2 = unit ? { ...d, objects: d.objects.map((q) => (q.id === id ? { ...q, params: { ...(q.params || {}), unit } } : q)) } : d;
+      if (!wireCheck(d2, `${B.id}.${o.key}`, `${id}.${i.key}`).ok) continue; const x = (B.x || 0) + BLOCK.W, y = (B.y || 0) + portY(B, "out", o.key) - portY(M, "in", i.key);
+      if (y >= 0 && free(x, y)) cands.push({ x, y, B, from: `${B.id}.${o.key}`, to: `${id}.${i.key}`, unit }); break; } } }
+  if (!cands.length) return null;
+  cands.sort((a, b) => (b.B.x || 0) - (a.B.x || 0) || (a.y - b.y)); const c = cands[0];
+  return { x: c.x, y: c.y, wires: [{ from: c.from, to: c.to }], ...(c.unit ? { unit: c.unit, params: { unit: c.unit, ...((REF_BY_UNIT[M.kind] || {})[c.unit] || {}) } } : {}) };
+}
+
 const fmt = (v) => String(v).replace("-", "−");
 /** The value chips of a block, laid out in rows inside its width : the key of the value (its technical name), the value, its unit. → [{ ...chip, text, x, w, row }] */
 export function chipLayout(o, d) {
   const out = []; let x = 8, row = 0;
-  for (const c of valueChips(o, d)) { const text = `${c.key} ${fmt(c.value)}${c.unit ? ` ${c.unit}` : ""}`, w = Math.min(BLOCK.W - 16, Math.round(text.length * 5.7 + 14));
+  for (const c of valueChips(o, d)) { const text = `${c.key} ${typeof c.value === "number" ? physText(c.value, c.unit) : `${c.value}${c.unit ? ` ${c.unit}` : ""}`}`, w = Math.min(BLOCK.W - 16, Math.round(text.length * 5.7 + 14));
     if (x + w > BLOCK.W - 8) { x = 8; row++; } out.push({ ...c, text, x, w, row }); x += w + 4; }
   return out;
 }

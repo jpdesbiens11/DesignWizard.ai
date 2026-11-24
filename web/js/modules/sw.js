@@ -32,9 +32,13 @@ import { swCanvas } from "./sw_canvas.js";
 import { swBench } from "./sw_bench.js";
 import { sheet, aiText, reimport } from "./sw_sheet.js";
 import { cpuPage, startPage, codePage, loadPage } from "./sw_pages.js";
-import { hwTag, hwProblems, flowLayout, snapAt, docked } from "../sw/sw_blocks.js";
+import { hwTag, hwProblems, flowLayout, snapAt, docked, hostBoard } from "../sw/sw_blocks.js";
+import { openHil } from "./sw_hil_ui.js";
 import { libraryPalette, reqImportSection, openImport } from "./sw_lib_ui.js";
 import { swRack } from "./sw_lab.js";
+import { shows, noviceOffers } from "../sw/sw_levels.js";
+import { level } from "./sw_level_ui.js";
+import { VIEW, autoPlace } from "../sw/sw_blocks.js";
 import { DEVICES, devicePlacement } from "../sw/sw_devices.js";
 
 const FOLDERS = { lib: ["#0891b2", "un module par genre de tuile"], cfg: ["#7c3aed", "une table de réglages par tuile posée"], io: ["#64748b", "le nom de chaque broche"], app: ["#16a34a", "le pas du logiciel"], hal: ["#b45309", "ce qui touche le CPU"], test: ["#dc2626", "le scénario rejoué sur un ordinateur"], doc: ["#475569", "traçabilité et chargement"] };
@@ -44,6 +48,7 @@ const fr = (n) => (n === null || n === undefined ? "" : String(n).replace(/\B(?=
 
 function render(main, args, vkey) {
   clear(main);
+  const lv = level(); VIEW.tags = shows(lv, "blockTags"); VIEW.chips = shows(lv, "blockChips");      // the level of the person : what a block shows (sw/sw_levels.js)
   const V = vstepOf(vkey), elsewhere = args[0] && !V.pages.includes(args[0]) && vOfPage(args[0]);
   if (elsewhere) { location.replace(vHash(elsewhere.key, args[0])); return () => {}; }      // an address of before the V : its step
   const { head, left, view, right, studio: root } = swShell(main, "sw-view");
@@ -53,7 +58,7 @@ function render(main, args, vkey) {
   const change = (label, fn) => store.commit(label, (p) => { p.software = p.software || []; if (!p.software[0]) return; fn(p.software[0]); });
   const host = el("div", { class: "sw-host" }), pageHost = el("div", { class: "sw-pagehost" }), replay = el("div", { class: "lab-bar sw-bar" }), liveBox = el("div", { class: "sw-livebox swlab bottom-pane", "data-bottom": "sw" }), rackHost = el("div", { class: "swlab-rackhost", hidden: true }), liveHost = el("div", { class: "sw-livehost" }), empty = el("div", { class: "page", hidden: true });
   liveBox.append(liveHost); view.append(empty, pageHost, rackHost, host, liveBox, replay);      // the panel of the bottom : its height is dragged at its top edge (core/panes.js mountBottom)
-  const canvas = swCanvas(host, { rank: rankOf, tag: (o) => hwTag(store.project, design(), o),
+  const canvas = swCanvas(host, { rank: rankOf, showRank: shows(lv, "rank"), tag: (o) => hwTag(store.project, design(), o),
     onArrange: () => { const d = design(); if (!d) return; const pos = flowLayout(d); change("Logiciel : blocs rangés de gauche à droite", (x) => { for (const o of x.objects) if (pos[o.id]) Object.assign(o, pos[o.id]); }); setTimeout(() => canvas.fit(), 0); },
     onPick: (s) => { st.sel = s; paint(); renderRight(); },
     onMove: (id, x, y) => { const d0 = design(), was = (d0.wires || []).filter((w) => (split(w.from)[0] === id || split(w.to)[0] === id) && docked(d0, w)), sn = snapAt(d0, id, x, y), at = sn || { x, y };      // keyed blocks (sw/sw_blocks.js snapAt)
@@ -77,12 +82,15 @@ function render(main, args, vkey) {
   const open = (key) => { if (!V.pages.includes(key)) { location.hash = vHash((vOfPage(key) || V).key, key); return; } st.step = key; mark(); all(); left.scrollTop = 0; };
   const addDevice = (key) => change(`Logiciel : ${DEVICES[key].label} posé`, (d) => { const free = (base) => { let n = 1, id = base; while (d.objects.some((o) => o.id === id)) id = `${base}_${++n}`; return id; }, y = Math.max(20, ...d.objects.map((o) => (o.y || 0) + 150)), P = devicePlacement(key, 20, y, free);
     for (const o of P.objects) { if (o.kind === "pin_adc") o.params.channel = Math.max(-1, ...d.objects.filter((q) => q.kind === "pin_adc").map((q) => Number((q.params || {}).channel) || 0)) + 1; if (o.kind === "pin_din" || o.kind === "pin_dout") o.params.pin = Math.max(-1, ...d.objects.filter((q) => q.kind === "pin_din" || q.kind === "pin_dout").map((q) => Number((q.params || {}).pin) || 0)) + 1; d.objects.push(o); }
-    d.wires.push(...P.wires); st.sel = { obj: P.objects[P.objects.length - 1].id }; });
-  const add = (kind) => change(`Logiciel : ${KINDS[kind].label} posé`, (d) => { let n = 1; while (d.objects.some((o) => o.id === `${kind}_${n}`)) n++; const y = Math.max(20, ...d.objects.map((o) => (o.y || 0) + 150)); d.objects.push({ id: `${kind}_${n}`, kind, name: `${KINDS[kind].label} ${n}`, params: {}, sure: [], x: 20, y }); st.sel = { obj: `${kind}_${n}` }; });
+    d.wires.push(...P.wires); if (P.scenario) { d.scenario = d.scenario || { steps: 200, pins: {} }; d.scenario.pins = { ...(d.scenario.pins || {}), ...P.scenario }; } st.sel = { obj: P.objects[P.objects.length - 1].id }; if (shows(lv, "autoPlace")) keyIn(d, P.objects[P.objects.length - 1].id); });
+  /* a novice is given the block already keyed in : to the latest free output of the same key (sw/sw_blocks.js autoPlace) */
+  const keyIn = (d, id) => { const a = autoPlace(d, id), o = d.objects.find((q) => q.id === id); if (!a || !o) return; o.x = a.x; o.y = a.y; if (a.params) o.params = { ...(o.params || {}), ...a.params }; d.wires.push(...a.wires); setTimeout(() => toast("Bloc emboîté tout seul sur la dernière sortie de la même clé. Glissez-le ailleurs pour le déboîter.", "success", 3500), 0); };
+  /* a new block : off the rails of the board — a block of the software goes in the middle, a board output on the right rail */
+  const add = (kind) => change(`Logiciel : ${KINDS[kind].label} posé`, (d) => { let n = 1; while (d.objects.some((o) => o.id === `${kind}_${n}`)) n++; const y = Math.max(20, ...d.objects.map((o) => (o.y || 0) + 150)); d.objects.push({ id: `${kind}_${n}`, kind, name: `${KINDS[kind].label} ${n}`, params: {}, sure: [], x: KINDS[kind].pin === "dout" ? 20 + 4 * 320 : KINDS[kind].pin ? 20 : 340, y }); st.sel = { obj: `${kind}_${n}` }; if (shows(lv, "autoPlace")) keyIn(d, `${kind}_${n}`); });
 
   /* ---------- the live bench : made when the step opens, gone when it closes ---------- */
   const stopBench = () => { if (bench) { bench.dispose(); bench = null; } rack = null; rackHost.replaceChildren(); };
-  function ensureBench() { if (bench) return; bench = swBench({ design, onFrame: () => { if (!bench) return; canvas.values(bench.values); if (rack) rack.refresh(); for (const td of right.querySelectorAll("[data-ref]")) td.textContent = fr(bench.values(td.dataset.ref)); }, onLog: () => { if (bench && journalHost && journalHost.isConnected) journalHost.replaceChildren(bench.journal()); } }); }
+  function ensureBench() { if (bench) return; bench = swBench({ design, lanes: shows(lv, "lanes"), onFrame: () => { if (!bench) return; canvas.values(bench.values); if (rack) rack.refresh(); for (const td of right.querySelectorAll("[data-ref]")) td.textContent = fr(bench.values(td.dataset.ref)); }, onLog: () => { if (bench && journalHost && journalHost.isConnected) journalHost.replaceChildren(bench.journal()); } }); }
 
   function renderLeft() {
     clear(left); const d = design(), cpu = d ? cpuOf(d) : null;
@@ -90,6 +98,8 @@ function render(main, args, vkey) {
     if (d) { const ok = ready(d, cpu), n = unsure(d).length, zipBtn = btn("Fichiers C (.zip)", () => { const f = files(); download(`${d.id}-c.zip`, zip(f.map((x) => ({ name: x.name, bytes: x.text }))), "application/zip"); toast(`${f.length} fichiers écrits : la bibliothèque, les modules, leur structure, l'essai — et doc/LOADING.md, pour les charger dans le CPU.`, "success", 6000); },
       { primary: true, small: true, icon: "download", disabled: !ok, tip: ok ? "Le paquet : la bibliothèque, les modules, la structure de fichiers, l'essai et la marche à suivre pour le CPU" : n ? `${n} valeur${n > 1 ? "s" : ""} d'exemple à confirmer d'abord — étape 3` : "Le guide dit ce qui manque" }); zipBtn.dataset.swZip = "";
       left.append(el("div", { class: "side-actions" }, zipBtn, btn("Copier pour une IA", async () => toast((await copyText(aiText(d))) ? "Copié : le logiciel, ses objets et la consigne." : "Copie impossible.", "success", 4000), { small: true, icon: "sparkle", tip: "Confier le logiciel à un assistant : objets, fils, CPU, consigne" }), btn("Réimporter…", () => reimport(design, change), { small: true, icon: "wizard", tip: "Aperçu des changements, puis une seule étape annulable" }))); }
+    if (d && V.key === "sim") { const hb = hostBoard(store.project, d), b = btn("Essayer sur la vraie carte", () => openHil(), { primary: true, icon: "chip", disabled: !hb, tip: hb ? `Pas à pas, comme la Manipulation en labo : la carte « ${hb.name || hb.id} » de l'Électronique, la sonde, l'alimentation, puis chaque entrée réglée et chaque sortie relevée — ce que le modèle attend, en volts` : "Aucune carte du produit avec un microcontrôleur : le PCBA de la carte de commande la donnera" });
+      b.dataset.swHilOpen = ""; left.append(el("div", { class: "side-actions swl-hil" }, b)); }      // the software tried on its board (modules/sw_hil_ui.js)
     const scroll = el("div", { class: "side-scroll" }); left.append(scroll);
     scroll.append(stepCard(d, cpu, V.key, st.step, run, open));
     if (!d) return;
@@ -106,7 +116,9 @@ function render(main, args, vkey) {
         el("label", { class: "field" }, el("span", { class: "field-label" }, "Référence"), ref), lvl ? el("label", { class: "field" }, el("span", { class: "field-label" }, S.levelWord), lvl) : null,
         el("ul", { class: "small sw-asks" }, A.lines.map((l) => el("li", null, l))),
         el("label", { class: "field" }, el("span", { class: "field-label" }, "Cadence du pas (ms)"), el("input", { type: "number", min: 1, max: 1000, step: 1, value: String(d.period || 10), "data-sw-period": "", onChange: (e) => { const v = Math.round(Number(e.target.value)); if (v >= 1 && v <= 1000) change(`Logiciel : pas de ${v} ms`, (x) => { x.period = v; }); } })))); }
-    if (st.step === "objects") scroll.append(reqImportSection({ design }), libraryPalette({ pack: st.pack, setPack: (k) => { st.pack = k; renderLeft(); }, add, addDevice, used: new Set(d.objects.map((o) => o.kind)) }));
+    if (st.step === "objects") { const used = new Set(d.objects.map((o) => o.kind));
+      scroll.append(libraryPalette({ pack: st.pack, setPack: (k) => { st.pack = k; renderLeft(); }, add, addDevice, used, packs: shows(lv, "packs"), planned: shows(lv, "planned"), only: lv === "novice" ? noviceOffers(used) : null, rawPins: shows(lv, "rawPins") }));
+      if (lv !== "novice") scroll.append(reqImportSection({ design })); }
     if (st.step === "values") { const U = unsure(d), objs = d.objects.filter((o) => U.some((u) => u.obj === o.id));
       scroll.append(el("div", { class: "side-section", "data-box": "todo", "data-fold-note": `${U.length} à relire` }, el("h3", null, "Les valeurs à relire"), objs.length ? el("div", { "data-sw-todo": String(U.length) }, objs.map((o) => { const K = KINDS[o.kind], n = U.filter((u) => u.obj === o.id).length, N = NATURES.find((x) => x.id === K.nature);
         return el("button", { class: `nav-item${st.sel && st.sel.obj === o.id ? " active" : ""}`, type: "button", style: `box-shadow: inset 3px 0 0 ${N.color}`, "data-sw-todo-obj": o.id, onClick: () => pick(o.id) }, icon(K.icon), el("span", { class: "grow" }, o.name), el("small", null, `${n} à relire`)); })) : el("p", { class: "lab-note" }, icon("check"), " Toutes les valeurs ont été relues.")));
@@ -120,7 +132,7 @@ function render(main, args, vkey) {
     if (st.step === "load") scroll.append(releaseList(d, cpu, run, (k, page) => { location.hash = vHash(k, page); }), docsSection(d));
     if (st.step === "load") scroll.append(el("div", { class: "side-section", "data-box": "pack", "data-fold-note": "" }, el("h3", null, "Le paquet"), el("p", { class: "muted small" }, "Tout ce qui est décrit au centre est aussi écrit dans le paquet, en anglais : doc/LOADING.md."),
       btn("Lire doc/LOADING.md", () => { st.file = "bms/doc/LOADING.md"; open("code"); }, { small: true, icon: "code" })));
-    const g = guideBox(guide(), { title: "Ce que le logiciel demande", quiet: "Rien à signaler : le paquet peut être écrit." }); if (g) scroll.append(el("div", { class: "side-section", "data-box": "guide", "data-fold-note": "le guide" }, el("h3", null, "À régler — le guide"), g));
+    const g = shows(lv, "guideList") ? guideBox(guide(), { title: "Ce que le logiciel demande", quiet: "Rien à signaler : le paquet peut être écrit." }) : null; if (g) scroll.append(el("div", { class: "side-section", "data-box": "guide", "data-fold-note": "le guide" }, el("h3", null, "À régler — le guide"), g));
   }
 
   function renderRight() {
@@ -130,10 +142,10 @@ function render(main, args, vkey) {
     const body = el("div", { class: "side-scroll" }); right.append(body);
     if (st.step === "live") { const at = el("div");
       body.append(el("div", { class: "side-section", "data-box": "bench", "data-fold-note": "les instruments" }, el("h3", null, "Le banc du logiciel"), el("p", { class: "muted small" }, "Comme au Labo d'une carte, les instruments sont au-dessus des blocs : une source par entrée du logiciel, réglée sur sa face — sa valeur dans l'unité du capteur, les comptes qu'elle met à la broche —, et les témoins de ce que le logiciel commande. Changez une source pendant la marche, ou en pause puis « Un pas »."), at));
-      if (o) sheet(body, { d, sel: st.sel, change, live: true, values: bench ? { ...bench.L.m.last } : null, onGone: () => { st.sel = null; } });
+      if (o) sheet(body, { d, sel: st.sel, change, live: true, level: lv, values: bench ? { ...bench.L.m.last } : null, onGone: () => { st.sel = null; } });
       else body.append(el("p", { class: "muted small" }, "Un clic sur une tuile montre ici ce qui y entre et ce qui en sort, en direct."));
       return; }
-    sheet(body, { d, sel: st.sel, change, values: valuesAt(), onGone: () => { st.sel = null; } });
+    sheet(body, { d, sel: st.sel, change, level: lv, values: valuesAt(), onGone: () => { st.sel = null; } });
     if (!o && !w && R) { const ev = events(d, R), name = (ref) => { const [id, key] = split(ref), x = d.objects.find((q) => q.id === id); return `${x ? x.name : id} — ${key}`; };
       body.append(el("div", { class: "side-section", "data-fold-note": `${R.t.length} pas` }, el("h3", null, "Le scénario rejoué"), el("p", { class: "muted small" }, "Le modèle est rejoué contre le scénario de l'exemple ; le curseur sous la page montre chaque instant. Pour tenir le banc vous-même : étape 5."),
         ev.length ? el("ul", { class: "lab-list", "data-sw-events": String(ev.length) }, ev.map((e) => el("li", null, el("button", { class: "link", type: "button", onClick: () => { st.k = R.t.indexOf(e.t); const s = replay.querySelector("[data-sw-pos]"); if (s) s.value = String(st.k); paint(); renderRight(); } }, `${e.t} ms`), ` — ${name(e.ref)} passe à ${e.to}`))) : el("p", { class: "muted" }, "Rien ne bascule dans ce scénario."))); }

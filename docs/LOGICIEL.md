@@ -258,3 +258,29 @@ cellules reçues de l'électronique de cellules par la liaison (l'exemple lit un
 le banc) ; les broches lues sur la carte (`sw/hwsw.js`) plutôt que tapées ; le banc du pack (`sw/plant.js`,
 `sw/bms_hw.js`) et les pannes injectées ; la couverture ; le
 journal de l'aller-retour IA (la réponse s'applique en une étape annulable, avec aperçu, mais n'entre pas au journal).
+
+## 4 sexies. Trois niveaux, les unités de la physique, l'essai sur la carte (v0.190.0)
+
+Demandes de JP, 24 novembre 2026 : « beaucoup trop de texte et d'étapes pour un ingénieur mécanique… trois niveaux de compréhension :
+novice, intermédiaire et expert » ; « tous les aspects physiques en unités de la physique… gère la complexité en arrière-plan » ;
+« être guidé comme pour le labo électronique, même interface, à tester le logiciel embarqué étape par étape sur la carte cible » ;
+« importer une liste d'exigences SW de DynamiteAgile… le prompt du format via l'icône IA ».
+
+- **Niveaux** (`sw/sw_levels.js`, bascule `modules/sw_level_ui.js`, gardée par le navigateur de chacun : `dw.sw.level`) — Novice : 3 étapes
+  (ce qu'il doit faire, les blocs, essayer), une phrase par étape, des blocs nus, les capteurs et actionneurs plutôt que des broches, et
+  **l'outil pose et emboîte les blocs** (`autoPlace` : la dernière sortie libre de la même clé, l'unité de ce qui nourrit le bloc, une
+  valeur de référence de cette unité — `REF_BY_UNIT`) ; Intermédiaire : 5 étapes, la carte et les valeurs sur les blocs, les mots repliés ;
+  Expert : le V complet. Le logiciel et ses règles ne changent pas avec le niveau : seulement ce qui se montre.
+- **Unités de la physique** (`sw/sw_units.js`) : afficheurs, valeurs, instruments du banc et analyseur en V, A, °C, %, Wh ; ce que l'on
+  tape est converti dans les entiers du logiciel (mV, mA, 0,1 °C, ‰), sur lesquels le C est prouvé dos à dos.
+- **Exigences de DynamiteAgile** : l'export .csv de Goldmine se lit tel quel (`agileReqs`) — les exigences allouées au logiciel
+  (colonne « allocation »), toutes sinon, et c'est dit ; le bouton « IA » des écrans du Logiciel (`modules/sw_ai.js`) donne le prompt
+  du format standard avec les exigences du projet (leurs identifiants), ses broches et les nets de sa carte (`reqPromptWith`) ; une
+  exigence renvoyée avec le même identifiant n'est pas doublée : elle reçoit son bloc. Une réponse appliquée entre au journal.
+- **Essai sur la carte** (`sw/sw_hil.js`, écran `modules/sw_hil_ui.js`, le même que la Manipulation en labo) : sur la carte de
+  l'Électronique — la sonde de programmation, l'alimentation réglée sortie coupée, le noir d'abord, le court-circuit cherché avant
+  d'alimenter, le courant à la mise sous tension, le programme chargé — puis chaque entrée tenue par une source là où son net touche
+  la carte (jamais sur la sortie d'un circuit : à la place du capteur, réglée jusqu'à la bonne tension), et chaque sortie relevée au
+  multimètre, au repos puis chaque entrée au-delà de son seuil ; **ce que la sortie doit lire vient du modèle** (le même pas que le C).
+  Un net non relié est proposé par son nom (AIN0, DIN0, DOUT0) et dit comme tel ; relevés et notes dans `project.swLab`. Rien de cette
+  procédure n'a tourné sur une vraie carte, et l'écran le dit.

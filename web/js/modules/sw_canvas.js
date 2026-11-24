@@ -16,9 +16,10 @@
 
 import { KINDS, portsOf } from "../sw/sw_objects.js";
 import { liveWires, split } from "../sw/sw_design.js";
-import { BLOCK, SIGNAL_TYPES, VALUE_SOURCES, typeOf, keyPath, familyOf, blockBox, portY, valueChips, chipLayout, snapAt, docked } from "../sw/sw_blocks.js";
+import { BLOCK, SIGNAL_TYPES, VALUE_SOURCES, VIEW, tagH, typeOf, keyPath, familyOf, blockBox, portY, valueChips, chipLayout, snapAt, docked } from "../sw/sw_blocks.js";
 import { viewBar, fitView, zoomView } from "../core/view_bar.js";
 import { DEVICES } from "../sw/sw_devices.js";
+import { physText, shownUnit } from "../sw/sw_units.js";
 import { el } from "../core/dom.js";
 
 const NS = "http://www.w3.org/2000/svg", K = 9, A = 7, R = 10;
@@ -91,14 +92,14 @@ export function swCanvas(host, o = {}) {
       plugs.push(S("path", { d: `M ${q.x} ${q.y - A + 1.5} ${keyPath(type, q.x, q.y, 1, A - 1.5, K - 2)} Z`, class: "swb-plug", style: `--wt:${SIGNAL_TYPES[type].color}`, "data-plug": w.to }));
       if (w.delay) svg.append(S("text", { x: (p.x + q.x) / 2, y: (p.y + q.y) / 2 - 6, class: "sw-delay", "text-anchor": "middle" }, "pas d'avant")); }
     /* the blocks */
-    for (const x of objs) { const b = blockBox(x), P = portsOf(x), F = familyOf(x.kind, x), Kd = KINDS[x.kind], Dv = x.device && DEVICES[x.device], tag = o.tag ? o.tag(x) : null, chips = valueChips(x), lit = P.out.some((p) => typeOf(p.unit) === "bool" && val(`${x.id}.${p.key}`) === 1);
+    for (const x of objs) { const b = blockBox(x), P = portsOf(x), F = familyOf(x.kind, x), Kd = KINDS[x.kind], Dv = x.device && DEVICES[x.device], tag = o.tag ? o.tag(x) : null, chips = VIEW.chips ? valueChips(x, d) : [], lit = P.out.some((p) => typeOf(p.unit) === "bool" && val(`${x.id}.${p.key}`) === 1);
       const g = S("g", { class: `swb-block sw-tile${sel && sel.obj === x.id ? " sel" : ""}${x.off ? " off" : ""}${lit ? " lit" : ""}`, "data-obj": x.id, "data-family": F.id, transform: `translate(${b.x} ${b.y})`, style: `--dom:${F.color}` });
       const choose = (e) => { e.stopPropagation(); if (o.onPick) o.onPick({ obj: x.id }); };
       g.append(...[S("path", { d: blockOutline(x), class: "swb-body", onClick: choose }), S("path", { d: `M ${R} 0 L ${b.w - R} 0 Q ${b.w} 0 ${b.w} ${R} L ${b.w} ${BLOCK.HEAD} L 0 ${BLOCK.HEAD} L 0 ${R} Q 0 0 ${R} 0 Z`, class: "swb-head" }),
         S("use", { href: `${sprite()}#i-${(Dv && Dv.icon) || Kd.icon || F.icon}`, x: 9, y: 8, width: 16, height: 16, class: "swb-ico" }),
         S("text", { x: 31, y: 21, class: "swb-name" }, cut(x.name, 24)), S("title", null, Dv ? `${x.name} — ${Dv.label} (${Dv.fr}) : ${Dv.text} Vu du logiciel : ${Kd.label}.` : `${x.name} — ${Kd.label} (${Kd.fr}) : ${Kd.text}`),
-        rank[x.id] ? S("text", { x: b.w - 9, y: 20, class: "swb-rank", "text-anchor": "end" }, S("title", null, `Calculé en n° ${rank[x.id]} à chaque pas`), `${rank[x.id]}`) : null].filter(Boolean));
-      if (tag) { const tg = S("g", { class: `swb-tag ${tag.state}`, "data-sw-tag": tag.state, onClick: choose }, S("rect", { x: 8, y: BLOCK.HEAD + 3, width: b.w - 16, height: 16, rx: 8 }), S("text", { x: 16, y: BLOCK.HEAD + 14.5 }, `${tag.state === "missing" ? "⚠ " : tag.state === "linked" ? "⛓ " : "▣ "}${cut(tag.text, 34)}`), S("title", null, tag.state === "missing" ? "Broche pas encore reliée à un net de la carte : sa fiche le choisit." : tag.state === "linked" ? "Reliée à ce net de la carte du projet." : "Le logiciel tourne sur cette carte du projet.")); g.append(tg); }
+        rank[x.id] && o.showRank !== false ? S("text", { x: b.w - 9, y: 20, class: "swb-rank", "text-anchor": "end" }, S("title", null, `Calculé en n° ${rank[x.id]} à chaque pas`), `${rank[x.id]}`) : null].filter(Boolean));
+      if (tag && VIEW.tags) { const tg = S("g", { class: `swb-tag ${tag.state}`, "data-sw-tag": tag.state, onClick: choose }, S("rect", { x: 8, y: BLOCK.HEAD + 3, width: b.w - 16, height: 16, rx: 8 }), S("text", { x: 16, y: BLOCK.HEAD + 14.5 }, `${tag.state === "missing" ? "⚠ " : tag.state === "linked" ? "⛓ " : "▣ "}${cut(tag.text, 34)}`), S("title", null, tag.state === "missing" ? "Broche pas encore reliée à un net de la carte : sa fiche le choisit." : tag.state === "linked" ? "Reliée à ce net de la carte du projet." : "Le logiciel tourne sur cette carte du projet.")); g.append(tg); }
       /* the head : what one takes the block by */
       const grip = S("rect", { width: b.w, height: BLOCK.HEAD, class: "sw-grip", tabindex: 0, role: "button", "aria-label": `${x.name} — ${Kd.label}. Glisser pour déplacer, Entrée pour ouvrir sa fiche, flèches pour déplacer de 10.` });
       grip.addEventListener("pointerdown", (e) => { e.preventDefault(); const pt = svg.getScreenCTM().inverse(), at = (ev) => ({ x: ev.clientX * pt.a + pt.e, y: ev.clientY * pt.d + pt.f }), s0 = at(e); let moved = false, nx = b.x, ny = b.y; grip.setPointerCapture(e.pointerId);
@@ -108,25 +109,25 @@ export function swCanvas(host, o = {}) {
       g.append(grip);
       /* the ports : a key each ; an output shows what it is worth */
       const pendingType = pending ? (() => { const [pa, pk] = split(pending), src = O[pa] && portsOf(O[pa]).out.find((q) => q.key === pk); return src ? typeOf(src.unit) : null; })() : null;
-      const port = (p, dir) => { const ref = `${x.id}.${p.key}`, y = portY(x, dir, p.key), type = typeOf(p.unit), v = val(ref), on = pending === ref, can = dir === "in" && pending && pendingType === type, nope = dir === "in" && pending && pendingType !== type, unit = p.unit !== "0/1" && p.unit !== p.label ? p.unit : "";
+      const port = (p, dir) => { const ref = `${x.id}.${p.key}`, y = portY(x, dir, p.key), type = typeOf(p.unit), v = val(ref), on = pending === ref, can = dir === "in" && pending && pendingType === type, nope = dir === "in" && pending && pendingType !== type, unit = p.unit !== "0/1" && p.unit !== p.label ? shownUnit(p.unit) : "";
         const hit = (e) => { e.stopPropagation(); if (dir === "out") { pending = on ? null : ref; draw(...last); } else if (pending) { const from = pending; pending = null; if (o.onWire) o.onWire(from, ref); else draw(...last); } else if (o.onPick) o.onPick({ obj: x.id }); };
         g.append(S("text", { x: dir === "in" ? K + 7 : b.w - 8, y: y + 4, class: "swb-port", "text-anchor": dir === "in" ? "start" : "end" }, p.label, unit ? S("tspan", { class: "swb-unit" }, ` ${unit}`) : null));
         g.append(S("path", { d: dir === "in" ? `M 0 ${y - A} ${keyPath(type, 0, y, 1, A, K)} Z` : `M ${b.w} ${y - A} ${keyPath(type, b.w, y, 1, A, K)} Z`, class: `sw-dot swb-key ${dir}${(dir === "in" ? dockedIn : dockedOut).has(ref) ? " docked" : ""}${on ? " on" : ""}${can ? " can" : ""}${nope ? " nope" : ""}${type === "bool" && v === 1 ? " hot" : ""}`, style: `--wt:${SIGNAL_TYPES[type].color}`, "data-bool": type === "bool" ? "1" : null, "data-type": type,
           tabindex: 0, role: "button", "data-port": ref, "data-dir": dir, "aria-label": `${dir === "in" ? "Entrée" : "Sortie"} « ${p.label} » de ${x.name} — ${SIGNAL_TYPES[type].fr}, en ${p.unit}${dir === "out" ? " — Entrée pour en tirer un fil" : pending ? (can ? " — Entrée pour y amener le fil" : " — ne reçoit pas ce type") : ""}`, onClick: hit, onKeydown: (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); hit(e); } } }));
-        if (dir === "out") { const tx = show(v), lw = Math.max(26, tx.length * 7 + 12), dy = dockedOut.has(ref) ? -21 : 0, lx = dockedOut.has(ref) ? b.w - lw - 4 : b.w + K + 5;      // a keyed output shows its value above the joint
-          g.append(S("g", { class: "swb-lcd", "data-lcd": ref }, S("rect", { x: lx, y: y - 9 + dy, width: lw, height: 18, rx: 4 }), S("text", { x: lx + 6, y: y + 4 + dy, class: "sw-val", "data-val": ref }, tx))); } };
+        if (dir === "out") { const tx = physText(v, p.unit), lw = Math.max(26, tx.length * 7 + 12), dy = dockedOut.has(ref) ? -21 : 0, lx = dockedOut.has(ref) ? b.w - lw - 4 : b.w + K + 5;      // a keyed output shows its value above the joint
+          g.append(S("g", { class: "swb-lcd", "data-lcd": ref }, S("rect", { x: lx, y: y - 9 + dy, width: lw, height: 18, rx: 4 }), S("text", { x: lx + 6, y: y + 4 + dy, class: "sw-val", "data-val": ref, "data-unit": p.unit }, tx))); } };
       P.in.forEach((p) => port(p, "in")); P.out.forEach((p) => port(p, "out"));
       /* the values, each in the colour of where it comes from */
-      if (chips.length) { const top = BLOCK.HEAD + BLOCK.TAG + Math.max(1, P.in.length, P.out.length) * BLOCK.ROW + 2;
+      if (chips.length) { const top = BLOCK.HEAD + tagH() + Math.max(1, P.in.length, P.out.length) * BLOCK.ROW + 2;
         for (const c of chipLayout(x, d)) { const cy = top + c.row * 20;
-          g.append(S("g", { class: `swb-chip ${c.source}${c.pending ? " pending" : ""}`, "data-sw-chip": `${x.id}.${c.key}`, "data-source": c.source, onClick: (e) => { e.stopPropagation(); if (o.onPick) o.onPick({ obj: x.id, field: c.key }); } }, S("rect", { x: c.x, y: cy, width: c.w, height: 16, rx: 8 }), S("text", { x: c.x + 7, y: cy + 11.5 }, c.text), S("title", null, `${c.label} : ${show(c.value)} ${c.unit || ""} — ${VALUE_SOURCES[c.source].text}`))); } }
+          g.append(S("g", { class: `swb-chip ${c.source}${c.pending ? " pending" : ""}`, "data-sw-chip": `${x.id}.${c.key}`, "data-source": c.source, onClick: (e) => { e.stopPropagation(); if (o.onPick) o.onPick({ obj: x.id, field: c.key }); } }, S("rect", { x: c.x, y: cy, width: c.w, height: 16, rx: 8 }), S("text", { x: c.x + 7, y: cy + 11.5 }, c.text), S("title", null, `${c.label} : ${physText(c.value, c.unit)} — ${VALUE_SOURCES[c.source].text}`))); } }
       svg.append(g); }
     svg.append(...plugs);
     if (pending) svg.append(S("text", { x: 12, y: hy - 12, class: "sw-hint" }, "Cliquez une entrée de la même clé — Échap pour renoncer."));
   }
   /* what every output is worth now, without redrawing : the displays, the wires that carry a 1, the quantities that move */
   function values(get) {
-    for (const t of svg.querySelectorAll("[data-val]")) { const v = get(t.getAttribute("data-val")), s = show(v); t.textContent = s; const r = t.previousSibling; if (r) r.setAttribute("width", String(Math.max(26, s.length * 7 + 12))); }
+    for (const t of svg.querySelectorAll("[data-val]")) { const v = get(t.getAttribute("data-val")), s = physText(v, t.getAttribute("data-unit")); t.textContent = s; const r = t.previousSibling; if (r) r.setAttribute("width", String(Math.max(26, s.length * 7 + 12))); }
     for (const w of svg.querySelectorAll(".sw-wire[data-from]")) { const v = get(w.getAttribute("data-from")), f = w.getAttribute("data-from"); if (w.dataset.bool) w.classList.toggle("hot", v === 1); else { w.classList.toggle("flow", was[f] !== undefined && was[f] !== v); } }
     for (const w of svg.querySelectorAll(".sw-wire[data-from]")) was[w.getAttribute("data-from")] = get(w.getAttribute("data-from"));
     for (const p of svg.querySelectorAll(".sw-dot[data-bool][data-dir='out']")) p.classList.toggle("hot", get(p.getAttribute("data-port")) === 1);

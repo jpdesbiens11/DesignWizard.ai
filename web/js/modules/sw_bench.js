@@ -12,6 +12,7 @@ import { el, clear, icon, btn, onOff } from "../core/dom.js";
 import { liveStart, liveStep, liveSet, due } from "../sw/sw_live.js";
 import { KINDS, portsOf } from "../sw/sw_objects.js";
 import { split } from "../sw/sw_design.js";
+import { physText, shownUnit } from "../sw/sw_units.js";
 
 const SPEEDS = [[0.05, "20 fois plus lent"], [0.2, "5 fois plus lent"], [1, "temps réel"]], fr = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " ").replace("-", "−");
 const CONTACT = [["follows", "suit la bobine"], ["open", "coincé ouvert"], ["closed", "soudé fermé"]];
@@ -70,21 +71,22 @@ export function swBench(o) {
   function tickBar() { const L = st.L, t = bar.querySelector("[data-sw-time]"), c = bar.querySelector("[data-sw-count]"); if (!L || !t) { drawBar(); return; } t.textContent = `${fr(L.t)} ms`; t.dataset.swTime = String(L.t); if (c) c.textContent = `pas n° ${L.m.k} · un pas toutes les ${L.m.dt} ms`; }
   /* the chronogram : a lane per decision (0 / 1) and per measure, the last seconds */
   function lanes() { const d = o.design(), out = []; if (!d) return out;
-    for (const x of d.objects.filter((q) => !q.off && KINDS[q.kind])) for (const p of portsOf(x).out) { if (KINDS[x.kind].pin === "ain") continue; if (p.unit === "0/1") out.push({ ref: `${x.id}.${p.key}`, label: `${x.name} · ${p.label}`, bool: true }); else if (x.kind === "analog_in") out.push({ ref: `${x.id}.${p.key}`, label: `${x.name} (${p.unit})`, bool: false }); }
+    for (const x of d.objects.filter((q) => !q.off && KINDS[q.kind])) for (const p of portsOf(x).out) { if (KINDS[x.kind].pin === "ain") continue; if (p.unit === "0/1") out.push({ ref: `${x.id}.${p.key}`, label: `${x.name} · ${p.label}`, bool: true }); else if (x.kind === "analog_in" || p.unit === "‰") out.push({ ref: `${x.id}.${p.key}`, label: `${x.name} (${shownUnit(p.unit)})`, bool: false, unit: p.unit }); }
     for (const x of d.objects.filter((q) => !q.off && KINDS[q.kind] && KINDS[q.kind].pin === "dout")) out.push({ ref: `${x.id}.level`, label: x.name, bool: true });
-    return out.slice(0, 14); }
+    return out.slice(0, o.lanes || 14); }
   function drawChart() {
     const L = st.L, ls = lanes(), H = 20, LBL = 190, w = Math.max(360, chart.clientWidth || 800), h = ls.length * H + 6, dpr = Math.min(2, window.devicePixelRatio || 1);
     if (chart.width !== Math.round(w * dpr) || chart.height !== Math.round(h * dpr)) { chart.width = Math.round(w * dpr); chart.height = Math.round(h * dpr); chart.style.height = `${h}px`; }
     const g = chart.getContext("2d"), ink = "#e2e8f0", mute = "#94a3b8", line = "#1e293b";      // a scope screen : dark in every theme, as the oscilloscopes of the Labo
     g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h); g.font = "11px system-ui, sans-serif"; g.textBaseline = "middle"; if (!L) return;
+    if (!L.trace.t.length) { g.fillStyle = "#4ade80"; g.font = "600 13px system-ui, sans-serif"; g.fillText("▶ Appuyez sur « Marche » ou « Un pas » : les courbes défilent ici.", LBL + 12, Math.min(h / 2, 14)); g.font = "11px system-ui, sans-serif"; }      // an empty screen says what to do
     const n = L.trace.t.length, span = L.keep, x = (k) => LBL + (w - LBL - 6) * (k + span - n) / (span - 1 || 1);
     ls.forEach((ln, r) => { const y0 = r * H + 4, y1 = y0 + H - 7, ys = L.trace.ports[ln.ref] || [], cur = ys.length ? ys[ys.length - 1] : 0;
       g.fillStyle = mute; g.fillText(ln.label.length > 30 ? `${ln.label.slice(0, 29)}…` : ln.label, 4, (y0 + y1) / 2); g.strokeStyle = line; g.lineWidth = 1; g.beginPath(); g.moveTo(LBL, y1 + 2.5); g.lineTo(w - 6, y1 + 2.5); g.stroke(); if (!ys.length) return;
       let lo = 0, hi = 1; if (!ln.bool) { lo = Math.min(...ys); hi = Math.max(...ys); if (hi === lo) { hi = lo + 1; lo -= 1; } }
       g.strokeStyle = ln.bool ? (cur ? "#f87171" : "#4ade80") : "#fb923c"; g.lineWidth = 1.8; g.beginPath();
       for (let k = 0; k < n; k++) { const yy = y1 - (y1 - y0) * (ys[k] - lo) / (hi - lo), xx = x(k); if (!k) g.moveTo(xx, yy); else { if (ln.bool) g.lineTo(xx, y1 - (y1 - y0) * (ys[k - 1] - lo) / (hi - lo)); g.lineTo(xx, yy); } } g.stroke();
-      if (!ln.bool) { g.fillStyle = "#fb923c"; g.textAlign = "right"; g.fillText(fr(cur), w - 8, y0 + 3); g.textAlign = "left"; } });
+      if (!ln.bool) { g.fillStyle = "#fb923c"; g.textAlign = "right"; g.fillText(physText(cur, ln.unit), w - 8, y0 + 3); g.textAlign = "left"; } });
   }
   start(); frame(true);
   return api;

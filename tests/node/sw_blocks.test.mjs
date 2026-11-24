@@ -115,7 +115,8 @@ test("requirements as a standard input : a prompt for an assistant, a plan, then
   assert.equal(valueChips(lim, d).find((c) => c.key === "above").source, "ref", "a value the requirement does not give : the reference value");
   d.reqs.find((r) => r.id === "SWR-010").sure = true; assert.ok(!unsure(d).some((u) => u.obj === lim.id && u.key === "trip"), "confirming the requirement confirms its values");
   assert.equal(d.reqs.find((r) => r.id === "SWR-013").objs.length, 0, "a planned block : the requirement is kept, allocated to nothing");
-  const again = planImport(data, d); assert.equal(again.design.objects.length, d.objects.length * 2, "an import beside an existing design adds, keeps what was there"); assert.ok(again.design.reqs.some((r) => r.id === "SWR-010-b"));
+  const again = planImport(data, d), blocks = (x) => x.objects.filter((o) => !KINDS[o.kind].pin && o.kind !== "analog_in").length;
+  assert.equal(blocks(again.design), blocks(d), "the same list again : a requirement already there with its block is kept, not doubled"); assert.equal(again.design.reqs.length, d.reqs.length); assert.ok(again.rows.filter((r) => r.state === "kept").length === 3);
 });
 
 test("the software is aligned on the board of the project : its host board, the nets of its microcontroller, a tag on every block", () => {

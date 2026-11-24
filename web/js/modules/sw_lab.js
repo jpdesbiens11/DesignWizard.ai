@@ -9,6 +9,7 @@
 import { el, icon } from "../core/dom.js";
 import { KINDS } from "../sw/sw_objects.js";
 import { DEVICES } from "../sw/sw_devices.js";
+import { physText, shownUnit, toShown, toInside, shownStep } from "../sw/sw_units.js";
 
 const fr = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " ").replace("-", "−");
 const CONTACT = [["follows", "suit"], ["open", "coincé ouvert"], ["closed", "soudé"]];
@@ -22,10 +23,10 @@ export function swRack(bench, design) {
     node.replaceChildren(); lamps.length = 0; const L = bench.L; if (!L) return;
     L.inputs.forEach((i, n) => { const D = devOf(i.id), v = L.set[i.id], head = el("h4", null, icon(D ? D.icon : i.kind === "analog" ? "sensor" : "chip"), el("span", null, i.name), el("small", null, D ? D.label : i.kind === "analog" ? "source" : i.kind === "digital" ? "entrée" : "contact"));
       const gear = el("div", { class: "swlab-gear", "data-sw-gear": i.id, style: `--jack:${JACKS[n % JACKS.length]}` }, head);
-      if (i.kind === "analog") { const lcd = el("input", { type: "number", min: i.min, max: i.max, step: i.step, value: String(v), "aria-label": `${i.name}, en ${i.unit}`, "data-bench": i.id }), range = el("input", { type: "range", min: i.min, max: i.max, step: i.step, value: String(v), "aria-label": `${i.name} (bouton)`, "data-bench-range": i.id }), note = el("p", { class: "swlab-note" }), face = el("div", { class: "swlab-lcd" }, lcd, el("span", null, i.unit));
-        const say = () => { const x = L.set[i.id], odd = i.lo !== undefined && (x < i.lo || x > i.hi); note.textContent = odd ? `hors de la plage vraisemblable (${fr(i.lo)} à ${fr(i.hi)}) : le logiciel ne doit pas la croire` : `→ ${fr(i.toCounts(x))} comptes sur ${fr(i.full)} à la broche`; note.classList.toggle("warn", !!odd); face.classList.toggle("warn", !!odd); };
-        const put = (x, from) => { bench.set(i.id, x); const now = L.set[i.id]; if (from !== lcd) lcd.value = String(now); if (from !== range) range.value = String(now); say(); };
-        lcd.addEventListener("input", () => { if (lcd.value !== "") put(Number(lcd.value), lcd); }); range.addEventListener("input", () => put(Number(range.value), range)); say();
+      if (i.kind === "analog") { const U = i.unit, lcd = el("input", { type: "number", min: toShown(i.min, U), max: toShown(i.max, U), step: String(Math.max(shownStep(U), toShown(i.step, U))), value: String(toShown(v, U)), "aria-label": `${i.name}, en ${shownUnit(U)}`, "data-bench": i.id }), range = el("input", { type: "range", min: i.min, max: i.max, step: i.step, value: String(v), "aria-label": `${i.name} (bouton)`, "data-bench-range": i.id }), note = el("p", { class: "swlab-note" }), face = el("div", { class: "swlab-lcd" }, lcd, el("span", null, shownUnit(U)));
+        const say = () => { const x = L.set[i.id], odd = i.lo !== undefined && (x < i.lo || x > i.hi); note.textContent = odd ? `hors de la plage vraisemblable (${physText(i.lo, U)} à ${physText(i.hi, U)}) : le logiciel ne doit pas la croire` : `${physText(i.min, U)} … ${physText(i.max, U)} · à la broche : ${fr(i.toCounts(x))} comptes sur ${fr(i.full)}`; note.classList.toggle("warn", !!odd); face.classList.toggle("warn", !!odd); };
+        const put = (x, from) => { bench.set(i.id, x); const now = L.set[i.id]; if (from !== lcd) lcd.value = String(toShown(now, U)); if (from !== range) range.value = String(now); say(); };
+        lcd.addEventListener("input", () => { if (lcd.value !== "") put(toInside(lcd.value, U), lcd); });      // typed in V, A, °C : the bench keeps the whole numbers of the software range.addEventListener("input", () => put(Number(range.value), range)); say();
         gear.append(face, range, note);
       } else if (i.kind === "digital") { const led = el("i", { class: `swlab-led${v ? " on" : ""}` }), sw = el("button", { type: "button", class: "swlab-sw", "aria-pressed": v ? "true" : "false", "data-bench": i.id, onClick: () => { bench.set(i.id, L.set[i.id] ? 0 : 1); draw(); } }, v ? "1 — ACTIF" : "0 — repos");
         gear.append(el("div", { class: "swlab-toggle" }, led, sw), el("p", { class: "swlab-note" }, D ? D.text : "Ce que la broche lit : 0 ou 1."));

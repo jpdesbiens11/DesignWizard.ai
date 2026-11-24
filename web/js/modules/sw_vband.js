@@ -9,6 +9,8 @@
 
 import { el, icon, btn } from "../core/dom.js";
 import { VSTEPS, STEPS as PAGES, vStates, vstepOf, wordsIn } from "../sw/sw_steps.js";
+import { shows, kidOf, levelSteps } from "../sw/sw_levels.js";
+import { level, levelSwitch, stepPath } from "./sw_level_ui.js";
 
 const NS = "http://www.w3.org/2000/svg", S = (tag, attrs = {}, ...kids) => { const n = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs || {})) if (v !== null && v !== undefined && v !== false) { if (k.startsWith("on")) n.addEventListener(k.slice(2).toLowerCase(), v); else n.setAttribute(k, v); } for (const c of kids.flat()) if (c !== null && c !== undefined) n.append(c); return n; };
 /* where each box stands in the V : x of its left edge, y of its top */
@@ -18,6 +20,7 @@ export const vHash = (key, page = "") => `#/${vstepOf(key).mod}${page ? `/${page
 
 /** The V. → an element : the diagram, and a line that says the reference the project follows */
 export function vBand(d, cpu, cur, run, std) {
+  const lv = level(); if (!shows(lv, "vband")) return el("div", { class: "swv-head swl-head" }, stepPath(lv, cur, vStates(d, cpu, run), (k) => vHash(k)), levelSwitch());      // novice, intermediate : the path of their steps (sw/sw_levels.js)
   const st = vStates(d, cpu, run), svg = S("svg", { class: "swv-band", viewBox: "0 0 1180 138", role: "group", "aria-label": "Le cycle en V du logiciel : sept étapes", "data-sw-v": "" });
   const mid = (k) => [POS[k][0] + BW / 2, POS[k][1] + BH / 2];
   svg.append(S("text", { class: "swv-branch", x: 6, y: 132 }, "Définir et concevoir ↘"), S("text", { class: "swv-branch", x: 1174, y: 132, "text-anchor": "end" }, "↗ Prouver et livrer"));
@@ -32,15 +35,22 @@ export function vBand(d, cpu, cur, run, std) {
       S("text", { class: "swv-label", x: x + 13, y: y + 16 }, `${s.n}. ${s.title}`, state === "done" ? S("tspan", { class: "swv-ok" }, " ✓") : null),
       S("text", { class: "swv-en", x: x + 13, y: y + 30 }, s.en)));
   }
-  return el("div", { class: "swv-head" }, svg, el("p", { class: "swv-std", "data-sw-std": "" }, icon("lock"), " ", std));
+  return el("div", { class: "swv-head" }, svg, el("div", { class: "swv-foot" }, el("p", { class: "swv-std", "data-sw-std": "" }, icon("lock"), " ", std), levelSwitch()));
 }
 /** The card of the step, at the head of the left panel. page : the page shown (a key of PAGES) or "". go(page) : open another page of the step. */
 export function stepCard(d, cpu, cur, page, run, go) {
+  const lv = level(), K = kidOf(cur);
+  if (!shows(lv, "words") && K) { const L = levelSteps(lv), i = L.findIndex((x) => x.key === cur), st0 = vStates(d, cpu, run)[cur], prev = L[i - 1], next = L[i + 1];      // the novice : a pictogram, a name, one sentence
+    return el("div", { class: "side-section sw-stepcard swl-kid", "data-sw-step": cur, "data-fold-note": i >= 0 ? `étape ${i + 1} sur ${L.length}` : "", style: `--dom:${K.color}` }, el("h3", null, i >= 0 ? `Étape ${i + 1}` : "Étape"),
+      el("div", { class: "swl-kidcard" }, icon(K.icon, "swl-big"), el("div", null, el("b", null, K.kid), el("p", null, K.says))),
+      el("p", { class: `sw-state ${st0.state}`, "data-sw-state-of": st0.state }, icon(st0.state === "done" ? "check" : st0.state === "todo" ? "warning" : "info"), " ", st0.text),
+      el("div", { class: "sw-nav" }, prev ? btn(`← ${prev.kid}`, () => { location.hash = vHash(prev.key); }, { small: true }) : el("span"), next ? (() => { const b = btn(`${next.kid} →`, () => { location.hash = vHash(next.key); }, { small: true, primary: st0.state === "done" }); b.dataset.swNext = next.key; return b; })() : null)); }
   const s = vstepOf(cur), st = vStates(d, cpu, run)[cur], i = VSTEPS.indexOf(s), prev = VSTEPS[i - 1], next = VSTEPS[i + 1], P = PAGES.find((x) => x.key === page);
   const words = wordsIn(`${s.plain} ${s.do} ${P ? `${P.plain} ${P.do}` : ""}`);
   return el("div", { class: "side-section sw-stepcard", "data-sw-step": s.key, "data-fold-note": `étape ${s.n} sur ${VSTEPS.length}`, style: `--dom:${s.color}` }, el("h3", null, `Étape ${s.n} — ${s.long}`),
     s.pages.length > 1 ? el("div", { class: "seg sw-pages", role: "tablist", "aria-label": "Les pages de l'étape" }, s.pages.map((k) => { const q = PAGES.find((x) => x.key === k), b = btn(q.title === "Objets" ? "Tuiles" : q.title, () => go(k), { small: true, cls: k === page ? "on" : "" }); b.setAttribute("role", "tab"); b.setAttribute("aria-selected", k === page ? "true" : "false"); b.dataset.swPage = k; return b; })) : null,
-    el("p", { class: "sw-plain", "data-sw-plain": "" }, el("span", { class: "sw-tag" }, "En clair"), " ", s.plain), el("p", null, el("span", { class: "sw-tag do" }, "On fait"), " ", P && s.pages.length > 1 ? P.do : s.do),
+    ...(() => { const a = [el("p", { class: "sw-plain", "data-sw-plain": "" }, el("span", { class: "sw-tag" }, "En clair"), " ", s.plain), el("p", null, el("span", { class: "sw-tag do" }, "On fait"), " ", P && s.pages.length > 1 ? P.do : s.do)];
+      return shows(lv, "words") === "fold" ? [el("p", { class: "swl-one" }, K ? K.says : s.long), el("details", { class: "sw-words" }, el("summary", null, "En savoir plus"), ...a)] : a; })(),
     el("p", { class: `sw-state ${st.state}`, "data-sw-state-of": st.state }, icon(st.state === "done" ? "check" : st.state === "todo" ? "warning" : "info"), " ", st.text),
     words.length ? el("details", { class: "sw-words", "data-sw-words": String(words.length) }, el("summary", null, `Les mots de cette étape (${words.length})`), el("dl", null, words.flatMap((w) => [el("dt", null, w.word, el("small", null, ` — ${w.en}`)), el("dd", null, w.says)]))) : null,
     el("div", { class: "sw-nav" }, prev ? btn(`← ${prev.n}. ${prev.title}`, () => { location.hash = vHash(prev.key); }, { small: true, tip: prev.long }) : el("span"), next ? (() => { const b = btn(`${next.n}. ${next.title} →`, () => { location.hash = vHash(next.key); }, { small: true, primary: st.state === "done", tip: next.long }); b.dataset.swNext = next.key; return b; })() : null));

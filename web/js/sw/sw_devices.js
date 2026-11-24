@@ -50,14 +50,16 @@ export const DEVICES_PLANNED = [
 ];
 /** The physical range a bench gives a sensor, in the unit of its measure. */
 export const deviceRange = (key) => (DEVICES[key] && DEVICES[key].range) || null;
-/** What a device brick puts on the page, at (x, y) : the pin tagged with its device and, for a sensor, its acquisition block wired to it.
+/** What a device brick puts on the page, at (x, y) : the pin tagged with its device and, for a sensor, its acquisition block wired to it —
+    KEYED to it, side by side (230 = the width of a block, sw/sw_blocks.js BLOCK.W) : a sensor and what reads it are one piece.
     ids : a function base → a free id. → { objects, wires } — every preset value left as a reference value (not in `sure`). */
 export function devicePlacement(key, x, y, ids) {
   const D = DEVICES[key]; if (!D) return { objects: [], wires: [] };
   if (D.side === "actuator") { const id = ids(`${key}_out`); return { objects: [{ id, kind: "pin_dout", device: key, name: `${D.label}`, params: {}, sure: [], x, y }], wires: [] }; }
   const pin = ids(`${key}_pin`), base = { id: pin, kind: D.pin, device: key, name: D.pin === "pin_adc" ? `${D.label} — voie` : D.label, params: {}, sure: [], x, y };
-  if (D.measure) { const q = ids(key); return { objects: [base, { id: q, kind: "analog_in", name: D.label.replace(/ \(.*\)| \+ .*/, ""), params: { ...D.measure }, sure: [], x: x + 320, y }], wires: [{ from: `${pin}.counts`, to: `${q}.counts` }] }; }
-  if (D.debounce) { const q = ids(`${key}_db`); return { objects: [base, { id: q, kind: "debounce", name: `${D.label} — anti-rebond`, params: { t: D.debounce }, sure: [], x: x + 320, y }], wires: [{ from: `${pin}.level`, to: `${q}.in` }] }; }
+  if (D.measure) { const q = ids(key), M = D.measure, mid = D.range ? Math.round((D.range[0] + D.range[1]) / 2) : M.lo, counts = Math.max(0, Math.min(C12, Math.round((((mid - M.offset) * M.den) / M.num) * C12 / VREF)));      // the bench starts the sensor in the middle of its range
+    return { objects: [base, { id: q, kind: "analog_in", name: D.label.replace(/ \(.*\)| \+ .*/, ""), params: { ...M }, sure: [], x: x + 230, y }], wires: [{ from: `${pin}.counts`, to: `${q}.counts` }], scenario: { [pin]: { points: [[0, counts]] } } }; }
+  if (D.debounce) { const q = ids(`${key}_db`); return { objects: [base, { id: q, kind: "debounce", name: `${D.label} — anti-rebond`, params: { t: D.debounce }, sure: [], x: x + 230, y }], wires: [{ from: `${pin}.level`, to: `${q}.in` }] }; }
   return { objects: [base], wires: [] };
 }
 export { C12 };

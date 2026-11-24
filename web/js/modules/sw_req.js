@@ -19,6 +19,9 @@ import { stdAsks } from "../sw/sw_std.js";
 import { vBand, stepCard, swShell, vHash } from "./sw_vband.js";
 import { traceMap } from "./sw_trace_map.js";
 import { docRow } from "./sw_docs_ui.js";
+import { openImport } from "./sw_lib_ui.js";
+import { shows } from "../sw/sw_levels.js";
+import { level } from "./sw_level_ui.js";
 
 function render(main) {
   clear(main);
@@ -31,6 +34,8 @@ function render(main) {
   function drawLeft(d, T) {
     clear(left); const cpu = d ? cpuOf(d) : null;
     left.append(el("div", { class: "side-head" }, el("h2", null, "Exigences")));
+    const imp = btn("Importer (DynamiteAgile, IA)…", () => openImport({ design }), { primary: !d || !reqsOf(d).length, small: true, icon: "upload", tip: "L'export .csv des exigences de DynamiteAgile, ou la réponse d'un assistant au format standard (le prompt : bouton « IA »)" }); imp.dataset.swReqImport = "";
+    left.append(el("div", { class: "side-actions" }, imp));
     if (d) left.append(el("div", { class: "side-actions" }, (() => { const b = btn("Nouvelle exigence", () => { let r = null; change("nouvelle exigence", (x) => { r = addReq(x, { text: "" }); }); if (r) { st.sel = { req: r.id }; draw(); const f = right.querySelector("[data-req-text]"); if (f) f.focus(); } }, { primary: true, small: true, icon: "plus" }); b.dataset.reqAdd = ""; return b; })(), docRow(d, "srs")));
     const scroll = el("div", { class: "side-scroll" }); left.append(scroll);
     scroll.append(stepCard(d, cpu, "req", "", run, () => {}));
@@ -44,12 +49,12 @@ function render(main) {
           badge(stFr, tone), btn("", () => change(`${r.id} copiée`, (x) => copyReq(x, r.id)), { small: true, icon: "copy", tip: "Copier — la copie naît à Off" })); }))] : null; })
         : el("p", { class: "muted small" }, "Aucune exigence : « Nouvelle exigence », une phrase avec « doit »."),
       T.orphans.length ? el("p", { class: "atelier-hint warn" }, `${T.orphans.length} tuile${T.orphans.length > 1 ? "s" : ""} qu'aucune exigence ne demande : entourée${T.orphans.length > 1 ? "s" : ""} d'ambre au centre.`) : null));
-    const D = designReqs(d);
-    scroll.append(el("div", { class: "side-section", "data-fold-note": `${D.length} tuiles` }, el("h3", null, "Ce que disent les tuiles"),
+    const D = designReqs(d), lv = level();
+    if (shows(lv, "reqLower")) scroll.append(el("div", { class: "side-section", "data-fold-note": `${D.length} tuiles` }, el("h3", null, "Ce que disent les tuiles"),
       el("p", { class: "muted small" }, "Les exigences de bas niveau : chaque tuile dit en une phrase ce qu'elle fait, tirée de la conception. Elles partent dans les fichiers C, au-dessus de chaque réglage."),
       el("ul", { class: "swr-llr" }, D.map((x) => { const N = NATURES.find((n) => n.id === KINDS[x.kind].nature); return el("li", { style: `--dom:${N.color}` }, el("button", { type: "button", class: "linklike", onClick: () => { st.sel = { obj: x.obj }; draw(); } }, x.name), el("span", { class: "muted small" }, ` — ${x.text}`)); }))));
     const g = reqGuide(d, run ? run.results : null).map((x) => ({ ...x, go: x.req ? () => { st.sel = { req: x.req }; draw(); } : null }));
-    scroll.append(el("div", { class: "side-section", "data-fold-note": `${g.length}` }, el("h3", null, "À régler — le guide"), guideBox(g, { quiet: "Les exigences sont écrites, allouées et confirmées." })));
+    if (shows(lv, "guideList")) scroll.append(el("div", { class: "side-section", "data-fold-note": `${g.length}` }, el("h3", null, "À régler — le guide"), guideBox(g, { quiet: "Les exigences sont écrites, allouées et confirmées." })));
   }
   function reqSheet(body, d, r, T) {
     const row = T.rows.find((x) => x.req.id === r.id), [stFr, tone] = TRACE_STATES[row.state], Q = reqQuality(r), objs = (d.objects || []).filter((x) => !x.off && KINDS[x.kind]), tests = testsOf(d).filter((t) => (t.reqs || []).includes(r.id));
@@ -87,8 +92,9 @@ function render(main) {
     const d = design(), cpu = d ? cpuOf(d) : null; run = d ? runAll(d) : null; const T = d ? trace(d, run.results) : null;
     head.replaceChildren(vBand(d, cpu, "req", run, d ? stdAsks(d).lines[0] : "Le logiciel n'existe pas encore."));
     empty.hidden = !!d; host.hidden = !d;
-    if (!d) { empty.replaceChildren(el("div", { class: "empty" }, el("h2", null, "Le logiciel commence par ses exigences"), el("p", null, "Une exigence dit, en une phrase mesurable, ce que le logiciel doit faire ; chacune est allouée aux tuiles qui la réalisent et prouvée par un essai. L'exemple en apporte six, à relire."),
-      (() => { const b = btn("Partir de l'exemple", () => store.commit("Logiciel : exemple posé", (p) => { p.software = [demoDesign()]; }), { primary: true, icon: "play" }); b.dataset.swDemo = ""; return b; })())); drawLeft(null, null); clear(right); setGuide([]); return; }
+    if (!d) { empty.replaceChildren(el("div", { class: "empty" }, el("h2", null, "Le logiciel commence par ses exigences"), el("p", null, "Une exigence dit, en une phrase mesurable, ce que le logiciel doit faire. Importez la liste de DynamiteAgile (son export .csv), ou une réponse d'IA au format standard — le prompt est sous le bouton « IA » —, ou partez de l'exemple."),
+      (() => { const b = btn("Importer mes exigences…", () => openImport({ design }), { primary: true, icon: "upload" }); b.dataset.swReqStart = ""; return b; })(), " ",
+      (() => { const b = btn("Partir de l'exemple", () => store.commit("Logiciel : exemple posé", (p) => { p.software = [demoDesign()]; }), { icon: "play" }); b.dataset.swDemo = ""; return b; })())); drawLeft(null, null); clear(right); setGuide([]); return; }
     map.draw(d, run, st.sel); drawLeft(d, T); drawRight(d, T);
     setGuide(reqGuide(d, run.results).map((x) => ({ ...x, go: x.req ? () => { st.sel = { req: x.req }; draw(); } : null })));
   }

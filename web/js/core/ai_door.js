@@ -138,7 +138,7 @@ export function planWords(rows) {
 }
 export const planApplies = (rows) => (rows || []).some((r) => r.action === "create" || r.action === "modify");
 
-const LIST = { part: "parts", assembly: "assemblies", board: "boards", case: "cases" }, KEEP = 20;      // the load cases of the Simulation are a list by id too ; the title block of the drawings is one object (« sheet »)
+const LIST = { part: "parts", assembly: "assemblies", board: "boards", case: "cases", software: "software" }, KEEP = 20;      // the load cases of the Simulation are a list by id too ; the title block of the drawings is one object (« sheet »)
 /** What a project holds, artefact by artefact — taken BEFORE a change, to tell afterwards what the change did (the common AI loop : modules/ai_loop.js). */
 export function snapshotLists(project) { const out = { journal: (project && project.aiJournal) || [] }; for (const [kind, key] of Object.entries(LIST)) out[kind] = new Map(((project && project[key]) || []).map((x) => [x.id, JSON.stringify(x)])); out.sheet = JSON.stringify((project && project.drawing) ?? null); return out; }
 /** The journal entry of a change made between a snapshot and now : what appeared, what changed, what went. Written in project.aiJournal ; null when nothing changed.

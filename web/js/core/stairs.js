@@ -109,6 +109,8 @@ export function aiTargetOf(key, args, project) {
     case "dfx": return (a[0] === "points" ? P(part(a[1])) : null) || all;
     case "creepage": return (a[0] === "board" ? I("board", boards.find((b) => b.id === a[1])) : I("assembly", asm(a[0]) || asms[0])) || all;
     case "render": case "labels": return A(asm(a[0]) || asms[0]) || all;
+    case "swreq": return { key: "sw:req", label: "les exigences du logiciel" };      // the Logiciel group has its own round trip (modules/sw_ai.js)
+    case "swarch": case "sw": case "swsim": case "swcode": case "swtest": case "swrel": return { key: "sw:design", label: "le logiciel" };
     default: return all;
   }
 }
