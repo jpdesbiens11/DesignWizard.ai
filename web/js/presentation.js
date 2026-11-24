@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the guided presentation (web/presentation.html) : slides scaled to the window, keyboard, touch, the
+/* DynamiteOrbit.ai — the guided presentation (web/presentation.html) : slides scaled to the window, keyboard, touch, the
    rail « from the idea to the order » drawn on every slide, the notes of the presenter, a screenshot enlarged on a click.
    No dependency, no external resource. Keys : → Space PageDown = next · ← PageUp = previous · Home / End · F = full
    screen · N = notes · R = replay the animation of the slide · Esc = close. Printed (Ctrl + P), each slide is one page. */
@@ -34,7 +34,7 @@ function start() {
       st.style.left = lb.style.left = `${stationAt(i)}%`; r.append(st, lb);
     });
     const mark = el("img", "mark"); mark.src = "img/logo/mark.svg"; mark.alt = ""; r.append(mark);
-    const foot = el("div", "foot"); foot.append(el("span", null, "DesignOrbit.ai by DynamiteAgile™ · pour les concepteurs, techniciens et ingénieurs en mécatronique"), el("span", null, s.hasAttribute("data-annex") ? `Annexe / ${main}` : `${k + 1} / ${main}`)); r.append(foot);
+    const foot = el("div", "foot"); foot.append(el("span", null, "DynamiteOrbit.ai by DynamiteAgile™ · pour les concepteurs, techniciens et ingénieurs en mécatronique"), el("span", null, s.hasAttribute("data-annex") ? `Annexe / ${main}` : `${k + 1} / ${main}`)); r.append(foot);
     s.append(r);
     s.querySelectorAll(".r").forEach((n, i) => n.style.setProperty("--i", String(i)));
   });
@@ -47,7 +47,7 @@ function start() {
     void slides[at].offsetWidth;                                   // restart the animations of the slide
     slides[at].classList.add("on");
     try { history.replaceState(null, "", `#${at + 1}`); } catch (e) { /* a file opened from the disk */ }
-    document.title = `${at + 1} / ${slides.length} — DesignOrbit.ai, de l'idée à la pièce commandée`;
+    document.title = `${at + 1} / ${slides.length} — DynamiteOrbit.ai, de l'idée à la pièce commandée`;
     if (!panel.hidden) notes();
   }
   const open = (img) => { const big = el("img"); big.src = img.currentSrc || img.src; big.alt = img.alt; zoom.replaceChildren(big); zoom.hidden = false; };

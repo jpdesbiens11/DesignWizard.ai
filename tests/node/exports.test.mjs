@@ -36,7 +36,7 @@ test("STL: binary file of the demo base (count, size, bounding box, placement ma
   assert.equal(bytes.length, 84 + 50 * n);
   const st = stlStats(bytes);
   assert.equal(st.triangles, n);
-  assert.match(st.header, /^DesignOrbit.ai\(TM\) by DynamiteAgile\(TM\) - Co-Intelligence WorkFlow\(TM\) - DRV/, "the 80 bytes of the header : the mark first");
+  assert.match(st.header, /^DynamiteOrbit.ai\(TM\) by DynamiteAgile\(TM\) - Co-Intelligence WorkFlow\(TM\) - DRV/, "the 80 bytes of the header : the mark first");
   for (let i = 0; i < 6; i++) close(st.bbox[i], built.bbox[i], 1e-3, `bbox[${i}]`);
   // facet normals are unit vectors computed from the vertices
   const dv = new DataView(bytes.buffer);
@@ -204,7 +204,7 @@ test("FeatureScript: every template and every demo part gives a well-formed Feat
     assert.ok(code.startsWith(`FeatureScript ${FS_VERSION};\nimport(path : "onshape/std/geometry.fs", version : "${FS_VERSION}.0");\n`), `${what}: header`);
     assert.equal(FS_VERSION, "2014");
     for (const line of FS_NOTICE) assert.ok(code.includes(`// ${line}`), `${what}: experimental notice`);
-    assert.match(code, /Généré par DesignOrbit\.ai/);
+    assert.match(code, /Généré par DynamiteOrbit\.ai/);
     assert.match(code, /Créez un Feature Studio|créez un Feature Studio/);
     assert.match(code, /Part Studio/);
     assertBalanced(code, what);

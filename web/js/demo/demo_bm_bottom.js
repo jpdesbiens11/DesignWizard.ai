@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — BM 8s8p - 21700, iteration 11 b : the BOTTOM LID (JP, 22 novembre 2026 : « celui du fond aura le connecteur LV et HV qui se
+/* DynamiteOrbit.ai — BM 8s8p - 21700, iteration 11 b : the BOTTOM LID (JP, 22 novembre 2026 : « celui du fond aura le connecteur LV et HV qui se
    connecte quand le BM est swappé dans sa cavité d'installation ou la station de recharge, et contient aussi [peut-être] la carte BMS
    principale, et le contacteur interne du BM… l'interface des 2 couvercles est vissée au casing central… métal ou plastique robuste » ;
    « Go, c'est bien les modifs » : the interface rings in machined aluminium).

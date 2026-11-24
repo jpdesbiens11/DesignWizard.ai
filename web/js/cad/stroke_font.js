@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — a single-stroke font, made by the tool, for laser marking (JP, 21 novembre 2026 : « label with laser marking on the busbar
+/* DynamiteOrbit.ai — a single-stroke font, made by the tool, for laser marking (JP, 21 novembre 2026 : « label with laser marking on the busbar
    surface around each contact interface »). A laser marks a line : each character is a few straight strokes on a grid 4 wide and 6 high,
    drawn here from scratch — no font of a maker is copied. The capitals, the digits and a few signs a part needs (+, −, ., /) ; a lower-case
    letter is marked as its capital. Pure : textStrokes gives the strokes of a text in the 2D frame of a face. */

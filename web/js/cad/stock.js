@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — raw stock ("matière première"): what the craftsman takes from the rack before any operation.
+/* DynamiteOrbit.ai — raw stock ("matière première"): what the craftsman takes from the rack before any operation.
    spec.stock = { form, ...finished dimensions of the blank, axis?, allowance? }
    The dimensions written in the part are those of the FINISHED blank (the body the operations start from). The
    platform then says which commercial size to buy (next standard size up), how it is cut, and how much of it ends

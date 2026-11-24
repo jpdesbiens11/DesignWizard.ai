@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — 3D printing : what a build direction costs. On the tessellated part, a face that looks down and lies
+/* DynamiteOrbit.ai — 3D printing : what a build direction costs. On the tessellated part, a face that looks down and lies
    flatter than the limit angle of the process needs supports, unless it rests on the build plate. Pure : a mesh, a
    direction, an angle — no kernel. Not modelled : a short bridge between two walls (it prints without support) and a
    support that would land on the part instead of the plate. The area is therefore an UPPER bound, read on the real

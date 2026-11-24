@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the worked example of a first complete design, written by tools/gen_first_design_example.mjs :
+/* DynamiteOrbit.ai — the worked example of a first complete design, written by tools/gen_first_design_example.mjs :
    the description an engineer gives, and the file an assistant gives back after the interview. Do not edit by hand. */
 
 export const FIRST_DESIGN_DESCRIPTION = `Module de mesure de température à quatre voies pour une armoire de machine.

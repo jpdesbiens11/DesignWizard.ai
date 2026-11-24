@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — DFM rules: aluminium and plastic extrusion. They read facts.extrusion (profile metrics computed by
+/* DynamiteOrbit.ai — DFM rules: aluminium and plastic extrusion. They read facts.extrusion (profile metrics computed by
    profile_metrics.js): wall, gaps / tongue ratio, corners, hollows, circumscribing circle (CCD), envelopes.
    Limits: Aluminum Extruders Council (AEC) design guidance, EN 755-9 / EN 12020-2 tolerances; wall-vs-CCD values and
    plastic limits are rules of thumb to confirm with the extruder. */
@@ -13,7 +13,7 @@ const S = {
   thumb: "Règle de pouce (rule of thumb), à confirmer avec l'extrudeur", pl: "Guides de conception d'extrusion plastique (rule of thumb)",
 };
 const R = {
-  e00: rule("EXT-00", "Bloc « extrusion » présent", "La section est décrite dans « extrusion.profile »", "warn", "Sans la section, les règles de profil ne peuvent pas être vérifiées.", "DesignOrbit.ai part language"),
+  e00: rule("EXT-00", "Bloc « extrusion » présent", "La section est décrite dans « extrusion.profile »", "warn", "Sans la section, les règles de profil ne peuvent pas être vérifiées.", "DynamiteOrbit.ai part language"),
   e01: rule("EXT-01", "Paroi minimale", "Aluminium : ≥ 1,2 mm (CCD ≤ 100), 1,5 mm (CCD ≤ 150), 2,0 mm au-delà ; plastique : ≥ 1,0 mm", "error", "Une paroi trop mince ne se remplit pas dans la filière et se déforme en sortie.", `${S.aec} ; ${S.thumb}`),
   e02: rule("EXT-02", "Parois uniformes", "Épaisseur maxi / mini ≤ 2:1", "warn", "Les zones épaisses sortent plus vite que les minces : vrillage, marques, retassures.", S.aec),
   e03: rule("EXT-03", "Rapport de languette (tongue ratio)", "Profondeur / largeur d'une gorge ≤ 3:1 (erreur au-delà de 4:1)", "warn", "La languette d'acier de la filière qui forme la gorge casse si elle est trop longue et étroite.", S.aec),
@@ -22,7 +22,7 @@ const R = {
   e06: rule("EXT-06", "Cercle circonscrit (CCD)", "CCD ≤ 200 mm pour les presses courantes", "warn", "Au-delà, peu de presses et de fournisseurs.", `${S.aec} ; ${S.thumb}`),
   e07: rule("EXT-07", "Masse linéique", "Section × masse volumique (kg/m)", "info", "Base du prix matière et du choix de la presse.", S.aec),
   e08: rule("EXT-08", "Symétrie", "Section symétrique quand c'est possible", "info", "Un écoulement équilibré donne un profilé droit.", S.aec),
-  e09: rule("EXT-09", "Enveloppes intérieures / extérieures", "Aucune enveloppe (carte, ventilateur, cellule) ne touche le profilé, jeu compris", "error", "Le composant ne rentre pas ou ne se pose pas.", "DesignOrbit.ai part language (extrusion.inside / outside)"),
+  e09: rule("EXT-09", "Enveloppes intérieures / extérieures", "Aucune enveloppe (carte, ventilateur, cellule) ne touche le profilé, jeu compris", "error", "Le composant ne rentre pas ou ne se pose pas.", "DynamiteOrbit.ai part language (extrusion.inside / outside)"),
   e10: rule("EXT-10", "Longueur et barre standard", "Barres de 6 m en standard ; longueur de pièce ≤ 6 m", "info", "Les pièces sont débitées dans des barres : optimiser le nombre de pièces par barre.", S.thumb),
   e11: rule("EXT-11", "Tolérances d'extrusion", "Coupe à la scie ± 0,5 mm ; section selon EN 755-9 / EN 12020-2 (≈ ± 0,15 à ± 0,5 mm selon la cote)", "info", "Un profilé brut n'a pas les tolérances d'une pièce usinée.", S.en),
   e12: rule("EXT-12", "Plastique : pas de section massive", "Épaisseur ≤ 4 mm ; éviter les creux fermés", "warn", "Le plastique refroidit lentement : retassures, vides, déformation ; un creux demande un calibrage interne.", S.pl),

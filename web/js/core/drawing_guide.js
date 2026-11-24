@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — drawings : what a sheet still asks for before it goes out, said to the guide. Pure. The title block first — who drew,
+/* DynamiteOrbit.ai — drawings : what a sheet still asks for before it goes out, said to the guide. Pure. The title block first — who drew,
    who checked, who approved, and a status that does not say more than the names do — then the review : a sheet whose artefact changed
    after its review is to be reviewed again. The English of the texts of the project has its own list (core/drawing_words.js). */
 

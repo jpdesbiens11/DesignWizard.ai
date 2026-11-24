@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — what is new, shown on the screens (core/whats_new.js holds the lines and the review). Installed once :
+/* DynamiteOrbit.ai — what is new, shown on the screens (core/whats_new.js holds the lines and the review). Installed once :
    the element a line names carries a small mark, « Nouveau », until the line is ticked « vu » (JP, 23 novembre, par menu :
    « Vu = disparaît ») — the tick stays in the list, it is the trace of the review ; untick it and the mark comes back. A button of the top bar says how many lines are left and opens their list : « Montrer » leads to the
    element, the box ticks the line, « Passer à une nouvelle revue » puts the marks away until the next version.

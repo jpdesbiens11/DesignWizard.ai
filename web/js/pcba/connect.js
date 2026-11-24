@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — PCBA: what is electrically joined on a resolved board, and what is still to route.
+/* DynamiteOrbit.ai — PCBA: what is electrically joined on a resolved board, and what is still to route.
    Copper of the same net is joined when it touches on a common layer : a track on a pad, two tracks, a via on
    anything it crosses (a via spans every layer), and everything that reaches a plane of that net. */
 

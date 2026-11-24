@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the virtual fabrication shop : what it plays, and the tool that moves (JP, 21 novembre 2026 : « seules les pièces
+/* DynamiteOrbit.ai — the virtual fabrication shop : what it plays, and the tool that moves (JP, 21 novembre 2026 : « seules les pièces
    machinées et moulées, extrudées, stampées ou découpées au laser peuvent être animées ; le reste ce sont des procédés trop complexes
    (ex. PCBA, flex PCB) et tu ne devrais pas rendre une démo de la gamme qui est fausse… voir l'outil d'usinage bouger seulement pour les
    pièces usinées ou sur-usinées après moulage métallique… simuler un parcours d'usinage avec les allers-retours IA… et mentionner la

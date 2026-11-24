@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — isolation of a board ALONE (demande de JP : « analyser l'isolation du PCBA… analyse PCBA ou analyse Assy ») : the
+/* DynamiteOrbit.ai — isolation of a board ALONE (demande de JP : « analyser l'isolation du PCBA… analyse PCBA ou analyse Assy ») : the
    scene the creepage and clearance engine measures (analysis/cc_paths.js), built from the REAL copper of the board — the pads, the tracks
    and the vias of its two outer layers — and from its bare laminate, holes included. Pure : no kernel, no DOM.
 

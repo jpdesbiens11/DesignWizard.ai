@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — Logiciel : the LIVE simulation (demande de JP : « le voir en mode pause, en attente des différentes entrées qui
+/* DynamiteOrbit.ai — Logiciel : the LIVE simulation (demande de JP : « le voir en mode pause, en attente des différentes entrées qui
    pourraient changer à l'écran — capteurs, batterie — pour voir comment le logiciel réagit… une vraie simulation logicielle en temps
    réel »). The software runs its step, one period at a time, against a BENCH one drives by hand : each input pin of the design is a
    control — a quantity one sets (a cell voltage, a current), a switch (a request), or a contact that follows the output it belongs to

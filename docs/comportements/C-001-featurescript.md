@@ -2,7 +2,7 @@
 
 ## 1. La question
 
-Une pièce DesignOrbit.ai peut-elle se reconstruire **nativement** dans Onshape, avec ses paramètres modifiables, à
+Une pièce DynamiteOrbit.ai peut-elle se reconstruire **nativement** dans Onshape, avec ses paramètres modifiables, à
 partir d'un script FeatureScript généré ?
 
 ## 2. La cible

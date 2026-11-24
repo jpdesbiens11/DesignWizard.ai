@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — tests of the 2D drawing kit (web/js/draw): metrics, WinAnsi, PDF structure, SVG
+/* DynamiteOrbit.ai — tests of the 2D drawing kit (web/js/draw): metrics, WinAnsi, PDF structure, SVG
    well-formedness, drafting helpers on both backends and the demo sheet.
    Run: node --test tests/node/draw.test.mjs */
 
@@ -126,7 +126,7 @@ test("PDF: valid structure, fonts, MediaBox, Info, WinAnsi text", () => {
   }
   assert.ok(s.includes("/MediaBox [0 0 1190.5512 841.8898]"), "A3 in points");
   assert.ok(s.includes("q 2.834646 0 0 -2.834646 0 841.8898 cm"), "single mm / y-flip matrix");
-  assert.ok(s.includes("/Creator (DesignOrbit.ai)"));
+  assert.ok(s.includes("/Creator (DynamiteOrbit.ai)"));
   assert.ok(s.includes("/Title <FEFF0050006900E800630065"), "UTF-16BE title");
   assert.ok(s.includes("/CreationDate (D:20261114000000Z)"));
   assert.ok(s.includes("(Mat\\351riau \\(\\33012 \\2610.1\\) \\\\ ok) Tj"), "escaped WinAnsi string");
@@ -214,8 +214,8 @@ test("drafting helpers use only Sheet primitives and return their documented val
   const labels = r.calls.filter((c) => c[0] === "text").map((c) => c[3]);
   for (const l of ["Title", "Part No.", "Rev.", "Material", "Finish", "Mass", "Scale", "Sheet", "Size",
     "Drawn", "Checked", "Approved", "Date", "General tolerances", "Project", "Status", "Units",
-    "DesignOrbit.ai™", "by DynamiteAgile™", "ISO 2768-mK", "mm", "1/1", "Essai"]) assert.ok(labels.includes(l), l);
-  assert.ok(labels.some((l) => /Co-Intelligence WorkFlow™ — document généré par DesignOrbit\.ai/.test(l)), "the note of the platform under the frame of every sheet");
+    "DynamiteOrbit.ai™", "by DynamiteAgile™", "ISO 2768-mK", "mm", "1/1", "Essai"]) assert.ok(labels.includes(l), l);
+  assert.ok(labels.some((l) => /Co-Intelligence WorkFlow™ — document généré par DynamiteOrbit\.ai/.test(l)), "the note of the platform under the frame of every sheet");
   for (const z of ["1", "8", "A", "F"]) assert.ok(labels.includes(z), `zone ${z}`);
   assert.ok(!labels.includes("9") && !labels.includes("G"), "A3 = 8 x 6 zones");
 

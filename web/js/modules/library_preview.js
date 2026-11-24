@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — Bibliothèque : the 3D previews. Each family of connectors shows the model of ITS series — the very
+/* DynamiteOrbit.ai — Bibliothèque : the 3D previews. Each family of connectors shows the model of ITS series — the very
    solids its part will be made of, rebuilt from the published dimensions (cad/connector_models.js), in the colour of the
    series — as a small picture on its card, and as a live view, to turn with the mouse, in the dialog that adds it. No
    kernel : the solids are boxes and cylinders, meshed here. One hidden view draws every picture, once ; the pictures are

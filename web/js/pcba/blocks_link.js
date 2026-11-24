@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — PCBA: function blocks that link and keep — USB, serial links, isolation, level translation,
+/* DynamiteOrbit.ai — PCBA: function blocks that link and keep — USB, serial links, isolation, level translation,
    memories, real-time clock — and the supplies around them : step-up converter, isolated supply, voltage reference,
    supply supervisor. */
 

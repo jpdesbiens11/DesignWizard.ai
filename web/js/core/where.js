@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — where am I (demande de JP, 23 novembre : « une fois un projet sélectionné, il faudrait en naviguant avoir un
+/* DynamiteOrbit.ai — where am I (demande de JP, 23 novembre : « une fois un projet sélectionné, il faudrait en naviguant avoir un
    rappel du projet / pièce-assy ou autre artéfact où on est par une indication textuelle qui est toujours sous le titre du module
    et des icônes dans la marge de gauche… plus facile de savoir où on est si on travaille sur plusieurs projets »).
    Pure : the address and the project give two lines — the project, then what the screen shows (aiTargetOf : the same artefact

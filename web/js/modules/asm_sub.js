@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — Assemblage : a sub-assembly seen from its parent (demande de JP : « Sous-assemblages »). An assembly goes
+/* DynamiteOrbit.ai — Assemblage : a sub-assembly seen from its parent (demande de JP : « Sous-assemblages »). An assembly goes
    into another one as ONE instance : it is put together in its own document and carried here as a rigid whole — its card on the
    right says what it holds and how it can be joined ; the dialog « Ajouter » offers the assemblies that can go in (never one
    that holds this one) ; the bill of materials reads flat (every part through the levels) or by level.

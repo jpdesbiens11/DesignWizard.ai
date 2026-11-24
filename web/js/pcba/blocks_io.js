@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — PCBA: function blocks at the edge of the board — protected and isolated inputs, analogue front
+/* DynamiteOrbit.ai — PCBA: function blocks at the edge of the board — protected and isolated inputs, analogue front
    ends, actuators (relay, DC motor, stepper), user interface. An input that goes to the microcontroller asks for the
    next free digital input (pool DIN) or analogue input (pool AIN) ; a command asks for the next free output (DOUT). */
 

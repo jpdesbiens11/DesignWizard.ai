@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — FeatureScript export (see featurescript.js), expressions: translation of the part-language
+/* DynamiteOrbit.ai — FeatureScript export (see featurescript.js), expressions: translation of the part-language
    expressions into FeatureScript arithmetic, and the small symbolic values the generator computes with.
    A symbolic value is {fs, prec, v, c} = FeatureScript text + its operator precedence + the numeric value today (to take
    the decisions the builder takes: signs, pattern kinds) + "is a constant". In the generated feature every quantity is a

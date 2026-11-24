@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — busbars : a solid conductor, straight or folded, cut and punched from sheet. The designer gives the strip
+/* DynamiteOrbit.ai — busbars : a solid conductor, straight or folded, cut and punched from sheet. The designer gives the strip
    (width, thickness, material, potential, current) and its legs, each after a 90° bend up or down ; terminals are punched
    where screws go, and LAMELLA CONTACTS are laid on the flat faces — each with its own identity (CT1, CT2…), its size, its
    plating, the side it presses on. The definition is kept in the part (spec.busbar) : the part is written again from it at

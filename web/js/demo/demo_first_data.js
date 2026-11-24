@@ -1,8 +1,8 @@
-/* DesignOrbit.ai — the first board of the Labo, written by tools/gen_demo_first.mjs : a coin cell, two buttons, a red LED and a yellow
+/* DynamiteOrbit.ai — the first board of the Labo, written by tools/gen_demo_first.mjs : a coin cell, two buttons, a red LED and a yellow
    LED, from its functions to its copper, in the .dwiz format. Do not edit by hand : change the tool and run it again. */
 
 export const DEMO_FIRST = `dwiz board/1 FIRST-PCBA "Première carte : une pile, deux boutons, deux DEL"
-# DesignOrbit.ai — fichier .dwiz : une instruction par ligne, « # » commente, les lignes en retrait précisent la ligne du dessus.
+# DynamiteOrbit.ai — fichier .dwiz : une instruction par ligne, « # » commente, les lignes en retrait précisent la ligne du dessus.
 
 # Pourquoi — les fonctions que la carte remplit
 description "La carte la plus simple du Labo : une pile bouton, et deux boutons qui allument chacun leur DEL — rouge pour S1, jaune pour S2. Rien à programmer : on y apprend le circuit, les mesures, et l'ordre qui protège une carte."

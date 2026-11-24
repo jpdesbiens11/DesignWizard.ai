@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — Aide: how the platform works, shortcuts, the wand's vocabulary, the part language, and how
+/* DynamiteOrbit.ai — Aide: how the platform works, shortcuts, the wand's vocabulary, the part language, and how
    collaborators send their feedback. */
 
 import { el, icon, btn, copyText, toast } from "../core/dom.js";
@@ -61,7 +61,7 @@ const ROADMAP = ["Entrevue directement dans l'app avec une clé d'API Claude (au
 function render(main, args = []) {
   const page = el("div", { class: "page" });
   main.append(page);
-  page.append(el("div", { class: "page-head" }, el("div", { class: "grow" }, el("h1", null, "Aide"), el("p", { class: "muted" }, `DesignOrbit.ai by DynamiteAgile™ · version ${app.version} · ${store.mode === "server" ? "serveur local (projets sur le disque, Onshape disponible)" : "mode navigateur (aucun serveur)"}`))));
+  page.append(el("div", { class: "page-head" }, el("div", { class: "grow" }, el("h1", null, "Aide"), el("p", { class: "muted" }, `DynamiteOrbit.ai by DynamiteAgile™ · version ${app.version} · ${store.mode === "server" ? "serveur local (projets sur le disque, Onshape disponible)" : "mode navigateur (aucun serveur)"}`))));
   const card = (title, ...kids) => el("section", { class: "card", style: { marginBottom: "1rem" } }, el("h2", null, title), kids);
   page.append(el("a", { class: "fs-strip", href: "#/start", "data-tip": "Huit étapes qui se cochent d'après le projet" }, icon("sparkle"), el("span", { class: "grow" }, el("b", null, "Premiers pas"), el("small", null, "De la page blanche à la révision libérée, en huit étapes — avec, pour chaque écran, ce que l'on y fait et comment.")), el("span", { class: "btn btn-small" }, "Ouvrir")));
   page.append(el("div", { class: "two-col" },

@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the load case of a simulation as a tree : supports, loads, heat sources, imposed temperatures. Each item
+/* DynamiteOrbit.ai — the load case of a simulation as a tree : supports, loads, heat sources, imposed temperatures. Each item
    has its number (A1, E1, Q1, T1), its plain words and the colour of its type. Pure : the screen draws the tree, the 3D
    view takes the same numbers, labels and colours. */
 

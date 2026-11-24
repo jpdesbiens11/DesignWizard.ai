@@ -1,7 +1,7 @@
-# DesignOrbit.ai — charte de marque
+# DynamiteOrbit.ai — charte de marque
 
 > « De l'intention à la pièce, de la pièce au système — la conception mécatronique réinventée, ouverte. »
-> DesignOrbit.ai by DynamiteAgile™ — logiciel libre, licence MIT.
+> DynamiteOrbit.ai by DynamiteAgile™ — logiciel libre, licence MIT.
 
 Tout ce qui suit est **généré ou tokenisé** : les images sortent de `python3 tools/make_sketch_assets.py` (bibliothèque standard,
 résultat identique à chaque exécution), les couleurs et les formes sont des jetons CSS (`web/css/app.css`, `web/css/themes.css`).
@@ -12,7 +12,7 @@ On ne retouche jamais un SVG à la main. Aucune ressource externe : ni police we
 ## 1. Le logo : le compas et la fusée
 
 Le 22 novembre 2026, JP a choisi par menu, entre trois propositions dessinées, la piste **L3 — la fusée part sur sa trajectoire** :
-le produit s'appelle désormais **DesignOrbit.ai** et son monde est celui des fusées.
+le produit s'appelle désormais **DynamiteOrbit.ai** et son monde est celui des fusées.
 
 | Piste | Idée | Verdict |
 |---|---|---|
@@ -37,7 +37,7 @@ le produit s'appelle désormais **DesignOrbit.ai** et son monde est celui des fu
   la même liste de formes (`logoShapes`).
 - **Zone de protection** : un module (8 unités, soit 1/8 du côté) tout autour — le cadre en tirets de la figure.
 - **Tailles minimales** : symbole 16 px ; logotype horizontal 24 px de haut ; sous 24 px, utiliser `favicon.svg`.
-- **Lettrage** : « DesignOrbit.ai » et « by DynamiteAgile™ » sont tracés en lettrage technique à trait unique (hauteur de capitale 10,
+- **Lettrage** : « DynamiteOrbit.ai » et « by DynamiteAgile™ » sont tracés en lettrage technique à trait unique (hauteur de capitale 10,
   hauteur d'x 7, panses de rayon 3,5 — `GLYPHS` dans `tools/sketch_logo.py`) : pas de police, donc le même rendu partout.
 
 ### Fichiers
@@ -191,12 +191,12 @@ Captures de référence : `docs/img/brand/theme-carnet.png`, `theme-mecanique.pn
 Tout document qui sort de la plateforme dit qui l'a fait. Les mots viennent d'une seule source,
 `web/js/core/brand.js` — la formulation est celle de DynamiteAgile :
 
-> DesignOrbit.ai™ by DynamiteAgile™ · Co-Intelligence WorkFlow™ — document généré par DesignOrbit.ai. La version
+> DynamiteOrbit.ai™ by DynamiteAgile™ · Co-Intelligence WorkFlow™ — document généré par DynamiteOrbit.ai. La version
 > électronique fait foi ; la version imprimée est pour référence.
 
 | Document | Le visuel | La note |
 |---|---|---|
-| Rapports et gammes en **PDF** (`core/pdfdoc.js`) | Symbole et nom sur la page de titre ; symbole, « DesignOrbit.ai™ by DynamiteAgile™ » et titre en tête de chaque page | Au pied de chaque page, page de titre comprise |
+| Rapports et gammes en **PDF** (`core/pdfdoc.js`) | Symbole et nom sur la page de titre ; symbole, « DynamiteOrbit.ai™ by DynamiteAgile™ » et titre en tête de chaque page | Au pied de chaque page, page de titre comprise |
 | Rapports et gammes en **Word** (`core/docx.js`) | En-tête de chaque page : symbole, nom, document, référence, révision, date, page | Pied de chaque page |
 | Classeurs **Excel** des calculs (`core/xlsx.js`) | Symbole et ligne de la marque en tête de chaque feuille | Au pied de chaque feuille imprimée, dans la feuille Notice et dans les propriétés du fichier |
 | **Dessins** PDF et SVG (`draw/drafting3.js`) | Symbole, nom et maison dans le cartouche | Sous le cadre de chaque feuille |
@@ -224,11 +224,11 @@ tableaux sortent en CSV.
 ## Le gabarit des documents à lire
 
 Les rapports, les gammes et le dossier de revue (PDF et Word) suivent un même gabarit, dans l'esprit du gabarit
-d'ingénierie de DynamiteAgile, avec le visuel de DesignOrbit.ai :
+d'ingénierie de DynamiteAgile, avec le visuel de DynamiteOrbit.ai :
 
-- **Sur chaque page**, un cartouche d'en-tête encadré : le symbole et « DesignOrbit.ai™ by DynamiteAgile™ » ; le titre
+- **Sur chaque page**, un cartouche d'en-tête encadré : le symbole et « DynamiteOrbit.ai™ by DynamiteAgile™ » ; le titre
   et le genre du document (RAPPORT DE REVUE DE CONCEPTION, GAMME…) ; le n° de document, la révision, la date et la page
-  « n de N ». Dessous, la ligne d'extraction (« Extrait le … — DesignOrbit.ai v… ») et le projet.
+  « n de N ». Dessous, la ligne d'extraction (« Extrait le … — DynamiteOrbit.ai v… ») et le projet.
 - **Sur la première page** : le titre, les faits du document, le bloc **Approbation** (préparé par, vérifié par,
   approuvé par — nom, date, signature) et le **Journal des révisions** (révision, motif, sections touchées, nom, date).
   Le sommaire suit.

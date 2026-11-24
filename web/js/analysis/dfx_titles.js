@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — DFx : the titles of the rules, in English, as the trade names what they check. A rule is written with
+/* DynamiteOrbit.ai — DFx : the titles of the rules, in English, as the trade names what they check. A rule is written with
    its French title (dfx_rules_*.js, dfa_rules.js) ; `rule()` shows the English one and keeps the French word (`fr`) for the
    glossary of the Help. The limit, the reason and the fix of a rule stay in French : they are the explanation. Pure. */
 

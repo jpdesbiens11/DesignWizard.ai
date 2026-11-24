@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — clearance: the shortest path through air between the conductors of two nets ("the taut string").
+/* DynamiteOrbit.ai — clearance: the shortest path through air between the conductors of two nets ("the taut string").
    1. minimum distance between the two meshes; if the straight segment crosses no solid, it is the clearance (direct);
    2. otherwise a visibility graph: candidate bend points sampled on the convex sharp edges of every solid, moved a hair
       (scene.eps) outward so that segments graze instead of touching; the two nets are virtual nodes reached by the

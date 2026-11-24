@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — PCBA: the long jobs — floor plan, placement, routing — run here, off the page. The board comes in,
+/* DynamiteOrbit.ai — PCBA: the long jobs — floor plan, placement, routing — run here, off the page. The board comes in,
    the same board goes back with its zones, positions or copper, and what the job has to say. */
 
 import { LIBRARY } from "./library.js";

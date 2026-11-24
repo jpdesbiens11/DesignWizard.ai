@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the AI round trip, as a dialogue : pick an artefact, say what you want done the way you would
+/* DynamiteOrbit.ai — the AI round trip, as a dialogue : pick an artefact, say what you want done the way you would
    ask a technician or a trainee, copy the request with the artefact, paste the answer, read the list of changes,
    apply — or not. One undoable step ; the human stays in the loop. It works from every screen, on the artefact the
    screen shows or on any other artefact of the project : a part, an assembly, a board, or the whole project. */

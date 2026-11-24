@@ -11,7 +11,7 @@ plateformes de CAO en nuage (le « modèle Linux », voir [VISION.md](VISION.md)
 
 ## 1. Les lignes directrices, et ce qu'elles donnent chez nous
 
-| Ligne directrice de REA | Application dans DesignOrbit.ai |
+| Ligne directrice de REA | Application dans DynamiteOrbit.ai |
 |---|---|
 | Choisir un logiciel que l'on **possède ou que l'on est autorisé à étudier** | Voir la liste des cibles au § 2. Un service en nuage dont les conditions interdisent l'ingénierie inverse n'est pas une cible d'inspection : on étudie ce qu'il publie et ce que l'on y possède. |
 | Partir d'**un comportement précis**, pas de « reconstruire toute l'application » | Une fiche de comportement par fonction (§ 3) : « un taraudage M4 débouchant », « deux interfaces identiques s'accouplent », « un profil détouré dans une plaque ». |
@@ -28,7 +28,7 @@ plateformes de CAO en nuage (le « modèle Linux », voir [VISION.md](VISION.md)
 
 **Cibles autorisées.**
 
-- **Nos propres logiciels et fichiers** : DesignOrbit.ai, DynamiteAgile, les pièces et assemblages que nous avons
+- **Nos propres logiciels et fichiers** : DynamiteOrbit.ai, DynamiteAgile, les pièces et assemblages que nous avons
   créés — y compris leurs exports (STEP, DXF, PDF) depuis n'importe quel outil.
 - **Les logiciels libres**, dans les termes de leur licence : Open CASCADE Technology (LGPL 2.1), three.js (MIT),
   et tout projet dont la licence permet l'étude.

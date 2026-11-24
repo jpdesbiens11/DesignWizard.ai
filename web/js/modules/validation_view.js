@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the reference cases, on the screens (demande de JP : « des exemples de validation des équations qui sont
+/* DynamiteOrbit.ai — the reference cases, on the screens (demande de JP : « des exemples de validation des équations qui sont
    référencées par une source existante… visibles dans l'interface »). For each published example replayed : where it comes from
    and how it was read, what the source gives, what it prints, what the tool finds and the gap — and, next to them, what the cases
    leave out. A model without a case says so. The analytical models replay their cases as the panel is drawn ; the simulation

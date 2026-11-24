@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — PCBA screen: the board canvas. Draws the artwork of art.js layer by layer (the same primitives the
+/* DynamiteOrbit.ai — PCBA screen: the board canvas. Draws the artwork of art.js layer by layer (the same primitives the
    Gerber files hold), the zones of the conceptual layout, the connections still to route and the findings ; lets the
    designer zoom, pan, pick a net, drag a zone or a part. Board millimetres, Y up. */
 

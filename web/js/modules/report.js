@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — Rapport: the design-review file of the project, built from the live model — pictures of the
+/* DynamiteOrbit.ai — Rapport: the design-review file of the project, built from the live model — pictures of the
    assembly and of each part, BOM, interface register, isolation verdicts, DFM / DFA findings, drawings, and the
    review decisions. Printable (PDF through the browser) or saved as one self-contained HTML file. */
 

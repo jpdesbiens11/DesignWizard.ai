@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — what a connector looks like, by kind : a header with its pins, a circular with its nut and its gland, a
+/* DynamiteOrbit.ai — what a connector looks like, by kind : a header with its pins, a circular with its nut and its gland, a
    shielded high-voltage one with its flange and its round ports, a terminal block with its screws… The shape is INDICATIVE :
    it tells the kinds apart and takes the right room, it is not the maker's drawing — nothing is copied from one. It is
    written once, as a few boxes and cylinders, and read twice : as the features of the part (expressions of L, W, H and e,

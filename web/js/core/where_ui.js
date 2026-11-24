@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — where am I, drawn (core/where.js says what, core/tower.js how it stands) : two short lines right under the head
+/* DynamiteOrbit.ai — where am I, drawn (core/where.js says what, core/tower.js how it stands) : two short lines right under the head
    of every left panel — the project, then the part, assembly, board, sheet… that the screen shows — and a flap that opens the
    launch tower : the project at the foot, the assemblies that hold the artefact, the artefact, the screen at the top where the
    rocket is ; each floor a link, each with what the guide finds on it. Installed once : a screen declares nothing, it only needs a

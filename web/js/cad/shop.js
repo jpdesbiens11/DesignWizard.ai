@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the Shop (« Atelier » in French): a part is made the way a craftsman makes it. It starts from raw stock (spec.stock,
+/* DynamiteOrbit.ai — the Shop (« Atelier » in French): a part is made the way a craftsman makes it. It starts from raw stock (spec.stock,
    see stock.js) and its "features" may use Shop verbs — drill, tap, counterbore, countersink, ream, mill, face,
    step, groove, outline, turn, bore, break_edges, deburr, finish — next to the kernel operations.
    expandSpec() rewrites stock and verbs into kernel features, structurally (expressions are kept as text, so the

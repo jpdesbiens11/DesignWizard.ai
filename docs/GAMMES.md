@@ -1,6 +1,6 @@
 # Les gammes — parler fabrication avec le fournisseur, montage avec le prototypage
 
-Une **gamme** dit comment une chose se fait, étape par étape. DesignOrbit.ai en écrit trois, tirées du modèle,
+Une **gamme** dit comment une chose se fait, étape par étape. DynamiteOrbit.ai en écrit trois, tirées du modèle,
 chacune pour un interlocuteur précis :
 
 | Gamme | Où | Pour parler avec | Ce qu'elle porte |

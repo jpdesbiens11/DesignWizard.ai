@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — FeatureScript export (see featurescript.js), generator: the state of one generation (lines of code,
+/* DynamiteOrbit.ai — FeatureScript export (see featurescript.js), generator: the state of one generation (lines of code,
    bodies, sketches, helpers used, warnings) and the emitters shared by features and interfaces: booleans on the tracked
    bodies, face levels, lists of points (positions and patterns become FeatureScript arrays filled by loops), profiles
    drawn as sketch entities. */

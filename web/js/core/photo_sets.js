@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the sets of the photo studio (demande de JP : « des backgrounds built-in pour faire des photo shoots… le rover
+/* DynamiteOrbit.ai — the sets of the photo studio (demande de JP : « des backgrounds built-in pour faire des photo shoots… le rover
    sur une dune de sable dans le désert, avec un ombrage sur le sable… en ville, en bord de mer, sur un porte-avions, sur un
    bateau, en campagne »). A set is a place built around the product, in three dimensions : a sky, a ground with its relief
    and its matter, water, and a few things that say where one is — so that the shadow of the product falls on real ground,

@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — minimal Google Drive v3 client (scope drive.file: the app only sees the files it created).
+/* DynamiteOrbit.ai — minimal Google Drive v3 client (scope drive.file: the app only sees the files it created).
    Every response is untrusted data: it is never inserted as HTML. Files are tagged with appProperties so the app
    finds its own folders again without depending on their names. */
 

@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — BM 8s8p - 21700, CONCEPT 4 « flat louvred faces », on its own branch from concept 3 (P7) (JP, 22 novembre 2026 : « comment on
+/* DynamiteOrbit.ai — BM 8s8p - 21700, CONCEPT 4 « flat louvred faces », on its own branch from concept 3 (P7) (JP, 22 novembre 2026 : « comment on
    s'assure que les employés d'usine ne s'électrocutent pas puisque tu as une grosse patte non protégée… je pensais que des contacts flexibles sur
    les faces des busbars est plus simple que des grosses pins de busbars pliées » ; by menu : « Faces planes à lamelles »).
    What changes from concept 3 :

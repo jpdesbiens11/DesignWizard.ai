@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — DFM rules: injection moulding (MLD-) and 3D-printed parts, FDM and MJF / SLS (HSG-, AM-), carried
+/* DynamiteOrbit.ai — DFM rules: injection moulding (MLD-) and 3D-printed parts, FDM and MJF / SLS (HSG-, AM-), carried
    over from the user's rule book and made generic. Wall limits of moulding come from materials.js (`wall`); printing
    limits are typical process data (industrial FDM, HP MJF PA12) — the data sheet of the printer actually used prevails. */
 

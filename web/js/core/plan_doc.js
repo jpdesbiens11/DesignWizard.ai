@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — a routing sheet, whatever it describes : the manufacture of a part (to talk with a supplier),
+/* DynamiteOrbit.ai — a routing sheet, whatever it describes : the manufacture of a part (to talk with a supplier),
    the assembly of a product or of an electronic board (to talk with the prototyping engineers). One shape for the
    three, one text and one document made from it :
    plan = { kind: "fabrication" | "assemblage" | "carte", id, name, revision, title, audience,
@@ -43,7 +43,7 @@ export function planText(plan) {
   if (plan.characteristics.length) out.push("", "CARACTÉRISTIQUES À TENIR", ...plan.characteristics.map((c) => `  - ${c.text}${c.control ? ` — ${c.control}` : ""}`));
   if (plan.questions.length || plan.points.length) out.push("", K.ask.toUpperCase(), ...plan.questions.map((q, i) => `  ${i + 1}. [${q.topic}] ${q.text}`), ...plan.points.map((t) => `  • ${t}`));
   if (plan.advice.length) out.push("", "REMARQUES", ...plan.advice.map((a) => `  - ${a}`));
-  out.push("", "Généré par DesignOrbit.ai — proposition à valider avec " + K.audience + ".");
+  out.push("", "Généré par DynamiteOrbit.ai — proposition à valider avec " + K.audience + ".");
   return out.join("\n");
 }
 
@@ -82,5 +82,5 @@ export function planDoc(plan, meta = {}) {
   out.push({ type: "table", head: ["N°", "Sujet", "Question", "Réponse"], widths: [6, 16, 46, 32], rows: [...plan.questions.map((q, i) => [String(i + 1), q.topic, q.text, ""]), ...plan.points.map((t, i) => [String(plan.questions.length + i + 1), "À voir", t, ""])] });
   if (plan.advice.length) { sec("Remarques tirées du modèle"); out.push({ type: "list", items: plan.advice }); }
   sec("Accord"); out.push({ type: "signatures", roles: K.sign });
-  return { title: `${K.title} — ${plan.id}`, subtitle: plan.name || "", subject: K.title, author: meta.author || "", date, reference: `${plan.id}-GAMME`, revision: plan.revision || "A", header: `${plan.id}${plan.revision ? ` rév. ${plan.revision}` : ""} — ${K.title}`, footer: "DesignOrbit.ai", blocks: [{ type: "toc" }, { type: "pagebreak" }, ...out] };
+  return { title: `${K.title} — ${plan.id}`, subtitle: plan.name || "", subject: K.title, author: meta.author || "", date, reference: `${plan.id}-GAMME`, revision: plan.revision || "A", header: `${plan.id}${plan.revision ? ` rév. ${plan.revision}` : ""} — ${K.title}`, footer: "DynamiteOrbit.ai", blocks: [{ type: "toc" }, { type: "pagebreak" }, ...out] };
 }

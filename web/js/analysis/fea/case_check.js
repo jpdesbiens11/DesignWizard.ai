@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — what is missing or odd in a load case, said while the designer builds it and before the solver is
+/* DynamiteOrbit.ai — what is missing or odd in a load case, said while the designer builds it and before the solver is
    asked. Pure : the tree of the Simulation shows the list, the « Lancer » button waits for what blocks.
    An entry : { level, id (the item of the case, A1 / E2 / Q1 / T1, or null), text, field (the value to look at, when one) }.
    Levels : "error" (the case cannot be solved or means nothing), "todo" (a value the tool invented and the designer

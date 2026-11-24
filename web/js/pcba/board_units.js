@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the lengths of a board, read as an electronics designer reads them. In SI : the millimetre, and the micrometre for a
+/* DynamiteOrbit.ai — the lengths of a board, read as an electronics designer reads them. In SI : the millimetre, and the micrometre for a
    foil or a coating. In the imperial system : the mil — a thousandth of an inch, 0.0254 mm exactly — for what is drawn in copper, drilled
    or coated, and the inch from one inch up (the outline of the board, the length of copper laid). A copper foil is called by its weight
    (« 1 oz »), the name the trade gives it. The board itself stays in millimetres, and so do its fabrication files : this module converts

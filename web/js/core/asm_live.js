@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — a part of an assembly put aside (demande de JP). An instance that is « off » stays in the assembly, with its
+/* DynamiteOrbit.ai — a part of an assembly put aside (demande de JP). An instance that is « off » stays in the assembly, with its
    place and its joints, and counts for nothing : not in the view, the bill of materials, the mass, the joints, the routing, the
    drawing, the checks, nor what is sent out. Turned on again, it comes back as it was. Different from « hidden », which only
    takes a part out of sight. Pure, and without any import : every tool that reads an assembly takes it through liveAsm(). */

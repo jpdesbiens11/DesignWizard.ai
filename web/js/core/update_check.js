@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the page says when a newer version is published. The application is one page, kept open for hours : what
+/* DynamiteOrbit.ai — the page says when a newer version is published. The application is one page, kept open for hours : what
    is published meanwhile does not reach it until it is loaded again — the designer looked for a button his page did not have yet.
    A small file, version.json, says what is published. The page reads it now and then (and each time one comes back to it) ; when
    it is newer than what runs, a button of the top bar offers the update : what is not saved is saved, the files the page had

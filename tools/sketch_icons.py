@@ -1,4 +1,4 @@
-"""Functional icons of DesignOrbit.ai, drawn on a 24-unit grid (see tools/make_sketch_assets.py).
+"""Functional icons of DynamiteOrbit.ai, drawn on a 24-unit grid (see tools/make_sketch_assets.py).
 
 ICONS maps a name to a list of shapes understood by sketch_rough.Pen.stroke(); the sprite exposes each one as
 <symbol id="i-NAME" viewBox="0 0 24 24">, stroke = currentColor. Keep every coordinate within 2.5 … 21.5 so that the

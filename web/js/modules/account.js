@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — Compte: Google sign-in, the project as a folder tree in the user's own Google Drive, the theme,
+/* DynamiteOrbit.ai — Compte: Google sign-in, the project as a folder tree in the user's own Google Drive, the theme,
    and — for the administrator — the list of accounts approved for the hosted demo (hashes only, see core/access.js). */
 
 import { el, clear, icon, btn, badge, field, toast, modal, copyText, download, fmt, debounce } from "../core/dom.js";
@@ -43,7 +43,7 @@ export async function openFromDrive() {
   if (!session.account && !(await connect())) return;
   try {
     const list = await session.fs.listProjects();
-    if (!list.length) { toast("Aucun projet DesignOrbit.ai dans ce Drive pour l'instant.", "info"); return; }
+    if (!list.length) { toast("Aucun projet DynamiteOrbit.ai dans ce Drive pour l'instant.", "info"); return; }
     const m = modal("Ouvrir depuis Google Drive", el("div", { class: "grid" }, list.map((p) => el("button", { class: "card lift", type: "button", onClick: async () => {
       m.close();
       const veil = pageVeil(); let off = false;      // reading can be called off ; once the project is being written here, it is left to finish

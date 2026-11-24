@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — « Premier design avec une IA » : the dialogue. The engineer writes a detailed description, copies
+/* DynamiteOrbit.ai — « Premier design avec une IA » : the dialogue. The engineer writes a detailed description, copies
    the interview prompt, runs the interview in the assistant of their choice, and pastes back the file it gives.
    The preview says what the file holds and what was refused ; nothing is created before « Créer le projet ». */
 

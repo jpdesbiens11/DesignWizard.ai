@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the RS-485 example board : a small measuring node that answers on an RS-485 bus (demande de JP : « la
+/* DynamiteOrbit.ai — the RS-485 example board : a small measuring node that answers on an RS-485 bus (demande de JP : « la
    fonction "communication" RS-485 avec un exemple concret : pièce, connecteur, traces, signaux et contribution au code
    logiciel »). The whole link on one board — terminal block, suppressor and series resistors, termination, bias, the
    transceiver, the three pins of the microcontroller — from its functions down to its routed copper. Stored as .dwiz text

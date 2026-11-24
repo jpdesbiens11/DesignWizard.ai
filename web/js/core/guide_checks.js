@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — what a project lacks or gets wrong, read from its data alone : a part with no material, a parameter
+/* DynamiteOrbit.ai — what a project lacks or gets wrong, read from its data alone : a part with no material, a parameter
    outside its own bounds, an interface no neighbour answers, an assembly that floats, a part placed nowhere… Pure : the
    guide of the top bar shows the list on every screen and takes the designer to the place ; a screen adds what only it
    knows (the brief of the Shop, the load case of a simulation).

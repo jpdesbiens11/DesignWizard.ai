@@ -1,6 +1,6 @@
 # Skills partageables
 
-Ce dossier contient ce que DesignOrbit.ai peut prêter à d'autres projets bâtis avec un agent.
+Ce dossier contient ce que DynamiteOrbit.ai peut prêter à d'autres projets bâtis avec un agent.
 
 ## `ergonomie-ui` — ergonomie d'interface et façon de travailler avec l'agent
 

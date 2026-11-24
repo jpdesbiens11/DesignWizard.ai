@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — Logiciel : the REQUIREMENTS of a software — what it must do, said before it is drawn (cycle en V, choix cliqué de JP le
+/* DynamiteOrbit.ai — Logiciel : the REQUIREMENTS of a software — what it must do, said before it is drawn (cycle en V, choix cliqué de JP le
    21 novembre 2026 : « 1 Exigences »). A requirement is one sentence with « doit », measurable, of one kind (function, safety, performance,
    interface, robustness), verified one way (a test on the model, an analysis, a review), and ALLOCATED to the tiles that carry it out. The
    tiles say, each, what they do in one sentence of their own (sw/sw_c.js requirement) : those are the requirements of the lower level, drawn

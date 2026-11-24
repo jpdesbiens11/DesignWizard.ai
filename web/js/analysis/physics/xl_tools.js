@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — what the formulas of a workbook are written with : a choice read from a table, a value read between
+/* DynamiteOrbit.ai — what the formulas of a workbook are written with : a choice read from a table, a value read between
    the points of a table, a margin, the properties of air at a temperature, and the two ways a spreadsheet finds a root
    without a solver — a bisection laid out as a table (one row per step), and a fixed number of substitutions. Pure.
    A formula names what it reads between braces : {key} an input, {p:prop} a property of a medium, {h:key} an

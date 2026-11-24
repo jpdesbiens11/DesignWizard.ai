@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — « Gamme » panel of the part studio: the raw stock to buy and the detailed routing sheet to talk
+/* DynamiteOrbit.ai — « Gamme » panel of the part studio: the raw stock to buy and the detailed routing sheet to talk
    with the supplier — phase by phase, each one shown in the 3D view as the part stands after it, with notes, the
    points to discuss and the Word / PDF / text sheets. Then the « Artéfacts » panel: the exchange files of the part. */
 

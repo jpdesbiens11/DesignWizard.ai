@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — demonstration : a TRACTION INVERTER, three phases, mounted on its motor (point 7 of the plan agreed with JP : « boîtier moulé
+/* DynamiteOrbit.ai — demonstration : a TRACTION INVERTER, three phases, mounted on its motor (point 7 of the plan agreed with JP : « boîtier moulé
    d'un onduleur triphasé de traction monté par une bride sur le cylindre d'un moteur ; côtés courbes, pans coupés, cavités de hauteurs
    différentes ; couvercle embouti à rabats avec joint silicone collé ; petit couvercle dessous ; potting ; connecteurs (trois AC, DC + / −),
    filtre, carte de commande, carte de puissance sous les IGBT, IGBT, condensateur de bus, busbars laminés »).

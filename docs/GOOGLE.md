@@ -23,7 +23,7 @@ changer dans la console Google. Conséquences à connaître :
   connecter : ajoutez-y l'adresse Gmail de chaque collaborateur (Google Cloud → API et services → Écran de
   consentement OAuth → Utilisateurs test). C'est la vraie barrière d'accès ;
 - la portée `drive.file` est attachée à l'identifiant : techniquement, les deux applications peuvent voir les
-  fichiers l'une de l'autre. En pratique chacune ne cherche que les siens (étiquette `dw` pour DesignOrbit.ai).
+  fichiers l'une de l'autre. En pratique chacune ne cherche que les siens (étiquette `dw` pour DynamiteOrbit.ai).
 
 Cet identifiant est **public par nature** : il ne fonctionne que depuis les origines déclarées. Il n'y a aucun
 secret client dans cette application.
@@ -33,7 +33,7 @@ services → Identifiants → l'ID client OAuth « Application Web » → **Orig
 l'adresse sans chemin, par exemple `https://designwizard.exemple.com`, `http://localhost:8070`,
 `http://127.0.0.1:8070`. Aucune « URI de redirection » n'est nécessaire.
 
-**Pour un identifiant propre à DesignOrbit.ai** (son nom sur l'écran de consentement, ses fichiers séparés) :
+**Pour un identifiant propre à DynamiteOrbit.ai** (son nom sur l'écran de consentement, ses fichiers séparés) :
 créez un ID client OAuth « Application Web » dans un projet Google Cloud où « Google Drive API » est activée, avec
 les portées `openid`, `email` et `.../auth/drive.file`, déclarez les origines, et remplacez `clientId` dans
 `web/js/config.js`.
@@ -44,7 +44,7 @@ les portées `openid`, `email` et `.../auth/drive.file`, déclarez les origines,
   application**. Le reste de votre Drive lui est invisible.
 - **Jeton** : gardé en mémoire seulement, jamais dans le stockage du navigateur ; valable une heure, renouvelé sans
   invite. Fermer l'onglet le fait disparaître.
-- **Aucun serveur** : le navigateur parle directement à Google. Rien ne passe par un service de DesignOrbit.ai.
+- **Aucun serveur** : le navigateur parle directement à Google. Rien ne passe par un service de DynamiteOrbit.ai.
 - **Partage** : « Équipe → Partager mon miroir dans Drive… » donne à une adresse le droit de lire le fichier du projet
   dans votre Drive. C'est le seul partage que fait l'application, et seulement à votre demande ; l'adresse va à Google,
   pas dans le projet.
@@ -58,11 +58,11 @@ les portées `openid`, `email` et `.../auth/drive.file`, déclarez les origines,
 
 Sur la page hébergée, une fois connecté, **votre Google Drive est le stockage de l'application** : la liste des
 projets vient de Drive, chaque modification y est enregistrée (quelques secondes après la dernière frappe), et un
-projet se rouvre de n'importe quel poste. Rien n'est gardé sur un serveur de DesignOrbit.ai. Sur votre poste
+projet se rouvre de n'importe quel poste. Rien n'est gardé sur un serveur de DynamiteOrbit.ai. Sur votre poste
 (`python designwizard.py`), les projets restent sur le disque et Drive est une option (menu Compte).
 
 ```text
-DesignOrbit.ai/
+DynamiteOrbit.ai/
   LISEZ-MOI.txt
   <Nom du projet>/
     <Nom du projet>.project.dwiz        le projet entier — ce que l'application ouvre

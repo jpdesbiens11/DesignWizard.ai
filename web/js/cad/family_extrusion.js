@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — "extrusion" family: a constant cross-section (aluminium or plastic) pushed through a die.
+/* DynamiteOrbit.ai — "extrusion" family: a constant cross-section (aluminium or plastic) pushed through a die.
    spec.extrusion = {
      profile,            // cross-section (see profile.js); drawn in the plane normal to the extrusion axis
      length,             // extruded length

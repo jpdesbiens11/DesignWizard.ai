@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the « Mold » tab of a moulded or cast part : the part thought through its mold (core/mold_plan.js).
+/* DynamiteOrbit.ai — the « Mold » tab of a moulded or cast part : the part thought through its mold (core/mold_plan.js).
    What the designer chooses — the process when the alloy allows several, the gate, the faces that must stay clean — and
    what follows from the part : the pull, the parting line, the slides, the risers, and what all of it leaves on the part.
    On the model : the parting line, the pull, an arrow per slide, the gate, the overflows, the risers standing on their

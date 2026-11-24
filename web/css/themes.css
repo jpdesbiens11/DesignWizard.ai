@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — themes. Loaded after css/app.css; the switch is document.documentElement.dataset.theme.
+/* DynamiteOrbit.ai — themes. Loaded after css/app.css; the switch is document.documentElement.dataset.theme.
    A theme only redefines tokens (see :root in app.css and docs/BRAND.md) plus a few details of its own at the end.
    carnet    « Le.Carnet »  the company theme and the default: its tokens ARE the :root values of app.css;
    mecanique the drawing office: vellum, ISO-blue ink, hairlines, square corners, dimension-line accents;

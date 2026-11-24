@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the special processes of the Shop : moulding, extrusion, precision laser cutting, 3D printing. One screen
+/* DynamiteOrbit.ai — the special processes of the Shop : moulding, extrusion, precision laser cutting, 3D printing. One screen
    (#/process/<kind>) says what each process asks of each material and where the figures come from, starts a part of that
    process in the Shop, and copies the sheet for an AI. The same sheet shows as a card under the raw stock of the Shop
    (specialCard), where the designer picks the thickness of the sheet. */

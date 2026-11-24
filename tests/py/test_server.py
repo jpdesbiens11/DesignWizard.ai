@@ -33,7 +33,7 @@ CSP = ("default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://account
        "base-uri 'self'; form-action 'self'")
 STEP = """ISO-10303-21;
 HEADER;
-FILE_DESCRIPTION(('DesignOrbit.ai test'),'2;1');
+FILE_DESCRIPTION(('DynamiteOrbit.ai test'),'2;1');
 FILE_SCHEMA(('AUTOMOTIVE_DESIGN'));
 ENDSEC;
 DATA;
@@ -163,17 +163,17 @@ class StaticTests(unittest.TestCase):
 
     def test_film_by_pieces(self):
         # a player asks for a film by byte ranges : the whole file when none is asked, the piece when one is
-        film = ROOT / "web/video/designorbit_fr.mp4"
+        film = ROOT / "web/video/dynamiteorbit_fr.mp4"
         data = film.read_bytes()
-        status, h, body = req("HEAD", "/video/designorbit_fr.mp4")
+        status, h, body = req("HEAD", "/video/dynamiteorbit_fr.mp4")
         self.assertEqual((status, h["Content-Type"], h["Accept-Ranges"], int(h["Content-Length"])), (200, "video/mp4", "bytes", len(data)))
-        status, h, body = req("GET", "/video/designorbit_fr.mp4", headers={"Range": "bytes=4-11"})
+        status, h, body = req("GET", "/video/dynamiteorbit_fr.mp4", headers={"Range": "bytes=4-11"})
         self.assertEqual((status, h["Content-Range"], body), (206, f"bytes 4-11/{len(data)}", data[4:12]))
-        status, h, body = req("GET", "/video/designorbit_fr.mp4", headers={"Range": "bytes=-16"})
+        status, h, body = req("GET", "/video/dynamiteorbit_fr.mp4", headers={"Range": "bytes=-16"})
         self.assertEqual((status, h["Content-Range"], body), (206, f"bytes {len(data) - 16}-{len(data) - 1}/{len(data)}", data[-16:]))
-        status, h, body = req("GET", "/video/designorbit_fr.mp4", headers={"Range": f"bytes={len(data)}-"})
+        status, h, body = req("GET", "/video/dynamiteorbit_fr.mp4", headers={"Range": f"bytes={len(data)}-"})
         self.assertEqual((status, h["Content-Range"], body), (416, f"bytes */{len(data)}", b""))
-        status, h, body = req("GET", "/video/designorbit_fr.vtt")
+        status, h, body = req("GET", "/video/dynamiteorbit_fr.vtt")
         self.assertEqual((status, h["Content-Type"]), (200, "text/vtt; charset=utf-8"))
         self.assertTrue(body.startswith(b"WEBVTT"))
 
@@ -218,7 +218,7 @@ class ProjectTests(unittest.TestCase):
     def test_ping(self):
         status, body = api("GET", "/api/ping")
         self.assertEqual(status, 200)
-        self.assertEqual((body["ok"], body["app"], body["mode"]), (True, "DesignOrbit.ai", "server"))
+        self.assertEqual((body["ok"], body["app"], body["mode"]), (True, "DynamiteOrbit.ai", "server"))
         self.assertIn("version", body)
         self.assertIn("connected", body["onshape"])
         self.assertEqual(req("HEAD", "/api/ping")[2], b"")
@@ -529,7 +529,7 @@ console.log(JSON.stringify({ available: await api.available(), plan: planPush(jo
         texts = [a["note"]["contents"] for a in drawing["annotations"]]
         self.assertEqual(texts[:3], ["NOTES :", "1. Ébavurer toutes les arêtes", "2. ISO 2768-mK"])
         self.assertEqual(texts[-2], "⌖ ⌀0.2 | A | B")
-        self.assertIn("Co-Intelligence WorkFlow™ — document généré par DesignOrbit.ai", texts[-1])   # the note of the platform closes the block of notes
+        self.assertIn("Co-Intelligence WorkFlow™ — document généré par DynamiteOrbit.ai", texts[-1])   # the note of the platform closes the block of notes
         self.assertTrue(all(a["type"] == "Onshape::Note" for a in drawing["annotations"]))
         ys = [a["note"]["position"]["coordinate"][1] for a in drawing["annotations"]]
         self.assertEqual(ys, sorted(ys, reverse=True))

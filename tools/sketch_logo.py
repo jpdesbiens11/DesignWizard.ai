@@ -1,4 +1,4 @@
-"""Logo of DesignOrbit.ai (see tools/make_sketch_assets.py and docs/BRAND.md): constructed, not hand-drawn.
+"""Logo of DynamiteOrbit.ai (see tools/make_sketch_assets.py and docs/BRAND.md): constructed, not hand-drawn.
 
 The mark is a draughtsman's compass and the rocket that leaves it, on a 64-unit grid (module 8):
   pivot P = (32, 15); the two legs go to (12, 51) and (52, 51); the orbit is the arc the compass traces, a circle centred
@@ -82,18 +82,18 @@ def lettering(text, x, y, scale, color, weight=1.7):
 
 
 def words(x, y, scale, ink=INK, accent=BLUE, muted=MUTED, center=False):
-    """« DesignOrbit.ai » with « by DynamiteAgile™ » under it, starting at x; y = baseline of the name."""
+    """« DynamiteOrbit.ai » with « by DynamiteAgile™ » under it, starting at x; y = baseline of the name."""
     sub = scale * 0.46
-    name_w = text_width("DesignOrbit") * scale
-    out = lettering("DesignOrbit", x, y, scale, ink) + lettering(".ai", x + name_w + TRACK * scale, y, scale, accent)
+    name_w = text_width("DynamiteOrbit") * scale
+    out = lettering("DynamiteOrbit", x, y, scale, ink) + lettering(".ai", x + name_w + TRACK * scale, y, scale, accent)
     by_w = text_width("by DynamiteAgile") * sub
-    sx = x + (text_width("DesignOrbit.ai") * scale - by_w - 9 * sub) / 2 if center else x
+    sx = x + (text_width("DynamiteOrbit.ai") * scale - by_w - 9 * sub) / 2 if center else x
     sy = y + 3.8 * scale + 10 * sub
     return out + lettering("by DynamiteAgile", sx, sy, sub, muted, 1.5) + lettering("™", sx + by_w + 1.6 * sub, sy, sub, muted, 1.1)
 
 
 def svg(w, h, body, extra=""):
-    return ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {} {}" role="img" aria-label="DesignOrbit.ai"{}>{}</svg>'
+    return ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {} {}" role="img" aria-label="DynamiteOrbit.ai"{}>{}</svg>'
             .format(w, h, extra, body))
 
 
@@ -119,13 +119,13 @@ def logo_symbol():
 
 def wordmark_svg():
     scale = 2.6
-    width = 64 + 16 + text_width("DesignOrbit.ai") * scale + 8
+    width = 64 + 16 + text_width("DynamiteOrbit.ai") * scale + 8
     return svg(f(width), 64, mark_body() + words(80, 33, scale))
 
 
 def stacked_svg():
     scale = 2.3
-    w = text_width("DesignOrbit.ai") * scale + 16
+    w = text_width("DynamiteOrbit.ai") * scale + 16
     body = '<g transform="translate({} 0) scale(1.25)">{}</g>'.format(f(w / 2 - 40), mark_body()) + words(8, 116, scale, center=True)
     return svg(f(w), 150, body)
 

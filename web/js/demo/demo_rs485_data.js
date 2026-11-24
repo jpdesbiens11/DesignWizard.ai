@@ -1,8 +1,8 @@
-/* DesignOrbit.ai — the RS-485 example board, written by tools/gen_demo_rs485.mjs : a small measuring node that answers on an
+/* DynamiteOrbit.ai — the RS-485 example board, written by tools/gen_demo_rs485.mjs : a small measuring node that answers on an
    RS-485 bus, from its functions to its copper, in the .dwiz format. Do not edit by hand : change the tool and run it again. */
 
 export const DEMO_RS485 = `dwiz board/1 NODE-485-PCBA "Nœud de mesure RS-485"
-# DesignOrbit.ai — fichier .dwiz : une instruction par ligne, « # » commente, les lignes en retrait précisent la ligne du dessus.
+# DynamiteOrbit.ai — fichier .dwiz : une instruction par ligne, « # » commente, les lignes en retrait précisent la ligne du dessus.
 
 # Pourquoi — les fonctions que la carte remplit
 description "Reçoit le 5 V, mesure une température, et répond sur un bus RS-485 demi-duplex (MODBUS RTU, 19 200 bit/s) : l'exemple de la liaison, du bornier au pilote."

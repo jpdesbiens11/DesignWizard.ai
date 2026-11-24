@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — forming a sub-assembly from parts already placed, and dissolving one back into its parent (demande de JP :
+/* DynamiteOrbit.ai — forming a sub-assembly from parts already placed, and dissolving one back into its parent (demande de JP :
    « Sous-assemblages », la suite). The two are the reverse of each other, and NOTHING MOVES :
      formSub      the instances chosen in an assembly leave it together and come back as ONE instance of a new assembly ; the joints
                   between them go inside, the joints to the rest stay in the parent and name their part by its path (« s3~i2 »).

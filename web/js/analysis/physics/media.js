@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the base of media : every solid, liquid and gas the analytical models know, with the properties they
+/* DynamiteOrbit.ai — the base of media : every solid, liquid and gas the analytical models know, with the properties they
    read from it. A value alone means nothing to a human : a model no longer asks for « E = 69 GPa », it asks which medium —
    « Aluminium 6061-T6 » — and the values follow, written beside it and not editable.
    Solids first (the materials of the library of parts, filed by group then by name), then liquids, then gases. Pure.

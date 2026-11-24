@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the launch tower (JP, 23 novembre, par menu : « La tour de lancement ») : where the screen stands in the product,
+/* DynamiteOrbit.ai — the launch tower (JP, 23 novembre, par menu : « La tour de lancement ») : where the screen stands in the product,
    drawn as a tower read from the pad up — the project at the foot, then the top assembly, its sub-assemblies, the part (or the board,
    or the software), and at the top the screen one is on, where the rocket is. Each floor is a link ; each says what the guide finds
    on it (its worst level). Pure : core/where_ui.js draws it in the flap under the « where am I » lines.

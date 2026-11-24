@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — PCBA: the entries of the trade library, as short specifications that library.js completes with
+/* DynamiteOrbit.ai — PCBA: the entries of the trade library, as short specifications that library.js completes with
    their land pattern (makeComponent). Generic classes only : no manufacturer, no reference. A pin is "NAME",
    "NAME:type" or "NAME@number" ; a part without a pin list takes the pad numbers as pin names. */
 

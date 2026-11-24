@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — Étiquettes : stickers, rating plates and markings laid on a product. Left, what is entered : the labels of
+/* DynamiteOrbit.ai — Étiquettes : stickers, rating plates and markings laid on a product. Left, what is entered : the labels of
    the assembly, and for the chosen one its kind, its size, its rotation and its artwork — the mark of the platform, a text,
    an image. Centre, the assembly in 3D : with a label chosen, a click on a face lays it there — flat on a plane, wrapped
    without stretching on a cylinder ; the arrows slide it, R turns it, Delete removes it. Right, what is obtained : the
@@ -36,7 +36,7 @@ const KIND_PIC = {
 };
 const tile = (o) => el("button", { class: `cf-tile${o.sel ? " sel" : ""}`, type: "button", "aria-pressed": o.sel ? "true" : "false", "data-tip": o.tip || null, style: `--dom:${o.color}`, onClick: o.run, ...o.data }, o.pic, el("b", null, o.label));
 /** What goes to an AI : the labels alone, behind a short request ; the answer brings them back. */
-const request = (asm, rows) => ["Tu es l'assistant de conception de DesignOrbit.ai. Voici les étiquettes d'un produit (autocollants, plaques signalétiques, marquages) : seul le bloc « labels » se modifie.",
+const request = (asm, rows) => ["Tu es l'assistant de conception de DynamiteOrbit.ai. Voici les étiquettes d'un produit (autocollants, plaques signalétiques, marquages) : seul le bloc « labels » se modifie.",
   "ENTREVUE — pose-moi au plus cinq questions, une à la fois : ce que le produit doit dire à qui le regarde (marque, référence, avertissements, tensions), ce que la réglementation de mon marché exige sur la plaque, les couleurs de la marque. Puis résume en trois lignes et attends mon accord.",
   "RÉPONSE ATTENDUE — un seul bloc ```dwiz avec l'assemblage entier, lignes « label » à jour : id, name, kind (sticker, plate ou marking), w et h en mm, turn en degrés, art (type logo, text ou image ; text, sub, ink, paper, shape rect, round ou pill). Ne touche ni à « inst » ni à « on » : la pose se fait à la souris. Garde les repères existants. Après le bloc, liste ce que tu as changé.",
   "", `Étiquettes en place : ${rows.map((r) => `${r.id} ${r.name} (${r.kind}, ${r.w} × ${r.h} mm, ${r.surface} de ${r.on})`).join(" ; ") || "aucune"}.`, "", toDwiz(asm).trimEnd()].join("\n");
@@ -63,7 +63,7 @@ function render(main, args) {
     const w = whereOf(h); if (!w) return h ? [{ title: "Une étiquette se pose sur une face d'une pièce" }] : null;
     const what = isWrapped(w) ? `cylindre Ø ${fr(2 * w.on.r)}` : w.on.tangent ? "face courbe (plan tangent)" : "face plane";
     return [{ title: `${names()[w.inst]} — ${what}` }, ...(item() ? [{ label: `Poser ${st.sel} ici`, icon: "mate", run: () => edit(`${st.sel} posée`, (l) => Object.assign(l, w)) }] : []),
-      { label: "La marque DesignOrbit.ai, ici", icon: "sparkle", run: () => add((n) => brandSticker(n), w) }, { label: "Un texte, ici", icon: "edit", run: () => add((n) => blankLabel(n), w) }];
+      { label: "La marque DynamiteOrbit.ai, ici", icon: "sparkle", run: () => add((n) => brandSticker(n), w) }, { label: "Un texte, ici", icon: "edit", run: () => add((n) => blankLabel(n), w) }];
   };
   const onKey = (e) => {
     const l = item(), k = e.key, step = e.altKey ? 0.1 : e.shiftKey ? 10 : 1, all = labels();
@@ -103,7 +103,7 @@ function render(main, args) {
   function card(l) {
     const a = l.art || {}, slow = debounce((label, fn) => edit(label, fn), 350), set = (label, fn) => edit(`${l.id} : ${label}`, fn);
     const num = (key, label, step, min, tip) => unitField(label, { value: l[key] ?? 0, step, min, "data-f": key, "data-tip": tip || null }, (v) => { if (v >= min) slow(`${l.id} : ${label}`, (q) => { q[key] = v; }); });
-    const txt = el("input", { type: "text", value: a.text || "", placeholder: a.type === "logo" ? "DesignOrbit.ai" : "Ce que dit l'étiquette", "data-f": "text", onChange: (e) => set("texte", (q) => { q.art.text = e.target.value; }) }); if (a.type === "text" && !String(a.text || "").trim()) needField(txt, { hint: "Le texte de l'étiquette" });
+    const txt = el("input", { type: "text", value: a.text || "", placeholder: a.type === "logo" ? "DynamiteOrbit.ai" : "Ce que dit l'étiquette", "data-f": "text", onChange: (e) => set("texte", (q) => { q.art.text = e.target.value; }) }); if (a.type === "text" && !String(a.text || "").trim()) needField(txt, { hint: "Le texte de l'étiquette" });
     const file = el("input", { type: "file", accept: "image/png,image/jpeg,image/svg+xml", hidden: true, onChange: (e) => { const f = e.target.files[0]; if (!f) return; const rd = new FileReader(); rd.onload = () => { if (String(rd.result).length > 4 * IMAGE_LIMIT) { toast("Image trop lourde pour le projet : réduisez-la sous 1 Mo environ.", "error", 6000); return; } set("image", (q) => { q.art.src = String(rd.result); }); }; rd.readAsDataURL(f); } });
     const bring = btn(a.src ? "Changer l'image…" : "Apporter l'image…", () => file.click(), { small: true, icon: "upload", tip: "PNG, JPEG ou SVG ; elle est gardée dans le projet" }); bring.dataset.f = "src";
     const color = (key, label) => field(label, el("input", { type: "color", value: /^#[0-9a-f]{6}$/i.test(a[key] || "") ? a[key] : "#ffffff", "data-f": key, onChange: (e) => set(label, (q) => { q.art[key] = e.target.value; }) }));
@@ -111,7 +111,7 @@ function render(main, args) {
       field("Nom", el("input", { type: "text", value: l.name || "", onChange: (e) => set("nom", (q) => { q.name = e.target.value; }) })),
       el("p", { class: "ft-label" }, "Son genre"), el("div", { class: "cf-tiles" }, Object.entries(LABEL_KINDS).map(([k, K]) => tile({ sel: k === l.kind, color: K.color, label: K.label, tip: K.text, pic: pic(K.color, KIND_PIC[k]()), data: { "data-kind": k }, run: () => set(K.label.toLowerCase(), (q) => { q.kind = k; }) }))),
       el("div", { class: "form-row tight" }, num("w", "Largeur (mm)", 1, 1, isWrapped(l) ? `Le long du tour du cylindre (${fr(2 * Math.PI * l.on.r, 0)} mm de tour)` : null), num("h", "Hauteur (mm)", 1, 1), num("turn", "Rotation (°)", 5, 0, "0 : le texte se lit à l'horizontale — autour du cylindre ; 90 : le long de son axe")),
-      el("p", { class: "ft-label" }, "Son motif"), el("div", { class: "cf-tiles" }, Object.entries(LABEL_ARTS).map(([k, A]) => tile({ sel: k === a.type, color: ART_COLOR[k], label: A.fr, tip: A.text, pic: pic(ART_COLOR[k], ART_PIC[k]()), data: { "data-art": k }, run: () => set(A.fr.toLowerCase(), (q) => { q.art.type = k; if (k === "logo" && !q.art.text) { q.art.text = "DesignOrbit.ai"; q.art.sub = "by DynamiteAgile™"; } }) }))),
+      el("p", { class: "ft-label" }, "Son motif"), el("div", { class: "cf-tiles" }, Object.entries(LABEL_ARTS).map(([k, A]) => tile({ sel: k === a.type, color: ART_COLOR[k], label: A.fr, tip: A.text, pic: pic(ART_COLOR[k], ART_PIC[k]()), data: { "data-art": k }, run: () => set(A.fr.toLowerCase(), (q) => { q.art.type = k; if (k === "logo" && !q.art.text) { q.art.text = "DynamiteOrbit.ai"; q.art.sub = "by DynamiteAgile™"; } }) }))),
       a.type === "image" ? el("div", { class: "form-actions", style: { justifyContent: "flex-start" } }, file, bring, a.src ? el("small", { class: "muted" }, `${Math.round(a.src.length / 1024)} Ko`) : null)
         : el("div", { class: "form-row tight" }, field(a.type === "logo" ? "Nom à côté du sigle" : "Texte", txt), field("Seconde ligne", el("input", { type: "text", value: a.sub || "", onChange: (e) => set("seconde ligne", (q) => { q.art.sub = e.target.value; }) }))),
       el("div", { class: "form-row tight" }, color("ink", "Encre"), color("paper", "Fond"), field("Forme", el("select", { onChange: (e) => set("forme", (q) => { q.art.shape = e.target.value; }) }, Object.entries(LABEL_SHAPES).map(([k, t]) => el("option", { value: k, selected: k === (a.shape || "round") }, t))))),

@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — first steps : the journey of a newcomer, from an empty project to a released revision, in eight steps
+/* DynamiteOrbit.ai — first steps : the journey of a newcomer, from an empty project to a released revision, in eight steps
    that tick themselves. Nothing is declared by hand : a step is done when the PROJECT shows it — a part exists, an
    assembly holds, a calculation was kept, the guide has nothing left to correct. Each step says what one does on its
    screen and how (the help of that screen, in a few lines) ; the guide of the top bar repeats it there until it is done.

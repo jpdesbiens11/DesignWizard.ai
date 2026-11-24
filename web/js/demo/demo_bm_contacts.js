@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — BM 8s8p - 21700 : the contacts between two CORE, iteration 12 (JP, 22 novembre 2026 : « let's pivot for a planar
+/* DynamiteOrbit.ai — BM 8s8p - 21700 : the contacts between two CORE, iteration 12 (JP, 22 novembre 2026 : « let's pivot for a planar
    high-current contact with a spring (to replace the deformable contact) » — then the laminated busbar of a CORE remade as an industrial one,
    the welds on the cells visible, the sensors moved to the bottom support).
    What it is now : FACE AGAINST FACE. The outer face of the + leg of a CORE lies on the outer face of the − leg of the next, bare silver-plated

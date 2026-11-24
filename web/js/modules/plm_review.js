@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — Révisions : the state of a revision, shown so that it cannot be missed, and the lean design review that
+/* DynamiteOrbit.ai — Révisions : the state of a revision, shown so that it cannot be missed, and the lean design review that
    takes a FROZEN revision to RELEASED (core/plm_review.js). The dialog prepares the list — what the tool could check itself,
    measured here on the frozen content (the DFx of a part, whether an assembly builds, the rules of a board) — and the
    approver, someone else than the author, confirms the rest, writes the decision and the open points. One undoable step.

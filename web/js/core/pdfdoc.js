@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — PCBA: the same document model as docx.js, laid out on A4 pages with the project's own vector PDF
+/* DynamiteOrbit.ai — PCBA: the same document model as docx.js, laid out on A4 pages with the project's own vector PDF
    writer : title page, table of contents with page numbers, headings, wrapped paragraphs, lists, tables whose header
    repeats on each page, figures drawn as vectors, check-lists, a sign-off table, header and footer. The layout runs
    twice : once to learn on which page each heading falls and how many pages there are, once for good. */

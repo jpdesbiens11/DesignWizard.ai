@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — project store: one document per project (parts, assemblies, analyses), with undo / redo and
+/* DynamiteOrbit.ai — project store: one document per project (parts, assemblies, analyses), with undo / redo and
    auto-save. Three back-ends: the local server (python designwizard.py: files on disk, Onshape proxy), the user's own
    Google Drive (the hosted application, once signed in: one folder per product, see google/drive_fs.js), or the
    browser alone (localStorage + export / import of the project file). */

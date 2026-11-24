@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — "pièce complémentaire": from a free interface of a part, generate the simplest part that carries
+/* DynamiteOrbit.ai — "pièce complémentaire": from a free interface of a part, generate the simplest part that carries
    the other side — a plate covering the footprint of the host face, with the matching interface placed so that the
    automatic mate drops it exactly in place. A starting point the designer then reshapes (or sends to the interview). */
 

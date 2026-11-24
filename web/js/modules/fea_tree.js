@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — Simulation : the tree of the load case, in the left panel. Supports, loads, heat sources and imposed
+/* DynamiteOrbit.ai — Simulation : the tree of the load case, in the left panel. Supports, loads, heat sources and imposed
    temperatures are listed by type, each with its number and the colour of its type ; a click on an item selects it — it
    lights up on the model and opens its values ; the eye of a type shows or hides its labels in the view. The model of the
    tree is analysis/fea/bc_tree.js ; this module only draws it. Each type folds on a click on its title (core/fold.js) : what

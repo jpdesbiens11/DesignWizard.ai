@@ -1,10 +1,10 @@
-/* DesignOrbit.ai — PCBA: the rule book of an assembled board — copper, drilling, placement, assembly, test, coating.
+/* DynamiteOrbit.ai — PCBA: the rule book of an assembled board — copper, drilling, placement, assembly, test, coating.
    Same shape as the mechanical rule books (analysis/dfx_core.js), so the DFx screen lists it with the others.
    The limits quoted here are those of the capability class of the board (model.js FAB) and of its net classes. */
 
 import { rule } from "../analysis/dfx_core.js";
 
-const S = { ipc: "IPC-2221B (espacements, Table 6-1 ; courant des pistes)", fab: "Capacités des fabricants de PCB (rule of thumb)", asm: "Pratique d'assemblage (IPC-7351, IPC-A-610)", dft: "Pratique d'essai (DFT)", coat: "IPC-CC-830, IPC-A-610 (vernis de tropicalisation)", std: "DesignOrbit.ai" };
+const S = { ipc: "IPC-2221B (espacements, Table 6-1 ; courant des pistes)", fab: "Capacités des fabricants de PCB (rule of thumb)", asm: "Pratique d'assemblage (IPC-7351, IPC-A-610)", dft: "Pratique d'essai (DFT)", coat: "IPC-CC-830, IPC-A-610 (vernis de tropicalisation)", std: "DynamiteOrbit.ai" };
 const R = [
   rule("PCBA-01", "Court-circuit", "Deux nets différents ne se touchent sur aucune couche", "error", "La carte ne fonctionne pas, ou une alimentation est en court-circuit.", S.ipc, { group: "Cuivre" }),
   rule("PCBA-02", "Isolement entre nets", "Distance ≥ isolement de la classe, et ≥ IPC-2221B à la tension entre les nets", "error", "Pont de gravure, amorçage sous tension.", S.ipc, { group: "Cuivre" }),

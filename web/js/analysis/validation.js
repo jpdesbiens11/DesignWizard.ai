@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — reference cases (demande de JP : « pour tous les modèles dans la simulation physique… des exemples de
+/* DynamiteOrbit.ai — reference cases (demande de JP : « pour tous les modèles dans la simulation physique… des exemples de
    validation des équations qui sont référencées par une source existante… qu'on est capable de reproduire des exemples simples
    pour chacun des modèles : analytique, thermique, structural »).
    A reference case is a worked example PUBLISHED by someone else — an open textbook, a public engineering page, course notes —

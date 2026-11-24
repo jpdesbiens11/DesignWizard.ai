@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — Historique : the BRANCHES, in the left pane (demande de JP, 21 novembre 2026 ; choices clicked : the whole branch in one
+/* DynamiteOrbit.ai — Historique : the BRANCHES, in the left pane (demande de JP, 21 novembre 2026 ; choices clicked : the whole branch in one
    block ; a part absent from the side that wins enters at Off, greyed). A row per branch, MAIN first, in the colour of its column in the tree :
    where it leaves, who works on it, how many points MAIN does not have yet ; « Fusionner dans MAIN » opens the preview — what comes, what MAIN
    gives up, what MAIN keeps, what comes back at Off — and applies it as ONE undoable step, then a merge point on MAIN. « Lire le travail d'un

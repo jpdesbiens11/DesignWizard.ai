@@ -1,22 +1,22 @@
-/* DesignOrbit.ai — the mark every document of the platform carries, whatever its format : who made it, and the note
+/* DynamiteOrbit.ai — the mark every document of the platform carries, whatever its format : who made it, and the note
    « Co-Intelligence WorkFlow™ » in the words of DynamiteAgile. One source for the PDF, the Word document, the text
    and data files, the fabrication files and what is sent to Onshape — so that no export goes out without it.
    Pure : the writers and the tests share it. */
 
-export const BRAND = { product: "DesignOrbit.ai™", by: "DynamiteAgile™", workflow: "Co-Intelligence WorkFlow™", site: "DesignOrbit.ai" };
+export const BRAND = { product: "DynamiteOrbit.ai™", by: "DynamiteAgile™", workflow: "Co-Intelligence WorkFlow™", site: "DynamiteOrbit.ai" };
 /** Who made the document. */
 export const BRAND_LINE = `${BRAND.product} by ${BRAND.by}`;
 /** The mark : the platform, the house, the workflow. */
 export const MARK = `${BRAND_LINE} · ${BRAND.workflow}`;
 /** The note at the bottom of every document. */
-export const FOOT_NOTE = `${MARK} — document généré par DesignOrbit.ai. La version électronique fait foi ; la version imprimée est pour référence.`;
+export const FOOT_NOTE = `${MARK} — document généré par DynamiteOrbit.ai. La version électronique fait foi ; la version imprimée est pour référence.`;
 /** The same note for the formats that only take plain ASCII (DXF, Gerber, drill files, STEP, STL). */
-export const FOOT_NOTE_ASCII = "DesignOrbit.ai(TM) by DynamiteAgile(TM) - Co-Intelligence WorkFlow(TM) - document genere par DesignOrbit.ai. La version electronique fait foi ; la version imprimee est pour reference.";
+export const FOOT_NOTE_ASCII = "DynamiteOrbit.ai(TM) by DynamiteAgile(TM) - Co-Intelligence WorkFlow(TM) - document genere par DynamiteOrbit.ai. La version electronique fait foi ; la version imprimee est pour reference.";
 const KEY = "Co-Intelligence WorkFlow";                        // what tells a file is already marked
-/** « Extrait le 2026-11-16 14:02 — DesignOrbit.ai v0.42.0 » : when the document left the platform, and from which version. */
+/** « Extrait le 2026-11-16 14:02 — DynamiteOrbit.ai v0.42.0 » : when the document left the platform, and from which version. */
 export function stampLine(when = new Date(), version = "") {
   const d = when instanceof Date && !Number.isNaN(when.getTime()) ? when : new Date(0), p = (n) => String(n).padStart(2, "0");
-  return `Extrait le ${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())} — DesignOrbit.ai${version ? ` v${version}` : ""}`;
+  return `Extrait le ${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())} — DynamiteOrbit.ai${version ? ` v${version}` : ""}`;
 }
 
 /* ---------- the mark as a vector (64 × 64, the figure of docs/BRAND.md) : the compass — two legs and the orbit they trace —
@@ -61,7 +61,7 @@ export function logoSvgBody(ink = LOGO.ink) {
 }
 /** The mark as an inline SVG, for a page (the report in HTML). */
 export function logoSvg(size = 40) {
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="${size}" height="${size}" role="img" aria-label="DesignOrbit.ai">${logoSvgBody()}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="${size}" height="${size}" role="img" aria-label="DynamiteOrbit.ai">${logoSvgBody()}</svg>`;
 }
 /** The mark on a 2D canvas (the signature of a photo) : top left at (x, y), `size` wide. */
 export function drawLogoCanvas(g, x, y, size, ink = LOGO.ink) {
@@ -115,7 +115,7 @@ export function stampText(name, text) {
 /** Whether a text carries the note. */
 export const isMarked = (text) => typeof text === "string" && text.includes(KEY);
 /** The 80 bytes at the head of a binary STL : the mark, in ASCII. */
-export const STL_HEADER = "DesignOrbit.ai(TM) by DynamiteAgile(TM) - Co-Intelligence WorkFlow(TM)";
+export const STL_HEADER = "DynamiteOrbit.ai(TM) by DynamiteAgile(TM) - Co-Intelligence WorkFlow(TM)";
 
 /* ---------- the confidentiality note of a deliverable : whose document it is ---------- */
 /** owner : the organisation the documents of the project belong to ("" : the issuer, unnamed) ; text : the wording of the project when it has its own. */

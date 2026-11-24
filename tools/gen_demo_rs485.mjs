@@ -36,6 +36,6 @@ for (const f of [...e.findings, ...d.findings].filter((x) => x.severity !== "inf
 for (const t of b.tracks) { t.pts = t.pts.map((p) => [+p[0].toFixed(3), +p[1].toFixed(3)]); delete t.auto; }
 for (const v of b.vias) delete v.auto;
 const text = toDwiz(b), esc = (s) => s.replace(/\\/g, "\\\\").replace(/`/g, "\\`").replace(/\$\{/g, "\\${");
-const head = "/* DesignOrbit.ai — the RS-485 example board, written by tools/gen_demo_rs485.mjs : a small measuring node that answers on an\n   RS-485 bus, from its functions to its copper, in the .dwiz format. Do not edit by hand : change the tool and run it again. */\n";
+const head = "/* DynamiteOrbit.ai — the RS-485 example board, written by tools/gen_demo_rs485.mjs : a small measuring node that answers on an\n   RS-485 bus, from its functions to its copper, in the .dwiz format. Do not edit by hand : change the tool and run it again. */\n";
 writeFileSync(new URL("../web/js/demo/demo_rs485_data.js", import.meta.url), `${head}\nexport const DEMO_RS485 = \`${esc(text)}\`;\n`);
 console.log("lines:", text.split("\n").length, "bytes:", text.length);

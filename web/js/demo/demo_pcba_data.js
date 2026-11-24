@@ -1,8 +1,8 @@
-/* DesignOrbit.ai — the demonstration board, written by tools/gen_demo_pcba.mjs : the control board of the compact drive,
+/* DynamiteOrbit.ai — the demonstration board, written by tools/gen_demo_pcba.mjs : the control board of the compact drive,
    from its functions to its copper, in the .dwiz format. Do not edit by hand : change the tool and run it again. */
 
 export const DEMO_PCBA_DESIGN = `dwiz board/1 DRV-CTRL-PCBA "Carte de contrôle du variateur"
-# DesignOrbit.ai — fichier .dwiz : une instruction par ligne, « # » commente, les lignes en retrait précisent la ligne du dessus.
+# DynamiteOrbit.ai — fichier .dwiz : une instruction par ligne, « # » commente, les lignes en retrait précisent la ligne du dessus.
 
 # Pourquoi — les fonctions que la carte remplit
 description "Reçoit le 24 V, alimente la logique, calcule et pilote l'étage de puissance, mesure la température et le mouvement, communique en CAN."

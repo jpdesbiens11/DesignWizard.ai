@@ -21,7 +21,7 @@ const starter = () => ({ format: STARTER_FORMAT, format_version: 1, language: "f
 test("a design leaves as a Project Starter file that holds by the rules of the format", () => {
   for (const project of [readFirstDesign(FIRST_DESIGN_ANSWER, { date: D0 }).project, { ...DEMO_DRIVE, boards: [demoBoard()] }, { name: "Vide", parts: [], boards: [] }]) {
     const { file, notes } = toProjectStarter(project, { date: D0 }); assert.deepEqual(checkStarter(file), [], project.name); assert.deepEqual(notes, []);
-    assert.equal(file.format, "dynamite-project-starter"); assert.equal(file.format_version, 1); assert.equal(file.generated_at, "2026-01-05"); assert.equal(file.generated_by, "DesignOrbit.ai"); assert.match(file.project.key, /^[A-Z][A-Z0-9]{1,9}$/);
+    assert.equal(file.format, "dynamite-project-starter"); assert.equal(file.format_version, 1); assert.equal(file.generated_at, "2026-01-05"); assert.equal(file.generated_by, "DynamiteOrbit.ai"); assert.match(file.project.key, /^[A-Z][A-Z0-9]{1,9}$/);
     assert.equal(file.diamond.functions[0].ref, "F0"); assert.equal(file.diamond.functions[0].type, "usage"); assert.equal(file.diamond.functions[0].parent, null);
   }
   const p = readFirstDesign(FIRST_DESIGN_ANSWER, { date: D0 }).project, d = toProjectStarter(p, { date: D0 }).file.diamond, fn = (ref) => d.functions.find((f) => f.ref === ref);
@@ -60,7 +60,7 @@ test("the functional tree of a DynamiteAgile file becomes the functions of a boa
   assert.match(byName("Plaire à l'œil").note, /estime/); assert.ok(b.functions.slice(1).every((f) => f.ai && f.ai.draft)); assert.equal(draftsOf(b).filter((w) => w.list === "functions").length, 5, "they wait in the tree as « Brouillon IA »");
   assert.deepEqual(importDiamond(b, starter()), { added: 0, same: 6, primary: dry.primary, problems: [] }); assert.equal(b.functions.length, 6);
   const bad = starter(); bad.diamond.functions[2].parent = "F9"; const r = importDiamond(b, bad); assert.equal(r.added, 0); assert.match(r.problems[0], /introuvable plus haut/); assert.equal(b.functions.length, 6);
-  // there and back : what DesignOrbit.ai writes, DesignOrbit.ai reads
+  // there and back : what DynamiteOrbit.ai writes, DynamiteOrbit.ai reads
   const out = toProjectStarter({ name: "Sonde", description: b.description, parts: [], boards: [b] }, { date: D0 }).file, again = emptyBoard("X", "x"); assert.deepEqual(checkStarter(out), []);
   assert.equal(importDiamond(again, out).added, 6); assert.deepEqual(again.functions.map((f) => f.name).sort(), b.functions.map((f) => f.name).sort());
 });

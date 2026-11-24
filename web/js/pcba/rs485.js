@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — RS-485 : what is published about the link, and what follows from it (demande de JP : « ajouter les
+/* DynamiteOrbit.ai — RS-485 : what is published about the link, and what follows from it (demande de JP : « ajouter les
    composantes et la fonction "communication" RS-485 avec un exemple concret : pièce, connecteur, traces, signaux »).
    The standard itself — TIA/EIA-485-A — is sold, and was NOT read. What is here was read, page by page, in public
    application notes and data sheets of makers that restate it, and in the MODBUS over Serial Line specification :

@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the Google file picker, for one purpose : let a person point at a file another member shared with them.
+/* DynamiteOrbit.ai — the Google file picker, for one purpose : let a person point at a file another member shared with them.
    The application only holds the « drive.file » permission : it sees the files it created for this account, and the files
    the person opens with it — one by one, through this picker. Picking a file once is what lets the application read it
    again later, alone. Nothing wider is ever asked.

@@ -1,4 +1,4 @@
-"""Project store of the DesignOrbit.ai local server (Python standard library only).
+"""Project store of the DynamiteOrbit.ai local server (Python standard library only).
 
 Layout of the data directory (never inside web/, git-ignored):
     projects/<id>.json                 the project document

@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — turning a part of an assembly by hand (demande de JP : « tourner une pièce elle-même… avec une poignée dans la
+/* DynamiteOrbit.ai — turning a part of an assembly by hand (demande de JP : « tourner une pièce elle-même… avec une poignée dans la
    vue, au lieu de taper un angle »). What « turning » means depends on what holds the part :
      placed by hand — the ground of the assembly, or a part no joint reaches : it turns about the vertical (Z) through the middle of
                       its box, and its placement is rewritten ; a sub-assembly turns the same way, as the one block it is ;

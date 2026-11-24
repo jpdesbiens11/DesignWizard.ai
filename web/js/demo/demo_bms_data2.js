@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the central BMS board of the module BM 8s8p, written by tools/gen_demo_bms.mjs, from its functions to its copper, in the
+/* DynamiteOrbit.ai — the central BMS board of the module BM 8s8p, written by tools/gen_demo_bms.mjs, from its functions to its copper, in the
    .dwiz format. Do not edit by hand : change the generator and run it again. */
 export const DEMO_BMS_2 = `track B3_BST in1 w=0.25 pts=[[25.5, 51], [24.75, 50.25], [24.75, 50], [24.25, 49.5], [24.25, 49], [24, 48.75]]
 track B3_BST top w=0.25 pts=[[24, 48.75], [24, 49.25], [23.75, 49.7]]

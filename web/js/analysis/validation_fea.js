@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the reference cases of the simulation (validation.js runs them, as it runs those of the analytical models).
+/* DynamiteOrbit.ai — the reference cases of the simulation (validation.js runs them, as it runs those of the analytical models).
    The same rule : a worked example somebody else published, read on its page, replayed by the SOLVER — a small mesh of cubes
    built here, the conditions of the example, and the printed result compared with what the solver finds. The mesh of each case
    is said (`mesh`) : the gap of a simulation is also the gap of its mesh, and a case chosen fine enough to hide it would say

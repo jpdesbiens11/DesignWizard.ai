@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the « Impression » tab of a printed part : which way it stands in the machine. The six directions
+/* DynamiteOrbit.ai — the « Impression » tab of a printed part : which way it stands in the machine. The six directions
    are measured on the mesh of the part (analysis/am_supports.js) and ranked, the cheapest first ; the one in use shows
    on the model — in red what must be supported, in blue what rests on the plate, an arrow for the top of the machine. A
    click on a direction writes it in the part (print.dir) : the routing sheet and the rule AM-13 follow. */

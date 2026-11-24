@@ -8,7 +8,7 @@ carte, physique, dessins, IA — et le nom de nouveau. Deux versions, **françai
 |---|---|
 | En ligne | https://jpdesbiens11.github.io/DynamiteOrbit.ai/vitrine.html#film |
 | Dans l'application | Accueil → « Voir la vidéo (2 min 50) » : une fenêtre, choix Français / English en cours de lecture |
-| Fichiers | `web/video/designorbit_fr.mp4`, `designorbit_en.mp4` (1280 × 720, 24 images/s, H.264), leur image d'attente `.jpg`, leurs sous-titres `.vtt` |
+| Fichiers | `web/video/dynamiteorbit_fr.mp4`, `dynamiteorbit_en.mp4` (1280 × 720, 24 images/s, H.264), leur image d'attente `.jpg`, leurs sous-titres `.vtt` |
 | Narration à enregistrer | `docs/film/narration_fr.md`, `docs/film/narration_en.md` |
 | Storyline — l'image et la voix, deux langues côte à côte | `docs/film/storyline.md` |
 
@@ -59,7 +59,7 @@ les étiquettes des plans ; depuis la v0.92.0 elle raconte **une histoire que le
 plateforme — un film de marque, plus vivant, en français ou en anglais au choix.
 
 - **Le fil.** Une pièce commence par une question : à quoi doit-elle servir ? Celui qui conçoit le sait, mais il doit le
-  redire à chaque logiciel. DesignOrbit.ai est « l'outil qui retient le pourquoi » : on suit la pièce de sa question
+  redire à chaque logiciel. DynamiteOrbit.ai est « l'outil qui retient le pourquoi » : on suit la pièce de sa question
   jusqu'à la commande, et le film se ferme sur la même phrase — « Une pièce commence par une question. Voici l'outil qui
   se souvient de la réponse. »
 - **L'image montre, la voix raconte.** Dans l'Atelier, l'écran affiche les interfaces à la première personne (« Je me
@@ -97,7 +97,7 @@ Refaire la voix ne demande pas de refaire le film. **Voix de synthèse** :
    donne (c'est ainsi que la voix de la v0.92.0 a été posée, sans nouveau rendu).
 2. Choisir la voix : `node tools/film_voice.mjs voices fr` (les voix de femme du compte ; `--library` pour la
    bibliothèque partagée), puis `node tools/film_voice.mjs sample <voix> fr <dossier>` pour entendre trois répliques.
-3. Faire le film parlé : `node tools/film_voice.mjs make <voix> fr <film sans sous-titres> web/video/designorbit_fr.mp4`.
+3. Faire le film parlé : `node tools/film_voice.mjs make <voix> fr <film sans sous-titres> web/video/dynamiteorbit_fr.mp4`.
    Chaque réplique est demandée une fois (gardée dans le dossier de travail), posée à son temps, et l'ensemble est
    mis au niveau sonore du web (−16 LUFS) puis posé sur l'image, qui n'est pas redessinée. Une réplique plus longue
    que sa place — jusqu'à un souffle avant la suivante — est accélérée de 12 % au plus ; au-delà l'outil nomme la
@@ -109,12 +109,12 @@ Refaire la voix ne demande pas de refaire le film. **Voix de synthèse** :
 
 **Voix enregistrée** (une personne) : d'après `docs/film/narration_<langue>.md`, une ligne, un souffle, chaque ligne
 entre ses deux temps (le débit le plus rapide est de 2,6 mots par seconde) ; un seul fichier par langue, posé par
-`ffmpeg -i designorbit_fr_sans-sous-titres.mp4 -i voix_fr.wav -c:v copy -c:a aac -b:a 160k -shortest designorbit_fr.mp4`.
+`ffmpeg -i dynamiteorbit_fr_sans-sous-titres.mp4 -i voix_fr.wav -c:v copy -c:a aac -b:a 160k -shortest dynamiteorbit_fr.mp4`.
 
 ## Le jour où le film parle
 
 **Règle de JP depuis la v0.92.0 (18 novembre 2026) : les sous-titres restent avec la voix, et dans les deux langues.**
-Le film parlé n'a pas de sous-titres dessinés dans l'image ; ce sont des pistes (`designorbit_<langue>.vtt`), et
+Le film parlé n'a pas de sous-titres dessinés dans l'image ; ce sont des pistes (`dynamiteorbit_<langue>.vtt`), et
 **chaque lecteur porte les deux** : celle de la langue de la voix est montrée dès le départ — ce qui est dit est ce
 qui est lu —, et un choix à côté du lecteur, **« Sous-titres : Français · English · Les deux · Aucun »**, permet
 d'écouter dans une langue et de lire dans l'autre, de lire les deux à la fois, ou de ne rien lire
@@ -133,7 +133,7 @@ Le site a donc deux états, dits par `FILM.voice` (`web/js/core/film.js`) et ten
 
 | | Muet (jusqu'à la v0.80.1) | Parlé (aujourd'hui) |
 |---|---|---|
-| `web/video/designorbit_<langue>.mp4` | narration incrustée dans l'image, pas de son | une voix, image sans sous-titres |
+| `web/video/dynamiteorbit_<langue>.mp4` | narration incrustée dans l'image, pas de son | une voix, image sans sous-titres |
 | Sous-titres | dans l'image | deux pistes `.vtt` par lecteur ; celle de la voix montrée dès le départ |
 | Vitrine | aucun script | un script maison (`js/vitrine.js`), `script-src 'self'` |
 | Sous le film | rien | le choix des sous-titres : Français · English · Les deux · Aucun |

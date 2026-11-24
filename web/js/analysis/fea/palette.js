@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the colours of a result : how a value becomes a colour on the model.
+/* DynamiteOrbit.ai — the colours of a result : how a value becomes a colour on the model.
    « Rainbow » is the scale of a calculation plot, blue to red. « Iron » and « White hot » are the two scales an infrared camera
    usually offers : with them a thermal result reads like a thermal image — black and cold at one end, white and hot at the other,
    lighter all the way up — to be put beside the picture taken on the bench. The scales are made here, a few colours joined by

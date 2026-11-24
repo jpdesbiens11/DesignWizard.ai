@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — Physique, joints: metric bolted joint (torque → preload, bolt stress, shear, bearing, thread
+/* DynamiteOrbit.ai — Physique, joints: metric bolted joint (torque → preload, bolt stress, shear, bearing, thread
    stripping, separation), interference fit (Lamé), dowel pin in shear. Inputs in mm, N, N.m, GPa, MPa, µm. */
 
 import { PI, SHEAR, n, sheet, num, opt, out, MAT, GEO, LOAD, CRIT } from "./models_core.js";

@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — Logiciel, étape 1 du V : les EXIGENCES (choix cliqué de JP, 21 novembre 2026 : « Cycle en V »). Route : #/swreq.
+/* DynamiteOrbit.ai — Logiciel, étape 1 du V : les EXIGENCES (choix cliqué de JP, 21 novembre 2026 : « Cycle en V »). Route : #/swreq.
    The same three places as every studio, under the V (modules/sw_vband.js). Left : the card of the step, the requirements grouped by kind —
    a colour and a pictogram per kind, On / Off and a copy born Off on each line —, what the tiles say they do (the requirements of the lower
    level, drawn from the design), the guide. Centre : the trace — requirements, tiles, tests (modules/sw_trace_map.js). Right : the sheet of

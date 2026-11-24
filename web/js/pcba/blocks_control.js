@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — PCBA: function blocks that compute, communicate, connect and signal. The microcontroller offers
+/* DynamiteOrbit.ai — PCBA: function blocks that compute, communicate, connect and signal. The microcontroller offers
    its pins as LAZY ports : a pin joins a net only when another block brings that net (CAN_TX, AIN0, I2C_SCL…), so an
    unused pin stays free instead of dangling on a net of its own. */
 

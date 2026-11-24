@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the storyline of Hugo : the story told by tools/storyline.mjs, scene by scene. A work of fiction : Hugo, Léa,
+/* DynamiteOrbit.ai — the storyline of Hugo : the story told by tools/storyline.mjs, scene by scene. A work of fiction : Hugo, Léa,
    Samuel and Davide are characters ; « Claude » is the AI assistant they work with. Every screen shown is a real capture of
    the platform on the Rover example ; the story says only what the platform does.
    A scene : { id, day, title, go (the route opened), early (captured before the others, for a heavy screen), prep (what the capture does first), ready (a function : what must be true in the page
@@ -13,7 +13,7 @@ export const CAST = {
   davide: { name: "Davide", role: "fabrication et atelier", color: "#7c3aed" },
   claude: { name: "Claude", role: "assistant IA", color: "#3a3f47" },
 };
-export const TITLE = { kicker: "Une histoire de conception — fiction", title: "Hugo et le Rover", sub: "De l'idée au résultat, en une semaine de session, avec DesignOrbit.ai",
+export const TITLE = { kicker: "Une histoire de conception — fiction", title: "Hugo et le Rover", sub: "De l'idée au résultat, en une semaine de session, avec DynamiteOrbit.ai",
   lead: "Hugo est en 2e année du baccalauréat en génie mécanique, à l'Université de Sherbrooke. Dans son cours de conception, son équipe doit livrer un véhicule autonome d'apprentissage. Il se sert de la plateforme comme d'un guide : elle lui dit quoi faire ensuite, et pourquoi." };
 export const END = { title: "Vendredi, 16 h — le Rover roule", text: "Une semaine, quatre étudiants, un assistant. Hugo n'a pas appris un logiciel : il a suivi une démarche — l'intention d'abord, les interfaces comme contrat, le procédé dès le premier jour, les vérifications avant la commande. Le dossier de revue est remis. La prochaine itération commence lundi.",
   learned: ["Une pièce naît de son intention : ses interfaces, sa matière, son procédé.", "L'assemblage se monte par les interfaces : un mate, c'est un contrat tenu.", "Le DFx et le guide parlent dès la première minute, pas la veille de la commande.", "L'IA propose, l'équipe dispose : chaque retour est relu avant d'être appliqué."] };

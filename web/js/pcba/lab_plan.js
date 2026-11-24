@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the electronics lab : the functional test plan of a board (demande de JP : « planifier un plan de test
+/* DynamiteOrbit.ai — the electronics lab : the functional test plan of a board (demande de JP : « planifier un plan de test
    fonctionnel avec toutes les instructions requises, le détail des manipulations et les mesures attendues… destiné à des
    étudiants du bac en stage et à de jeunes ingénieurs : mentorat du pourquoi on fait ces tests et à quoi s'attendre, et
    manipulations très détaillées, comme un labo éducatif, mais pour de vrais résultats avec de vraies pièces »).
@@ -210,7 +210,7 @@ export function labPlanDoc(board, o = {}) {
   sec("Feuille de résultats");
   out.push({ type: "table", head: ["N°", "Essai", "Conforme", "Remarque"], widths: [8, 50, 12, 30], rows: sheets.map((s) => [s.id, `${s.block} — ${s.title}`, "", ""]) });
   out.push({ type: "signatures", roles: ["Essais faits par", "Vérifiés par", "Responsable du projet"] });
-  return { title: `Plan de test fonctionnel — ${board.id}`, subtitle: board.name || "", subject: "Plan de test fonctionnel", author: o.author || "", date, reference: `${board.id}-PTF`, revision: board.revision || "A", header: `${board.id} rév. ${board.revision || "A"} — Plan de test fonctionnel`, footer: "DesignOrbit.ai", blocks: out, sheets };
+  return { title: `Plan de test fonctionnel — ${board.id}`, subtitle: board.name || "", subject: "Plan de test fonctionnel", author: o.author || "", date, reference: `${board.id}-PTF`, revision: board.revision || "A", header: `${board.id} rév. ${board.revision || "A"} — Plan de test fonctionnel`, footer: "DynamiteOrbit.ai", blocks: out, sheets };
 }
 /** What the lab asks for on a board. → [{ level, text, id }] for the guide */
 export function labGuide(board) {

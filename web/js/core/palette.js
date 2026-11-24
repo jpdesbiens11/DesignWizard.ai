@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the wand (Ctrl+K): one field to go anywhere, run a command, or edit the current part in plain words. */
+/* DynamiteOrbit.ai — the wand (Ctrl+K): one field to go anywhere, run a command, or edit the current part in plain words. */
 
 import { el, clear, icon, modal, toast } from "./dom.js";
 import { app, go } from "./app.js";

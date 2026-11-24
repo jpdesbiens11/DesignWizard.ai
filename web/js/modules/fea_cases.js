@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — Simulation : the load cases of the model, under their names (demande de JP : « plusieurs cas de charge nommés
+/* DynamiteOrbit.ai — Simulation : the load cases of the model, under their names (demande de JP : « plusieurs cas de charge nommés
    par pièce »). One group of the left panel, above the conditions : each case one line — its mark, its name, what it holds — and
    the one in use marked. A click brings a case in use ; the one that is left waits as it was. The « + » makes a new case, a copy
    of the one in use under another name : service, transport, drop… The convention is the list of load cases — or studies — of

@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the film of the platform : two and a half minutes, in French and in English. Its pictures are the real screens, drawn
+/* DynamiteOrbit.ai — the film of the platform : two and a half minutes, in French and in English. Its pictures are the real screens, drawn
    frame by frame by tools/film_render.mjs from one timeline (tools/film/script.mjs) ; the files live in web/video. The home screen opens
    the film in a dialog ; the showcase page (vitrine.html) shows it in two players, one per language.
    Two states, told by FILM.voice (docs/VIDEO.md) : a silent film whose narration is drawn in the picture, or a film that speaks, whose
@@ -12,7 +12,7 @@ import { subsBox, subChoices, subDefault } from "./captions.js";
 /** The film : its length in seconds, its languages and their names, and what the screen says about its sound. */
 export const FILM = {
   seconds: 170, langs: ["fr", "en"], names: { fr: "Français", en: "English" },
-  voice: true,      // true once the published files speak : web/video/designorbit_<lang>.mp4 then carry a voice and no drawn subtitles
+  voice: true,      // true once the published files speak : web/video/dynamiteorbit_<lang>.mp4 then carry a voice and no drawn subtitles
   silent: { fr: "Sans son : la narration se lit à l'écran.", en: "No sound: the narration reads on screen." },
   spoken: { fr: "La voix raconte ; les sous-titres restent, dans la langue de votre choix.", en: "The voice tells the story; the subtitles stay, in the language you choose." },
   words: { fr: { voice: "Voix", subs: "Sous-titres", both: "Les deux", off: "Aucun" }, en: { voice: "Voice", subs: "Subtitles", both: "Both", off: "None" } },      // next to a film that speaks
@@ -26,7 +26,7 @@ export const filmLang = (wanted) => (String(wanted || "").toLowerCase().startsWi
 /** The files of the film in a language : { lang, src, poster, vtt }. */
 export function filmFiles(lang, base = "video/") {
   const l = FILM.langs.includes(lang) ? lang : "fr";
-  return { lang: l, src: `${base}designorbit_${l}.mp4`, poster: `${base}designorbit_${l}.jpg`, vtt: `${base}designorbit_${l}.vtt` };
+  return { lang: l, src: `${base}dynamiteorbit_${l}.mp4`, poster: `${base}dynamiteorbit_${l}.jpg`, vtt: `${base}dynamiteorbit_${l}.vtt` };
 }
 /** « 2 min 50 » */
 export const filmLength = (s = FILM.seconds) => `${Math.floor(s / 60)} min ${String(Math.round(s % 60)).padStart(2, "0")}`;
@@ -56,7 +56,7 @@ export function showFilm(lang) {
     if (subs && subs.now() === subDefault(now.lang, FILM.langs)) subs.set(subDefault(l, FILM.langs));      // subtitles that followed the voice follow it still ; a choice of the viewer (the other language, both, none) is left alone
     now = filmFiles(l); load(at, playing);
   }
-  modal(`DesignOrbit.ai en ${filmLength()}`, [video,
+  modal(`DynamiteOrbit.ai en ${filmLength()}`, [video,
     el("div", { class: "film-bar" }, el("span", { class: "film-langs", role: "group", "aria-label": "Langue de la voix" }, voiceWord, picks), box, note,
       el("a", { class: "btn btn-small", href: "presentation.html", target: "_blank", rel: "noopener" }, "Présentation guidée"))],
   { xl: true, onClose: () => { video.pause(); video.removeAttribute("src"); video.load(); } });      // a film taken off the page would go on playing : it is stopped and let go

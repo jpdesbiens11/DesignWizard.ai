@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — a drop-down list one can search (demande de JP : « un menu déroulant pour choisir la pièce… quand il y a
+/* DynamiteOrbit.ai — a drop-down list one can search (demande de JP : « un menu déroulant pour choisir la pièce… quand il y a
    30 pièces, il faut vraiment scroller »). A button shows what is chosen ; it opens a list grouped by nature — a colour per
    group, a pictogram and a short title per line — with a field that narrows it as one types.
    The usage it follows : the combobox of the web (WAI-ARIA « combobox with a listbox popup ») — Enter, Space or ↓ opens ; typing

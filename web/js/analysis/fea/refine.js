@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — refinement zones : smaller cubes where the analyst wants to look closely.
+/* DynamiteOrbit.ai — refinement zones : smaller cubes where the analyst wants to look closely.
    The analyst places a volume in the model — a cylinder or a square prism along X, Y or Z — and what it shares with the product is
    meshed again with cubes 2, 3 or 4 times smaller. The fine cubes subdivide the cubes of the model (same grid lines), so a zone is
    a block of whole cubes : its shape, in cubes ; inside it the product is read again from its geometry, so a detail smaller than a

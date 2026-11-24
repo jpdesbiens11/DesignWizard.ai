@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the « Développé » tab of a folded sheet-metal part : the blank before the press brake. It draws the
+/* DynamiteOrbit.ai — the « Développé » tab of a folded sheet-metal part : the blank before the press brake. It draws the
    flat pattern computed by cad/family_folded.js — the outline and the holes the laser cuts, the bend lines it must not
    cut — gives the figures of the fold (thickness, inside radius, developed length of a bend, k factor) and each folded
    edge, and hands the DXF. The developed length uses a typical k factor : the panel says so, the shop corrects it. */

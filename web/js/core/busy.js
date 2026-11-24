@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the veil of a long operation : what is being done, how far it is, for how long — and a button to cancel it. One look
+/* DynamiteOrbit.ai — the veil of a long operation : what is being done, how far it is, for how long — and a button to cancel it. One look
    for every screen : a view of the 3D (core/viewport.js) or any panel (busyVeil on a host). While the kernel is being downloaded — 23 MB,
    once — the veil shows its bytes : the first operation of a session is the one that waits for it.
    veil.set(text, o) : o { done, total, cancel() (shows « Annuler »), stopped (true : nothing runs — a notice, with retry) , retry(),

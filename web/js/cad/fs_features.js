@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — FeatureScript export (see featurescript.js), features: one emitter per operation of the part language
+/* DynamiteOrbit.ai — FeatureScript export (see featurescript.js), features: one emitter per operation of the part language
    (box, cylinder, extrude, revolve, hole, pocket, pad, slot, boss, shell, fillet, chamfer). The hole / pocket / pad / boss
    emitters are also used by the interfaces. An operation that cannot be converted throws Skip. */
 

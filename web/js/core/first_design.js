@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — a first complete design, written by an AI after an interview.
+/* DynamiteOrbit.ai — a first complete design, written by an AI after an interview.
    The engineer gives a detailed description ; firstDesignPrompt() wraps it in an interview led block by block, with
    answers to click, in the manner of the Project Starter of DynamiteAgile ; the assistant ends with ONE file : every
    part, the assemblies, the board by its functions and blocks, the analyses to run, its assumptions.
@@ -67,8 +67,8 @@ export const physicsCatalogue = () => MODELS.map((m) => `- ${m.id} — ${m.title
 export function firstDesignPrompt(o = {}) {
   const n = FIRST_DESIGN_BLOCKS.reduce((s, b) => s + b[1].length, 0), text = String(o.description || "").trim();
   return [
-    "# Premier design complet — entrevue pour DesignOrbit.ai", "",
-    "Tu es un bureau d'études mécatronique à toi seul : concepteur mécanique senior, électronicien et ingénieur de fabrication. À partir de la description ci-dessous et d'une courte entrevue, tu écris le PREMIER DESIGN COMPLET d'un produit pour la plateforme DesignOrbit.ai : toutes ses pièces, ses assemblages, sa carte électronique et les analyses à faire.",
+    "# Premier design complet — entrevue pour DynamiteOrbit.ai", "",
+    "Tu es un bureau d'études mécatronique à toi seul : concepteur mécanique senior, électronicien et ingénieur de fabrication. À partir de la description ci-dessous et d'une courte entrevue, tu écris le PREMIER DESIGN COMPLET d'un produit pour la plateforme DynamiteOrbit.ai : toutes ses pièces, ses assemblages, sa carte électronique et les analyses à faire.",
     "La plateforme construit chaque pièce en 3D à partir de ton fichier, calcule elle-même les analyses et les règles de fabrication, et présente le tout à l'ingénieur comme un BROUILLON à passer en revue de conception, pièce par pièce. Tu proposes ; l'outil calcule ; l'humain décide.", "",
     `## Le produit${o.name ? ` — ${o.name}` : ""}`, "", "Description donnée par l'ingénieur :", "", '"""', text || "(aucune description : commence par demander ce qu'est le produit, en une phrase, et le problème qu'il règle)", '"""', "",
     "## Comment mener l'entrevue", "", ...HOW.map((t, i) => `${i + 1}. ${t}`), "",
@@ -197,7 +197,7 @@ export function readFirstDesign(text, o = {}) {
   for (const it of items) project.review.items[it.key] = { state: "draft" };
   const counts = { parts: project.parts.length, assemblies: project.assemblies.length, boards: project.boards.length, physics: project.physics.length, pairs, outside: outside.length, refused: refused.length, problems: items.reduce((s, x) => s + x.problems.length, 0) };
   const KIND = { part: "pièce", assembly: "assemblage", board: "carte", physics: "analyse" };
-  const fix = refused.length || counts.problems ? ["Le fichier que tu m'as rendu a été relu par DesignOrbit.ai. Corrige les points suivants et redonne le fichier COMPLET, dans un seul bloc de code, sans rien changer d'autre :",
+  const fix = refused.length || counts.problems ? ["Le fichier que tu m'as rendu a été relu par DynamiteOrbit.ai. Corrige les points suivants et redonne le fichier COMPLET, dans un seul bloc de code, sans rien changer d'autre :",
     ...refused.map((x) => `- ${KIND[x.kind]} « ${x.id} » refusée : ${x.why}`), ...items.flatMap((x) => x.problems.map((t) => `- ${KIND[x.kind]} « ${x.id} » : ${t}`))].join("\n") : "";
   return { project, items, refused, counts, outside, fix };
 }

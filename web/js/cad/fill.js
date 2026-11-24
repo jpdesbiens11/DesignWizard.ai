@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — filling a cavity as it is done in production : the filler (potting compound, thermal gap filler, foam)
+/* DynamiteOrbit.ai — filling a cavity as it is done in production : the filler (potting compound, thermal gap filler, foam)
    is poured in a housing with everything already in place, and takes the room that is left. The kernel computes that
    room : the box of the container up to the filling level, less the container, less every other part. What remains is one
    solid enclosed by the walls, plus — when the walls lean or have round corners — thin slivers outside them : only the

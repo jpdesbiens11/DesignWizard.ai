@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the teaser : half a minute cut from the film, for a post or the top of a page (kit de lancement, demande de JP).
+/* DynamiteOrbit.ai — the teaser : half a minute cut from the film, for a post or the top of a page (kit de lancement, demande de JP).
    It is not drawn again : each of its shots is a span of a scene of the film (tools/film/script.mjs), so a new picture of the film
    gives a new teaser by the same cut (tools/film_teaser.mjs). Its narration is its own — the story of the film in seven breaths — and
    holds the same rules as the film's : it tells, it never reads out what the screen writes ; every sentence is something the tool
@@ -32,7 +32,7 @@ export const TEASER_LINES = [
   { t0: 13.3, t1: 17.8, ...L("Les pièces trouvent leur place. Changez-en une : les autres suivent.", "Parts find their place. Change one, and the others follow.") },
   { t0: 18.3, t1: 21.8, ...L("Le calcul se recoupe, le plan se trace.", "The calculation is cross-checked, the drawing draws itself.") },
   { t0: 22.2, t1: 25.4, ...L("Jusqu'au dossier qui part chez le fabricant.", "Right down to the package that goes to the maker.") },
-  { t0: 26, t1: 31.2, ...L("DesignOrbit.ai. Libre, ouvert à tous. Essayez la démonstration.", "DesignOrbit.ai. Free and open to all. Try the demonstration.") },
+  { t0: 26, t1: 31.2, ...L("DynamiteOrbit.ai. Libre, ouvert à tous. Essayez la démonstration.", "DynamiteOrbit.ai. Free and open to all. Try the demonstration.") },
 ];
 /** How long the voice may speak for line i : to a breath before the next one, or to the end of the teaser. */
 export const teaserRoom = (i) => (i + 1 < TEASER_LINES.length ? TEASER_LINES[i + 1].t0 - 0.15 : TEASER_DURATION - 0.25) - TEASER_LINES[i].t0;
@@ -46,7 +46,7 @@ const stamp = (t, sep) => { const ms = Math.round(t * 1000), h = Math.floor(ms /
 export const teaserSrt = (lang) => `${TEASER_LINES.map((c, i) => `${i + 1}\n${stamp(c.t0, ",")} --> ${stamp(c.t1, ",")}\n${c[lang]}`).join("\n\n")}\n`;
 /** The teaser as a script : what is shown, what is said, both languages. */
 export function teaserScript() {
-  const spans = teaserSpans(), out = ["# DesignOrbit.ai — bande-annonce · teaser", "", `${TEASER_DURATION} s, coupées du film (tools/film/teaser.mjs). L'image montre, la voix raconte ; aucun chiffre de gain.`, "",
+  const spans = teaserSpans(), out = ["# DynamiteOrbit.ai — bande-annonce · teaser", "", `${TEASER_DURATION} s, coupées du film (tools/film/teaser.mjs). L'image montre, la voix raconte ; aucun chiffre de gain.`, "",
     "| Temps · time | Plan du film · shot | La voix raconte | The voice tells |", "|---|---|---|---|"];
   for (const c of TEASER_LINES) { const s = spans.find((x) => c.t0 >= x.at && c.t0 < x.at + x.len); out.push(`| ${stamp(c.t0, ".").slice(6, 10)} | ${s ? `${s.scene} (${s.a.toFixed(1)} → ${s.b.toFixed(1)} s)` : "—"} | ${c.fr} | ${c.en} |`); }
   return out.join("\n") + "\n";

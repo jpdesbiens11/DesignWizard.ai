@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the RS-485 link as the software sees it : the MODEL (demande de JP : « … signaux et contribution au code
+/* DynamiteOrbit.ai — the RS-485 link as the software sees it : the MODEL (demande de JP : « … signaux et contribution au code
    logiciel — on aura l'interface HW/SW »). One source for three things : what the Labo puts on the bus of the simulated
    board, the C driver the tool writes (sw/rs485_c.js), and the sheet of the hardware / software interface (sw/hwsw.js).
    The protocol is MODBUS RTU, chosen because its specification is public and complete : the frame, the character of

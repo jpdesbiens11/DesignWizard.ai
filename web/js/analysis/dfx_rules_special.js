@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — DFM rules of two special processes of the Shop : precision laser cutting, by sheet material (LAS-), and
+/* DynamiteOrbit.ai — DFM rules of two special processes of the Shop : precision laser cutting, by sheet material (LAS-), and
    3D printing, by process and by material (AM-1x). The figures live in cad/special_processes.js : the rule book prints
    them, the checks read them. The laser rules run after the flat-plate rules of dfx_rules_sheet.js (LC-, SM-, LAM-) ; the
    printing rules run after the housing rules of dfx_rules_plastic.js (HSG-) for a polymer, and alone for a metal. */

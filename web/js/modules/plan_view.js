@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — a routing sheet on screen, whatever it describes (the manufacture of a part, the assembly of a
+/* DynamiteOrbit.ai — a routing sheet on screen, whatever it describes (the manufacture of a part, the assembly of a
    product or of a board) : phase by phase — station, work holding, operations, tools, checks — with a note per phase
    kept in the artefact, the points to discuss, the sheet as text, Word and PDF with the pictures of the view, and the
    AI round trip on the artefact, the computed sheet given for reference. */

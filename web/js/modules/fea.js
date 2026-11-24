@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — Simulation: a deliberately simple finite-element model for structure and steady-state thermal.
+/* DynamiteOrbit.ai — Simulation: a deliberately simple finite-element model for structure and steady-state thermal.
    The part or the assembly is meshed coarsely with identical cubes, the efforts are set on its boundaries (faces and
    interfaces), and BEFORE anything is solved the screen writes the hand calculation of the equivalent simple model —
    what a good analyst does first. The simulation then runs in a worker and is compared with that estimate.

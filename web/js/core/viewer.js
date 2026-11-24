@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — 3D view (three.js): the CAD habits a designer expects — orbit / pan / zoom to cursor, standard
+/* DynamiteOrbit.ai — 3D view (three.js): the CAD habits a designer expects — orbit / pan / zoom to cursor, standard
    views, fit, section plane, exploded view, x-ray, face and edge picking, measure — plus overlays for the
    platform's own tools (interface frames, DFx markers, isolation paths). Renders only when something changed. */
 

@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — PCBA: copper laid by hand. The router proposes ; the designer finishes — a track drawn click by
+/* DynamiteOrbit.ai — PCBA: copper laid by hand. The router proposes ; the designer finishes — a track drawn click by
    click, a via, a corner moved, a stretch removed. Hand copper carries no « auto » mark : the router routes around it
    and never takes it away. Nothing is laid that crowds a pad, a hole, other copper or the board edge : every piece is
    checked against the rules of its net first, and the reason is given when it is refused. */

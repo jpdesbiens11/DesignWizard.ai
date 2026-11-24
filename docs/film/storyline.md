@@ -1,4 +1,4 @@
-# DesignOrbit.ai — storyline du film · film storyline
+# DynamiteOrbit.ai — storyline du film · film storyline
 
 2 min 50 s. L'image montre, la voix raconte : elle ne lit jamais ce qui est écrit à l'écran. Fil de l'histoire : une pièce commence par une question — à quoi sert-elle ? — et l'outil est celui qui retient la réponse, du premier besoin à la commande.
 
@@ -23,7 +23,7 @@
 |---|---|---|
 | 00:09.2 | Mais il faut le redire. Au modeleur, au calcul, au dessin. Encore et encore. | But you must repeat it. To the modeller, the solver, the drawing. Every time. |
 
-## 00:15 → 00:23 — DesignOrbit.ai
+## 00:15 → 00:23 — DynamiteOrbit.ai
 
 - **À l'écran** : On construit la fusée en volant. · De l'intention à la pièce, de la pièce au système.
 - **On screen**: We build the rocket in flight. · From intent to part, from part to system.
@@ -31,7 +31,7 @@
 | Temps · time | La voix raconte | The voice tells |
 |---|---|---|
 | 00:15.3 | Et si on ne le disait qu'une fois ? | What if you only had to say it once? |
-| 00:18.6 | DesignOrbit.ai : l'outil qui retient le pourquoi. | DesignOrbit.ai: the tool that remembers why. |
+| 00:18.6 | DynamiteOrbit.ai : l'outil qui retient le pourquoi. | DynamiteOrbit.ai: the tool that remembers why. |
 
 ## 00:23 → 00:39 — Atelier · Shop
 
@@ -144,4 +144,4 @@
 | Temps · time | La voix raconte | The voice tells |
 |---|---|---|
 | 02:41.4 | Une pièce commence par une question. | A part begins with a question. |
-| 02:44.5 | Voici l'outil qui se souvient de la réponse : DesignOrbit.ai. | Here is the tool that remembers the answer: DesignOrbit.ai. |
+| 02:44.5 | Voici l'outil qui se souvient de la réponse : DynamiteOrbit.ai. | Here is the tool that remembers the answer: DynamiteOrbit.ai. |

@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the Shop companion for a FOLDED SHEET-METAL part. The designer says which sides of the base fold up
+/* DynamiteOrbit.ai — the Shop companion for a FOLDED SHEET-METAL part. The designer says which sides of the base fold up
    (or down), or simply puts an interface on a side : that side becomes a folded edge that carries it. The part then
    writes itself as a « folded » block (cad/family_folded.js) : a base just large enough, one inside radius for every
    bend (the minimum of the material), edges high enough for the press brake and for what they carry, holes kept away
@@ -77,7 +77,7 @@ export function foldedSheet(brief, all, log, T) {
 
 /** The sheet of the process for an AI : what the press brake asks, the block of the language, the instruction. */
 export function foldBrief() {
-  return ["Voici ce que la TÔLERIE PLIÉE demande au dessin, tel que la plateforme DesignOrbit.ai l'applique (règles SM-01 à SM-08, bloc « folded » du langage de pièce).",
+  return ["Voici ce que la TÔLERIE PLIÉE demande au dessin, tel que la plateforme DynamiteOrbit.ai l'applique (règles SM-01 à SM-08, bloc « folded » du langage de pièce).",
     "Quand tu proposes ou modifies une pièce pliée (process « sheet_metal », bloc « folded »), respecte ces limites : un seul rayon intérieur, des bords assez hauts, des trous loin des plis et des bords, des dégagements aux angles. Dis ce que tu n'as pas pu respecter.",
     "Valeurs typiques de guides publiés : la table de pliage de l'atelier fait foi.", "", ...FOLD_RULES.chips.map(([text, tip]) => `- ${text}${tip ? ` — ${tip}` : ""}`), "", ...FOLD_RULES.notes.map((x) => `- ${x}`), "",
     "Le bloc de la pièce : \"folded\": { \"base\": [\"L\", \"W\"], \"t\": \"t\", \"r\": \"r\", \"flanges\": [ { \"side\": \"+X\", \"h\": \"h\", \"dir\": \"up\" } ], \"relief\": 3.5, \"k\": 0.44 } — sans « stock » : le flan est le développé, calculé par la plateforme.",

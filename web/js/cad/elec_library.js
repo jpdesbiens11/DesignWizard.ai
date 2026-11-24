@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the electrical library : connectors (low voltage and high voltage / power) and cylindrical Li-ion cells.
+/* DynamiteOrbit.ai — the electrical library : connectors (low voltage and high voltage / power) and cylindrical Li-ion cells.
    Each connector entry names a real, widely used family of a major manufacturer, or a published standard, as a REFERENCE :
    maker and series are quoted to say what the part is compatible with — no logo, no copied drawing. The figures are the
    nominal ones published by the manufacturer (per contact, at the stated condition) ; they derate with the number of poles,

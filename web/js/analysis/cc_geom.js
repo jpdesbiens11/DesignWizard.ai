@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — mesh utilities of the isolation analysis (creepage & clearance).
+/* DynamiteOrbit.ai — mesh utilities of the isolation analysis (creepage & clearance).
    Pure computational geometry on indexed triangle meshes: no DOM, no Node API, no dependency (browser worker and Node).
    Conventions: V = Float64Array of x,y,z per vertex, I = Uint32Array of 3 vertex indices per triangle (outward CCW).
    Units are those of the meshes (mm). */

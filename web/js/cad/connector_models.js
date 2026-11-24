@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — connectors modelled series by series. A series of a maker is not copied : it is REBUILT, by a generator,
+/* DynamiteOrbit.ai — connectors modelled series by series. A series of a maker is not copied : it is REBUILT, by a generator,
    from the dimensions its data sheet publishes — the pitch, the rows, how the length grows with the number of circuits,
    the depth, the height, the pin, the hole in the board. What comes out is the platform's own geometry : a housing that
    has the size and the look of the series (its silos, its shroud, its latch, its colour), pins where the board expects

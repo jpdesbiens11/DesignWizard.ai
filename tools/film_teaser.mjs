@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the teaser, made : the shots of tools/film/teaser.mjs cut from a film already rendered (its picture only — the
+/* DynamiteOrbit.ai — the teaser, made : the shots of tools/film/teaser.mjs cut from a film already rendered (its picture only — the
    voice of the film is left behind), the seven lines of the teaser said by a synthetic voice and laid over, and its subtitles beside
    it. Not part of the application and not run by the tests : it needs ffmpeg, and an ElevenLabs account for the voice.
      node tools/film_teaser.mjs make <voice id> <fr|en> <film.mp4> <out.mp4> [--work folder] [--model id] [--kbps n] [--dry] [--force]

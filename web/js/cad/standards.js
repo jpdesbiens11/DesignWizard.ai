@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — standard sizes used by features, interfaces and DFx checks (ISO metric). All in mm.
+/* DynamiteOrbit.ai — standard sizes used by features, interfaces and DFx checks (ISO metric). All in mm.
    Sources: ISO 273 (clearance holes), ISO 4762 (socket head cap screws), ISO 10642 (countersunk), ISO 7089 (washers),
    usual tap drill sizes (ISO 2306) and typical heat-set insert data (to confirm with the insert supplier). */
 

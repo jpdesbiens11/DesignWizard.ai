@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the instruments of a simulation (demande de JP) : temperature sensors and strain gauges put on the product,
+/* DynamiteOrbit.ai — the instruments of a simulation (demande de JP) : temperature sensors and strain gauges put on the product,
    read on the result — what the thermocouples and the gauges of the test bench should say, before the bench exists.
      st.sensors = [{ id ("TC1", "SG2"), kind ("temp" | "gauge"), at [x, y, z] (mm), name?, off?, body? (the body it was put on),
                      n? (a gauge : the outward normal of the face it is bonded to), angle? (degrees : its axis, in the plane of that face),

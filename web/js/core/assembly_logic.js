@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — assembly logic (pure functions, no DOM, no kernel): interface matching, automatic mates,
+/* DynamiteOrbit.ai — assembly logic (pure functions, no DOM, no kernel): interface matching, automatic mates,
    placement solving, linked parameters, hardware and BOM.
    asm = { id, name, instances:[{id, part, fixed, placement:{t,r}, hidden}], mates:[{id, a:{inst,iface}, b:{inst,iface}, linked, flip, angle, offset}] }
    `built` = map partId -> result of the kernel build (interfaces with frames, bbox, mass...). */

@@ -1,7 +1,7 @@
-/* DesignOrbit.ai — the central BMS board of the module BM 8s8p, written by tools/gen_demo_bms.mjs, from its functions to its copper, in the
+/* DynamiteOrbit.ai — the central BMS board of the module BM 8s8p, written by tools/gen_demo_bms.mjs, from its functions to its copper, in the
    .dwiz format. Do not edit by hand : change the generator and run it again. */
 export const DEMO_BMS_1 = `dwiz board/1 BMS-CENTRAL-PCBA "BMS central du module"
-# DesignOrbit.ai — fichier .dwiz : une instruction par ligne, « # » commente, les lignes en retrait précisent la ligne du dessus.
+# DynamiteOrbit.ai — fichier .dwiz : une instruction par ligne, « # » commente, les lignes en retrait précisent la ligne du dessus.
 
 # Pourquoi — les fonctions que la carte remplit
 description <<<

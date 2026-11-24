@@ -1,8 +1,8 @@
 {
   "name": "designwizard-ai",
-  "version": "0.187.0",
+  "version": "0.188.0",
   "private": true,
-  "description": "DesignOrbit.ai by DynamiteAgile - from interfaces to parts, assemblies, PCB, isolation, DFx and drawings. No dependency: this file only tells Node that the sources are ES modules and names the test command.",
+  "description": "DynamiteOrbit.ai by DynamiteAgile - from interfaces to parts, assemblies, PCB, isolation, DFx and drawings. No dependency: this file only tells Node that the sources are ES modules and names the test command.",
   "type": "module",
   "scripts": {
     "test": "node --test tests/node/*.test.mjs"

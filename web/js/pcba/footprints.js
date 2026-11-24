@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — PCBA: land patterns. Each generator returns { pads, body: [w, h, z], courtyard: [w, h] } in the
+/* DynamiteOrbit.ai — PCBA: land patterns. Each generator returns { pads, body: [w, h, z], courtyard: [w, h] } in the
    pad format of model.js. Dimensions are nominal patterns in the spirit of IPC-7351 (density level B): typical values,
    good for a prototype — the data sheet of the chosen part prevails.
    Conventions: the part is centred on its origin ; on two-row packages pin 1 is at the top of the left row and the

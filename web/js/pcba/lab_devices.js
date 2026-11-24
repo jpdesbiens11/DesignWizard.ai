@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the electronics lab : what each component of a board IS, for the solver (pcba/lab_mna.js). A function block
+/* DynamiteOrbit.ai — the electronics lab : what each component of a board IS, for the solver (pcba/lab_mna.js). A function block
    (pcba/blocks.js) gives its real little circuit — its parts, their values, the nets that join their pins : the passives go
    in as they are, and each integrated circuit is replaced by WHAT IT DOES SEEN FROM OUTSIDE (a regulator holds its output, a
    comparator pulls its output down, a driver follows its input, a memory answers on its bus). These are behaviours with

@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — SVG backend of the drawing kit. Produces standalone SVG markup (one document per page,
+/* DynamiteOrbit.ai — SVG backend of the drawing kit. Produces standalone SVG markup (one document per page,
    width/height in mm, viewBox in mm) that renders like the PDF backend: same geometry, same text layout
    (text is positioned from the shared AFM metrics and pinned with textLength). No DOM access. */
 

@@ -1,4 +1,4 @@
-# Essai pilote — une heure avec DesignOrbit.ai
+# Essai pilote — une heure avec DynamiteOrbit.ai
 
 > Ce fichier est écrit par `node tools/pilot_kit.mjs --docs` à partir de `tools/pilot/content.mjs` : changez le contenu là, pas ici.
 > Le robot `tools/pilot_walk.mjs` suit ce parcours sur l'outil et vérifie que chaque mot cité « entre guillemets » est bien à l'écran.

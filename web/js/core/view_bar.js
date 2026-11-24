@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the small bar of a view that zooms (demande de JP : « pan, zoom, ajuster à la fenêtre, loupe… enlever la loupe du menu
+/* DynamiteOrbit.ai — the small bar of a view that zooms (demande de JP : « pan, zoom, ajuster à la fenêtre, loupe… enlever la loupe du menu
    du haut, ça n'a pas d'affaire là ») : ONE bar for every artefact at the centre of a page — a drawing, a board, the tiles of the software —
    in its top right corner : − [the zoom] + · Ajuster · Loupe. The percentage brings the view back to its true size (100 %), « Ajuster »
    fits the whole in the window, the magnifier (core/loupe.js) is turned on beside the zoom of the view it is used on.

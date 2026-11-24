@@ -1,6 +1,6 @@
-/* DesignOrbit.ai — the generic prompts. The platform does not call any AI itself: it writes the prompt, the user
+/* DynamiteOrbit.ai — the generic prompts. The platform does not call any AI itself: it writes the prompt, the user
    runs the interview in Claude (or another assistant) and pastes the answer back; the answer is a part in the
-   DesignOrbit.ai part language, built at once. */
+   DynamiteOrbit.ai part language, built at once. */
 
 import { LANGUAGE_REFERENCE } from "../cad/language_doc.js";
 import { evaluatedParams } from "./links.js";
@@ -44,7 +44,7 @@ export function partPrompt(project, opts) {
   const ant = anticipatedInterfaces(project, opts.neighbours || []);
   const others = (project.parts || []).filter((p) => !(opts.neighbours || []).includes(p.id)).map((p) => `- ${p.id} — ${p.name || ""}${p.function ? ` : ${p.function}` : ""}`);
   const lines = [];
-  lines.push(`Tu es un concepteur mécanique senior. Tu vas m'aider à définir UNE pièce d'un produit mécatronique pour la plateforme DesignOrbit.ai, qui construira la pièce en 3D directement à partir de ta réponse. On commence toujours par les INTERFACES de la pièce avec ses voisines, puis on dessine la pièce autour.`);
+  lines.push(`Tu es un concepteur mécanique senior. Tu vas m'aider à définir UNE pièce d'un produit mécatronique pour la plateforme DynamiteOrbit.ai, qui construira la pièce en 3D directement à partir de ta réponse. On commence toujours par les INTERFACES de la pièce avec ses voisines, puis on dessine la pièce autour.`);
   lines.push("");
   lines.push(`PROJET : ${project.name || "sans nom"}${project.description ? ` — ${project.description}` : ""}`);
   lines.push(`PIÈCE À CONCEVOIR : ${opts.name || "(à nommer)"}`);
@@ -79,7 +79,7 @@ export function partPrompt(project, opts) {
 export function revisionPrompt(project, spec, request) {
   const light = JSON.parse(JSON.stringify(spec));
   if (light.step) light.step = "(géométrie STEP importée, non modifiable)";
-  return [`Tu es un concepteur mécanique senior. Voici une pièce du projet « ${project.name || ""} » dans le langage DesignOrbit.ai (DW part/1). Modifie-la selon ma demande, sans changer son "id" ni les "key" de ses interfaces, et sans toucher à ce qui n'est pas concerné.`,
+  return [`Tu es un concepteur mécanique senior. Voici une pièce du projet « ${project.name || ""} » dans le langage DynamiteOrbit.ai (DW part/1). Modifie-la selon ma demande, sans changer son "id" ni les "key" de ses interfaces, et sans toucher à ce qui n'est pas concerné.`,
     "", `DEMANDE : ${request || "(décrire la modification)"}`, "", "PIÈCE ACTUELLE :", "```json", j(light), "```", "",
     "Réponds par UN SEUL objet JSON complet (la pièce entière, modifiée) dans un bloc de code, puis une liste courte de ce que tu as changé.", "", "LANGAGE :", "", LANGUAGE_REFERENCE].join("\n");
 }
@@ -87,7 +87,7 @@ export function revisionPrompt(project, spec, request) {
 /** Prompt for an extrusion profile designed around what goes inside / outside it. */
 export function extrusionPrompt(project, opts) {
   const env = (list) => (list || []).map((e) => `- ${e.name} : ${e.w} × ${e.h} mm${e.clearance ? `, jeu ${e.clearance} mm` : ""}${e.note ? ` — ${e.note}` : ""}`).join("\n") || "- (rien)";
-  return [`Tu es un concepteur de profilés extrudés (${opts.process === "extrusion_plastic" ? "plastique" : "aluminium"}). Dessine la SECTION d'un profilé pour la plateforme DesignOrbit.ai, qui l'extrudera en 3D et vérifiera les règles d'extrusion à partir de ta réponse.`,
+  return [`Tu es un concepteur de profilés extrudés (${opts.process === "extrusion_plastic" ? "plastique" : "aluminium"}). Dessine la SECTION d'un profilé pour la plateforme DynamiteOrbit.ai, qui l'extrudera en 3D et vérifiera les règles d'extrusion à partir de ta réponse.`,
     "", `PROJET : ${project.name || ""}`, `PROFILÉ : ${opts.name || "(à nommer)"}`, `FONCTION : ${opts.fn || "(à préciser)"}`, `LONGUEUR : ${opts.length || "à définir"} mm · MATÉRIAU : ${opts.material || (opts.process === "extrusion_plastic" ? "PVC-U" : "AL6063-T5")}`,
     "", "CE QUI DOIT ALLER DEDANS (dimensions de la section de chaque élément, vues dans le plan de la section) :", env(opts.inside),
     "", "CE QUI SE FIXE OU S'APPUIE DEHORS :", env(opts.outside),
@@ -104,7 +104,7 @@ export function extrusionPrompt(project, opts) {
 export function shopPrompt(project, brief, spec) {
   const tv = spec.params && spec.params.t && typeof spec.params.t.value === "number" ? spec.params.t.value : undefined, sheet = spec.folded ? [...FOLD_RULES.chips.map(([text, tip]) => `${text}${tip ? ` — ${tip}` : ""}`), ...FOLD_RULES.notes] : processSheet(spec.process, spec.material, tv);      // folded sheet metal, laser cutting, 3D printing : the sheet of the process
   const intent = [["Fonction", brief.fn], ["Efforts et charges", brief.loads], ["Milieu", brief.environment], ["Quantité", brief.quantity], ["Priorité", brief.priority]].filter(([, v]) => v !== undefined && v !== "" && v !== null).map(([k, v]) => `- ${k} : ${v}`);
-  return [`Tu es un concepteur mécanique senior et un compagnon d'atelier. Voici l'INTENTION d'une pièce du projet « ${project.name || ""} » et la première proposition que la plateforme DesignOrbit.ai a écrite à partir de cette intention : ses interfaces, sa matière première (« stock ») et ses opérations d'atelier. Améliore-la comme le ferait un artisan d'expérience, sans perdre ce qui est imposé.`,
+  return [`Tu es un concepteur mécanique senior et un compagnon d'atelier. Voici l'INTENTION d'une pièce du projet « ${project.name || ""} » et la première proposition que la plateforme DynamiteOrbit.ai a écrite à partir de cette intention : ses interfaces, sa matière première (« stock ») et ses opérations d'atelier. Améliore-la comme le ferait un artisan d'expérience, sans perdre ce qui est imposé.`,
     "", `PIÈCE : ${spec.id} — ${spec.name || ""}`, "INTENTION :", ...(intent.length ? intent : ["- (à préciser pendant l'entrevue)"]),
     "", "CE QUI EST IMPOSÉ : le \"id\" de la pièce ; pour chaque interface son \"type\", sa \"key\", ses \"params\" et son \"side\" ; la forme de la matière première, sauf si tu démontres qu'une autre forme du commerce enlève un posage ou des copeaux.",
     "", "CE QUE TU PEUX AMÉLIORER : l'enveloppe et l'épaisseur (taille du commerce), la position des interfaces, les allègements, nervures, rayons et chanfreins, le nombre de posages, les notes de dessin, la finition — toujours avec les verbes d'atelier (drill, tap, cbore, mill, step, turn…) et des paramètres nommés.",

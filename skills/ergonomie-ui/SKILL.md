@@ -6,7 +6,7 @@ license: MIT
 
 # Ergonomie d'interface, construite avec un agent
 
-Ces règles viennent d'une application réelle — DesignOrbit.ai, une plateforme de conception mécatronique écrite à
+Ces règles viennent d'une application réelle — DynamiteOrbit.ai, une plateforme de conception mécatronique écrite à
 la main avec un agent, sous licence MIT. Elles ont été trouvées une demande à la fois, puis écrites pour que le
 prochain écran naisse avec. Ce n'est ni une bibliothèque de composants ni un système de design : c'est **une façon
 de travailler** et **un catalogue de règles**, chacune avec sa raison.

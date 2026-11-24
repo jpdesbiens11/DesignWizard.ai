@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the stairs between the levels of the tool (demande de JP : « cette icône-là, qui permet de naviguer vers la
+/* DynamiteOrbit.ai — the stairs between the levels of the tool (demande de JP : « cette icône-là, qui permet de naviguer vers la
    carte… pour remonter de niveau, vers le niveau qui est lié directement à ce qu'on regarde… en escalier, d'une échelle à
    l'autre. Si on veut en skipper plusieurs niveaux, on peut aller dans les menus »).
    Every screen that shows something MADE FROM something else — the tests of a board, the simulation of a part, the drawing of an

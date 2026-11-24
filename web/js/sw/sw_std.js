@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — Logiciel : the REFERENCE a software follows, chosen by the project (choix cliqué de JP, 21 novembre 2026 : « au choix du
+/* DynamiteOrbit.ai — Logiciel : the REFERENCE a software follows, chosen by the project (choix cliqué de JP, 21 novembre 2026 : « au choix du
    projet » — DO-178C for aircraft, ISO 26262 for road vehicles). What the tool says of each comes from PUBLIC secondary pages, read on
    21 November 2026 (Wikipedia, CC BY-SA 4.0 : « DO-178C », « DO-178B », « ISO 26262 », « Modified condition/decision coverage », « V-model
    (software development) ») — the standards themselves are sold, and were NOT read. Every figure carries where it was read ; what those pages

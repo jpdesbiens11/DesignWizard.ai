@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — what a 3D view shows around the part : the triad (where X, Y and Z point, top right) and the grid
+/* DynamiteOrbit.ai — what a 3D view shows around the part : the triad (where X, Y and Z point, top right) and the grid
    behind the part. Pure : the viewer draws what these functions return ; the tests read the same numbers.
    The grid stands on the three faces of the box of the part that are away from the eye — the floor and the two back
    walls of a room — so that it is always BEHIND the part, whatever the view ; its step is a round number of millimetres. */

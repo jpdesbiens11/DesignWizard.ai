@@ -1,4 +1,4 @@
-# DesignOrbit.ai — narration de la vidéo
+# DynamiteOrbit.ai — narration de la vidéo
 
 Durée : 2 min 50 s. Une ligne, un souffle : chaque ligne se dit entre ses deux temps. Ton : chaleureux, assuré, sans emphase.
 
@@ -11,10 +11,10 @@ Durée : 2 min 50 s. Une ligne, un souffle : chaque ligne se dit entre ses deux 
 
 - **00:09.2 → 00:14.8** Mais il faut le redire. Au modeleur, au calcul, au dessin. Encore et encore.
 
-## 00:15 — DesignOrbit.ai
+## 00:15 — DynamiteOrbit.ai
 
 - **00:15.3 → 00:18.4** Et si on ne le disait qu'une fois ?
-- **00:18.6 → 00:22.9** DesignOrbit.ai : l'outil qui retient le pourquoi.
+- **00:18.6 → 00:22.9** DynamiteOrbit.ai : l'outil qui retient le pourquoi.
 
 ## 00:23 — Atelier
 
@@ -69,4 +69,4 @@ Durée : 2 min 50 s. Une ligne, un souffle : chaque ligne se dit entre ses deux 
 ## 02:41 — Fin
 
 - **02:41.4 → 02:44.2** Une pièce commence par une question.
-- **02:44.5 → 02:49.7** Voici l'outil qui se souvient de la réponse : DesignOrbit.ai.
+- **02:44.5 → 02:49.7** Voici l'outil qui se souvient de la réponse : DynamiteOrbit.ai.

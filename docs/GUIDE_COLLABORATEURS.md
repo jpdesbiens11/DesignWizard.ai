@@ -1,6 +1,6 @@
 # Guide des collaborateurs
 
-Merci de prendre le temps d'essayer DesignOrbit.ai. Votre avis d'ingénieur compte plus que tout ce qui est écrit ici.
+Merci de prendre le temps d'essayer DynamiteOrbit.ai. Votre avis d'ingénieur compte plus que tout ce qui est écrit ici.
 
 **L'essai se fait en une heure, en suivant [ESSAI_PILOTE.md](ESSAI_PILOTE.md)** : onze stations sur la démonstration, de
 l'accueil au dossier de revue, avec une fiche de retour. Cette page dit seulement comment installer l'outil, ce que sont
@@ -13,7 +13,7 @@ git clone https://github.com/jpdesbiens11/DynamiteOrbit.ai.git
 ```
 
 ```bash
-cd DesignOrbit.ai
+cd DynamiteOrbit.ai
 ```
 
 ```bash

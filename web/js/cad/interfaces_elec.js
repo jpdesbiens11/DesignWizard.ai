@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — electrical interfaces : how two conductors are joined.
+/* DynamiteOrbit.ai — electrical interfaces : how two conductors are joined.
    weld    : a permanent joint — laser, resistance spots, ultrasonic, or bonded wires (wirebonding) — between a thin side
              (a tab, the tongue of a busbar, the foot of a wire) and a terminal (the cap of a cell, a thick bar, a pad).
    contact : a pressure contact between two FLAT lands of solid conductors, in one of three forms (CONTACT_FORMS) : pointed

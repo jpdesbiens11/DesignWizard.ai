@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — PCBA: from functions to a circuit. A function is fulfilled by a block ; adding a block writes its
+/* DynamiteOrbit.ai — PCBA: from functions to a circuit. A function is fulfilled by a block ; adding a block writes its
    parts (repères numbered per prefix) and merges its nets into the board : a port joins the board net of its name
    (a rail, GND, CAN_TX…), everything else stays inside the block under « <block>_<NAME> ». The functional tree keeps
    the link function → block → parts → nets, which is what a design review reads. */

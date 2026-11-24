@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the safety factor of a structural result, point by point : the yield strength of the material over
+/* DynamiteOrbit.ai — the safety factor of a structural result, point by point : the yield strength of the material over
    the von Mises stress there. It is read against the factor the designer aims at : below it the part is red, whatever
    else ; above it the colour goes from orange (just enough) through blue (comfortable) to green (ample). Pure : the
    screen paints the model with it, the report can quote its summary.

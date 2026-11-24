@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the virtual fabrication shop, its scenes (point 13 of the roadmap, JP : « un genre d'atelier de fab virtuel… une gamme de
+/* DynamiteOrbit.ai — the virtual fabrication shop, its scenes (point 13 of the roadmap, JP : « un genre d'atelier de fab virtuel… une gamme de
    fab visuelle… montages conventionnels (table, étau…), porte-outils manuels ou CNC simple, presse d'estampage »). For each phase of the
    routing of a part (cad/process_plan.js) : where the part stands — turned so that the face being worked looks at the tool — and the fixture
    and machine around it, built by the tool from boxes and cylinders : a vise on a machine table under a spindle, a chuck and a tool post, a

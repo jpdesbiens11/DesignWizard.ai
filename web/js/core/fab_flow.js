@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the virtual fabrication shop, its flow (point 13 of the roadmap, JP : « les étapes se déplacent dans le flux pour en changer
+/* DynamiteOrbit.ai — the virtual fabrication shop, its flow (point 13 of the roadmap, JP : « les étapes se déplacent dans le flux pour en changer
    l'ordre »). The order of the phases of a part is the shop's to choose : it is kept in the part (plan.order, cad/process_plan.js honours it).
    What an order breaks is said, never forbidden : a raw part that does not come first, deburring before the cutting is over, a surface treatment
    that later work would scratch, a final check before the end of the work, packing that is not last. Pure (browser and Node). */

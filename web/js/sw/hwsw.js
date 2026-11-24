@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the hardware / software interface of a link, READ FROM THE BOARD (demande de JP : « … signaux et
+/* DynamiteOrbit.ai — the hardware / software interface of a link, READ FROM THE BOARD (demande de JP : « … signaux et
    contribution au code logiciel — on aura l'interface HW/SW »). For each RS-485 block of a board : which pin of the
    microcontroller carries which signal of the transceiver, under which name the software knows it, where the bus leaves
    the board, the times the software must hold, the frame, and the printed frames the driver is checked against.
@@ -82,7 +82,7 @@ export function hwswDoc(board, o = {}) {
   out.push({ type: "table", head: ["Fabricant", "Série", "Alimentation", "Débit", "Charge sur le bus"], widths: [20, 24, 18, 18, 20], rows: RS485_SERIES.map((s) => [s.maker, s.series, s.vcc, s.rate, s.load]), caption: "Cités comme références de compatibilité ; la fiche du composant acheté fait foi." });
   sec("Ce qui est vérifié, ce qui ne l'est pas");
   list(["Vérifié : le modèle et le pilote C redonnent les quatre trames imprimées ; le C, compilé sur un ordinateur, écrit ce que le modèle annonce ; les formules de polarisation redonnent les exemples chiffrés des notes lues.", "Simulé, non mesuré : les niveaux du bus viennent d'un comportement TYPIQUE de transceiver — aucune carte réelle n'a été mesurée.", "Non vérifié : le pilote n'a tourné sur aucun microcontrôleur ; les quatre fonctions du port, les interruptions et les priorités sont à écrire et à essayer dans le projet.", "Non lu : TIA/EIA-485-A, RTCA DO-160 (un équipement embarqué y est qualifié — foudre, décharges, susceptibilité) et toute exigence de niveau de développement du logiciel."]);
-  return { title: `Interface matériel / logiciel — ${board.id}`, subtitle: "Liaison RS-485", subject: "Interface matériel / logiciel", author: o.author || "", date, reference: `${board.id}-ICD-485`, revision: board.revision || "A", header: `${board.id} rév. ${board.revision || "A"} — Interface matériel / logiciel`, footer: "DesignOrbit.ai", blocks: out, links };
+  return { title: `Interface matériel / logiciel — ${board.id}`, subtitle: "Liaison RS-485", subject: "Interface matériel / logiciel", author: o.author || "", date, reference: `${board.id}-ICD-485`, revision: board.revision || "A", header: `${board.id} rév. ${board.revision || "A"} — Interface matériel / logiciel`, footer: "DynamiteOrbit.ai", blocks: out, links };
 }
 /** The files of the driver for a board : its pins written in the header. → [{ name, text }] */
 export function driverFiles(board) { const L = rs485Links(board)[0]; return cDriver({ board: board.id, pins: L ? L.pins : [] }); }

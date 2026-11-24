@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — Labo, said plainly, on the page (demande de JP : « simplifier et expliquer comme à un enfant de 16 ans… expliquer
+/* DynamiteOrbit.ai — Labo, said plainly, on the page (demande de JP : « simplifier et expliquer comme à un enfant de 16 ans… expliquer
    pourquoi les mesures virtuelles diffèrent de ce qui est demandé dans le labo réel »). The same three boxes for the Labo and for the
    bench mode ; the words are those of pcba/lab_plain.js, nothing is decided here.
      - benchTable(sheet) : « à l'écran du Labo » ↔ « au vrai banc », a line per thing the screen shows ;

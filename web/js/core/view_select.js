@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — pointing at the model : what lies under the cursor (a face, an edge when the cursor is on one,
+/* DynamiteOrbit.ai — pointing at the model : what lies under the cursor (a face, an edge when the cursor is on one,
    a point when it is on the end of an edge), the selection the designer builds with clicks — one entity, or several
    with Ctrl + click — what it measures, and the menu a right click opens. A screen owns a selection, asks it what
    is chosen, and offers the gestures that make sense for it. */

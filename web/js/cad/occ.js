@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — thin layer over the OpenCascade kernel (replicad-opencascadejs "single" build: constructors are
+/* DynamiteOrbit.ai — thin layer over the OpenCascade kernel (replicad-opencascadejs "single" build: constructors are
    overloaded by arguments, handles are transparent). Every kernel call of the platform goes through this file.
    Units mm. Works in a Web Worker and in Node (tests). Temporary kernel objects are tracked and freed by flush(). */
 

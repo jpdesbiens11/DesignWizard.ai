@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — Bibliothèque électrique : connectors (low voltage, high voltage and power) and cylindrical cells, taken
+/* DynamiteOrbit.ai — Bibliothèque électrique : connectors (low voltage, high voltage and power) and cylindrical cells, taken
    from real families of major manufacturers and from published standards. The designer filters by what the connection
    must carry — current, voltage, sealing, interlock — picks a family, says how many poles, which potential, and whether
    the connection leaves the product ; the part is created with its conductors, its nets and its interfaces. Route : #/library. */

@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — PCBA: the design flow of a board, and where a board stands in it. Functions first, then the
+/* DynamiteOrbit.ai — PCBA: the design flow of a board, and where a board stands in it. Functions first, then the
    architecture (one block per function), the conceptual layout, a preliminary review ; then the detailed layout, the
    checks, the fabrication package and the detailed review. The screen draws this as a diagram. */
 

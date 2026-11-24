@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the English of the drawings of the demonstration projects : every text a sheet of theirs writes — the
+/* DynamiteOrbit.ai — the English of the drawings of the demonstration projects : every text a sheet of theirs writes — the
    name of a part, of an interface, the label of a parameter, a finish, a note, the name of the project — with its English
    (core/drawing_words.js : project.drawing.words). The screens keep the French ; a drawing is written in English.
    One line per text, in the order of the sheets. */

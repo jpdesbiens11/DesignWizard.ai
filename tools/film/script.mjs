@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the film : what is shown and what is said, second by second, in French and in English. Pure : the page that draws the
+/* DynamiteOrbit.ai — the film : what is shown and what is said, second by second, in French and in English. Pure : the page that draws the
    film (film.js), the tool that renders it (tools/film_render.mjs) and the tests read the same timeline.
    Under three minutes, between a quick demonstration and a marketing film : the problem, the name, then the path of a design — intent,
    part, its family of variants, assembly by modules, board, physics, drawings, AI — and the name again. The pictures are the real screens
@@ -63,7 +63,7 @@ export const CUES = [
   { t0: 4.1, t1: 8.8, ...L("À quoi cette pièce doit-elle servir ? Vous, vous le savez.", "What is this part for? You already know.") },
   { t0: 9.2, t1: 14.8, ...L("Mais il faut le redire. Au modeleur, au calcul, au dessin. Encore et encore.", "But you must repeat it. To the modeller, the solver, the drawing. Every time.") },
   { t0: 15.3, t1: 18.4, ...L("Et si on ne le disait qu'une fois ?", "What if you only had to say it once?") },
-  { t0: 18.6, t1: 22.9, ...L("DesignOrbit.ai : l'outil qui retient le pourquoi.", "DesignOrbit.ai: the tool that remembers why.") },
+  { t0: 18.6, t1: 22.9, ...L("DynamiteOrbit.ai : l'outil qui retient le pourquoi.", "DynamiteOrbit.ai: the tool that remembers why.") },
   { t0: 23.4, t1: 27.7, ...L("Ici, on ne dessine pas d'abord. On laisse parler la pièce.", "Here, you do not start by drawing. You let the part speak.") },
   { t0: 28.2, t1: 33, ...L("Je me visse ici. Je reçois un arbre. Je laisse passer un câble.", "I bolt on here. I take a shaft. I let a cable through.") },
   { t0: 33.4, t1: 38.7, ...L("Et l'outil propose une forme, un brut, et les étapes pour la fabriquer.", "And the tool proposes a shape, a stock size, and the steps to make it.") },
@@ -88,7 +88,7 @@ export const CUES = [
   { t0: 148, t1: 153.6, take: 24, ...L("Elle propose. Vous relisez. Et rien ne change sans votre accord.", "It proposes. You read. And nothing changes without your say-so.") },
   { t0: 154.5, t1: 160.4, take: 25, ...L("Le code est ouvert à tous. Et votre travail ne reste prisonnier de personne.", "The code is open to all. And your work is never locked in.") },
   { t0: 161.4, t1: 164.2, take: 26, ...L("Une pièce commence par une question.", "A part begins with a question.") },
-  { t0: 164.5, t1: 169.7, take: 27, ...L("Voici l'outil qui se souvient de la réponse : DesignOrbit.ai.", "Here is the tool that remembers the answer: DesignOrbit.ai.") },
+  { t0: 164.5, t1: 169.7, take: 27, ...L("Voici l'outil qui se souvient de la réponse : DynamiteOrbit.ai.", "Here is the tool that remembers the answer: DynamiteOrbit.ai.") },
 ];
 
 /** Everything the film writes on screen in a language : what the voice does not read out. */
@@ -116,10 +116,10 @@ const stamp = (t, sep = ".") => { const ms = Math.round(t * 1000), h = Math.floo
 export const toVtt = (lang) => `WEBVTT\n\n${CUES.map((c, i) => `${i + 1}\n${stamp(c.t0)} --> ${stamp(c.t1)}\n${c[lang]}`).join("\n\n")}\n`;
 /** The cues said during a scene, and the name a scene goes by in a script. */
 const cuesOf = (s) => CUES.filter((c) => c.t0 >= s.t0 - 0.01 && c.t0 < s.t1);
-const sceneName = (s, lang) => (s.station ? s.station[lang] : s.kind === "end" ? (lang === "fr" ? "Fin" : "End") : s.kind === "logo" ? "DesignOrbit.ai" : s.id === "open" ? (lang === "fr" ? "Logiciel libre" : "Open source") : s.id === "loop" ? (lang === "fr" ? "Le détour" : "The detour") : lang === "fr" ? "Ouverture" : "Opening");
+const sceneName = (s, lang) => (s.station ? s.station[lang] : s.kind === "end" ? (lang === "fr" ? "Fin" : "End") : s.kind === "logo" ? "DynamiteOrbit.ai" : s.id === "open" ? (lang === "fr" ? "Logiciel libre" : "Open source") : s.id === "loop" ? (lang === "fr" ? "Le détour" : "The detour") : lang === "fr" ? "Ouverture" : "Opening");
 /** The narration as a script to record : scene by scene, with the time of each line. */
 export function toScript(lang) {
-  const out = [lang === "fr" ? "# DesignOrbit.ai — narration de la vidéo" : "# DesignOrbit.ai — video narration", "",
+  const out = [lang === "fr" ? "# DynamiteOrbit.ai — narration de la vidéo" : "# DynamiteOrbit.ai — video narration", "",
     lang === "fr" ? `Durée : ${Math.floor(DURATION / 60)} min ${String(DURATION % 60).padStart(2, "0")} s. Une ligne, un souffle : chaque ligne se dit entre ses deux temps. Ton : chaleureux, assuré, sans emphase.`
       : `Length: ${Math.floor(DURATION / 60)} min ${String(DURATION % 60).padStart(2, "0")} s. One line, one breath: each line is said between its two times. Tone: warm, confident, unforced.`, ""];
   for (const s of SCENES) {
@@ -133,7 +133,7 @@ export function toScript(lang) {
 /** The storyline : scene by scene, what the screen shows and what the voice tells over it, French and English side by side. */
 export function toStoryline() {
   const len = `${Math.floor(DURATION / 60)} min ${String(DURATION % 60).padStart(2, "0")} s`, shown = (s, l) => [s.big, s.slogan, s.title, s.small, ...(s.chips || [])].filter(Boolean).map((x) => x[l]).join(" · ");
-  const out = ["# DesignOrbit.ai — storyline du film · film storyline", "",
+  const out = ["# DynamiteOrbit.ai — storyline du film · film storyline", "",
     `${len}. L'image montre, la voix raconte : elle ne lit jamais ce qui est écrit à l'écran. Fil de l'histoire : une pièce commence par une question — à quoi sert-elle ? — et l'outil est celui qui retient la réponse, du premier besoin à la commande.`, "",
     `${len}. The picture shows, the voice tells: it never reads out what is written on screen. The thread: a part begins with a question — what is it for? — and the tool is the one that remembers the answer, from the first need to the order.`, ""];
   for (const s of SCENES) {

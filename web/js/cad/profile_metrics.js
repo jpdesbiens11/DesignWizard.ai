@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — 2D measurements of a normalised profile, used by the extrusion DFM rules and the profile preview:
+/* DynamiteOrbit.ai — 2D measurements of a normalised profile, used by the extrusion DFM rules and the profile preview:
    wall thickness (ray cast inward from the boundary), air gaps and tongue ratio (ray cast outward), circumscribing
    circle diameter (CCD), convex hull. Pure geometry, no kernel. */
 

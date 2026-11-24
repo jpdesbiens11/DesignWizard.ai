@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — DEMO-HVB: the reference product of the Creepage & Clearance training (DynamiteAgile 0.50.9).
+/* DynamiteOrbit.ai — DEMO-HVB: the reference product of the Creepage & Clearance training (DynamiteAgile 0.50.9).
    Distances are known by construction, so the geometric engine can be checked against them:
    two HV busbars 6 mm apart with a 10 mm barrier rib, a 0.8 mm slot (narrower than X of PD2), a 3 mm groove,
    an LV sense terminal 8 mm from HV-, an aluminium floor at chassis potential, a PC cover 0.5 mm above the plate. */

@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — DFx rules that apply to every process: bolted joints and the other interfaces (IF-), general checks
+/* DynamiteOrbit.ai — DFx rules that apply to every process: bolted joints and the other interfaces (IF-), general checks
    (GEN-: material, process, parameters, mass, electrical role) and the report of the builder itself (KRN-).
    Sources: ISO 273 (clearance holes), Machinery's Handbook (thread engagement), ASME Y14.5 fixed-fastener rule,
    insert suppliers' boss guidance; edge distances and slenderness limits are rules of thumb. */
@@ -10,7 +10,7 @@ import { rule, num, round, groupBy } from "./dfx_core.js";
 
 const S = {
   mh: "Machinery's Handbook (longueur de filet en prise) ; règle de pouce : 1 × d acier, 1,5 à 2 × d aluminium", iso: "ISO 273 (trous de passage) ; ASME Y14.5 annexe B (fixed fastener rule)",
-  thumb: "Règle de pouce (rule of thumb) pour les assemblages boulonnés", ins: "Données des fournisseurs d'inserts (heat-set inserts) ; Covestro part design guide", lang: "DesignOrbit.ai part language",
+  thumb: "Règle de pouce (rule of thumb) pour les assemblages boulonnés", ins: "Données des fournisseurs d'inserts (heat-set inserts) ; Covestro part design guide", lang: "DynamiteOrbit.ai part language",
   mat: "materials.js (matières et process associés)",
 };
 const R = {

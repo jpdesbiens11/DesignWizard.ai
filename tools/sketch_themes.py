@@ -1,4 +1,4 @@
-"""Brick emblems and the per-theme home illustrations of DesignOrbit.ai (see tools/make_sketch_assets.py). No text.
+"""Brick emblems and the per-theme home illustrations of DynamiteOrbit.ai (see tools/make_sketch_assets.py). No text.
 
 Brick emblems: the pictogram of a brick of the product ladder (B0 … B9) over a row of ten cells, the first N+1 filled —
 « brick by brick ». Stroke and fill are currentColor, so an inlined emblem (or <use href="img/icons.svg#i-bN">) follows the theme.

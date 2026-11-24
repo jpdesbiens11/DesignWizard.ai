@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — frozen revisions : what a product is made of, fixed. A part, an assembly or a board is FROZEN : it
+/* DynamiteOrbit.ai — frozen revisions : what a product is made of, fixed. A part, an assembly or a board is FROZEN : it
    receives its number, its content is fixed as a revision, and that revision never changes again. Freezing is not releasing :
    a frozen revision waits for its design review, which releases it or refuses it (core/plm_review.js — the functions here keep
    their first names, `release` and `releases` : they freeze, and list what was frozen). Working goes on in the

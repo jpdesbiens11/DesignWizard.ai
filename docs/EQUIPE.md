@@ -80,7 +80,7 @@ miroir**, comme le reste.
 ## Par Google Drive
 
 Chaque membre se connecte à **son** compte Google : son projet est enregistré dans **son** Drive (dossier
-« DesignOrbit.ai »), comme toujours. Personne n'écrit dans le Drive d'un autre.
+« DynamiteOrbit.ai »), comme toujours. Personne n'écrit dans le Drive d'un autre.
 
 | Bouton | Ce qu'il fait |
 |---|---|

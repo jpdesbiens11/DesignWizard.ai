@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — geometric engine of the "Creepage & Clearance" isolation analysis (IEC 60664-1).
+/* DynamiteOrbit.ai — geometric engine of the "Creepage & Clearance" isolation analysis (IEC 60664-1).
    Measures on the triangle meshes of a complete assembly, between the conductors of two nets:
      - the CLEARANCE: shortest path through air (cc_clearance.js, "the taut string");
      - the CREEPAGE: shortest path along the insulating surfaces (cc_creepage.js, "the ant").

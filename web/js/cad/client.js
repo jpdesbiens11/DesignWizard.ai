@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — page-side client of the kernel worker (promise RPC + a small build cache). */
+/* DynamiteOrbit.ai — page-side client of the kernel worker (promise RPC + a small build cache). */
 
 const BASE = new URL("../../vendor/occ/", import.meta.url).href;
 let worker = null, seq = 0, crashed = false;      // crashed : the kernel stopped and was started again, and nothing has answered since

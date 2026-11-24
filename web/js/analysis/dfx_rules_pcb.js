@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — DFM rules: printed circuit boards (mechanical envelope + isolation-relevant copper) and purchased
+/* DynamiteOrbit.ai — DFM rules: printed circuit boards (mechanical envelope + isolation-relevant copper) and purchased
    parts. PCB-01…05 come from the user's rule book; spacing uses IPC-2221B Table 6-1 (FUNCTIONAL spacing — the safety
    insulation, creepage and clearance, is the job of the isolation analysis). Copper zones are read from their bodies
    ("Cu:<net>#n"): a zone given as a free profile is approximated by its bounding rectangle. */
@@ -11,7 +11,7 @@ const S = {
   iso: "ISO 4762 / ISO 7089 (tête de vis, rondelle) ; règle de pouce pour l'accès outil",
 };
 const R = {
-  p00: rule("PCB-00", "Bloc « pcb » présent", "La carte est décrite dans le bloc « pcb » (size ou outline, t, components, zones, nets)", "warn", "Sans ce bloc, contour, composants et zones ne peuvent pas être vérifiés.", "DesignOrbit.ai part language"),
+  p00: rule("PCB-00", "Bloc « pcb » présent", "La carte est décrite dans le bloc « pcb » (size ou outline, t, components, zones, nets)", "warn", "Sans ce bloc, contour, composants et zones ne peuvent pas être vérifiés.", "DynamiteOrbit.ai part language"),
   p01: rule("PCB-01", "Trou au bord de carte", "Bord du trou au bord de carte ≥ épaisseur de la carte", "warn", "Le bord se fissure au détourage.", S.fab),
   p02: rule("PCB-02", "Couronne de tête de vis", "Couronne sans cuivre Ø ≈ rondelle (≈ 2 × trou) autour de chaque trou de fixation", "warn", "La tête de vis court-circuite le cuivre.", S.prac),
   p03: rule("PCB-03", "Rayon de détourage", "Angles intérieurs du contour ≥ R1,0 (fraise Ø2) ; angles extérieurs R1,0 conseillés", "warn", "La fraise de détourage ne fait pas d'angle vif intérieur ; un angle extérieur vif s'ébrèche.", S.fab, { fix: true }),
@@ -19,7 +19,7 @@ const R = {
   p05: rule("PCB-05", "Épaisseur standard", "0,8 · 1,0 · 1,2 · 1,6 · 2,0 · 2,4 mm (1,6 mm par défaut)", "warn", "Une autre épaisseur coûte plus cher et allonge le délai.", S.fab, { fix: true }),
   p06: rule("PCB-06", "Composant au bord de carte", "Composant à ≥ 2 mm du bord ; connecteurs et pièces hautes (≥ 5 mm) peuvent dépasser volontairement", "warn", "Dépanélisation, manutention et rails de convoyeur ont besoin d'une marge.", "IPC-2221 (edge clearance) ; règle de pouce", { fix: true }),
   p07: rule("PCB-07", "Composants superposés", "Deux empreintes du même côté ne se recouvrent pas", "warn", "Collision des boîtiers au placement.", S.prac),
-  p08: rule("PCB-08", "Zones et nets déclarés", "Chaque zone de cuivre porte un net déclaré dans « pcb.nets » (tension)", "warn", "Sans tension déclarée, ni l'espacement IPC ni l'analyse d'isolation ne peuvent être vérifiés.", "DesignOrbit.ai part language"),
+  p08: rule("PCB-08", "Zones et nets déclarés", "Chaque zone de cuivre porte un net déclaré dans « pcb.nets » (tension)", "warn", "Sans tension déclarée, ni l'espacement IPC ni l'analyse d'isolation ne peuvent être vérifiés.", "DynamiteOrbit.ai part language"),
   p11: rule("PCB-11", "Espacement entre zones", "Distance ≥ IPC-2221B Table 6-1 à la tension entre les nets : B2 (externe nu), A5 (avec vernis), B1 (interne / à travers la carte)", "error", "Amorçage entre conducteurs.", S.ipc),
   p12: rule("PCB-12", "Cuivre au bord de carte", "Zone à ≥ 0,5 mm du bord, et ≥ espacement B2 à la tension du net (bord supposé au potentiel du châssis)", "warn", "Cuivre arraché au détourage ; amorçage vers un guide-carte ou le châssis.", `${S.ipc} ; ${S.fab}`),
   p13: rule("PCB-13", "Zones sous tension et trous de fixation", "Distance de la zone à la tête de vis ≥ IPC-2221B B2 à la tension du net", "warn", "La vis est au potentiel du châssis : arc vers la structure.", S.ipc),

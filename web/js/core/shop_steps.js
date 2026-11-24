@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — a new part, step by step (demande de JP : « on devrait plus procéder sous forme d'une entrevue d'intention de
+/* DynamiteOrbit.ai — a new part, step by step (demande de JP : « on devrait plus procéder sous forme d'une entrevue d'intention de
    conception… aspect par aspect », mise en page choisie sur maquette : « une question à la fois »). The fields are those of the
    intent — nothing is added, nothing is lost : they are asked one question at a time, six of them, and a card keeps what has
    been said so far, each line a way back to its question.

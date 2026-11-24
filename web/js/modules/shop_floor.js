@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the floor of the Shop : levels 1 and 2 of the path (core/shop_levels.js).
+/* DynamiteOrbit.ai — the floor of the Shop : levels 1 and 2 of the path (core/shop_levels.js).
    Level 1, `#/shop` : every part of the product, by nature or by assembly, the doors to create one — step by step, with an AI,
    off the shelf, or straight in a studio — and the shelves one consults from anywhere (interface register, special processes,
    electrical library).

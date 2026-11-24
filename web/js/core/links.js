@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the dependency between mated interfaces.
+/* DynamiteOrbit.ai — the dependency between mated interfaces.
    When a part changes, every interface it shares through a linked mate is compared (evaluated values) with the other
    side; where they differ, the other part ADAPTS: if its interface field is driven by one of its own parameters
    (e.g. "dx": "pcbL"), that parameter takes the new value — the whole part follows; otherwise the field is overwritten.

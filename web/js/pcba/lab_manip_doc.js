@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — Labo, « Manipulation en labo » on paper : the procedure of a test, step by step, with a PICTURE OF THE BOARD
+/* DynamiteOrbit.ai — Labo, « Manipulation en labo » on paper : the procedure of a test, step by step, with a PICTURE OF THE BOARD
    for every step that touches it (demande de JP : « permettre l'importation des procédures en pdf avec un format complet
    pour un travail en lab… le cahier de travail et de notes »). The same steps as the screen (pcba/lab_manip.js), the same
    points — a ring on the pad, the lead that goes there, the pin written small — drawn as vectors, so the page prints sharp.
@@ -77,5 +77,5 @@ export function manipDoc(board, R, sheets, o = {}) {
     { type: "p", text: "Les valeurs attendues viennent d'une simulation, où chaque circuit intégré est un comportement TYPIQUE : la fiche technique du composant monté fait foi. Les règles de sécurité de votre établissement passent avant ce cahier.", style: "muted" });
   for (const s of sheets) { out.push({ type: "pagebreak" }); out.push(...manipBlocks(board, R, s)); }
   const tag = one ? `-${String(sheets[0].id || [sheets[0].blockId, sheets[0].test].filter(Boolean).join("-")).toLowerCase()}` : "";      // a test of the plan has its number ; one opened from its block is named by its block and its test
-  return { title: `Manipulations en laboratoire — ${board.id}`, subtitle: one ? `${sheets[0].id ? `${sheets[0].id} — ` : ""}${sheets[0].title}` : board.name || "", subject: "Manipulations en laboratoire", author: o.author || "", date, reference: `${board.id}-MANIP${tag.toUpperCase()}`, revision: board.revision || "A", header: `${board.id} rév. ${board.revision || "A"} — Manipulations en laboratoire`, footer: "DesignOrbit.ai", blocks: out, name: `${board.id}-rev${board.revision || "A"}-manipulations${tag}` };
+  return { title: `Manipulations en laboratoire — ${board.id}`, subtitle: one ? `${sheets[0].id ? `${sheets[0].id} — ` : ""}${sheets[0].title}` : board.name || "", subject: "Manipulations en laboratoire", author: o.author || "", date, reference: `${board.id}-MANIP${tag.toUpperCase()}`, revision: board.revision || "A", header: `${board.id} rév. ${board.revision || "A"} — Manipulations en laboratoire`, footer: "DynamiteOrbit.ai", blocks: out, name: `${board.id}-rev${board.revision || "A"}-manipulations${tag}` };
 }

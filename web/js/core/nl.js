@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the wand's small language: turns a short sentence (French or English) into an edit of the current part.
+/* DynamiteOrbit.ai — the wand's small language: turns a short sentence (French or English) into an edit of the current part.
    No AI call: a set of patterns on the vocabulary of a workshop ("4 trous M4 aux coins à 8 mm", "congé 3", "longueur 150",
    "coque 2 ouverte dessus", "matériau PA66"). Each interpretation says what it will do before it is applied. */
 

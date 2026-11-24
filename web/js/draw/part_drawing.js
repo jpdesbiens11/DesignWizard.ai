@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — composes the 2D drawing of a part on a Sheet (PDF or SVG backend), on a tabloid page (11 × 17 in).
+/* DynamiteOrbit.ai — composes the 2D drawing of a part on a Sheet (PDF or SVG backend), on a tabloid page (11 × 17 in).
    The views take the sheet : the three standard views at the largest scale that fits, the notes in a band at the bottom
    beside the title block and its tolerance block (UNLESS OTHERWISE SPECIFIED, draw/uos.js), and — in the top right corner a
    three-view layout leaves empty — the revisions, a small isometric view and the holes as a table. A geometric tolerance is
@@ -241,7 +241,7 @@ function composeSheet(sheet0, data, minIdx = 0) {
   const tolBlock = { lines: uosLines(U, drawingUnit() === "in"), example: !U.sure, std: UOS_STD };
   let sheets = 1;
   const block = (n, sh = sheet) => drawTitleBlock(sh, frame, { title: `${say(spec.name) || spec.id}${o.variant ? ` — VARIANT ${say(o.variant)}` : ""}`, partNumber: spec.id, revision: spec.revision || "A", material: mat.name, finish: say(spec.finish) || "—", mass: massOf(built.mass),
-    scale: n === 1 ? scale[1] : "—", sheet: `${n}/${sheets}`, size: "B (11 × 17)", drawnBy: o.drawnBy || "", checkedBy: o.checkedBy || "", approvedBy: o.approvedBy || "", date: o.date || "", company: o.organisation || "DesignOrbit.ai", project: say((project && project.name) || ""),
+    scale: n === 1 ? scale[1] : "—", sheet: `${n}/${sheets}`, size: "B (11 × 17)", drawnBy: o.drawnBy || "", checkedBy: o.checkedBy || "", approvedBy: o.approvedBy || "", date: o.date || "", company: o.organisation || "DynamiteOrbit.ai", project: say((project && project.name) || ""),
     projection: third ? "third" : "first", units: drawingUnit(), status: o.status || "Preliminary", uos: tolBlock });
   room.rect(frame.x + frame.w - TITLE_BLOCK_W - TOL_BLOCK_W, frame.y + frame.h - TITLE_BLOCK_H, TITLE_BLOCK_W + TOL_BLOCK_W, TITLE_BLOCK_H);      // drawn at the end, when the number of sheets is known : its room is taken now
   /* detail views : each in the white room left, as near as it can to the view it comes from ; its circle and its letter on that view */

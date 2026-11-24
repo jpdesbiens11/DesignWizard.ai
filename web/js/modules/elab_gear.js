@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — Labo, the instruments of the bench as small drawings : what one sets on the front of each, for a step of
+/* DynamiteOrbit.ai — Labo, the instruments of the bench as small drawings : what one sets on the front of each, for a step of
    « Manipulation en labo » (demande de JP : « l'appareil et son réglage dessinés »). The setting comes from the step
    (pcba/lab_manip.js, `gear`) : a supply shows its voltage, its current limit and whether its output is on ; a multimeter
    shows the position of its dial ; an oscilloscope shows the channel in use. Generic instruments, drawn by the tool : no

@@ -1,6 +1,6 @@
 # Vision — réinventer la conception mécatronique, à partir de l'intention
 
-> **DesignOrbit.ai by DynamiteAgile™** — libre (MIT), ouvert, bâti brique par brique.
+> **DynamiteOrbit.ai by DynamiteAgile™** — libre (MIT), ouvert, bâti brique par brique.
 
 ## 0. L'objectif
 
@@ -29,12 +29,12 @@ façon dont une personne conçoit une pièce. Un artisan, lui, entre dans son at
 2. **dans quoi elle est faite** — le matériau et la matière première : une plaque, une barre, un tube, un profilé ;
 3. **comment il va la faire** — scier, fraiser, percer, tarauder, plier, imprimer.
 
-La forme finale n'est que la conséquence de ces trois décisions. DesignOrbit.ai prend ces décisions comme **entrée**
+La forme finale n'est que la conséquence de ces trois décisions. DynamiteOrbit.ai prend ces décisions comme **entrée**
 et laisse le logiciel — aidé par l'IA — produire la géométrie, les vérifications et les documents.
 
 ## 2. Le principe : l'intention d'abord
 
-| CAO conventionnelle | DesignOrbit.ai |
+| CAO conventionnelle | DynamiteOrbit.ai |
 |---|---|
 | L'entrée est une esquisse sur un plan | L'entrée est l'**intention** : interfaces, matériau, matière première, procédé |
 | L'arbre de construction décrit des opérations géométriques | La **gamme** décrit des opérations d'atelier (débiter, fraiser, percer, tarauder…) |
@@ -97,7 +97,7 @@ Règles du projet :
   SVG, JSON. Le DWG lui-même est un format propriétaire non documenté : la plateforme écrit du DXF, que tout outil DWG
   ouvre.
 - **Interopérabilité plutôt que copie.** Avec Onshape, l'échange passe par son API publique et par FeatureScript, son
-  langage documenté : une pièce DesignOrbit.ai peut se reconstruire nativement dans Onshape, paramètres compris.
+  langage documenté : une pièce DynamiteOrbit.ai peut se reconstruire nativement dans Onshape, paramètres compris.
 - **Noms et marques.** Les noms de produits tiers ne servent qu'à désigner l'interopérabilité. L'identité visuelle
   s'inspire de principes (les carnets de la Renaissance, les premiers principes, la simplicité), jamais du portrait ou
   de la marque de quelqu'un.

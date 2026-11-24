@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the project « BM 8s8p - 21700 » (demande de JP, 21 novembre 2026 : « créer un nouveau projet pour ces pièces et assembly
+/* DynamiteOrbit.ai — the project « BM 8s8p - 21700 » (demande de JP, 21 novembre 2026 : « créer un nouveau projet pour ces pièces et assembly
    qui s'appelle BM 8s8p - 21700 et tout mettre ce qui a trait au core 1s8p dedans… commencer un assembly des 8 cores pour voir où on en
    est, et après on itérera ensemble le design »).
    What it holds, from the architecture JP gave (CLAUDE.md, point 20) : a CORE is 8 cells 21700 in PARALLEL (1S8P), two rows of 4 — the
@@ -129,7 +129,7 @@ export function busbarSizing() {
     concept 1 kept on MAIN, concept 2 and concept 3 on their own branches. o : { branch (true or "c2" : the project opens on concept 2 ; "c3" :
     on concept 3 ; else on MAIN) } */
 export function bmProject(opts = {}) {
-  const p = { dw: "project/1", id: "bm-8s8p-21700", name: "BM 8s8p - 21700", author: "DesignOrbit.ai",
+  const p = { dw: "project/1", id: "bm-8s8p-21700", name: "BM 8s8p - 21700", author: "DynamiteOrbit.ai",
     description: "Module de batterie 8s8p en cellules 21700 : 8 CORE 1S8P en série, côte à côte, chacun avec sa carte de mesure posée dessus. Douzième itération : le CORE refait — busbar laminé industriel sur le dessus, soudures laser dessinées, joints plans pressés par les ressorts du couvercle, capteurs dans le support du bas.",
     parts: [JSON.parse(JSON.stringify(CELL))], assemblies: [], boards: [coreBoard(), bmsBoard()], drawing: { words: WORDS_BM }, physics: [busbarSizing(), returnSizing(I_CORE), screwHolding(), ...heatCalcs(CASE_L)], log: [] };
   const layout = contactLayout(CORE_X, D), z = stackOf({ H, ins: INS_T, t: BB_T, w: WRAP_T });
@@ -163,14 +163,14 @@ export function bmProject(opts = {}) {
     and their twins, the parts and the assemblies of concept 2 (demo_bm_c2.js), the calculations that still speak of its parts. back : the
     project stays on concept 2 ; else it goes back to MAIN (concept 1, what every screen opened on until now). */
 function withConceptTwo(p, onBranch) {
-  addPoint(p, { kind: "manual", label: "Concept 1 — itération 15", when: "2026-11-22T12:00:00.000Z", by: "DesignOrbit.ai",
+  addPoint(p, { kind: "manual", label: "Concept 1 — itération 15", when: "2026-11-22T12:00:00.000Z", by: "DynamiteOrbit.ai",
     note: "Le module tel que les itérations 1 à 15 l'ont fait : 8 CORE debout côte à côte, busbar laminé à jambes pliées, joints plans pressés par le couvercle du haut à came quart de tour, couvercle du fond à anneau usiné." });
   const doc = JSON.parse(JSON.stringify(withoutHistory(p))), twins = new Set(p.boards.map((b) => b.part)), c2 = conceptTwo({ core: p.boards[0].part, bms: p.boards[1].part });
   doc.parts = [...doc.parts.filter((x) => twins.has(x.id)), ...c2.parts]; doc.assemblies = c2.assemblies;
   const ids = new Set(doc.parts.map((x) => x.id)); doc.physics = [...(doc.physics || []).filter((c) => !c.part || ids.has(c.part)), camCalc()];
   doc.description = `Concept 2 « consumer product interface » : les 8 CORE couchés en ligne, pressés comme des piles dans une lampe — bandes à lamelles sur la face − de chaque CORE, plaque + rigide à bossages ; poignée quart de tour à came double lobe (${camLayout().preload.toFixed(0)} N sur la pile) ; couvercle du fond actif (connecteur, contacteur, carte BMS). Premier jet, à itérer.`;
   delete doc.id; delete doc.log; delete doc.updated; putDefinition(p, doc);
-  addPoint(p, { kind: "manual", branch: C2_BRANCH, label: "Concept 2 — premier jet : CORE 2.0 en ligne, poignée à came", when: "2026-11-22T12:30:00.000Z", by: "DesignOrbit.ai",
+  addPoint(p, { kind: "manual", branch: C2_BRANCH, label: "Concept 2 — premier jet : CORE 2.0 en ligne, poignée à came", when: "2026-11-22T12:30:00.000Z", by: "DynamiteOrbit.ai",
     note: "D'après les documents et les réponses de JP : CORE en ligne pressés, bandes à lamelles sur la face −, + rigide à bossages, poignée quart de tour à came double lobe, couvercle du fond actif." });
   if (!onBranch) restoreInto(p, "P1");
 }
@@ -196,17 +196,17 @@ function withConceptThree(p) {
   p.assemblies = p.assemblies.map((a) => (a.id === lid.id ? lid : a.id === "BM-LID-BOT-ASM" ? bottom.assembly : a));
   p.physics = [...p.physics.filter((c) => ["phy-bm-busbar", "phy-bm-return"].includes(c.id)), ...calcsC3(I_CORE, F)];
   p.description = `Concept 3 « blade and fork » : le concept 1 entier, mais chaque joint entre deux CORE est une lame dans une pince à deux bandes à lamelles — l'effort de contact reste dans la pince, la pile n'est plus pressée pour ses contacts ; rondelles ressorts au couvercle du haut ; boîtier ${r6(F3.jawOut[1] - CORE_ENV.x1)} mm plus large au bout +X. Premier jet, à itérer.`;
-  addPoint(p, { kind: "manual", branch: C3_BRANCH, label: "Concept 3 — premier jet : lame dans une pince", when: "2026-11-22T18:00:00.000Z", by: "DesignOrbit.ai",
+  addPoint(p, { kind: "manual", branch: C3_BRANCH, label: "Concept 3 — premier jet : lame dans une pince", when: "2026-11-22T18:00:00.000Z", by: "DynamiteOrbit.ai",
     note: "Choix de JP par menu : lame dans une pince, à partir du concept 1 complet. Joints entre CORE et bornes en lame et pince à bandes à lamelles ; rondelles ressorts au couvercle ; boîtier élargi au bout +X." });
   topLidC3(p, env, DISC);
-  addPoint(p, { kind: "manual", branch: C3_BRANCH, label: "Concept 3 — couvercle du haut : pinces côté module, pont rigide", when: "2026-11-22T19:00:00.000Z", by: "DesignOrbit.ai",
+  addPoint(p, { kind: "manual", branch: C3_BRANCH, label: "Concept 3 — couvercle du haut : pinces côté module, pont rigide", when: "2026-11-22T19:00:00.000Z", by: "DynamiteOrbit.ai",
     note: "Choix de JP par menu : « Couvercle du haut », puis « Pinces côté module ». La borne + et la languette de retour portent chacune une pince en creux ; le couvercle, un pont de cuivre rigide à deux lames. Plus de shunt souple ni de ressort de plot." });
   const cut = shortTopC3(p, env, DISC);
-  addPoint(p, { kind: "manual", branch: C3_BRANCH, label: `Concept 3 — bout haut raccourci de ${String(cut).replace(".", ",")} mm`, when: "2026-11-22T20:00:00.000Z", by: "DesignOrbit.ai",
+  addPoint(p, { kind: "manual", branch: C3_BRANCH, label: `Concept 3 — bout haut raccourci de ${String(cut).replace(".", ",")} mm`, when: "2026-11-22T20:00:00.000Z", by: "DynamiteOrbit.ai",
     note: `Choix de JP par menu : « Raccourcir le bout haut ». La plaque de pression appuie directement sur la borne + (plus de plaque d'appui) ; la languette de retour passe dans une fenêtre de la plaque, juste derrière la borne ; le boîtier perd ${String(cut).replace(".", ",")} mm.` });  const cut2 = fixedReturnC3(p, env, DISC);
-  addPoint(p, { kind: "manual", branch: C3_BRANCH, label: `Concept 3 — retour fixe, sans pont : ${frC(cut2)} mm de moins`, when: "2026-11-22T21:00:00.000Z", by: "DesignOrbit.ai",
+  addPoint(p, { kind: "manual", branch: C3_BRANCH, label: `Concept 3 — retour fixe, sans pont : ${frC(cut2)} mm de moins`, when: "2026-11-22T21:00:00.000Z", by: "DynamiteOrbit.ai",
     note: `Choix de JP par menu : « Retour fixe, sans pont ». La borne + et le busbar de retour sont reliés en permanence par un shunt souple court ; le couvercle ne fait plus que tenir la pile ; le contacteur du fond reste ce qui ouvre le module. Le boîtier perd encore ${frC(cut2)} mm.` });  const cut3 = bottomShortC3(p, env);
-  addPoint(p, { kind: "manual", branch: C3_BRANCH, label: `Concept 3 — bout bas raccourci : ${frC(cut3)} mm de moins`, when: "2026-11-22T22:00:00.000Z", by: "DesignOrbit.ai",
+  addPoint(p, { kind: "manual", branch: C3_BRANCH, label: `Concept 3 — bout bas raccourci : ${frC(cut3)} mm de moins`, when: "2026-11-22T22:00:00.000Z", by: "DynamiteOrbit.ai",
     note: `Choix de JP par menu : « Bout bas, même méthode ». Plus d'entretoises : le boîtier s'arrête 1 mm derrière la plaque d'appui de la borne −, l'anneau du fond y appuie par ses quatre pattes ; le couvercle du fond et ce qu'il porte suivent. Le module perd ${frC(cut3)} mm.` });
 }
 
@@ -238,7 +238,7 @@ function bottomShortC3(p, env) {
 function withConceptFour(p) {
   const P1 = rebuild(p.history, "P1"), L = contactLayout(CORE_X, D), z = stackOf({ H, ins: INS_T, t: BB_T, w: WRAP_T });
   const r = conceptFour(p, { P1, X: CORE_X, Y: CORE_Y, ins: INS_T, t: BB_T, H, zM1: z.zM1, I: I_CORE, caseL1: CASE_L, pitch1: CORE_PITCH, at, lvx: L.lv.map((c) => c.x) });
-  addPoint(p, { kind: "manual", branch: C4_BRANCH, label: "Concept 4 — premier jet : faces planes à lamelles, rien ne dépasse", when: "2026-11-22T23:00:00.000Z", by: "DesignOrbit.ai",
+  addPoint(p, { kind: "manual", branch: C4_BRANCH, label: "Concept 4 — premier jet : faces planes à lamelles, rien ne dépasse", when: "2026-11-22T23:00:00.000Z", by: "DynamiteOrbit.ai",
     note: `Choix de JP par menu : « Faces planes à lamelles » (sa question : les employés qui manipulent les CORE). Plus de lame ni de pince : deux bandes à lamelles encastrées dans la face −, au ras d'un cadre isolant ; face + plate. Pas ${frC(r.pitch)} mm, boîtier ${frC(r.caseL)} mm.` });
 }
 const frC = (v) => String(Math.round(v * 100) / 100).replace(".", ",");

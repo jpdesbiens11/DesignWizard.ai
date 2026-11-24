@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the words of a battery system, as standards and authorities publish them (demande de JP : « si jamais
+/* DynamiteOrbit.ai — the words of a battery system, as standards and authorities publish them (demande de JP : « si jamais
    ces acronymes sont de l'abus de langage comparativement aux normes en vigueur de l'industrie… recampons-nous sur les
    standards de l'industrie, les bons noms, et citons les normes en vigueur dans l'aéro pour les justifier »).
    The platform writes the established term ; a word of a house — CMB, BMU, BM, EFC… — stays in the glossary as an alias,

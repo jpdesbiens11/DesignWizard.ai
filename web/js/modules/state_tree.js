@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — a list drawn as a tree : groups by state or by type, each with its colour dot, its count and — when
+/* DynamiteOrbit.ai — a list drawn as a tree : groups by state or by type, each with its colour dot, its count and — when
    the screen asks for it — an eye that shows or hides what the group puts in the view ; items with their number, their
    few words and a chip. A click selects an item, a second one lets it go ; the selected item may open an editor under it.
    The same look as the trees of the Assembly and of the Simulation (.bc-tree). The models are in core/trees.js. */

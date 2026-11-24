@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — PCBA: function blocks that bring power in, protect it, convert it and switch it. Each template
+/* DynamiteOrbit.ai — PCBA: function blocks that bring power in, protect it, convert it and switch it. Each template
    sizes its own parts the way a designer does it by hand, and says so in `calc`. Typical values : the data sheet of
    the chosen references prevails. */
 

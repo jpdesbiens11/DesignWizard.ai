@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the subtitles of a film that speaks (demande de JP, 18 novembre 2026) : they stay on while the voice is heard, and
+/* DynamiteOrbit.ai — the subtitles of a film that speaks (demande de JP, 18 novembre 2026) : they stay on while the voice is heard, and
    every player carries both languages. One listens in a language and reads in it — what the film opens with —, in the other one, in
    both at once, or reads nothing : a choice next to the player (ordinary radio buttons), kept in step with the player's own subtitle
    menu. Before that day the subtitles showed only once the sound was off ; the voice now tells a story and the subtitles are its text.

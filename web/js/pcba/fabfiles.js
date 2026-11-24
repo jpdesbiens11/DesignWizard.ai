@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — PCBA: the fabrication package of a board — what a board shop and an assembler need to quote and
+/* DynamiteOrbit.ai — PCBA: the fabrication package of a board — what a board shop and an assembler need to quote and
    build a prototype : Gerber layers, drill files, pick-and-place, bill of materials, netlist, and the notes that say
    what the files do not (stack-up, finish, conformal coating). File extensions are the ones shops recognise. */
 

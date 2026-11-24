@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the top bar by discipline : three groups (Mécanique, Électronique, Produit), each of which flips down its screens as
+/* DynamiteOrbit.ai — the top bar by discipline : three groups (Mécanique, Électronique, Produit), each of which flips down its screens as
    numbered tiles ; the groups keep their width, the tools give way. Markup : core/app.js (NAV). See docs/ERGONOMIE.md. */
 
 .nav-wrap { flex: none; } .tab.nav-group { border: 0; background: none; cursor: pointer; font: inherit; font-size: .93rem; font-weight: 500; } .tab.nav-group .nav-name { display: inline; } .tab.nav-group.active { font-weight: 650; }

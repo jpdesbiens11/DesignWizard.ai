@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — Logiciel : the TESTS that prove the requirements (cycle en V, « 6 Vérification » ; the V-model pairs each phase of design
+/* DynamiteOrbit.ai — Logiciel : the TESTS that prove the requirements (cycle en V, « 6 Vérification » ; the V-model pairs each phase of design
    with the phase of test made for it). A test is a scenario — what each input pin reads, instant after instant, as the live bench drives it —
    and what one EXPECTS : a signal worth a value at an instant, or one that becomes a value within a window (a response time). It names the
    requirements it proves. It runs on the MODEL, the very step the tool writes in C (sw/sw_design.js simulate) : passed or failed, with what

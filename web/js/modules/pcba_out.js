@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — PCBA screen: the output steps — checks, fabrication package, design review — and the views a user
+/* DynamiteOrbit.ai — PCBA screen: the output steps — checks, fabrication package, design review — and the views a user
    of a classic ECAD tool looks for : schematic, stack-up, rules, net classes, bill of materials. The same data as the
    natural flow, seen the classic way. */
 

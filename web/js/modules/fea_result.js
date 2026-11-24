@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — Simulation : what the result panel shows once a run is done, and the switch between the two views.
+/* DynamiteOrbit.ai — Simulation : what the result panel shows once a run is done, and the switch between the two views.
    The designer goes back and forth : the MODEL, grey, with its supports, loads and their labels — where the case is
    changed ; the RESULT, coloured — the last run, kept while the case is reworked and said to be « of before » until the
    next run. The result is read as a stress (or a temperature) on an adjustable scale, or as a SAFETY FACTOR against the

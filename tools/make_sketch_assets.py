@@ -1,4 +1,4 @@
-"""« Carnet d'ingénieur » visual assets of DesignOrbit.ai: icons, module marks, brand mark, illustrations.
+"""« Carnet d'ingénieur » visual assets of DynamiteOrbit.ai: icons, module marks, brand mark, illustrations.
 
     python3 tools/make_sketch_assets.py
 

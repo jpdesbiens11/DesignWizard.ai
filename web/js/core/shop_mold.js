@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the Shop companion for a MOULDED part. The designer says what the part holds (the volume to
+/* DynamiteOrbit.ai — the Shop companion for a MOULDED part. The designer says what the part holds (the volume to
    contain, the things fixed inside), what it meets outside (cover, fixings, openings) and the material ; the part
    then draws itself with the moulder's rules of thumb : one nominal wall chosen for the material and the flow
    length, radii that keep it uniform round the corners, bosses detached from the walls and tied by gussets, low

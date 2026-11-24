@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the one-page sheet of the launch kit, as a page to print : Letter, portrait, the paper, the ink and the marks of
+/* DynamiteOrbit.ai — the one-page sheet of the launch kit, as a page to print : Letter, portrait, the paper, the ink and the marks of
    the platform (the tokens of web/css/app.css, the icons of web/img/icons.svg, the logo of core/brand.js). The words come from
    tools/launch/content.mjs ; tools/launch_kit.mjs prints the page to a PDF. A choice in a list is never a bare line of text : three
    groups by nature, each its colour, each step its pictogram and a short title (CLAUDE.md, « Visuel, symbole, couleur »). Pure :
@@ -58,9 +58,9 @@ footer { display: flex; justify-content: space-between; gap: .2in; margin-top: .
 export function sheetHtml(lang, o) {
   const S = SHEET, t = (x) => esc(typo(x[lang], lang)), [first, second] = S.slogan[lang];
   const group = (g) => `<section class="group" style="--c:${g.color}"><h2>${t(g.title)}</h2><div class="steps">${g.steps.map((s) => `<div class="step"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-${s.icon}"/></svg></div><div><b>${t(s.title)}</b><span>${t(s.text)}</span></div></div>`).join("")}</div></section>`;
-  return `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><title>DesignOrbit.ai — ${esc(S.slogan[lang].join(" "))}</title><style>${CSS}</style></head><body>${o.icons}
+  return `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><title>DynamiteOrbit.ai — ${esc(S.slogan[lang].join(" "))}</title><style>${CSS}</style></head><body>${o.icons}
 <div class="page">
-  <header>${o.logo}<div><div class="name">DesignOrbit<i>.ai</i></div><div class="by">by DynamiteAgile™</div></div><div class="kicker">${t(S.kicker)}</div></header>
+  <header>${o.logo}<div><div class="name">DynamiteOrbit<i>.ai</i></div><div class="by">by DynamiteAgile™</div></div><div class="kicker">${t(S.kicker)}</div></header>
   <div class="hero">
     <div><h1 style="font-size:${second.length > 17 ? 26 : 30}pt"><span>${esc(first)}</span><span><mark>${esc(second)}</mark></span></h1><p class="promise">${t(S.promise)}</p><div class="story">${S.story[lang].map((p) => `<p>${esc(typo(p, lang))}</p>`).join("")}</div></div>
     <figure><img src="${o.shot}" alt=""><figcaption>${t(S.shot.caption)}</figcaption></figure>

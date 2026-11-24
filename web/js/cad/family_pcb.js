@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — "pcb" family: a printed circuit board as a mechanical + electrical envelope.
+/* DynamiteOrbit.ai — "pcb" family: a printed circuit board as a mechanical + electrical envelope.
    spec.pcb = {
      outline,                    // profile in XY (default: rect from size)
      size: [w, h], r,            // shortcut for a rectangular board with corner radius r

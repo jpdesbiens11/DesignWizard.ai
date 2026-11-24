@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the base of media, to consult : every solid, liquid and gas the analytical models read their properties
+/* DynamiteOrbit.ai — the base of media, to consult : every solid, liquid and gas the analytical models read their properties
    from. Solids first, then liquids, then gases ; in each, by group then by name ; a colour and a pictogram per state. A
    line opens on all the medium gives, with the units, the French word of each property and where the values come from ;
    a fluid shows its values at the temperature one types. Nothing is edited here : the values are those of the platform.

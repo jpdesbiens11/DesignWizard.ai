@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the HISTORY of a design : restore points, and the tree of their branches (point 9 of the plan agreed with JP, choices
+/* DynamiteOrbit.ai — the HISTORY of a design : restore points, and the tree of their branches (point 9 of the plan agreed with JP, choices
    clicked on 20 November 2026 : « un point de restauration garde la définition complète du produit, les fichiers lourds rangés une seule
    fois et cités par chaque point… commencer par les points et l'arbre »).
    A point keeps the WHOLE definition of the product — every part, assembly, board, and every ledger (review, MVP, revisions, cases) —

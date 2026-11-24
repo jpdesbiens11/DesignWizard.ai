@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the parts of a project grouped by the way they are made, for a list one chooses in : a group per process
+/* DynamiteOrbit.ai — the parts of a project grouped by the way they are made, for a list one chooses in : a group per process
    (its trade name, in English), a colour per group, a pictogram and a short title per part, the imported parts last.
    Pure : the drop-down list of the part studio shows it (modules/part_list.js). */
 

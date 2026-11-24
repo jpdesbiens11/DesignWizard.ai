@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — Logiciel : the CPU the software is written for, as a SHEET (demande de JP : « sachant… le CPU choisi » ; choix cliqué :
+/* DynamiteOrbit.ai — Logiciel : the CPU the software is written for, as a SHEET (demande de JP : « sachant… le CPU choisi » ; choix cliqué :
    un microcontrôleur de sécurité à double cœur d'abord). A sheet says what the design is checked against — how many analog channels, how many
    pins, the resolution of the converter — and what the skeleton of the hardware layer must say : what the CPU asks of its software.
    The first real sheet is a dual-core lockstep microcontroller of a large maker, cited in text as a reference of compatibility — no logo, no

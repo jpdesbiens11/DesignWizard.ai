@@ -3,7 +3,7 @@
 Demande de JP (18 novembre 2026) : à partir de l'histoire du film, de quoi annoncer la plateforme — **une bande-annonce
 d'environ 30 s, une fiche d'une page et des textes de publication prêts à poster**, en français et en anglais. Le kit
 n'est pas dans l'application : ce sont des fichiers, produits par deux outils et déposés dans le Drive de JP, dans
-« DesignOrbit.ai » → « Communications et marketing » → `Marketing` → `Kit de lancement`, nommés `Sujet_AAAA-MM-JJ` ;
+« DynamiteOrbit.ai » → « Communications et marketing » → `Marketing` → `Kit de lancement`, nommés `Sujet_AAAA-MM-JJ` ;
 un kit refait remplace le précédent, qui descend dans un sous-dossier « Versions du AAAA-MM-JJ ».
 
 | Fichier | Ce que c'est |
@@ -39,7 +39,7 @@ phrase d'ouverture à la marque — et ce que la voix raconte par-dessus, en sep
 ces plans dans un film déjà rendu (son image seule), fait dire les répliques et pose les sous-titres à côté :
 
 ```bash
-NODE_USE_ENV_PROXY=1 node tools/film_teaser.mjs make <voix> fr web/video/designorbit_fr.mp4 <dossier>/teaser_fr.mp4
+NODE_USE_ENV_PROXY=1 node tools/film_teaser.mjs make <voix> fr web/video/dynamiteorbit_fr.mp4 <dossier>/teaser_fr.mp4
 ```
 
 Le film donné est celui de la même langue (ce qu'il écrit à l'écran est dans cette langue). **Quand l'image du film
@@ -70,6 +70,6 @@ La bande-annonce a été recoupée du film refait à la v0.99 (écrans d'aujourd
 répliques, nouvelle image.
 
 Pas vérifié : **la voix de la bande-annonce à l'oreille** — personne ne l'a écoutée (prononciation de
-« DesignOrbit.ai », ton) ; l'anglais par quelqu'un dont c'est la langue ; l'accueil réel des textes sur un réseau ;
+« DynamiteOrbit.ai », ton) ; l'anglais par quelqu'un dont c'est la langue ; l'accueil réel des textes sur un réseau ;
 la règle « les liens en premier commentaire », qui est un usage courant et non une mesure. L'image de la bande-annonce
 est celle du film : elle se met à jour avec lui.

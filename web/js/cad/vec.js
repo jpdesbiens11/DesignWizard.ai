@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — small 3D vector / frame / 4x4 matrix helpers (plain arrays, no dependency). */
+/* DynamiteOrbit.ai — small 3D vector / frame / 4x4 matrix helpers (plain arrays, no dependency). */
 
 export const v3 = {
   add: (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]],

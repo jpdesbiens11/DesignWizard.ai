@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — thin access to the DFx rule engine (loaded on first use, so a screen never fails because of it). */
+/* DynamiteOrbit.ai — thin access to the DFx rule engine (loaded on first use, so a screen never fails because of it). */
 
 let mod;
 async function load() {

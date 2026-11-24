@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — Historique (modules/history.js, history_tree.js) : the tree of the restore points, the changes, the branches. */
+/* DynamiteOrbit.ai — Historique (modules/history.js, history_tree.js) : the tree of the restore points, the changes, the branches. */
 .hist-view { display: flex; flex-direction: column; min-height: 0; } .hist-view > [hidden] { display: none !important; }
 .hist-host { flex: 1; min-height: 0; overflow: hidden; position: relative; background: var(--paper); } .hist-host.panning { cursor: grabbing; }
 .hist-tree { display: block; user-select: none; } .hist-back { fill: transparent; cursor: grab; }

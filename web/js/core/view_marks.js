@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — what the 3D view draws on a part when the designer points at it : a face lit up (the one a
+/* DynamiteOrbit.ai — what the 3D view draws on a part when the designer points at it : a face lit up (the one a
    list names, the one under the cursor, the one just chosen), and the symbols of a load case — a clamp where the
    part is held, an arrow where it is pushed and which way, a row of small arrows for a pressure, a mark for heat.
    Every mark belongs to a tag, so a screen clears its own and nothing else. Pure three.js, no state of its own. */

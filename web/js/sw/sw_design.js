@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — Logiciel : a DESIGN is objects and the wires between them (sw/sw_objects.js says what an object is).
+/* DynamiteOrbit.ai — Logiciel : a DESIGN is objects and the wires between them (sw/sw_objects.js says what an object is).
      design : { id, name, cpu (the key of a CPU sheet : sw/sw_cpu.js), period (ms : how often the software runs its step),
                 objects : [{ id, kind, name, params : { key: value }, sure : [keys confirmed], x, y, off? }],
                 wires : [{ from : "obj.port", to : "obj.port", delay? }], scenario? }

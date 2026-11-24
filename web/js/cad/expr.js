@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — safe expression evaluator for the part language.
+/* DynamiteOrbit.ai — safe expression evaluator for the part language.
    Numbers in a part spec may be written as expressions of the part parameters: "L/2 - 10", "max(t, 2)".
    No eval / new Function (strict CSP): a small recursive-descent parser over + - * / % ^ ( ) , identifiers and calls. */
 

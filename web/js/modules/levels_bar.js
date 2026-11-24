@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the breadcrumb and the work tabs, under the top bar of every screen of the Shop, of the part studios and of
+/* DynamiteOrbit.ai — the breadcrumb and the work tabs, under the top bar of every screen of the Shop, of the part studios and of
    the Assembly (demande de JP : « être capable de faire le lien… monter à ma partie atelier pour aller voir les autres pièces,
    pouvoir les sélectionner ou les faire apparaître dans de nouveaux onglets »).
    The breadcrumb says where one stands — 1 the Shop, 2 a nature of part, 3 one part — and takes one elsewhere : a click on a

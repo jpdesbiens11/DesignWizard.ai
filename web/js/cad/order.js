@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — ordering a prototype part: is it ready to be made, how soon can it be on the lab bench, and
+/* DynamiteOrbit.ai — ordering a prototype part: is it ready to be made, how soon can it be on the lab bench, and
    what does the shop need to quote it? The platform exists to close the design loop fast: design from the intent,
    check the manufacturability (DFx) and the physics, ORDER the part, test it — before any production is launched.
    Lead times are TYPICAL figures of express prototype shops (working days, door to door excluded); they rank the
@@ -80,6 +80,6 @@ export function rfqText(spec, built, route, check, order = spec.order || {}, fil
   if (route && route.steps.length) lines.push(``, `Gamme envisagée (indicative, l'atelier reste maître de sa méthode) :`, ...route.steps.filter((s) => s.kind !== "check").map((s) => `  ${String(s.n).padStart(3)}  ${s.text}`));
   if (order.note) lines.push(``, `Remarques : ${order.note}`);
   if (files.length) lines.push(``, `Fichiers joints :`, ...files.map((f) => `  - ${f}`));
-  lines.push(``, `Merci de répondre avec : prix unitaire, délai ferme, et toute remarque de fabricabilité.`, ``, `Dossier généré par DesignOrbit.ai — règles DFx : ${check.blockers.length ? "à corriger" : check.cautions.length ? "fabricable, avec remarques" : "aucune remarque"}.`);
+  lines.push(``, `Merci de répondre avec : prix unitaire, délai ferme, et toute remarque de fabricabilité.`, ``, `Dossier généré par DynamiteOrbit.ai — règles DFx : ${check.blockers.length ? "à corriger" : check.cautions.length ? "fabricable, avec remarques" : "aucune remarque"}.`);
   return lines.filter((l) => l !== null).join("\n");
 }

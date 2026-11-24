@@ -1,4 +1,4 @@
-"""Illustrations of DesignOrbit.ai (see tools/make_sketch_assets.py): home page journey and empty state. No text."""
+"""Illustrations of DynamiteOrbit.ai (see tools/make_sketch_assets.py): home page journey and empty state. No text."""
 import math
 
 from sketch_marks import ART, FINS, FLAME, HL, INK, PORTHOLE, ROCKET, cross, draw_art

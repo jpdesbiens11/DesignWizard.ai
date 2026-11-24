@@ -49,7 +49,7 @@ if (process.argv.includes("--dry")) process.exit(0);
 for (const t of b.tracks) { t.pts = t.pts.map((p) => [+p[0].toFixed(3), +p[1].toFixed(3)]); delete t.auto; }
 for (const v of b.vias) delete v.auto;
 const text = toDwiz(b), esc = (s) => s.replace(/\\/g, "\\\\").replace(/`/g, "\\`").replace(/\$\{/g, "\\${");
-const head = "/* DesignOrbit.ai — the CORE board, written by tools/gen_demo_core.mjs : the small board laid on the top of a CORE of 8 cells\n   21700 in parallel, from its functions to its copper, in the .dwiz format. Do not edit by hand : change the tool and run it again. */";
+const head = "/* DynamiteOrbit.ai — the CORE board, written by tools/gen_demo_core.mjs : the small board laid on the top of a CORE of 8 cells\n   21700 in parallel, from its functions to its copper, in the .dwiz format. Do not edit by hand : change the tool and run it again. */";
 const lines = text.split("\n"), half = Math.ceil(lines.length / 2), parts = [lines.slice(0, half).join("\n") + "\n", lines.slice(half).join("\n")];      // two files : each source file stays under 500 lines
 writeFileSync(new URL("../web/js/demo/demo_core_data.js", import.meta.url), `${head}\nexport const DEMO_CORE_1 = \`${esc(parts[0])}\`;\n`);
 writeFileSync(new URL("../web/js/demo/demo_core_data2.js", import.meta.url), `${head}\nexport const DEMO_CORE_2 = \`${esc(parts[1])}\`;\n`);

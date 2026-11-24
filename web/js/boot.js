@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — applied before the first paint (classic script in <head>): the theme chosen by the user, so the
+/* DynamiteOrbit.ai — applied before the first paint (classic script in <head>): the theme chosen by the user, so the
    page never flashes in another theme. Kept tiny and dependency-free. */
 (function () {
   var t = "carnet";

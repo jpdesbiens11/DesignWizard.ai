@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the formulas of the workbooks, structure : the four beams of Roark, the column (Euler / Johnson), the
+/* DynamiteOrbit.ai — the formulas of the workbooks, structure : the four beams of Roark, the column (Euler / Johnson), the
    shaft in torsion, the plate under pressure (coefficients read between the points of Roark's table), two joined materials
    that do not expand alike. Same units as the models : mm, N, N·m, GPa, MPa, kPa, µm/m·K. See xl_tools.js for the braces. */
 

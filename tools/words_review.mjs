@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — the English of the demonstrations, in a workbook to review. Every text a demonstration writes on its drawings (the
+/* DynamiteOrbit.ai — the English of the demonstrations, in a workbook to review. Every text a demonstration writes on its drawings (the
    name of a part, a finish, an interface, a parameter, a note), the English it arrives with (web/js/demo/demo_words.js), and two yellow
    columns for whoever knows the trade : the correction, a remark. One sheet per demonstration, and a notice.
    Usage : node tools/words_review.mjs <out.xlsx> [logo.png]
@@ -42,14 +42,14 @@ const sheets = DEMOS.map(([name, title, p]) => {
       return { h: lines > 1 ? 15 * lines : 18, cells: [{ v: i + 1, s: "tdl" }, { v: x.kind, s: "tdl" }, { v: where, s: "tdl" }, { v: x.fr, s: "tdl" }, { v: x.en, s: "tdl" }, { v: "", s: "choice" }, { v: "", s: "choice" }] }; })];
   return { name, cols: [6, 18, 30, 62, 62, 50, 40], rows, merges: ["B1:G1", "B2:G2"], pictures: logo, freeze: 4 };
 });
-const notice = [[{ v: "", s: "plain" }, { v: "Anglais des dessins des démonstrations — à relire", s: "title" }], [null, { v: `DesignOrbit.ai · ${date}`, s: "sub" }], [],
+const notice = [[{ v: "", s: "plain" }, { v: "Anglais des dessins des démonstrations — à relire", s: "title" }], [null, { v: `DynamiteOrbit.ai · ${date}`, s: "sub" }], [],
   ...[["Ce que c'est", "Les dessins de la plateforme sont écrits en anglais. Ce que chaque démonstration a tapé en français — noms de pièces, finitions, interfaces, paramètres, notes — s'y écrit avec l'anglais de ce classeur. Ces traductions ont été proposées par l'outil d'IA : elles n'ont pas encore été relues par quelqu'un du métier."],
     ["Ce qui est demandé", "Lire chaque ligne en anglais de dessin technique, vocabulaire d'atelier (ASME Y14.5). Si l'anglais convient, ne rien écrire. Sinon, écrire dans « Correction » l'anglais à mettre à la place ; « Remarque » sert à dire pourquoi, ou à poser une question."],
     ["À garder", "Les références, les nombres, les unités et les désignations (M4, ISO 2768-mK, 6061-T6, Ra 3,2) ne se traduisent pas. Un terme court vaut mieux qu'une phrase : le dessin a peu de place."],
     ["Les feuilles", counts.map(([t, n, same]) => `${t} : ${n} textes${same ? ` (dont ${same} déjà en anglais)` : ""}`).join(" · ")],
     ["Après la relecture", "Renvoyez le classeur : les corrections sont reportées dans les démonstrations (web/js/demo/demo_words.js), et les dessins suivent. Dans un projet à vous, le même travail se fait à l'écran des Dessins, bouton « anglais du dessin »."],
     ["Marque", FOOT_NOTE]].map(([a, b]) => ({ h: 58, cells: [{ v: a, s: "head" }, { v: b, s: "text" }] }))];
-const bytes = xlsx({ title: "Anglais des dessins des démonstrations — à relire", subject: "Traductions français → anglais à valider", author: "DesignOrbit.ai", date: new Date(), names: [], sheets: [{ name: "Notice", cols: [24, 120], rows: notice, pictures: logo }, ...sheets] });
+const bytes = xlsx({ title: "Anglais des dessins des démonstrations — à relire", subject: "Traductions français → anglais à valider", author: "DynamiteOrbit.ai", date: new Date(), names: [], sheets: [{ name: "Notice", cols: [24, 120], rows: notice, pictures: logo }, ...sheets] });
 writeFileSync(out, bytes);
 for (const [t, n, same, missing] of counts) console.log(`${t} : ${n} textes, ${same} déjà en anglais, ${missing} sans anglais`);
 console.log(`${out} : ${bytes.length} octets`);

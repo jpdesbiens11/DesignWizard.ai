@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — PCBA: the trade component library — low-voltage embedded control and motor-drive electronics.
+/* DynamiteOrbit.ai — PCBA: the trade component library — low-voltage embedded control and motor-drive electronics.
    Every entry is a GENERIC class of part with the pinout usual for its class ; the designer writes the exact
    reference (mpn) once it is chosen, and the data sheet of that reference prevails. Prices are typical prototype
    unit prices in CAD. A board adds its own components in board.library (makeComponent builds one from a package). */

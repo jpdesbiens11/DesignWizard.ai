@@ -1,6 +1,6 @@
-# DesignOrbit.ai × Onshape
+# DynamiteOrbit.ai × Onshape
 
-DesignOrbit.ai peut envoyer un assemblage dans un document Onshape : le 3D (STEP converti en
+DynamiteOrbit.ai peut envoyer un assemblage dans un document Onshape : le 3D (STEP converti en
 Part Studios + Assembly natifs), les plans PDF produits par l'application, un dessin natif Onshape par
 pièce (associatif au 3D) et les propriétés des pièces (part number, description…).
 
@@ -21,7 +21,7 @@ Pages, `file://`), l'application fonctionne mais le panneau Onshape indique qu'i
 3. Permissions à cocher : lecture du profil, **lecture** et **écriture** des documents. La suppression
    n'est pas nécessaire.
 4. Copiez l'**access key** et la **secret key** : la secret key n'est affichée qu'une fois.
-5. Dans DesignOrbit.ai, panneau **Onshape** → collez les deux clés → **Connecter**.
+5. Dans DynamiteOrbit.ai, panneau **Onshape** → collez les deux clés → **Connecter**.
 
 À savoir : un compte individuel a droit à 2 clés ; une clé agit en votre nom et ne fonctionne que sur le
 serveur Onshape qui l'a émise (cad.onshape.com ou votre domaine Enterprise).

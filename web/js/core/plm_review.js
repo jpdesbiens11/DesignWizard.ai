@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — from a FROZEN revision to a RELEASED one (demande de JP : « "Libérer" doit être "Geler la révision"… le
+/* DynamiteOrbit.ai — from a FROZEN revision to a RELEASED one (demande de JP : « "Libérer" doit être "Geler la révision"… le
    gel a besoin d'un approbateur et d'un cycle de revue de conception (lean) pour justifier et tracer le passage à
    "libérée" — l'état final d'un composant ou d'un assemblage gelé, par convention de l'industrie… on doit voir
    facilement l'état et le nom de la révision »).
@@ -95,5 +95,5 @@ export function reviewDoc(project, rec, o = {}) {
   out.push({ type: "h1", text: "La décision" }, { type: "kv", rows: [["Décision", rv ? (rv.decision === "released" ? "LIBÉRÉE" : "REFUSÉE") : "en attente"], ["Approbateur", rv ? rv.by : "—"], ["Date", rv ? String(rv.at).slice(0, 10) : "—"], ["Justification", rv ? rv.why : "—"]] });
   if (rv && rv.open.length) out.push({ type: "h2", text: "Points ouverts" }, { type: "list", items: rv.open });
   out.push({ type: "signatures", roles: ["Auteur de la révision", "Approbateur"] });
-  return { title: `Revue de conception — ${rec.pn} rév. ${rec.rev}`, subtitle: rec.name || "", subject: "Revue de conception", author: rv ? rv.by : "", date, reference: `${rec.pn}-REV-${rec.rev}`, revision: rec.rev, header: `${rec.pn} rév. ${rec.rev} — Revue de conception`, footer: "DesignOrbit.ai", blocks: out };
+  return { title: `Revue de conception — ${rec.pn} rév. ${rec.rev}`, subtitle: rec.name || "", subject: "Revue de conception", author: rv ? rv.by : "", date, reference: `${rec.pn}-REV-${rec.rev}`, revision: rec.rev, header: `${rec.pn} rév. ${rec.rev} — Revue de conception`, footer: "DynamiteOrbit.ai", blocks: out };
 }

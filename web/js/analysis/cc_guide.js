@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — isolation : what the creepage and clearance analysis of an assembly still asks for, said to the guide. Pure.
+/* DynamiteOrbit.ai — isolation : what the creepage and clearance analysis of an assembly still asks for, said to the guide. Pure.
    The analysis is a calculation : its lines are written in millimetres and stay so, whatever the units chosen for the design.
    What the list reads is what the project keeps — the nets, and the light summary of the last analysis (asm.isolation.results). It cannot
    see that the geometry has moved since : only that a net analysed is gone. */

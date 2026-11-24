@@ -1,4 +1,4 @@
-/* DesignOrbit.ai — example project : a sounding rocket with a hybrid motor, as a CAD exercise. 8 in (203,2 mm) in diameter,
+/* DynamiteOrbit.ai — example project : a sounding rocket with a hybrid motor, as a CAD exercise. 8 in (203,2 mm) in diameter,
    about 12 ft (3,66 m) long, four fixed fins. From the tail up : a nozzle cooled by a helical coil in which a little of the
    oxidiser expands, its skirt, the combustion chamber and its polyurethane fuel grain, the injector plate, the main valve
    of the nitrous oxide with its actuator, the oxidiser tank, the avionics bay (bulkhead, sled, control board, battery,
@@ -198,8 +198,8 @@ const CHUTE = { dw: "part/1", id: "FUS-6020", name: "Parachute plié dans sa gai
   notes: [CAD, "Toile de polyamide : PA12 pris pour la masse. Le dispositif qui sépare l'ogive n'est pas dessiné."] };
 
 /* the sticker of the platform, wrapped on the central airframe, reading up the rocket — on the side the three-quarter view of the render looks at */
-const STICKER = { id: "E1", name: "Sticker DesignOrbit.ai", kind: "sticker", inst: "coque_centrale", w: 420, h: 120, turn: 90, on: { p: [58.28, 83.23, 760], axis: [0, 0, 1], c: [0, 0, 0], r: 101.6 },
-  art: { type: "logo", text: "DesignOrbit.ai", sub: "by DynamiteAgile™", ink: "#26323f", paper: "#ffffff", shape: "round" } };
+const STICKER = { id: "E1", name: "Sticker DynamiteOrbit.ai", kind: "sticker", inst: "coque_centrale", w: 420, h: 120, turn: 90, on: { p: [58.28, 83.23, 760], axis: [0, 0, 1], c: [0, 0, 0], r: 101.6 },
+  art: { type: "logo", text: "DynamiteOrbit.ai", sub: "by DynamiteAgile™", ink: "#26323f", paper: "#ffffff", shape: "round" } };
 const PARTS = [NOZZLE, COIL, SKIRT, CHAMBER, GRAIN, INJECTOR, VALVE, TANK, LINE, AIR_A, FIN, AIR_B, BUTTON, AIR_C, NOSE, BULKHEAD, SLED, PCB, BATTERY, HARNESS, REC_BULKHEAD, CHUTE];
 /* instance, its part, then the mate that holds it : [its interface, the instance it meets, the interface there, options of the mate] */
 const BUILD = [
@@ -212,7 +212,7 @@ const BUILD = [
   ["coque_avant", AIR_C, "IF1", "coque_centrale", "IF2"], ["ogive", NOSE, "IF1", "coque_avant", "IF2"]];
 
 export const DEMO_ROCKET = {
-  dw: "project/1", id: "demo-fusee", name: "Fusée à moteur hybride (exemple)", author: "DesignOrbit.ai",
+  dw: "project/1", id: "demo-fusee", name: "Fusée à moteur hybride (exemple)", author: "DynamiteOrbit.ai",
   description: "Une fusée-sonde de 8 po de diamètre et d'environ 12 pi de long, à moteur hybride : bloc de combustible en polyuréthane, réservoir de protoxyde d'azote, vanne principale, tuyère refroidie par un serpentin hélicoïdal, carte de commande et faisceau, parachute, quatre ailerons fixes. Un exercice de CAO : géométrie de principe, ni dimensionnée ni validée.",
   parts: withPaths(PARTS),      // a disc drilled and tapped, a tube turned and bored : tool paths written by an AI for the fabrication shop (demo_paths.js)
   assemblies: [{ dw: "assembly/1", id: "FUS-ASM", name: "Fusée hybride — assemblage général",
