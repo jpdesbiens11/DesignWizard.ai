@@ -76,15 +76,15 @@ export function swBench(o) {
   function drawChart() {
     const L = st.L, ls = lanes(), H = 20, LBL = 190, w = Math.max(360, chart.clientWidth || 800), h = ls.length * H + 6, dpr = Math.min(2, window.devicePixelRatio || 1);
     if (chart.width !== Math.round(w * dpr) || chart.height !== Math.round(h * dpr)) { chart.width = Math.round(w * dpr); chart.height = Math.round(h * dpr); chart.style.height = `${h}px`; }
-    const g = chart.getContext("2d"), css = getComputedStyle(chart), ink = css.getPropertyValue("--ink").trim() || "#222", mute = css.getPropertyValue("--muted").trim() || "#888", line = css.getPropertyValue("--line").trim() || "#ccc";
+    const g = chart.getContext("2d"), ink = "#e2e8f0", mute = "#94a3b8", line = "#1e293b";      // a scope screen : dark in every theme, as the oscilloscopes of the Labo
     g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h); g.font = "11px system-ui, sans-serif"; g.textBaseline = "middle"; if (!L) return;
     const n = L.trace.t.length, span = L.keep, x = (k) => LBL + (w - LBL - 6) * (k + span - n) / (span - 1 || 1);
     ls.forEach((ln, r) => { const y0 = r * H + 4, y1 = y0 + H - 7, ys = L.trace.ports[ln.ref] || [], cur = ys.length ? ys[ys.length - 1] : 0;
       g.fillStyle = mute; g.fillText(ln.label.length > 30 ? `${ln.label.slice(0, 29)}…` : ln.label, 4, (y0 + y1) / 2); g.strokeStyle = line; g.lineWidth = 1; g.beginPath(); g.moveTo(LBL, y1 + 2.5); g.lineTo(w - 6, y1 + 2.5); g.stroke(); if (!ys.length) return;
       let lo = 0, hi = 1; if (!ln.bool) { lo = Math.min(...ys); hi = Math.max(...ys); if (hi === lo) { hi = lo + 1; lo -= 1; } }
-      g.strokeStyle = ln.bool ? (cur ? "#dc2626" : ink) : "#0891b2"; g.lineWidth = 1.6; g.beginPath();
+      g.strokeStyle = ln.bool ? (cur ? "#f87171" : "#4ade80") : "#fb923c"; g.lineWidth = 1.8; g.beginPath();
       for (let k = 0; k < n; k++) { const yy = y1 - (y1 - y0) * (ys[k] - lo) / (hi - lo), xx = x(k); if (!k) g.moveTo(xx, yy); else { if (ln.bool) g.lineTo(xx, y1 - (y1 - y0) * (ys[k - 1] - lo) / (hi - lo)); g.lineTo(xx, yy); } } g.stroke();
-      if (!ln.bool) { g.fillStyle = "#0891b2"; g.textAlign = "right"; g.fillText(fr(cur), w - 8, y0 + 3); g.textAlign = "left"; } });
+      if (!ln.bool) { g.fillStyle = "#fb923c"; g.textAlign = "right"; g.fillText(fr(cur), w - 8, y0 + 3); g.textAlign = "left"; } });
   }
   start(); frame(true);
   return api;

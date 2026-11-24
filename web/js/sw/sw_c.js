@@ -17,6 +17,7 @@ import { FOOT_NOTE_ASCII } from "../core/brand.js";
 import { KINDS, cfgOf, portsOf } from "./sw_objects.js";
 import { order, liveWires, simulate, unsure, split } from "./sw_design.js";
 import { loadDoc } from "./sw_load.js";
+import { LIB_MORE, moreRequirement } from "./sw_c_more.js";
 
 const up = (s) => String(s).toUpperCase().replace(/[^A-Z0-9]+/g, "_"), lo = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, "_");
 const head = (name, what) => `/* ${name} — ${what}\n * ${FOOT_NOTE_ASCII}\n * WRITTEN BY THE TOOL from the objects of the design : change the design, not this file.\n * A skeleton : it has run on no microcontroller. */\n`;
@@ -149,6 +150,7 @@ void dw_contactor_step(dw_contactor_t *s, const dw_contactor_cfg_t *c, dw_bool r
 }`,
     cfg: (c) => `{ ${c.t_fb}U }`, call: (v, i, C) => `dw_contactor_step(&${v}, &${C}, ${i.request}, ${i.inhibit}, ${i.feedback}, dt_ms);`, outs: { drive: "drive", fault: "fault" } },
 };
+Object.assign(LIB, LIB_MORE);      // the conventional blocks (sw/sw_c_more.js)
 const ctype = (p) => (p.unit === "0/1" ? "dw_bool" : p.unit === "counts" ? "uint16_t" : "int32_t");
 const SIZE = { dw_bool: 1, uint8_t: 1, uint16_t: 2, int16_t: 2, int32_t: 4, uint32_t: 4, int64_t: 8, uint64_t: 8 };
 /** The size of a C structure as a compiler lays it out with natural alignment : each field on a multiple of its own size, the whole on a
@@ -193,6 +195,7 @@ export function requirement(d, o) {
   if (o.kind === "module_state") return `${o.name} shall be in STOP, the contactor open, as soon as ${from("fault")} is 1, and leave it only on a reset with no fault ; be in EMERGENCY when ${from("lost")} has held for ${c.t_lost} ms, and in STOP when the emergency lasts ${c.t_emerg} ms ; else be DERATED while ${from("warn_a")} or ${from("warn_b")} holds, and NORMAL otherwise.`;
   if (o.kind === "contactor") return `${o.name} shall close on a request, open on an inhibit, and raise a fault when its feedback has not followed the order for ${c.t_fb} ms.`;
   if (o.kind === "energy_counter") return `${o.name} shall count, in mWh, the energy that leaves the pack and the energy that enters it, from ${from("i")} and ${from("v")}.`;
+  const more = moreRequirement(o, c, from); if (more) return more;
   return `${o.name} is a pin of the microcontroller (${KINDS[o.kind].label}).`;
 }
 

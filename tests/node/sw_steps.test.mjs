@@ -40,7 +40,7 @@ test("what enters and what leaves an object : one line each, where it comes from
   const latch = ioRows(d, d.objects.find((o) => o.id === "latch")); assert.deepEqual(latch.in.map((p) => [p.key, p.from, p.free, p.delay]), [["a", "Over-voltage · trip", false, false], ["b", "Contactor K+ · fault", true, true], ["c", "", true, false], ["reset", "", true, false]], "an input left free says so ; a wire that carries the step before too");
   assert.equal(kindShape("pin_adc"), "lit le CPU → 1 sortie"); assert.equal(kindShape("contactor"), "3 entrées → 2 sorties"); assert.equal(kindShape("pin_dout"), "1 entrée → écrit le CPU");
   const r = rankOf(d); assert.ok(r.cell_v < r.ov && r.ov < r.latch && r.latch < r.k_pos && r.k_pos < r.k_drv, "the rank is the order of the step");
-  const cv = read("web/js/modules/sw_canvas.js"); assert.match(cv, /"ENTRÉES" : "lit une broche du CPU"/); assert.match(cv, /"SORTIES" : "écrit une broche du CPU"/); assert.match(cv, /M -7 \$\{y - 7\} L 6 \$\{y\} L -7 \$\{y \+ 7\} Z/, "an input is an arrowhead that points INTO the tile");
+  const cv = read("web/js/modules/sw_canvas.js"); assert.match(cv, /"ENTRÉES DE LA CARTE"/); assert.match(cv, /"SORTIES DE LA CARTE"/); assert.match(cv, /keyPath\(typeOf\(p\.unit\), 0, portY\(o, "in", p\.key\), -1, A, K\)/, "an input is a notch of its key, cut INTO the block (v0.189 : blocks that key into each other)");
   assert.match(read("web/js/modules/sw_sheet.js"), /sec\("Ses entrées et ses sorties", "", ioTable\(d, o, c\.values\)\)/);
 });
 

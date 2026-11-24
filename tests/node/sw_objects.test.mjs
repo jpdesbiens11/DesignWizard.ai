@@ -16,7 +16,7 @@ const sure = (d) => ({ ...d, objects: d.objects.map((o) => ({ ...o, sure: KINDS[
 const at = (R, ref, ms) => R.ports[ref][R.t.indexOf(ms)];
 
 test("the objects : grouped by nature, each with its English name, its French one, its ports and what it proposes", () => {
-  assert.deepEqual(NATURES.map((n) => n.id), ["pin", "measure", "decide", "command"]); assert.ok(NATURES.every((n) => n.label && n.fr && /^#[0-9a-f]{6}$/.test(n.color) && n.icon && n.text));
+  assert.deepEqual(NATURES.map((n) => n.id), ["pin", "measure", "decide", "control", "command"]); assert.ok(NATURES.every((n) => n.label && n.fr && /^#[0-9a-f]{6}$/.test(n.color) && n.icon && n.text));
   for (const [k, K] of Object.entries(KINDS)) { assert.ok(NATURES.some((n) => n.id === K.nature), k); assert.ok(K.label && K.fr && K.icon && K.text.length > 30, `${k} says what it is`); assert.ok(K.pin || (K.init && K.step && LIB[k]), `${k} : a behaviour written once, and its C`);
     for (const p of [...K.ports.in, ...K.ports.out]) assert.ok(p.key && p.label && p.unit, `${k}.${p.key}`); for (const p of K.params) assert.ok(p.key && p.label && p.value !== undefined, `${k} : ${p.key} has an example`); }
   /* a port takes the unit and the range its object chose */

@@ -15,6 +15,7 @@
 
 import { KINDS, NATURES, cfgOf, portOf, portsOf } from "./sw_objects.js";
 import { DEMO_REQS, DEMO_TESTS } from "./sw_demo_v.js";
+import { moreProblems } from "./sw_kinds_more.js";
 
 const split = (ref) => { const k = String(ref || "").lastIndexOf("."); return k < 0 ? [ref, ""] : [ref.slice(0, k), ref.slice(k + 1)]; };
 const live = (d) => ((d && d.objects) || []).filter((o) => !o.off && KINDS[o.kind]);
@@ -38,7 +39,9 @@ export function order(d) {
   return { ids, loop: objs.filter((o) => !done.has(o.id)).map((o) => o.id) };
 }
 /** The values a kind proposed that the project has not confirmed. → [{ obj, key, label }] */
-export function unsure(d) { return live(d).flatMap((o) => KINDS[o.kind].params.filter((p) => !(o.sure || []).includes(p.key)).map((p) => ({ obj: o.id, key: p.key, label: p.label }))); }
+export function unsure(d) { const ok = confirmedReqs(d); return live(d).flatMap((o) => KINDS[o.kind].params.filter((p) => !(o.sure || []).includes(p.key) && !(o.src && ok.has(o.src[p.key]))).map((p) => ({ obj: o.id, key: p.key, label: p.label }))); }
+/** The requirements the project has confirmed : a value one of them gives is confirmed with it (sw/sw_req_import.js). */
+export const confirmedReqs = (d) => new Set(((d && d.reqs) || []).filter((r) => r.on !== false && r.sure !== false).map((r) => r.id));
 /** How many pins of each sort the design takes. → { ain, din, dout } */
 export const pinCount = (d) => { const n = { ain: 0, din: 0, dout: 0 }; for (const o of live(d)) if (KINDS[o.kind].pin) n[KINDS[o.kind].pin]++; return n; };
 /** What is missing or wrong, for the guide. cpu : a CPU sheet (sw/sw_cpu.js) or null. → [{ level, text, obj?, field? }] — "error" keeps the files from being written. */
@@ -53,6 +56,7 @@ export function problems(d, cpu) {
   const L = order(d).loop; if (L.length) say("error", `Des objets se suivent en boucle (${L.map((id) => O[id].name).join(", ")}) : l'un des fils de la boucle doit porter « la valeur du pas d'avant » — un clic sur le fil.`, L[0]);
   for (const o of objs) { const c = cfgOf(o); if (o.kind === "analog_in" && c.lo >= c.hi) say("error", `${o.name} : la plage vraisemblable est à l'envers (${c.lo} à ${c.hi}).`, o.id, "lo");
     if (o.kind === "limit" && (c.above ? c.clear >= c.trip : c.clear <= c.trip)) say("error", `${o.name} : le seuil de retour doit être ${c.above ? "sous" : "au-dessus du"} le seuil, sinon il bat.`.replace("sous le seuil", "sous le seuil"), o.id, "clear");
+    for (const p of moreProblems(o, c, d.period)) out.push(p);
     if (o.kind === "limit" && d.period && c.delay % d.period) say("check", `${o.name} : le délai (${c.delay} ms) n'est pas un multiple de la période du logiciel (${d.period} ms) — il sera arrondi au pas suivant.`, o.id, "delay"); }
   if (cpu) { const n = pinCount(d); if (n.ain > cpu.adc.channels) say("error", `Le logiciel lit ${n.ain} voies analogiques ; le CPU choisi (${cpu.name}) en a ${cpu.adc.channels}.`);
     if (n.din + n.dout > cpu.gio) say("error", `Le logiciel prend ${n.din + n.dout} broches logiques ; le CPU choisi en offre ${cpu.gio}.`);

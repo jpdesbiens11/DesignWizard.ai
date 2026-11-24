@@ -47,7 +47,7 @@ test("wiring : one bar for every view that zooms, the magnifier in it, the botto
   assert.match(sw, /new ResizeObserver/, "a resize refits while the view was not moved");
   const app = read("web/js/core/app.js");
   assert.match(app, /querySelectorAll\("\.bottom-pane"\)\.forEach\(\(b\) => mountBottom\(b\)\)/, "every bottom panel gets its edge, whatever the screen");
-  assert.match(read("web/js/modules/sw.js"), /class: "sw-livebox bottom-pane", "data-bottom": "sw"/);
+  assert.match(read("web/js/modules/sw.js"), /class: "sw-livebox swlab bottom-pane", "data-bottom": "sw"/);
   assert.match(read("web/js/modules/elab.js"), /class: "lab-bottom bottom-pane", "data-bottom": "lab"/);
   const css = read("web/css/views.css");
   assert.match(css, /\.bottom-pane \.bottom-body \{ height: var\(--bottom-h, 240px\);/); assert.match(css, /\.bottom-pane\.folded \.bottom-body \{ display: none; \}/);

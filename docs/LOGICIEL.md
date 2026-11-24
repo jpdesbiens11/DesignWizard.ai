@@ -6,7 +6,7 @@ les in/out à gérer, leurs plages et le CPU choisi ». Choix cliqués le même 
 microcontrôleur de sécurité à double cœur d'abord** ; « EFC » = energy flow counter, nommé par sa fonction.
 
 Écrans : le groupe **Logiciel** de la barre du haut (depuis la v0.128.0 ; avant, Électronique › Logiciel, `#/sw`).
-Première tranche, v0.121.0 : **une chaîne complète**, du dessin au C compilé. Depuis la v0.128.0, le **cycle en V** (§ 4 ter).
+Première tranche, v0.121.0 : **une chaîne complète**, du dessin au C compilé. Depuis la v0.128.0, le **cycle en V** (§ 4 ter). Depuis la v0.189.0, **des blocs à clés, de gauche à droite** (§ 4 quinquies).
 
 ## 1. L'idée
 
@@ -189,6 +189,32 @@ norme demande.
 Non fait ici, et dit : l'essai d'intégration sur la carte et l'essai sur le CPU ; l'aller-retour IA d'une exigence ou
 d'un essai. **Aucune prétention de conformité ni de certification** : une norme se tient par un processus,
 des revues indépendantes et une autorité ; l'outil aide à tenir les traces que ce processus demande.
+
+
+## 4 quinquies. Des blocs à clés, de gauche à droite (v0.189.0)
+
+Demande de JP, 24 novembre 2026 : « au lieu du cycle en V standard, très ennuyeux… un système de blocs logiciels à clés (comme des blocs LEGO) et à couleurs, une vue de gauche à droite, entrées et sorties, un peu comme LabVIEW mais avec des blocs plus ergonomiques » ; puis « des blocs capteurs typiques qui envoient leurs données au CPU, des actionneurs typiques » et « qu'ils se connectent tout seuls quand on les approche avec des interfaces compatibles ». Le V reste (sa structure et ses étapes étaient bonnes) ; c'est sa présentation qui change.
+
+**Ce qui ne change pas.** Un bloc est un objet (`sw/sw_objects.js`) : ses ports, ses valeurs, son pas en entiers ; un fil est permis par `wireCheck` ; le C est écrit et prouvé dos à dos. Tout ce qui suit est la façon de le **voir** et de le **poser**.
+
+- **La clé d'un port** = le type de ce qu'il porte (`SIGNAL_TYPES`, `typeOf`, `keyPath` de `sw/sw_blocks.js`) : décision 0 / 1 = dent carrée (vert), grandeur physique = dent ronde (orange), comptes bruts = queue d'aronde (gris), commande en ‰ = flèche (rose), état = pointe (violet), temps = marche (bleu). Une sortie est une **languette**, une entrée une **encoche** de même forme : seule une clé de même forme y entre, et le fil prend la couleur de son type (comme LabVIEW colore ses fils par type de donnée ; les blocs à encoches sont la convention de la programmation visuelle pour débutants).
+- **La famille d'un bloc** = sa couleur et sa colonne, de gauche à droite : capteurs, entrées de la carte, acquérir, décider, réguler, commander, communiquer, veiller, sorties de la carte, actionneurs (`FAMILIES`).
+- **De gauche à droite.** « Ranger de gauche à droite » place chaque bloc une colonne après le dernier bloc qu'il lit, les entrées de la carte d'abord, ses sorties en dernier (`columns`, `flowLayout`) — une étape annulable. Les entrées et les sorties de la carte sont posées sur deux **rails**.
+- **Les blocs s'emboîtent.** Un bloc lâché à moins de 28 px d'une place où l'une de ses encoches rencontre une languette de même clé (ou l'inverse) s'aimante, s'emboîte, et chaque paire de ports qui se font face et s'accordent est reliée — sans fil dessiné (`snapAt`, `docked`). L'écarter le déboîte. Les fils restent pour les liaisons à distance.
+- **La bibliothèque par domaine** (`LIBRARY`, `PACKS`) : le commun de tout logiciel embarqué — broches, entrée analogique, **anti-rebond**, seuil, **temporisation au travail (TON)**, **porte logique**, mémoire de défaut, **régulateur PI** à intégrale bornée, **rampe** (les cinq nouveaux : `sw/sw_kinds_more.js`, leur C : `sw/sw_c_more.js`, prouvés dos à dos par `tests/node/sw_blocks.test.mjs`) ; les **capteurs et actionneurs typiques** (`sw/sw_devices.js`) ; batterie · BMS / ESS ; robot ; puissance ; appareil autonome. Un bloc que l'outil ne sait pas encore faire tourner (PWM, CAN, chien de garde, codeur, commande vectorielle…) est montré en pointillé, « à venir », et ne se pose pas.
+- **Capteurs et actionneurs.** Un capteur est du matériel : le logiciel n'en voit qu'une **broche** et le bloc qui en fait une grandeur. Une brique de capteur pose donc la broche, marquée de son capteur, et son bloc d'acquisition relié, à la **mise à l'échelle typique** d'un tel capteur (CTN linéarisée de 0 à 60 °C, Pt100 et amplificateur, pont diviseur, courant à effet Hall, shunt, pression ratiométrique, potentiomètre ; bouton et fin de course suivis d'un anti-rebond). Un actionneur pose la broche de sortie qui le commande (bobine, témoin, avertisseur, électrovanne, chauffage, ventilateur). Rien de nouveau ne s'écrit en C ; chaque valeur est une **valeur de référence**, ambre, à confirmer avec la fiche de la pièce que la carte porte.
+- **Aligné sur la carte.** Le logiciel tourne sur la carte du produit qui porte un microcontrôleur et dont le nom dit qu'elle commande (`hostBoard`) ; chaque bloc porte son étiquette — la carte et le CPU ; pour une broche, le net de la carte (`mcuNets`), choisi dans sa fiche : vert relié, ambre à relier ; le guide le dit (`hwProblems`).
+- **D'où vient une valeur** (`VALUE_SOURCES`, `valueChips`) : verte, donnée par une exigence (en pointillé tant que l'exigence n'est pas confirmée) ; bleue, tapée ou confirmée ; ambre, valeur de référence de l'outil.
+
+### Les exigences, entrée standard
+
+Les exigences du projet restent où le projet les tient ; l'outil les **lit** dans une structure, `dynamiteorbit/sw-requirements@1` (`sw/sw_req_import.js`) : `system` (nom, domaine, période), `signals` (ce que le logiciel lit sur la carte ou lui donne : nom, sens, analogique ou logique, unité, plage, `hw` : carte, broche, net), `requirements` (id, phrase avec « shall », genre, preuve, `block` de la bibliothèque, `input` — un signal ou une autre exigence —, `output`, `values`, `source`). « Copier le prompt (format standard) » donne à un assistant la consigne et le catalogue des blocs, écrit depuis la bibliothèque elle-même : il convertit le document du projet, sans inventer de nombre. « Importer des exigences… » montre l'aperçu (blocs, valeurs données, valeurs de référence, blocs à venir, notes), puis pose tout en **une étape annulable**, rangé de gauche à droite. **Les exigences arrivent « à confirmer »** : elles sont passées par un assistant, et la réponse d'un assistant ne confirme rien ; confirmer une exigence (étape 1) confirme les valeurs qu'elle donne. Les unités V, A, °C, %, s sont converties dans celles des blocs.
+
+### Le banc du logiciel
+
+La simulation (étape 4) se présente comme le Labo d'une carte : au-dessus des blocs, **un instrument par entrée du logiciel**, réglé sur sa face — un afficheur dans l'unité du capteur, un bouton, les comptes que cela met à la broche, une plage hors de laquelle l'afficheur passe à l'ambre ; un interrupteur et son témoin pour une entrée logique ; un sélecteur pour un contact qui suit sa bobine ou reste coincé ; puis **les témoins** de ce que le logiciel commande. Dessous, le chronogramme sur un **écran d'analyseur** (sombre dans tous les thèmes). Les fils qui portent un 1 s'allument, ceux dont la grandeur bouge défilent. Rien n'est calculé à l'écran : c'est le pas du modèle, le même que le C (`modules/sw_lab.js`, `modules/sw_bench.js`).
+
+**Reste** : la sortie à modulation (PWM) et un moteur simulé derrière, pour que les actionneurs proportionnels et le PI se voient tourner ; une table d'interpolation (la CTN sur toute sa courbe) ; les blocs Communiquer et Veiller ; les signaux d'une exigence reliés aux broches lues sur la carte (`sw/hwsw.js`) ; un bloc qui s'emboîte au clavier ; l'essai au toucher.
 
 ## 4 quater. La machine à états d'un module (v0.165.0)
 

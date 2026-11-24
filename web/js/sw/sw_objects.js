@@ -12,10 +12,13 @@
    proposes are EXAMPLES, typical of such a board and said as such — never those of a component reference.
    Pure : no page. */
 
+import { MORE_KINDS, QUANTITY_UNITS } from "./sw_kinds_more.js";
+
 export const NATURES = [
   { id: "pin", label: "Pins", fr: "Brancher", color: "#64748b", icon: "chip", text: "Ce qui touche le microcontrôleur : une voie du convertisseur, une entrée, une sortie." },
   { id: "measure", label: "Measure", fr: "Mesurer", color: "#0891b2", icon: "sensor", text: "Faire d'un nombre du convertisseur une grandeur que l'on comprend, et dire si elle est vraisemblable." },
   { id: "decide", label: "Decide", fr: "Décider", color: "#7c3aed", icon: "wizard", text: "Comparer, attendre, retenir : ce qui fait d'une mesure une décision." },
+  { id: "control", label: "Control", fr: "Réguler", color: "#d97706", icon: "param", text: "Amener une grandeur à sa consigne, sans à-coup : régulateur, rampe." },
   { id: "command", label: "Command", fr: "Commander", color: "#dc2626", icon: "power", text: "Agir sur le matériel, et relire que l'ordre a été suivi." },
 ];
 const B = { unit: "0/1", min: 0, max: 1 }, MS = "ms", div = (a, b) => Math.trunc(a / b);      // a division as C makes it : toward zero
@@ -30,7 +33,7 @@ export const KINDS = {
   pin_dout: { nature: "pin", label: "Digital output", fr: "sortie logique", icon: "chip", text: "Une broche du microcontrôleur que le logiciel commande : 0 ou 1 — une bobine, un témoin.", ports: { in: [{ key: "level", label: "level", ...B }], out: [] }, params: [P("pin", "Broche", 0, "", "Le numéro de la broche de sortie.", { min: 0, max: 255 })], pin: "dout" },
   analog_in: { nature: "measure", label: "Analog input", fr: "entrée analogique", icon: "sensor", text: "Des comptes du convertisseur à une grandeur : mise à l'échelle, moyenne glissante, et un drapeau « vraisemblable » quand la valeur reste dans sa plage.",
     ports: { in: [{ key: "counts", label: "counts", unit: "counts", min: 0, max: 65535 }], out: [{ key: "value", label: "value", unit: "*", min: "lo", max: "hi" }, { key: "valid", label: "valid", ...B }] },
-    params: [P("unit", "Unité de la valeur", "mV", "", "Ce que la valeur veut dire une fois mise à l'échelle.", { choices: ["mV", "mA", "0.1 °C"] }), P("bits", "Résolution du convertisseur", 12, "bit", "Lue sur la fiche du CPU.", { min: 8, max: 16 }), P("vref", "Référence du convertisseur", 3300, "mV", "La tension qui donne la pleine échelle.", { min: 500, max: 5500 }),
+    params: [P("unit", "Unité de la valeur", "mV", "", "Ce que la valeur veut dire une fois mise à l'échelle.", { choices: QUANTITY_UNITS }), P("bits", "Résolution du convertisseur", 12, "bit", "Lue sur la fiche du CPU.", { min: 8, max: 16 }), P("vref", "Référence du convertisseur", 3300, "mV", "La tension qui donne la pleine échelle.", { min: 500, max: 5500 }),
       P("num", "Échelle : numérateur", 2, "", "La valeur vaut la tension lue × numérateur ÷ dénominateur + décalage : c'est le pont diviseur ou le capteur.", { min: -100000, max: 100000 }), P("den", "Échelle : dénominateur", 1, "", "", { min: 1, max: 100000 }), P("offset", "Décalage", 0, "*", "Ajouté après l'échelle (un capteur de courant centré au milieu de sa plage en a un).", { min: -10000000, max: 10000000 }),
       P("lo", "Plage : plus petite valeur vraisemblable", 500, "*", "En dessous, la mesure n'est pas crue : fil coupé, capteur débranché.", { min: -10000000, max: 10000000 }), P("hi", "Plage : plus grande valeur vraisemblable", 5000, "*", "Au-dessus, la mesure n'est pas crue.", { min: -10000000, max: 10000000 }), P("n", "Moyenne glissante", 4, "éch.", "Sur combien d'échantillons : 1, 2, 4, 8 ou 16.", { choices: [1, 2, 4, 8, 16] })],
     init: () => ({ buf: new Array(16).fill(0), k: 0, sum: 0, primed: 0 }),
@@ -45,7 +48,7 @@ export const KINDS = {
       return { e_out: s.e_out, e_in: s.e_in }; } },
   limit: { nature: "decide", label: "Limit", fr: "seuil avec délai et hystérésis", icon: "warning", text: "Déclenche quand la valeur reste au-delà du seuil pendant le délai ; ne revient que lorsqu'elle repasse le seuil de retour.",
     ports: { in: [{ key: "value", label: "value", unit: "*", min: -10000000, max: 10000000 }], out: [{ key: "trip", label: "trip", ...B }] },
-    params: [P("unit", "Unité de la valeur", "mV", "", "La même que ce qui lui est relié.", { choices: ["mV", "mA", "0.1 °C"] }), P("above", "Sens", 1, "", "1 : déclenche au-dessus du seuil (surtension, surtempérature). 0 : en dessous (sous-tension).", { choices: [1, 0] }),
+    params: [P("unit", "Unité de la valeur", "mV", "", "La même que ce qui lui est relié.", { choices: QUANTITY_UNITS }), P("above", "Sens", 1, "", "1 : déclenche au-dessus du seuil (surtension, surtempérature). 0 : en dessous (sous-tension).", { choices: [1, 0] }),
       P("trip", "Seuil", 4250, "*", "La valeur à ne pas dépasser.", { min: -10000000, max: 10000000 }), P("clear", "Seuil de retour", 4150, "*", "Où la valeur doit revenir pour que le seuil se relâche : l'hystérésis évite de battre.", { min: -10000000, max: 10000000 }), P("delay", "Délai", 100, MS, "Combien de temps la valeur doit rester au-delà du seuil : un parasite ne déclenche pas.", { min: 0, max: 600000 })],
     init: () => ({ t: 0, tripped: 0 }),
     step(s, c, i, dt) { const over = c.above ? i.value >= c.trip : i.value <= c.trip, back = c.above ? i.value <= c.clear : i.value >= c.clear;
@@ -74,6 +77,7 @@ export const KINDS = {
     step(s, c, i, dt) { if (i.feedback !== s.drive) { s.t += dt; if (s.t >= c.t_fb) s.fault = 1; } else { s.t = 0; if (!i.request) s.fault = 0; }      // the order given at the step before is what the contact must follow
       s.drive = i.request && !i.inhibit && !s.fault ? 1 : 0; return { drive: s.drive, fault: s.fault }; } },
 };
+Object.assign(KINDS, MORE_KINDS);      // the conventional blocks of every embedded program (sw/sw_kinds_more.js)
 /** The parameters of an object : what its kind proposes, with what the object says in their place. */
 export const cfgOf = (obj) => { const K = KINDS[obj.kind]; return Object.fromEntries((K ? K.params : []).map((p) => [p.key, obj.params && obj.params[p.key] !== undefined ? obj.params[p.key] : p.value])); };
 /** A port of an object, as it is once its parameters are known : { key, label, unit, min, max, free? } — "*" is the unit the object chose, « lo » / « hi » its range. */

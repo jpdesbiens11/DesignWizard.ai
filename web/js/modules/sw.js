@@ -22,7 +22,7 @@ import { KINDS, NATURES } from "../sw/sw_objects.js";
 import { demoDesign, problems, unsure, ready, simulate, events, wireCheck, order, split } from "../sw/sw_design.js";
 import { vPackage } from "../sw/sw_docs.js";
 import { cpuOf, cpuList } from "../sw/sw_cpu.js";
-import { stepStates, kindShape, rankOf, vstepOf, vOfPage } from "../sw/sw_steps.js";
+import { stepStates, rankOf, vstepOf, vOfPage } from "../sw/sw_steps.js";
 import { runAll } from "../sw/sw_test.js";
 import { STANDARDS, stdOf, levelOf, stdAsks } from "../sw/sw_std.js";
 import { vBand, stepCard, swShell, vHash } from "./sw_vband.js";
@@ -32,6 +32,10 @@ import { swCanvas } from "./sw_canvas.js";
 import { swBench } from "./sw_bench.js";
 import { sheet, aiText, reimport } from "./sw_sheet.js";
 import { cpuPage, startPage, codePage, loadPage } from "./sw_pages.js";
+import { hwTag, hwProblems, flowLayout, snapAt, docked } from "../sw/sw_blocks.js";
+import { libraryPalette, reqImportSection, openImport } from "./sw_lib_ui.js";
+import { swRack } from "./sw_lab.js";
+import { DEVICES, devicePlacement } from "../sw/sw_devices.js";
 
 const FOLDERS = { lib: ["#0891b2", "un module par genre de tuile"], cfg: ["#7c3aed", "une table de réglages par tuile posée"], io: ["#64748b", "le nom de chaque broche"], app: ["#16a34a", "le pas du logiciel"], hal: ["#b45309", "ce qui touche le CPU"], test: ["#dc2626", "le scénario rejoué sur un ordinateur"], doc: ["#475569", "traçabilité et chargement"] };
 const LEVEL = { error: "error", todo: "todo", check: "warn" }, CANVAS = new Set(["objects", "values", "live"]), RIGHT = CANVAS;
@@ -45,31 +49,40 @@ function render(main, args, vkey) {
   const { head, left, view, right, studio: root } = swShell(main, "sw-view");
   const design = () => (store.project && (store.project.software || [])[0]) || null;
   const firstPage = () => { const d = design(); if (V.key !== "design" || !d) return V.pages[0]; const S = stepStates(d, cpuOf(d)); return S.objects.state === "done" && S.values.state === "todo" ? "values" : "objects"; };
-  const st = { step: V.pages.includes(args[0]) ? args[0] : firstPage(), sel: null, k: 0, file: "bms/README.md", alive: true };
+  const st = { step: V.pages.includes(args[0]) ? args[0] : firstPage(), sel: null, k: 0, file: "bms/README.md", alive: true, pack: "all" };
   const change = (label, fn) => store.commit(label, (p) => { p.software = p.software || []; if (!p.software[0]) return; fn(p.software[0]); });
-  const host = el("div", { class: "sw-host" }), pageHost = el("div", { class: "sw-pagehost" }), replay = el("div", { class: "lab-bar sw-bar" }), liveBox = el("div", { class: "sw-livebox bottom-pane", "data-bottom": "sw" }), liveHost = el("div", { class: "sw-livehost" }), empty = el("div", { class: "page", hidden: true });
-  liveBox.append(liveHost); view.append(empty, pageHost, host, liveBox, replay);      // the panel of the bottom : its height is dragged at its top edge (core/panes.js mountBottom)
-  const canvas = swCanvas(host, { rank: rankOf,
+  const host = el("div", { class: "sw-host" }), pageHost = el("div", { class: "sw-pagehost" }), replay = el("div", { class: "lab-bar sw-bar" }), liveBox = el("div", { class: "sw-livebox swlab bottom-pane", "data-bottom": "sw" }), rackHost = el("div", { class: "swlab-rackhost", hidden: true }), liveHost = el("div", { class: "sw-livehost" }), empty = el("div", { class: "page", hidden: true });
+  liveBox.append(liveHost); view.append(empty, pageHost, rackHost, host, liveBox, replay);      // the panel of the bottom : its height is dragged at its top edge (core/panes.js mountBottom)
+  const canvas = swCanvas(host, { rank: rankOf, tag: (o) => hwTag(store.project, design(), o),
+    onArrange: () => { const d = design(); if (!d) return; const pos = flowLayout(d); change("Logiciel : blocs rangés de gauche à droite", (x) => { for (const o of x.objects) if (pos[o.id]) Object.assign(o, pos[o.id]); }); setTimeout(() => canvas.fit(), 0); },
     onPick: (s) => { st.sel = s; paint(); renderRight(); },
-    onMove: (id, x, y) => change(`Logiciel : ${id} déplacé`, (d) => { const o = d.objects.find((q) => q.id === id); if (o) { o.x = x; o.y = y; } }),
+    onMove: (id, x, y) => { const d0 = design(), was = (d0.wires || []).filter((w) => (split(w.from)[0] === id || split(w.to)[0] === id) && docked(d0, w)), sn = snapAt(d0, id, x, y), at = sn || { x, y };      // keyed blocks (sw/sw_blocks.js snapAt)
+      const gone = was.filter((w) => !docked({ ...d0, objects: d0.objects.map((q) => (q.id === id ? { ...q, x: at.x, y: at.y } : q)) }, w));
+      change(sn ? `Logiciel : ${id} emboîté` : gone.length ? `Logiciel : ${id} déboîté` : `Logiciel : ${id} déplacé`, (d) => { const o = d.objects.find((q) => q.id === id); if (!o) return; o.x = at.x; o.y = at.y;
+        d.wires = d.wires.filter((w) => !gone.some((g) => g.from === w.from && g.to === w.to)); if (sn) d.wires.push(...sn.wires); });
+      if (sn) toast(`Emboîté : ${sn.wires.length} liaison${sn.wires.length > 1 ? "s" : ""} faite${sn.wires.length > 1 ? "s" : ""} par les clés (${sn.wires.map((w) => `${split(w.from)[1]} → ${split(w.to)[1]}`).join(", ")}). Ctrl + Z pour revenir.`, "success", 4000);
+      else if (gone.length) toast(`Déboîté : ${gone.length} liaison${gone.length > 1 ? "s" : ""} défaite${gone.length > 1 ? "s" : ""}. Ctrl + Z pour revenir.`, "info", 4000); },
     onWire: (from, to) => { const d = design(), c = wireCheck(d, from, to); if (!c.ok) { toast(c.text, "error", 7000); paint(); return; }
       const loops = order({ ...d, wires: [...d.wires.filter((w) => w.to !== to), { from, to }] }).loop.length > 0;
       change(`Logiciel : fil ${from} → ${to}`, (x) => { x.wires = x.wires.filter((w) => w.to !== to); x.wires.push({ from, to, ...(loops ? { delay: true } : {}) }); });
       toast(loops ? "Ce fil ferme une boucle : il porte la valeur du pas d'avant, comme le font les schémas-blocs. Un clic sur le fil pour le voir." : c.level ? c.text : "Fil posé.", loops || c.level ? "info" : "success", loops || c.level ? 7000 : 2200); } });
-  let R = null, bench = null, journalHost = null, run = null;
+  let R = null, bench = null, journalHost = null, run = null, rack = null;
   const files = () => { const d = design(); return d ? vPackage(d, cpuOf(d)) : []; };      // the C, and the requirements and the verification beside it (doc/)
   const valuesAt = () => (R ? Object.fromEntries(Object.entries(R.ports).map(([r, y]) => [r, y[Math.min(st.k, y.length - 1)]])) : null);
-  const guide = () => { const d = design(); return d ? problems(d, cpuOf(d)).map((p) => ({ level: LEVEL[p.level] || "tip", text: p.text, field: "sw", go: p.obj ? () => pick(p.obj, p.field) : null })) : []; };
+  const guide = () => { const d = design(); return d ? [...problems(d, cpuOf(d)), ...hwProblems(store.project, d)].map((p) => ({ level: LEVEL[p.level] || "tip", text: p.text, field: "sw", go: p.obj ? () => pick(p.obj, p.field) : null })) : []; };
   /* choose an object from a list : the page shows it, its sheet opens, the value asked blinks under the pointer */
   function pick(id, field) { if (V.key !== "design") { location.hash = vHash("design", unsure(design()).some((u) => u.obj === id) ? "values" : "objects"); return; } if (!CANVAS.has(st.step) || st.step === "live") { st.step = unsure(design()).some((u) => u.obj === id) ? "values" : "objects"; mark(); }
     st.sel = { obj: id }; all(); const f = field ? right.querySelector(`[data-sw-param="${field}"]`) : right.querySelector("[data-sw-param].need, [data-sw-param]"); if (f) nudge(f); }
   const mark = () => { try { history.replaceState(null, "", vHash(V.key, st.step)); } catch (e) { /* a page without history */ } };
   const open = (key) => { if (!V.pages.includes(key)) { location.hash = vHash((vOfPage(key) || V).key, key); return; } st.step = key; mark(); all(); left.scrollTop = 0; };
+  const addDevice = (key) => change(`Logiciel : ${DEVICES[key].label} posé`, (d) => { const free = (base) => { let n = 1, id = base; while (d.objects.some((o) => o.id === id)) id = `${base}_${++n}`; return id; }, y = Math.max(20, ...d.objects.map((o) => (o.y || 0) + 150)), P = devicePlacement(key, 20, y, free);
+    for (const o of P.objects) { if (o.kind === "pin_adc") o.params.channel = Math.max(-1, ...d.objects.filter((q) => q.kind === "pin_adc").map((q) => Number((q.params || {}).channel) || 0)) + 1; if (o.kind === "pin_din" || o.kind === "pin_dout") o.params.pin = Math.max(-1, ...d.objects.filter((q) => q.kind === "pin_din" || q.kind === "pin_dout").map((q) => Number((q.params || {}).pin) || 0)) + 1; d.objects.push(o); }
+    d.wires.push(...P.wires); st.sel = { obj: P.objects[P.objects.length - 1].id }; });
   const add = (kind) => change(`Logiciel : ${KINDS[kind].label} posé`, (d) => { let n = 1; while (d.objects.some((o) => o.id === `${kind}_${n}`)) n++; const y = Math.max(20, ...d.objects.map((o) => (o.y || 0) + 150)); d.objects.push({ id: `${kind}_${n}`, kind, name: `${KINDS[kind].label} ${n}`, params: {}, sure: [], x: 20, y }); st.sel = { obj: `${kind}_${n}` }; });
 
   /* ---------- the live bench : made when the step opens, gone when it closes ---------- */
-  const stopBench = () => { if (bench) { bench.dispose(); bench = null; } };
-  function ensureBench() { if (bench) return; bench = swBench({ design, onFrame: () => { if (!bench) return; canvas.values(bench.values); for (const td of right.querySelectorAll("[data-ref]")) td.textContent = fr(bench.values(td.dataset.ref)); }, onLog: () => { if (bench && journalHost && journalHost.isConnected) journalHost.replaceChildren(bench.journal()); } }); }
+  const stopBench = () => { if (bench) { bench.dispose(); bench = null; } rack = null; rackHost.replaceChildren(); };
+  function ensureBench() { if (bench) return; bench = swBench({ design, onFrame: () => { if (!bench) return; canvas.values(bench.values); if (rack) rack.refresh(); for (const td of right.querySelectorAll("[data-ref]")) td.textContent = fr(bench.values(td.dataset.ref)); }, onLog: () => { if (bench && journalHost && journalHost.isConnected) journalHost.replaceChildren(bench.journal()); } }); }
 
   function renderLeft() {
     clear(left); const d = design(), cpu = d ? cpuOf(d) : null;
@@ -93,8 +106,7 @@ function render(main, args, vkey) {
         el("label", { class: "field" }, el("span", { class: "field-label" }, "Référence"), ref), lvl ? el("label", { class: "field" }, el("span", { class: "field-label" }, S.levelWord), lvl) : null,
         el("ul", { class: "small sw-asks" }, A.lines.map((l) => el("li", null, l))),
         el("label", { class: "field" }, el("span", { class: "field-label" }, "Cadence du pas (ms)"), el("input", { type: "number", min: 1, max: 1000, step: 1, value: String(d.period || 10), "data-sw-period": "", onChange: (e) => { const v = Math.round(Number(e.target.value)); if (v >= 1 && v <= 1000) change(`Logiciel : pas de ${v} ms`, (x) => { x.period = v; }); } })))); }
-    if (st.step === "objects") scroll.append(el("div", { class: "side-section", "data-box": "kinds", "data-fold-note": `${Object.keys(KINDS).length} genres` }, el("h3", null, "Poser une tuile"), el("p", { class: "muted small" }, "Chaque tuile dit combien elle a d'entrées (à gauche) et de sorties (à droite)."),
-      NATURES.map((N) => [el("p", { class: "ft-label rd-group", style: `--dom:${N.color}` }, `${N.fr} — ${N.label}`), el("div", { class: "cf-tiles lab-blocks" }, Object.entries(KINDS).filter(([, K]) => K.nature === N.id).map(([k, K]) => tile({ color: N.color, label: K.label, small: `${K.fr} · ${kindShape(k)}`, tip: K.text, pic: icon(K.icon, "lab-cat"), data: { "data-kind": k }, run: () => add(k) })))])));
+    if (st.step === "objects") scroll.append(reqImportSection({ design }), libraryPalette({ pack: st.pack, setPack: (k) => { st.pack = k; renderLeft(); }, add, addDevice, used: new Set(d.objects.map((o) => o.kind)) }));
     if (st.step === "values") { const U = unsure(d), objs = d.objects.filter((o) => U.some((u) => u.obj === o.id));
       scroll.append(el("div", { class: "side-section", "data-box": "todo", "data-fold-note": `${U.length} à relire` }, el("h3", null, "Les valeurs à relire"), objs.length ? el("div", { "data-sw-todo": String(U.length) }, objs.map((o) => { const K = KINDS[o.kind], n = U.filter((u) => u.obj === o.id).length, N = NATURES.find((x) => x.id === K.nature);
         return el("button", { class: `nav-item${st.sel && st.sel.obj === o.id ? " active" : ""}`, type: "button", style: `box-shadow: inset 3px 0 0 ${N.color}`, "data-sw-todo-obj": o.id, onClick: () => pick(o.id) }, icon(K.icon), el("span", { class: "grow" }, o.name), el("small", null, `${n} à relire`)); })) : el("p", { class: "lab-note" }, icon("check"), " Toutes les valeurs ont été relues.")));
@@ -117,8 +129,7 @@ function render(main, args, vkey) {
     right.append(el("div", { class: "side-head" }, el("h2", null, st.step === "live" ? "Le banc" : o ? o.name : w ? "Un fil" : d.name || "Logiciel")));
     const body = el("div", { class: "side-scroll" }); right.append(body);
     if (st.step === "live") { const at = el("div");
-      body.append(el("div", { class: "side-section", "data-box": "bench", "data-fold-note": "ce que lisent les broches" }, el("h3", null, "Ce que lisent les broches"), el("p", { class: "muted small" }, "Chaque entrée du logiciel est une broche du CPU : vous décidez ce qu'elle lit. Changez-en une pendant la marche, ou en pause puis « Un pas »."), at));
-      if (bench) bench.mountSide(at);
+      body.append(el("div", { class: "side-section", "data-box": "bench", "data-fold-note": "les instruments" }, el("h3", null, "Le banc du logiciel"), el("p", { class: "muted small" }, "Comme au Labo d'une carte, les instruments sont au-dessus des blocs : une source par entrée du logiciel, réglée sur sa face — sa valeur dans l'unité du capteur, les comptes qu'elle met à la broche —, et les témoins de ce que le logiciel commande. Changez une source pendant la marche, ou en pause puis « Un pas »."), at));
       if (o) sheet(body, { d, sel: st.sel, change, live: true, values: bench ? { ...bench.L.m.last } : null, onGone: () => { st.sel = null; } });
       else body.append(el("p", { class: "muted small" }, "Un clic sur une tuile montre ici ce qui y entre et ce qui en sort, en direct."));
       return; }
@@ -138,9 +149,11 @@ function render(main, args, vkey) {
     const onCanvas = !!d && CANVAS.has(st.step), showRight = !!d && RIGHT.has(st.step), errs = d ? problems(d, cpuOf(d)).filter((p) => p.level === "error") : [];
     root.classList.toggle("no-right", !showRight); right.hidden = !showRight; empty.hidden = !!d; host.hidden = !onCanvas; pageHost.hidden = !d || onCanvas; replay.hidden = !onCanvas || st.step === "live"; liveBox.hidden = !d || st.step !== "live";
     if (!d) { stopBench(); clear(empty); empty.append(el("div", { class: "empty" }, el("h2", null, "Le logiciel du BMS, par objets"), el("p", null, "Chaque chose que le CPU doit gérer est une tuile posée sur la page : elle connaît ses entrées, ses sorties, leurs plages. Vous reliez les tuiles ; l'outil écrit le C — une bibliothèque, des modules, leur structure de fichiers —, le fait tourner devant vous, et dit comment le charger dans le CPU."),
-      (() => { const b = btn("Partir de l'exemple", () => store.commit("Logiciel : exemple posé", (p) => { p.software = [demoDesign()]; }), { primary: true, icon: "play" }); b.dataset.swDemo = ""; return b; })())); renderLeft(); clear(right); setGuide([]); return; }
-    if (st.step === "live" && !errs.length) ensureBench(); else stopBench();
-    clear(liveHost); if (st.step === "live") { if (bench) liveHost.append(bench.bar, el("div", { class: "sw-lanes-box bottom-body" }, el("p", { class: "muted small" }, "Chronogramme — les dernières secondes : une ligne par décision (rouge quand elle vaut 1) et par mesure."), bench.chart)); else liveHost.append(el("p", { class: "form-error", "data-sw-live-blocked": "" }, `Le banc attend un logiciel sans erreur : ${errs[0] ? errs[0].text : ""}`)); }
+      el("div", { class: "form-actions" }, (() => { const b = btn("Partir de mes exigences…", () => openImport({ design }), { primary: true, icon: "upload", tip: "Le format standard : un assistant y convertit votre document, l'outil pose les blocs" }); b.dataset.swReqStart = ""; return b; })(),
+      (() => { const b = btn("Partir de l'exemple", () => store.commit("Logiciel : exemple posé", (p) => { p.software = [demoDesign()]; }), { icon: "play" }); b.dataset.swDemo = ""; return b; })()))); renderLeft(); clear(right); setGuide([]); return; }
+    if (st.step === "live" && !errs.length) { ensureBench(); if (!rack && bench) { rack = swRack(bench, design); rackHost.replaceChildren(rack.node); } } else stopBench();
+    rackHost.hidden = !rack;
+    clear(liveHost); if (st.step === "live") { if (bench) liveHost.append(bench.bar, el("div", { class: "sw-lanes-box bottom-body" }, el("p", { class: "muted small" }, "CHRONOGRAMME · les dernières secondes — une voie par décision (verte à 0, rouge à 1) et par mesure (orange), comme un analyseur logique."), bench.chart)); else liveHost.append(el("p", { class: "form-error", "data-sw-live-blocked": "" }, `Le banc attend un logiciel sans erreur : ${errs[0] ? errs[0].text : ""}`)); }
     if (!onCanvas) pageHost.replaceChildren(centre(d));
     renderLeft(); renderRight(); renderReplay(); paint(); setGuide(guide()); setStatus(ready(d, cpuOf(d)) ? "Logiciel prêt à écrire" : "Logiciel : à régler", ready(d, cpuOf(d)) ? "done" : "");
   }
