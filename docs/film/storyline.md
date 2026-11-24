@@ -72,7 +72,7 @@
 
 - **À l'écran** : Les pièces se matent d'elles-mêmes · par leurs interfaces · une pièce change, l'assemblage suit · interférences vérifiées · des modules dans l'assemblage
 - **On screen**: Parts mate themselves · through their interfaces · change a part, the assembly follows · interferences checked · modules inside the assembly
-- **Image** : plan filmé « rover »
+- **Image** : écran « fusee », puis plan filmé « rover »
 
 | Temps · time | La voix raconte | The voice tells |
 |---|---|---|
