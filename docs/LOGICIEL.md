@@ -392,3 +392,21 @@ Non vérifié : la version 2 du fichier d'exigences de JP n'entre pas au dépôt
 fabriqué. Les blocs « à venir » (protection rapide, état de charge, équilibrage, CAN, chien de garde, mémoire, pente, vraisemblance) laissent
 leurs exigences portées par rien, et c'est dit.
 
+## 4 undecies. Les broches et la carte, sans faux problème (v0.195.0)
+
+JP, 24 novembre 2026, sur une capture : « j'ai une valeur qui semble ne pas être prise en compte… que je n'arrive pas à régler pour partir la
+simulation, c'est quoi la bonne valeur ? ». Ce n'était pas la voie : le point du guide était « 14 blocs de broche sans net de la carte », et le
+tour menait au premier bloc, la voie en surbrillance. Trois défauts derrière :
+
+- **Une valeur relue d'une liaison n'est pas une broche** : les tensions et la température des CORE arrivent par la chaîne RS-485 ; le banc
+  les tient à la place (`bench` sur l'objet : son étiquette dit « Banc · … », sa fiche dit pourquoi, le guide n'en demande rien).
+- **Ce que la carte ne peut pas porter est du matériel à ajouter, pas un réglage** : `hwProblems` compte, par sorte de broche (analogique,
+  entrée, sortie), les nets du microcontrôleur encore libres ; tant qu'il en reste, relier est « à vérifier » (et le tour amène sur le net) ;
+  au-delà, c'est un conseil — « un net à ajouter dans son PCBA ; rien à régler ici : la simulation tourne ». En Novice, la fiche d'une
+  broche à relier montre le net à choisir.
+- **Une broche n'est jamais partagée** : deux broches sur la même voie ADC ou le même GPIO sont une erreur, avec la première voie libre
+  proposée (`nextPin`) ; une broche posée prend d'office la première libre.
+- **Le logiciel du BM** relie ce que la carte du BMS central porte (`AIN0` : courant du module ; `DIN0` : contact auxiliaire ; `DOUT0` :
+  bobine du contacteur ; `LED_STATUS` : DEL verte) ; les autres sorties (DEL jaune et rouge, buzzer, pompe) et le bouton d'acquittement
+  attendent des nets à ajouter au PCBA de la carte. « Mettre à jour le logiciel du BM » reprend cette version.
+

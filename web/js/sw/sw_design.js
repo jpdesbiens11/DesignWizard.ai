@@ -52,6 +52,9 @@ export function problems(d, cpu) {
   for (const [to, list] of Object.entries(into)) if (list.length > 1) say("error", `Deux fils arrivent sur la même entrée (${O[split(to)[0]].name}, « ${split(to)[1]} ») : une entrée n'écoute qu'une sortie.`, split(to)[0]);
   for (const w of W) { const c = wireCheck(d, w.from, w.to); if (c.level) say(c.level === "warn" ? "check" : "error", c.text, split(w.to)[0]); }
   for (const w of (d.wires || []).filter((x) => !W.includes(x) && byId(d)[split(x.from)[0]] && byId(d)[split(x.to)[0]])) say("error", `Un fil va vers un port qui n'existe pas (${w.from} → ${w.to}).`, split(w.to)[0]);
+  /* two pins on the same channel of the converter, or the same GPIO : the second reads what the first reads */
+  for (const [what, list, key] of [["voie ADC", objs.filter((o) => KINDS[o.kind].pin === "ain"), "channel"], ["broche GPIO", objs.filter((o) => KINDS[o.kind].pin === "din" || KINDS[o.kind].pin === "dout"), "pin"]]) {
+    const seen = new Map(); for (const o of list) { const n = cfgOf(o)[key]; if (seen.has(n)) say("error", `${o.name} et ${seen.get(n).name} sont sur la même ${what} (${n}) : donnez à ${o.name} une ${what} libre (${nextPin({ objects: objs }, KINDS[o.kind].pin)}, par exemple).`, o.id, key); else seen.set(n, o); } }
   for (const o of objs) if ((KINDS[o.kind].pin === "ain" || KINDS[o.kind].pin === "din") && !W.some((w) => split(w.from)[0] === o.id)) say("check", `${o.name} : la broche est lue par aucun bloc — un bout libre.`, o.id);
   for (const o of objs) for (const p of portsOf(o).in) if (!p.free && !into[`${o.id}.${p.key}`]) say("error", `${o.name} : l'entrée « ${p.label} » n'est reliée à rien.`, o.id);
   const L = order(d).loop; if (L.length) say("error", `Des objets se suivent en boucle (${L.map((id) => O[id].name).join(", ")}) : l'un des fils de la boucle doit porter « la valeur du pas d'avant » — un clic sur le fil.`, L[0]);
@@ -65,6 +68,8 @@ export function problems(d, cpu) {
   const u = unsure(d); if (u.length) say("check", `${u.length} valeur${u.length > 1 ? "s sont des exemples" : " est un exemple"} proposé${u.length > 1 ? "s" : ""} par l'outil : à entrer ou à confirmer avant d'écrire les fichiers.`, u[0].obj, u[0].key);
   return out;
 }
+/** The first channel of the converter (ain) or GPIO (din, dout) no pin of the design holds yet. */
+export function nextPin(d, sort) { const key = sort === "ain" ? "channel" : "pin", held = new Set(live(d).filter((o) => KINDS[o.kind].pin && (sort === "ain" ? KINDS[o.kind].pin === "ain" : KINDS[o.kind].pin !== "ain")).map((o) => cfgOf(o)[key])); let n = 0; while (held.has(n)) n++; return n; }
 /** May the files be written ? Nothing wrong, and no example left unconfirmed. */
 export const ready = (d, cpu) => !problems(d, cpu).some((p) => p.level === "error") && !unsure(d).length && live(d).length > 0;
 

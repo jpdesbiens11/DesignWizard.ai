@@ -226,6 +226,7 @@ export function hwTag(project, d, o) {
   const b = hostBoard(project, d), K = KINDS[o.kind], name = b ? b.name || b.id : "";
   if (!K || !K.pin) return b ? { state: "board", board: name, text: `${name} · CPU` } : { state: "none", board: "", text: "aucune carte dans le projet" };
   const at = K.pin === "ain" ? `ADC ${cfgOf(o).channel}` : `GPIO ${cfgOf(o).pin}`;
+  if (o.bench) return { state: "bench", board: name, text: `Banc · ${o.bench}` };      // a value the bench stands in for (read from a link, not a pin of the board)
   if (o.hw && o.hw.net) return { state: "linked", board: name, text: `${name ? `${name} · ` : ""}${o.hw.net}${o.hw.pin ? ` · ${o.hw.pin}` : ""}` };
   return { state: "missing", board: name, text: `${at} · net à relier` };
 }
@@ -233,8 +234,12 @@ export function hwTag(project, d, o) {
 export function hwProblems(project, d) {
   const b = hostBoard(project, d), out = [], pins = (d.objects || []).filter((o) => !o.off && KINDS[o.kind] && KINDS[o.kind].pin);
   if (!b) { if (pins.length) out.push({ level: "tip", text: "Aucune carte du produit avec un microcontrôleur : le logiciel n'est aligné sur aucun matériel. Le PCBA de la carte de commande l'y attachera d'office." }); return out; }
-  const nets = new Set(mcuNets(b).map((x) => x.net)), open = pins.filter((o) => !(o.hw && o.hw.net));
-  if (open.length) out.push({ level: "check", text: `${open.length} bloc${open.length > 1 ? "s" : ""} de broche sans net de la carte ${b.name || b.id} : choisissez le net dans sa fiche — l'étiquette du bloc passe au vert.`, obj: open[0].id });
+  const all = mcuNets(b), nets = new Set(all.map((x) => x.net)), open = pins.filter((o) => !(o.hw && o.hw.net) && !o.bench), used = new Set(pins.filter((o) => o.hw && o.hw.net).map((o) => o.hw.net));
+  /* by sort of pin : what the board can still give (a net of that sort no pin holds yet) — the rest is hardware to add, not a setting to change */
+  for (const [k, sort, re] of [["ain", "analogique", /^AIN/i], ["din", "d'entrée logique", /^DIN/i], ["dout", "de sortie logique", /^(DOUT|LED)/i]]) {
+    const mine = open.filter((o) => KINDS[o.kind].pin === k), free = [...new Set(all.filter((x) => re.test(x.net) && !used.has(x.net)).map((x) => x.net))], can = Math.min(mine.length, free.length);
+    if (can) out.push({ level: "check", text: `${can} broche${can > 1 ? "s" : ""} ${sort} sans net de la carte ${b.name || b.id} (libre${free.length > 1 ? "s" : ""} : ${free.join(", ")}) : choisissez le net dans sa fiche — l'étiquette du bloc passe au vert.`, obj: mine[0].id, field: "net" });
+    if (mine.length > free.length) out.push({ level: "tip", text: `La carte ${b.name || b.id} n'a pas assez de nets ${sort === "analogique" ? "analogiques" : sort} pour ce logiciel : ${mine.length - free.length} broche${mine.length - free.length > 1 ? "s" : ""} (${mine.slice(free.length).map((o) => o.name).join(", ")}) ${mine.length - free.length > 1 ? "attendent" : "attend"} un net à ajouter dans son PCBA. Rien à régler ici : la simulation tourne.`, obj: mine[free.length].id }); }
   for (const o of pins) if (o.hw && o.hw.net && !nets.has(o.hw.net)) out.push({ level: "error", text: `${o.name} : le net « ${o.hw.net} » ne touche plus le microcontrôleur de ${b.name || b.id}.`, obj: o.id });
   return out;
 }

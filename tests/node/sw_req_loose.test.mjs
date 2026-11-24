@@ -47,3 +47,11 @@ test("the screens : the counters and the tour, the questionnaire with Approve at
   assert.match(read("sw_canvas.js"), /data-sw-ask/); assert.match(read("sw_puzzle_view.js"), /data-sw-ask/);
   assert.match(read("sw_lib_ui.js"), /Un logiciel neuf, fait de ce fichier/); assert.match(read("sw.js"), /swFix\(/);
 });
+
+test("a pin is never shared : two on the same channel are an error, a new one takes the first free channel", async () => {
+  const { nextPin } = await import("../../web/js/sw/sw_design.js");
+  const d = { objects: [{ id: "a", kind: "pin_adc", params: { channel: 0 } }, { id: "b", kind: "pin_adc", params: { channel: 0 } }, { id: "c", kind: "pin_din", params: { pin: 0 } }, { id: "e", kind: "pin_dout", params: { pin: 1 } }], wires: [] };
+  assert.ok(problems(d).some((p) => p.level === "error" && p.obj === "b" && p.field === "channel" && /même voie ADC \(0\)/.test(p.text)));
+  assert.equal(nextPin(d, "ain"), 1); assert.equal(nextPin(d, "din"), 2, "digital inputs and outputs share the GPIO");
+});
+

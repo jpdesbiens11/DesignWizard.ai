@@ -84,7 +84,7 @@ test("the software tried on its board : the probe, the supply, a short sought be
   assert.equal(rest.points[1].ref, "R13", "the output read where it is easy to touch : a resistor pad, not the pin of the chip");
   assert.match(steps.find((s) => s.id === "src-adc_v").text, /sortie d'un circuit de la carte : n'y injectez rien/, "a net driven by an amplifier is never forced");
   assert.ok(notes.some((n) => /aucun net de la carte/.test(n)), "what the board does not carry is said");
-  assert.equal(touchOf(board, "DOUT0").ref, "R13"); assert.deepEqual(netOf(board, d, d.objects.find((o) => o.id === "k_drv")), { net: "DOUT0", proposed: true });
+  assert.equal(touchOf(board, "DOUT0").ref, "R13"); assert.deepEqual(netOf(board, d, d.objects.find((o) => o.id === "k_drv")), { net: "DOUT0", proposed: false }, "linked in the software of the BM");
   /* the order protects the board ; a reading out of its band stops the test */
   const nb = { ticks: Object.fromEntries(ids.slice(0, ids.indexOf("power")).map((k) => [k, "t"])), readings: { power: 0.04 } }, S = hilState(steps, nb);
   assert.equal(S[ids.indexOf("power")].done, true); assert.equal(S[ids.indexOf("flash")].open, true); assert.equal(S[ids.indexOf("flash") + 1].open, false);
