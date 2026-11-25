@@ -74,17 +74,18 @@ test("the « IA » button of the Logiciel group : its own round trip, the prompt
 });
 
 test("the software tried on its board : the probe, the supply, a short sought before the power, the program loaded, then each case read — expected by the model", () => {
-  const P = bmProject(), d = P.software[0], { board, steps, notes } = hilSteps(P, d); assert.equal(board.id, "BMS-CENTRAL-PCBA");
+  const P = bmProject(), d = P.software[0], { board, steps, notes } = hilSteps(P, d); assert.equal(board.id, "BMS-CENTRAL-3X3");
   const ids = steps.map((s) => s.id); for (const k of ["safety", "probe", "set-supply", "con-supply", "guard", "power", "flash", "off"]) assert.ok(ids.includes(k), k);
   assert.ok(ids.indexOf("guard") < ids.indexOf("power") && ids.indexOf("power") < ids.indexOf("flash"), "the short sought BEFORE the power, the program after it");
-  assert.deepEqual(steps.find((s) => s.id === "probe").points.map((p) => p.ref), ["J4", "J4", "J4"]); assert.deepEqual(steps.find((s) => s.id === "con-supply").points.map((p) => `${p.ref}.${p.pin}`)[1], "J1.1");
+  assert.deepEqual(steps.find((s) => s.id === "probe").points.map((p) => p.ref), ["J6", "J6", "J6"]); assert.deepEqual(steps.find((s) => s.id === "con-supply").points.map((p) => `${p.ref}.${p.pin}`)[1], "J1.1");
   assert.match(steps.find((s) => s.id === "set-supply").text, /12 V/);
-  const rest = steps.find((s) => s.id === "read-rest-k_drv"), past = steps.find((s) => s.id === "read-adc_v-ov-k_drv");
-  assert.deepEqual([rest.expect.lo, rest.expect.unit], [2.6, "V"], "at rest the contactor is commanded : 3,3 V on its net"); assert.deepEqual([past.expect.lo, past.expect.hi], [0, 0.4], "past the over-voltage the software opens it : 0 V");
-  assert.equal(rest.points[1].ref, "R13", "the output read where it is easy to touch : a resistor pad, not the pin of the chip");
-  assert.match(steps.find((s) => s.id === "src-adc_v").text, /sortie d'un circuit de la carte : n'y injectez rien/, "a net driven by an amplifier is never forced");
+  const rest = steps.find((s) => s.id === "read-rest-k_drv"), past = steps.find((s) => s.id === "read-adc_i-over_i-k_drv");
+  assert.deepEqual([rest.expect.lo, rest.expect.unit], [2.6, "V"], "at rest the contactor is commanded : 3,3 V on its net"); assert.deepEqual([past.expect.lo, past.expect.hi], [2.6, 3.6], "above the sustained current the module derates : the contactor stays closed");
+  assert.equal(rest.points[1].ref, "R20", "the output read where it is easy to touch : a resistor pad, not the pin of the chip");
+  assert.ok(!steps.some((s) => s.id === "src-adc_v") && notes.some((n) => /relue de la chaîne RS-485.*aucune broche de la carte ne la porte/.test(n)), "a value read from the chain is never injected on a pin");
+  assert.ok(!notes.some((n) => /^Bouton/.test(n)) || notes.some((n) => /Bouton : acquitter le défaut : aucun net/.test(n)), "the button is not given the net of the wake-up");
   assert.ok(notes.some((n) => /aucun net de la carte/.test(n)), "what the board does not carry is said");
-  assert.equal(touchOf(board, "DOUT0").ref, "R13"); assert.deepEqual(netOf(board, d, d.objects.find((o) => o.id === "k_drv")), { net: "DOUT0", proposed: false }, "linked in the software of the BM");
+  assert.equal(touchOf(board, "DOUT0").ref, "R20"); assert.deepEqual(netOf(board, d, d.objects.find((o) => o.id === "k_drv")), { net: "DOUT0", proposed: false }, "linked in the software of the BM"); assert.equal(netOf(board, d, d.objects.find((o) => o.id === "led_y")), null, "never DOUT1 (the precharge) nor LED_STATUS (the green LED) by its number");
   /* the order protects the board ; a reading out of its band stops the test */
   const nb = { ticks: Object.fromEntries(ids.slice(0, ids.indexOf("power")).map((k) => [k, "t"])), readings: { power: 0.04 } }, S = hilState(steps, nb);
   assert.equal(S[ids.indexOf("power")].done, true); assert.equal(S[ids.indexOf("flash")].open, true); assert.equal(S[ids.indexOf("flash") + 1].open, false);

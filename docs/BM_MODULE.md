@@ -935,6 +935,37 @@ CTN ↔ busbar ne sont pas encore des interfaces appariées, d'où les « interf
 **Pas encore dessiné** : la rondelle ondulée sous chaque plage LV côté + ; les crochets de la plaque clipsée ; la plage crénelée et les trous de la carte où se brasent les languettes et les queues (à placer dans le PCBA) ; le chant du cuivre aux
 petits bouts, nu ; la dépouille du support de cellules ; la carte BMS centrale et ses fils, la précharge, la cavité ou la station.
 
+## Itération 16 — la carte du BMS central, 3 po × 3 po
+
+JP, 25 novembre 2026 : « une nouvelle carte BMS de 3 po × 3 po au plus, au fond du BM dans le couvercle du bas, avec le connecteur et le raccord des
+busbars vers les CORE… la chaîne RS-485 des CORE est collectée par cette carte ; l'extérieur communique et prend ou envoie l'énergie, gérée et
+autorisée par elle ; en cas d'urgence elle ouvre le contacteur au bout du BM… s'aligner sur les façons de faire les plus à jour de l'industrie
+automobile et les citer ». Choix de JP, par menu : **CAN FD isolé** vers le véhicule et la borne ; **contacteur + précharge + pyrofusible** ;
+**shunt sur la barre de retour** ; **le module ou le 12 V, le premier présent** ; puis, pour la loger, **le connecteur d'échange monté sur la carte**.
+
+- **La carte** (`tools/gen_demo_bms3.mjs`, `web/js/demo/demo_bms3.js`, `BMS-CENTRAL-3X3`) : 76,2 × 76,2 mm, 4 couches, 29 blocs, 125
+  composants. Deux sources jointes par un bloc nouveau, « Première source présente » (`power_or` : deux diodes Schottky en OU — un contrôleur de
+  diode idéale perdrait moins, et la carte le dit) ; le réveil (WAKE) et la mesure de la tension du module ; la chaîne RS-485 isolée des 8 CORE,
+  inchangée ; le shunt de la barre lu par ses deux fils Kelvin (bloc `shunt` étendu : `ext`, gain jusqu'à 200) ; trois commandes sur le 12 V du
+  connecteur — le contacteur, la précharge, l'amorce du pyrofusible — et la relecture du contact auxiliaire ; le CAN FD avec sa propre
+  alimentation isolée et son propre isolateur ; le microcontrôleur, sa mémoire, sa programmation, ses points de test.
+- **Les usages de l'automobile suivis**, cités dans Logiciel › Références : des cartes de surveillance par module en chaîne isolée et un
+  contrôleur central, avec des ports CAN FD et des pilotes de contacteurs (Electronic Design, 2023) ; la séquence de précharge — contacteur
+  négatif, précharge, contacteur positif à 90–95 % de la tension (TI SLVAF35A § 3) ; un pyrofusible boulonné sur les barres et un joint au
+  shunt dans le manuel de service de Tesla (Model 3) — ce qui indique une mesure par shunt, que la page ne décrit pas. **L'architecture de Lucid
+  n'a été décrite par aucune source lue.**
+- **Ce que la carte ne fait pas encore** : le routeur de l'outil laisse **12 liaisons sur 274** à 76,2 × 76,2 mm et 4 couches (plus de passes ou
+  une grille plus fine n'ont pas fait mieux) — à router à la main, ou en 6 couches dans un outil de CAO ; aucune erreur électrique, et les seules
+  erreurs du contrôle de dessin sont ces liaisons. Les composants sont ceux des séries génériques de l'outil : la fiche du composant monté fait foi.
+- **Le logiciel du BM tourne sur elle** (`board: "BMS-CENTRAL-3X3"`) : courant du module sur `AIN1` (le shunt), contact auxiliaire sur `DIN1`,
+  bobine du contacteur sur `DOUT0`, DEL verte sur `LED_STATUS` ; les valeurs relues de la chaîne restent au banc. **Le guide dit les écarts dans
+  les deux sens** : ce que la carte porte et que le logiciel ne commande pas encore (`DOUT1` — PRECHARGE, `DOUT2` — PYRO, `DIN0` — WAKE,
+  `AIN0` — tension du module) et ce que le logiciel commande et que la carte ne porte pas (DEL jaune et rouge, buzzer, pompe, bouton
+  d'acquittement). Un net qui porte une fonction n'est jamais proposé à une autre broche (`netRole`), ni dans l'essai sur la vraie carte.
+- **La carte de 85 × 62 mm de l'itération 14 reste** : le concept 2 la loge dans son couvercle du fond agrandi. La place de la nouvelle carte —
+  le connecteur d'échange soudé dessus, la carte formant le fond du couvercle, composants vers l'intérieur, les broches HV passant par des
+  découpes — est l'**itération suivante** de la mécanique.
+
 **Non vérifié** : l'échauffement réel du cuivre dans le module fermé (le modèle est une barre seule à l'air libre) ; la
 chaleur des cellules elles-mêmes à 45 A (la fiche donne ≤ 8 mΩ à 1 kHz à l'expédition, pas la résistance en courant
 continu) ; la tenue des plis du flex à l'assemblage ; le formage des cônes dans le polyimide ; la mesure par le cône (aucun essai) ;

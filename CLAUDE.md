@@ -159,6 +159,10 @@ premier) ; on descend « Prochaines actions » dans l'ordre ; ce qui est fait se
 plus bas, avec sa version. Une revue de la liste se fait à chaque reprise de séance.
 
 **Prochaines actions** (dans l'ordre)
+00. **BM — loger la carte du BMS central 3 po × 3 po** (JP, 25 novembre, par menu : « Connecteur d'échange monté sur la carte ») — la carte
+   (v0.198.0, `BMS-CENTRAL-3X3`) forme le fond du couvercle du bas, le connecteur d'échange soudé dessous, composants vers l'intérieur, les broches HV
+   par des découpes ; le contacteur et les barres remontent d'autant ; puis le logiciel commande la précharge et le pyrofusible (séquence de TI
+   SLVAF35A § 3) et lit le réveil et la tension du module ; enfin les 12 liaisons que le routeur laisse.
 0 bis. **Logiciel en 3D par couches** (JP, 24 novembre : « garde l'idée du 3D en mémoire, c'est super intéressant pour un concepteur mécanique ») —
    les pièces du casse-tête (v0.191.0) empilées en couches comme un vrai objet : capteurs en bas, décisions au milieu, actions en haut, une colonne par
    lien, la vue qui tourne comme une pièce. À proposer par menu quand la vue 2D est éprouvée.

@@ -27,9 +27,12 @@ export function touchOf(board, net) {
 const netByName = (board, re) => ((board && board.nets) || []).find((n) => re.test(n.name)) || null;
 /** The net of a pin block : the one linked in its sheet, or one proposed by its name (AIN<channel>, DIN<n>, DOUT<n>, LED…). → { net, proposed } | null */
 export function netOf(board, d, o) {
-  if (o.hw && o.hw.net) return { net: o.hw.net, proposed: false }; const K = KINDS[o.kind], c = cfgOf(o), objs = (d.objects || []).filter((q) => KINDS[q.kind] && KINDS[q.kind].pin === K.pin), i = objs.indexOf(o);
+  if (o.hw && o.hw.net) return { net: o.hw.net, proposed: false }; if (o.bench) return null; /* a value read from a link has no pin to propose */ const K = KINDS[o.kind], c = cfgOf(o), objs = (d.objects || []).filter((q) => KINDS[q.kind] && KINDS[q.kind].pin === K.pin), i = objs.indexOf(o);
   const names = ((board && board.nets) || []).map((n) => n.name), want = K.pin === "ain" ? [`AIN${c.channel}`, `AIN${i}`] : K.pin === "din" ? [`DIN${i}`] : o.device === "led" ? ["LED_STATUS", `DOUT${i}`] : [`DOUT${i}`];
-  const hit = want.find((w) => names.includes(w)); return hit ? { net: hit, proposed: true } : null;
+  /* a net the board gives another function (PRECHARGE, PYRO, WAKE) is never proposed by its number : the pin waits for its own net */
+  const owned = (net) => ((board && board.blocks) || []).some((x) => x.template !== "mcu" && Object.values(x.connect || {}).includes(net) && !(o.device === "led" && x.template === "led"));
+  const held = (net) => (d.objects || []).some((q) => q !== o && q.hw && q.hw.net === net);      /* and never a net another pin of the software holds */
+  const hit = want.find((w) => names.includes(w) && !owned(w) && !held(w)); return hit ? { net: hit, proposed: true } : null;
 }
 /** The pin voltage, in mV, that makes an analog input read a value (the inverse of its scaling, sw/sw_objects.js analog_in). */
 const pinMv = (m, v) => { const c = cfgOf(m); return Math.round(((v - c.offset) * c.den) / c.num); };
@@ -53,7 +56,8 @@ export function hilSteps(project, d) {
 
   /* the inputs and outputs of the software on this board */
   const objs = (d.objects || []).filter((o) => !o.off && KINDS[o.kind]), W = liveWires(d), L0 = liveStart(d), rest = { ...L0.set }, ins = [], outs = [];
-  for (const i of L0.inputs) { const o = objs.find((x) => x.id === i.id), n = netOf(board, d, o), t = n && at(n.net), m = i.kind === "analog" ? objs.find((x) => x.id === split((W.find((w) => w.from === `${o.id}.counts`) || { to: "" }).to)[0]) : null;
+  for (const i of L0.inputs) { const o0 = objs.find((x) => x.id === i.id); if (o0 && o0.bench) { notes.push(`${o0.name} : ${o0.bench} — aucune broche de la carte ne la porte ; sur la vraie carte, elle vient des cartes de CORE (ou d'un simulateur de la liaison), elle reste au repos pendant l'essai.`); continue; }
+    const o = o0, n = netOf(board, d, o), t = n && at(n.net), m = i.kind === "analog" ? objs.find((x) => x.id === split((W.find((w) => w.from === `${o.id}.counts`) || { to: "" }).to)[0]) : null;
     if (!t) { notes.push(`${o.name} : aucun net de la carte ne lui correspond — elle reste au repos pendant l'essai.`); continue; } ins.push({ i, o, m, n, t }); }
   for (const o of objs.filter((x) => KINDS[x.kind].pin === "dout")) { const n = netOf(board, d, o), t = n && at(n.net); if (!t) { notes.push(`${o.name} : aucun net de la carte ne lui correspond — elle n'est pas relevée.`); continue; } outs.push({ o, n, t }); }
   const say = (x) => `${x.n.net}${x.n.proposed ? " (net proposé par son nom : à confirmer dans la fiche du bloc)" : ""}`;

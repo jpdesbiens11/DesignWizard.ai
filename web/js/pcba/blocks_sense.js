@@ -23,10 +23,23 @@ const ntc = { id: "ntc", name: "Mesure de température par CTN", category: "Mesu
   } };
 
 const shunt = { id: "shunt", name: "Mesure de courant par shunt", category: "Mesurer", function: "Mesurer le courant jusqu'à {imax} A", desc: "Résistance de mesure quatre fils et amplificateur de gain 20.",
-  params: { imax: P("Courant maximal", "A", 10, 0.1, 60), vbus: P("Tension de la ligne", "V", 24, 0, 80), vdd: P("Alimentation de la mesure", "V", 3.3, 2.7, 5) },
+  params: { imax: P("Courant maximal", "A", 10, 0.1, 600), vbus: P("Tension de la ligne", "V", 24, 0, 80), vdd: P("Alimentation de la mesure", "V", 3.3, 2.7, 5),
+    ext: P("Shunt hors carte, sur une barre", "", 0, 0, 1, { options: [0, 1], labels: ["non", "oui"] }), gain: P("Gain de l'amplificateur", "", 20, 20, 200, { options: [20, 50, 100, 200] }) },
   build(p) {
-    const b = builder(), gain = 20, r = eSeries(0.9 * p.vdd / (gain * p.imax), "E24", "down"), power = p.imax * p.imax * r, line = pw(p.vbus, p.imax);
-    b.part("RS", "R-SHUNT-2512", `${ohm(r)} 1 %`, "Convertit le courant en tension").part("U", "U-CSA-SOT23-5", "gain 20", "Amplifie la tension du shunt", { near: "RS" }).part("C", "C-0603", "100 nF", "Découplage", { near: "U" });
+    const ext = +p.ext === 1, gain = +p.gain || 20, b = builder(), r = eSeries(0.9 * p.vdd / (gain * p.imax), "E24", "down"), power = p.imax * p.imax * r, line = pw(p.vbus, ext ? 0.001 : p.imax);
+    if (ext) {      // the shunt is a part of the busbar (choix de JP, 25 novembre 2026 : « shunt sur la barre de retour ») : the board reads its two Kelvin leads through a filter
+      b.part("U", "U-CSA-SOT23-5", `gain ${gain}`, "Amplifie la tension du shunt de la barre").part("C", "C-0603", "100 nF", "Découplage", { near: "U" });
+      b.part("RP", "R-0603", "10 Ω", "Filtre différentiel d'entrée", { near: "U" }).part("RN", "R-0603", "10 Ω", "Filtre différentiel d'entrée", { near: "U" }).part("CD", "C-0603", "100 nF", "Filtre différentiel d'entrée", { near: "U" });
+      b.part("RF", "R-0603", "100 Ω", "Filtre de sortie", { near: "U" }).part("CF", "C-0603", "10 nF", "Filtre de sortie", { near: "RF" });
+      b.net("IN", ["RP.1"], line).net("LOAD", ["RN.1"], line).net("SP", ["RP.2", "CD.1", "U.IN+"]).net("SN", ["RN.2", "CD.2", "U.IN-"]).net("VDD", ["U.VS", "C.1"], pw(p.vdd, 0.005)).net("GND", ["U.GND", "C.2", "CF.2"], GND).net("AMP", ["U.OUT", "RF.1"]).net("OUT", ["RF.2", "CF.1"]);
+      b.port("IN", "IN", "in", "SHUNT_P").port("LOAD", "LOAD", "in", "SHUNT_N").port("VDD", "VDD", "power_in", railName(p.vdd)).port("GND", "GND", "gnd", "GND").port("OUT", "OUT", "out", "AIN", { pool: true });
+      b.calc("Résistance de mesure", r * 1000, "mΩ", `Le shunt de la barre : R = 0,9 × Vdd / (gain × Imax) = 0,9 × ${fr(p.vdd)} / (${gain} × ${fr(p.imax)}) = ${ohm(0.9 * p.vdd / (gain * p.imax))} → ${ohm(r)} (à choisir chez le fabricant du shunt).`);
+      b.calc("Puissance dans le shunt", power, "W", `P = Imax² R = ${fr(p.imax)}² × ${ohm(r)} = ${fr(power)} W, dans la barre : le shunt est une pièce de la barre de retour, pas de la carte.`);
+      b.calc("Pleine échelle", gain * r * p.imax, "V", `Vs = gain × R × Imax = ${gain} × ${ohm(r)} × ${fr(p.imax)} A = ${fr(gain * r * p.imax)} V.`);
+      b.note("Les deux fils Kelvin partent de l'intérieur des pastilles du shunt, torsadés, jusqu'au connecteur de la carte.").note("Le filtre différentiel au plus près de l'amplificateur.");
+      return b.out();
+    }
+    b.part("RS", "R-SHUNT-2512", `${ohm(r)} 1 %`, "Convertit le courant en tension").part("U", "U-CSA-SOT23-5", `gain ${gain}`, "Amplifie la tension du shunt", { near: "RS" }).part("C", "C-0603", "100 nF", "Découplage", { near: "U" });
     b.part("RF", "R-0603", "100 Ω", "Filtre de sortie", { near: "U" }).part("CF", "C-0603", "10 nF", "Filtre de sortie", { near: "RF" });
     b.net("IN", ["RS.1", "U.IN+"], line).net("LOAD", ["RS.2", "U.IN-"], line).net("VDD", ["U.VS", "C.1"], pw(p.vdd, 0.005)).net("GND", ["U.GND", "C.2", "CF.2"], GND).net("AMP", ["U.OUT", "RF.1"]).net("OUT", ["RF.2", "CF.1"]);
     b.port("IN", "IN", "power_in", railName(p.vbus)).port("LOAD", "LOAD", "power_out", `${railName(p.vbus)}_MES`).port("VDD", "VDD", "power_in", railName(p.vdd)).port("GND", "GND", "gnd", "GND").port("OUT", "OUT", "out", "AIN", { pool: true });

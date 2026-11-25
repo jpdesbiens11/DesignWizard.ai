@@ -230,6 +230,10 @@ export function hwTag(project, d, o) {
   if (o.hw && o.hw.net) return { state: "linked", board: name, text: `${name ? `${name} · ` : ""}${o.hw.net}${o.hw.pin ? ` · ${o.hw.pin}` : ""}` };
   return { state: "missing", board: name, text: `${at} · net à relier` };
 }
+/** What a net of a board does : the name of the block of the board that drives or reads it (« PRECHARGE », « WAKE »), or "" — so that a LED is
+    not linked to the squib of a pyrofuse because its net looked free. */
+/* (the microcontroller touches them all : it says nothing) */
+export const netRole = (board, net) => { const bl = ((board && board.blocks) || []).find((x) => x.template !== "mcu" && Object.values(x.connect || {}).includes(net)); return bl ? String((bl.params && bl.params.name) || bl.name || bl.template) : ""; };
 /** What the hardware alignment asks, for the guide. → [{ level, text, obj }] */
 export function hwProblems(project, d) {
   const b = hostBoard(project, d), out = [], pins = (d.objects || []).filter((o) => !o.off && KINDS[o.kind] && KINDS[o.kind].pin);
@@ -237,8 +241,10 @@ export function hwProblems(project, d) {
   const all = mcuNets(b), nets = new Set(all.map((x) => x.net)), open = pins.filter((o) => !(o.hw && o.hw.net) && !o.bench), used = new Set(pins.filter((o) => o.hw && o.hw.net).map((o) => o.hw.net));
   /* by sort of pin : what the board can still give (a net of that sort no pin holds yet) — the rest is hardware to add, not a setting to change */
   for (const [k, sort, re] of [["ain", "analogique", /^AIN/i], ["din", "d'entrée logique", /^DIN/i], ["dout", "de sortie logique", /^(DOUT|LED)/i]]) {
-    const mine = open.filter((o) => KINDS[o.kind].pin === k), free = [...new Set(all.filter((x) => re.test(x.net) && !used.has(x.net)).map((x) => x.net))], can = Math.min(mine.length, free.length);
-    if (can) out.push({ level: "check", text: `${can} broche${can > 1 ? "s" : ""} ${sort} sans net de la carte ${b.name || b.id} (libre${free.length > 1 ? "s" : ""} : ${free.join(", ")}) : choisissez le net dans sa fiche — l'étiquette du bloc passe au vert.`, obj: mine[0].id, field: "net" });
+    const mine = open.filter((o) => KINDS[o.kind].pin === k), left = [...new Set(all.filter((x) => re.test(x.net) && !used.has(x.net)).map((x) => x.net))], free = left.filter((n) => !netRole(b, n)), owned = left.filter((n) => netRole(b, n)), can = Math.min(mine.length, free.length);
+    /* a net the board gives a function (PRECHARGE, PYRO, WAKE) waits for the block of the software that does it — never for any free pin */
+    if (owned.length) out.push({ level: "tip", text: `La carte ${b.name || b.id} porte ${owned.length > 1 ? "des nets" : "un net"} ${sort} que le logiciel ne lit ni ne commande encore : ${owned.map((n) => `${n} — ${netRole(b, n)}`).join(", ")}. Le bloc qui le fait est à ajouter au logiciel.` });
+    if (can) out.push({ level: "check", text: `${can} broche${can > 1 ? "s" : ""} ${sort} sans net de la carte ${b.name || b.id} (libre${free.length > 1 ? "s" : ""} : ${free.join(", ")}) : choisissez le net dans sa fiche, s'il porte ce que la broche fait — l'étiquette du bloc passe au vert.`, obj: mine[0].id, field: "net" });
     if (mine.length > free.length) out.push({ level: "tip", text: `La carte ${b.name || b.id} n'a pas assez de nets ${sort === "analogique" ? "analogiques" : sort} pour ce logiciel : ${mine.length - free.length} broche${mine.length - free.length > 1 ? "s" : ""} (${mine.slice(free.length).map((o) => o.name).join(", ")}) ${mine.length - free.length > 1 ? "attendent" : "attend"} un net à ajouter dans son PCBA. Rien à régler ici : la simulation tourne.`, obj: mine[free.length].id }); }
   for (const o of pins) if (o.hw && o.hw.net && !nets.has(o.hw.net)) out.push({ level: "error", text: `${o.name} : le net « ${o.hw.net} » ne touche plus le microcontrôleur de ${b.name || b.id}.`, obj: o.id });
   return out;

@@ -126,7 +126,7 @@ test("the software is aligned on the board of the project : its host board, the 
   assert.equal(hwTag(P, d, d.objects.find((o) => o.id === "adc_i")).state, "linked"); assert.ok(!hwProblems(P, d).some((x) => x.level === "check" || x.level === "error"), "the software of the BM : nothing to fix on the board, what it lacks is a tip");
   assert.ok(hwProblems(P, d).some((x) => x.level === "tip" && /n'a pas assez de nets de sortie logique.*Buzzer/.test(x.text)), "outputs the board cannot carry : hardware to add, said");
   const pin = d.objects.find((o) => o.id === "adc_i"); delete pin.hw; assert.equal(hwTag(P, d, pin).state, "missing"); assert.equal(hwTag(P, d, d.objects.find((o) => o.kind === "limit")).state, "board");
-  assert.ok(hwProblems(P, d).some((x) => x.level === "check" && /net de la carte/.test(x.text)));
+  assert.ok(hwProblems(P, d).some((x) => x.level === "tip" && /AIN1 — /.test(x.text)), "a net the board gives a function waits for the block that does it — never for any free pin");
   pin.hw = { board: b.id, net: nets[0].net, pin: nets[0].pin }; assert.equal(hwTag(P, d, pin).state, "linked"); pin.hw.net = "NO-SUCH-NET"; assert.ok(hwProblems(P, d).some((x) => x.level === "error"));
   assert.equal(hostBoard({ boards: [] }, d), null);
 });

@@ -149,5 +149,22 @@ const battery = { id: "battery", name: "Pile", category: "Alimenter", function: 
     b.note("Le support est détrompé : la pile ne s'y met que dans un sens — le + vers le haut.");
     return b.out();
   } };
-export const POWER_BLOCKS = [conn_power, input_protection, buck, ldo, half_bridge, load_switch, balance, battery];
+/* The first source present of two (choix de JP, 25 novembre 2026, pour le BMS central du module : « le module ou le 12 V, le premier présent ») :
+   two Schottky diodes join the two supplies on one rail — whichever is higher feeds the board, the other is blocked. The drop of a diode
+   is lost ; an ideal-diode controller would lose less, and the block says so. */
+const power_or = { id: "power_or", name: "Première source présente", category: "Alimenter", function: "Prendre la plus haute de {va} V et {vb} V", desc: "Deux diodes Schottky en OU sur un même rail, un réservoir.",
+  params: { va: P("Tension de la source A", "V", 34, 5, 60), vb: P("Tension de la source B", "V", 12, 5, 60), i: P("Courant", "A", 0.5, 0.05, 2) },
+  build(p) {
+    const b = builder();
+    b.part("DA", "D-SCH-SMA", "60 V 2 A", "Laisse passer la source A, bloque le retour vers elle").part("DB", "D-SCH-SMA", "60 V 2 A", "Laisse passer la source B, bloque le retour vers elle", { near: "DA" });
+    b.part("C", "C-1206", "1 µF 100 V", "Réservoir du rail commun", { near: "DA" });
+    b.net("SRC_A", ["DA.A"], pw(p.va, p.i)).net("SRC_B", ["DB.A"], pw(p.vb, p.i)).net("OUT", ["DA.K", "DB.K", "C.1"], pw(Math.max(p.va, p.vb), p.i)).net("GND", ["C.2"], GND);
+    b.port("SRC_A", "SRC_A", "power_in", railName(p.va)).port("SRC_B", "SRC_B", "power_in", railName(p.vb)).port("OUT", "OUT", "power_out", "VSYS").port("GND", "GND", "gnd", "GND");
+    b.calc("Chute d'une diode", 0.45, "V", `Une Schottky de 2 A perd environ 0,45 V à ${fr(p.i)} A (valeur typique) : le rail commun vaut la plus haute des deux sources, moins cette chute.`);
+    b.calc("Pertes d'une diode", 0.45 * p.i, "W", `P = 0,45 V × ${fr(p.i)} A = ${fr(0.45 * p.i)} W.`);
+    b.note("Un contrôleur de diode idéale (MOSFET piloté) perdrait dix fois moins : à préférer quand le courant monte.").note("Le rail commun n'alimente que la logique : les charges du 12 V (bobines) restent sur le 12 V.");
+    return b.out();
+  } };
+
+export const POWER_BLOCKS = [conn_power, input_protection, buck, ldo, half_bridge, load_switch, balance, battery, power_or];
 export { farad };

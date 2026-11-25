@@ -8,8 +8,8 @@ const OBJ = (id, kind, name, x, y, params = {}) => ({ id, kind, name, x, y, para
 /* a value the bench stands in for : read from the chain of CORE boards (RS-485), not from a pin of the central board */
 const CHAIN = "relue de la chaîne RS-485 des cartes de CORE";
 const BENCH = (o, why = CHAIN) => ({ ...o, bench: why });
-/* a pin the central board has (demo/demo_bms.js : U9 is its microcontroller) */
-const HW = (o, net, pin) => ({ ...o, hw: { board: "BMS-CENTRAL-PCBA", net, pin } });
+/* a pin the central board has (demo/demo_bms3.js, the 3 in × 3 in board : U11 is its microcontroller ; AIN1 the amplifier of the shunt, DIN1 the auxiliary contact, DOUT0 the coil of the contactor) */
+const HW = (o, net, pin) => ({ ...o, hw: { board: "BMS-CENTRAL-3X3", net, pin } });
 const W = (pairs) => pairs.map(([from, to, delay]) => ({ from, to, ...(delay ? { delay: true } : {}) }));
 /** counts of a 12-bit converter under 3.3 V for a voltage at its pin, in mV */
 const counts = (mv) => Math.round((mv * 4095) / 3300);
@@ -18,7 +18,7 @@ const amps = (a) => counts((a * 1000 + 660000) / 400);
 
 /** The software of the module, new each time. */
 export function moduleDesign(cpu = "tms570ls1224_pge") {
-  return { id: "BM-SW", name: "Logiciel du BMS central — module BM 8s8p", cpu, period: 10,
+  return { id: "BM-SW", name: "Logiciel du BMS central — module BM 8s8p", cpu, period: 10, board: "BMS-CENTRAL-3X3",      // it runs on the 3 in × 3 in board (sw/sw_blocks.js hostBoard)
     objects: [
       BENCH(OBJ("adc_v", "pin_adc", "Banc : la plus haute tension de CORE (relue de la chaîne)", 20, 20, { channel: 0 })), OBJ("v_max", "analog_in", "Highest CORE voltage", 230, 10, { unit: "mV", num: 2, den: 1, lo: 2500, hi: 4500, n: 4 }),
       OBJ("hvw", "limit", "High voltage — watch", 470, -60, { unit: "mV", above: 1, trip: 4180, clear: 4120, delay: 200 }),
@@ -29,7 +29,7 @@ export function moduleDesign(cpu = "tms570ls1224_pge") {
       BENCH(OBJ("adc_t", "pin_adc", "Banc : la plus haute température (relue de la chaîne)", 20, 170, { channel: 1 })), OBJ("t_max", "analog_in", "Highest temperature", 230, 160, { unit: "0.1 °C", num: 1, den: 1, lo: 0, hi: 1500, n: 4 }),
       OBJ("hot", "limit", "Hot — derate", 470, 140, { unit: "0.1 °C", above: 1, trip: 600, clear: 550, delay: 1000 }), OBJ("ot", "limit", "Over-temperature", 470, 250, { unit: "0.1 °C", above: 1, trip: 750, clear: 700, delay: 500 }),
       OBJ("cool", "limit", "Cooling on — 45 °C", 470, 320, { unit: "0.1 °C", above: 1, trip: 450, clear: 380, delay: 500 }),
-      HW(OBJ("adc_i", "pin_adc", "Voie : courant du module (capteur de la barre de retour)", 20, 380, { channel: 2 }), "AIN0", "U9.PA0"), OBJ("i_mod", "analog_in", "Module current", 230, 370, { unit: "mA", num: 400, den: 1, offset: -660000, lo: -500000, hi: 500000, n: 2 }),
+      HW(OBJ("adc_i", "pin_adc", "Voie : courant du module (capteur de la barre de retour)", 20, 380, { channel: 2 }), "AIN1", "U11.PA1"), OBJ("i_mod", "analog_in", "Module current", 230, 370, { unit: "mA", num: 400, den: 1, offset: -660000, lo: -500000, hi: 500000, n: 2 }),
       OBJ("over_i", "limit", "Above the sustained current — derate", 470, 380, { unit: "mA", above: 1, trip: 95000, clear: 90000, delay: 2000 }),
       OBJ("over_ic", "limit", "Charge current too high — derate", 470, 440, { unit: "mA", above: 0, trip: -95000, clear: -90000, delay: 2000 }),
       OBJ("i_watch", "logic", "Current to watch (discharge or charge)", 700, 400, { op: "OR" }),
@@ -38,10 +38,10 @@ export function moduleDesign(cpu = "tms570ls1224_pge") {
       OBJ("v_fault", "logic", "Voltage fault (over or under)", 700, -60, { op: "OR" }), OBJ("v_watch", "logic", "Voltage to watch (high or low)", 700, -200, { op: "OR" }),
       OBJ("watch", "logic", "To watch : voltage or temperature", 900, -100, { op: "OR" }),
       OBJ("latch", "fault_latch", "Fault latch", 700, 60), OBJ("module", "module_state", "Module state", 900, 260, { t_lost: 500, t_emerg: 1000 }),
-      OBJ("k", "contactor", "Contactor", 1130, 260, { t_fb: 50 }), HW(OBJ("k_fb", "pin_din", "Entrée : contact auxiliaire", 900, 450, { pin: 3 }), "DIN0", "U9.PC13"), HW(OBJ("k_drv", "pin_dout", "Sortie : bobine du contacteur", 1360, 270, { pin: 2 }), "DOUT0", "U9.PB3"),
+      OBJ("k", "contactor", "Contactor", 1130, 260, { t_fb: 50 }), HW(OBJ("k_fb", "pin_din", "Entrée : contact auxiliaire", 900, 450, { pin: 3 }), "DIN1", "U11.PC14"), HW(OBJ("k_drv", "pin_dout", "Sortie : bobine du contacteur", 1360, 270, { pin: 2 }), "DOUT0", "U11.PB3"),
       OBJ("lamp", "state_lamp", "General state lamp", 1130, 40),
       OBJ("bal", "balancing", "Passive balancing (per CORE)", 700, 640, { v_min: 3900, delta: 20, hyst: 10 }),
-      { ...HW(OBJ("led_g", "pin_dout", "LED verte — état bon", 1360, -60, { pin: 7 }), "LED_STATUS", "U9.PA15"), device: "led" }, { ...OBJ("led_y", "pin_dout", "LED jaune — à surveiller", 1360, 20, { pin: 8 }), device: "led" },
+      { ...HW(OBJ("led_g", "pin_dout", "LED verte — état bon", 1360, -60, { pin: 7 }), "LED_STATUS", "U11.PA15"), device: "led" }, { ...OBJ("led_y", "pin_dout", "LED jaune — à surveiller", 1360, 20, { pin: 8 }), device: "led" },
       { ...OBJ("led_r", "pin_dout", "LED rouge — limite dépassée", 1360, 100, { pin: 9 }), device: "led" }, { ...OBJ("buzz", "pin_dout", "Buzzer — alarme", 1360, 180, { pin: 10 }), device: "buzzer" },
       { ...OBJ("pump", "pin_dout", "Pompe de refroidissement (WEG)", 1360, 360, { pin: 11 }), device: "pump" }],
     wires: W([["adc_v.counts", "v_max.counts"], ["v_max.value", "ov.value"], ["v_max.value", "hvw.value"], ["adc_vmin.counts", "v_min.counts"], ["v_min.value", "uv.value"], ["v_min.value", "lvw.value"],
