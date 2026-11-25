@@ -22,7 +22,9 @@ test("the block « Passive balancing » : on above the floor voltage and the del
 
 test("the charge of the 8 CORE : from 3,0 V at rest, 0,1 C then 2 C, slower while a resistor bleeds, constant voltage at 4,2 V — and at the end balanced", () => {
   assert.equal(ocv(0), 2.5); assert.equal(ocv(1), 4.2); assert.ok(Math.abs(ocv(socAt(3.0)) - 3.0) < 1e-9, "0 % = 2,5 V, 100 % = 4,2 V");
-  const S = balanceSpec(moduleDesign()), B = balanceStart(S); assert.equal(S.cfg.v_min, 3900, "the settings of the software's block");
+  const free = balanceSpec(moduleDesign()), F = balanceStart(free); while (!F.done && F.t < 12 * 3600) balanceStep(F, 10);
+  assert.ok(F.done && F.trace.some((p) => p.bleed.some(Boolean) && p.i > 70), "by default the resistors bleed WHILE it charges at 2 C (balancing during charge)"); assert.ok(!F.trace.some((p) => p.phase === "bal"), "no slowing by default");
+  const S = balanceSpec(moduleDesign(), { cBal: 0.5 }), B = balanceStart(S); assert.equal(S.cfg.v_min, 3900, "the settings of the software's block");
   const rest = B.v.reduce((a, x) => a + x, 0) / B.v.length; assert.ok(Math.abs(rest - 3.0) < 0.06, `starts about 3,0 V (${rest})`);
   const seen = new Set(), rates = []; let flips = 0, last = "";
   while (!B.done && B.t < 12 * 3600) { balanceStep(B, 10); const R = balanceSummary(B); seen.add(R.phase); rates.push(R.cRate); if (R.phase !== last) { flips++; last = R.phase; } }
@@ -34,5 +36,5 @@ test("the charge of the 8 CORE : from 3,0 V at rest, 0,1 C then 2 C, slower whil
 test("the charge profile starts at 3,0 V and tells the balancing ; the window is in « Essayer »", () => {
   const d = moduleDesign(), P = playProfile(d, profileOf(d, "charge")), all = P.events.flatMap((e) => e.answers.map((a) => a.text));
   assert.equal(d.profiles[0].events[0].set.adc_vmin, 3000); assert.ok(all.some((t) => /résistance de la CORE la plus haute est branchée/.test(t)) && all.some((t) => /résistance débranchée/.test(t)));
-  const read = (f) => readFileSync(new URL(`../../web/js/modules/${f}`, import.meta.url), "utf8"); assert.match(read("sw_balance_ui.js"), /swBalanceOpen/); assert.match(read("sw.js"), /swBalance\(design\)/);
+  const read = (f) => readFileSync(new URL(`../../web/js/modules/${f}`, import.meta.url), "utf8"); assert.match(read("sw_balance_ui.js"), /swBalanceOpen/); assert.match(read("sw.js"), /swBalance\(design/); assert.match(read("sw_balance_ui.js"), /dragWindow\(win, bar/, "the window moves by its title bar"); assert.match(read("sw_monitor_ui.js"), /data-swm-cores/);
 });

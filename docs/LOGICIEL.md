@@ -434,3 +434,21 @@ pendant ce temps, et on passe de 0,1 C à 2 C, et on peut voir en mode accélér
   charge simulée est l'équilibrage en fin de charge. Non vérifié : la courbe et la résistance réelles de la P45B (fiche p. 3 : ≤ 8 mΩ à
   1 kHz, pas une résistance en continu).
 
+## 4 terdecies. L'équilibrage visible, les sources citées (v0.197.0)
+
+JP, 25 novembre 2026 : « la fenêtre de charge et équilibrage ne peut être déplacée… je ne vois pas les cellules progresser… une lumière verte quand
+le balancing commence, en parallèle ou en série avec la recharge, peu importe le standard de l'industrie… mettre des sources pour le comportement et
+ajouter une section Références dans le bas du menu Logiciel ».
+
+- **Les fenêtres flottantes se déplacent** par leur barre de titre, leur place gardée (`modules/sw_drag.js`).
+- **L'équilibrage tourne pendant la charge** : ce que prévoit le manuel d'un circuit de surveillance du commerce (TI BQ76952, § 10.1 :
+  « pendant la charge ou au repos »). Ralentir la charge pendant qu'une résistance décharge reste un réglage (« Pendant l'équilibrage »,
+  2 C d'office), dit comme un choix du projet : aucune source lue ne le demande.
+- **La lumière verte** : « Équilibrage actif · n CORE » en tête de la fenêtre de charge ; dans le monitoring, une DEL « Passive balancing »
+  (lue dans le logiciel : un bloc `balancing`) et, tant que la charge tourne, **les 8 CORE** — leur niveau, leur tension, leur écart, bordés de
+  vert quand leur résistance décharge.
+- **Références** (`sw/sw_refs.js`, écran `#/swref`, dernière tuile du groupe Logiciel) : quinze sources, par sujet, chacune avec son niveau de
+  lecture (les mots du registre de la plateforme), ce qu'elle dit que l'outil utilise et les écrans qui la citent ; `refCite(id)` pose un
+  numéro [n] sur un écran. **Ce qu'aucune source lue ne dit** est listé à part (`REF_GAPS`). Les sources ont été ouvertes et lues pour cette
+  version ; les pages de l'ISO et d'Analog Devices ont refusé la lecture automatique, et c'est dit.
+

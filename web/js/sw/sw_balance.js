@@ -5,7 +5,8 @@
    The plant : N cell blocks in series (the CORE of the module, each 8 cells in parallel), each with its own capacity and its own state of
    charge — unbalanced at the start —, a typical open-circuit curve (0 % = 2,5 V, 100 % = 4,2 V : the range JP gives), one resistance. The
    charger : 0.1 C to begin with, then 2 C (the most the cell sheet allows : 9 A per cell, 8 in parallel), then constant voltage at 4,2 V on the
-   highest block ; while a resistor bleeds, it slows (0.5 C by default, set on the screen). THE DECISION of each block is the step of the « Passive balancing » block of the
+   highest block. The resistors bleed WHILE it charges — what the reference manual of a monitor of the trade allows, « during charging or at
+   rest » (refs ti-bq76952-trm, sw/sw_refs.js) ; slowing the charge while they bleed is a choice the screen offers (cBal), no source read asks it. THE DECISION of each block is the step of the « Passive balancing » block of the
    software — the same step as the C —, run once per block with its own voltage, the lowest one, and the current.
    Everything is TYPICAL : the curve is written from memory, the resistance and the spread are examples ; the screen says so. Pure : no page. */
 
@@ -20,7 +21,7 @@ export const socAt = (v) => lerp(OCV, v, 1, 0);
 /* the module of JP : 8 CORE of 8 Molicel P45B in parallel (4,5 Ah each, sheet p. 3) ; a spread of state of charge and of capacity, as a pack
    that has lived ; the resistance of a block is an example (8 cells of about 25 mΩ of direct-current resistance in parallel) */
 export const BALANCE_DEFAULTS = { n: 8, capAh: 36, start: 3.0, spread: [0, -0.02, 0.03, 0.01, -0.025, 0.04, 0.005, -0.01], capSpread: [1, 0.98, 1.01, 0.99, 1.02, 0.97, 1, 1.015],
-  r: 0.0032, rBal: 8.2, cLow: 0.1, cHigh: 2, cBal: 0.5, vTop: 4.2, soft: 120, ramp: 60, endC: 0.05, dt: 1 };
+  r: 0.0032, rBal: 8.2, cLow: 0.1, cHigh: 2, cBal: 2, vTop: 4.2, soft: 120, ramp: 60, endC: 0.05, dt: 1 };
 const MS = { v_min: 3900, delta: 20, hyst: 10 };
 
 /** The settings : the defaults, the values of the « Passive balancing » block of the software when it has one, and what the screen changed. */
@@ -35,7 +36,7 @@ export function balanceStart(S) {
     i: 0, phase: "soft", done: false, bledAh: new Array(S.n).fill(0), trace: [] };
   B.v = soc.map((x) => ocv(x)); sample(B); return B;
 }
-const PHASES = { soft: "Départ doux à 0,1 C", ramp: "Montée vers 2 C", cc: "Charge rapide à 2 C", bal: "Équilibrage : la charge ralentit", cv: "Tension constante à 4,2 V", done: "Chargé et équilibré" };
+const PHASES = { soft: "Départ doux à 0,1 C", ramp: "Montée vers 2 C", cc: "Charge rapide à 2 C", bal: "Équilibrage : la charge ralentie", cv: "Tension constante à 4,2 V", done: "Chargé et équilibré" };
 export const phaseText = (p) => PHASES[p] || p;
 /** Runs n steps of S.dt seconds. → B */
 export function balanceStep(B, n = 1) {
@@ -43,9 +44,9 @@ export function balanceStep(B, n = 1) {
   for (let q = 0; q < n && !B.done; q++) {
     const ocvs = B.soc.map(ocv), hi = Math.max(...ocvs), cv = Math.max(0, (S.vTop - hi) / S.r), anyBleed = B.bleed.some(Boolean);
     let want = B.t < S.soft ? S.cLow * C1 : B.t < S.soft + S.ramp ? (S.cLow + (S.cHigh - S.cLow) * (B.t - S.soft) / S.ramp) * C1 : S.cHigh * C1;
-    if (anyBleed) want = Math.min(want, S.cBal * C1);      // the charge slows while a resistor bleeds : the resistor catches up only so fast
+    const free = want; if (anyBleed) want = Math.min(want, S.cBal * C1);      // balancing runs WITH the charge (TI BQ76952 TRM § 10.1 : « during charging or at rest ») ; slowing it is a choice of the project (cBal)
     const I = Math.min(want, cv);      // charging current, A (into the pack)
-    B.phase = I < want - 1e-9 ? "cv" : anyBleed ? "bal" : B.t < S.soft ? "soft" : B.t < S.soft + S.ramp ? "ramp" : "cc"; B.i = I;
+    B.phase = I < want - 1e-9 ? "cv" : anyBleed && want < free - 1e-9 ? "bal" : B.t < S.soft ? "soft" : B.t < S.soft + S.ramp ? "ramp" : "cc"; B.i = I;
     for (let k = 0; k < S.n; k++) { const ib = B.bleed[k] ? B.v[k] / S.rBal : 0, ic = I - ib;
       B.soc[k] = Math.min(1, Math.max(0, B.soc[k] + ic * S.dt / 3600 / B.cap[k])); B.v[k] = ocv(B.soc[k]) + I * S.r; B.bledAh[k] += ib * S.dt / 3600; }
     /* the software decides, block by block : the step of its « Passive balancing » block, in mV and mA — on voltages corrected of the drop

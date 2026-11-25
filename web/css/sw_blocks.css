@@ -275,3 +275,26 @@ svg .sw-ask { cursor: pointer; } svg .sw-ask circle { fill: #d97706; stroke: #ff
 .swbal-res { display: grid; justify-items: center; } .swbal-zig { width: 2.4rem; height: .8rem; fill: none; stroke: #475569; stroke-width: 1.6; } .swbal-zig.on { stroke: #f97316; filter: drop-shadow(0 0 4px #f97316); } .swbal-col.on .swbal-res small { color: #fdba74; font-weight: 700; }
 .swbal-note { color: #94a3b8; font-size: .7rem; margin: .5rem 0 .4rem; } .swbal-chart { width: 100%; display: block; border-radius: 8px; border: 1.5px solid #1e293b; }
 @media (prefers-reduced-motion: reduce) { .swbal-zig.on { filter: none; } }
+
+/* the green light of balancing, in the charge window and in the monitoring ; the CORE climbing in the monitoring */
+.swbal-lamp { display: inline-flex; align-items: center; gap: .35rem; margin-left: auto; margin-right: .4rem; font-size: .78rem; color: #94a3b8; } .swbal-lamp i, .swm-bal i { width: .8rem; height: .8rem; border-radius: 50%; background: #1e293b; border: 2px solid #334155; display: inline-block; }
+.swbal-lamp[data-bal-lamp="on"] { color: #86efac; } .swbal-lamp[data-bal-lamp="on"] i, .swm-bal.on i { background: #22c55e; border-color: #86efac; box-shadow: 0 0 9px #22c55e; }
+.swm-bal { margin-left: .5rem; font-size: .68rem; text-transform: none; letter-spacing: 0; color: #94a3b8; } .swm-bal.on { color: #86efac; }
+.swm-cores { display: grid; grid-template-columns: repeat(8, 1fr); gap: .25rem; } .swm-core { display: grid; justify-items: center; gap: .1rem; background: #111c33; border: 1.5px solid #1e293b; border-radius: 8px; padding: .25rem .1rem; } .swm-core.on { border-color: #22c55e; }
+.swm-cbar { position: relative; width: 1rem; height: 3rem; border: 1.5px solid #475569; border-radius: 3px; overflow: hidden; background: #020617; } .swm-cbar i { position: absolute; left: 0; right: 0; bottom: 0; background: #22c55e; }
+.swm-core b { font-family: var(--mono, ui-monospace, monospace); font-size: .7rem; color: #f8fafc; } .swm-core small { font-size: .6rem; color: #94a3b8; } .swm-core.on small { color: #86efac; }
+@media (prefers-reduced-motion: reduce) { .swbal-lamp[data-bal-lamp="on"] i, .swm-bal.on i { box-shadow: none; } }
+
+/* Logiciel › Références (modules/sw_refs_ui.js) */
+.swref-top { display: flex; align-items: center; gap: .5rem; padding: .5rem .8rem; } .swref-top .sk-icon { width: 1.2rem; height: 1.2rem; color: #0891b2; }
+.swref-topics { display: grid; gap: .3rem; } .swref-topic { display: flex; align-items: center; gap: .45rem; border: 1.5px solid var(--line); border-left: 5px solid var(--dom); border-radius: 10px; background: var(--surface); padding: .35rem .55rem; font: inherit; text-align: left; cursor: pointer; }
+.swref-topic.on { background: color-mix(in srgb, var(--dom) 12%, var(--surface)); font-weight: 700; } .swref-topic .sk-icon { width: 1rem; height: 1rem; color: var(--dom); } .swref-topic small { margin-left: auto; color: var(--muted); }
+.swref-levels { margin: 0; padding-left: 1rem; font-size: .8rem; } .swref-levels li { margin-bottom: .3rem; }
+.swref-page { max-width: 62rem; } .swref-h { display: flex; align-items: center; gap: .4rem; color: var(--dom); margin: 1.1rem 0 .4rem; } .swref-h .sk-icon { width: 1.1rem; height: 1.1rem; }
+.swref-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .5rem; }
+.swref-card { border: 1.5px solid var(--line); border-radius: 12px; padding: .55rem .75rem; background: var(--surface); cursor: pointer; } .swref-card.sel { border-color: #0891b2; box-shadow: 0 0 0 3px color-mix(in srgb, #0891b2 20%, transparent); }
+.swref-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: .45rem; } .swref-n { color: #0891b2; }
+.swref-says { margin: .35rem 0; padding-left: 1.1rem; font-size: .88rem; } .swref-foot { display: flex; flex-wrap: wrap; gap: .8rem; align-items: center; }
+.swref-url { display: inline-flex; align-items: center; gap: .25rem; } .swref-url .sk-icon { width: .85rem; height: .85rem; }
+.ref-cite { font-size: .78em; font-weight: 700; color: #38bdf8; text-decoration: none; margin: 0 .1rem; } .ref-cite:hover, .ref-cite:focus-visible { text-decoration: underline; }
+.swref-gaps { padding-left: 1rem; }

@@ -9,7 +9,7 @@ import { partHash } from "./shop_levels.js";
 import { liveAsm } from "./asm_live.js";
 
 const enc = encodeURIComponent;
-const SW = new Set(["sw", "swreq", "swarch", "swsim", "swcode", "swtest", "swrel"]);
+const SW = new Set(["sw", "swreq", "swarch", "swsim", "swcode", "swtest", "swrel", "swref"]);
 const RANK = { error: 4, todo: 3, warn: 2, tip: 1 };
 
 /** The assemblies from the top one down to the one that holds `want` ({ part } or { asm }) directly. → [asm, …] or null. */

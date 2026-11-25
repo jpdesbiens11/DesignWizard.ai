@@ -8,15 +8,17 @@
    What it follows : the transport of a simulator, a bar chart that is also a gauge (one level per cell block, as battery tools show them). */
 
 import { el, btn, icon } from "../core/dom.js";
+import { dragWindow } from "./sw_drag.js";
+import { refCite } from "./sw_refs_ui.js";
 import { balanceSpec, balanceStart, balanceStep, balanceSummary } from "../sw/sw_balance.js";
 
 const SPEEDS = [1, 10, 100, 1000, 10000], hm = (s) => `${Math.floor(s / 3600)} h ${String(Math.floor((s % 3600) / 60)).padStart(2, "0")} min`;
 const f = (x, d = 2) => String(x.toFixed(d)).replace(".", ",");
 
 /** design() → { button, dispose() } — null when the software has no « Passive balancing » block */
-export function swBalance(design) {
+export function swBalance(design, o = {}) {
   if (!((design() || {}).objects || []).some((o) => !o.off && o.kind === "balancing")) return null;
-  const st = { open: false, run: false, speed: 1000, raf: 0, last: 0, rest: 0, over: { start: 3.0, cBal: 0.5, rBal: 8.2 } };
+  const st = { open: false, run: false, speed: 1000, raf: 0, last: 0, rest: 0, over: { start: 3.0, cBal: 2, rBal: 8.2 } };
   let S = null, B = null;
   const cols = el("div", { class: "swbal-cols" }), head = el("div", { class: "swbal-head" }), chart = el("canvas", { class: "swbal-chart", role: "img", "aria-label": "Tension de chaque CORE dans le temps" });
   const go = btn("Marche", () => (st.run ? pause() : play()), { small: true, primary: true, icon: "play" }); go.dataset.balRun = "";
@@ -24,11 +26,14 @@ export function swBalance(design) {
   const again = btn("Recommencer", () => { pause(); reset(); }, { small: true, icon: "refresh" });
   const speed = el("select", { "aria-label": "Vitesse du temps", onChange: (e) => { st.speed = Number(e.target.value); } }, SPEEDS.map((k) => el("option", { value: k, selected: k === st.speed }, `×${k.toLocaleString("fr-CA")}`)));
   const num = (key, label, step0, min, max, unit, tip) => el("label", { class: "swbal-set", "data-tip": tip }, el("span", null, label), el("input", { type: "number", step: step0, min, max, value: String(st.over[key]), "data-bal-set": key, onChange: (e) => { const v = Number(e.target.value); if (Number.isFinite(v)) { st.over[key] = v; pause(); reset(); } } }), el("small", null, unit));
-  const sets = el("div", { class: "swbal-sets" }, num("start", "Départ", 0.05, 2.5, 4.1, "V", "Tension de départ de chaque CORE, au repos (0 % = 2,5 V, 100 % = 4,2 V)"), num("cBal", "Pendant l'équilibrage", 0.1, 0.05, 2, "C", "Le courant de charge pendant qu'une résistance décharge un CORE : plus bas, l'écart se rattrape mieux, mais la charge dure plus longtemps"), num("rBal", "Résistance", 0.1, 1, 200, "Ω", "La résistance d'équilibrage de chaque CORE : plus petite, elle rattrape plus vite et chauffe plus"));
-  const body = el("div", { class: "swbal-body" }, head, cols, el("p", { class: "swbal-note" }, "Cellules TYPIQUES : courbe de tension écrite de mémoire (0 % = 2,5 V, 100 % = 4,2 V), résistance des CORE et écarts de départ donnés en exemple. Le courant maximal (2 C = 72 A) est celui de la fiche Molicel P45B (9 A par cellule, 8 en parallèle). Ce qui décide est le bloc « Passive balancing » du logiciel, sur des tensions corrigées de la chute courant × résistance."), chart);
+  const sets = el("div", { class: "swbal-sets" }, num("start", "Départ", 0.05, 2.5, 4.1, "V", "Tension de départ de chaque CORE, au repos (0 % = 2,5 V, 100 % = 4,2 V)"), num("cBal", "Pendant l'équilibrage", 0.1, 0.05, 2, "C", "Le courant de charge pendant qu'une résistance décharge un CORE. 2 C : l'équilibrage tourne EN MÊME TEMPS que la charge, ce que prévoit un circuit de surveillance du commerce [ti-bq76952-trm]. Plus bas : la charge ralentit pour laisser l'écart se rattraper — un choix du projet, aucune source lue ne le demande"), num("rBal", "Résistance", 0.1, 1, 200, "Ω", "La résistance d'équilibrage de chaque CORE : plus petite, elle rattrape plus vite et chauffe plus"));
+  const body = el("div", { class: "swbal-body" }, head, cols, el("p", { class: "swbal-note" }, "L'équilibrage passif tourne pendant la charge ou au repos, au-dessus d'une tension minimale et d'un écart ; on ne mesure pas une cellule pendant qu'on la décharge ", refCite("ti-bq76952-trm"), ". Courant d'une résistance d'un circuit du commerce : 65 à 200 mA ", refCite("ti-sluaa81a"), refCite("digikey-ltc6813"), " — 0,5 A ici demande des transistors externes. Charge : 0,1 C, puis courant constant, puis tension constante ", refCite("ti-bq24610"), refCite("bu-409"), " ; 2 C = 72 A, le maximum de la fiche de la cellule (9 A par cellule, 8 en parallèle) ", refCite("molicel-p45b"), ". Cellules TYPIQUES : courbe écrite de mémoire (0 % = 2,5 V, 100 % = 4,2 V), résistance des CORE et écarts de départ en exemple ; aucune source lue ne chiffre la durée de l'équilibrage d'une grosse cellule."), chart);
   const close = btn("", () => api.close(), { small: true, tip: "Fermer" }); close.textContent = "×"; close.classList.add("swm-x"); close.setAttribute("aria-label", "Fermer");
+  const lamp = el("span", { class: "swbal-lamp", "data-bal-lamp": "off", role: "status", "aria-live": "polite" }, el("i", { "aria-hidden": "true" }), el("b", null, "Équilibrage au repos"));
+  const bar = el("header", { class: "swm-head" }, icon("bolt"), el("h3", null, "Charge et équilibrage"), lamp, close);
   const win = el("div", { class: "swm swbal", role: "dialog", "aria-label": "Charge et équilibrage", tabindex: "-1", hidden: true, "data-sw-balance": "", onKeydown: (e) => { if (e.key === "Escape") api.close(); } },
-    el("header", { class: "swm-head" }, icon("bolt"), el("h3", null, "Charge et équilibrage"), close), el("div", { class: "swbal-bar" }, go, step, again, speed), sets, body);
+    bar, el("div", { class: "swbal-bar" }, go, step, again, speed), sets, body);
+  const drag = dragWindow(win, bar, "dw.sw.balance.pos");
   const button = btn("Charge et équilibrage", () => (st.open ? api.close() : api.open()), { small: true, icon: "bolt", tip: "Les 8 CORE pendant une charge : de 0,1 C à 2 C, puis l'équilibrage passif qui rattrape les écarts — en accéléré" }); button.dataset.swBalanceOpen = "";
 
   function reset() { S = balanceSpec(design(), { start: st.over.start, cBal: st.over.cBal, rBal: st.over.rBal }); B = balanceStart(S); draw(); }
@@ -36,6 +41,7 @@ export function swBalance(design) {
   function pause() { st.run = false; if (st.raf) cancelAnimationFrame(st.raf); st.raf = 0; go.lastChild.textContent = "Marche"; }
   function tick(ts) { if (!st.run) return; const x = st.rest + Math.min(0.25, (ts - st.last) / 1000) * st.speed / S.dt, n = Math.floor(x); st.rest = x - n; st.last = ts; if (n) { balanceStep(B, Math.min(n, 20000)); draw(); } if (B.done) { pause(); draw(); return; } st.raf = requestAnimationFrame(tick); }
   function draw() {
+    if (o.onDraw) o.onDraw(B);
     if (!st.open || !B) return; const R = balanceSummary(B), vr = B.v.map((x) => x - B.i * S.r), low = Math.min(...vr);
     head.replaceChildren(el("div", { class: `swbal-phase ${R.phase}` }, el("small", null, hm(R.t)), el("b", null, R.text)),
       el("div", { class: "swbal-gauge" }, el("small", null, "Chargeur"), el("b", null, `${f(R.i, 1)} A`), el("span", null, `${f(R.cRate, 2)} C`), el("i", { style: `width:${Math.min(100, (100 * R.cRate) / S.cHigh)}%` })),
@@ -47,6 +53,8 @@ export function swBalance(design) {
         el("b", null, `${f(vr[k], 3)} V`), el("span", { class: dv > S.cfg.delta ? "hi" : "" }, dv ? `+${dv} mV` : "le plus bas"),
         el("div", { class: "swbal-res", title: on ? `Résistance branchée : ${f(vr[k] / S.rBal, 2)} A dissipés` : "Résistance débranchée" }, resistor(on), el("small", null, on ? `${f(vr[k] / S.rBal, 2)} A` : "—"))); }));
     plot(); button.dataset.swBalancePhase = R.phase;
+    /* the green light : balancing has started, and how many CORE bleed — beside the charge, not instead of it */
+    lamp.dataset.balLamp = R.bleeding ? "on" : "off"; lamp.lastChild.textContent = R.bleeding ? `Équilibrage actif · ${R.bleeding} CORE` : R.phase === "done" ? "Équilibré" : "Équilibrage au repos";
   }
   function plot() {
     const T = B.trace, w = Math.max(320, chart.clientWidth || 520), h = 150, dpr = Math.min(2, window.devicePixelRatio || 1); chart.width = Math.round(w * dpr); chart.height = Math.round(h * dpr); chart.style.height = `${h}px`;
@@ -62,9 +70,10 @@ export function swBalance(design) {
     const p = document.createElementNS("http://www.w3.org/2000/svg", "path"); p.setAttribute("d", "M0 6 H8 L11 1 L15 11 L19 1 L23 11 L27 1 L30 6 H40"); s.append(p); return s; };
   const api = {
     button,
-    open() { st.open = true; if (!win.isConnected) document.body.append(win); win.hidden = false; win.style.left = `${Math.max(8, Math.min(330, window.innerWidth - 760))}px`; win.style.top = "84px"; if (!B) reset(); else draw(); button.setAttribute("aria-expanded", "true"); win.focus(); },
+    open() { st.open = true; if (!win.isConnected) document.body.append(win); win.hidden = false; drag.restore({ x: Math.max(8, Math.min(330, window.innerWidth - 760)), y: 84 }); if (!B) reset(); else draw(); button.setAttribute("aria-expanded", "true"); win.focus(); },
     close() { st.open = false; pause(); win.hidden = true; button.setAttribute("aria-expanded", "false"); },
     dispose() { pause(); win.remove(); },
+    get state() { return B && st.open ? B : null; },
   };
   return api;
 }

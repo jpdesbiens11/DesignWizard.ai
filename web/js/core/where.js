@@ -11,7 +11,7 @@ const KIND = {
   part: { word: "Pièce", icon: "part" }, assembly: { word: "Assemblage", icon: "assembly" }, board: { word: "Carte", icon: "chip" },
   drawing: { word: "Dessin", icon: "drawing" }, case: { word: "Cas de charge", icon: "physics" }, iso: { word: "Isolation", icon: "creepage" },
 };
-const SW = new Set(["sw", "swreq", "swarch", "swsim", "swcode", "swtest", "swrel"]);
+const SW = new Set(["sw", "swreq", "swarch", "swsim", "swcode", "swtest", "swrel", "swref"]);
 
 /** → null (no project, or a page without a place), or { project, kind, icon, name, id } — kind, name and id empty when the
     screen shows the whole project. */

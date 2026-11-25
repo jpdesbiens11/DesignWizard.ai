@@ -24,6 +24,7 @@ export function swMonitor(bench, design, sound) {
   const lamps = Object.fromEntries(["red", "yellow", "green"].map((k) => [k, el("i", { class: `swm-lamp ${k}`, "aria-hidden": "true" })]));
   const stateText = el("b", { class: "swm-state" }), clock = el("small", { class: "swm-clock" }), body = el("div", { class: "swm-body" });
   const leds = {}, values = {}, prod = {};
+  const coreBox = el("section", { class: "swm-group swm-coresec", hidden: true, "data-swm-cores": "" });
   const groups = [...new Set(M.rows.map((r) => r.group))];
   for (const g of groups) body.append(el("section", { class: "swm-group" }, el("h4", null, g), el("div", { class: "swm-grid" }, M.rows.filter((r) => r.group === g).map((r) => {
     leds[r.id] = el("i", { class: `swm-led ${r.sev}`, "aria-hidden": "true" }); values[r.id] = el("b", { class: "swm-val" }, "—");
@@ -31,6 +32,7 @@ export function swMonitor(bench, design, sound) {
   if (M.product.length) body.append(el("section", { class: "swm-group" }, el("h4", null, "Le produit"), el("div", { class: "swm-grid" }, M.product.map((p) => {
     prod[p.id] = { led: el("i", { class: "swm-led", "aria-hidden": "true" }), text: el("b", { class: "swm-val" }) };
     return el("div", { class: "swm-cond", "data-swm": p.id }, prod[p.id].led, el("span", { class: "swm-name" }, p.label), prod[p.id].text); }))));
+  body.append(coreBox);
   const soundSw = onOff(soundOn(), (on) => { setSoundOn(on); if (!on) sound.update(false); }, "Son de l'alarme", "Le buzzer s'entend dans le haut-parleur de l'ordinateur : un carillon doux, toutes les deux secondes, tant qu'il sonne");
   const foot = el("div", { class: "swm-foot" }, el("label", { class: "swm-sound" }, icon("warning"), "Son du buzzer", soundSw), btn("Écouter", () => sound.chime(), { small: true, tip: "Le son de l'alarme, une fois" }),
     btn("Fenêtre à part", () => detach(), { small: true, icon: "export", tip: "Ouvrir le tableau de bord dans sa propre fenêtre — sur un deuxième écran, comme celui du pilote" }));
@@ -69,6 +71,13 @@ export function swMonitor(bench, design, sound) {
       const t = bench.L ? bench.L.t : 0; clock.textContent = `t = ${String((t / 1000).toFixed(1)).replace(".", ",")} s`;
       for (const r of R.rows) { leds[r.id].classList.toggle("on", r.on); values[r.id].textContent = r.valueText; values[r.id].parentNode.classList.toggle("on", r.on); }
       for (const p of R.product) { const P = prod[p.id], bad = p.sev === "green" ? false : p.sev === "off-red" ? !p.on : p.on; P.led.className = `swm-led ${p.sev === "green" ? (p.on ? "green on" : "") : bad ? "red on" : "green on"}`; P.text.textContent = p.text; P.led.parentNode.classList.toggle("on", bad); }
+    },
+    /* the 8 CORE of « Charge et équilibrage », while it runs : each one's voltage climbing, its resistor glowing green-lit when it bleeds */
+    cores(B) {
+      if (!B) { coreBox.hidden = true; return; } coreBox.hidden = false; const r = B.S.r, vr = B.v.map((x) => x - B.i * r), low = Math.min(...vr), n = B.bleed.filter(Boolean).length;
+      coreBox.replaceChildren(el("h4", null, "Les CORE — charge et équilibrage", el("span", { class: `swm-bal${n ? " on" : ""}`, "data-swm-bal": n ? "on" : "off" }, el("i", { "aria-hidden": "true" }), n ? ` équilibrage actif · ${n}` : " équilibrage au repos")),
+        el("div", { class: "swm-cores" }, B.v.map((_, k) => el("div", { class: `swm-core${B.bleed[k] ? " on" : ""}`, "data-swm-core": String(k + 1) }, el("div", { class: "swm-cbar" }, el("i", { style: `height:${Math.round(B.soc[k] * 100)}%` })),
+          el("b", null, String(vr[k].toFixed(2)).replace(".", ",")), el("small", null, Math.round((vr[k] - low) * 1000) ? `+${Math.round((vr[k] - low) * 1000)}` : "min")))));
     },
     dispose() { api.close(); panel.remove(); },
   };
