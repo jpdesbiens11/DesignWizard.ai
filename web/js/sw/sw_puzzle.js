@@ -73,3 +73,43 @@ export function connectPieces(d, A, B) {
 /** What a piece shows now, in words a beginner reads : its title and the value of its main output. */
 export const pieceUnit = (p) => (p.show ? p.show.unit : "");
 export { cfgOf };
+
+/* ---------- WITHOUT A WIRE (demande de JP, 25 novembre 2026 : « enlever les lignes pour connecter directement les blocs par l'interface
+   physique… des blocs connectés par une interface dont le keying peut différer selon le type de compatibilité » ; puis « s'il faut dupliquer une
+   fonction pour la mettre à 3 places mais pouvoir ouvrir un bloc d'interface où on voit la combinaison de tout, let's do it… simple, compris
+   d'un coup d'œil ») : the pieces SNAP. Every action ends a row ; what feeds a piece sits against its left edge, the tab of one in the notch of
+   the other, keyed by the type it carries (sw/sw_blocks.js keyPath) ; a piece that takes two branches is as tall as both. A piece that feeds
+   several others is laid ONCE, where it is first needed ; elsewhere it is a TWIN — the same piece, dashed, its value live — that opens the
+   interface block : what it takes, and every place it goes. A loop (the value of the step before) is a twin marked ↺.
+   What it follows : the rungs of ladder logic (IEC 61131-3), one output per rung, a contact repeated as often as it is read ; the stacks of
+   block languages (Scratch) that snap without a wire. Pure : no page. */
+export const SNAP = { W: 196, H: 64, GAP: 12, TREE: 30, TOP: 20 };
+const keyType = (l) => (l && l.types[0]) || "quantity";
+/** → { nodes: [{ key, id, twin, loop, type (of the tab toward its parent), count (wires), parent, x, y, w, h, col, ins: [{ y, type }] }],
+         rows: [{ root, y, h }], copies: { pieceId: number of places it plugs }, w, h } */
+export function puzzleForest(d, P = pieces(d), L = links(d, P)) {
+  const by = Object.fromEntries(P.map((p) => [p.id, p])), feed = (id) => L.filter((l) => l.to === id && !l.delay), loop = (id) => L.filter((l) => l.to === id && l.delay);
+  const outs = (id) => L.filter((l) => l.from === id && !l.delay), reach = {};
+  const size = (id, seen = new Set()) => { if (seen.has(id)) return 0; seen.add(id); return 1 + feed(id).reduce((s, l) => s + size(l.from, seen), 0); };
+  for (const p of P) reach[p.id] = size(p.id);
+  const rank = { act: 0, decide: 1, sense: 2 }, sinks = P.filter((p) => !outs(p.id).length).sort((a, b) => rank[a.band] - rank[b.band] || reach[b.id] - reach[a.id]);
+  const placed = new Set(), build = (id, l, stack) => {
+    if (placed.has(id) || stack.has(id)) return { id, twin: true, loop: false, link: l, kids: [] };
+    placed.add(id); const st = new Set(stack).add(id);
+    return { id, twin: false, loop: false, link: l, kids: [...feed(id).sort((a, b) => reach[b.from] - reach[a.from]).map((x) => build(x.from, x, st)), ...loop(id).map((x) => ({ id: x.from, twin: true, loop: true, link: x, kids: [] }))] }; };
+  const trees = sinks.map((s) => build(s.id, null, new Set())); for (const p of P) if (!placed.has(p.id)) trees.push(build(p.id, null, new Set()));      // a closed loop with no end : laid on its own
+  const height = (n) => (n.h = Math.max(SNAP.H, n.kids.reduce((s, k) => s + height(k), 0) + SNAP.GAP * Math.max(0, n.kids.length - 1)));
+  const depth = (n) => 1 + Math.max(0, ...n.kids.map(depth)); trees.forEach(height); const D = Math.max(1, ...trees.map(depth));
+  const nodes = [], rows = []; let y = SNAP.TOP;
+  const place = (n, col, top, parent, key) => { const ins = []; let ky = top;
+    n.kids.forEach((k, i) => { place(k, col - 1, ky, key, `${key}.${i}`); ins.push({ y: ky + k.h / 2 - top, type: keyType(k.link) }); ky += k.h + SNAP.GAP; });
+    nodes.push({ key, id: n.id, twin: n.twin, loop: n.loop, type: n.link ? keyType(n.link) : null, count: n.link ? n.link.wires.length : 0, parent, x: 20 + col * SNAP.W, y: top, w: SNAP.W, h: n.h, col, ins }); };
+  trees.forEach((t, i) => { place(t, D - 1, y, null, `t${i}`); rows.push({ root: t.id, y, h: t.h }); y += t.h + SNAP.TREE; });
+  const copies = {}; for (const n of nodes) copies[n.id] = (copies[n.id] || 0) + 1;
+  void by; return { nodes, rows, copies, w: 40 + D * SNAP.W + 24, h: y + 10 };
+}
+/** The interface block of a piece : what it takes, every place it goes, and how many copies of it the view shows. */
+export function pieceInterface(d, id, P = pieces(d), L = links(d, P)) {
+  const by = Object.fromEntries(P.map((p) => [p.id, p])), side = (ls, end) => ls.map((l) => ({ piece: by[l[end]], type: keyType(l), count: l.wires.length, loop: !!l.delay, wires: l.wires })).filter((x) => x.piece);
+  return { piece: by[id] || null, takes: side(L.filter((l) => l.to === id), "from"), gives: side(L.filter((l) => l.from === id), "to") };
+}

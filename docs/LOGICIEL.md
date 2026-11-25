@@ -224,6 +224,30 @@ quand l'urgence dure ; on ne sort de l'arrêt que par un acquittement, sans déf
 phrase d'exigence, et sa place dans un essai dos à dos : le logiciel du module BM 8s8p (`sw/sw_bm_design.js`), joué sur son banc,
 écrit en C, compilé et comparé pas à pas (`tests/node/sw_module_state.test.mjs`). Voir `docs/BM_MODULE.md`, itération 15.
 
+## 4 quaterdecies. Le casse-tête sans fil (v0.199.0)
+
+Demandes de JP, 25 novembre 2026 : « enlever les lignes pour connecter directement les blocs par l'interface physique au lieu de fils… un
+keying qui peut différer selon le type de compatibilité » ; puis « s'il faut dupliquer une fonction pour la mettre à 3 places, mais pouvoir
+ouvrir un bloc d'interface où on voit la combinaison de tout, let's do it ; le visuel doit être simple et se comprendre d'un coup d'œil ».
+Trois façons ont été montrées en image (arbres et jumeaux, rails typés, prises nommées) ; la première est retenue.
+
+- **Chaque rangée finit sur une action** (ou sur une décision que rien ne lit) ; ce qu'elle demande s'emboîte contre son bord gauche, et
+  ainsi de suite vers la gauche : la languette d'une pièce dans l'encoche de la suivante, sans écart (`puzzleForest` de `web/js/sw/sw_puzzle.js`).
+- **La clé dit ce que la prise porte** : sa forme et sa couleur viennent du type du signal (`SIGNAL_TYPES`, `keyPath` de `sw/sw_blocks.js`) —
+  une décision 0 / 1, une grandeur, un état, une commande ; la légende est sous les rangées. Une pièce qui prend deux branches est aussi
+  haute que les deux.
+- **Une pièce partagée est posée une fois**, là où elle sert d'abord (la plus grande rangée d'abord) ; ailleurs c'est un **jumeau** — la
+  même pièce, en pointillé, sa valeur en direct. Une boucle (la valeur du pas d'avant) est un jumeau marqué ↺.
+- **Le bloc d'interface** (`modules/sw_puzzle_iface.js`, `pieceInterface`) : le « ×n » d'une pièce, ou un clic sur un jumeau, l'ouvre — la
+  pièce au milieu, ce qu'elle prend emboîté à sa gauche, et chaque endroit où elle va, avec sa clé. « Ouvrir sa fiche » mène à ses valeurs.
+- Brancher reste deux clics : la prise ronde en bas à droite d'une pièce, puis la pièce qu'elle nourrit ; l'outil choisit les bonnes prises
+  (`connectPieces`). Le logiciel ne change pas : seule la façon de le voir change.
+
+Ce qui suit : l'échelle de la logique à relais (IEC 61131-3), une sortie par échelon et un contact répété autant de fois qu'il est lu ; les
+piles des langages par blocs qui s'emboîtent sans fil. Vérifié par `tests/node/sw_puzzle.test.mjs` : chaque pièce touche celle qu'elle
+nourrit, sa clé est celle de l'encoche, rien ne se chevauche, chaque pièce est posée une seule fois hors jumeaux. Non vérifié : un essai
+par une personne qui n'a jamais programmé.
+
 ## 5. Ce qui est vérifié, ce qui ne l'est pas
 
 Vérifié : 6 essais Node (`tests/node/sw_objects.test.mjs`) — objets, fils, guide, simulation, et le C compilé qui

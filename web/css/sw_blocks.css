@@ -298,3 +298,18 @@ svg .sw-ask { cursor: pointer; } svg .sw-ask circle { fill: #d97706; stroke: #ff
 .swref-url { display: inline-flex; align-items: center; gap: .25rem; } .swref-url .sk-icon { width: .85rem; height: .85rem; }
 .ref-cite { font-size: .78em; font-weight: 700; color: #38bdf8; text-decoration: none; margin: 0 .1rem; } .ref-cite:hover, .ref-cite:focus-visible { text-decoration: underline; }
 .swref-gaps { padding-left: 1rem; }
+/* the puzzle without a wire (v0.199.0) : rows, twins, keys, the interface block */
+svg.swp .swp-row { fill: color-mix(in srgb, var(--graphite) 4%, transparent); stroke: color-mix(in srgb, var(--graphite) 14%, transparent); stroke-width: 1; }
+svg.swp .swp-chip { fill: color-mix(in srgb, var(--dom) 14%, var(--surface)); stroke: var(--dom); stroke-width: 1.5; } svg.swp .swp-chip-t { fill: var(--dom); font-size: 13px; font-weight: 800; }
+svg.swp .swp-key { fill: var(--surface); stroke: var(--key); stroke-width: 2.5; } svg.swp .swp-key-t { fill: var(--ink); font-size: 12px; font-weight: 650; }
+svg.swp .swp-tab, .swi .swp-tab { fill: none; stroke: var(--key); stroke-width: 3.5; stroke-linejoin: round; pointer-events: none; }
+svg.swp .swp-piece.twin .swp-body { fill: var(--surface); stroke-dasharray: 6 4; stroke-width: 2; }
+svg.swp .swp-copies rect { fill: var(--dom); } svg.swp .swp-copies text { fill: #fff; font-size: 11px; font-weight: 800; pointer-events: none; } svg.swp .swp-copies { cursor: pointer; outline: none; } svg.swp .swp-copies:focus-visible rect { stroke: var(--acc); stroke-width: 3; }
+svg.swp .swp-plug { fill: var(--surface); stroke: var(--dom); stroke-width: 2; cursor: crosshair; outline: none; } svg.swp .swp-plug:hover, svg.swp .swp-plug:focus-visible { fill: var(--dom); }
+svg.swp .swp-title { font-size: 13px; }
+.swi { position: absolute; left: 50%; top: 3.2rem; transform: translateX(-50%); z-index: 9; max-width: calc(100% - 2rem); max-height: calc(100% - 4rem); overflow: auto; background: var(--surface); border: 2px solid var(--dom); border-radius: 14px; box-shadow: 0 12px 32px rgb(0 0 0 / .22); padding: .7rem .9rem; }
+.swi header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; font-size: 1rem; } .swi-say { margin: .3rem 0 .6rem; font-size: .9rem; }
+.swi-svg { display: block; max-width: 100%; height: auto; } .swi-body { fill: color-mix(in srgb, var(--dom) 13%, var(--surface)); stroke: var(--dom); stroke-width: 2.2; }
+.swi-t { fill: var(--ink); font-size: 13px; font-weight: 750; } .swi-v { fill: var(--muted); font-size: 12px; font-family: var(--mono, ui-monospace, monospace); } .swi-eq { fill: var(--muted); font-size: 26px; font-weight: 800; }
+.swi-keys { display: flex; flex-wrap: wrap; gap: .8rem; margin: .5rem 0 .2rem; font-size: .8rem; } .swi-keys i { display: inline-block; width: .9rem; height: .55rem; border: 2.5px solid var(--key); border-radius: 3px; margin-right: .3rem; vertical-align: -1px; }
+.swi-foot { display: flex; justify-content: flex-end; }

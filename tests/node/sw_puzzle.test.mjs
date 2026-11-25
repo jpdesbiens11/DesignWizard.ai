@@ -38,3 +38,20 @@ test("the screen : jigsaw pieces with a knob and a socket, the view by level, th
   assert.match(read("web/js/modules/sw_level_ui.js"), /return lv === "expert" \? "blocks" : "puzzle"/, "the puzzle for the novice and the intermediate, the blocks for the expert");
   assert.match(read("web/js/modules/sw.js"), /make = mode === "puzzle" \? swPuzzle : swCanvas/);
 });
+
+test("without a wire (JP, 25 novembre 2026) : every row ends on an action, a piece snaps against the one it feeds with the key of its type, a shared piece is laid once and elsewhere as a twin, and its interface block says every place it goes", async () => {
+  const { puzzleForest, pieceInterface, SNAP } = await import("../../web/js/sw/sw_puzzle.js");
+  const d = bmProject().software[0], P = pieces(d), F = puzzleForest(d, P);
+  assert.equal(F.rows[0].root, "k", "the contactor first : the biggest row"); assert.ok(F.rows.every((r) => P.find((p) => p.id === r.root).band !== "sense"), "a row ends on what decides or acts");
+  for (const id of new Set(F.nodes.map((n) => n.id))) assert.equal(F.nodes.filter((n) => n.id === id && !n.twin).length, 1, `${id} : laid once, the rest are twins`);
+  const N = Object.fromEntries(F.nodes.map((n) => [n.key, n]));
+  for (const n of F.nodes) { if (!n.parent) continue; const p = N[n.parent], slot = p.ins.find((q) => Math.abs(p.y + q.y - (n.y + n.h / 2)) < 1e-9);
+    assert.equal(n.x + n.w, p.x, "the child touches its parent : no gap, no wire"); assert.ok(slot, "its tab in a notch of the parent"); assert.equal(slot.type, n.type, "the same key on both sides"); }
+  for (const a of F.nodes) for (const b of F.nodes) if (a !== b) assert.ok(!(a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h), "no piece on another");
+  assert.ok(F.nodes.some((n) => n.twin && n.loop && n.id === "k"), "the loop : the contactor's value of the step before, a twin ↺");
+  assert.ok(F.nodes.filter((n) => n.twin).length > 5 && F.copies.module === 2, "Module state : one piece, two places");
+  const I = pieceInterface(d, "module"); assert.deepEqual(I.gives.map((g) => g.piece.id).sort(), ["k", "lamp"]); assert.ok(I.takes.length >= 4);
+  assert.equal(SNAP.H, 64, "compact pieces");
+  const v = read("web/js/modules/sw_puzzle_view.js"); assert.doesNotMatch(v, /swp-line/, "no line drawn"); assert.match(v, /snapOutline\(n\.w, n\.h, n\.type, n\.ins\)/); assert.match(v, /swIface\(host/);
+  assert.match(read("web/js/modules/sw_puzzle_iface.js"), /role: "dialog"/);
+});
