@@ -2,7 +2,7 @@
    build a prototype : Gerber layers, drill files, pick-and-place, bill of materials, netlist, and the notes that say
    what the files do not (stack-up, finish, conformal coating). File extensions are the ones shops recognise. */
 
-import { resolveBoard, boardBom, copperLayers, COATINGS, FAB } from "./model.js";
+import { resolveBoard, boardBom, copperLayers, layerCount, MAX_INNER, COATINGS, FAB } from "./model.js";
 import { layerArt, coatingKeepouts, LAYER_NAMES } from "./art.js";
 import { gerber } from "./gerber.js";
 import { excellon, drillTable } from "./drill.js";
@@ -12,7 +12,7 @@ import { planText } from "../core/plan_doc.js";
 import { stampText } from "../core/brand.js";
 
 export const FAB_FILES = [
-  { key: "top", ext: ".GTL", fn: (n) => "Copper,L1,Top" }, { key: "in1", ext: ".G1", fn: () => "Copper,L2,Inr" }, { key: "in2", ext: ".G2", fn: () => "Copper,L3,Inr" }, { key: "bottom", ext: ".GBL", fn: (n) => `Copper,L${n},Bot` },
+  { key: "top", ext: ".GTL", fn: (n) => "Copper,L1,Top" }, ...Array.from({ length: MAX_INNER }, (_, i) => ({ key: `in${i + 1}`, ext: `.G${i + 1}`, fn: () => `Copper,L${i + 2},Inr` })), { key: "bottom", ext: ".GBL", fn: (n) => `Copper,L${n},Bot` },
   { key: "mask_top", ext: ".GTS", fn: () => "Soldermask,Top", polarity: "Negative" }, { key: "mask_bottom", ext: ".GBS", fn: () => "Soldermask,Bot", polarity: "Negative" },
   { key: "silk_top", ext: ".GTO", fn: () => "Legend,Top" }, { key: "silk_bottom", ext: ".GBO", fn: () => "Legend,Bot" }, { key: "paste_top", ext: ".GTP", fn: () => "Paste,Top" }, { key: "paste_bottom", ext: ".GBP", fn: () => "Paste,Bot" },
   { key: "outline", ext: ".GKO", fn: () => "Profile,NP" }, { key: "coat_top", ext: "-vernis-dessus.gbr", fn: () => "Other,Vernis de tropicalisation dessus" }, { key: "coat_bottom", ext: "-vernis-dessous.gbr", fn: () => "Other,Vernis de tropicalisation dessous" },
@@ -25,10 +25,13 @@ const pad = (s, n) => String(s).slice(0, n).padEnd(n);
 
 /** Stack-up of the bare board, top to bottom : [{ layer, material, thickness (mm) }]. Typical build of a prototype shop. */
 export function stackup(board) {
-  const b = board.board || {}, n = b.layers >= 4 ? 4 : 2, cu = (b.copper || 35) / 1000, t = b.t || 1.6, rows = [{ layer: "Vernis épargne dessus", material: `Vernis ${b.mask || "vert"}`, thickness: 0.02 }];
+  const b = board.board || {}, n = layerCount(b.layers), cu = (b.copper || 35) / 1000, t = b.t || 1.6, rows = [{ layer: "Vernis épargne dessus", material: `Vernis ${b.mask || "vert"}`, thickness: 0.02 }];
   const copper = (i, name) => rows.push({ layer: `L${i} — ${name}`, material: `Cuivre ${b.copper || 35} µm`, thickness: cu });
   if (n === 2) { copper(1, "dessus"); rows.push({ layer: "Âme", material: "FR-4 TG150", thickness: Math.max(0.1, t - 2 * cu) }); copper(2, "dessous"); }
-  else { const pp = 0.2, core = Math.max(0.1, t - 2 * pp - 4 * cu); copper(1, "dessus"); rows.push({ layer: "Préimprégné", material: "FR-4 7628", thickness: pp }); copper(2, "interne 1"); rows.push({ layer: "Âme", material: "FR-4 TG150", thickness: core }); copper(3, "interne 2"); rows.push({ layer: "Préimprégné", material: "FR-4 7628", thickness: pp }); copper(4, "dessous"); }
+  else {                                  // n − 1 dielectrics : prepreg, core, prepreg, … , prepreg (n/2 prepregs, n/2 − 1 cores)
+    const gaps = n - 1, nPp = n / 2, nCore = n / 2 - 1, room = Math.max(0.1 * gaps, t - n * cu), pp = Math.min(0.2, room / gaps), core = Math.max(0.1, (room - nPp * pp) / nCore), r3 = (x) => Math.round(x * 1000) / 1000;
+    for (let i = 1; i <= n; i++) { copper(i, i === 1 ? "dessus" : i === n ? "dessous" : `interne ${i - 1}`); if (i < n) rows.push(i % 2 ? { layer: "Préimprégné", material: "FR-4 7628", thickness: r3(pp) } : { layer: "Âme", material: "FR-4 TG150", thickness: r3(core) }); }
+  }
   rows.push({ layer: "Vernis épargne dessous", material: `Vernis ${b.mask || "vert"}`, thickness: 0.02 });
   return rows;
 }

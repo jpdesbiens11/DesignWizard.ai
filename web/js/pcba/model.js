@@ -12,7 +12,7 @@
      blocks:    [{ id, template, name, function, params: {…}, zone: [x, y, w, h] }],        // one solution per function; zone = floor plan
      parts:     [{ ref, comp, value, block, at: [x, y], rot, side: "top" | "bottom", mpn, dnp, fixed }],
      nets:      [{ name, class, voltage, current, pins: ["U1.3", "C2.VIN"] }],              // a pin is a pad number or a pin name
-     board:     { size: [w, h], r, outline: [[x, y], …], t, layers: 2 | 4, copper: 35, finish, mask, silk,
+     board:     { size: [w, h], r, outline: [[x, y], …], t, layers: 2 | 4 | 6 | 8 | 10 | 12, copper: 35, finish, mask, silk,
                   coating: { type: "none" | "AR" | "UR" | "SR" | "XY", thickness, sides: "both" | "top" },
                   holes: [{ at: [x, y], d, plated, land, kind: "mount" | "tooling" }] },
      rules:     { fab: "standard" | "fin", classes: { <class>: { track, clearance, via: [d, drill] } } },
@@ -33,8 +33,21 @@ import { ipcSpacing } from "../analysis/dfx_rules_pcb.js";
 
 export const BOARD_VERSION = 1;
 /** Copper layers of a board, from the top down. */
-export const copperLayers = (n) => (n >= 4 ? ["top", "in1", "in2", "bottom"] : ["top", "bottom"]);
-export const LAYER_FR = { top: "Cuivre dessus", in1: "Cuivre interne 1", in2: "Cuivre interne 2", bottom: "Cuivre dessous" };
+/** The copper counts a board can have (demande de JP, 25 novembre 2026 : « être capable de gérer le nombre de couches requis ») : even, 2 to 12. */
+export const LAYER_COUNTS = [2, 4, 6, 8, 10, 12];
+export const MAX_INNER = LAYER_COUNTS[LAYER_COUNTS.length - 1] - 2;
+/** A count as the shop builds it : even, between 2 and 12 (an odd count goes up to the next even one). */
+export const layerCount = (n) => { const k = Math.round(+n || 2); return k <= 2 ? 2 : Math.min(MAX_INNER + 2, k % 2 ? k + 1 : k); };
+/** Copper layers of a board, from the top down : top, in1 … in(n − 2), bottom. */
+export const copperLayers = (n) => { const k = layerCount(n); return ["top", ...Array.from({ length: k - 2 }, (_, i) => `in${i + 1}`), "bottom"]; };
+export const LAYER_FR = { top: "Cuivre dessus", ...Object.fromEntries(Array.from({ length: MAX_INNER }, (_, i) => [`in${i + 1}`, `Cuivre interne ${i + 1}`])), bottom: "Cuivre dessous" };
+/** The planes an n-layer board gets when its count is chosen : the ground on the first inner layer, the biggest rail on the last one ;
+    the inner layers between stay for signals. 2 layers : none. */
+export function defaultPlanes(board, n) {
+  const k = layerCount(n); if (k < 4) return [];
+  const gnd = (board.nets || []).find((x) => x.class === "ground"), rail = (board.nets || []).filter((x) => x.class === "power").sort((p, q) => q.pins.length - p.pins.length)[0];
+  return [gnd && { net: gnd.name, layer: "in1" }, rail && { net: rail.name, layer: `in${k - 2}` }].filter(Boolean);
+}
 
 /** What a board shop holds without a surcharge ("standard") or with its fine-line service ("fin"). Typical values:
     the capabilities sheet of the chosen shop prevails. */

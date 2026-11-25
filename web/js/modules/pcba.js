@@ -93,7 +93,7 @@ function render(main, args) {
     if (!board) { go("#/pcba"); return; }
     const ctx = context(board);
     if (!ui.step || !STEPS[ui.step]) ui.step = ctx.flow.current === "pdr" || ctx.flow.current === "cdr" ? "revue" : ctx.flow.current;
-    if (!ui.layers) ui.layers = new Set(["bottom", "in2", "in1", "top", "silk_top", "outline"]);
+    if (!ui.layers) ui.layers = new Set(["bottom", ...Array.from({ length: 10 }, (_, i) => `in${i + 1}`), "top", "silk_top", "outline"]);
     const nav = (step) => { ui.step = step; ui.classic = null; ui.focus = null; history.replaceState(null, "", `#/pcba/${encodeURIComponent(id)}/${step}`); draw(); };
     ctx.nav = nav; ctx.redraw = draw;
     setGuide(boardChecksGuide(board, ctx).map((x) => ({ ...x, text: boardProse(x.text), screen: "pcba", ref: id, hash: `#/pcba/${encodeURIComponent(id)}/${x.step}` })));      // what the checks found, for the Guide of the top bar — a board reads in mil

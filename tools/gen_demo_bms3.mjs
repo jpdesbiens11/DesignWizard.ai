@@ -57,7 +57,7 @@ addBlock(b, "conn_wire", { signals: "CAN_H,CAN_L,GND_CISO,WAKE_IN" }, { parent: 
 addBlock(b, "mcu", { pins: 48, xtal: 8, vdd: 3.3 }, { parent: f6 }); addBlock(b, "eeprom", { vdd: 3.3 }, { parent: f6 });
 addBlock(b, "conn_swd", {}, { parent: f7 }); addBlock(b, "led", { v: 3.3, i: 2, color: "verte" }, { parent: f7 });
 addBlock(b, "test", { nets: "VSYS,+3V3,GND,GND_ISO,GND_CISO", fiducials: 3 }, { parent: f7 });
-Object.assign(b.board, { size: [W, H], layers: 4 });
+Object.assign(b.board, { size: [W, H], layers: Number(process.argv.find((a) => a.startsWith("--layers="))?.slice(9) || 6) });
 b.review = { author: "", open: [
   "Choisir et lire les composants : microcontrôleur, émetteur-récepteur CAN FD isolé, contrôleur de diode idéale (au lieu des deux Schottky), pilote d'amorce du pyrofusible, amplificateur du shunt — leurs brochages sont ceux des séries génériques de l'outil, la fiche du composant monté fait foi.",
   "Le logiciel du module ne commande pas encore la précharge ni le pyrofusible : ajouter leurs blocs et leur séquence (précharge jusqu'à 90 à 95 % de la tension du module, puis le contacteur : TI SLVAF35A § 3, Références).",

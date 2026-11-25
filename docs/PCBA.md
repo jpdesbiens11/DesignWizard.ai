@@ -91,7 +91,9 @@ redimensionnent à la souris.
 
 **Détaillé** : dans chaque zone, le composant principal d'abord, puis ses condensateurs de découplage contre la
 broche d'alimentation qu'ils servent, puis le reste ; mires aux coins. Le **routeur** est un routeur en labyrinthe
-sur grille de 0,25 mm (A*), sur 2 ou 4 couches, à vias traversants :
+sur grille de 0,25 mm (A*), sur 2, 4, 6, 8, 10 ou 12 couches (v0.199.0 : `copperLayers`, `LAYER_COUNTS` de `web/js/pcba/model.js` ; un
+nombre impair monte au pair suivant ; au choix du nombre, la masse va sur l'interne 1 et le plus gros rail sur la dernière interne, les autres
+internes portent des pistes — `defaultPlanes` ; empilage, Gerber `.G1` à `.G10` et couleurs de la vue suivent), à vias traversants :
 
 - largeur et isolement de la classe du net, élargis d'après IPC-2221 pour son courant et IPC-2221B pour sa tension ;
 - une piste se rétrécit pour entrer dans une petite pastille ;

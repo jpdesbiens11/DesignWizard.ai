@@ -6,9 +6,11 @@ import { el, svg } from "../core/dom.js";
 import { viewBar } from "../core/view_bar.js";
 import { boardProse } from "../pcba/board_units.js";
 
-export const LAYER_STYLE = { bottom: ["#2f6fc8", 0.8], in2: ["#3fa36b", 0.55], in1: ["#c89b2f", 0.55], top: ["#c8402f", 0.85], mask_bottom: ["#1f7a4d", 0.35], mask_top: ["#1f7a4d", 0.35], paste_bottom: ["#8a8f98", 0.8], paste_top: ["#8a8f98", 0.8],
+const INNER = ["#c89b2f", "#3fa36b", "#a855f7", "#0891b2", "#db2777", "#65a30d", "#ea580c", "#4f46e5", "#0d9488", "#b45309"];      // in1, in2, … : one colour each
+const INNER_KEYS = INNER.map((_, i) => `in${i + 1}`);
+export const LAYER_STYLE = { bottom: ["#2f6fc8", 0.8], ...Object.fromEntries(INNER.map((c, i) => [INNER_KEYS[i], [c, 0.55]])), top: ["#c8402f", 0.85], mask_bottom: ["#1f7a4d", 0.35], mask_top: ["#1f7a4d", 0.35], paste_bottom: ["#8a8f98", 0.8], paste_top: ["#8a8f98", 0.8],
   silk_bottom: ["#7c6fb0", 0.9], silk_top: ["#3b3f46", 0.95], coat_bottom: ["#27a7c9", 0.22], coat_top: ["#27a7c9", 0.22], fab_bottom: ["#7c6fb0", 0.9], fab_top: ["#5a6472", 0.95], outline: ["#20242a", 1] };
-export const DRAW_ORDER = ["coat_bottom", "bottom", "mask_bottom", "paste_bottom", "silk_bottom", "fab_bottom", "in2", "in1", "top", "mask_top", "paste_top", "silk_top", "fab_top", "coat_top", "outline"];
+export const DRAW_ORDER = ["coat_bottom", "bottom", "mask_bottom", "paste_bottom", "silk_bottom", "fab_bottom", ...[...INNER_KEYS].reverse(), "top", "mask_top", "paste_top", "silk_top", "fab_top", "coat_top", "outline"];
 const pts = (list) => list.map((p) => `${p[0]},${p[1]}`).join(" ");
 let uid = 0;
 
@@ -112,7 +114,7 @@ export function boardView(host) {
 export function layerList(art, visible, onChange) {
   const box = el("div", { class: "pv-layers" });
   for (const key of [...DRAW_ORDER].reverse()) {
-    if (!art.layers[key] || (!art.layers[key].length && !["top", "bottom", "in1", "in2"].includes(key))) continue;
+    if (!art.layers[key] || (!art.layers[key].length && !/^(top|bottom|in\d+)$/.test(key))) continue;
     box.append(el("label", { class: "pv-layer-row" }, el("input", { type: "checkbox", checked: visible.has(key), onChange: (e) => { if (e.target.checked) visible.add(key); else visible.delete(key); onChange(visible); } }),
       el("i", { style: { background: (LAYER_STYLE[key] || ["#666"])[0] } }), el("span", null, art.names[key] || key)));
   }

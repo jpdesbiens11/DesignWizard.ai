@@ -8,9 +8,9 @@
    `clear: true` removes what is under it (negative polarity) ; the order of the primitives of a layer matters. */
 
 import { textStrokes, textWidth } from "./strokefont.js";
-import { COATINGS } from "./model.js";
+import { COATINGS, LAYER_FR } from "./model.js";
 
-export const LAYER_NAMES = { top: "Cuivre dessus", in1: "Cuivre interne 1", in2: "Cuivre interne 2", bottom: "Cuivre dessous", mask_top: "Vernis épargne dessus", mask_bottom: "Vernis épargne dessous",
+export const LAYER_NAMES = { ...LAYER_FR, mask_top: "Vernis épargne dessus", mask_bottom: "Vernis épargne dessous",
   paste_top: "Pâte à braser dessus", paste_bottom: "Pâte à braser dessous", silk_top: "Sérigraphie dessus", silk_bottom: "Sérigraphie dessous", coat_top: "Vernis de tropicalisation dessus",
   coat_bottom: "Vernis de tropicalisation dessous", fab_top: "Plan d'assemblage dessus", fab_bottom: "Plan d'assemblage dessous", outline: "Contour de la carte" };
 const BARE = { connector: "connecteur : les contacts doivent rester nus", terminal: "bornier : les contacts doivent rester nus", switch: "organe de commande", testpoint: "point de test", fiducial: "mire de placement" };

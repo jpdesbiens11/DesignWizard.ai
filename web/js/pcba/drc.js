@@ -116,7 +116,7 @@ export function checkBoard(board, lib = {}, opts = {}) {
   const probe = (n) => n.pads.some((i) => R.pads[i].drill || R.parts.find((x) => x.ref === R.pads[i].ref).kind === "testpoint"), blind = R.nets.filter((n) => ["power", "ground", "hv"].includes(n.class) && n.pads.length > 1 && !probe(n));
   if (blind.length) add("PCBA-40", `Sans accès de mesure : ${blind.map((n) => n.name).join(", ")}.`, { nets: blind.map((n) => n.name) });
   if (!PCB_THICKNESS.includes(R.t)) add("PCBA-50", `Épaisseur de ${fr(R.t)} mm : les épaisseurs courantes sont ${PCB_THICKNESS.map((t) => fr(t)).join(" · ")} mm.`, { measured: R.t });
-  if (R.layers.length >= 4 && !R.planes.length) add("PCBA-51", "Quatre couches sans plan de masse ni plan d'alimentation.");
+  if (R.layers.length >= 4 && !R.planes.length) add("PCBA-51", `${R.layers.length} couches sans plan de masse ni plan d'alimentation.`);
   const minTrack = R.tracks.length ? Math.min(...R.tracks.map((t) => t.w)) : null;
   if ((b.copper || 35) > 35 && ((minTrack !== null && minTrack < 0.2 - 1e-6) || minSpace < 0.2 - 1e-6)) add("PCBA-52", `Cuivre de ${b.copper} µm avec des pistes ou des isolements sous 0,2 mm.`, { measured: Math.min(minTrack ?? 1, minSpace) });
   if (R.w > 100 || R.h > 100) add("PCBA-53", `Carte de ${fr(R.w)} × ${fr(R.h)} mm.`);
