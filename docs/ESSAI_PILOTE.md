@@ -20,14 +20,14 @@ L'outil est un logiciel libre en développement actif. Rien de ce qu'il calcule 
 | | Station | Où | Durée |
 |---|---|---|---|
 | 0 | Entrer | Accueil | 0 – 5 min |
-| 1 | L'assemblage | Mécanique › 3 Assemblage | 5 – 12 min |
-| 2 | L'Atelier : une pièce née de l'intention | Mécanique › 1 Atelier | 12 – 20 min |
-| 3 | Une pièce : ses cotes, ses règles, son dossier | Mécanique › 2 Pièces | 20 – 26 min |
-| 4 | Le calcul à la main | Mécanique › 5 Physique | 26 – 31 min |
-| 5 | La simulation, après l'estimation | Mécanique › 5 Physique · Simulation, onglet Simulation | 31 – 37 min |
-| 6 | L'isolation électrique | Électronique › 4 Isolation | 37 – 42 min |
-| 7 | La carte électronique et son Labo | Électronique › 2 PCBA, puis 3 Labo | 42 – 49 min |
-| 8 | Le dessin | Mécanique › 4 Dessins | 49 – 53 min |
+| 1 | L'assemblage | Mécanique › 4 Assemblage | 5 – 12 min |
+| 2 | L'Atelier : une pièce née de l'intention | Mécanique › 2 Atelier | 12 – 20 min |
+| 3 | Une pièce : ses cotes, ses règles, son dossier | Mécanique › 3 Pièces | 20 – 26 min |
+| 4 | Le calcul à la main | Mécanique › 6 Physique | 26 – 31 min |
+| 5 | La simulation, après l'estimation | Mécanique › 6 Physique · Simulation, onglet Simulation | 31 – 37 min |
+| 6 | L'isolation électrique | Électronique › 5 Isolation | 37 – 42 min |
+| 7 | La carte électronique et son Labo | Électronique › 3 PCBA, puis 4 Labo | 42 – 49 min |
+| 8 | Le dessin | Mécanique › 5 Dessins | 49 – 53 min |
 | 9 | La revue et son dossier | Produit › 1 DFx, 2 Revue, 3 Rapport | 53 – 57 min |
 | 10 | Confier une tâche à une IA | Le bouton à étincelle de la barre du haut | 57 – 60 min |
 
@@ -48,7 +48,7 @@ Total : 60 minutes.
 
 ### 1. L'assemblage — 7 min
 
-*Mécanique › 3 Assemblage.* Voir un produit entier, monté par ses interfaces.
+*Mécanique › 4 Assemblage.* Voir un produit entier, monté par ses interfaces.
 
 1. Tournez la vue en glissant dans la vue ; la molette zoome. Sous la vue, essayez « Vue éclatée » (le curseur écarte les pièces), « Rayons X » et, dans le menu de coupe, « Coupe X ».
 2. Volet de droite, onglet « Mates » : cliquez un accouplement — ses deux interfaces se montrent dans la vue.
@@ -62,7 +62,7 @@ Total : 60 minutes.
 
 ### 2. L'Atelier : une pièce née de l'intention — 8 min
 
-*Mécanique › 1 Atelier.* Faire une pièce sans esquisse : dire à quoi elle sert, l'outil propose.
+*Mécanique › 2 Atelier.* Faire une pièce sans esquisse : dire à quoi elle sert, l'outil propose.
 
 1. Ouvrez l'Atelier, puis la porte « Pas à pas ».
 2. Question 1 : dans « Nom de la pièce », tapez un nom (par exemple : Équerre de capteur), dites en une phrase à quoi elle sert, puis « Suivant ». Questions 2 et 3 — ses contraintes, ses voisines : répondez, ou « Passer ».
@@ -77,7 +77,7 @@ Total : 60 minutes.
 
 ### 3. Une pièce : ses cotes, ses règles, son dossier — 6 min
 
-*Mécanique › 2 Pièces.* Ajuster une pièce, et voir ce que l'outil en vérifie et en tire.
+*Mécanique › 3 Pièces.* Ajuster une pièce, et voir ce que l'outil en vérifie et en tire.
 
 1. Ouvrez les Pièces, puis la Base du boîtier dans la liste de gauche.
 2. Onglet « Paramètres » : changez « Longueur » avec les flèches du champ — tenues, elles accélèrent. La pièce se reconstruit ; le couvercle, lié par ses interfaces, suit.
@@ -91,7 +91,7 @@ Total : 60 minutes.
 
 ### 4. Le calcul à la main — 5 min
 
-*Mécanique › 5 Physique.* Poser une question de physique simple, et lire le calcul pas à pas.
+*Mécanique › 6 Physique.* Poser une question de physique simple, et lire le calcul pas à pas.
 
 1. Ouvrez la Physique. À droite, choisissez « Structure », puis « Cantilever · end load ».
 2. À gauche, « Reprendre ses dimensions » lit la longueur, la section et le matériau sur une pièce du projet.
@@ -104,7 +104,7 @@ Total : 60 minutes.
 
 ### 5. La simulation, après l'estimation — 6 min
 
-*Mécanique › 5 Physique · Simulation, onglet Simulation.* Lancer un calcul par éléments finis, et le recouper avec une estimation.
+*Mécanique › 6 Physique · Simulation, onglet Simulation.* Lancer un calcul par éléments finis, et le recouper avec une estimation.
 
 1. Ouvrez la tuile Physique · Simulation, puis l'onglet Simulation ; la Base du boîtier est choisie, avec son « Cas de charge ».
 2. Un champ clignote : la pression est un exemple que l'outil a inventé. Tapez la vôtre, ou gardez-la par le bouton « Garder 0.002 MPa » à côté du champ. Tant que ce n'est pas fait, l'action attend.
@@ -118,7 +118,7 @@ Total : 60 minutes.
 
 ### 6. L'isolation électrique — 5 min
 
-*Électronique › 4 Isolation.* Mesurer les distances d'isolement sur le produit entier.
+*Électronique › 5 Isolation.* Mesurer les distances d'isolement sur le produit entier.
 
 1. Ouvrez l'Isolation.
 2. « Analyser » : l'outil mesure, pour chaque paire de potentiels, la distance dans l'air et la ligne de fuite sur l'assemblage complet.
@@ -131,7 +131,7 @@ Total : 60 minutes.
 
 ### 7. La carte électronique et son Labo — 7 min
 
-*Électronique › 2 PCBA, puis 3 Labo.* Voir une carte conçue par ses fonctions, puis l'essayer sur un banc simulé.
+*Électronique › 3 PCBA, puis 4 Labo.* Voir une carte conçue par ses fonctions, puis l'essayer sur un banc simulé.
 
 1. Ouvrez le PCBA : en haut, le parcours de la carte ; dessous, les vues classiques — « Schéma », « Carte et couches », « Nomenclature ».
 2. Cliquez « Labo », dans l'en-tête de la carte.
@@ -146,7 +146,7 @@ Total : 60 minutes.
 
 ### 8. Le dessin — 4 min
 
-*Mécanique › 4 Dessins.* Lire le dessin que l'outil a tracé, et l'enregistrer.
+*Mécanique › 5 Dessins.* Lire le dessin que l'outil a tracé, et l'enregistrer.
 
 1. Ouvrez les Dessins, puis la Base du boîtier.
 2. Le dessin est déjà tracé : vues, cotes à bulles, tolérances tirées des interfaces, cartouche. Ctrl + molette zoome la feuille ; « Agrandir » aussi.

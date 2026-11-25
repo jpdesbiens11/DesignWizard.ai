@@ -23,6 +23,7 @@ import "./modules/sw.js";
 import "./modules/sw_req.js";
 import "./modules/sw_verify.js";
 import "./modules/sw_refs_ui.js";
+import "./modules/reqs_page.js";
 import "./modules/assembly.js";
 import "./modules/physics.js";
 import "./modules/media.js";

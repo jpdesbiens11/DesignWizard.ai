@@ -69,9 +69,10 @@ ${blocks}
 /** A CSV text → rows of cells (quotes, doubled quotes, line breaks inside quotes). */
 export function csvRows(text) {
   const s = String(text || "").replace(/^\uFEFF/, ""), rows = []; let row = [], cell = "", q = false;
+  const first = s.split(/\r?\n/)[0].replace(/"[^"]*"/g, ""), sep = (first.match(/;/g) || []).length > (first.match(/,/g) || []).length ? ";" : ",";      // the separator of the header line : a « ; » inside a cell of a comma list stays text
   for (let i = 0; i < s.length; i++) { const c = s[i];
     if (q) { if (c === '"' && s[i + 1] === '"') { cell += '"'; i++; } else if (c === '"') q = false; else cell += c; }
-    else if (c === '"') q = true; else if (c === "," || c === ";") { row.push(cell); cell = ""; } else if (c === "\n" || c === "\r") { if (c === "\r" && s[i + 1] === "\n") i++; row.push(cell); rows.push(row); row = []; cell = ""; } else cell += c; }
+    else if (c === '"') q = true; else if (c === sep) { row.push(cell); cell = ""; } else if (c === "\n" || c === "\r") { if (c === "\r" && s[i + 1] === "\n") i++; row.push(cell); rows.push(row); row = []; cell = ""; } else cell += c; }
   if (cell || row.length) { row.push(cell); rows.push(row); }
   return rows.filter((r) => r.some((x) => String(x).trim()));
 }

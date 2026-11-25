@@ -26,15 +26,15 @@ import { installLoupe } from "./loupe.js";
 import { installUpdateCheck, updateButton } from "./update_check.js";
 import { installWhatsNew, newsButton } from "./whats_new_ui.js";
 
-export const APP_VERSION = "0.199.0";
+export const APP_VERSION = "0.200.0";
 /** What every document of the open project carries beside its content : approval names, organisation, confidentiality note, extraction stamp (core/brand.js). */
 export const docMeta = (when = new Date()) => docIdentity(store.project, when, APP_VERSION);
 const modules = new Map();
 /* the tools of the top bar, by discipline (demande de JP : « des drop down visuels, ou flip down, par groupes de modules de conception — du haut jusqu'à la
    simulation — par discipline ») : each group flips down its screens, from the one where one designs to the one where one simulates */
 export const NAV = [
-  { id: "mech", label: "Mécanique", icon: "part", color: "#2563eb", hint: "De l'intention à la simulation", keys: ["shop", "parts", "assembly", "drawings", "physics", "fab"], also: { fea: "physics" }, tiles: { physics: { label: "Physique · Simulation", sub: "Calcul à la main, puis éléments finis" } } },
-  { id: "elec", label: "Électronique", icon: "chip", color: "#16a34a", hint: "De la carte nue au banc d'essai", keys: ["pcb", "pcba", "elab", "creepage"] },
+  { id: "mech", label: "Mécanique", icon: "part", color: "#2563eb", hint: "De l'intention à la simulation", keys: ["mreq", "shop", "parts", "assembly", "drawings", "physics", "fab"], also: { fea: "physics" }, tiles: { physics: { label: "Physique · Simulation", sub: "Calcul à la main, puis éléments finis" } } },
+  { id: "elec", label: "Électronique", icon: "chip", color: "#16a34a", hint: "De la carte nue au banc d'essai", keys: ["ereq", "pcb", "pcba", "elab", "creepage"] },
   { id: "soft", label: "Logiciel", icon: "code", color: "#0891b2", hint: "Le cycle en V, des exigences au paquet livré", keys: ["swreq", "swarch", "sw", "swsim", "swcode", "swtest", "swrel", "swref"] },
   { id: "product", label: "Produit", icon: "report", color: "#7c3aed", hint: "Règles, revue, dossier", keys: ["dfx", "review", "report", "history", "eco"] },
 ];
