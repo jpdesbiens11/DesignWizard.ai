@@ -80,3 +80,39 @@ sans doublon. Non vérifié : l'import sur la démo en ligne de DynamiteAgile, u
 
 Le projet BM 8s8p - 21700 de l'accueil s'ouvre avec cette liste chargée ; elle fait partie de la définition du produit, donc de chaque point
 de son historique.
+
+## Lue par la machine : ce que le banc doit montrer (v0.205.0)
+
+> JP, 27 novembre 2026, par menu : « Requis lisibles + pointillés » ; « des missions tirées des requis » ; le cycle en V gardé au niveau
+> Expert, rempli automatiquement.
+
+Une exigence prouvée par **essai** (lettre T) qui parle d'une grandeur que le banc relève devient un **oracle** (`web/js/core/req_oracle.js`) :
+
+| Genre | Ce qu'il dit | Exemple (ESS) |
+|---|---|---|
+| **bound** | la grandeur reste entre deux bornes tant que le contactor est fermé | ESS-REQ-002 : V bloc ≥ 2,80 V et ≤ 4,20 V |
+| **envelope** | ce que les missions doivent atteindre — l'enveloppe à couvrir | ESS-REQ-003 : jusqu'à 360 A en décharge |
+| **reaction** | la condition tient `hold`, la réponse vient avant `within` | ESS-REQ-013 : V bloc max > 4,25 V · 100 ms ⇒ contactor ouvert ≤ 150 ms |
+
+L'outil **lit les tournures courantes** de l'énoncé (« dépasse… pendant plus de… », « , ou 65 °C en charge », « en N ms au plus », le critère
+d'acceptation « en moins de 3 s » ou « entre 100 et 150 ms ») et **propose** ; une personne **confirme**, ou corrige les nombres, dans la marge
+de droite (« Lue par la machine ») — une étape annulable. Ce qu'il ne sait pas lire est dit : prouvée autrement que par essai, valeur TBD,
+ou aucune grandeur que le banc relève (la chaîne muette, le contact auxiliaire : à écrire quand le banc les enregistrera). Une lecture
+confirmée suit son exigence quand DynamiteAgile lui donne sa clé ; si l'énoncé change, elle est proposée de nouveau.
+
+**Sur la vue Mission** (Logiciel › Essayer), chaque limite d'une exigence est un **pointillé tagué de sa clé**, coloré par son verdict sur le
+profil joué — vert tenue, rouge échoue, gris non exercée, ambre enveloppe non couverte ; trait fin : lecture à confirmer. Les seuils du
+logiciel restent en jaune et rouge. Dessous, **le constat des exigences** de ce profil.
+
+**Le verdict** se lit sur l'enregistrement du banc, **une ligne par seconde** : un dépassement de moins d'une seconde n'est pas jugé, et une
+réponse est attendue au plus une ligne après son délai — le constat le dit. Le jugement suit l'exigence, pas le logiciel : c'est l'idée des
+essais fondés sur les exigences (les normes elles-mêmes n'ont pas été lues).
+
+**Premier constat sur l'ESS** (profils Charge et Décharge du BMS central, joués sans écran) :
+
+- **ESS-REQ-015** (65 °C en charge) **échoue** : le logiciel n'a qu'un seuil, 75 °C.
+- **ESS-REQ-002** (≤ 4,20 V en service) **échoue** en charge : le logiciel laisse monter à 4,25 V avant d'ouvrir — l'exigence 002 et
+  l'exigence 013 (ouvrir à 4,25 V) ne s'accordent pas : à trancher dans DynamiteAgile.
+- **ESS-REQ-024** (équilibrage) **échoue** : le logiciel n'équilibre jamais en décharge, l'exigence ne le dit pas.
+- **ESS-REQ-003** (360 A) **non couverte** : les profils vont jusqu'à 109 A ; les missions tirées des exigences (phase suivante) iront.
+- ESS-REQ-016 et ESS-REQ-047 tenues ; ESS-REQ-013 et 014 non exercées à une ligne par seconde.

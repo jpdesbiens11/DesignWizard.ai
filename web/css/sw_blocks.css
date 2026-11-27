@@ -342,6 +342,15 @@ svg.swp .swp-title { font-size: 13px; }
 .rq-mtile { display: grid; justify-items: center; gap: .1rem; border: 1.5px solid color-mix(in srgb, var(--c) 45%, var(--line)); border-radius: 10px; padding: .4rem; text-align: center; font-size: .78rem; } .rq-mtile svg { color: var(--c); } .rq-mtile b { font-size: 1.2rem; color: var(--c); }
 .rq-mstage { font-size: .85rem; } .rq-mgroup { margin: .35rem 0; } .rq-mgroup summary { cursor: pointer; font-weight: 700; } .rq-mgroup ul { margin: .3rem 0; padding-left: 1.1rem; display: grid; gap: .2rem; } .rq-mfield s { color: var(--muted); }
 @media (max-width: 900px) { .rq-path { grid-template-columns: 1fr; } }
+/* a requirement read by the machine (core/req_oracle.js) : its line under the card, its numbers in the right margin, its verdict on the Mission */
+.rq-oracle { display: grid; gap: .15rem; margin-top: .35rem; font-size: .76rem; color: #0e7490; } .rq-oracle span { display: flex; align-items: center; gap: .25rem; } .rq-oracle.guess { color: #92400e; }
+.rq-oracle.guess span { border-bottom: 1.5px dashed #d97706; width: fit-content; }
+.rq-ocard { border: 1.5px solid #0891b2; border-radius: 9px; padding: .4rem .5rem; margin: .35rem 0; font-size: .8rem; } .rq-ocard.guess { border-style: dashed; border-color: #d97706; }
+.rq-ofields { display: flex; flex-wrap: wrap; gap: .3rem .6rem; margin-top: .3rem; } .rq-ofield { display: flex; align-items: center; gap: .25rem; font-size: .75rem; color: var(--muted); } .rq-ofield input { width: 5.5rem; }
+.rq-oacts { display: flex; flex-wrap: wrap; gap: .35rem; }
+.swmi-reqs { margin: .4rem 0 .2rem; color: #e2e8f0; } .swmi-reqs summary { cursor: pointer; font-weight: 700; font-size: .85rem; } .swmi-reqs ul { margin: .35rem 0; padding-left: 1.1rem; display: grid; gap: .2rem; color: #cbd5e1; }
+.swmi-reqs li.fail b, .swmi-rq.fail { color: #f87171; } .swmi-reqs li.pass b, .swmi-reqs li.covered b, .swmi-rq.pass, .swmi-rq.covered { color: #4ade80; } .swmi-reqs li.uncovered b, .swmi-rq.uncovered { color: #fbbf24; } .swmi-rq.none { color: #cbd5e1; }
+.swmi-rqchips { display: flex; flex-wrap: wrap; gap: .3rem; margin: .35rem 0; } .swmi-rq { display: inline-flex; gap: .35rem; align-items: baseline; border: 1.5px solid currentColor; border-radius: 999px; padding: 0 .5rem; font-size: .75rem; font-weight: 700; background: #0b1220; } .swmi-rq small { font-weight: 500; }
 @media (prefers-reduced-motion: reduce) { .rq-alloc.guess .rq-chip.on { animation: none; } }
 .swbal-stale { display: flex; align-items: center; gap: .6rem; margin: .4rem .8rem; padding: .5rem .7rem; border: 1.5px solid #f59e0b; border-radius: 10px; background: color-mix(in srgb, #f59e0b 14%, transparent); color: #fde68a; font-size: .85rem; } .swbal-stale[hidden] { display: none; } .swbal-stale span { flex: 1; }
 /* docked over a side pane (v0.201.2) : the window covers the pane, scrolls inside it, and its × gives the pane back */

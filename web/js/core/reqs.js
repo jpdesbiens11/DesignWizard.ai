@@ -104,6 +104,10 @@ export function mergePlan(R, list) {
 export function mergeReqs(R, list, file = "", when = "") {
   const plan = mergePlan(R, list), next = makeReqs(list, file, when), was = new Map(plan.pairs.map(([o, r]) => [r, o]));
   for (const r of list.rows) { const o = was.get(r); if (isNeed(r) || !o || proposeAlloc(r).said || !R.alloc[keyOf(o)]) continue; next.alloc[keyOf(r)] = { ...R.alloc[keyOf(o)] }; }
+  /* the reading a person confirmed (core/req_oracle.js) follows its line — unless the statement changed : then it is to read again */
+  plan.reread = [];
+  for (const [o, r] of plan.pairs) { const kept = R && R.oracles && R.oracles[keyOf(o)]; if (!kept) continue;
+    if (kept.statement === (r.statement || "")) (next.oracles = next.oracles || {})[keyOf(r)] = kept; else plan.reread.push(keyOf(r)); }
   next.loads = [...((R && R.loads) || []), ...next.loads];
   return { R: next, plan };
 }

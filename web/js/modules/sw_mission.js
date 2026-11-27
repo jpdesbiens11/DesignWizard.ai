@@ -17,7 +17,11 @@ import { profileTxt } from "../sw/sw_profiles.js";
 import { profilesOf } from "../sw/sw_story.js";
 import { STATE_NAMES } from "../sw/sw_units.js";
 import { openBank } from "./sw_profile_bank.js";
+import { store } from "../core/store.js";
+import { seriesOf, verdicts, chartLines, verdictWord, oracleText } from "../core/req_oracle.js";
 
+/* the limits of the REQUIREMENTS (core/req_oracle.js, JP 27 novembre : « tagger les ID de requis… lignes pointillées pour les limites min / max ») : the colour is the verdict */
+const RQ_COL = { pass: "#4ade80", covered: "#4ade80", fail: "#f87171", none: "#cbd5e1", uncovered: "#fbbf24" }, RQ_RANK = { fail: 4, uncovered: 3, none: 2, pass: 1, covered: 1 };
 const STATE_COL = ["#16a34a", "#eab308", "#f97316", "#dc2626"], fr = (x, n = 1) => String(+x.toFixed(n)).replace(".", ",");
 const hms = (ms) => { const s = Math.round(ms / 1000); return s < 60 ? `${s} s` : `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, "0")}`; };
 /** The duty cycle of each lane of a record : the share of the time it was on. Pure. → { ref: 0..1 } */
@@ -37,6 +41,14 @@ export function swMission(bench, design, story, change, showPieces) {
      screen button to get back ») : the mission over the whole window, with what one needs while it runs — Marche / Pause, the banner of a limit
      and its « Continuer » ; « Écran normal » or Esc brings the page back. What it follows : the full-screen view of a recorder or a video player. */
   const st = { full: false };
+  /* the verdicts of the requirements on this run : a chip per requirement (its worst verdict), the details folded under */
+  const reqHead = el("div", { class: "swmi-rqchips" }), reqList = el("ul", { class: "small" }), reqBox = el("details", { class: "swmi-reqs", "data-swmi-reqs": "" }, el("summary", null, "Le constat des exigences sur ce profil"), reqHead, reqList);
+  function showVerdicts(res) {
+    reqBox.hidden = !res.length; if (!res.length) return; const by = new Map(); for (const x of res) { const w = by.get(x.key); if (!w || RQ_RANK[x.verdict] > RQ_RANK[w.verdict]) by.set(x.key, x); }
+    const n = (v) => res.filter((x) => x.verdict === v).length; reqBox.firstChild.textContent = `Le constat des exigences sur ce profil — ${n("pass") + n("covered")} tenue${n("pass") + n("covered") > 1 ? "s" : ""}, ${n("fail")} en échec, ${n("none")} non exercée${n("none") > 1 ? "s" : ""}${n("uncovered") ? `, ${n("uncovered")} enveloppe${n("uncovered") > 1 ? "s" : ""} non couverte${n("uncovered") > 1 ? "s" : ""}` : ""}`;
+    reqHead.replaceChildren(...[...by.values()].map((x) => el("span", { class: `swmi-rq ${x.verdict}`, "data-swmi-rq": x.key, title: res.filter((y) => y.key === x.key).map((y) => `${oracleText(y.oracle)} — ${verdictWord(y.verdict)} : ${y.text}`).join("\n") }, x.key, el("small", null, verdictWord(x.verdict)))));
+    reqList.replaceChildren(...res.map((x) => el("li", { class: x.verdict }, el("b", null, x.key), x.sure ? "" : " (lecture proposée)", ` — ${oracleText(x.oracle)} — `, el("b", null, verdictWord(x.verdict)), ` : ${x.text}`)));
+  }
   const go = btn("Pause", () => (bench.running ? bench.pause() : bench.play()), { small: true, primary: true, icon: "play", tip: "Laisser courir le profil, ou l'arrêter" }); go.hidden = true; go.dataset.swmiRun = "";
   const full = btn("Plein écran", () => setFull(!st.full), { small: true, icon: "fit", tip: "La mission sur tout l'écran ; « Écran normal » ou Échap y revient" }); full.dataset.swmiFull = "";
   const onKey = (e) => { if (e.key === "Escape" && st.full) { e.preventDefault(); setFull(false); } };
@@ -56,7 +68,7 @@ export function swMission(bench, design, story, change, showPieces) {
   const fsChange = () => { if (st.full && document.fullscreenElement !== node) setFull(false, true); };
   document.addEventListener("fullscreenchange", fsChange);
   const node = el("div", { class: "swmi", "data-sw-mission": "" }, el("header", { class: "swmi-head" }, icon("report"), title, clock, el("span", { class: "swmi-gap" }), go, full, exp, imp, rec, back), el("div", { class: "swmi-body" }, canvas),
-    el("p", { class: "swmi-note muted small" }, "Une ligne par seconde du module simulé (valeurs TYPIQUES). Les traits pointillés sont les seuils du logiciel ; une bande pleine, un composant en marche, avec son taux de marche à gauche. Un chiffre en haut : un événement du profil."));
+    reqBox, el("p", { class: "swmi-note muted small" }, "Une ligne par seconde du module simulé (valeurs TYPIQUES). En jaune et rouge, les seuils du LOGICIEL ; en pointillé tagué, les limites des EXIGENCES, colorées par leur verdict (vert tenue, rouge échoue, gris non exercée, ambre enveloppe non couverte ; trait fin : lecture à confirmer). Une bande pleine, un composant en marche, avec son taux de marche à gauche. Un chiffre en haut : un événement du profil."));
   /* the banner of a limit met */
   function halted(h) {
     halt.hidden = !h; if (!h) { halt.replaceChildren(); return; } const ok = story.canClear();
@@ -73,6 +85,7 @@ export function swMission(bench, design, story, change, showPieces) {
     const LBL = Math.round(Math.min(190, Math.max(96, w * 0.22))), X0 = LBL + 8, X1 = w - 10, top = 34, H = [104, 70, 70].map((x) => Math.round(x * k)), gap = 30, laneH = 17, h = top + H[0] + H[1] + H[2] + gap * 3 + 22 + lanes.length * laneH + 34, dpr = Math.min(2, window.devicePixelRatio || 1);
     canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr); canvas.style.width = `${w}px`; canvas.style.height = `${h}px`;
     const g = canvas.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.fillStyle = "#0b1220"; g.fillRect(0, 0, w, h); g.font = "11px system-ui, sans-serif"; g.textBaseline = "middle";
+    const RQ = store.project && store.project.reqs, res = RQ ? verdicts(RQ, seriesOf(L.rec, refs, d.plant)) : []; showVerdicts(res);
     const T = Math.max(story.total, L.t, 1000), X = (t) => X0 + (X1 - X0) * Math.min(1, t / T), R = L.rec, lims = packLimits(d), cut = (t, n) => (t.length > n ? `${t.slice(0, n - 1)}…` : t), chars = Math.max(10, Math.floor((LBL - 40) / 6));
     /* the time axis : a tick and its minute under the chart, a light line through every panel */
     const stepMin = [1, 2, 5, 10, 15, 20, 30, 60].find((m) => (X1 - X0) / (T / 60000 / m) >= 56) || 60, yEnd = h - 24;
@@ -81,7 +94,7 @@ export function swMission(bench, design, story, change, showPieces) {
     /* the events of the profile, numbered */
     let n = 0; g.strokeStyle = "#334155"; g.setLineDash([2, 4]); for (const e of story.events) { if (e.hidden) continue; n++; const x = X(e.t); g.beginPath(); g.moveTo(x, top - 14); g.lineTo(x, yEnd); g.stroke(); g.fillStyle = "#a78bfa"; g.textAlign = "center"; g.fillText(String(n), x, 9); } g.setLineDash([]); g.textAlign = "left";
     /* three analog panels : the CORE voltages, the current, the temperature — each with its title above, its scale (ticks and grid) and the thresholds of the software */
-    const panel = (y0, hh, lo, hi, step, label, series, what, unit) => {
+    const panel = (y0, hh, lo, hi, step, label, series, what, unit, pk) => {
       const Y = (v) => y0 + hh - (hh * (Math.max(lo, Math.min(hi, v)) - lo)) / (hi - lo);
       g.fillStyle = "#e2e8f0"; g.font = "600 12px system-ui, sans-serif"; g.fillText(`${label} — ${unit}`, 6, y0 - 12); g.font = "11px system-ui, sans-serif";
       for (let v = lo; v <= hi + 1e-9; v += step) { const yy = Y(v); g.strokeStyle = "#16213a"; g.beginPath(); g.moveTo(X0, yy); g.lineTo(X1, yy); g.stroke(); g.fillStyle = "#94a3b8"; g.textAlign = "right"; g.fillText(`${fr(v, step < 1 ? 1 : 0)} ${unit}`, X0 - 6, yy); g.textAlign = "left"; }
@@ -89,11 +102,18 @@ export function swMission(bench, design, story, change, showPieces) {
       const taken = []; for (const l of lims.filter((x) => what.includes(x.what)).sort((a, b) => b.trip - a.trip)) { const v = l.what === "temp" ? l.trip / 10 : l.trip / 1000; if (v < lo || v > hi) continue; g.strokeStyle = l.latch ? "#ef4444" : "#eab308"; g.setLineDash([5, 4]); g.beginPath(); g.moveTo(X0, Y(v)); g.lineTo(X1, Y(v)); g.stroke(); g.setLineDash([]);
         let ly = Y(v) - 7; while (taken.some((t) => Math.abs(t - ly) < 12)) ly += 12; taken.push(ly);      /* two thresholds close together : their labels one under the other */
         g.fillStyle = g.strokeStyle; g.textAlign = "right"; g.fillText(cut(l.name, 30), X1 - 4, ly); g.textAlign = "left"; }
+      /* the limits of the requirements : dashed across, tagged at the left with the key */
+      const tags = []; for (const ln of chartLines(RQ, res, pk)) { if (ln.value < lo || ln.value > hi) continue; const yy = Y(ln.value), col = RQ_COL[ln.verdict] || "#cbd5e1";
+        g.strokeStyle = col; g.globalAlpha = ln.sure ? 1 : 0.65; g.lineWidth = ln.sure ? 1.4 : 1; g.setLineDash(ln.sure ? [9, 4] : [2, 3]); g.beginPath(); g.moveTo(X0, yy); g.lineTo(X1, yy); g.stroke(); g.setLineDash([]); g.lineWidth = 1;
+        /* the tag sits ON its line, inside the panel ; tags that would touch move to the right, never up over another panel */
+        const txt = `${ln.key}${ln.when ? ` · ${ln.when === "charge" ? "charge" : "décharge"}` : ""}`, tw = g.measureText(txt).width + 10, ty = Math.max(y0 + 7, Math.min(y0 + hh - 7, yy));
+        let tx = X0 + 4; while (tags.some((t) => Math.abs(t.y - ty) < 14 && tx < t.x + t.w + 4 && t.x < tx + tw + 4)) tx = Math.max(...tags.filter((t) => Math.abs(t.y - ty) < 14).map((t) => t.x + t.w + 6)); tags.push({ x: tx, y: ty, w: tw });
+        g.fillStyle = "#0b1220"; g.fillRect(tx, ty - 6, tw, 13); g.strokeStyle = col; g.strokeRect(tx, ty - 6, tw, 13); g.fillStyle = col; g.fillText(txt, tx + 5, ty + 0.5); g.globalAlpha = 1; }
       for (const [col, f] of series) { g.strokeStyle = col; g.lineWidth = 1.6; g.beginPath(); R.forEach((x, j) => { const yy = Y(f(x)); if (!j) g.moveTo(X(x.t), yy); else g.lineTo(X(x.t), yy); }); g.stroke(); g.lineWidth = 1; }
     };
-    let y = top; panel(y, H[0], 2.6, 4.4, 0.6, "Tension des CORE (haut, bas)", [["#60a5fa", (x) => x.vmax / 1000], ["#22d3ee", (x) => x.vmin / 1000]], ["vmax", "vmin"], "V"); y += H[0] + gap;
-    panel(y, H[1], -120, 120, 60, "Courant (+ décharge, − charge)", [["#fbbf24", (x) => x.current / 1000]], ["current"], "A"); y += H[1] + gap;
-    panel(y, H[2], 15, 85, 20, "Température du CORE le plus chaud", [["#fb7185", (x) => x.temp / 10]], ["temp"], "°C"); y += H[2] + gap;
+    let y = top; panel(y, H[0], 2.6, 4.4, 0.6, "Tension des CORE (haut, bas)", [["#60a5fa", (x) => x.vmax / 1000], ["#22d3ee", (x) => x.vmin / 1000]], ["vmax", "vmin"], "V", "v"); y += H[0] + gap;
+    panel(y, H[1], -120, 120, 60, "Courant (+ décharge, − charge)", [["#fbbf24", (x) => x.current / 1000]], ["current"], "A", "i"); y += H[1] + gap;
+    panel(y, H[2], 15, 85, 20, "Température du CORE le plus chaud", [["#fb7185", (x) => x.temp / 10]], ["temp"], "°C", "t"); y += H[2] + gap;
     /* the state of the module, as a band ; then one lane per component, filled where it is on, with its duty cycle */
     g.fillStyle = "#e2e8f0"; g.font = "600 12px system-ui, sans-serif"; g.fillText("État du module", 6, y - 12); g.font = "11px system-ui, sans-serif";
     STATE_NAMES.forEach((s0, k) => { g.fillStyle = STATE_COL[k]; g.fillRect(X0 + k * 78, y - 17, 9, 9); g.fillStyle = "#94a3b8"; g.fillText(s0, X0 + k * 78 + 13, y - 12); });

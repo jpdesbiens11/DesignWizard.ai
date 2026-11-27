@@ -4,14 +4,14 @@
    draft, the stage before and after — and waits for a person : « Appliquer » is one undoable step. The rules are pure (core/reqs.js mergePlan). */
 
 import { el, btn, icon, modal } from "../core/dom.js";
-import { mergePlan, stageOf, STAGES, keyOf, COLUMN_FR } from "../core/reqs.js";
+import { mergeReqs, stageOf, STAGES, keyOf, COLUMN_FR } from "../core/reqs.js";
 
 const MAX = 12;      // lines shown per group ; the count says the rest
 const cut = (t, n = 90) => { const s = String(t || ""); return s.length > n ? `${s.slice(0, n - 1)}…` : s; };
 
 /** Opens the preview. R : the list the project holds ; list : the new reading ({ head, rows }) ; apply() : does it (one step). → the dialog */
 export function openMerge(R, list, file, apply) {
-  const P = mergePlan(R, list), before = stageOf(R), after = stageOf({ rows: list.rows }), A = STAGES[after.stage], B = STAGES[before.stage];
+  const P = mergeReqs(R, list, file).plan, before = stageOf(R), after = stageOf({ rows: list.rows }), A = STAGES[after.stage], B = STAGES[before.stage];
   const tile = (n, label, color, ic) => el("div", { class: "rq-mtile", style: `--c:${color}` }, icon(ic), el("b", null, String(n)), el("span", null, label));
   const group = (title, n, items, open = false) => n ? el("details", { class: "rq-mgroup", open }, el("summary", null, `${title} (${n})`), el("ul", { class: "small" }, items.slice(0, MAX), n > MAX ? el("li", { class: "muted" }, `… et ${n - MAX} autre${n - MAX > 1 ? "s" : ""}`) : null)) : null;
   const nothing = !P.added.length && !P.removed.length && !P.changed.length && !P.keyed.length;
@@ -28,6 +28,7 @@ export function openMerge(R, list, file, apply) {
       c.fields.map((f, i) => el("span", { class: "rq-mfield" }, i ? " · " : "", `${COLUMN_FR[f.h] || f.h} : `, el("s", null, cut(f.from, 40) || "vide"), " → ", el("b", null, cut(f.to, 40) || "vide"))))), true),
     group("Retirées — absentes du fichier", P.removed.length, P.removed.map((r) => el("li", null, el("b", null, keyOf(r)), ` — ${cut(r.statement || r.title)}`)), true),
     group("Clés données par DynamiteAgile", P.keyed.length, P.keyed.map((k) => el("li", null, `${k.from} → `, el("b", null, k.to)))),
+    group("Lues par la machine, à confirmer de nouveau — leur énoncé a changé", P.reread.length, P.reread.map((k) => el("li", null, el("b", null, k))), true),
     el("div", { class: "form-actions" }, btn("Annuler", () => m.close()), ok)], { wide: true });
   return m;
 }

@@ -21,6 +21,8 @@ import { DISCIPLINES, categoryOf, VERIFY, CRIT, COLUMN_FR, STAGES, readAgile, ma
 import { essList, ESS_FILE } from "../demo/demo_ess_reqs.js";
 import { openMerge } from "./reqs_merge_ui.js";
 import { openImport } from "./sw_lib_ui.js";
+import { oracleLine, oracleSection } from "./reqs_oracle_ui.js";
+import { oracleGuide } from "../core/req_oracle.js";
 
 const ROVER = "examples/exemple_exigences_rover.csv";
 const slug = (s) => String(s || "produit").normalize("NFKD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9]+/g, "_").replace(/^_|_$/g, "").toLowerCase() || "produit";
@@ -64,7 +66,7 @@ function page(disc) {
         el("header", null, el("b", { class: "rq-key" }, k), r.external_id && r.external_id !== k ? el("small", null, r.external_id) : null, r.criticality ? el("span", { class: "rq-crit", style: `--c:${CRIT[r.criticality] || "#64748b"}`, title: "Criticité (A la plus haute)" }, r.criticality) : null,
           V ? el("span", { class: "rq-ver", title: `Preuve : ${V.fr}` }, `${r.verification_method} · ${V.label}`) : null, hasTbd(r) ? el("span", { class: "rq-tbd", title: "Une valeur est à définir : à fixer dans DynamiteAgile" }, "TBD") : null,
           r.status ? el("span", { class: `rq-status ${M}`, "data-rq-status": M, title: M === "draft" ? "Brouillon : avant « Accepted » dans DynamiteAgile" : M === "out" ? "Écartée : rejetée ou obsolète" : "Acceptée dans DynamiteAgile" }, r.status) : null),
-        el("p", null, r.statement || r.title), r.acceptance_criteria ? el("small", { class: "rq-ac" }, icon("check"), " ", r.acceptance_criteria) : null, chips);
+        el("p", null, r.statement || r.title), r.acceptance_criteria ? el("small", { class: "rq-ac" }, icon("check"), " ", r.acceptance_criteria) : null, disc === "sw" && !need ? oracleLine(L, r) : null, chips);
     }
     /* where the list stands : the three moves, the one we are at lit, what to do now */
     function stageBand(L) {
@@ -87,7 +89,7 @@ function page(disc) {
         right.append(el("div", { class: "side-head" }, el("h2", null, "Le format")), el("p", { class: "small" }, "Les colonnes de l'export de DynamiteAgile (Goldmine), gardées telles quelles ; l'outil ne remplit que « allocation ». Une ligne sans « key » est créée par l'import de Goldmine, puis retrouvée par son « external_id »."));
         setGuide(reqsGuide(null, disc)); return;
       }
-      const { needs, reqs } = forDiscipline(L, disc), G = reqsGuide(L, disc), guess = reqs.filter((r) => !(L.alloc[keyOf(r)] || {}).sure), S = stageOf(L), draft = S.stage === "draft";
+      const { needs, reqs } = forDiscipline(L, disc), G = [...reqsGuide(L, disc), ...(disc === "sw" ? oracleGuide(L, reqs) : [])], guess = reqs.filter((r) => !(L.alloc[keyOf(r)] || {}).sure), S = stageOf(L), draft = S.stage === "draft";
       const ai = btn(draft ? "Ébauche avec l'IA" : "Concevoir avec l'IA", async () => toast((await copyText(designPrompt(L, disc, store.project))) ? `Consigne copiée : ${reqs.length} exigences et ${needs.length} besoins${draft ? ", en brouillon" : ""}. Collez-la dans votre assistant ; rapportez sa réponse par ${disc === "sw" ? "« Coller la réponse… », ici ou au bouton « IA » du Logiciel" : `la porte « Avec l'IA »${disc === "mech" ? " de l'Atelier" : ""}`}.` : "Copie impossible.", "success", 8000),
         { primary: true, small: true, icon: "sparkle", tip: draft ? "La consigne qui demande à un assistant d'éprouver le brouillon : ce qui manque, ce qui se contredit, une valeur pour chaque TBD" : "La consigne qui demande à un assistant de concevoir cette discipline à partir de ses exigences" });
       const toAgile = btn("Vers DynamiteAgile (.csv)", () => download(`exigences_${slug(store.project.name)}.csv`, toAgileCsv(L), "text/csv"), { small: true, icon: "download", tip: "Toute la liste, les mêmes colonnes, l'allocation remplie : Goldmine → Importer (une ligne sans clé y est créée)" }); toAgile.dataset.rqToAgile = "";
@@ -117,6 +119,7 @@ function page(disc) {
           a ? el("p", { class: "small" }, `Allocation : ${allocText(a) || "aucune"}${a.sure ? "" : " (proposée)"}`) : null,
           el("p", { class: "small" }, el("span", { class: "rq-schip", style: `--c:${M === "firm" ? STAGES.final.color : M === "out" ? "#64748b" : STAGES.draft.color}` }, M === "firm" ? "Acceptée" : M === "out" ? "Écartée" : "Brouillon"), ` ${r.status || "aucun statut : pas encore dans DynamiteAgile"}`),
           disc !== "sw" && reqs.includes(r) && L.alloc[keyOf(r)] && L.alloc[keyOf(r)].sw ? el("p", { class: "small" }, el("a", { href: "#/lreq", onClick: (e) => { e.preventDefault(); go("#/lreq"); } }, "La voir dans le Logiciel")) : null),
+          isNeed(r) ? null : oracleSection(L, r, (label, fn) => store.commit(`Exigences : ${label}`, (p) => fn(p.reqs))),
           el("div", { class: "side-section" }, el("h3", null, "Les colonnes de DynamiteAgile"), el("dl", { class: "rq-dl" }, L.head.filter((h) => r[h]).flatMap((h) => [el("dt", null, COLUMN_FR[h] || h), el("dd", null, r[h])])))); }
       setGuide(G.map((x) => ({ ...x, go: x.key || (x.keys && x.keys[0]) ? () => { st.sel = x.key || x.keys[0]; draw(); } : null })));
       if (st.sel) setTimeout(() => { const c = view.querySelector(`[data-rq="${CSS.escape(st.sel)}"]`); if (c && c.scrollIntoView) c.scrollIntoView({ block: "nearest" }); }, 0);

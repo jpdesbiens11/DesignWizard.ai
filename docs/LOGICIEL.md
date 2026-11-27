@@ -546,3 +546,5 @@ ajouter une section Références dans le bas du menu Logiciel ».
 ## Les exigences du produit, d'abord (v0.204.0)
 
 Le groupe Logiciel commence par la page des exigences du produit (`#/lreq`), la même liste de DynamiteAgile que la Mécanique et l'Électronique, filtrée sur le logiciel ; l'étape 1 du V (`#/swreq`, « Exigences du logiciel ») les reçoit sous leurs clés par « Vers les exigences du logiciel (V) » ou « Depuis le produit (n) ». Voir `docs/EXIGENCES.md`.
+
+Les exigences du produit prouvées par essai sont **lues par la machine** et tracées en pointillé tagué sur la vue Mission, avec leur verdict profil par profil (v0.205.0) : voir `docs/EXIGENCES.md`, « Lue par la machine ».
