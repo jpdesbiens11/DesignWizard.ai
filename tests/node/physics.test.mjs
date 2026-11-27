@@ -21,10 +21,10 @@ const STEEL = { E: 210, Re: 355, rho: 7850 };
 const VERDICTS = ['ok', 'warn', 'fail'];
 
 /* ---------- 1. library shape and defaults ---------- */
-test('library: 22 models, unique ids, complete definitions', () => {
+test('library: 23 models, unique ids, complete definitions', () => {
   assert.equal(new Set(MODELS.map((m) => m.id)).size, MODELS.length);
   const domains = DOMAINS.map((d) => d.id); assert.deepEqual(domains, ['structure', 'joints', 'fluid', 'thermal', 'electrical']);
-  assert.deepEqual(Object.fromEntries(domains.map((d) => [d, MODELS.filter((m) => m.domain === d).length])), { structure: 8, joints: 7, fluid: 2, thermal: 5, electrical: 3 });
+  assert.deepEqual(Object.fromEntries(domains.map((d) => [d, MODELS.filter((m) => m.domain === d).length])), { structure: 8, joints: 8, fluid: 2, thermal: 5, electrical: 3 });
   for (const m of MODELS) {
     for (const k of ['id', 'title', 'question', 'sketch', 'validity', 'reference']) assert.ok(typeof m[k] === 'string' && m[k].length > 2, `${m.id}.${k}`); assert.ok(domains.includes(m.domain), m.id);
     assert.ok(m.question.trim().endsWith('?'), `${m.id}: the question ends with « ? »`); assert.ok(Array.isArray(m.assumptions) && m.assumptions.length >= 2 && typeof m.compute === 'function', m.id); assert.equal(model(m.id), m);

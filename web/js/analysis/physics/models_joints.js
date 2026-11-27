@@ -300,4 +300,57 @@ const faceCam = { id: "face_cam", domain: "joints", sketch: "facecam", title: "F
     return S.set({ s, F, Fl: F / nl, T_up, F_up: T_up / lev, T_down, T_rel, F_rel: T_rel / lev, alphaLock, eta });
   } };
 
-export const JOINTS = [bolt, pressfit, pin, springStop, louvreStrip, plasticScrew, faceCam];
+/* ---------- a lever cam that rolls on a fixed stop (JP, 27 novembre 2026, the concept sheet CB-6.29 : « en relevant la poignée, la came
+   asymétrique roule sur une butée fixe : son rayon grandit et pousse le BM vers le connector, puis son plat arrive contre la butée et barre le
+   BM »). A plate cam keyed to a handle turns on a pivot of the part that moves ; a flat stop face of the fixed part faces it. The distance from
+   the pivot to the stop face is the support of the cam in that direction : it grows on the ramp by the stroke s, then the corner of the flat
+   passes the stop — the part goes e further, the over-travel — and the flat lies on it. Leaving the flat, either way, asks for e again : the
+   handle stays (a detent). Virtual work : T dθ = F dd — the torque is the force times the slope of the travel ; the friction on the stop
+   face acts at the distance of the stop, the friction of the pin at its radius. The corner rolls on the stop under the push : a line contact
+   of Hertz, a cylinder of radius rc on a plane. ---------- */
+const PUSH = "Ce qu'elle pousse", HOLD = "Ce qui la tient";
+const leverCam = { id: "lever_cam", domain: "joints", sketch: "levercam", title: "Lever cam rolling on a fixed stop (stroke, hand effort, hold on the flat)", fr: "Came à levier sur une butée fixe (course, effort à la main, tenue au plat)",
+  question: "Relever la poignée pousse-t-il la pièce jusqu'au bout, la main gantée y suffit-elle, et le plat la garde-t-il barrée ?",
+  inputs: [num("r0", "Distance pivot → butée, poignée ouverte", "mm", 15, 2, 500, 0.5, CAM), num("s", "Course jusqu'au plat", "mm", 8, 0.5, 100, 0.5, CAM),
+    num("a", "Demi-longueur du plat", "mm", 6, 0.5, 100, 0.5, CAM), num("rc", "Rayon des coins du plat", "mm", 1.5, 0.1, 50, 0.1, CAM),
+    num("ramp", "Rotation de la poignée sur la rampe", "°", 66, 5, 180, 1, CAM), num("lever", "Levier (pivot → main)", "mm", 57, 5, 1000, 1, CAM),
+    num("cams", "Nombre de cames (elles se partagent l'effort)", "", 2, 1, 4, 1, CAM), num("rp", "Rayon de l'axe du pivot", "mm", 5, 0.5, 50, 0.5, CAM),
+    num("b", "Largeur du contact came / butée", "mm", 9, 0.5, 200, 0.5, CAM),
+    num("Fc", "Effort d'engagement du connecteur", "N", 150, 0, 1e5, 10, PUSH), num("m", "Masse de ce qui glisse", "kg", 6, 0, 1e4, 0.5, PUSH),
+    num("muS", "Frottement de la pièce sur sa surface", "", 0.3, 0, 1, 0.05, PUSH), num("Fb", "Effort des butées élastiques au sur-centre", "N", 200, 0, 1e5, 10, PUSH),
+    num("Fv", "Effort qui veut ouvrir (masse × accélération)", "N", 590, 0, 1e6, 10, HOLD),
+    num("mu", "Frottement came / butée μ", "", 0.15, 0.005, 0.8, 0.005, FRIC), num("muP", "Frottement de l'axe μp", "", 0.15, 0.005, 0.8, 0.005, FRIC),
+    num("E", "Module d'Young de la came et de la butée", "MPa", 210000, 1000, 500000, 1000, CRIT), num("pAdm", "Pression de contact admise", "MPa", 1500, 10, 5000, 10, CRIT),
+    num("wipe", "Sur-course que le connecteur accepte", "mm", 1, 0, 50, 0.1, CRIT), num("Fhand", "Effort à la main admis (moufle, froid)", "N", 80, 1, 2000, 5, CRIT)],
+  outputs: [out("hf", "Distance pivot → butée au plat", "mm"), out("e", "Sur-course (le sommet, puis le plat)", "mm"), out("k", "Pente de la course", "mm/rad"),
+    out("F", "Effort à pousser au plus fort", "N"), out("T", "Couple au plus fort", "N·m"), out("F_hand", "Effort à la main au plus fort", "N"),
+    out("T_open", "Couple pour ouvrir sous la charge Fv", "N·m"), out("F_open", "Effort à la main pour ouvrir sous la charge Fv", "N"), out("p", "Pression de Hertz au coin du plat", "MPa")],
+  assumptions: ["La course suit le support de la came dans la direction de la butée : poignée ouverte, r0 ; au plat, r0 + s. Le coin du plat (rayon rc) passe la butée au sommet, à √((hf − rc)² + (a − rc)²) + rc du pivot : la pièce va e plus loin, puis le plat la ramène.",
+    "La rampe est prise à pente constante, k = (s + e) / rampe en radians — entrer la rotation qui donne la pente la plus forte du profil réel.",
+    "Travaux virtuels : T = F (k + μ hf' + μp rp), hf' la distance au sommet — la came glisse sur la face de la butée à la vitesse ω × la distance du pivot, l'axe tourne dans sa bague.",
+    "L'effort à pousser : l'engagement du connecteur, le frottement de la pièce sur sa surface et les butées élastiques au sur-centre, pris ensemble au plus fort ; les cames se le partagent.",
+    "Au plat, une charge Fv qui pousse la pièce contre les butées ne fait pas tourner la poignée : pour ouvrir, il faut basculer la came sur le coin du plat, à a − rc de l'axe de la butée.",
+    "Le coin roule sur la face de la butée : contact linéique de Hertz, cylindre de rayon rc sur un plan, même acier des deux côtés (ν = 0,3) : p = √(F E* / (π b rc)), 1/E* = 2 (1 − ν²) / E."],
+  validity: "Frottement de Coulomb constant, came et butée rigides, rampe à pente constante ; ni l'usure, ni la glace, ni la tenue des goupilles et de l'axe ne sont calculées. Les coefficients de frottement, l'effort du connecteur et l'effort admis à la main sont des valeurs d'exemple, à lire sur les fiches et à mesurer.",
+  reference: "Contact entre deux cylindres d'axes parallèles (Hertz) — page Wikipédia « Contact mechanics » (lue) ; travaux virtuels pour le couple",
+  fill: {},
+  compute(i) {
+    const S = sheet(), rad = (d) => d * PI / 180, nc = Math.max(1, Math.round(i.cams)), rc = Math.min(i.rc, i.a), hf = i.r0 + i.s, top = Math.hypot(hf - rc, i.a - rc) + rc, e = top - hf;
+    const k = (i.s + e) / rad(i.ramp), F = i.Fc + i.muS * i.m * 9.81 + i.Fb, T = F * (k + i.mu * top + i.muP * i.rp) / 1000, lev = i.lever / 1000;
+    const T_open = i.Fv * (i.a - rc + i.muP * i.rp) / 1000, Es = i.E / (2 * (1 - 0.3 * 0.3)), p = Math.sqrt((F / nc) * Es / (PI * i.b * rc));
+    S.step(`Au plat : hf = r0 + s = ${n(i.r0)} + ${n(i.s)} = ${n(hf)} mm ; au sommet, le coin passe à √((${n(hf)} − ${n(rc)})² + (${n(i.a)} − ${n(rc)})²) + ${n(rc)} = ${n(top)} mm : sur-course e = ${n(e)} mm.`);
+    S.step(`Pente : k = (s + e) / rampe = (${n(i.s)} + ${n(e)}) / (${n(i.ramp)}° × π/180) = ${n(k)} mm/rad.`);
+    S.step(`Effort à pousser : F = Fc + μs m g + Fb = ${n(i.Fc)} + ${n(i.muS)} × ${n(i.m)} × 9,81 + ${n(i.Fb)} = ${n(F)} N, ${n(F / nc)} N par came (${nc} came${nc > 1 ? "s" : ""}).`);
+    S.step(`Couple : T = F (k + μ × ${n(top)} + μp rp) = ${n(F)} × (${n(k)} + ${n(i.mu)} × ${n(top)} + ${n(i.muP)} × ${n(i.rp)}) / 1000 = ${n(T)} N·m, soit ${n(T / lev)} N au bout d'un levier de ${n(i.lever)} mm.`);
+    S.step(`Au plat, sous Fv = ${n(i.Fv)} N : la charge passe par le plat ; pour ouvrir, T = Fv (a − rc + μp rp) = ${n(T_open)} N·m, soit ${n(T_open / lev)} N à la main.`);
+    S.step(`Coin du plat sur la butée : E* = E / (2 (1 − ν²)) = ${n(Es)} MPa ; p = √(F/${nc} × E* / (π b rc)) = √(${n(F / nc)} × ${n(Es)} / (π × ${n(i.b)} × ${n(rc)})) = ${n(p)} MPa.`);
+    if (i.rc > i.a) S.warn("Le rayon des coins dépasse la demi-longueur du plat : il n'y a plus de plat, la poignée ne tient plus seule.");
+    if (nc === 1) S.warn("Une seule came : la pièce est poussée d'un seul côté et se met de travers.");
+    S.check("Effort à la main vs effort admis", T / lev, i.Fhand, "N", { note: T / lev > i.Fhand ? "Trop dur : un levier plus long, une course plus lente (rampe plus longue), moins de frottement — un galet sur la butée." : "" });
+    S.check("Sur-course vs ce que le connecteur accepte", e, i.wipe, "mm", { note: e > i.wipe ? "Le plat fait aller la pièce plus loin que le connecteur ne l'accepte : un plat plus court ou des coins plus ronds." : "" });
+    S.check("Plat qui tient : demi-plat utile vs rien", Math.max(0, i.a - rc), 0.5, "mm", { min: true, note: i.a - rc < 0.5 ? "Le plat est trop court : la poignée ne reste pas fermée seule." : "" });
+    S.check("Pression au coin du plat vs pression admise", p, i.pAdm, "MPa", { note: p > i.pAdm ? "Le coin marque la butée : un rayon plus grand, une came plus large, un acier plus dur." : "" });
+    return S.set({ hf, e, k, F, T, F_hand: T / lev, T_open, F_open: T_open / lev, p });
+  } };
+
+export const JOINTS = [bolt, pressfit, pin, springStop, louvreStrip, plasticScrew, faceCam, leverCam];

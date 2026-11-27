@@ -114,6 +114,11 @@ const SCENES = {
       const qd = q0 + th + dw * Math.PI / 360; G.cyl([rm * Math.cos(qd), rm * Math.sin(qd), base], [rm * Math.cos(qd), rm * Math.sin(qd), base + s], 2, C.second); G.cyl([rm * Math.cos(qd), rm * Math.sin(qd), base + s], [rm * Math.cos(qd), rm * Math.sin(qd), base + s + 6], 2, C.dark); }
     G.box([P(i.lever, 35) / 2, 0, base + 3 * s + 7.5], [P(i.lever, 35), 8, 3], C.dark); G.arrow([0, 0, -6], [0, 0, -1]);
     G.label([0, -R, 0], `${nl} lobe${nl > 1 ? "s" : ""} · rampe ${n1(P(i.alpha, 6))}° au rayon ${G.q(rm, "mm")} · course ${G.q(s, "mm")} (marches à l'écran)`); G.label([P(i.lever, 35), 0, base + 3 * s + 9], `levier ${G.q(P(i.lever, 35), "mm")} · ${n1(turn)}°`); },
+  levercam(G, i) { const r0 = P(i.r0, 15), s = P(i.s, 8), hf = r0 + s, a = P(i.a, 6), lev = P(i.lever, 57), b = P(i.b, 9), rp = P(i.rp, 5), x0 = -b / 2;
+    G.cyl([x0, 0, 0], [x0 + b, 0, 0], (r0 + hf) / 2, C.second); G.box([0, hf + 5, 0], [b + 2, 10, 2 * a + 16], C.wall);
+    G.box([x0 - 5, 0, lev / 2], [8, 12, lev], C.dark); G.cyl([x0 - 9, 0, lev], [x0 - 69, 0, lev], 6, C.dark); G.cyl([x0 - 12, 0, 0], [x0 + b + 2, 0, 0], rp, C.dark);
+    G.box([x0 - 45, -hf - 25, 0], [60, 30, 40], C.second, 0.3); G.arrow([x0 - 45, -hf - 10, 25], [0, -1, 0]); G.arrow([x0 - 40, 25, lev + 6], [0, 0, 1]);
+    G.label([0, hf, -a - 8], `course ${G.q(s, "mm")} : de ${G.q(r0, "mm")} à ${G.q(hf, "mm")} du pivot · plat de ${G.q(2 * a, "mm")}`); G.label([x0 - 40, 0, lev], `levier ${G.q(lev, "mm")} · ${n1(P(i.cams, 2))} cames`); },
   pulse(G, i) { const r = Math.sqrt(P(i.A, 2.5) / Math.PI), L = 14 * r; G.cyl([0, 0, 0], [L, 0, 0], r, C.second); G.arrow([0, 0, 0], [1, 0, 0], C.current); G.arrow([L + 5 * r, 0, 0], [1, 0, 0], C.current); G.gem([L / 2, 0, r], C.hot);
     G.label([L / 2, 0, -r], `section ${G.q(P(i.A, 2.5), "mm²")} (${G.dia(2 * r)} équivalent)`); G.label([0, 0, r], `I = ${n1(P(i.I, 0))} A pendant ${n1(P(i.time, 0))} s`); },
 };

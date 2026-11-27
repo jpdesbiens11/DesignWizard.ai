@@ -145,6 +145,7 @@ export const GAPS = {
 };
 /** Why a model has no case yet. */
 export const NONE = {
+  lever_cam: "Aucun exemple publié d'une came à levier sur butée n'a encore été rejoué. La pression au coin suit la formule de Hertz lue (cylindre sur plan) ; le couple est un bilan de travaux virtuels. Ni l'un ni l'autre n'est validé ici sur un cas chiffré.",
   junction_temperature: "Aucun exemple publié n'a encore été rejoué. La chaîne de résistances est une simple somme ; elle n'est pas validée ici.",
   heatsink_natural: "Aucun exemple publié d'un dissipateur complet en convection naturelle n'a été trouvé en lecture libre. Le modèle enchaîne plusieurs corrélations (Churchill-Chu, Bar-Cohen & Rohsenow, ailettes) dont aucune n'a été recoupée ici.",
   heatsink_forced: "Aucun exemple publié d'un dissipateur complet en convection forcée n'a été trouvé en lecture libre. Les corrélations de la plaque plane et le rendement d'ailette ne sont pas recoupés ici.",

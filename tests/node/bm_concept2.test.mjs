@@ -26,7 +26,7 @@ test("the history of the project : concept 1 kept on MAIN, concept 2 on its bran
   const c2 = rebuild(h, "P2"); assert.ok(c2.assemblies.some((a) => a.id === "BM2-MODULE-ASM")); assert.ok(!c2.parts.some((x) => x.id === "BM-BB-LAM"), "concept 2 is not concept 1 with more parts");
   assert.ok(c2.parts.some((x) => x.id === p.boards[0].part) && c2.parts.some((x) => x.id === p.boards[1].part), "the two boards keep their twins");
   const b = bmProject({ branch: true }); assert.equal(b.history.head, "P2"); assert.ok(b.assemblies.some((a) => a.id === "BM2-MODULE-ASM"));
-  assert.match(read("web/js/modules/home.js"), /bmProject\(\{ branch: "c4" \}\), "#\/assembly\/BM-8S8P-ASM"/, "the home card opens on the latest concept, concept 4");
+  assert.match(read("web/js/modules/home.js"), /bmProject\(\{ branch: "c5" \}\), "#\/assembly\/BM5-SWAP-ASM"/, "the home card opens on the latest concept, concept 5, the module on its swap surface");
 });
 
 test("the stack in numbers : a CORE is a big cell ; the bands of one press the + plate of the one before down to its bosses ; the handle presses them all", () => {

@@ -100,4 +100,15 @@ const faceCam = {
   flags: [{ label: "Le plateau laisse une rampe", f: 'IF({dwell}>={turn},"NON : le plateau prend toute la rotation","Oui")' }, { label: "La rampe tient dans un lobe", f: 'IF({turn}>360/{h:nl},"NON : la rotation dépasse ce qu\'un lobe peut porter","Oui")' },
     { label: "Deux lobes au moins", f: 'IF({h:nl}<2,"NON : un seul lobe fait fléchir l\'arbre","Oui")' }, { label: "Un plateau de fin de course", f: 'IF({dwell}<=0,"NON : la poignée s\'arrête sur la pente","Oui")' }],
 };
-export const XL_JOINTS = { bolted_joint: bolt, press_fit: pressfit, dowel_pin: pin, spring_stop: springStop, louvre_strip: louvreStrip, plastic_screw: plasticScrew, face_cam: faceCam };
+/* the lever cam on a fixed stop : the support of the cam (r0, then r0 + s, the corner of the flat over the top), the torque by virtual work, Hertz at the corner */
+const leverCam = {
+  helpers: [{ key: "nc", label: "Nombre de cames retenu", unit: "", f: "MAX(1,ROUND({cams},0))" }, { key: "rc", label: "Rayon des coins retenu (au plus le demi-plat)", unit: "mm", f: "MIN({rc},{a})" },
+    { key: "top", label: "Distance pivot → butée au sommet", unit: "mm", f: "SQRT(({r0}+{s}-{h:rc})^2+({a}-{h:rc})^2)+{h:rc}" }, { key: "lev", label: "Levier", unit: "m", f: "{lever}/1000" },
+    { key: "Es", label: "Module de contact E* (ν = 0,3)", unit: "MPa", f: "{E}/(2*(1-0.3^2))" }],
+  outputs: { hf: "{r0}+{s}", e: "{h:top}-{o:hf}", k: "({s}+{o:e})/RADIANS({ramp})", F: "{Fc}+{muS}*{m}*9.81+{Fb}", T: "{o:F}*({o:k}+{mu}*{h:top}+{muP}*{rp})/1000", F_hand: "{o:T}/{h:lev}",
+    T_open: "{Fv}*({a}-{h:rc}+{muP}*{rp})/1000", F_open: "{o:T_open}/{h:lev}", p: "SQRT({o:F}/{h:nc}*{h:Es}/(PI()*{b}*{h:rc}))" },
+  checks: [{ label: "Effort à la main vs effort admis", unit: "N", value: "{o:F_hand}", limit: "{Fhand}" }, { label: "Sur-course vs ce que le connecteur accepte", unit: "mm", value: "{o:e}", limit: "{wipe}" },
+    { label: "Plat qui tient : demi-plat utile vs rien", unit: "mm", value: "MAX(0,{a}-{h:rc})", limit: "0.5", min: true }, { label: "Pression au coin du plat vs pression admise", unit: "MPa", value: "{o:p}", limit: "{pAdm}" }],
+  flags: [{ label: "Il reste un plat", f: 'IF({rc}>{a},"NON : les coins mangent le plat, la poignée ne tient plus seule","Oui")' }, { label: "Deux cames au moins", f: 'IF({h:nc}<2,"NON : la pièce est poussée d\'un seul côté","Oui")' }],
+};
+export const XL_JOINTS = { bolted_joint: bolt, press_fit: pressfit, dowel_pin: pin, spring_stop: springStop, louvre_strip: louvreStrip, plastic_screw: plasticScrew, face_cam: faceCam, lever_cam: leverCam };

@@ -40,8 +40,8 @@ Trois façons de rejouer un exemple :
 
 ## Où l'on en est
 
-**19 des 28 modèles** ont au moins un exemple publié rejoué — 28 cas, dont 26 lus sur la page de leur source.
-Sans cas : `spring_stop`, `louvre_strip`, `plastic_screw`, `junction_temperature`, `heatsink_natural`, `heatsink_forced`, `lumped_mass`, `pcb_trace`, `adiabatic_pulse`.
+**19 des 29 modèles** ont au moins un exemple publié rejoué — 28 cas, dont 26 lus sur la page de leur source.
+Sans cas : `spring_stop`, `louvre_strip`, `plastic_screw`, `lever_cam`, `junction_temperature`, `heatsink_natural`, `heatsink_forced`, `lumped_mass`, `pcb_trace`, `adiabatic_pulse`.
 
 ## Structure
 
@@ -168,6 +168,10 @@ Sans cas : `spring_stop`, `louvre_strip`, `plastic_screw`, `junction_temperature
 | Rendement d'une vis à filet carré : λ = 10°, μ = 0,30 *(rejoué tel quel)* | [Engineers Edge, « Power Screws Design »](https://engineersedge.com/mechanics_machines/power_screws_design_13982.htm) — paragraphe sur le rendement (efficiency) : « for λ = 10 degrees and µ = 0.05 » puis « µ = 0.30 » · page lue | Rendement de la came | η = 35 percent | 35,06 % | +0,2 % | ± 1,5 % |
 
 - **Ce que ces cas ne couvrent pas** : Seul le rendement de la rampe est comparé (un exemple de vis à filet carré) : la course, le frottement de la butée, le couple de retour et l'auto-blocage n'ont pas de cas chiffré — la formule de la descente et la condition d'auto-blocage sont celles que la page Wikipédia « Leadscrew » imprime, sans exemple.
+
+### Lever cam · fixed stop — Came à levier sur une butée fixe (course, effort à la main, tenue au plat)
+
+**Aucun cas.** Aucun exemple publié d'une came à levier sur butée n'a encore été rejoué. La pression au coin suit la formule de Hertz lue (cylindre sur plan) ; le couple est un bilan de travaux virtuels. Ni l'un ni l'autre n'est validé ici sur un cas chiffré.
 
 ## Fluides
 
@@ -311,7 +315,7 @@ Les exemples en unités impériales sont convertis : 1 in = 25,4 mm ; 1 lbf = 4,
 
 ## Ce qui n'est pas fait
 
-- 9 modèles n'ont aucun cas (voir plus haut) ; la plaque n'est recoupée que par ses coefficients.
+- 10 modèles n'ont aucun cas (voir plus haut) ; la plaque n'est recoupée que par ses coefficients.
 - Aucun cas ne vient d'un **essai** : ce sont des exemples de manuels, résolus par leurs auteurs avec les mêmes théories.
 - Les sources sont des pages publiques ; les manuels cités par les modèles (Roark, Shigley, Incropera, White) n'ont pas été ouverts.
 - La simulation n'a que quatre cas, tous sur des barreaux : voir `docs/SIMULATION.md` pour ses recoupements internes.

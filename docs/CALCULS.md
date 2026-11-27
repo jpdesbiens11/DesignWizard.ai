@@ -31,7 +31,7 @@ Pour itérer hors ligne. `physicsBook()` écrit un classeur à l'image de l'outi
 | **Methode** | Le calcul étape par étape (valeurs de l'export), les hypothèses, le domaine de validité, la référence |
 | **Notice** | Ce qu'est le classeur, ce qui est vivant et ce qui est figé, les unités, les limites, la confidentialité, la marque |
 
-**Classeur vivant : les 22 modèles.** Les résultats, les marges et le verdict sont des **formules**
+**Classeur vivant : les 23 modèles.** Les résultats, les marges et le verdict sont des **formules**
 (`xl_formulas.js` et ses quatre familles : `xl_structure.js`, `xl_joints.js`, `xl_thermal.js`, `xl_electrical.js`) :
 on change une case jaune, ou le média, tout suit ; une pression en kPa se lit aussi en psi, bar et atm.
 

@@ -47,6 +47,7 @@ import { ENV3, laminateC3, louvrePart, terminalsC3, lidForcesC3, pressPlateC3, d
 import { CORE_ENV } from "./demo_bm_case.js";
 import { lidForks, lidForkFeatures, bridgeC3, lidBandsPart } from "./demo_bm_c3_lid.js";
 import { conceptFour } from "./demo_bm_c4.js";
+import { conceptFive, C5 } from "./demo_bm_c5.js";
 import { run as runCalc, sessionDefaults as calcDefaults } from "../analysis/physics/index.js";
 import { addPoint, restoreInto, putDefinition, withoutHistory, tipOf, rebuild } from "../core/history.js";
 
@@ -59,6 +60,10 @@ export const C3_BRANCH = "concept 3 - blade and fork";
 /** The branch of concept 4 (JP, 22 novembre : « on doit penser à une 4e idée plus sécuritaire… des contacts flexibles sur les faces des busbars » ;
     by menu : « Faces planes à lamelles » ; « concept 4 »), from the tip of concept 3. */
 export const C4_BRANCH = "concept 4 - flat louvred faces";
+/** The branch of concept 5 (JP, 27 novembre : « J'aimerais modifier les géométries du ESS et que tu implantes ce concept dans le projet ESS 8s8p
+    directement » — the concept sheet CB-6.29 of DynamiteAgile, « Cames asymétriques sous poignée en U : pousser puis barrer le BM » ; by menu :
+    « Concept 5, depuis concept 4 »), from the tip of concept 4. */
+export const C5_BRANCH = "concept 5 - U handle and asymmetric cams";
 
 /* Iteration 2 (JP, 21 novembre : « garder les L pressés » ; « le max de courant continu des 21700 P45B de Molicel, en décharge et en charge,
    la valeur la plus élevée — on est en 8s8p avec 8 CORE » ; then the flex in G). The cell is the Molicel INR-21700-P45B of the library, its
@@ -157,8 +162,8 @@ export function bmProject(opts = {}) {
   putBoard(p, BMS3_BOARD_ID); putBoard(p, p.boards[0].id);      // the main board 3 in × 3 in and a CORE board on the lab table : « En marche » runs them together (JP, 27 novembre 2026)
   p.software = [moduleDesign()];
   p.reqs = makeReqs(essList(), ESS_FILE, "2026-11-27T12:00:00.000Z");      // the requirements of the ESS, a draft in the format of DynamiteAgile (JP, 27 novembre) : seen by the three branches, kept by every point of the history
-  withConceptTwo(p, true); withConceptThree(p); withConceptFour(p);
-  const tip = { c3: C3_BRANCH, c4: C4_BRANCH }[opts.branch];
+  withConceptTwo(p, true); withConceptThree(p); withConceptFour(p); withConceptFive(p);
+  const tip = { c3: C3_BRANCH, c4: C4_BRANCH, c5: C5_BRANCH }[opts.branch];
   restoreInto(p, tip ? tipOf(p.history, tip).id : opts.branch ? "P2" : "P1");      // the software of the central BMS : its state machine, run on its bench, written in C      // the lab table : the central BMS and one CORE board, linked by the four wires of the chain
   return p;
 }
@@ -244,6 +249,13 @@ function withConceptFour(p) {
   const r = conceptFour(p, { P1, X: CORE_X, Y: CORE_Y, ins: INS_T, t: BB_T, H, zM1: z.zM1, I: I_CORE, caseL1: CASE_L, pitch1: CORE_PITCH, at, lvx: L.lv.map((c) => c.x) });
   addPoint(p, { kind: "manual", branch: C4_BRANCH, label: "Concept 4 — premier jet : faces planes à lamelles, rien ne dépasse", when: "2026-11-22T23:00:00.000Z", by: "DynamiteOrbit.ai",
     note: `Choix de JP par menu : « Faces planes à lamelles » (sa question : les employés qui manipulent les CORE). Plus de lame ni de pince : deux bandes à lamelles encastrées dans la face −, au ras d'un cadre isolant ; face + plate. Pas ${frC(r.pitch)} mm, boîtier ${frC(r.caseL)} mm.` });
+}
+/** Concept 5, on its branch from the tip of concept 4 : the module of concept 4 untouched, its swap handle added — the ears on the top ring, the U
+    handle and its two cams, the swap surface with its stops (demo_bm_c5.js). */
+function withConceptFive(p) {
+  const r = conceptFive(p), L = r.layout;
+  addPoint(p, { kind: "manual", branch: C5_BRANCH, label: "Concept 5 — premier jet : poignée en U, cames asymétriques, swap surface", when: "2026-11-27T22:30:00.000Z", by: "DynamiteOrbit.ai",
+    note: `Feuille de concept CB-6.29 de DynamiteAgile (brique CB-6 Swap interface), choix de JP par menu : « Concept 5, depuis concept 4 ». Le module du concept 4 tel quel ; deux oreilles sur l'anneau du couvercle du haut ; une poignée en U qui pivote ${frC(L.yP - L.m.cap)} mm derrière le couvercle (la main gantée, 45 mm derrière le grip) ; deux cames de ${C5.cam.stroke} mm de course qui roulent sur les butées fixes de la swap surface et barrent le module sur leur plat ; gâchette et pawls ; rails, réceptacle, tampons.` });
 }
 const frC = (v) => String(Math.round(v * 100) / 100).replace(".", ",");
 

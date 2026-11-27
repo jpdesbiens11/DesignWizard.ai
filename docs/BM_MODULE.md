@@ -863,7 +863,7 @@ Question de JP (22 novembre 2026) : « comment on s'assure que les employés d'u
 protégée… je pensais que des contacts flexibles sur les faces des busbars est plus simple que des grosses pins de busbars pliées ». Trois idées lui
 ont été montrées en image (la lame d'aujourd'hui, des faces planes à lamelles, des douilles et une navette) ; son choix, par menu : **« Faces planes à
 lamelles »**, en 4e concept. Source : `web/js/demo/demo_bm_c4.js` (`conceptFour`), `withConceptFour` de `demo_bm.js` ; essais :
-`tests/node/bm_concept4.test.mjs`. Point P8, parti de P7 (le concept 3 avec ses bouts raccourcis) ; la carte de l'accueil ouvre cette branche.
+`tests/node/bm_concept4.test.mjs`. Point P8, parti de P7 (le concept 3 avec ses bouts raccourcis) ; la carte de l'accueil a ouvert cette branche jusqu'à v0.213 — depuis v0.214, le concept 5, qui part d'elle.
 
 **Le danger, dit juste** : un CORE seul a 4,2 V au plus, la pile 33,6 V — l'électrocution n'est pas le risque ; le risque, c'est le court-circuit
 d'un CORE (un outil, une bague entre sa face + et sa face −) : brûlure, arc. Une lame qui dépasse de 15 mm s'accroche ; une face plate, non.
@@ -885,6 +885,51 @@ d'un CORE (un outil, une bague entre sa face + et sa face −) : brûlure, arc. 
 
 **À revoir** : les plages LV ne se touchent plus d'office (le cadre les écarte de 0,5 mm : la plage du côté + doit monter sur sa rondelle) ; les
 marques laser « HV − » sont sous le cadre ; l'effort et la tenue des cadres sous 700 N (PA66) ; un essai de résistance du joint réel.
+
+## Concept 5 — « U handle and asymmetric cams » (branche de l'historique, partie du concept 4)
+
+Demande de JP (27 novembre 2026) : « J'aimerais modifier les géométries du ESS et que tu implantes ce concept dans le projet ESS 8s8p
+directement » — la feuille de concept **CB-6.29** de la Diamond de DynamiteAgile (brique CB-6 Swap interface : rails, latch, blind-mate
+connector), « Cames asymétriques sous poignée en U : pousser puis barrer le BM ». Son choix, par menu : **« Concept 5, depuis concept 4 »**.
+Puis, en cours de route : « just modify what you need to and try keeping as much as possible of the rest untouched ». Source :
+`web/js/demo/demo_bm_c5.js` (`conceptFive`), `withConceptFive` de `demo_bm.js` ; essais : `tests/node/bm_concept5.test.mjs`. Point P9, parti
+de P8 ; la carte de l'accueil ouvre cette branche, sur l'assemblage « Interface d'échange ».
+
+**Ce qui change du concept 4 : rien n'est retiré.** Les pièces, les assemblages, les calculs et la description du concept 4 restent tels quels
+(un essai le tient) ; seul l'anneau du couvercle du haut reçoit deux oreilles, et le module reçoit sa poignée.
+
+- **Le principe de la feuille** : en relevant la poignée, la came asymétrique roule sur une butée fixe — son rayon grandit et pousse le BM vers
+  le connector, puis son plat arrive contre la butée et barre le BM.
+- **De l'intérieur vers l'extérieur** (« cames hors du BM, bras à l'intérieur ») : l'**oreille** du module (6 mm, sur l'anneau en 6061-T6), le
+  **bras** de la poignée (8 mm), la **came** (10 mm, acier cémenté), la tête de l'**axe** Ø10.
+- **La poignée en U** (`BM5-HANDLE`) : grip Ø25 à **10 mm sous le dessus** du module, **123,2 mm entre les bras**, **45 mm entre le grip et
+  le bout du module** (la main gantée 120 × 45 de la feuille). Avec des bras droits, ce sont ces 45 mm qui placent le pivot **61,5 mm
+  derrière le couvercle** (57,5 mm derrière le levier du quart de tour, ce qui dépasse le plus). Levier de 56,95 mm ; elle tourne de 90°, couchée vers +Y.
+- **La came** (`BM5-CAM`) : dessinée par son support — la distance à la butée — qui grandit **à pente constante** (7,0 mm/rad) de 15 mm,
+  poignée couchée, à 23 mm au plat : **8 mm de course**. Le coin du plat (R1,5) passe la butée au sommet, à 12° de la fermeture : le module va
+  **0,47 mm** plus loin, puis le plat le ramène. Sortir du plat, dans un sens ou dans l'autre, redemande ces 0,47 mm : **la poignée reste
+  fermée seule** (un cran, pas un sur-centre contre une butée de poignée).
+- **Le second verrou** : une **gâchette** sous le grip (`BM5-TRIGGER`, 3 mm de course) ; dans chaque bras, une **tringle** et un **pawl**
+  (`BM5-PAWL`) dont le nez entre de 4 mm dans l'oreille, poignée fermée. Les ressorts et les renvois ne sont pas dessinés.
+- **La swap surface** (`BM5-SWAP-PLATE`, une seule pour le drone et la charging base) : un plateau, deux **rails** le long des flancs du
+  module, la **cloison** et le **réceptacle** du connector (`BM5-RECEPT`, enveloppe générique), les deux **butées** fixes (`BM5-STOP`, acier,
+  dans le plan des cames, 2 vis M8), deux **tampons élastiques** sur la cloison (`BM5-BUMPER`). Les tampons sont un ajout : la came ne fait que
+  pousser — ce qui retient le module vers l'avant, prend la sur-course du plat et garde le plat pressé sur sa butée, ce sont eux.
+- **La pose** : le module glisse entre les rails jusqu'à ce que ses cames touchent les butées, poignée couchée — son connector est alors à 8 mm
+  de chez lui, le nez 1 mm dans la bouche du réceptacle ; relever la poignée fait le reste.
+- **Le calcul** (`phy-bm5-cam`, modèle nouveau **`lever_cam`**, « came à levier sur une butée fixe ») : sur le profil dessiné, **76 N à la main**
+  pour 80 N admis (moufle à −40 °C, valeur d'exemple à confirmer) ; sur-course 0,47 mm pour 1 mm admis par le connector (exemple) ; pression de
+  Hertz au coin 720 MPa pour 1 500 admis (acier cémenté, exemple). Le module pèse **10,44 kg** avec sa poignée (mesuré par l'outil sur l'assemblage) ;
+  efforts d'exemple : connector 150 N (aucune fiche lue), μ 0,3 sur la surface, tampons 200 N, 10 g pour ce qui veut ouvrir. La marge à la main
+  est mince (1,05) ; le frottement sur la butée (μ 0,15) fait le tiers du couple.
+- **Vérifié par les essais** : toutes les pièces se construisent ; le module barré sur sa swap surface, rien ne traverse rien ; le long de la
+  rotation (−90°, −60°, −30°, −12°, 0°), la came reste devant sa butée et au-dessus du plateau, la poignée passe à côté de la butée ; la course,
+  le cran, la pente constante, le grip, la main gantée ; le concept 4 inchangé.
+
+**À revoir avec JP** : le pivot loin derrière le couvercle (ce que coûtent les 45 mm de la main ; des bras coudés ou un grip au-dessus du module
+changeraient la feuille) ; un **galet** sur la butée, qui ôterait le tiers de l'effort ; l'**extraction** (la poignée couchée tire le module,
+rien ne l'éjecte) ; la **glace** sur la butée ; les efforts réels du connector et sa sur-course admise ; les oreilles usinées avec l'anneau
+(rapportées et vissées en série) ; la clavette des butées ; le quart de tour du couvercle, toujours là sous la poignée.
 
 ## Ce qu'il contient
 
