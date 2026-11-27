@@ -19,7 +19,7 @@ const LABELS = { key: "Clé", external_id: "Identifiant", kind: "Nature", stakeh
   source: "Source", source_doc: "Document source", category: "Catégorie", lifecycle: "Cycle de vie", criticality: "Criticité", verification_method: "Preuve", acceptance_criteria: "Critère d'acceptation",
   allocation: "Allocation", verification_ref: "Référence de vérification", test_ref: "Essai", test_source: "Source de l'essai", functions: "Fonctions", need_status: "Statut du besoin", revision: "Révision",
   received_at: "Reçue le", rationale: "Pourquoi", client_summary: "Résumé client", implemented_by: "Réalisée par", updated_at: "Mise à jour", last_change: "Dernier changement" };
-const EXAMPLE = "data/exemple_exigences_rover.csv";
+const EXAMPLE = "examples/exemple_exigences_rover.csv";
 
 function page(disc) {
   const D = DISCIPLINES.find((x) => x.id === disc);

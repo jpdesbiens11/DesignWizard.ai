@@ -3,10 +3,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { AGILE_COLUMNS, readAgile, makeReqs, forDiscipline, parentsOf, keyOf, toAgileCsv, reqsGuide, designPrompt, proposeAlloc } from "../../web/js/core/reqs.js";
 import { NAV } from "../../web/js/core/app.js";
 
-const csv = readFileSync(new URL("../../web/data/exemple_exigences_rover.csv", import.meta.url), "utf8");
+const csv = readFileSync(new URL("../../web/examples/exemple_exigences_rover.csv", import.meta.url), "utf8");
 
 test("the export of DynamiteAgile is read as it is : every column, in its order, a « ; » inside a cell stays text", () => {
   const r = readAgile(csv); assert.ok(r.ok); assert.deepEqual(r.list.head, AGILE_COLUMNS, "the format of reference");
@@ -33,4 +35,10 @@ test("back to DynamiteAgile : the same columns, the allocation filled ; the prom
 test("the page is the first tile of Mécanique and of Électronique", () => {
   assert.equal(NAV.find((g) => g.id === "mech").keys[0], "mreq"); assert.equal(NAV.find((g) => g.id === "elec").keys[0], "ereq");
   const m = readFileSync(new URL("../../web/js/modules/reqs_page.js", import.meta.url), "utf8"); assert.match(m, /key: "mreq"/); assert.match(m, /key: "ereq"/); assert.match(readFileSync(new URL("../../web/js/main.js", import.meta.url), "utf8"), /reqs_page\.js/);
+});
+
+test("the example travels with the site : its file is not ignored by git (a « data/ » folder is)", () => {
+  const f = fileURLToPath(new URL("../../web/examples/exemple_exigences_rover.csv", import.meta.url));
+  let ignored = true; try { execFileSync("git", ["check-ignore", "-q", f], { stdio: "ignore" }); } catch (e) { ignored = e.status === 0; }
+  assert.equal(ignored, false, "git check-ignore : the example is published");
 });
