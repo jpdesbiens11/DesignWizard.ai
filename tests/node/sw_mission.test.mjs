@@ -22,3 +22,7 @@ test("the screen : the mission takes the place of the pieces, a limit stops the 
   assert.match(s, /now >= 2 && \(st\.lastRed \|\| 0\) < 2/, "URGENCE or ARRÊT stops the profile"); assert.match(s, /function cont\(\)/); assert.match(s, /if \(st\.halt\) return L;/, "nothing runs while it is stopped");
   assert.match(w, /swMission\(bench, design, story, change/); assert.match(w, /mission\.halt/);
 });
+
+test("the rack, compact while a module is on the bench : what it drives is read, what one injects stays a switch", () => {
+  const r = read("web/js/modules/sw_lab.js"); assert.match(r, /node\.classList\.toggle\("compact", !!L\.plant\)/); assert.match(r, /swlab-chip read/); assert.match(r, /swlab-seg mini/);
+});

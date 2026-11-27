@@ -341,3 +341,10 @@ svg.swp .swp-title { font-size: 13px; }
 .swmi-halt div { flex: 1; } .swmi-halt p { margin: .2rem 0 0; font-size: .85rem; color: #fecaca; } .swmi-halt svg { color: #f87171; width: 28px; height: 28px; }
 .swmi-host { flex: 1 1 0; min-height: 300px; }
 .swmi-halt b { color: #fff; font-size: .95rem; }
+/* the rack, compact while a module is on the bench (v0.202.1) : one line — what is read, what one injects */
+.swlab-rack.compact { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; padding: .35rem .5rem; overflow: visible; }
+.swlab-chip { display: inline-flex; align-items: center; gap: .35rem; padding: .2rem .55rem; border: 1.5px solid var(--line); border-radius: 999px; background: var(--surface); font: inherit; font-size: .78rem; color: var(--ink); }
+.swlab-chip svg { width: 14px; height: 14px; color: var(--muted); } .swlab-chip b { font-family: var(--mono, ui-monospace, monospace); font-variant-numeric: tabular-nums; }
+.swlab-chip.read b { background: #0b1220; color: #4ade80; padding: 0 .4rem; border-radius: 6px; }
+.swlab-chip.sw { cursor: pointer; } .swlab-chip.sw.on { border-color: #16a34a; background: color-mix(in srgb, #16a34a 12%, var(--surface)); }
+.swlab-seg.mini { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; } .swlab-seg.mini button { border: 0; background: none; padding: .05rem .45rem; font: inherit; font-size: .72rem; cursor: pointer; color: var(--muted); } .swlab-seg.mini button.on { background: #0f766e; color: #fff; }

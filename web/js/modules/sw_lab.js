@@ -24,6 +24,15 @@ export function swRack(bench, design) {
   const lamps = [], reads = [];
   function draw() {
     node.replaceChildren(); lamps.length = 0; reads.length = 0; const L = bench.L; if (!L) return; const driven = plantPins(L);
+    /* COMPACT while a module is on the bench (JP, 26 novembre 2026 : « do they say something useful? can we change and compact them to keep them? ») :
+       what the module drives is READ on one line — the same values as the monitoring and the mission ; what one injects by hand stays a small
+       switch — the chain that falls silent, the acknowledge button, the contact jammed open or welded. The outputs are in the mission. */
+    node.classList.toggle("compact", !!L.plant);
+    if (L.plant) { L.inputs.forEach((i) => { const v = L.set[i.id];
+        if (i.kind === "analog") { const b = el("b", null, physText(v, i.unit)); reads.push([i, b]); node.append(el("span", { class: "swlab-chip read", "data-sw-gear": i.id, title: "Mené par le module simulé : lu, pas réglé à la main" }, icon("sensor"), el("span", null, i.name), b)); return; }
+        if (i.kind === "digital") { node.append(el("button", { type: "button", class: `swlab-chip sw${v ? " on" : ""}`, "data-sw-gear": i.id, "data-bench": i.id, "aria-pressed": v ? "true" : "false", title: "Injecter à la main : 0 ou 1", onClick: () => { bench.set(i.id, L.set[i.id] ? 0 : 1); draw(); } }, el("i", { class: `swlab-led${v ? " on" : ""}` }), el("span", null, i.name), el("b", null, v ? "1" : "0"))); return; }
+        node.append(el("span", { class: "swlab-chip", "data-sw-gear": i.id }, icon("power"), el("span", null, i.name), el("span", { class: "swlab-seg mini", role: "group", "aria-label": `${i.name} : ce que fait le contact` }, CONTACT.map(([k, l]) => el("button", { type: "button", class: v === k ? "on" : "", "aria-pressed": v === k ? "true" : "false", "data-bench": `${i.id}:${k}`, title: k === "follows" ? "Sain : il suit la bobine" : k === "open" ? "Panne : reste ouvert" : "Panne : reste fermé", onClick: () => { bench.set(i.id, k); draw(); } }, l))))); });
+      return; }
     L.inputs.forEach((i, n) => { const D = devOf(i.id), v = L.set[i.id], head = el("h4", null, icon(D ? D.icon : i.kind === "analog" ? "sensor" : "chip"), el("span", null, i.name), el("small", null, D ? D.label : i.kind === "analog" ? "source" : i.kind === "digital" ? "entrée" : "contact"));
       const gear = el("div", { class: "swlab-gear", "data-sw-gear": i.id, style: `--jack:${JACKS[n % JACKS.length]}` }, head);
       if (i.kind === "analog") { const U = i.unit, lcd = el("input", { type: "number", min: toShown(i.min, U), max: toShown(i.max, U), step: String(Math.max(shownStep(U), toShown(i.step, U))), value: String(toShown(v, U)), "aria-label": `${i.name}, en ${shownUnit(U)}`, "data-bench": i.id }), range = el("input", { type: "range", min: i.min, max: i.max, step: i.step, value: String(v), "aria-label": `${i.name} (bouton)`, "data-bench-range": i.id }), note = el("p", { class: "swlab-note" }), face = el("div", { class: "swlab-lcd" }, lcd, el("span", null, shownUnit(U)));
@@ -43,7 +52,7 @@ export function swRack(bench, design) {
       el("div", { class: "swlab-outs" }, outs.map((o) => { const led = el("i", { class: `swlab-led ${lampColour(o)}` }), turns = o.device === "pump" || o.device === "fan"; lamps.push([`${o.id}.level`, led]); return el("span", { class: `swlab-out${turns ? " turns" : ""}`, "data-sw-lamp": o.id, title: o.device && DEVICES[o.device] ? DEVICES[o.device].text : o.name }, led, turns ? icon("refresh", "swlab-spin") : null, o.name.length > 26 ? `${o.name.slice(0, 25)}…` : o.name); }))));
     refresh();
   }
-  function refresh() { const L = bench.L; if (L) for (const [i, lcd, range] of reads) { const v = L.set[i.id]; lcd.value = String(toShown(v, i.unit)); range.value = String(v); }
+  function refresh() { const L = bench.L; if (L) for (const [i, lcd, range] of reads) { const v = L.set[i.id]; if (!range) { lcd.textContent = physText(v, i.unit); continue; } lcd.value = String(toShown(v, i.unit)); range.value = String(v); }
     for (const [ref, led] of lamps) { const on = bench.values(ref) === 1; led.classList.toggle("on", on); led.parentNode.classList.toggle("on", on); } }
   draw();
   return { node, refresh, redraw: draw };
