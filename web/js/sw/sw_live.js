@@ -7,6 +7,7 @@
 
 import { KINDS, cfgOf } from "./sw_objects.js";
 import { machine, liveWires, pinRead, split } from "./sw_design.js";
+import { plantOf, packStart, packStep, packSense, packDrive } from "./sw_pack.js";
 
 const div = (a, b) => Math.trunc(a / b), clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 /** The controls of the bench : one per input pin. kind "analog" : a quantity in the unit of the measure it feeds (or in counts when it feeds
@@ -29,8 +30,17 @@ export function liveInputs(d) {
 /** A live run, at its start : the machine, the bench at its starting values, nothing logged. keep : how many steps of trace are kept. */
 export function liveStart(d, keep = 600) {
   const m = machine(d), inputs = liveInputs(d), set = Object.fromEntries(inputs.map((i) => [i.id, i.start]));
-  return { d, m, inputs, set, keep, t: 0, log: [], trace: { t: [], ports: Object.fromEntries(Object.keys(m.last).map((r) => [r, []])) }, bool: boolOuts(d) };
+  const L = { d, m, inputs, set, keep, t: 0, log: [], trace: { t: [], ports: Object.fromEntries(Object.keys(m.last).map((r) => [r, []])) }, bool: boolOuts(d) };
+  /* the module on the bench (sw/sw_pack.js) : it drives the pins it names, one second at a time, and obeys what the software commands */
+  const pl = plantOf(d); if (pl) { L.plant = packStart(d); L.pl = pl; L.pk = { every: Math.max(1, Math.round(1000 / m.dt)), n: 0 }; sensePlant(L); }
+  return L;
 }
+const PLANT_PINS = ["vmax", "vmin", "temp", "current"];
+function sensePlant(L) { const s = packSense(L.plant); for (const k of PLANT_PINS) if (L.pl[k]) liveSet(L, L.pl[k], s[k]); }
+/** The pins the module on the bench drives : they are read, not set by hand. */
+export const plantPins = (L) => new Set(L && L.pl ? PLANT_PINS.map((k) => L.pl[k]).filter(Boolean) : []);
+/** Changes what drives the module on the bench (an event of a profile : `plant`). */
+export function liveDrive(L, patch) { if (L && L.plant && patch) { packDrive(L.plant, patch); sensePlant(L); } return L; }
 /* the 0 / 1 outputs of the design : what the journal watches */
 const boolOuts = (d) => { const out = new Set(); for (const o of (d.objects || []).filter((x) => !x.off && KINDS[x.kind])) for (const p of KINDS[o.kind].ports.out) if (p.unit === "0/1") out.add(`${o.id}.${p.key}`); return out; };
 /** Sets a control of the bench : a value, or for a contact « follows », « open » (jammed at 0), « closed » (welded at 1). */
@@ -42,11 +52,13 @@ export function liveStep(L, n = 1) {
     return pinRead({ follows: i.of, delay: i.delay, ...(v === "open" ? { stuck: 0 } : v === "closed" ? { stuck: 1 } : {}) }, k, now, drove, L.m.dt); };
   for (let q = 0; q < n; q++) { const before = {}; for (const r of L.bool) before[r] = L.m.last[r];
     const now = L.m.step(read); L.t = now + L.m.dt;
-    for (const r of L.bool) if (L.m.last[r] !== before[r]) L.log.push({ t: now, ref: r, to: L.m.last[r] });
+    for (const r of L.bool) if (L.m.last[r] !== before[r]) { L.log.push({ t: now, ref: r, to: L.m.last[r] }); L.nlog = (L.nlog || 0) + 1; }      // nlog : how many were ever logged (the log keeps the last 200)
     L.trace.t.push(now); for (const r of Object.keys(L.trace.ports)) L.trace.ports[r].push(L.m.last[r]);
-    if (L.trace.t.length > L.keep) { L.trace.t.shift(); for (const r of Object.keys(L.trace.ports)) L.trace.ports[r].shift(); } }
+    if (L.trace.t.length > L.keep) { L.trace.t.shift(); for (const r of Object.keys(L.trace.ports)) L.trace.ports[r].shift(); }
+    if (L.plant && ++L.pk.n >= L.pk.every) { L.pk.n = 0; const last = L.m.last, pl = L.pl;
+      packStep(L.plant, { closed: pl.contactor ? !!last[pl.contactor] : true, derate: pl.state ? (last[pl.state] || 0) >= 1 : false, pump: pl.pump ? !!last[pl.pump] : false }); sensePlant(L); } }
   if (L.log.length > 200) L.log.splice(0, L.log.length - 200);
   return L;
 }
 /** How many periods are due after `ms` of real time at a speed (1 : real time ; 0.1 : ten times slower), a remainder carried. → { n, rest } */
-export const due = (ms, period, speed = 1, rest = 0) => { const x = rest + ms * speed / period, n = Math.floor(x); return { n: Math.min(n, 400), rest: x - n }; };
+export const due = (ms, period, speed = 1, rest = 0) => { const x = rest + ms * speed / period, n = Math.floor(x); return { n: Math.min(n, speed > 1 ? 6000 : 400), rest: x - n }; };      // faster than real time (a module that charges in an hour) : more steps per frame

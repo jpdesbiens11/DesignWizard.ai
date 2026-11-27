@@ -2,6 +2,7 @@
    — the contactor open about 2 s, the buzzer, the coolant pump —, and the dashboard « Monitoring du BM-SWAP » read from the software.
    node --test tests/node/sw_monitor.test.mjs */
 import test from "node:test";
+import { coverage } from "../../web/js/sw/sw_pack.js";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { KINDS } from "../../web/js/sw/sw_objects.js";
@@ -24,17 +25,10 @@ test("the status lamp : one lamp lit at a time, green for normal, yellow for der
   assert.deepEqual(problems(d).filter((p) => p.level === "error"), []);
 });
 
-test("the mission profiles of the module : a charge and a discharge, each with its critical events — comm, voltage, current, temperature —; each red case opens the contactor about 2 s", () => {
+test("the mission profiles of the module : a charge and a discharge, written from the thresholds of the software — every limit crossed on purpose", () => {
   const d = moduleDesign(); assert.deepEqual(profilesOf(d).map((p) => p.kind), ["charge", "discharge"]);
-  for (const id of ["charge", "discharge"]) {
-    const P = playProfile(d, profileOf(d, id)), all = P.events.flatMap((e) => e.answers), at = (re) => all.filter((a) => re.test(a.text)).map((a) => a.t);
-    assert.ok(P.events.some((e) => e.hidden), "an acknowledgement is a button pressed then released : the release has no mark");
-    const opened = at(/Contactor : ouvert/), closed = at(/Contactor : fermé/); assert.equal(opened.length, 3, `${id} : chain silent, a voltage, a temperature`);
-    opened.forEach((t, k) => { const open = closed[k] - t; assert.ok(open >= 1900 && open <= 2100, `${id} : the contactor stays open about 2 s (${open} ms)`); });
-    assert.ok(at(/lamp : jaune/).length >= 3, `${id} : cases to watch, in yellow`); assert.equal(at(/Buzzer — alarme : sonne/).length, 3);
-    assert.ok(at(/Pompe de refroidissement \(WEG\) : en marche/).length >= 1, `${id} : the pump starts when it is warm`);
-    assert.ok(at(/Module state : DÉRATÉ/).some((t) => P.events.some((e) => /Courant/.test(e.title) && e.answers.some((a) => a.t === t))), `${id} : the current derates the module`);
-  }
+  assert.deepEqual(coverage(d, d.profiles).left, [], "no limit of the software left untouched");
+  for (const p of d.profiles) { assert.ok(p.events.some((e) => e.pulse), `${p.id} : an acknowledgement is a button pressed then released`); assert.ok(p.events.some((e) => e.plant && e.plant.mode === p.kind), `${p.id} : the module ${p.kind === "charge" ? "charges" : "discharges"}`); }
   assert.deepEqual(expandProfile([{ t: 100, id: "a", set: {}, pulse: { ack: 300 } }]).map((e) => [e.t, e.set.ack, !!e.hidden]), [[100, 1, false], [400, 0, true]]);
 });
 
@@ -53,7 +47,7 @@ test("the dashboard is read from the software : its title, the colour of each co
   const sev = Object.fromEntries(M.rows.map((r) => [r.id, r.sev]));
   assert.deepEqual(sev, { hvw: "yellow", ov: "red", lvw: "yellow", uv: "red", hot: "yellow", ot: "red", over_i: "yellow", over_ic: "yellow" }, "a limit that ends in a fault is red ; one that derates is yellow ; the pump's is an action, not a condition");
   assert.ok(M.product.some((p) => p.id === "pump" && p.sev === "green") && M.product.some((p) => p.id === "buzz") && M.product.some((p) => p.id === "k"));
-  const L = liveStart(d); liveStep(L, 5); const R = monitorRead(M, (r) => L.m.last[r]);
+  const L = liveStart({ ...d, plant: undefined }); liveStep(L, 5); const R = monitorRead(M, (r) => L.m.last[r]);      // the bench at its scenario, without the simulated module
   assert.equal(R.general, "green"); assert.equal(R.stateName, "NORMAL"); assert.equal(R.rows.find((r) => r.id === "ov").valueText, "3,9 V"); assert.equal(R.alarm, false);
   assert.match(monitorOf({ name: "X", objects: [{ id: "m", kind: "module_state", params: {} }], wires: [] }).title, /Monitoring — X/);
 });

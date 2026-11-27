@@ -4,6 +4,8 @@
    current is the one the closed module carries for ever (95 A, demo/demo_bm_heat.js). What arrives from the chain of CORE boards — the highest
    cell voltage, the highest temperature, the silence of the chain — stands here as inputs of the bench, until the objects of the link exist. */
 
+import { missionProfiles } from "./sw_pack.js";
+
 const OBJ = (id, kind, name, x, y, params = {}) => ({ id, kind, name, x, y, params, sure: [] });
 /* a value the bench stands in for : read from the chain of CORE boards (RS-485), not from a pin of the central board */
 const CHAIN = "relue de la chaîne RS-485 des cartes de CORE";
@@ -18,7 +20,7 @@ const amps = (a) => counts((a * 1000 + 660000) / 400);
 
 /** The software of the module, new each time. */
 export function moduleDesign(cpu = "tms570ls1224_pge") {
-  return { id: "BM-SW", name: "Logiciel du BMS central — module BM 8s8p", cpu, period: 10, board: "BMS-CENTRAL-3X3",      // it runs on the 3 in × 3 in board (sw/sw_blocks.js hostBoard)
+  const d = { id: "BM-SW", name: "Logiciel du BMS central — module BM 8s8p", cpu, period: 10, board: "BMS-CENTRAL-3X3",      // it runs on the 3 in × 3 in board (sw/sw_blocks.js hostBoard)
     objects: [
       BENCH(OBJ("adc_v", "pin_adc", "Banc : la plus haute tension de CORE (relue de la chaîne)", 20, 20, { channel: 0 })), OBJ("v_max", "analog_in", "Highest CORE voltage", 230, 10, { unit: "mV", num: 2, den: 1, lo: 2500, hi: 4500, n: 4 }),
       OBJ("hvw", "limit", "High voltage — watch", 470, -60, { unit: "mV", above: 1, trip: 4180, clear: 4120, delay: 200 }),
@@ -55,7 +57,11 @@ export function moduleDesign(cpu = "tms570ls1224_pge") {
     scenario: { steps: 800, pins: { adc_v: { points: [[0, counts(1950)]] }, adc_vmin: { points: [[0, counts(1825)]] }, adc_t: { points: [[0, counts(250)]] },
       adc_i: { points: [[0, amps(50)], [500, amps(150)], [4000, amps(50)]] }, lost: { points: [[0, 0], [5000, 1]] }, ack: { points: [[0, 0]] }, k_fb: { follows: "k_drv", delay: 20 } } },
     profiles: [CHARGE, DISCHARGE], monitor: { title: "Monitoring du BM-SWAP" },
+    /* the module on the bench (sw/sw_pack.js) : the pins it drives, the outputs it obeys — and the charge and the discharge written from the thresholds */
+    plant: { vmax: "adc_v", vmin: "adc_vmin", temp: "adc_t", current: "adc_i", contactor: "k_drv.level", state: "module.state", pump: "pump.level", lost: "lost", ack: "ack" },
     reqs: [], tests: [] };
+  d.profiles = missionProfiles(d);
+  return d;
 }
 
 /* THE MISSION PROFILES of the module (demande de JP, 24 novembre 2026 : « un profil de charge et un de décharge avec des événements critiques pour

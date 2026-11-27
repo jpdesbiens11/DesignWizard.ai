@@ -9,7 +9,7 @@ import { bmProject } from "../../web/js/demo/demo_bm.js";
 const read = (f) => readFileSync(new URL(`../../${f}`, import.meta.url), "utf8");
 
 test("the profile the tool writes : at rest, each input past its threshold and back, the one that latches a fault last", () => {
-  const d = bmProject().software[0], P = autoProfile(d);
+  const d = { ...bmProject().software[0], plant: undefined }, P = autoProfile(d);      // the bench driven by hand : without its simulated module (sw/sw_pack.js)
   assert.equal(P[0].id, "start"); assert.equal(P[P.length - 1].id, "end"); for (let i = 1; i < P.length; i++) assert.ok(P[i].t > P[i - 1].t, "in time");
   for (const e of P) assert.ok(e.title && e.says && typeof e.set === "object", e.id);
   assert.match(P.find((e) => e.id === "hot-in").says, /24,9 °C à 62,4 °C — au-delà du seuil de 60 °C/, "in the units of physics");
@@ -18,12 +18,12 @@ test("the profile the tool writes : at rest, each input past its threshold and b
 });
 
 test("played on the model : what the software and the product answer, and when", () => {
-  const d = bmProject().software[0], R = playProfile(d, autoProfile(d)), at = (id) => R.events.find((e) => e.id === id).answers.map((a) => `${a.text} @${a.after}`);
+  const d = { ...bmProject().software[0], plant: undefined }, R = playProfile(d, autoProfile(d)), at = (id) => R.events.find((e) => e.id === id).answers.map((a) => `${a.text} @${a.after}`);
   assert.ok(at("hot-in").includes("Module state : DÉRATÉ @1020"), at("hot-in").join(" | "));
   for (const w of ["Module state : URGENCE @490", "Module state : ARRÊT @1490", "Contactor : ouvert @1490", "Sortie : bobine du contacteur : relâché @1490", "General state lamp : rouge @490", "Buzzer — alarme : sonne @490"]) assert.ok(at("lost-on").includes(w), `${w} — ${at("lost-on").join(" | ")}`);
   assert.ok(at("ov-in").includes("Fault latch : défaut retenu @110"));
   assert.ok(R.events.every((e) => e.answers.every((a) => !/^Banc|^Entrée/.test(a.text))), "the pins the software reads are not answers");
   assert.equal(R.events.find((e) => e.id === "lost-on").answers.find((a) => a.text === "Contactor : ouvert").when, "1,49 s");
-  const ui = read("web/js/modules/sw_story_ui.js"); assert.match(ui, /data-sw-bubble/); assert.match(ui, /bench\.set\(id, v\)/, "the events set the instruments of the bench");
+  const ui = read("web/js/modules/sw_story_ui.js"); assert.match(ui, /data-sw-bubble/); assert.match(ui, /bench\.set\(id, v\)/, "the events set the instruments of the bench"); assert.match(ui, /bench\.drive\(e\.plant\)/, "and drive the module on the bench");
   assert.match(read("web/js/modules/sw.js"), /story\.line/, "the storyline above the chronogram, which stays");
 });

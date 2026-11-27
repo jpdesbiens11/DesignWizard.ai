@@ -8,7 +8,7 @@ import { KINDS } from "../../web/js/sw/sw_objects.js";
 import { LIB, requirement } from "../../web/js/sw/sw_c.js";
 import { LIBRARY } from "../../web/js/sw/sw_blocks.js";
 import { moduleDesign } from "../../web/js/sw/sw_bm_design.js";
-import { playProfile, profileOf } from "../../web/js/sw/sw_story.js";
+import { profileOf } from "../../web/js/sw/sw_story.js";
 import { ocv, socAt, balanceSpec, balanceStart, balanceStep, balanceSummary } from "../../web/js/sw/sw_balance.js";
 
 test("the block « Passive balancing » : on above the floor voltage and the delta, off under the return gap, never while discharging ; its C and its sentence", () => {
@@ -33,8 +33,8 @@ test("the charge of the 8 CORE : from 3,0 V at rest, 0,1 C then 2 C, slower whil
   assert.ok(flips < 12, `the phases do not beat (${flips})`); const R = balanceSummary(B); assert.ok(R.spread <= S.cfg.delta, `balanced : ${R.spread} mV`); assert.ok(R.socMean > 0.98); assert.ok(R.heatWh > 0, "the resistors turned energy into heat");
 });
 
-test("the charge profile starts at 3,0 V and tells the balancing ; the window is in « Essayer »", () => {
-  const d = moduleDesign(), P = playProfile(d, profileOf(d, "charge")), all = P.events.flatMap((e) => e.answers.map((a) => a.text));
-  assert.equal(d.profiles[0].events[0].set.adc_vmin, 3000); assert.ok(all.some((t) => /résistance de la CORE la plus haute est branchée/.test(t)) && all.some((t) => /résistance débranchée/.test(t)));
-  const read = (f) => readFileSync(new URL(`../../web/js/modules/${f}`, import.meta.url), "utf8"); assert.match(read("sw_balance_ui.js"), /swBalanceOpen/); assert.match(read("sw.js"), /swBalance\(design/); assert.match(read("sw_balance_ui.js"), /dragWindow\(win, bar/, "the window moves by its title bar"); assert.match(read("sw_monitor_ui.js"), /data-swm-cores/);
+test("the charge profile starts at 3,0 V and drives the module the windows show ; the window is in « Essayer »", () => {
+  const d = moduleDesign(), e0 = profileOf(d, "charge")[0]; assert.equal(e0.plant.mode, "charge"); assert.equal(e0.plant.start, 3);
+  const read = (f) => readFileSync(new URL(`../../web/js/modules/${f}`, import.meta.url), "utf8"); assert.match(read("sw_balance_ui.js"), /swBalanceOpen/); assert.match(read("sw.js"), /swBalance\(design, \{ bench/); assert.match(read("sw_balance_ui.js"), /dragWindow\(win, bar/, "the window moves by its title bar"); assert.match(read("sw_monitor_ui.js"), /data-swm-cores/);
+  assert.match(read("sw_balance_ui.js"), /o\.bench\.plant/, "the window shows the module of the bench : the same simulation as the monitoring");
 });

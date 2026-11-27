@@ -248,6 +248,31 @@ piles des langages par blocs qui s'emboîtent sans fil. Vérifié par `tests/nod
 nourrit, sa clé est celle de l'encoche, rien ne se chevauche, chaque pièce est posée une seule fois hors jumeaux. Non vérifié : un essai
 par une personne qui n'a jamais programmé.
 
+## 4 quindecies. Une seule simulation du module, des profils tirés des seuils (v0.201.0)
+
+Demande de JP, 25 novembre 2026 : « le comportement de ces 2 fenêtres doit suivre le même profil de recharge en simulation ; présentement, c'est
+séparé. On doit définir le profil de charge et de décharge afin de couvrir tous les cas de l'enveloppe de fonctionnement et trigger les safety…
+exporter et importer un profil… le démarrer et voir les conséquences dans la logique SW implantée » ; choix cliqué : « Tirés des seuils du logiciel ».
+
+- **Le module sur le banc** (`web/js/sw/sw_pack.js`) : les 8 CORE (courbe, résistance, équilibrage passif de `sw_balance.js`), un chargeur
+  (0,1 C, montée, 2 C, tension constante) ou une charge, la température du CORE le plus chaud (I²R, résistances, air ou pompe). Il tourne AVEC le
+  logiciel, une seconde à la fois (`liveStep`, `sw/sw_live.js`) : contacteur ouvert, aucun courant ; dératé, le courant tenu à 0,5 C (le véhicule
+  et le chargeur tiennent la demande 30 s) ; pompe en marche, quatre fois mieux refroidi. Ses capteurs vont aux broches que `design.plant` nomme —
+  le banc les montre lues, pas réglées.
+- **Les deux fenêtres et le banc montrent la même chose** : « Charge et équilibrage » suit le module du banc (son transport est celui du banc),
+  le monitoring aussi ; le temps va jusqu'à ×400 ; un profil applique chaque événement à son instant exact (`setAdvance`), même en accéléré.
+- **Les profils** : `missionProfiles` écrit la charge et la décharge à partir des seuils du logiciel (`packLimits`) — chacun franchi au moins
+  une fois par la physique : courant (chargeur qui pousse, charge qui tire), température (chaleur du dehors), communication, tension haute
+  (chargeur qui oublie sa tension constante), tension basse (module qui se vide) ; un défaut retenu est acquitté. `coverage` dit ce qu'un
+  profil ne franchit pas. Les réponses du logiciel sont recueillies pendant que le profil joue.
+- **Le fichier** (`sw/sw_profiles.js`) porte `module.mode`, `module.start`, `module.load`, `module.push`, `module.cv_fail`, `module.heat_to`,
+  `module.ambient`, et en 5e champ les seuils visés ; il revient tel quel ; le prompt pour l'IA les nomme.
+
+Ce que le banc montre déjà, et qui est à revoir : le seuil « High voltage — watch » (4,18 V) est franchi pendant une charge normale à 4,2 V, et
+le module oscille entre normal et dératé toutes les 30 s — un seuil d'exemple trop serré, à confirmer. Tout est TYPIQUE (courbe, résistance,
+masse thermique, refroidissement) et l'écran le dit. Vérifié par `tests/node/sw_pack.test.mjs` (chaque seuil déclenché, contacteur ouvert,
+aller-retour du fichier) et dans le navigateur ; non vérifié : un essai sur une vraie batterie.
+
 ## 5. Ce qui est vérifié, ce qui ne l'est pas
 
 Vérifié : 6 essais Node (`tests/node/sw_objects.test.mjs`) — objets, fils, guide, simulation, et le C compilé qui

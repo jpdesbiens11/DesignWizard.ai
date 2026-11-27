@@ -14,7 +14,9 @@
    What it follows : the timeline of a media player, the captions of a guided tour, the « step over » of a debugger, a segmented control. */
 
 import { el, btn, icon } from "../core/dom.js";
-import { profileOf, profilesOf, playProfile } from "../sw/sw_story.js";
+import { profileOf, profilesOf, playProfile, expandProfile, sayOutput } from "../sw/sw_story.js";
+import { STATE_NAMES } from "../sw/sw_units.js";
+import { liveStep } from "../sw/sw_live.js";
 import { openBank } from "./sw_profile_bank.js";
 
 const fr = (ms) => `${String(+(ms / 1000).toFixed(1)).replace(".", ",")} s`;
@@ -24,7 +26,7 @@ const chosen = (d) => { try { return localStorage.getItem(PKEY(d)); } catch (e) 
 /** bench : the live bench ; design() ; onSet() : the instruments were changed by an event ; change(label, fn) : an undoable step on the design.
     → { line, bubble, tick(), play(), next(), dispose() } */
 export function swStory(bench, design, onSet, change) {
-  const st = { on: false, at: -1, until: null, manual: false, id: null }; let E = [], V = [], total = 1;
+  const st = { on: false, at: -1, until: null, manual: false, id: null, live: false, logN: 0, state: undefined }; let E = [], V = [], total = 1;
   const cursor = el("i", { class: "sws-cursor", "aria-hidden": "true" }), marks = el("div", { class: "sws-marks" }), bubble = el("div", { class: "sws-bubble", hidden: true, role: "status", "aria-live": "polite", "data-sw-bubble": "" });
   const go = btn("Jouer le profil", () => play(), { small: true, primary: true, icon: "play", tip: "Le banc repart de zéro et les événements arrivent un à un, en temps réel : ce qui arrive au produit, ce que le logiciel répond" }); go.dataset.swStoryPlay = "";
   const nextB = btn("Suivant", () => next(), { small: true, icon: "chevron-right", tip: "Un événement à la fois : il arrive, le logiciel répond, puis tout s'arrête — on regarde l'état, les valeurs et les sorties, puis « Suivant » encore" }); nextB.classList.add("sws-next"); nextB.dataset.swStoryNext = "";
@@ -38,7 +40,9 @@ export function swStory(bench, design, onSet, change) {
   function load(id) {
     const d = design(), all = profilesOf(d); st.id = all.find((p) => p.id === id) ? id : all.find((p) => p.id === chosen(d)) ? chosen(d) : all[0] ? all[0].id : null;
     if (id && st.id === id) { try { localStorage.setItem(PKEY(d), id); } catch (e) { /* the choice holds until the page is left */ } }
-    const plan = playProfile(d, profileOf(d, st.id)); E = plan.events; total = plan.duration; V = E.map((e, k) => (e.hidden ? -1 : k)).filter((k) => k >= 0);
+    /* a module on the bench (design.plant) : an hour of physics is not played in advance — what the software answers is gathered as it happens */
+    st.live = !!(d && d.plant); if (st.live) { E = expandProfile(profileOf(d, st.id)).map((e) => ({ ...e, answers: [] })); total = (E.length ? E[E.length - 1].t : 0) + 1000; }
+    else { const plan = playProfile(d, profileOf(d, st.id)); E = plan.events; total = plan.duration; } V = E.map((e, k) => (e.hidden ? -1 : k)).filter((k) => k >= 0);
     st.on = false; st.manual = false; st.at = -1; bubble.hidden = true; total$.textContent = fr(total); line.dataset.swStory = String(V.length);
     marks.replaceChildren(...V.map((k, n) => { const e = E[k]; return el("button", { type: "button", class: "sws-mark", style: `left:${(100 * e.t) / total}%`, "data-sws": e.id, "data-tip": `${fr(e.t)} — ${e.title}`, "aria-label": `Événement ${n + 1} à ${fr(e.t)} : ${e.title}`, onClick: () => play(k) }, String(n + 1)); }));
     pick.replaceChildren(...(all.length > 1 ? all.map((p) => el("button", { type: "button", role: "radio", class: p.id === st.id ? "on" : "", "aria-checked": p.id === st.id ? "true" : "false", "data-profile": p.id, "data-tip": `Le profil « ${p.name} »${p.kind ? ` (${p.kind})` : ""}`, onClick: () => { if (p.id !== st.id) { bench.pause(); load(p.id); bench.reset(); } } }, icon(p.kind === "charge" ? "bolt" : p.kind === "discharge" ? "power" : "flow"), p.name)) : []));
@@ -52,28 +56,40 @@ export function swStory(bench, design, onSet, change) {
         : n ? el("p", { class: "sws-quiet" }, "Le logiciel ne change rien : rien ne dépasse un seuil.") : null].filter(Boolean));
     bubble.dataset.seen = String(seen.length);
   }
-  function apply() { const t = bench.L ? bench.L.t : 0; let changed = false; while (st.at + 1 < E.length && E[st.at + 1].t <= t) { st.at++; for (const [id, v] of Object.entries(E[st.at].set || {})) { bench.set(id, v); changed = true; } } if (changed && onSet) onSet(); }
+  function apply() { const t = bench.L ? bench.L.t : 0; let changed = false; while (st.at + 1 < E.length && E[st.at + 1].t <= t) { st.at++; const e = E[st.at]; if (e.plant && bench.drive) { bench.drive(e.plant); changed = true; } for (const [id, v] of Object.entries(e.set || {})) { bench.set(id, v); changed = true; } } if (changed && onSet) onSet(); gather(); }
+  /* LIVE answers (a module on the bench) : each 0 / 1 output that changed, and the state of the module, told with the last event one sees */
+  function gather() { if (!st.live || !bench.L) return; const L = bench.L, d = design(), k = vis(), e = E[k], ref = d && d.plant && d.plant.state;
+    const first = (L.nlog || 0) - L.log.length; if (st.logN < first) st.logN = first;
+    for (; st.logN < (L.nlog || 0); st.logN++) { const g = L.log[st.logN - first]; if (!g) continue; if (!e || g.t < e.t) continue; const { o } = { o: (d.objects || []).find((x) => g.ref.startsWith(`${x.id}.`)) }; if (o && (o.kind === "state_lamp" || o.device === "led") && !g.to) continue;
+      if (o && (o.kind === "limit" || o.kind === "logic") && e.answers.length > 12) continue; e.answers.push({ t: g.t, after: g.t - e.t, ref: g.ref, to: g.to, text: sayOutput(d, g.ref, g.to), when: fr(g.t - e.t) }); }
+    const now = ref ? L.m.last[ref] : undefined; if (ref && now !== st.state) { if (e && st.state !== undefined) e.answers.push({ t: L.t, after: L.t - e.t, ref, to: now, text: `État du module : ${STATE_NAMES[now] || now}`, when: fr(L.t - e.t) }); st.state = now; } }
   /* runs the bench up to the time `until`, the events met on the way applied : one call per event */
-  function runTo(until) { const dt = bench.L.m.dt; while (bench.L.t < until) { apply(); const n = E[st.at + 1] ? Math.min(E[st.at + 1].t, until) : until; bench.step(Math.max(1, Math.ceil((n - bench.L.t) / dt))); } apply(); }
+  function runTo(until) { const dt = bench.L.m.dt; while (bench.L.t < until) { apply(); const n = E[st.at + 1] ? Math.min(E[st.at + 1].t, until) : until; let m = Math.max(1, Math.ceil((n - bench.L.t) / dt)); while (m > 0) { const q = st.live ? Math.min(m, 500) : m; bench.step(q); m -= q; gather(); } } apply(); }
   function marksOn() { const v = vis(); for (const m of marks.children) m.classList.toggle("on", !!E[v] && m.dataset.sws === E[v].id); cursor.style.left = `${Math.min(100, (100 * (bench.L ? bench.L.t : 0)) / total)}%`; }
   const say = () => { const n = V.indexOf(vis()), left = V.length - 1 - n; nextB.lastChild.textContent = left > 0 ? `Suivant (${n + 2} / ${V.length})` : "Recommencer pas à pas"; if (left > 0) delete nextB.dataset.done; else nextB.dataset.done = ""; };
   /* ONE event one sees : applied, then the time runs until all it causes has happened (its answers, then 0.3 s), never past the next one */
   function next() {
-    if (!st.manual || V.indexOf(vis()) >= V.length - 1) { bench.reset(); bench.pause(); st.on = false; st.manual = true; st.at = -1; } else bench.pause();
-    const k = V[V.indexOf(vis()) + 1], e = E[k], nk = V[V.indexOf(k) + 1], dt = bench.L.m.dt, after = Math.max(e.t, ...e.answers.map((a) => a.t)) + 300;
+    if (!st.manual || V.indexOf(vis()) >= V.length - 1) { bench.reset(); bench.pause(); st.on = false; st.manual = true; st.at = -1; fresh(); } else bench.pause();
+    const k = V[V.indexOf(vis()) + 1], e = E[k], nk = V[V.indexOf(k) + 1], dt = bench.L.m.dt, after = st.live ? (nk !== undefined ? E[nk].t - dt : total) : Math.max(e.t, ...e.answers.map((a) => a.t)) + 300;
     runTo(Math.max(e.t, nk !== undefined ? Math.min(after, E[nk].t - dt) : Math.min(after, total))); if (onSet) onSet(); show(vis()); marksOn(); say();
   }
   function play(upTo = 0) {
     st.manual = false; nextB.lastChild.textContent = "Suivant"; delete nextB.dataset.done;
-    bench.reset(); bench.pause(); st.on = true; st.at = -1; st.until = upTo > 0 ? E[upTo].t : null;
+    bench.reset(); bench.pause(); st.on = true; st.at = -1; fresh(); st.until = upTo > 0 ? E[upTo].t : null;
     if (st.until) runTo(st.until); else apply();      // up to the event chosen, a few calls : one per event
-    if (bench.setSpeed) bench.setSpeed(1); bench.play(); tick();
+    if (bench.setSpeed) bench.setSpeed(st.live ? Math.max(100, bench.speed || 100) : 1); bench.play(); tick();
   }
   function tick() {
     const t = bench.L ? bench.L.t : 0; cursor.style.left = `${Math.min(100, (100 * t) / total)}%`; if (!st.on) return;
     const was = vis(); apply(); const v = vis(); if (v >= 0) show(v); if (v !== was) marksOn();
     if (t >= total) { st.on = false; bench.pause(); }
   }
+  /* the bench runs n steps : split at the time of each event of the profile, so that each is applied on time (sw_bench setAdvance) */
+  function advance(n) { const L = bench.L, dt = L.m.dt, end = L.t + n * dt; if (!st.on && !st.manual) { liveStep(L, n); return L; }
+    while (L.t < end) { apply(); const nx = E[st.at + 1] ? Math.min(E[st.at + 1].t, end) : end; liveStep(L, Math.max(1, Math.ceil((nx - L.t) / dt))); } apply(); return L; }
+  if (bench.setAdvance) bench.setAdvance(advance);
+  /* a run starts : the answers gathered live are forgotten */
+  function fresh() { st.logN = 0; st.state = undefined; if (st.live) for (const e of E) e.answers = []; }
   load(null);
-  return { line, bubble, tick, play, next, dispose() { st.on = false; } };
+  return { get live() { return st.live; }, get playing() { return st.on; }, line, bubble, tick, play, next, dispose() { st.on = false; if (bench.setAdvance) bench.setAdvance(null); } };
 }

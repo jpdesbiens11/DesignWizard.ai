@@ -11,20 +11,24 @@ import { el, btn, icon } from "../core/dom.js";
 import { dragWindow } from "./sw_drag.js";
 import { refCite } from "./sw_refs_ui.js";
 import { balanceSpec, balanceStart, balanceStep, balanceSummary } from "../sw/sw_balance.js";
+import { packPhase } from "../sw/sw_pack.js";
 
 const SPEEDS = [1, 10, 100, 1000, 10000], hm = (s) => `${Math.floor(s / 3600)} h ${String(Math.floor((s % 3600) / 60)).padStart(2, "0")} min`;
 const f = (x, d = 2) => String(x.toFixed(d)).replace(".", ",");
 
-/** design() → { button, dispose() } — null when the software has no « Passive balancing » block */
+/** design() → { button, dispose() } — null when the software has no « Passive balancing » block.
+    o.bench : the live bench — when it carries the module (sw/sw_pack.js), the window SHOWS IT (JP, 25 novembre 2026 : « ces 2 fenêtres doivent suivre le
+    même profil de recharge en simulation ») : the same CORE, the same time, the same profile as the monitoring ; its transport is the bench's. */
 export function swBalance(design, o = {}) {
   if (!((design() || {}).objects || []).some((o) => !o.off && o.kind === "balancing")) return null;
   const st = { open: false, run: false, speed: 1000, raf: 0, last: 0, rest: 0, over: { start: 3.0, cBal: 2, rBal: 8.2 } };
-  let S = null, B = null;
+  let S = null, B = null; const shared = () => !!(o.bench && o.bench.plant), FASTS = [10, 100, 400];
   const cols = el("div", { class: "swbal-cols" }), head = el("div", { class: "swbal-head" }), chart = el("canvas", { class: "swbal-chart", role: "img", "aria-label": "Tension de chaque CORE dans le temps" });
-  const go = btn("Marche", () => (st.run ? pause() : play()), { small: true, primary: true, icon: "play" }); go.dataset.balRun = "";
-  const step = btn("Une minute", () => { pause(); balanceStep(B, 60); draw(); }, { small: true, icon: "chevron-right", tip: "Avancer d'une minute de charge, puis s'arrêter" });
-  const again = btn("Recommencer", () => { pause(); reset(); }, { small: true, icon: "refresh" });
-  const speed = el("select", { "aria-label": "Vitesse du temps", onChange: (e) => { st.speed = Number(e.target.value); } }, SPEEDS.map((k) => el("option", { value: k, selected: k === st.speed }, `×${k.toLocaleString("fr-CA")}`)));
+  const go = btn("Marche", () => (shared() ? (o.bench.running ? o.bench.pause() : o.start ? o.start() : o.bench.play()) : st.run ? pause() : play()), { small: true, primary: true, icon: "play" }); go.dataset.balRun = "";
+  const step = btn("Une minute", () => { if (shared()) { o.bench.step(Math.round(60000 / o.bench.L.m.dt)); draw(); return; } pause(); balanceStep(B, 60); draw(); }, { small: true, icon: "chevron-right", tip: "Avancer d'une minute, puis s'arrêter" });
+  const again = btn("Recommencer", () => { if (shared()) { if (o.restart) o.restart(); return; } pause(); reset(); }, { small: true, icon: "refresh" });
+  const speed = el("select", { "aria-label": "Vitesse du temps", onChange: (e) => { st.speed = Number(e.target.value); if (shared() && o.bench.setSpeed) o.bench.setSpeed(st.speed); } }, SPEEDS.map((k) => el("option", { value: k, selected: k === st.speed }, `×${k.toLocaleString("fr-CA")}`)));
+  const same = el("p", { class: "swbal-same", hidden: true, "data-bal-shared": "" }, icon("link"), " La même simulation que le monitoring et le banc : le profil joué (Charge ou Décharge, sous la page) mène les CORE, et le logiciel y répond — contacteur, dératation, pompe.");
   const num = (key, label, step0, min, max, unit, tip) => el("label", { class: "swbal-set", "data-tip": tip }, el("span", null, label), el("input", { type: "number", step: step0, min, max, value: String(st.over[key]), "data-bal-set": key, onChange: (e) => { const v = Number(e.target.value); if (Number.isFinite(v)) { st.over[key] = v; pause(); reset(); } } }), el("small", null, unit));
   const sets = el("div", { class: "swbal-sets" }, num("start", "Départ", 0.05, 2.5, 4.1, "V", "Tension de départ de chaque CORE, au repos (0 % = 2,5 V, 100 % = 4,2 V)"), num("cBal", "Pendant l'équilibrage", 0.1, 0.05, 2, "C", "Le courant de charge pendant qu'une résistance décharge un CORE. 2 C : l'équilibrage tourne EN MÊME TEMPS que la charge, ce que prévoit un circuit de surveillance du commerce [ti-bq76952-trm]. Plus bas : la charge ralentit pour laisser l'écart se rattraper — un choix du projet, aucune source lue ne le demande"), num("rBal", "Résistance", 0.1, 1, 200, "Ω", "La résistance d'équilibrage de chaque CORE : plus petite, elle rattrape plus vite et chauffe plus"));
   const body = el("div", { class: "swbal-body" }, head, cols, el("p", { class: "swbal-note" }, "L'équilibrage passif tourne pendant la charge ou au repos, au-dessus d'une tension minimale et d'un écart ; on ne mesure pas une cellule pendant qu'on la décharge ", refCite("ti-bq76952-trm"), ". Courant d'une résistance d'un circuit du commerce : 65 à 200 mA ", refCite("ti-sluaa81a"), refCite("digikey-ltc6813"), " — 0,5 A ici demande des transistors externes. Charge : 0,1 C, puis courant constant, puis tension constante ", refCite("ti-bq24610"), refCite("bu-409"), " ; 2 C = 72 A, le maximum de la fiche de la cellule (9 A par cellule, 8 en parallèle) ", refCite("molicel-p45b"), ". Cellules TYPIQUES : courbe écrite de mémoire (0 % = 2,5 V, 100 % = 4,2 V), résistance des CORE et écarts de départ en exemple ; aucune source lue ne chiffre la durée de l'équilibrage d'une grosse cellule."), chart);
@@ -32,19 +36,23 @@ export function swBalance(design, o = {}) {
   const lamp = el("span", { class: "swbal-lamp", "data-bal-lamp": "off", role: "status", "aria-live": "polite" }, el("i", { "aria-hidden": "true" }), el("b", null, "Équilibrage au repos"));
   const bar = el("header", { class: "swm-head" }, icon("bolt"), el("h3", null, "Charge et équilibrage"), lamp, close);
   const win = el("div", { class: "swm swbal", role: "dialog", "aria-label": "Charge et équilibrage", tabindex: "-1", hidden: true, "data-sw-balance": "", onKeydown: (e) => { if (e.key === "Escape") api.close(); } },
-    bar, el("div", { class: "swbal-bar" }, go, step, again, speed), sets, body);
+    bar, el("div", { class: "swbal-bar" }, go, step, again, speed), same, sets, body);
   const drag = dragWindow(win, bar, "dw.sw.balance.pos");
   const button = btn("Charge et équilibrage", () => (st.open ? api.close() : api.open()), { small: true, icon: "bolt", tip: "Les 8 CORE pendant une charge : de 0,1 C à 2 C, puis l'équilibrage passif qui rattrape les écarts — en accéléré" }); button.dataset.swBalanceOpen = "";
 
-  function reset() { S = balanceSpec(design(), { start: st.over.start, cBal: st.over.cBal, rBal: st.over.rBal }); B = balanceStart(S); draw(); }
+  function reset() { if (shared()) { B = o.bench.plant; S = B.S; } else { S = balanceSpec(design(), { start: st.over.start, cBal: st.over.cBal, rBal: st.over.rBal }); B = balanceStart(S); } draw(); }
+  /* shared : the window follows the bench — the speeds are the bench's, its own settings belong to the profile */
+  function mode() { const on = shared(); same.hidden = !on; sets.hidden = on; sets.style.display = on ? "none" : ""; speed.replaceChildren(...(on ? FASTS : SPEEDS).map((k) => el("option", { value: k, selected: k === (on ? o.bench.speed : st.speed) }, `×${k.toLocaleString("fr-CA")}`))); }
   function play() { if (B.done) reset(); st.run = true; st.last = performance.now(); st.rest = 0; go.lastChild.textContent = "Pause"; st.raf = requestAnimationFrame(tick); }
   function pause() { st.run = false; if (st.raf) cancelAnimationFrame(st.raf); st.raf = 0; go.lastChild.textContent = "Marche"; }
   function tick(ts) { if (!st.run) return; const x = st.rest + Math.min(0.25, (ts - st.last) / 1000) * st.speed / S.dt, n = Math.floor(x); st.rest = x - n; st.last = ts; if (n) { balanceStep(B, Math.min(n, 20000)); draw(); } if (B.done) { pause(); draw(); return; } st.raf = requestAnimationFrame(tick); }
   function draw() {
     if (o.onDraw) o.onDraw(B);
-    if (!st.open || !B) return; const R = balanceSummary(B), vr = B.v.map((x) => x - B.i * S.r), low = Math.min(...vr);
+    if (shared() && B !== o.bench.plant) { B = o.bench.plant; S = B.S; }
+    if (!st.open || !B) return; const R = { ...balanceSummary(B), ...(shared() ? { text: packPhase(B.phase) } : {}) }, vr = B.v.map((x) => x - B.i * S.r), low = Math.min(...vr);
     head.replaceChildren(el("div", { class: `swbal-phase ${R.phase}` }, el("small", null, hm(R.t)), el("b", null, R.text)),
-      el("div", { class: "swbal-gauge" }, el("small", null, "Chargeur"), el("b", null, `${f(R.i, 1)} A`), el("span", null, `${f(R.cRate, 2)} C`), el("i", { style: `width:${Math.min(100, (100 * R.cRate) / S.cHigh)}%` })),
+      el("div", { class: `swbal-gauge${R.i < 0 ? " out" : ""}` }, el("small", null, R.i < 0 ? "Décharge" : "Chargeur"), el("b", null, `${f(Math.abs(R.i), 1)} A`), el("span", null, `${f(Math.abs(R.cRate), 2)} C`), el("i", { style: `width:${Math.min(100, (100 * Math.abs(R.cRate)) / S.cHigh)}%` })),
+      ...(B.temp !== undefined ? [el("div", { class: "swbal-fig" }, el("small", null, "Au plus chaud"), el("b", { class: B.temp > 45 ? "warn" : "ok" }, `${f(B.temp, 1)} °C`))] : []),
       el("div", { class: "swbal-fig" }, el("small", null, "Écart"), el("b", { class: R.spread > S.cfg.delta ? "warn" : "ok" }, `${R.spread} mV`)), el("div", { class: "swbal-fig" }, el("small", null, "Résistances"), el("b", null, `${R.bleeding} / ${S.n}`)),
       el("div", { class: "swbal-fig" }, el("small", null, "Chaleur"), el("b", null, `${f(R.heatWh, 1)} Wh`)), el("div", { class: "swbal-fig" }, el("small", null, "Charge moyenne"), el("b", null, `${Math.round(R.socMean * 100)} %`)));
     cols.replaceChildren(...B.v.map((_, k) => { const soc = B.soc[k], on = !!B.bleed[k], dv = Math.round((vr[k] - low) * 1000);
@@ -63,17 +71,19 @@ export function swBalance(design, o = {}) {
     g.strokeStyle = "#1e293b"; g.lineWidth = 1; g.font = "10px system-ui, sans-serif"; g.fillStyle = "#64748b"; for (const v of [3.0, 3.5, 4.0, 4.2]) { g.beginPath(); g.moveTo(34, Y(v)); g.lineTo(w - 6, Y(v)); g.stroke(); g.fillText(`${f(v, 1)} V`, 2, Y(v) + 3); }
     const hue = (k) => `hsl(${(k * 360) / B.v.length} 80% 62%)`;
     for (let k = 0; k < B.v.length; k++) { g.strokeStyle = hue(k); g.lineWidth = 1.4; g.beginPath(); T.forEach((p, j) => { const y = Y(p.v[k] - p.i * S.r); if (!j) g.moveTo(X(p.t), y); else g.lineTo(X(p.t), y); }); g.stroke(); }
-    g.strokeStyle = "#fbbf24"; g.setLineDash([4, 3]); g.beginPath(); T.forEach((p, j) => { const y = h - 14 - (h - 24) * Math.min(1, p.i / (S.cHigh * S.capAh)); if (!j) g.moveTo(X(p.t), y); else g.lineTo(X(p.t), y); }); g.stroke(); g.setLineDash([]);
-    g.fillStyle = "#fbbf24"; g.fillText("courant (pointillé, jusqu'à 2 C)", w - 170, 12); g.fillStyle = "#94a3b8"; g.fillText(hm(T[T.length - 1].t), w - 60, h - 2);
+    g.strokeStyle = "#fbbf24"; g.setLineDash([4, 3]); g.beginPath(); T.forEach((p, j) => { const y = h - 14 - (h - 24) * Math.min(1, Math.abs(p.i) / (S.cHigh * S.capAh)); if (!j) g.moveTo(X(p.t), y); else g.lineTo(X(p.t), y); }); g.stroke(); g.setLineDash([]);
+    g.fillStyle = "#fbbf24"; g.fillText("courant (pointillé, jusqu'à 2 C, charge ou décharge)", w - 250, 12); g.fillStyle = "#94a3b8"; g.fillText(hm(T[T.length - 1].t), w - 60, h - 2);
   }
   const resistor = (on) => { const s = document.createElementNS("http://www.w3.org/2000/svg", "svg"); s.setAttribute("viewBox", "0 0 40 12"); s.setAttribute("class", `swbal-zig${on ? " on" : ""}`); s.setAttribute("aria-hidden", "true");
     const p = document.createElementNS("http://www.w3.org/2000/svg", "path"); p.setAttribute("d", "M0 6 H8 L11 1 L15 11 L19 1 L23 11 L27 1 L30 6 H40"); s.append(p); return s; };
   const api = {
     button,
-    open() { st.open = true; if (!win.isConnected) document.body.append(win); win.hidden = false; drag.restore({ x: Math.max(8, Math.min(330, window.innerWidth - 760)), y: 84 }); if (!B) reset(); else draw(); button.setAttribute("aria-expanded", "true"); win.focus(); },
-    close() { st.open = false; pause(); win.hidden = true; button.setAttribute("aria-expanded", "false"); },
+    open() { st.open = true; if (!win.isConnected) document.body.append(win); win.hidden = false; drag.restore({ x: Math.max(8, Math.min(330, window.innerWidth - 760)), y: 84 }); mode(); if (!B || shared()) reset(); else draw(); button.setAttribute("aria-expanded", "true"); win.focus(); },
+    close() { st.open = false; if (!shared()) pause(); win.hidden = true; button.setAttribute("aria-expanded", "false"); },
     dispose() { pause(); win.remove(); },
-    get state() { return B && st.open ? B : null; },
+    get state() { return shared() ? o.bench.plant : B && st.open ? B : null; },
+    /* a frame of the bench : the window redraws, a few times a second */
+    frame() { if (!shared()) return; const now = performance.now(); if (now - (st.drawn || 0) < 200) return; st.drawn = now; draw(); go.lastChild.textContent = o.bench.running ? "Pause" : "Marche"; },
   };
   return api;
 }
