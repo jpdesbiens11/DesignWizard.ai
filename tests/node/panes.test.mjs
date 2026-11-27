@@ -52,3 +52,15 @@ test("every side panel of every page can be resized and hidden : a studio gets i
   assert.ok(withSides.length >= 13 && withSides.includes("pcba.js") && withSides.includes("sw_vband.js"), `${withSides.length} screens have side panels`);
   for (const f of withSides) assert.match(readFileSync(new URL(f, dir), "utf8"), /class: "studio/, `${f} : its side panels are in a studio`);
 });
+
+test("a centre that shows a page scrolls, and the groups of a side pane scroll under its head (JP, 27 novembre 2026 : « on n'a pas accès à toutes les cases de la partie centrale »)", () => {
+  const css = readFileSync(new URL("../../web/css/app.css", import.meta.url), "utf8");
+  assert.match(css, /\.studio > \.viewport:has\(> \.page\)[^{]*\{[^}]*overflow:\s*auto/, "a viewport holding a page of cards scrolls ; a 3D or 2D view keeps overflow hidden and zooms instead");
+  for (const cls of ["rq-view", "swref-view"]) assert.match(css, new RegExp(`\\.${cls}\\b[^{]*\\{[^}]*overflow:\\s*auto`), `${cls} scrolls even where :has() is not read`);
+  const dir = new URL("../../web/js/modules/", import.meta.url), bad = [];
+  for (const f of readdirSync(dir).filter((x) => x.endsWith(".js"))) {
+    const src = readFileSync(new URL(f, dir), "utf8");
+    if (/\b(left|right)\.append\(el\("div", \{ class: "side-section/.test(src)) bad.push(f);
+  }
+  assert.deepEqual(bad, [], "a group of a side pane goes in its .side-scroll : appended straight to the aside, it pushes the whole page down");
+});

@@ -87,7 +87,7 @@ function page(disc) {
           btn("Importer le .csv de DynamiteAgile", () => pick.click(), { small: true, icon: "upload", tip: "Goldmine → Exporter (.csv) : la liste se lit telle quelle, toutes ses colonnes gardées" })));
         view.append(el("div", { class: "page" }, el("div", { class: "empty" }, el("h2", null, `Les exigences allouées ${D.to}`), el("p", null, "Une seule liste pour tout le produit, celle de DynamiteAgile : la mécanique, l'électronique et le logiciel y voient chacun les exigences qui leur sont allouées — une exigence peut l'être à plusieurs. On la charge en brouillon, on l'itère dans DynamiteAgile, on relit la version finale ici."),
           el("div", { class: "rq-path" }, PATH.map((x) => el("div", { class: "rq-step" }, el("span", { class: "rq-n" }, String(x.n)), icon(x.icon), el("div", null, el("b", null, x.t), el("small", null, x.s))))))));
-        right.append(el("div", { class: "side-head" }, el("h2", null, "Le format")), el("p", { class: "small" }, "Les colonnes de l'export de DynamiteAgile (Goldmine), gardées telles quelles ; l'outil ne remplit que « allocation ». Une ligne sans « key » est créée par l'import de Goldmine, puis retrouvée par son « external_id »."));
+        right.append(el("div", { class: "side-head" }, el("h2", null, "Le format")), el("div", { class: "side-scroll" }, el("p", { class: "small" }, "Les colonnes de l'export de DynamiteAgile (Goldmine), gardées telles quelles ; l'outil ne remplit que « allocation ». Une ligne sans « key » est créée par l'import de Goldmine, puis retrouvée par son « external_id ».")));
         setGuide(reqsGuide(null, disc)); return;
       }
       const { needs, reqs } = forDiscipline(L, disc), G = [...reqsGuide(L, disc), ...(disc === "sw" ? oracleGuide(L, reqs) : [])], guess = reqs.filter((r) => !(L.alloc[keyOf(r)] || {}).sure), S = stageOf(L), draft = S.stage === "draft";
@@ -101,7 +101,8 @@ function page(disc) {
         toAgile, again,
         guess.length ? btn(`Confirmer les ${guess.length} propositions`, () => store.commit(`Exigences : ${guess.length} allocations confirmées`, (p) => { for (const r of guess) p.reqs.alloc[keyOf(r)].sure = true; }), { small: true, icon: "check" }) : null));
       const cats = [...new Set(reqs.map((r) => r.category || ""))], loads = L.loads || [];
-      left.append(el("div", { class: "side-section", "data-fold-note": `${loads.length} lecture${loads.length > 1 ? "s" : ""}` }, el("h3", null, "Les lectures de la liste"),
+      const ls = el("div", { class: "side-scroll" }); left.append(ls);      /* the groups scroll under the pinned actions (core/panes, .side-scroll) */
+      ls.append(el("div", { class: "side-section", "data-fold-note": `${loads.length} lecture${loads.length > 1 ? "s" : ""}` }, el("h3", null, "Les lectures de la liste"),
           el("ol", { class: "rq-loads small" }, loads.map((x) => el("li", { class: x.stage }, el("span", { class: "rq-schip", style: `--c:${STAGES[x.stage].color}` }, STAGES[x.stage].fr), ` ${x.file || "liste"}${x.when ? ` · ${day(x.when)}` : ""} — ${x.rows} lignes${x.draft ? `, ${x.draft} en brouillon` : ""}${x.tbd ? `, ${x.tbd} TBD` : ""}`))),
           btn(`Seulement ${D.the} (.csv)`, () => download(`exigences_${D.label.toLowerCase()}.csv`, toAgileCsv(L, { needs, reqs }), "text/csv"), { small: true, icon: "download", tip: "Les exigences de cette discipline et leurs besoins, pour DynamiteAgile" })),
         el("div", { class: "side-section" }, el("h3", null, "Par catégorie"), el("nav", { class: "rq-cats" }, [null, ...cats].map((c) => { const C = c === null ? { fr: "Toutes", color: D.color, icon: D.icon } : categoryOf(c);
@@ -114,10 +115,10 @@ function page(disc) {
       for (const c of cats.filter((x) => st.cat === null || x === st.cat)) { const C = categoryOf(c); pg.append(el("h3", { class: "rq-h", style: `--cat:${C.color}` }, icon(C.icon), C.fr), el("div", { class: "rq-grid" }, reqs.filter((r) => (r.category || "") === c).map((r) => card(r, L)))); }
       view.append(pg);
       const r = st.sel && L.rows.find((x) => keyOf(x) === st.sel);
-      right.append(el("div", { class: "side-head" }, el("h2", null, r ? keyOf(r) : "Une exigence")));
-      if (!r) right.append(el("p", { class: "muted small" }, "Cliquez une exigence : toutes ses colonnes de DynamiteAgile, et les besoins d'où elle vient."));
+      const rs = el("div", { class: "side-scroll" }); right.append(el("div", { class: "side-head" }, el("h2", null, r ? keyOf(r) : "Une exigence")), rs);
+      if (!r) rs.append(el("p", { class: "muted small" }, "Cliquez une exigence : toutes ses colonnes de DynamiteAgile, et les besoins d'où elle vient."));
       else { const P = isNeed(r) ? [] : parentsOf(L, r), a = L.alloc[keyOf(r)], M = maturityOf(r);
-        right.append(el("div", { class: "side-section" }, el("h3", null, "D'où elle vient"), P.length ? el("ul", { class: "small" }, P.map((n) => el("li", null, el("a", { href: "#", onClick: (e) => { e.preventDefault(); st.sel = keyOf(n); draw(); } }, keyOf(n)), ` — ${n.statement}`))) : el("p", { class: "small muted" }, isNeed(r) ? "C'est un besoin : le pourquoi d'autres exigences." : "Aucun besoin nommé dans « derived_from »."),
+        rs.append(el("div", { class: "side-section" }, el("h3", null, "D'où elle vient"), P.length ? el("ul", { class: "small" }, P.map((n) => el("li", null, el("a", { href: "#", onClick: (e) => { e.preventDefault(); st.sel = keyOf(n); draw(); } }, keyOf(n)), ` — ${n.statement}`))) : el("p", { class: "small muted" }, isNeed(r) ? "C'est un besoin : le pourquoi d'autres exigences." : "Aucun besoin nommé dans « derived_from »."),
           a ? el("p", { class: "small" }, `Allocation : ${allocText(a) || "aucune"}${a.sure ? "" : " (proposée)"}`) : null,
           el("p", { class: "small" }, el("span", { class: "rq-schip", style: `--c:${M === "firm" ? STAGES.final.color : M === "out" ? "#64748b" : STAGES.draft.color}` }, M === "firm" ? "Acceptée" : M === "out" ? "Écartée" : "Brouillon"), ` ${r.status || "aucun statut : pas encore dans DynamiteAgile"}`),
           disc !== "sw" && reqs.includes(r) && L.alloc[keyOf(r)] && L.alloc[keyOf(r)].sw ? el("p", { class: "small" }, el("a", { href: "#/lreq", onClick: (e) => { e.preventDefault(); go("#/lreq"); } }, "La voir dans le Logiciel")) : null),

@@ -275,6 +275,7 @@ main h1 { font-family: var(--hand); display: inline; padding: 0 .2em; -webkit-bo
 .nav-item.in-folder { margin-left: .85rem; width: calc(100% - .85rem); border-left: 2px solid color-mix(in srgb, var(--graphite) 22%, transparent); border-radius: 0 var(--r-hand) var(--r-hand) 0; }
 .nav-item.err { box-shadow: inset 3px 0 0 var(--hl-red); }
 .viewport { position: relative; min-width: 0; min-height: 0; overflow: hidden; background: var(--view-bg); }
+.studio > .viewport:has(> .page), .rq-view, .swref-view { overflow: auto; }      /* a centre showing a page of cards scrolls (JP, 27 novembre 2026) ; a 3D or 2D view zooms instead */
 .dw-view-canvas { display: block; outline: none; }
 .dw-view-labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
 .dw-view-label { position: absolute; transform: translate(-50%, -135%); padding: .08rem .45rem; border-radius: var(--r-hand); background: var(--note); border: 1.2px solid var(--graphite); font-size: .76rem; white-space: nowrap;
