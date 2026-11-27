@@ -295,6 +295,26 @@ is manageable ».
 Vérifié par `tests/node/sw_mission.test.mjs` et dans le navigateur (charge jouée à ×400 : arrêt à la surchauffe, « Continuer », arrêt à la
 perte de communication). Non vérifié : un essai sur une vraie batterie.
 
+## 4 septdecies. Brancher à la souris, une porte qui grandit, la Mission en plein écran (v0.203.0)
+
+Demandes de JP, 25 et 26 novembre 2026 : « déconnecter et connecter les blocs à la souris manuellement ; pour les grands blocs, il prendrait de la
+hauteur si on branche le dernier connecteur, si c'est possible de l'agrandir ; pour un bloc fermé in/out, aucune expansion automatique » ;
+« we don't see the title… and the axis measure » ; « a full screen mode for the central area… with a normal screen button to get back ».
+
+- **Les prises libres** (`freeSlots` de `web/js/sw/sw_snap.js`) : chaque entrée qu'aucun fil n'atteint est une prise en pointillé, à la clé de
+  son type, sous ce qui est emboîté ; la pièce en est plus haute (`SNAP.SLOT`).
+- **Glisser-déposer** (`modules/sw_puzzle_view.js`) : une pièce prise suit le pointeur ; la prise la plus proche s'allume — verte si la clé va
+  (`connectTo` : la sortie qui entre dans CETTE prise), rouge sinon, et la raison est dite au lâcher ; une pièce emboîtée tirée loin de sa voisine
+  s'en débranche (`detach`). Chaque geste est une étape annulable.
+- **Une porte qui grandit, sans changer le C d'un genre** : une porte ET, OU ou OU exclusif (associatives) aux entrées prises offre « + » ; une
+  décision lâchée là ajoute une porte de même opération en cascade (`growInto`, `grownOf`) — la vue montre la chaîne comme UNE pièce, « (3
+  entrées) ». Tout autre genre est fermé.
+- **La Mission** : titres au-dessus des panneaux, unité, graduations et grille, temps gradué en minutes, étiquettes de seuils qui ne se
+  chevauchent plus ; « Plein écran » (Marche / Pause, bandeau du défaut et « Continuer » dedans), « Écran normal » ou Échap.
+
+Vérifié par `tests/node/sw_snap.test.mjs` et dans le navigateur (Over-voltage débranché puis rebranché par glisser ; plein écran, arrêt,
+« Continuer », Échap). Non vérifié : le glisser au toucher.
+
 ## 5. Ce qui est vérifié, ce qui ne l'est pas
 
 Vérifié : 6 essais Node (`tests/node/sw_objects.test.mjs`) — objets, fils, guide, simulation, et le C compilé qui

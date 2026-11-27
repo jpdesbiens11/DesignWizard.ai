@@ -11,7 +11,7 @@ const WEB = new URL("../../web/", import.meta.url).pathname;
 /* the floating windows, and the files that draw them */
 const OWNERS = { "modal-backdrop": ["dom.js"], toasts: ["dom.js"], "sk-tip": ["dom.js"], "ctx-menu": ["view_select.js"], "code-view": ["code_view.js"], "look-pop": ["part_look.js"],
   "new-flag": ["whats_new_ui.js"], manip: ["elab_manip.js", "sw_hil_ui.js"], "pick-pop": ["pick_list.js"], "lib-stage": ["library_preview.js"], swm: ["sw_monitor_ui.js", "sw_balance_ui.js"],
-  "swf-card": ["sw_fix_ui.js"], "swf-quiz": ["sw_fix_ui.js"], panel: ["panes.js", "whats_new_ui.js"] };
+  "swf-card": ["sw_fix_ui.js"], "swf-quiz": ["sw_fix_ui.js"], "swmi-full": ["sw_mission.js"], panel: ["panes.js", "whats_new_ui.js"] };
 const files = (d, ext) => { const out = []; const walk = (x) => { for (const f of readdirSync(x)) { const p = join(x, f); if (statSync(p).isDirectory()) walk(p); else if (ext.test(f)) out.push(p); } }; walk(d); return out; };
 
 test("every class that floats a window over the page is used by that window only", () => {

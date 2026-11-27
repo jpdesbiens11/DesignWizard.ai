@@ -56,6 +56,41 @@ export function swPuzzle(host, o = {}) {
   const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => { if (!vw.moved) fit(false); else apply(); }) : null; if (ro) ro.observe(host);
   const onKey = (e) => { if (e.key === "Escape" && pending) { pending = null; if (last) draw(...last); } }; svg.addEventListener("keydown", onKey);
 
+  /* SNAP BY HAND (JP, 25 novembre 2026 : « déconnecter et connecter les blocs à la souris ») : a piece is taken and moves with the pointer ; near a
+     free socket of another piece the socket lights — green when the key fits, red when it does not ; let go on a green one : plugged
+     (o.onSnap) ; a snapped piece let go far from where it was : unplugged from the piece it fed (o.onDetach). A click stays a click.
+     What it follows : drag and drop with snapping of block languages, the target lit before the drop. */
+  let drag = null;
+  const toSvg = (e) => { const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); };
+  function grab(e, n, p) {
+    if (e.button !== 0 || pending || e.target.closest(".swp-plug, .swp-copies, .sw-ask")) return;
+    const at = toSvg(e); drag = { n, p, at, dx: at.x - n.x, dy: at.y - n.y, on: false, id: e.pointerId, hot: null };
+  }
+  svg.addEventListener("pointermove", (e) => {
+    if (!drag || e.pointerId !== drag.id) return; const at = toSvg(e);
+    if (!drag.on) { if (Math.hypot(at.x - drag.at.x, at.y - drag.at.y) < 6 / vw.z) return; drag.on = true; try { svg.setPointerCapture(e.pointerId); } catch (err) { /* gone */ }
+      const src = svg.querySelector(`[data-node="${CSS.escape(drag.n.key)}"]`); drag.ghost = src.cloneNode(true); drag.ghost.classList.add("swp-ghost"); drag.ghost.removeAttribute("data-node"); svg.append(drag.ghost); src.classList.add("swp-lifted"); drag.src = src; }
+    const x = at.x - drag.dx, y = at.y - drag.dy; drag.ghost.setAttribute("transform", `translate(${x} ${y})`);
+    /* the socket nearest the tab of the piece carried */
+    const tx = x + drag.n.w, ty = y + drag.n.h / 2; let best = null, bd = 70;
+    for (const q of svg.querySelectorAll(".swp-piece:not(.swp-ghost) [data-slot]")) { if (q.dataset.slotPiece === drag.p.id) continue; const node = q.closest("[data-node]"), m = /translate\(([-\d.]+) ([-\d.]+)\)/.exec(node.getAttribute("transform") || ""), sy = Number(((q.querySelector("text") || {}).getAttribute ? q.querySelector("text").getAttribute("y") : 0)) - 4;
+      if (!m) continue; const dd = Math.hypot(tx - Number(m[1]), ty - (Number(m[2]) + sy)); if (dd < bd) { bd = dd; best = q; } }
+    if (drag.hot && drag.hot !== best) drag.hot.classList.remove("hot", "ok", "no");
+    drag.hot = best; if (best) { const ok = o.canSnap ? o.canSnap(drag.p.id, best.dataset.slot) : false; best.classList.add("hot"); best.classList.toggle("ok", !!ok); best.classList.toggle("no", !ok); drag.ok = !!ok; }
+  });
+  const drop = (e) => {
+    if (!drag || (e && e.pointerId !== drag.id)) return; const D = drag; drag = null; if (!D.on) return; svg.dataset.dragged = "1"; setTimeout(() => { delete svg.dataset.dragged; }, 0);
+    D.ghost.remove(); if (D.src) D.src.classList.remove("swp-lifted"); if (D.hot) D.hot.classList.remove("hot", "ok", "no");
+    const at = toSvg(e), far = Math.hypot(at.x - D.dx - D.n.x, at.y - D.dy - D.n.y) > 80 / vw.z;
+    if (D.hot && D.ok && o.onSnap) { o.onSnap(D.p.id, D.hot.dataset.slot); return; }
+    if (D.hot && !D.ok && o.onSnapRefused) { o.onSnapRefused(D.p.id, D.hot.dataset.slot); return; }
+    if (far && D.n.parentId && o.onDetach) { o.onDetach(D.p.id, D.n.parentId); return; }
+    if (last) draw(...last);
+  };
+  svg.addEventListener("pointerup", drop); svg.addEventListener("pointercancel", drop);
+  /* a click right after a drag is not a click */
+  svg.addEventListener("click", (e) => { if (svg.dataset.dragged) { e.stopPropagation(); delete svg.dataset.dragged; } }, true);
+
   function draw(d, Rn, k, sel) {
     last = [d, Rn, k, sel]; svg.replaceChildren(); const P = pieces(d), L = links(d, P), F = puzzleForest(d, P, L), by = Object.fromEntries(P.map((p) => [p.id, p])); cb = { w: F.w, h: F.h + 46 };
     if (!vw.fitted && host.clientWidth > 1) { fit(false); vw.fitted = true; } else apply();
@@ -73,10 +108,12 @@ export function swPuzzle(host, o = {}) {
     const ask = {}; for (const u of unsure(d)) ask[u.obj] = (ask[u.obj] || 0) + 1;
     for (const n of F.nodes) { const p = by[n.id]; if (!p) continue; const B = band(p.band), v = p.show ? val(p.show.ref) : undefined, isBool = p.show && p.show.unit === "0/1", H = SNAP.H, cy = n.h / 2;
       const cls = `swp-piece${n.twin ? " twin" : ""}${sel && sel.obj && p.members.includes(sel.obj) ? " sel" : ""}${pending === p.id ? " from" : ""}${pend && pend.has(p.id) ? " can" : ""}${pend && !pend.has(p.id) && pending !== p.id ? " nope" : ""}${isBool && v === 1 ? " lit" : ""}`;
-      const g = S("g", { class: cls, "data-piece": p.id, "data-obj": p.id, "data-node": n.key, ...(n.twin ? { "data-twin": "" } : {}), transform: `translate(${n.x} ${n.y})`, style: `--dom:${B.color}`, tabindex: 0, role: "button", "aria-label": `${p.title}${n.twin ? " — jumeau" : ""} — ${B.fr}`,
+      const g = S("g", { class: cls, onPointerdown: (e) => grab(e, n, p), "data-piece": p.id, "data-obj": p.id, "data-node": n.key, ...(n.twin ? { "data-twin": "" } : {}), transform: `translate(${n.x} ${n.y})`, style: `--dom:${B.color}`, tabindex: 0, role: "button", "aria-label": `${p.title}${n.twin ? " — jumeau" : ""} — ${B.fr}`,
         onClick: (e) => { e.stopPropagation(); if (pending && pending !== p.id) { const from = pending; pending = null; if (o.onConnect) o.onConnect(from, p.id); else draw(...last); return; } if (n.twin) { openIface(p.id); return; } if (o.onPick) o.onPick({ obj: p.id }); }, onKeydown: (e) => { if (e.key === "Enter") g.dispatchEvent(new MouseEvent("click")); } });
-      const top = Math.max(0, cy - H / 2);      // a tall piece : its face in the middle, the body as tall as what it takes
-      g.append(...[S("path", { d: snapOutline(n.w, n.h, n.type, n.ins), class: "swp-body", filter: n.twin ? null : "url(#swp-shadow)" }),
+      const top = Math.max(0, (n.body || n.h) / 2 - H / 2), slots = n.slots || [];      // a tall piece : its face in the middle of what it takes ; its free sockets under it
+      g.append(...[S("path", { d: snapOutline(n.w, n.h, n.type, [...n.ins, ...slots]), class: "swp-body", filter: n.twin ? null : "url(#swp-shadow)" }),
+        ...slots.map((q) => S("g", { class: `swp-slot${q.grow ? " grow" : ""}`, "data-slot": q.ref, "data-slot-piece": p.id }, S("path", { d: keyPath(q.type, 0, q.y, -1, 7, 9).replace(/^L/, "M"), style: `--key:${SIGNAL_TYPES[q.type].color}` }),
+          S("text", { x: 14, y: q.y + 4, class: "swp-slot-t" }, q.grow ? "+ une entrée de plus" : `◂ ${cut(q.label, 22)}`), S("title", null, q.grow ? `${p.title} peut grandir : glissez une pièce ici, une porte de plus s'ajoute en cascade` : `Prise libre « ${q.label} » de ${q.of} — glissez une pièce dessus pour la brancher`))),
         n.type ? S("path", { d: keyPath(n.type, n.w, cy, 1, 7, 9).replace(/^L/, "M"), class: "swp-tab", style: `--key:${SIGNAL_TYPES[n.type].color}` }) : null,
         ...n.ins.map((q) => S("path", { d: keyPath(q.type, 0, q.y, -1, 7, 9).replace(/^L/, "M"), class: "swp-tab", style: `--key:${SIGNAL_TYPES[q.type].color}` })),
         S("circle", { cx: 30, cy: top + 26, r: 17, class: "swp-ico-bg" }), S("use", { href: `${sprite()}#i-${p.icon || B.icon}`, x: 19, y: top + 15, width: 22, height: 22, class: "swp-ico" }),

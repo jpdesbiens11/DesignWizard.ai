@@ -15,6 +15,7 @@ import { KINDS, portsOf, cfgOf } from "./sw_objects.js";
 import { liveWires, split, wireCheck } from "./sw_design.js";
 import { DEVICES } from "./sw_devices.js";
 import { typeOf, REF_BY_UNIT } from "./sw_blocks.js";
+import { freeSlots } from "./sw_snap.js";
 
 export const BANDS = [
   { id: "sense", fr: "Capter", says: "Ce que le logiciel apprend du monde : un capteur, un bouton, un contact.", color: "#0f766e", icon: "sensor" },
@@ -30,7 +31,9 @@ export function pieces(d) {
     out.push({ id: main.id, members: r ? [p.id, r.id] : [p.id], band: "sense", title: D ? D.label : r ? r.name : p.name, icon: D ? D.icon : KINDS[main.kind].icon, kind: main.kind, device: p.device || null, show: { ref: `${main.id}.${KINDS[main.kind].ports.out[0].key}`, unit: portsOf(main).out[0].unit } }); taken.add(p.id); if (r) taken.add(r.id); }
   for (const o of objs.filter((x) => KINDS[x.kind].pin === "dout")) { const D = o.device && DEVICES[o.device], w = W.find((x) => x.to === `${o.id}.level`), drv = w && O[split(w.from)[0]], cmd = drv && KINDS[drv.kind].nature === "command" && !taken.has(drv.id) ? drv : null;      // a driver and the pin it drives : one piece
     out.push({ id: cmd ? cmd.id : o.id, members: cmd ? [cmd.id, o.id] : [o.id], band: "act", title: cmd ? cmd.name : D ? D.label : o.name.replace(/^Sortie\s*:\s*/i, ""), icon: D ? D.icon : cmd ? KINDS[cmd.kind].icon : "power", kind: (cmd || o).kind, device: o.device || null, show: { ref: `${o.id}.level`, unit: "0/1" } }); taken.add(o.id); if (cmd) taken.add(cmd.id); }
-  for (const o of objs.filter((x) => !taken.has(x.id))) { const K = KINDS[o.kind], first = portsOf(o).out[0]; out.push({ id: o.id, members: [o.id], band: K.nature === "command" ? "act" : K.nature === "measure" ? "sense" : "decide", title: o.name, icon: K.icon, kind: o.kind, device: null, show: first ? { ref: `${o.id}.${first.key}`, unit: first.unit } : null }); }
+  /* a gate grown in cascade (sw/sw_snap.js growInto) belongs to the piece of its head : one piece, as tall as its inputs */
+  const grown = (id) => objs.filter((x) => x.grownOf === id).map((x) => x.id);
+  for (const o of objs.filter((x) => !taken.has(x.id) && !(x.grownOf && O[x.grownOf]))) { const K = KINDS[o.kind], first = portsOf(o).out[0], g = grown(o.id); out.push({ id: o.id, members: [o.id, ...g], band: K.nature === "command" ? "act" : K.nature === "measure" ? "sense" : "decide", title: g.length ? `${o.name} (${g.length + 2} entrées)` : o.name, icon: K.icon, kind: o.kind, device: null, show: first ? { ref: `${o.id}.${first.key}`, unit: first.unit } : null }); }
   return out;
 }
 /** The pieces each object belongs to. */
@@ -83,7 +86,7 @@ export { cfgOf };
    interface block : what it takes, and every place it goes. A loop (the value of the step before) is a twin marked ↺.
    What it follows : the rungs of ladder logic (IEC 61131-3), one output per rung, a contact repeated as often as it is read ; the stacks of
    block languages (Scratch) that snap without a wire. Pure : no page. */
-export const SNAP = { W: 196, H: 64, GAP: 12, TREE: 30, TOP: 20 };
+export const SNAP = { W: 196, H: 64, GAP: 12, TREE: 30, TOP: 20, SLOT: 30 };
 const keyType = (l) => (l && l.types[0]) || "quantity";
 /** → { nodes: [{ key, id, twin, loop, type (of the tab toward its parent), count (wires), parent, x, y, w, h, col, ins: [{ y, type }] }],
          rows: [{ root, y, h }], copies: { pieceId: number of places it plugs }, w, h } */
@@ -96,15 +99,18 @@ export function puzzleForest(d, P = pieces(d), L = links(d, P)) {
   const placed = new Set(), build = (id, l, stack) => {
     if (placed.has(id) || stack.has(id)) return { id, twin: true, loop: false, link: l, kids: [] };
     placed.add(id); const st = new Set(stack).add(id);
-    return { id, twin: false, loop: false, link: l, kids: [...feed(id).sort((a, b) => reach[b.from] - reach[a.from]).map((x) => build(x.from, x, st)), ...loop(id).map((x) => ({ id: x.from, twin: true, loop: true, link: x, kids: [] }))] }; };
+    return { id, twin: false, loop: false, link: l, slots: by[id] ? freeSlots(d, by[id]) : [], kids: [...feed(id).sort((a, b) => reach[b.from] - reach[a.from]).map((x) => build(x.from, x, st)), ...loop(id).map((x) => ({ id: x.from, twin: true, loop: true, link: x, kids: [] }))] }; };
   const trees = sinks.map((s) => build(s.id, null, new Set())); for (const p of P) if (!placed.has(p.id)) trees.push(build(p.id, null, new Set()));      // a closed loop with no end : laid on its own
-  const height = (n) => (n.h = Math.max(SNAP.H, n.kids.reduce((s, k) => s + height(k), 0) + SNAP.GAP * Math.max(0, n.kids.length - 1)));
+  /* a piece is as tall as what it takes, then its free sockets (each SNAP.SLOT high) */
+  const height = (n) => { n.body = Math.max(SNAP.H, n.kids.reduce((s, k) => s + height(k), 0) + SNAP.GAP * Math.max(0, n.kids.length - 1)); return (n.h = n.body + (n.slots || []).length * SNAP.SLOT); };
   const depth = (n) => 1 + Math.max(0, ...n.kids.map(depth)); trees.forEach(height); const D = Math.max(1, ...trees.map(depth));
   const nodes = [], rows = []; let y = SNAP.TOP;
   const place = (n, col, top, parent, key) => { const ins = []; let ky = top;
     n.kids.forEach((k, i) => { place(k, col - 1, ky, key, `${key}.${i}`); ins.push({ y: ky + k.h / 2 - top, type: keyType(k.link) }); ky += k.h + SNAP.GAP; });
-    nodes.push({ key, id: n.id, twin: n.twin, loop: n.loop, type: n.link ? keyType(n.link) : null, count: n.link ? n.link.wires.length : 0, parent, x: 20 + col * SNAP.W, y: top, w: SNAP.W, h: n.h, col, ins }); };
+    const slots = (n.slots || []).map((q, i) => ({ ...q, y: n.body + i * SNAP.SLOT + SNAP.SLOT / 2 }));      // the free sockets, under what is snapped
+    nodes.push({ key, id: n.id, twin: n.twin, loop: n.loop, type: n.link ? keyType(n.link) : null, count: n.link ? n.link.wires.length : 0, parent, x: 20 + col * SNAP.W, y: top, w: SNAP.W, h: n.h, body: n.body, col, ins, slots }); };
   trees.forEach((t, i) => { place(t, D - 1, y, null, `t${i}`); rows.push({ root: t.id, y, h: t.h }); y += t.h + SNAP.TREE; });
+  const N = Object.fromEntries(nodes.map((q) => [q.key, q])); for (const q of nodes) q.parentId = q.parent && N[q.parent] ? N[q.parent].id : null;      // the piece it is snapped into
   const copies = {}; for (const n of nodes) copies[n.id] = (copies[n.id] || 0) + 1;
   void by; return { nodes, rows, copies, w: 40 + D * SNAP.W + 24, h: y + 10 };
 }

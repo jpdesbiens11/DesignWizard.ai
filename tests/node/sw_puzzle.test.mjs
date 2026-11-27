@@ -52,6 +52,6 @@ test("without a wire (JP, 25 novembre 2026) : every row ends on an action, a pie
   assert.ok(F.nodes.filter((n) => n.twin).length > 5 && F.copies.module === 2, "Module state : one piece, two places");
   const I = pieceInterface(d, "module"); assert.deepEqual(I.gives.map((g) => g.piece.id).sort(), ["k", "lamp"]); assert.ok(I.takes.length >= 4);
   assert.equal(SNAP.H, 64, "compact pieces");
-  const v = read("web/js/modules/sw_puzzle_view.js"); assert.doesNotMatch(v, /swp-line/, "no line drawn"); assert.match(v, /snapOutline\(n\.w, n\.h, n\.type, n\.ins\)/); assert.match(v, /swIface\(host/);
+  const v = read("web/js/modules/sw_puzzle_view.js"); assert.doesNotMatch(v, /swp-line/, "no line drawn"); assert.match(v, /snapOutline\(n\.w, n\.h, n\.type, \[\.\.\.n\.ins, \.\.\.slots\]\)/, "the notches of what is snapped and of the free sockets"); assert.match(v, /swIface\(host/);
   assert.match(read("web/js/modules/sw_puzzle_iface.js"), /role: "dialog"/);
 });

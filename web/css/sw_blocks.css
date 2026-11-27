@@ -348,3 +348,13 @@ svg.swp .swp-title { font-size: 13px; }
 .swlab-chip.read b { background: #0b1220; color: #4ade80; padding: 0 .4rem; border-radius: 6px; }
 .swlab-chip.sw { cursor: pointer; } .swlab-chip.sw.on { border-color: #16a34a; background: color-mix(in srgb, #16a34a 12%, var(--surface)); }
 .swlab-seg.mini { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; } .swlab-seg.mini button { border: 0; background: none; padding: .05rem .45rem; font: inherit; font-size: .72rem; cursor: pointer; color: var(--muted); } .swlab-seg.mini button.on { background: #0f766e; color: #fff; }
+/* snapping by hand (v0.203.0) : free sockets, the piece carried, the socket lit */
+svg.swp .swp-slot path { fill: none; stroke: var(--key); stroke-width: 2.2; stroke-dasharray: 3 2.5; opacity: .75; } svg.swp .swp-slot-t { font-size: 10.5px; fill: var(--muted); pointer-events: none; }
+svg.swp .swp-slot.grow .swp-slot-t { fill: #7c3aed; font-weight: 700; }
+svg.swp .swp-slot.hot.ok path { stroke-width: 4; stroke-dasharray: none; opacity: 1; filter: drop-shadow(0 0 4px #22c55e); stroke: #16a34a; } svg.swp .swp-slot.hot.ok .swp-slot-t { fill: #15803d; font-weight: 800; }
+svg.swp .swp-slot.hot.no path { stroke: #dc2626; stroke-width: 3; opacity: 1; } svg.swp .swp-slot.hot.no .swp-slot-t { fill: #dc2626; }
+svg.swp .swp-ghost { opacity: .8; pointer-events: none; filter: drop-shadow(0 8px 10px rgb(0 0 0 / .25)); } svg.swp .swp-lifted { opacity: .25; }
+svg.swp .swp-piece { touch-action: none; }
+/* the mission, full screen (v0.203.0) */
+.swmi-full { position: fixed; inset: 0; z-index: 70; overflow: auto; background: #0b1220; padding: .7rem 1rem; }
+.swmi-full .swmi-halt { margin-bottom: .6rem; }
