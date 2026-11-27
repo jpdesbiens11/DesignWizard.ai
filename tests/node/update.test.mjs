@@ -39,7 +39,17 @@ test("version : the four places where it is written say the same", () => {
 
 test("wiring : the top bar carries the update button, the application watches, the browser remembers every file", () => {
   const app = read("web/js/core/app.js");
-  assert.match(app, /updateButton\(\), newsButton\(\), guideButton\(\)/); assert.match(app, /installUpdateCheck\(\{ running: APP_VERSION, save:/);
+  assert.match(app, /versionChip\(\), tabs, tools/, "the version beside the logo, always in sight"); assert.match(app, /sayUpdated\(APP_VERSION/); assert.match(app, /installUpdateCheck\(\{ running: APP_VERSION, save:/);
   assert.match(read("web/js/boot.js"), /setResourceTimingBufferSize\(3000\)/);
   assert.match(read("web/js/core/update_check.js"), /fetch\(`version\.json\?t=\$\{last\}`, \{ cache: "no-store" \}\)/);
+});
+
+test("the version chip (JP, 26 novembre 2026 : « je ne sais jamais si tu as fait ou pas la maj ») : the version always said, green when it is the one published, orange when a newer one is", async () => {
+  const { chipOf } = await import("../../web/js/core/update_check.js");
+  const base = { running: "0.201.3", found: null, busy: false, checked: 0, online: null };
+  assert.equal(chipOf(base).text, "v0.201.3"); assert.equal(chipOf(base).act, "check");
+  const ok = chipOf({ ...base, checked: Date.now(), online: "0.201.3" }); assert.equal(ok.cls, "ok"); assert.match(ok.tip, /À jour/);
+  const off = chipOf({ ...base, checked: Date.now(), online: null }); assert.equal(off.cls, "unknown"); assert.match(off.tip, /hors ligne/);
+  const nw = chipOf({ ...base, found: "0.202.0", checked: Date.now(), online: "0.202.0" }); assert.equal(nw.cls, "found"); assert.equal(nw.text, "v0.201.3 → v0.202.0"); assert.equal(nw.act, "update");
+  assert.match(read("web/js/core/update_check.js"), /setInterval\(look, 2 \* 60 \* 1000\)/, "every two minutes while the page is seen");
 });

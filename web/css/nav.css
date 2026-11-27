@@ -111,3 +111,10 @@ a.tw-floor:hover { background: color-mix(in srgb, var(--dom, var(--primary)) 12%
 .tw-floor.pad { margin-top: .15rem; border-top: 3px double color-mix(in srgb, var(--graphite) 45%, transparent); padding-top: .3rem; border-radius: 0; }
 .tw-light { flex: none; min-width: .9rem; height: .9rem; padding: 0 .2rem; border-radius: 99px; display: inline-grid; place-items: center; font: 700 .6rem var(--label-font, inherit); color: #fff; }
 .tw-light.bad { background: var(--danger, #dc2626); } .tw-light.warn { background: var(--warn, #f59e0b); } .tw-light.tip { background: color-mix(in srgb, var(--graphite) 35%, transparent); width: .6rem; min-width: .6rem; height: .6rem; padding: 0; }
+/* the version of the page, always in sight beside the logo (v0.201.3) : green up to date, orange when a newer one is published */
+.version-chip { display: inline-flex; align-items: center; gap: .35rem; flex: none; margin: 0 .4rem 0 -.2rem; padding: .15rem .55rem; border-radius: 999px; border: 1.5px solid var(--line); background: var(--surface); color: var(--muted); font: inherit; font-size: .75rem; font-weight: 700; font-variant-numeric: tabular-nums; cursor: pointer; white-space: nowrap; }
+.version-chip i { width: .55rem; height: .55rem; border-radius: 50%; background: #94a3b8; }
+.version-chip.ok { color: #15803d; border-color: color-mix(in srgb, #16a34a 45%, var(--line)); } .version-chip.ok i { background: #22c55e; }
+.version-chip.checking i { animation: swb-blink .7s ease-in-out infinite alternate; }
+.version-chip.found { color: #fff; background: #ea580c; border-color: #ea580c; animation: need-edge-g 1.4s ease-in-out infinite; } .version-chip.found i { background: #fff; }
+.version-chip.busy { opacity: .7; cursor: progress; }

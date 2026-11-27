@@ -23,10 +23,10 @@ import { installWhere } from "./where_ui.js";
 import { installShare } from "./share_ui.js";
 import { installPanelKeep } from "./panel_keep.js";
 import { installLoupe } from "./loupe.js";
-import { installUpdateCheck, updateButton } from "./update_check.js";
+import { installUpdateCheck, versionChip, sayUpdated } from "./update_check.js";
 import { installWhatsNew, newsButton } from "./whats_new_ui.js";
 
-export const APP_VERSION = "0.201.2";
+export const APP_VERSION = "0.201.3";
 /** What every document of the open project carries beside its content : approval names, organisation, confidentiality note, extraction stamp (core/brand.js). */
 export const docMeta = (when = new Date()) => docIdentity(store.project, when, APP_VERSION);
 const modules = new Map();
@@ -115,11 +115,11 @@ function topbar() {
     btn("", () => store.redo() || toast("Rien à rétablir."), { icon: "redo", small: true, tip: "Rétablir (Ctrl+Y)" }),
     menuButton("Onshape", "onshape", onshapeMenu), menuButton("Projet", "folder", projectMenu),
     menuButton("", session.account && session.account.admin ? "admin" : "user", accountMenu, session.account ? `Compte : ${session.account.email}` : "Compte Google, Drive et thème"),
-    updateButton(), newsButton(), guideButton(), el("a", { class: "btn btn-small", href: "#/help", "data-tip": "Aide, raccourcis et guide des collaborateurs" }, icon("help")));
+    newsButton(), guideButton(), el("a", { class: "btn btn-small", href: "#/help", "data-tip": "Aide, raccourcis et guide des collaborateurs" }, icon("help")));
   return el("header", { class: "topbar" },
     el("a", { class: "brand", href: "#/home", "aria-label": "DynamiteOrbit.ai, accueil" }, icon("logo", "brand-logo"),
       el("span", { class: "brand-name" }, el("b", null, "DynamiteOrbit", el("i", null, ".ai")), el("small", null, "by DynamiteAgile™"))),
-    tabs, tools);
+    versionChip(), tabs, tools);
 }
 export function setStatus(text, cls = "") { const c = document.getElementById("kernel-chip"); if (c) { c.textContent = text; c.className = "chip " + cls; c.title = text; } }
 
@@ -236,6 +236,7 @@ export async function start() {
   installShare();       // « Partager » on every studio : the link of the element, the files the screen makes, an animation of its 3D view (core/share_ui.js)
   installPanelKeep();    // a panel drawn anew keeps its place, and the cursor its field
   installLoupe();        // the magnifier : a lens over drawings, boards, diagrams and 3D views — its buttons are beside the zoom of each view (core/view_bar.js)
+  sayUpdated(APP_VERSION, (t) => setTimeout(() => toast(t, "success", 9000), 800));      // after an update : said once
   installUpdateCheck({ running: APP_VERSION, save: () => (store.saveState === "dirty" ? store.saveNow() : Promise.resolve()) });      // a page kept open says when a newer version is published, and offers to load it
   store.on("error", (e) => toast(e.message, "error", 8000));
   await store.init();
