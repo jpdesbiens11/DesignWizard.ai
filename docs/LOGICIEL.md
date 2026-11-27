@@ -543,3 +543,6 @@ ajouter une section Références dans le bas du menu Logiciel ».
   numéro [n] sur un écran. **Ce qu'aucune source lue ne dit** est listé à part (`REF_GAPS`). Les sources ont été ouvertes et lues pour cette
   version ; les pages de l'ISO et d'Analog Devices ont refusé la lecture automatique, et c'est dit.
 
+## Les exigences du produit, d'abord (v0.204.0)
+
+Le groupe Logiciel commence par la page des exigences du produit (`#/lreq`), la même liste de DynamiteAgile que la Mécanique et l'Électronique, filtrée sur le logiciel ; l'étape 1 du V (`#/swreq`, « Exigences du logiciel ») les reçoit sous leurs clés par « Vers les exigences du logiciel (V) » ou « Depuis le produit (n) ». Voir `docs/EXIGENCES.md`.

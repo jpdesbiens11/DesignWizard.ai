@@ -22,6 +22,8 @@
    CORE is drawn in that frame, so its place in the CORE is the origin (the cells and the board excepted). */
 
 import { cellPart } from "../core/elec_parts.js";
+import { essList, ESS_FILE } from "./demo_ess_reqs.js";
+import { makeReqs } from "../core/reqs.js";
 import { cell } from "../cad/elec_library.js";
 import { coreBoard } from "./demo_core.js";
 import { bmsBoard, BMS_BOARD_ID } from "./demo_bms.js";
@@ -154,6 +156,7 @@ export function bmProject(opts = {}) {
   bms.name = "BMS central du module"; bms.function = "Le BMS central : interroge les 8 cartes de CORE par la chaîne RS-485, lit le courant du module, commande le contacteur et dit l'état au véhicule par CAN. Pas encore posé : le logement du couvercle du fond est trop petit.";
   putBoard(p, BMS_BOARD_ID); putBoard(p, p.boards[0].id);
   p.software = [moduleDesign()];
+  p.reqs = makeReqs(essList(), ESS_FILE, "2026-11-27T12:00:00.000Z");      // the requirements of the ESS, a draft in the format of DynamiteAgile (JP, 27 novembre) : seen by the three branches, kept by every point of the history
   withConceptTwo(p, true); withConceptThree(p); withConceptFour(p);
   const tip = { c3: C3_BRANCH, c4: C4_BRANCH }[opts.branch];
   restoreInto(p, tip ? tipOf(p.history, tip).id : opts.branch ? "P2" : "P1");      // the software of the central BMS : its state machine, run on its bench, written in C      // the lab table : the central BMS and one CORE board, linked by the four wires of the chain

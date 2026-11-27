@@ -32,7 +32,7 @@ export const POINT_KINDS = {
 export const MAIN = "MAIN";
 /** The words of an artefact, by its kind. */
 export const ART_KINDS = { part: { fr: "Pièce", color: "#2563eb" }, assembly: { fr: "Assemblage", color: "#475569" }, board: { fr: "Carte", color: "#16a34a" }, other: { fr: "Registre", color: "#a16207" } };
-const OTHER_FR = { review: "registre de revue", mvp: "itérations MVP", plm: "révisions", team: "équipe", talk: "messages", cases: "cas de charge", aiJournal: "journal de l'IA", name: "nom du produit", description: "description", drawing: "réglages des dessins", sw: "logiciel" };
+const OTHER_FR = { review: "registre de revue", mvp: "itérations MVP", plm: "révisions", team: "équipe", talk: "messages", cases: "cas de charge", aiJournal: "journal de l'IA", name: "nom du produit", description: "description", drawing: "réglages des dessins", sw: "logiciel", reqs: "exigences du produit" };
 
 /** A fingerprint of a text : two 32-bit hashes (cyrb53) and the length. Equal texts, equal fingerprints ; for different ones a collision is
     beyond what a design history meets (53 bits and the length). */

@@ -85,5 +85,6 @@ export function openImport(o) {
   const m = modal("Partir des exigences — format standard", [el("p", { class: "muted small" }, "Les exigences importées arrivent « à confirmer » : elles sont passées par un assistant, et la réponse d'un assistant ne confirme rien. Confirmer une exigence (étape 1) confirme les valeurs qu'elle donne."),
     field("Réponse de l'assistant ou fichier", area), modeBox, el("label", { class: "field" }, el("span", { class: "field-label" }, "Ou un fichier (.json, ou .csv de DynamiteAgile)"), file), out,
     el("div", { class: "form-actions" }, btn("Copier le prompt", async () => toast((await copyText(reqPrompt())) ? "Prompt copié." : "Copie impossible.", "success"), { small: true, icon: "sparkle" }), btn("Annuler", () => m.close()), ok)], { wide: true });
+  if (o.text) { area.value = o.text; read(); }      // the requirements of the product allocated to the software (modules/reqs_page.js) : read at once, applied only by « Poser les blocs »
   return m;
 }

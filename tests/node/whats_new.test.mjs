@@ -15,7 +15,7 @@ test("every line says what is new, in which version, on which screen and on whic
   for (const n of NEWS) {
     assert.deepEqual(lineProblems(n), [], n.id); assert.ok(!newer(n.v, RUNNING), `${n.id} : version ${n.v} is not after the running one (${RUNNING})`);
     for (const t of n.sel.match(/[.#][A-Za-z][\w-]*|\[[a-z-]+/g) || []) { const word = t.replace(/^[.#[]/, ""); assert.ok(sources.includes(word), `${n.id} : « ${word} » of its selector is written somewhere in the screens`); }
-    if (n.where) { const key = n.where.replace(/^#\//, "").split("/")[0], file = { swreq: "sw_req", swarch: "sw", swsim: "sw", swcode: "sw", swtest: "sw_verify", swrel: "sw", swref: "sw_refs_ui", mreq: "reqs_page", ereq: "reqs_page" }[key] || key; assert.ok(existsSync(new URL(`../../web/js/modules/${file}.js`, import.meta.url)), `${n.id} leads to a screen that exists (${key})`); }      // the steps of the V live in a few modules
+    if (n.where) { const key = n.where.replace(/^#\//, "").split("/")[0], file = { swreq: "sw_req", swarch: "sw", swsim: "sw", swcode: "sw", swtest: "sw_verify", swrel: "sw", swref: "sw_refs_ui", mreq: "reqs_page", ereq: "reqs_page", lreq: "reqs_page" }[key] || key; assert.ok(existsSync(new URL(`../../web/js/modules/${file}.js`, import.meta.url)), `${n.id} leads to a screen that exists (${key})`); }      // the steps of the V live in a few modules
   }
   assert.ok(lineProblems({ id: "X y", v: "1", title: "", text: "court", sel: "" }).length >= 5);
   for (let i = 1; i < NEWS.length; i++) assert.ok(!newer(NEWS[i].v, NEWS[i - 1].v), "newest first");

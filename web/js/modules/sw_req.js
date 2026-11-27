@@ -22,6 +22,7 @@ import { docRow } from "./sw_docs_ui.js";
 import { openImport } from "./sw_lib_ui.js";
 import { shows } from "../sw/sw_levels.js";
 import { level } from "./sw_level_ui.js";
+import { forDiscipline, toAgileCsv } from "../core/reqs.js";
 
 function render(main) {
   clear(main);
@@ -35,7 +36,10 @@ function render(main) {
     clear(left); const cpu = d ? cpuOf(d) : null;
     left.append(el("div", { class: "side-head" }, el("h2", null, "Exigences")));
     const imp = btn("Importer (DynamiteAgile, IA)…", () => openImport({ design }), { primary: !d || !reqsOf(d).length, small: true, icon: "upload", tip: "L'export .csv des exigences de DynamiteAgile, ou la réponse d'un assistant au format standard (le prompt : bouton « IA »)" }); imp.dataset.swReqImport = "";
-    left.append(el("div", { class: "side-actions" }, imp));
+    /* the requirements of the PRODUCT (the list of DynamiteAgile, #/lreq) : those allocated to the software come here under their keys */
+    const PR = store.project && store.project.reqs, fromP = PR ? forDiscipline(PR, "sw") : null;
+    const prod = fromP && fromP.reqs.length ? btn(`Depuis le produit (${fromP.reqs.length})`, () => openImport({ design, text: toAgileCsv(PR, fromP) }), { small: true, icon: "link", tip: "Les exigences du produit allouées au logiciel (DynamiteAgile, page 1 Exigences) : l'aperçu, puis une étape annulable" }) : null; if (prod) prod.dataset.swFromProduct = "";
+    left.append(el("div", { class: "side-actions" }, imp, prod));
     if (d) left.append(el("div", { class: "side-actions" }, (() => { const b = btn("Nouvelle exigence", () => { let r = null; change("nouvelle exigence", (x) => { r = addReq(x, { text: "" }); }); if (r) { st.sel = { req: r.id }; draw(); const f = right.querySelector("[data-req-text]"); if (f) f.focus(); } }, { primary: true, small: true, icon: "plus" }); b.dataset.reqAdd = ""; return b; })(), docRow(d, "srs")));
     const scroll = el("div", { class: "side-scroll" }); left.append(scroll);
     scroll.append(stepCard(d, cpu, "req", "", run, () => {}));
@@ -102,4 +106,4 @@ function render(main) {
   draw();
   return () => { off(); map.destroy(); setGuide([]); };
 }
-registerModule({ key: "swreq", label: "Exigences", icon: "report", tip: "1. Écrire ce que le logiciel doit faire — Requirements", render });
+registerModule({ key: "swreq", label: "Exigences du logiciel", icon: "report", tip: "1. Écrire ce que le logiciel doit faire — Software requirements, tirées des exigences du produit", render });

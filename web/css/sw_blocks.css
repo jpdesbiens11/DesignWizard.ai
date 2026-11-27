@@ -326,6 +326,22 @@ svg.swp .swp-title { font-size: 13px; }
 .rq-cats { display: grid; gap: .25rem; } .rq-cat { display: flex; align-items: center; gap: .45rem; border: 1.5px solid var(--line); border-radius: 9px; background: var(--surface); padding: .3rem .55rem; cursor: pointer; color: var(--ink); font: inherit; font-size: .85rem; }
 .rq-cat svg { color: var(--c); } .rq-cat small { margin-left: auto; color: var(--muted); } .rq-cat.on { border-color: var(--c); background: color-mix(in srgb, var(--c) 10%, var(--surface)); }
 .rq-dl { display: grid; grid-template-columns: max-content 1fr; gap: .25rem .6rem; font-size: .8rem; margin: 0; } .rq-dl dt { color: var(--muted); } .rq-dl dd { margin: 0; }
+/* the list of the product : a draft, its iterations in DynamiteAgile, the final version (JP, 27 novembre 2026) */
+.rq-stage { border: 1.5px solid color-mix(in srgb, var(--c) 45%, var(--line)); border-radius: 12px; padding: .6rem .75rem; background: color-mix(in srgb, var(--c) 6%, var(--surface)); margin-bottom: .6rem; }
+.rq-stage.draft { border-style: dashed; } .rq-stage > p { margin: .45rem 0 0; }
+.rq-path { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .45rem; }
+.rq-step { display: flex; align-items: flex-start; gap: .4rem; border: 1.5px solid var(--line); border-radius: 10px; padding: .4rem .5rem; background: var(--surface); opacity: .6; font-size: .8rem; }
+.rq-step b { display: block; font-size: .85rem; } .rq-step small { color: var(--muted); line-height: 1.3; } .rq-step svg { flex: none; margin-top: .1rem; }
+.rq-step.on { opacity: 1; border-color: var(--c, var(--acc)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--c, var(--acc)) 25%, transparent); } .rq-step.done { opacity: .85; }
+.rq-n { flex: none; width: 1.35rem; height: 1.35rem; border-radius: 999px; display: grid; place-items: center; background: var(--c, var(--acc)); color: #fff; font-weight: 800; font-size: .75rem; }
+.rq-schip { display: inline-flex; align-items: center; gap: .25rem; border: 1.5px solid var(--c); color: var(--c); border-radius: 999px; padding: 0 .5rem; font-weight: 700; font-size: .78rem; background: var(--surface); }
+.rq-tbd { border: 1.5px dashed #d97706; color: #b45309; border-radius: 999px; padding: 0 .4rem; font-weight: 800; font-size: .72rem; }
+.rq-status.draft { border: 1.5px dashed #d97706; color: #b45309; } .rq-status.firm { border-color: #16a34a; color: #15803d; } .rq-status.out { text-decoration: line-through; }
+.rq-loads { margin: 0 0 .4rem; padding-left: 1.2rem; display: grid; gap: .25rem; }
+.rq-mtiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: .4rem; margin: .5rem 0; }
+.rq-mtile { display: grid; justify-items: center; gap: .1rem; border: 1.5px solid color-mix(in srgb, var(--c) 45%, var(--line)); border-radius: 10px; padding: .4rem; text-align: center; font-size: .78rem; } .rq-mtile svg { color: var(--c); } .rq-mtile b { font-size: 1.2rem; color: var(--c); }
+.rq-mstage { font-size: .85rem; } .rq-mgroup { margin: .35rem 0; } .rq-mgroup summary { cursor: pointer; font-weight: 700; } .rq-mgroup ul { margin: .3rem 0; padding-left: 1.1rem; display: grid; gap: .2rem; } .rq-mfield s { color: var(--muted); }
+@media (max-width: 900px) { .rq-path { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .rq-alloc.guess .rq-chip.on { animation: none; } }
 .swbal-stale { display: flex; align-items: center; gap: .6rem; margin: .4rem .8rem; padding: .5rem .7rem; border: 1.5px solid #f59e0b; border-radius: 10px; background: color-mix(in srgb, #f59e0b 14%, transparent); color: #fde68a; font-size: .85rem; } .swbal-stale[hidden] { display: none; } .swbal-stale span { flex: 1; }
 /* docked over a side pane (v0.201.2) : the window covers the pane, scrolls inside it, and its × gives the pane back */
