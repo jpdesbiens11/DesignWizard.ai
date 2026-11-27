@@ -8,7 +8,7 @@
    What it follows : the transport of a simulator, a bar chart that is also a gauge (one level per cell block, as battery tools show them). */
 
 import { el, btn, icon } from "../core/dom.js";
-import { dragWindow } from "./sw_drag.js";
+import { dragWindow, dockOver } from "./sw_drag.js";
 import { refCite } from "./sw_refs_ui.js";
 import { balanceSpec, balanceStart, balanceStep, balanceSummary } from "../sw/sw_balance.js";
 import { packPhase } from "../sw/sw_pack.js";
@@ -40,7 +40,7 @@ export function swBalance(design, o = {}) {
   const bar = el("header", { class: "swm-head" }, icon("bolt"), el("h3", null, "Charge et équilibrage"), lamp, close);
   const win = el("div", { class: "swm swbal", role: "dialog", "aria-label": "Charge et équilibrage", tabindex: "-1", hidden: true, "data-sw-balance": "", onKeydown: (e) => { if (e.key === "Escape") api.close(); } },
     bar, stale, el("div", { class: "swbal-bar" }, go, step, again, speed), same, sets, body);
-  const drag = dragWindow(win, bar, "dw.sw.balance.pos");
+  const drag = dragWindow(win, bar, "dw.sw.balance.pos"), dock = dockOver(win, "left");      // in the left pane while it is open (JP) ; floating when the pane is hidden
   const button = btn("Charge et équilibrage", () => (st.open ? api.close() : api.open()), { small: true, icon: "bolt", tip: "Les 8 CORE pendant une charge : de 0,1 C à 2 C, puis l'équilibrage passif qui rattrape les écarts — en accéléré" }); button.dataset.swBalanceOpen = "";
 
   function reset() { if (shared()) { B = o.bench.plant; S = B.S; } else { S = balanceSpec(design(), { start: st.over.start, cBal: st.over.cBal, rBal: st.over.rBal }); B = balanceStart(S); } draw(); }
@@ -81,8 +81,8 @@ export function swBalance(design, o = {}) {
     const p = document.createElementNS("http://www.w3.org/2000/svg", "path"); p.setAttribute("d", "M0 6 H8 L11 1 L15 11 L19 1 L23 11 L27 1 L30 6 H40"); s.append(p); return s; };
   const api = {
     button,
-    open() { st.open = true; if (!win.isConnected) document.body.append(win); win.hidden = false; drag.restore({ x: Math.max(8, Math.min(330, window.innerWidth - 760)), y: 84 }); mode(); if (!B || shared()) reset(); else draw(); button.setAttribute("aria-expanded", "true"); win.focus(); },
-    close() { st.open = false; if (!shared()) pause(); win.hidden = true; button.setAttribute("aria-expanded", "false"); },
+    open() { st.open = true; if (!win.isConnected) document.body.append(win); win.hidden = false; if (!dock.on()) drag.restore({ x: Math.max(8, Math.min(330, window.innerWidth - 760)), y: 84 }); mode(); if (!B || shared()) reset(); else draw(); button.setAttribute("aria-expanded", "true"); win.focus(); },
+    close() { st.open = false; dock.off(); if (!shared()) pause(); win.hidden = true; button.setAttribute("aria-expanded", "false"); },
     dispose() { pause(); win.remove(); },
     get state() { return shared() ? o.bench.plant : B && st.open ? B : null; },
     /* a frame of the bench : the window redraws, a few times a second */

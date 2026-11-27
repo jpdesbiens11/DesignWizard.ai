@@ -11,6 +11,7 @@
 import { el, btn, icon, onOff, toast } from "../core/dom.js";
 import { monitorOf, monitorRead } from "../sw/sw_monitor.js";
 import { soundOn, setSoundOn } from "./sw_sound.js";
+import { dockOver } from "./sw_drag.js";
 
 const POS = "dw.sw.monitor.pos";
 const keep = (p) => { try { localStorage.setItem(POS, JSON.stringify(p)); } catch (e) { /* the place holds until the page is left */ } };
@@ -42,10 +43,11 @@ export function swMonitor(bench, design, sound) {
     onKeydown: (e) => { if (e.key === "Escape") { e.stopPropagation(); api.close(); } } },
   bar, el("div", { class: "swm-top" }, el("div", { class: "swm-light", role: "img", "aria-label": "État général" }, lamps.red, lamps.yellow, lamps.green), el("div", null, el("small", null, "État général"), stateText)), body, foot);
   /* moved by its title bar, as any window */
-  bar.addEventListener("pointerdown", (e) => { if (st.win || e.target.closest("button")) return; const r = panel.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top; bar.setPointerCapture(e.pointerId);
+  bar.addEventListener("pointerdown", (e) => { if (st.win || dock.docked || e.target.closest("button")) return; const r = panel.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top; bar.setPointerCapture(e.pointerId);
     const move = (m) => place({ x: m.clientX - dx, y: m.clientY - dy }), up = () => { bar.removeEventListener("pointermove", move); bar.removeEventListener("pointerup", up); keep({ x: panel.offsetLeft, y: panel.offsetTop }); };
     bar.addEventListener("pointermove", move); bar.addEventListener("pointerup", up); });
   const place = (p) => { const w = panel.offsetWidth || 380, h = panel.offsetHeight || 300; panel.style.left = `${Math.max(0, Math.min(window.innerWidth - w, p.x))}px`; panel.style.top = `${Math.max(0, Math.min(window.innerHeight - 40, p.y))}px`; void h; };
+  const dock = dockOver(panel, "right");      // in the right pane while it is open (JP) ; floating when the pane is hidden
   const button = btn(M.title, () => (st.open ? api.close() : api.open()), { small: true, icon: "sensor", tip: "Le tableau de bord : une LED par condition à surveiller, les valeurs à côté, l'état général en vert, jaune ou rouge" });
   button.dataset.swMonitorOpen = ""; button.setAttribute("aria-expanded", "false");
   const light = el("i", { class: "swm-dot", "aria-hidden": "true" }); button.prepend(light);
@@ -54,14 +56,14 @@ export function swMonitor(bench, design, sound) {
     const w = window.open("", "dw-monitor", "width=460,height=720"); if (!w) { toast("Le navigateur a bloqué la fenêtre : autorisez les fenêtres de ce site, puis recommencez.", "error", 6000); return; }
     w.document.title = M.title; w.document.body.className = "swm-own";
     for (const l of document.querySelectorAll('link[rel="stylesheet"]')) w.document.head.append(el("link", { rel: "stylesheet", href: l.href }));
-    st.win = w; panel.classList.add("own"); panel.hidden = false; w.document.body.replaceChildren(panel); st.open = true;
+    dock.off(); st.win = w; panel.classList.add("own"); panel.hidden = false; w.document.body.replaceChildren(panel); st.open = true;
     w.addEventListener("pagehide", () => { if (st.win !== w) return; st.win = null; panel.classList.remove("own"); document.body.append(panel); api.close(); });
     api.refresh();
   }
   const api = {
     button,
-    open() { if (st.win) { st.win.focus(); return; } st.open = true; if (!panel.isConnected) document.body.append(panel); panel.hidden = false; place(kept() || { x: window.innerWidth - 420, y: 90 }); button.setAttribute("aria-expanded", "true"); api.refresh(); panel.focus(); },
-    close() { st.open = false; if (st.win) { const w = st.win; st.win = null; panel.classList.remove("own"); w.close(); } panel.hidden = true; button.setAttribute("aria-expanded", "false"); },
+    open() { if (st.win) { st.win.focus(); return; } st.open = true; if (!panel.isConnected) document.body.append(panel); panel.hidden = false; if (!dock.on()) place(kept() || { x: window.innerWidth - 420, y: 90 }); button.setAttribute("aria-expanded", "true"); api.refresh(); panel.focus(); },
+    close() { st.open = false; dock.off(); if (st.win) { const w = st.win; st.win = null; panel.classList.remove("own"); w.close(); } panel.hidden = true; button.setAttribute("aria-expanded", "false"); },
     /* each frame of the bench : the lamps, the LEDs, the values */
     refresh() {
       const R = monitorRead(M, (r) => bench.values(r)); light.className = `swm-dot ${R.general || ""}`; button.dataset.swMonitorState = R.general || "";

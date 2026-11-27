@@ -328,3 +328,8 @@ svg.swp .swp-title { font-size: 13px; }
 .rq-dl { display: grid; grid-template-columns: max-content 1fr; gap: .25rem .6rem; font-size: .8rem; margin: 0; } .rq-dl dt { color: var(--muted); } .rq-dl dd { margin: 0; }
 @media (prefers-reduced-motion: reduce) { .rq-alloc.guess .rq-chip.on { animation: none; } }
 .swbal-stale { display: flex; align-items: center; gap: .6rem; margin: .4rem .8rem; padding: .5rem .7rem; border: 1.5px solid #f59e0b; border-radius: 10px; background: color-mix(in srgb, #f59e0b 14%, transparent); color: #fde68a; font-size: .85rem; } .swbal-stale[hidden] { display: none; } .swbal-stale span { flex: 1; }
+/* docked over a side pane (v0.201.2) : the window covers the pane, scrolls inside it, and its × gives the pane back */
+.swm.docked { position: fixed; border-radius: 0; max-width: none; max-height: none; overflow: auto; z-index: 40; box-shadow: none; } .swm.docked .swm-head { cursor: default !important; position: sticky; top: 0; z-index: 1; }
+.swm.docked.docked-left { border-right: 2px solid var(--line); } .swm.docked.docked-right { border-left: 2px solid var(--line); }
+.swbal.docked .swbal-cols { grid-template-columns: repeat(4, minmax(0, 1fr)); } .swbal.docked .swbal-head { grid-template-columns: repeat(2, minmax(0, 1fr)); flex-wrap: wrap; }
+.swbal.docked .swbal-bar, .swbal.docked .swbal-sets { flex-wrap: wrap; }
