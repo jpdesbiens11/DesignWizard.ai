@@ -16,6 +16,7 @@ import { campaignRun, findingsCsv, findingsMd } from "../sw/sw_campaign.js";
 import { verdictWord } from "../core/req_oracle.js";
 import { swShell } from "./sw_vband.js";
 import { leanHead, leanDesign, lastCampaign, rememberCampaign } from "./sw_lean_ui.js";
+import { loopSection } from "./sw_loop_ui.js";
 
 const V = { pass: { c: "#16a34a", s: "✓" }, fail: { c: "#dc2626", s: "✗" }, none: { c: "#94a3b8", s: "–" }, uncovered: { c: "#d97706", s: "◌" }, covered: { c: "#0891b2", s: "●" } };
 const WHY = { offbench: "prouvée autrement que par essai", tbd: "une valeur TBD", unread: "aucune grandeur que le banc relève", need: "un besoin", person: "« ne pas juger au banc »" };
@@ -58,7 +59,8 @@ function render(main) {
     clear(right); const fails = C ? C.rows.filter((r) => r.overall === "fail") : [];
     right.append(el("div", { class: "side-head" }, el("h2", null, "Ce qui échoue")), el("div", { class: "side-scroll" },
       el("div", { class: "side-section", "data-fold-note": C ? `${fails.length}` : "—" }, el("h3", null, "À corriger"), !C ? el("p", { class: "small muted" }, "Jouez la campagne.") : fails.length ? fails.map((r) => el("p", { class: "small" }, icon("warning"), ` ${r.key} — ${r.text} — échoue sur ${C.profiles.filter((p) => r.by[p.id] === "fail").map((p) => p.name).join(", ")}`)) : el("p", { class: "small muted" }, "Aucune exigence échouée.")),
-      el("div", { class: "side-section" }, el("h3", null, "Ensuite"), el("p", { class: "small" }, "Le constat part à une IA avec la consigne de corriger le design et le logiciel ; la nouvelle version rejoue toute la campagne et n'est acceptée que sans régression (phase suivante)."),
+      loopSection(d, C),      // the AI loop (JP, 27 novembre 2026, par menu : « Boucle IA ») : the package, the new version, the gate
+      el("div", { class: "side-section" }, el("h3", null, "Ensuite"), el("p", { class: "small" }, "Quand aucune exigence n'échoue, le paquet C part vers le microcontrôleur."),
         btn("Export", () => go("#/swrel"), { small: true, icon: "download", tip: "Le paquet C, quand les constats sont verts" }))));
     setGuide(C ? fails.map((r) => ({ level: "error", text: `${r.key} échoue : ${r.text}.` })) : [{ level: "todo", text: "La campagne n'a pas encore été jouée : « Jouer la campagne »." }]);
   }

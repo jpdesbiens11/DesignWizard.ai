@@ -596,3 +596,24 @@ rapidement » ; choix par menu : « Alléger le parcours d'abord ».
 - **Virtuel** : le module est typique ; l'écran et les fichiers le disent. **Ensuite** : les missions tirées des exigences (phase 2), puis la
   boucle IA (constat + consigne → nouvelle version → toute la campagne rejouée, acceptée sans régression).
 
+## La boucle IA : nouvelle version, acceptée sans régression (v0.211.0)
+
+JP, 27 novembre 2026 : « export de toutes les données HIL + prompt → IA → nouvelle version du logiciel importée, qui rejoue tous les duty cycles
+pour voir si la mise à jour est bonne » ; « un genre de ML en design » ; choix par menu : « Boucle IA ». Sur l'écran Constats (`#/swfind`), trois
+gestes (`web/js/sw/sw_loop.js`, pur ; `modules/sw_loop_ui.js`) :
+
+1. **Le paquet** (`loopFiles`) — un .zip : `PROMPT.md` (la consigne : corriger ce qui échoue sans rien faire échouer d'autre ; ne toucher ni aux
+   interfaces HW, ni au banc, ni aux missions, ni aux exigences ; une valeur changée reste un exemple), `constat.md` et `constat.csv`,
+   `requirements.md` (chaque exigence et ses limites lues par la machine), `software.json`. Tout porte la marque. L'outil n'appelle aucune IA.
+2. **La nouvelle version** (`readCandidate`) — la réponse collée ou en fichier : ses changements dits ; ce que la boucle **remet** (le banc
+   `plant`, les missions `profiles`, la carte, chaque broche sur son net) dit aussi ; une valeur changée par la réponse perd sa confirmation ; un
+   logiciel qui ne tourne pas, un genre inconnu ou « aucun changement » sont refusés avant tout.
+3. **La porte** (`compareCampaigns`) — toute la campagne rejouée sur la nouvelle version, sous le voile (progression, « Annuler »), comparée
+   limite par limite **et mission par mission** : une case qui tenait et ne tient plus, ou un nouvel échec, est une **régression**. Une seule, et
+   « Accepter » reste fermé. Accepter est **une étape annulable**, écrite au journal des réponses d'IA (`journalChange`), qui pose un point
+   « Après l'IA » dans l'historique ; la comparaison sort en .md (`compareMd`).
+
+**Essayé sur le BM** : une version qui ouvre à 4,20 V corrige ESS-REQ-002 sans régression — acceptée ; une version qui monte la
+surtempérature à 90 °C fait échouer ESS-REQ-015 en décharge — refusée ; une version qui déplace la bobine du contactor sur un autre net la voit
+remise. **Non vérifié** : un tour avec une vraie réponse d'assistant (le format est celui de l'aller-retour existant du logiciel).
+

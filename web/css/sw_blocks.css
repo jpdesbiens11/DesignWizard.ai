@@ -399,3 +399,7 @@ svg.swp .swp-piece { touch-action: none; }
 .swf2-table th small { color: var(--muted); font-weight: 400; } .swf2-cell { text-align: center !important; font-weight: 700; color: var(--v); background: color-mix(in srgb, var(--v) 12%, transparent); white-space: nowrap; }
 .swf2-fail td:first-child { box-shadow: inset 4px 0 0 #dc2626; } .swf2-count { display: flex; align-items: baseline; gap: .4rem; margin: .15rem .6rem; color: var(--v); } .swf2-count b { font-size: 1.2rem; min-width: 1.6rem; text-align: right; }
 .swf2-unread { margin-top: .8rem; font-size: .82rem; }
+/* the AI loop (modules/sw_loop_ui.js) */
+.swl2-acts { display: flex; flex-wrap: wrap; gap: .3rem; margin: .3rem .6rem; } .swl2-body { position: relative; min-height: 220px; }
+.swl2-box { border: 1.5px solid var(--line); border-left: 4px solid #2563eb; border-radius: 8px; padding: .4rem .6rem; margin: .5rem 0; background: var(--surface); }
+.swl2-box.bad { border-left-color: #dc2626; } .swl2-box.ok { border-left-color: #16a34a; } .swl2-box.keep { border-left-color: #d97706; } .swl2-box ul { margin: .2rem 0 0 1rem; }
