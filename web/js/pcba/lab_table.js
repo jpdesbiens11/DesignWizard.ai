@@ -55,6 +55,11 @@ const has = (links, a, b) => links.some((l) => (l.a === a && l.b === b) || (l.a 
 export function autoLinks(A, B) {
   const pa = portsOf(A).filter((p) => !p.debug), pb = portsOf(B).filter((p) => !p.debug), out = [];
   for (const p of pa.filter((x) => x.kind !== "ground")) { const q = pb.find((x) => x.kind !== "ground" && norm(x.net) === norm(p.net)); if (q && linkCheck(p, q).ok && !out.some((l) => l.b === q.key)) out.push({ a: p.key, b: q.key, auto: true }); }
+  /* two boards meet through a connector of each : a SIGNAL is linked when its pair of connectors shares two nets or more — a single signal name
+     met by chance on two unrelated connectors (an NTC0 of each board) is not, unless it is all the two boards share ; a supply is always linked */
+  const pairOfRefs = (l) => `${l.a.split(":")[1].split(".")[0]}>${l.b.split(":")[1].split(".")[0]}`, count = {}; for (const l of out) count[pairOfRefs(l)] = (count[pairOfRefs(l)] || 0) + 1;
+  const best = Math.max(0, ...Object.values(count)), kindAt = (k) => (pa.find((x) => x.key === k) || {}).kind;
+  if (out.length) out.splice(0, out.length, ...out.filter((l) => kindAt(l.a) !== "signal" || count[pairOfRefs(l)] >= 2 || count[pairOfRefs(l)] === best));
   if (out.length) { const refA = (k) => k.split(":")[1].split(".")[0], ra = refA(out[0].a), rb = refA(out[0].b), g = pa.find((x) => x.kind === "ground" && x.ref === ra) || pa.find((x) => x.kind === "ground"), h = pb.find((x) => x.kind === "ground" && x.ref === rb) || pb.find((x) => x.kind === "ground"); if (g && h) out.push({ a: g.key, b: h.key, auto: true }); }      // the return of the current : one ground, on the connector the others use
   return out;
 }

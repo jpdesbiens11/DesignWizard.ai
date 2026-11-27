@@ -17,9 +17,10 @@ import { svgView } from "./svg_view.js";
 import { gearPic } from "./elab_gear.js";
 import { rs485Board } from "../demo/demo_rs485.js";
 import { demoBoard } from "../demo/demo_pcba.js";
+import { systemRun } from "./elab_system.js";
 
 const fr = (v) => String(+(+v).toPrecision(3)).replace(".", ",");
-const MODES = [["table", "Table", "pcb"], ["schema", "Schéma des liaisons", "branch"]];
+const MODES = [["table", "Table", "pcb"], ["schema", "Schéma des liaisons", "branch"], ["run", "En marche", "play"]];      // « En marche » : JP, 27 novembre 2026
 
 export function tableScreen(main) {
   const st = { mode: "table", pick: null, open: false }, left = el("aside", { class: "side" }), right = el("aside", { class: "side right" }), host = el("div", { class: "lab-table-host" });
@@ -44,7 +45,7 @@ export function tableScreen(main) {
   let drag = null;
   V.svg.addEventListener("pointerdown", (e) => { const n = e.target.closest && e.target.closest("[data-port]"); drag = n && st.open ? n.dataset.port : null; });
   V.svg.addEventListener("pointerup", (e) => { const n = e.target.closest && e.target.closest("[data-port]"); if (drag && n && n.dataset.port !== drag) { st.pick = drag; pickPort(n.dataset.port); } drag = null; });      // a drag from a pin to another : a cable
-  V.svg.addEventListener("click", (e) => { const port = e.target.closest && e.target.closest("[data-port]"), c = e.target.closest && e.target.closest("[data-cable]"); if (port) pickPort(port.dataset.port); else if (c) selectLink(c.dataset.cable); });
+  V.svg.addEventListener("click", (e) => { if (st.mode === "run") { RUN().click(e.target); return; } const port = e.target.closest && e.target.closest("[data-port]"), c = e.target.closest && e.target.closest("[data-cable]"); if (port) pickPort(port.dataset.port); else if (c) selectLink(c.dataset.cable); });
   V.svg.addEventListener("keydown", (e) => { const port = e.target.closest && e.target.closest("[data-port]"); if (port && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); pickPort(port.dataset.port); } });
   let chosen = null; const selectLink = (id) => { chosen = id; drawRight(); const row = right.querySelector(`[data-cable-row="${CSS.escape(id)}"]`); if (row) row.scrollIntoView({ block: "nearest" }); };
 
@@ -72,15 +73,22 @@ export function tableScreen(main) {
     for (const l of tableLinks(P())) { const a = at.get(l.a), b = at.get(l.b); if (a && b) g.prepend(svg("g", { class: `lab-cable${l.on === false ? " off" : ""}${l.ok ? "" : " bad"}`, "data-cable": l.id }, svg("path", { d: `M${a[0]},${a[1]} C${(a[0] + b[0]) / 2},${a[1]} ${(a[0] + b[0]) / 2},${b[1]} ${b[0]},${b[1]}`, class: "halo" }), svg("path", { d: `M${a[0]},${a[1]} C${(a[0] + b[0]) / 2},${a[1]} ${(a[0] + b[0]) / 2},${b[1]} ${b[0]},${b[1]}`, stroke: l.ok ? PORT_KINDS[l.kind].color : "#dc2626" }))); }
     return { w: Math.max(boards().length * colW, 300), h: H + 20, y: -20 };
   }
+  /* « En marche » : the two kinds of boards at work (modules/elab_system.js) — each frame redraws the drawing and the right pane only */
+  let run = null; const RUN = () => (run = run || systemRun({ project: P, redraw: () => { if (st.mode === "run") paint(); }, refresh: () => draw() }));
+  function paint() {
+    V.svg.replaceChildren(); const g = svg("g"); V.svg.append(g);
+    if (!boards().length) { V.setBox(400, 100); g.append(svg("text", { x: 0, y: 40, class: "lab-table-name" }, "La table est vide : posez une carte, à gauche.")); }
+    else { const box = st.mode === "table" ? drawTable(g) : st.mode === "schema" ? drawSchema(g) : RUN().draw(g); g.setAttribute("transform", `translate(0 ${-box.y})`); V.setBox(box.w, box.h); }
+    if (st.mode === "run") RUN().right(right);
+  }
   function draw() {
     const lock = btn(st.open ? "Montage déverrouillé" : "Montage verrouillé", () => { st.open = !st.open; st.pick = null; draw(); }, { small: true, primary: st.open, icon: st.open ? "edit" : "lock", tip: st.open ? "Les câbles se changent à la souris : un clic sur une broche puis sur une autre, ou un glisser de l'une à l'autre ; chaque câble est vérifié. Cliquer pour verrouiller." : "Le montage est tenu : les câbles viennent des cartes et de l'IA. Déverrouiller pour les changer à la souris, en connaissance de cause.", cls: "lab-lock" }); lock.setAttribute("aria-pressed", st.open ? "true" : "false");
     bar.replaceChildren(lock, el("div", { class: "role-switch", role: "radiogroup", "aria-label": "Vue de la table" }, MODES.map(([k, l, ic]) => el("button", { type: "button", role: "radio", "aria-checked": st.mode === k ? "true" : "false", class: st.mode === k ? "on" : "", style: { "--g": "#0f766e" }, "data-mode": k, onClick: () => { st.mode = k; draw(); } }, icon(ic), el("span", null, l)))),
+      ...(st.mode === "run" ? [...RUN().bar(), el("span", { class: "grow" }), el("span", { class: "chip", "data-tip": "La carte principale et les CORE boards tournent ensemble : l'alimentation de chacune lue de ses blocs, le round-robin et ses frames, le logiciel de la carte principale contre le module simulé. Ce qui ne l'est pas est dit dans la marge de droite." }, icon("info"), " Frames et fonctions HW simulées")] : [
       el("span", { class: "muted small grow" }, !st.open ? " Montage verrouillé : un clic sur une broche dit ce qu'elle porte." : st.pick ? ` Câble depuis ${st.pick} : cliquez la broche d'arrivée, sur une autre carte (Échap annule).` : " Un clic sur une broche, puis sur une broche d'une autre carte — ou un glisser de l'une à l'autre : un câble, vérifié avant d'être posé."),
-      el("span", { class: "chip", "data-tip": "Les cartes ne sont pas simulées ensemble : la table dit comment elles sont câblées, et le guide ce qui ne tient pas. Chaque carte s'essaie dans la vue « Une carte »." }, icon("info"), " Câblage, pas simulation"));
-    V.svg.replaceChildren(); const g = svg("g"); V.svg.append(g);
-    if (!boards().length) { V.setBox(400, 100); g.append(svg("text", { x: 0, y: 40, class: "lab-table-name" }, "La table est vide : posez une carte, à gauche.")); }
-    else { const box = st.mode === "table" ? drawTable(g) : drawSchema(g); g.setAttribute("transform", `translate(0 ${-box.y})`); V.setBox(box.w, box.h); }
-    drawLeft(); drawRight(); setGuide(tableIssues(P()).map((x) => ({ ...x, go: x.link ? () => selectLink(x.link) : null })));
+      el("span", { class: "chip", "data-tip": "Dans les vues Table et Schéma, les cartes ne sont pas simulées ensemble : la table dit comment elles sont câblées, et le guide ce qui ne tient pas. « En marche » les fait tourner ensemble." }, icon("info"), " Câblage, pas simulation")]));
+    if (st.mode !== "run" && run) run.stop();
+    paint(); drawLeft(); if (st.mode !== "run") drawRight(); setGuide(tableIssues(P()).map((x) => ({ ...x, go: x.link ? () => selectLink(x.link) : null })));
   }
   function drawLeft() {
     const t = T(), others = store.boards.filter((b) => !t.boards.includes(b.id));
@@ -114,5 +122,5 @@ export function tableScreen(main) {
   document.addEventListener("keydown", key);
   const off = store.on("change", () => draw());
   draw();
-  return () => { off(); document.removeEventListener("keydown", key); V.destroy(); setGuide([]); };
+  return () => { off(); if (run) run.stop(); document.removeEventListener("keydown", key); V.destroy(); setGuide([]); };
 }

@@ -88,7 +88,7 @@ export function moduleDesign(cpu = "tms570ls1224_pge") {
       adc_i: { points: [[0, amps(50)], [500, amps(150)], [4000, amps(50)]] }, lost: { points: [[0, 0], [5000, 1]] }, ack: { points: [[0, 0]] }, wake: { points: [[0, 1]] }, veh_en: { points: [[0, 1]] }, pres: { points: [[0, 1]] }, adc_to: { points: [[0, counts(250)]] }, k_fb: { follows: "k_drv", delay: 20 } } },
     profiles: [], monitor: { title: "Monitoring du BM-SWAP" },
     /* the module on the bench (sw/sw_pack.js) : the pins it drives, the outputs it obeys — and the charge and the discharge written from the thresholds */
-    plant: { vmax: "adc_v", vmin: "adc_vmin", temp: "adc_t", current: "adc_i", vmod: "adc_vm", vout: "adc_vo", bleed: "bal_in", contactor: "k_drv.level", state: "module.state", pump: "pump.level", lost: "lost", ack: "ack",
+    plant: { vmax: "adc_v", vmin: "adc_vmin", temp: "adc_t", current: "adc_i", vmod: "adc_vm", vout: "adc_vo", bleed: "bal_in", contactor: "k_drv.level", state: "module.state", pump: "pump.level", lost: "lost", ack: "ack", wake: "wake",
       balance: CORE_BALANCE },
     reqs: [], tests: [] };
   d.profiles = missionProfiles(d);

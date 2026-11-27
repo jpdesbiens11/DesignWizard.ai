@@ -513,3 +513,27 @@ Un nouveau gabarit de bloc arrive avec ses essais (`T.<gabarit>` dans `lab_bench
 `why`, son `expect`, son `learn`) et, s'il porte un circuit intégré d'une famille nouvelle, son comportement dans
 `lab_devices.js` avec la note qui dit ce qui est typique. Un test tient que chaque bloc de la bibliothèque a son
 essai et que chaque essai tourne.
+
+## 1 quater. Les deux cartes en marche (v0.209.0)
+
+> JP, 27 novembre 2026 : « 2 pcb types that speak to each other when powered with 12 V and do all functions related to HW » ; choix par menu :
+> « Les 2 cartes en marche ».
+
+Sur la table (`#/elab/table`), la troisième vue, **« En marche »**, fait tourner ensemble la carte qui alimente le bus side des autres (la carte
+principale) et la carte qu'elle écoute (une CORE board, comptée autant de fois que le bus a de nœuds) — `web/js/pcba/lab_system.js` (pur),
+`web/js/modules/elab_system.js` :
+
+- **L'alimentation de chaque carte est lue de ses blocs** (`railsOf` : input protection, diode-OR, buck, LDO, DC-DC isolé) : la carte principale
+  vit sur le module ou sur le 12 V ; le bus side des CORE boards vit de ce que la carte principale leur donne par la daisy chain (`systemPower`).
+  Un interrupteur « 12 V » sur l'alimentation de laboratoire dessinée : sans lui, standby, CORE boards silent.
+- **Le round-robin** (`roundRobin`, `coreFrame`) : la frame de chaque CORE au cadrage RTU de `sw/rs485_link.js` (adresse = slot, fonction 0x41,
+  cell block voltage, 8 NTC, flags, CRC-16 : 23 octets), CORE 1 ouvre le cycle, chaque slot après la frame d'avant et son silence t3,5 ; un
+  cycle à l'échelle sous les cartes (32,3 ms sur 100 ms à 115 200 bauds — exemples). La frame de la CORE choisie se lit octet par octet.
+- **Chaque fonction HW de la carte principale** (`hwFunctions`) : le logiciel de la carte principale tourne contre le module simulé
+  (`sw/sw_live.js`) ; chaque broche de son logiciel est montrée sous la fonction de la carte qui la porte, avec son net, sa broche et sa valeur.
+  Les cartes posent elles-mêmes deux entrées du banc : WAKE (le 12 V) et le silence du round-robin (pas de bus side, ou daisy chain débranchée).
+- **Ce qui n'est pas simulé est dit** (`SYSTEM_GAPS`) : le firmware des CORE boards, une température par CORE, la couche électrique RS-485 (elle
+  s'essaie bloc par bloc), la frame CAN FD, la précharge et le pyrofusible ; frame, baud rate et période sont des exemples.
+- **Câbles posés d'office** (`autoLinks`) : un signal n'est câblé que si sa paire de connecteurs partage au moins deux signaux (ou si c'est tout ce
+  que les deux cartes partagent) — une NTC0 de chaque carte n'est plus reliée ; une alimentation l'est toujours.
+

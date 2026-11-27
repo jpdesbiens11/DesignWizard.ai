@@ -9,7 +9,7 @@ import { bmProject } from "../../web/js/demo/demo_bm.js";
 import { erc } from "../../web/js/pcba/erc.js";
 import { checkBoard } from "../../web/js/pcba/drc.js";
 import { LIBRARY } from "../../web/js/pcba/library.js";
-import { tableLinks, tableIssues } from "../../web/js/pcba/lab_table.js";
+import { putBoard, tableLinks, tableIssues } from "../../web/js/pcba/lab_table.js";
 
 const read = (f) => readFileSync(new URL(`../../${f}`, import.meta.url), "utf8");
 
@@ -24,6 +24,8 @@ test("the central BMS : its functions, its blocks, every link routed, no error f
 
 test("in the project : a product board with its twin, on the lab table with a CORE board, the four wires of the chain linked by themselves", () => {
   const p = bmProject(), twin = p.parts.find((x) => x.id === `${BMS_BOARD_ID}-PCB`); assert.ok(twin); assert.equal(twin.name, "BMS central du module");
+  /* since 27 novembre 2026 the main board 3 in × 3 in is the one on the table (« En marche ») : this board is put there again, alone with a CORE board */
+  p.labTable = { boards: [], links: [] }; putBoard(p, BMS_BOARD_ID); putBoard(p, "CORE-1S8P-PCBA");
   const links = tableLinks(p); assert.equal(links.length, 4); assert.ok(links.every((l) => l.ok && l.a.startsWith(`${BMS_BOARD_ID}:`)));
   assert.deepEqual(links.map((l) => l.A.net).sort(), ["+5V_ISO", "GND_ISO", "RS485_A", "RS485_B"]); assert.deepEqual(tableIssues(p), []);
   const doc = read("docs/BM_MODULE.md"); for (const re of [/Itération 14/, /gen_demo_bms\.mjs/, /85 × 62 mm/, /Pas fait/]) assert.match(doc, re);
