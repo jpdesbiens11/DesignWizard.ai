@@ -38,7 +38,7 @@ export function liveStart(d, keep = 600) {
     L.recRefs = (d.objects || []).filter((o) => !o.off && KINDS[o.kind] && KINDS[o.kind].pin === "dout").map((o) => `${o.id}.level`); L.rec = []; record(L); }
   return L;
 }
-const PLANT_PINS = ["vmax", "vmin", "temp", "current"];
+const PLANT_PINS = ["vmax", "vmin", "temp", "current", "vmod", "vout"];
 function record(L) { const s = packSense(L.plant), last = L.m.last; L.rec.push({ t: L.t, ...s, state: L.pl.state ? last[L.pl.state] || 0 : 0, bleed: L.plant.bleed.filter(Boolean).length, out: L.recRefs.map((r) => (last[r] ? 1 : 0)) }); if (L.rec.length > 30000) L.rec.splice(0, L.rec.length - 30000); }
 /** The record of a mission as CSV : one line a second — time, what the pins read in the units of physics, the state, each output. */
 export function recordCsv(L, names = {}) {

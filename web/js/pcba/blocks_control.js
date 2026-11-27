@@ -14,7 +14,10 @@ const MCU_PORTS = { SWDIO: ["SWDIO", "SWDIO", "bidir"], SWCLK: ["SWCLK", "SWCLK"
   PWM_H: ["PA8", "PWM_H", "out"], PWM_L: ["PA7", "PWM_L", "out"], LED: ["PA15", "LED_STATUS", "out"], DOUT0: ["PB3", "DOUT0", "out"], DOUT1: ["PB4", "DOUT1", "out"], DOUT2: ["PB5", "DOUT2", "out"], IMU_INT: ["PB0", "IMU_INT", "in"],
   AIN4: ["PA4", "AIN4", "in"], AIN5: ["PA5", "AIN5", "in"], AIN6: ["PA6", "AIN6", "in"], SPI_CS: ["PB12", "SPI_CS", "out"], SPI_SCK: ["PB13", "SPI_SCK", "out"], SPI_MISO: ["PB14", "SPI_MISO", "in"], SPI_MOSI: ["PB15", "SPI_MOSI", "out"],
   AIN7: ["PA7", "AIN7", "in"], AIN8: ["PB0", "AIN8", "in"],      // PA7 and PB0 also carry PWM_L and IMU_INT : a board uses one function per pin
-  UART2_TX: ["PB10", "UART2_TX", "out"], UART2_RX: ["PB11", "UART2_RX", "in"], PWM_A: ["PB8", "PWM_A", "out"], PWM_B: ["PB9", "PWM_B", "out"], DIN0: ["PC13", "DIN0", "in"], DIN1: ["PC14", "DIN1", "in"], DIN2: ["PC15", "DIN2", "in"], DOUT3: ["PB2", "DOUT3", "out"] };
+  UART2_TX: ["PB10", "UART2_TX", "out"], UART2_RX: ["PB11", "UART2_RX", "in"], PWM_A: ["PB8", "PWM_A", "out"], PWM_B: ["PB9", "PWM_B", "out"], DIN0: ["PC13", "DIN0", "in"], DIN1: ["PC14", "DIN1", "in"], DIN2: ["PC15", "DIN2", "in"], DOUT3: ["PB2", "DOUT3", "out"],
+  /* more discrete pins for a central BMS (JP, 27 novembre 2026 : présence, acquittement, ventilateur, avertisseur, témoins jaune et rouge) — on PB10 to PB15,
+     which the second UART and the SPI also carry : a board uses one function per pin */
+  DIN3: ["PB12", "DIN3", "in", 1], DIN4: ["PB13", "DIN4", "in", 1], DOUT4: ["PB14", "DOUT4", "out", 1], DOUT5: ["PB15", "DOUT5", "out", 1], LED_WARN: ["PB10", "LED_WARN", "out", 1], LED_FAULT: ["PB11", "LED_FAULT", "out", 1] };      // 1 : a SPARE pin — it gives way to the SPI and the second UART (pcba/synth.js bindLazy)
 const ONLY48 = /^(PB2|PB[89]|PB1[0-5]|PC1[3-5])$/;                 // pins the 32-lead package does not have
 
 const mcu = { id: "mcu", name: "Microcontrôleur", category: "Calculer", function: "Calculer et piloter : microcontrôleur 32 bits, {pins} broches", desc: "Cœur, découplage par broche d'alimentation, quartz, remise à zéro, mode de démarrage.",
@@ -36,7 +39,7 @@ const mcu = { id: "mcu", name: "Microcontrôleur", category: "Calculer", functio
     }
     b.net("GND", gnd, GND);
     b.port("VDD", "VDD", "power_in", railName(p.vdd)).port("GND", "GND", "gnd", "GND").port("NRST", "NRST", "bidir", "RESET_N");
-    for (const [name, [pin, net, dir]] of Object.entries(MCU_PORTS)) if (n === 48 || !ONLY48.test(pin)) b.port(name, null, dir, net, { lazy: true, pin: `U.${pin}` });
+    for (const [name, [pin, net, dir, spare]] of Object.entries(MCU_PORTS)) if (n === 48 || !ONLY48.test(pin)) b.port(name, null, dir, net, { lazy: true, pin: `U.${pin}`, ...(spare ? { spare: true } : {}) });
     b.calc("Découplage", vdd.length, "", `Un condensateur de 100 nF par broche d'alimentation (${vdd.length}) et 4,7 µF de réserve.`);
     b.calc("Remise à zéro", 1, "ms", "τ = R C = 10 kΩ × 100 nF = 1 ms : filtre les parasites sans retarder le démarrage.");
     b.note("Chaque condensateur de 100 nF contre sa broche d'alimentation, retour direct au plan de masse.").note("Quartz et ses condensateurs contre les broches d'oscillateur ; aucun signal dessous.").note("Connecteur de programmation accessible carte montée.");

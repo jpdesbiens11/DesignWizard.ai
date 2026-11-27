@@ -8,9 +8,12 @@ import { missionProfiles } from "./sw_pack.js";
 
 const OBJ = (id, kind, name, x, y, params = {}) => ({ id, kind, name, x, y, params, sure: [] });
 /* a value the bench stands in for : read from the chain of CORE boards (RS-485), not from a pin of the central board */
-const CHAIN = "relue de la chaîne RS-485 des cartes de CORE";
+const CHAIN = "relue par la chaîne RS-485 des 8 cartes de CORE (CORE-1S8P-PCBA : la tension de chaque CORE, ses 8 CTN)";
 const BENCH = (o, why = CHAIN) => ({ ...o, bench: why });
-/* a pin the central board has (demo/demo_bms3.js, the 3 in × 3 in board : U11 is its microcontroller ; AIN1 the amplifier of the shunt, DIN1 the auxiliary contact, DOUT0 the coil of the contactor) */
+/* a pin the central board has (demo/demo_bms3.js, the 3 in × 3 in board : U11 is its microcontroller) — JP, 27 novembre 2026 : « aligner le logiciel avec
+   les 2 types de cartes, CORE × 8 + main » : AIN0 the module, AIN1 the shunt, AIN2 the output, AIN3 the NTC of the output terminal ; DIN1 the auxiliary
+   contact, DIN2 ENABLE, DIN3 the presence, DIN4 the acknowledgement ; DOUT0 the contactor, DOUT3 the pump, DOUT4 the fan, DOUT5 the buzzer ; three LEDs.
+   What a CORE board measures comes by the chain (BENCH) ; WAKE, the precharge and the pyrofuse are on the board, their blocks still to come. */
 const HW = (o, net, pin) => ({ ...o, hw: { board: "BMS-CENTRAL-3X3", net, pin } });
 const W = (pairs) => pairs.map(([from, to, delay]) => ({ from, to, ...(delay ? { delay: true } : {}) }));
 /** counts of a 12-bit converter under 3.3 V for a voltage at its pin, in mV */
@@ -36,29 +39,40 @@ export function moduleDesign(cpu = "tms570ls1224_pge") {
       OBJ("over_ic", "limit", "Charge current too high — derate", 470, 440, { unit: "mA", above: 0, trip: -95000, clear: -90000, delay: 2000 }),
       OBJ("i_watch", "logic", "Current to watch (discharge or charge)", 700, 400, { op: "OR" }),
       BENCH(OBJ("lost", "pin_din", "Banc : la chaîne des cartes se tait", 470, 500, { pin: 5 }), "dit par la liaison RS-485 elle-même, quand plus aucune carte ne répond"),
-      OBJ("ack", "pin_din", "Bouton : acquitter le défaut", 470, 600, { pin: 6 }),
+      HW(OBJ("ack", "pin_din", "Entrée : acquitter le défaut (véhicule ou service)", 470, 600, { pin: 6 }), "DIN4", "U11.PB13"),
       OBJ("v_fault", "logic", "Voltage fault (over or under)", 700, -60, { op: "OR" }), OBJ("v_watch", "logic", "Voltage to watch (high or low)", 700, -200, { op: "OR" }),
       OBJ("watch", "logic", "To watch : voltage or temperature", 900, -100, { op: "OR" }),
       OBJ("latch", "fault_latch", "Fault latch", 700, 60), OBJ("module", "module_state", "Module state", 900, 260, { t_lost: 500, t_emerg: 1000 }),
       OBJ("k", "contactor", "Contactor", 1130, 260, { t_fb: 50 }), HW(OBJ("k_fb", "pin_din", "Entrée : contact auxiliaire", 900, 450, { pin: 3 }), "DIN1", "U11.PC14"), HW(OBJ("k_drv", "pin_dout", "Sortie : bobine du contacteur", 1360, 270, { pin: 2 }), "DOUT0", "U11.PB3"),
       OBJ("lamp", "state_lamp", "General state lamp", 1130, 40),
       OBJ("bal", "balancing", "Passive balancing (per CORE)", 700, 640, { v_min: 3900, delta: 20, hyst: 10 }),
-      { ...HW(OBJ("led_g", "pin_dout", "LED verte — état bon", 1360, -60, { pin: 7 }), "LED_STATUS", "U11.PA15"), device: "led" }, { ...OBJ("led_y", "pin_dout", "LED jaune — à surveiller", 1360, 20, { pin: 8 }), device: "led" },
-      { ...OBJ("led_r", "pin_dout", "LED rouge — limite dépassée", 1360, 100, { pin: 9 }), device: "led" }, { ...OBJ("buzz", "pin_dout", "Buzzer — alarme", 1360, 180, { pin: 10 }), device: "buzzer" },
-      { ...OBJ("pump", "pin_dout", "Pompe de refroidissement (WEG)", 1360, 360, { pin: 11 }), device: "pump" }],
+      { ...HW(OBJ("led_g", "pin_dout", "LED verte — état bon", 1360, -60, { pin: 7 }), "LED_STATUS", "U11.PA15"), device: "led" }, { ...HW(OBJ("led_y", "pin_dout", "LED jaune — à surveiller", 1360, 20, { pin: 8 }), "LED_WARN", "U11.PB10"), device: "led" },
+      { ...HW(OBJ("led_r", "pin_dout", "LED rouge — limite dépassée", 1360, 100, { pin: 9 }), "LED_FAULT", "U11.PB11"), device: "led" }, { ...HW(OBJ("buzz", "pin_dout", "Buzzer — alarme", 1360, 180, { pin: 10 }), "DOUT5", "U11.PB15"), device: "buzzer" },
+      { ...HW(OBJ("pump", "pin_dout", "Pompe de refroidissement (WEG)", 1360, 360, { pin: 11 }), "DOUT3", "U11.PB2"), device: "pump" },
+      /* JP, 27 novembre 2026 : « aligner le logiciel avec les 2 types de cartes, CORE × 8 + main… measure current, voltage, temperature at output,
+         vehicle command, EFC, actuators (pump, fan) » — what the central board reads and drives besides the chain of the CORE boards */
+      HW(OBJ("adc_vm", "pin_adc", "Voie : tension du module (prise B+)", 20, 720, { channel: 4 }), "AIN0", "U11.PA0"), OBJ("v_mod", "analog_in", "Module voltage", 230, 710, { unit: "mV", num: 147, den: 10, lo: 0, hi: 40000, n: 4 }),
+      { ...OBJ("efc", "energy_counter", "Energy flow counter (EFC) → véhicule", 470, 720), vehicle: "CAN FD" },      // what it counts goes to the vehicle by the CAN FD : the block that writes the frame is still to come
+      HW(OBJ("adc_vo", "pin_adc", "Voie : tension de sortie, après le contacteur", 20, 810, { channel: 5 }), "AIN2", "U11.PA2"), { ...OBJ("v_out", "analog_in", "Output voltage → véhicule", 230, 800, { unit: "mV", num: 147, den: 10, lo: 0, hi: 40000, n: 4 }), vehicle: "CAN FD" },      // with the precharge (to come) it is compared to the module
+      HW(OBJ("adc_to", "pin_adc", "Voie : température de la borne de sortie (CTN)", 20, 900, { channel: 6 }), "AIN3", "U11.PA3"), OBJ("t_out", "analog_in", "Output terminal temperature", 230, 890, { unit: "0.1 °C", num: 1, den: 1, lo: 0, hi: 1500, n: 4 }),
+      OBJ("tout_hot", "limit", "Output terminal hot — derate", 470, 900, { unit: "0.1 °C", above: 1, trip: 900, clear: 850, delay: 1000 }),
+      OBJ("warn_all", "logic", "To watch : cells or output terminal", 1000, -100, { op: "OR" }),
+      { ...HW(OBJ("fan", "pin_dout", "Ventilateur du radiateur", 1360, 440, { pin: 12 }), "DOUT4", "U11.PB14"), device: "fan" },
+      HW(OBJ("veh_en", "pin_din", "Entrée : le véhicule autorise l'énergie (ENABLE)", 700, 540, { pin: 13 }), "DIN2", "U11.PC15"), HW(OBJ("pres", "pin_din", "Entrée : le module est dans sa cavité (présence)", 700, 600, { pin: 14 }), "DIN3", "U11.PB12"),
+      OBJ("allow", "logic", "Vehicle allows and module present", 900, 560, { op: "AND" }), OBJ("req", "logic", "Close only when allowed", 1050, 330, { op: "AND" })],
     wires: W([["adc_v.counts", "v_max.counts"], ["v_max.value", "ov.value"], ["v_max.value", "hvw.value"], ["adc_vmin.counts", "v_min.counts"], ["v_min.value", "uv.value"], ["v_min.value", "lvw.value"],
-      ["adc_t.counts", "t_max.counts"], ["t_max.value", "hot.value"], ["t_max.value", "ot.value"], ["t_max.value", "cool.value"], ["cool.trip", "pump.level"],
+      ["adc_t.counts", "t_max.counts"], ["t_max.value", "hot.value"], ["t_max.value", "ot.value"], ["t_max.value", "cool.value"], ["cool.trip", "pump.level"], ["cool.trip", "fan.level"], ["adc_vm.counts", "v_mod.counts"], ["v_mod.value", "efc.v"], ["i_mod.value", "efc.i"], ["adc_vo.counts", "v_out.counts"], ["adc_to.counts", "t_out.counts"], ["t_out.value", "tout_hot.value"],
       ["adc_i.counts", "i_mod.counts"], ["i_mod.value", "over_i.value"], ["i_mod.value", "over_ic.value"], ["over_i.trip", "i_watch.a"], ["over_ic.trip", "i_watch.b"], ["ov.trip", "v_fault.a"], ["uv.trip", "v_fault.b"], ["v_fault.y", "latch.a"], ["ot.trip", "latch.b"], ["k.fault", "latch.c", 1],
       ["hvw.trip", "v_watch.a"], ["lvw.trip", "v_watch.b"], ["v_watch.y", "watch.a"], ["hot.trip", "watch.b"],
-      ["latch.fault", "module.fault"], ["lost.level", "module.lost"], ["watch.y", "module.warn_a"], ["i_watch.y", "module.warn_b"], ["ack.level", "latch.reset"], ["ack.level", "module.reset"],
-      ["module.close", "k.request"], ["latch.fault", "k.inhibit"], ["k_fb.level", "k.feedback"], ["k.drive", "k_drv.level"],
+      ["latch.fault", "module.fault"], ["lost.level", "module.lost"], ["watch.y", "warn_all.a"], ["tout_hot.trip", "warn_all.b"], ["warn_all.y", "module.warn_a"], ["i_watch.y", "module.warn_b"], ["ack.level", "latch.reset"], ["ack.level", "module.reset"],
+      ["module.close", "req.a"], ["veh_en.level", "allow.a"], ["pres.level", "allow.b"], ["allow.y", "req.b"], ["req.y", "k.request"], ["latch.fault", "k.inhibit"], ["k_fb.level", "k.feedback"], ["k.drive", "k_drv.level"],
       ["v_max.value", "bal.v"], ["v_min.value", "bal.low"], ["i_mod.value", "bal.i"], ["module.state", "lamp.state"], ["lamp.green", "led_g.level"], ["lamp.yellow", "led_y.level"], ["lamp.red", "led_r.level"], ["lamp.red", "buzz.level"]]),
     /* the bench : 50 A, then 150 A for 3.5 s (derated after 2 s), 50 A again ; at 5 s the chain falls silent : emergency after 0.5 s, stop after 1 s more */
     scenario: { steps: 800, pins: { adc_v: { points: [[0, counts(1950)]] }, adc_vmin: { points: [[0, counts(1825)]] }, adc_t: { points: [[0, counts(250)]] },
-      adc_i: { points: [[0, amps(50)], [500, amps(150)], [4000, amps(50)]] }, lost: { points: [[0, 0], [5000, 1]] }, ack: { points: [[0, 0]] }, k_fb: { follows: "k_drv", delay: 20 } } },
+      adc_i: { points: [[0, amps(50)], [500, amps(150)], [4000, amps(50)]] }, lost: { points: [[0, 0], [5000, 1]] }, ack: { points: [[0, 0]] }, veh_en: { points: [[0, 1]] }, pres: { points: [[0, 1]] }, adc_to: { points: [[0, counts(250)]] }, k_fb: { follows: "k_drv", delay: 20 } } },
     profiles: [CHARGE, DISCHARGE], monitor: { title: "Monitoring du BM-SWAP" },
     /* the module on the bench (sw/sw_pack.js) : the pins it drives, the outputs it obeys — and the charge and the discharge written from the thresholds */
-    plant: { vmax: "adc_v", vmin: "adc_vmin", temp: "adc_t", current: "adc_i", contactor: "k_drv.level", state: "module.state", pump: "pump.level", lost: "lost", ack: "ack" },
+    plant: { vmax: "adc_v", vmin: "adc_vmin", temp: "adc_t", current: "adc_i", vmod: "adc_vm", vout: "adc_vo", contactor: "k_drv.level", state: "module.state", pump: "pump.level", lost: "lost", ack: "ack" },
     reqs: [], tests: [] };
   d.profiles = missionProfiles(d);
   return d;

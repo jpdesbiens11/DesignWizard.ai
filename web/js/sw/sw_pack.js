@@ -38,6 +38,7 @@ export const packPhase = (p) => PH[p] || phaseText(p);
 /** One second (S.dt) of the pack, under what the software commands : out = { closed, derate, pump }. → P */
 export function packStep(P, out = {}) {
   const S = P.S, D = P.drive, C1 = S.capAh, closed = out.closed !== false, dt = S.dt;
+  P.closed = closed;
   /* the vehicle and the charger, asked to derate, hold the lower current a while (S.hold s) : they do not beat with the threshold */
   if (out.derate) P.held = P.t + S.hold; const derate = P.t < P.held;
   const ocvs = P.soc.map(ocvX), hi = Math.max(...ocvs), anyBleed = P.bleed.some(Boolean); let I = 0, phase = "rest";      // I > 0 : into the pack (charge)
@@ -66,7 +67,9 @@ export function packStep(P, out = {}) {
 }
 function sample(P) { P.trace.push({ t: P.t, i: P.i, v: [...P.v], soc: [...P.soc], bleed: [...P.bleed], phase: P.phase, temp: P.temp }); if (P.trace.length > 4000) P.trace.splice(0, P.trace.length - 4000); }
 /** What the pins read, in the units the software keeps : mV of the highest and the lowest block (at their terminals), 0.1 °C, mA (+ : discharge). */
-export function packSense(P) { const mv = P.v.map((x) => Math.round(x * 1000)); return { vmax: Math.max(...mv), vmin: Math.min(...mv), temp: Math.round(P.temp * 10), current: Math.round(-P.i * 1000) }; }
+/** What the pins of the bench read. vmod : the module, the sum of its blocks (mV) ; vout : the output after the contactor — the module when it is
+    closed, nothing when it is open (the central board reads both : JP, 27 novembre 2026, « measure current, voltage, temperature at output »). */
+export function packSense(P) { const mv = P.v.map((x) => Math.round(x * 1000)), vmod = mv.reduce((a, b) => a + b, 0); return { vmax: Math.max(...mv), vmin: Math.min(...mv), temp: Math.round(P.temp * 10), current: Math.round(-P.i * 1000), vmod, vout: P.closed ? vmod : 0 }; }
 
 /* ---------- the profiles, written from the thresholds of the software ---------- */
 /** The limits of the software that read the pack : { id, name, what (vmax | vmin | temp | current), above, trip, clear, delay, latch } */

@@ -38,14 +38,14 @@ test("the bank : a profile as text and back, unchanged ; a wrong line said with 
   assert.deepEqual(back.profile.events.map((e) => [e.t, e.set, e.pulse]), p.events.map((e) => [e.t, e.set, e.pulse]));
   const bad = parseProfileTxt("name: X\n0 | a | b | foo = 1 V ; adc_v = 9 V ; adc_t = 20 V ; ack = pulse 0.3 s\n", d);
   assert.equal(bad.errors.length, 3); assert.match(bad.errors.map((e) => e.text).join(" "), /« foo » n'est pas une entrée.*adc_v : 9 V est hors.*adc_t se donne en °C/);
-  const ask = profilePrompt(d, "une charge en hiver"); for (const re of [/mission-profile@1/, /adc_i — Module current — en A/, /ack — Bouton : acquitter le défaut — logique/, /charge\) est négatif/, /LA DEMANDE : une charge en hiver/]) assert.match(ask, re);
+  const ask = profilePrompt(d, "une charge en hiver"); for (const re of [/mission-profile@1/, /adc_i — Module current — en A/, /ack — Entrée : acquitter le défaut \(véhicule ou service\) — logique/, /charge\) est négatif/, /LA DEMANDE : une charge en hiver/]) assert.match(ask, re);
 });
 
 test("the dashboard is read from the software : its title, the colour of each condition, the values in physical units, what the product does", () => {
   const d = moduleDesign(), M = monitorOf(d);
   assert.equal(M.title, "Monitoring du BM-SWAP"); assert.ok(M.lamp && M.state);
   const sev = Object.fromEntries(M.rows.map((r) => [r.id, r.sev]));
-  assert.deepEqual(sev, { hvw: "yellow", ov: "red", lvw: "yellow", uv: "red", hot: "yellow", ot: "red", over_i: "yellow", over_ic: "yellow" }, "a limit that ends in a fault is red ; one that derates is yellow ; the pump's is an action, not a condition");
+  assert.deepEqual(sev, { hvw: "yellow", ov: "red", lvw: "yellow", uv: "red", hot: "yellow", ot: "red", over_i: "yellow", over_ic: "yellow", tout_hot: "yellow" }, "a limit that ends in a fault is red ; one that derates is yellow ; the pump's is an action, not a condition");
   assert.ok(M.product.some((p) => p.id === "pump" && p.sev === "green") && M.product.some((p) => p.id === "buzz") && M.product.some((p) => p.id === "k"));
   const L = liveStart({ ...d, plant: undefined }); liveStep(L, 5); const R = monitorRead(M, (r) => L.m.last[r]);      // the bench at its scenario, without the simulated module
   assert.equal(R.general, "green"); assert.equal(R.stateName, "NORMAL"); assert.equal(R.rows.find((r) => r.id === "ov").valueText, "3,9 V"); assert.equal(R.alarm, false);

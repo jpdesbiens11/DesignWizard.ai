@@ -3,16 +3,19 @@
    collectée par cette carte ; l'extérieur communique et prend ou envoie l'énergie, gérée et autorisée par elle ; en cas d'urgence elle ouvre
    le contacteur au bout du BM »). Choix de JP, par menu : CAN FD isolé ; contacteur + précharge + pyrofusible ; shunt sur la barre de retour ;
    le module ou le 12 V, le premier présent ; puis le connecteur d'échange monté sur la carte (la place dans le couvercle : itération suivante).
-   It stands beside the 85 × 62 mm board of iteration 14, which concept 2 houses. Stored as .dwiz text (tools/gen_demo_bms3.mjs writes it). */
+   JP, 27 novembre : toutes les fonctions des exigences et de l'architecture — sortie mesurée, pompe et ventilateur, ordres du véhicule, témoins et
+   avertisseur, connecteur d'échange combiné LV + HV. It stands beside the 85 × 62 mm board of iteration 14, which concept 2 houses. Stored as
+   .dwiz text in three files (tools/gen_demo_bms3.mjs writes them). */
 
 import { fromDwiz } from "../core/dwiz.js";
 import { DEMO_BMS3_1 } from "./demo_bms3_data.js";
 import { DEMO_BMS3_2 } from "./demo_bms3_data2.js";
+import { DEMO_BMS3_3 } from "./demo_bms3_data3.js";
 
 export const BMS3_BOARD_ID = "BMS-CENTRAL-3X3";
 /** A fresh copy of the board. */
 export function bms3Board() {
-  const d = fromDwiz(DEMO_BMS3_1 + DEMO_BMS3_2), board = Array.isArray(d) ? d[0] : d;
+  const d = fromDwiz(DEMO_BMS3_1 + DEMO_BMS3_2 + DEMO_BMS3_3), board = Array.isArray(d) ? d[0] : d;
   for (const t of board.tracks || []) t.auto = true;
   for (const v of board.vias || []) v.auto = true;
   return board;

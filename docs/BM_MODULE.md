@@ -966,6 +966,37 @@ automobile et les citer ». Choix de JP, par menu : **CAN FD isolé** vers le v�
   le connecteur d'échange soudé dessus, la carte formant le fond du couvercle, composants vers l'intérieur, les broches HV passant par des
   découpes — est l'**itération suivante** de la mécanique.
 
+## Itération 17 — la carte principale complète, le logiciel aligné sur les deux cartes
+
+JP, 27 novembre 2026 : « aligner actual sw avec 2 PCB type : core x 8 + main ; faire le main PCBA 3"x3" with all relevant functions from
+requirements and architecture : monitoring, contactor, led, buzzer, connector combined lv+hv, rest over busbar, measure current, voltage,
+temperature at output, feed RS-485 stream to vehicle, actuator if any (cooling pump, fan), vehicle command, EFC ». Choix de JP, par menu, le même
+jour : **le CAN FD isolé reste**, et porte aussi le flux de la chaîne RS-485 des 8 CORE.
+
+- **La carte** (`BMS-CENTRAL-3X3`, 76,2 × 76,2 mm, 4 couches) : **39 blocs, 160 composants**. Ajouts : la **tension de sortie** après le
+  contacteur et la **température de la borne de sortie** (une CTN), lues par les **prises sur les barres** avec les deux fils Kelvin du shunt ; la
+  **pompe** et le **ventilateur** (deux commandes 12 V) ; les **ordres câblés du véhicule** — ENABLE, présence du module dans sa cavité,
+  acquittement d'un défaut ; **trois témoins** (vert, jaune, rouge) et l'**avertisseur** ; le **connecteur d'échange combiné** : ses contacts LV
+  sur la carte (12 V de puissance, signaux : CAN FD, réveil, les trois ordres), ses contacts HV sur les barres, par des découpes — aucun courant
+  de puissance dans le cuivre de la carte. La bibliothèque n'a pas de connecteur combiné : la série du commerce reste à choisir et à lire.
+- **Le microcontrôleur** manquait de broches tout-ou-rien : six signaux n'arrivaient à aucune broche à la première génération (l'outil ne le
+  signalait pas). Le bloc MCU ouvre maintenant PB10 à PB15 à deux entrées, deux sorties et deux témoins de plus (`DIN3`, `DIN4`, `DOUT4`,
+  `DOUT5`, `LED_WARN`, `LED_FAULT` — broches que portent aussi le second UART et le SPI, inutilisés ici), et un essai tient que chaque signal
+  qu'un bloc donne au microcontrôleur l'atteint.
+- **Ce que la carte ne fait pas encore** : le routeur de l'outil laisse **17 liaisons sur 340** (12 sur 274 avant) — à router à la main, ou en
+  6 couches ; aucune erreur électrique, et les seules erreurs du contrôle de dessin sont ces liaisons.
+- **Le logiciel du BMS central, aligné sur les deux cartes** (`sw/sw_bm_design.js`) : chaque entrée et chaque sortie est sur le net de la carte
+  principale qui la porte — `AIN0` module, `AIN1` shunt, `AIN2` sortie, `AIN3` CTN de la borne ; `DIN1` contact auxiliaire, `DIN2` ENABLE,
+  `DIN3` présence, `DIN4` acquittement ; `DOUT0` contacteur, `DOUT3` pompe, `DOUT4` ventilateur, `DOUT5` avertisseur ; trois témoins — ou dit
+  qu'elle vient de la chaîne RS-485 des **8 cartes de CORE** (la tension de chaque CORE, ses 8 CTN, le silence de la chaîne). Nouveau : l'**EFC**
+  (energy flow counter : tension du module × courant, le genre « Energy counter »), la **tension de sortie**, la **température de la borne** —
+  au-delà de 90 °C le module se dérate (exemple) —, le **ventilateur** avec la pompe, et le **contacteur qui ne se ferme que si le véhicule
+  l'autorise et que le module est dans sa cavité** (ESS-REQ-031). Le module simulé du banc donne aussi la tension du module et celle de la sortie.
+- **Encore à venir** : les blocs qui écrivent la trame CAN FD (le flux des CORE, l'état, l'énergie : l'EFC et la tension de sortie finissent
+  leur rangée « → véhicule ») ; la précharge et le pyrofusible ; une seconde détection du contacteur collé par la tension de sortie (elle
+  allumerait une DEL rouge en service normal si elle était posée seule : elle viendra avec la précharge) ; le **logiciel de la carte de CORE** —
+  la carte a son microcontrôleur, mais l'outil ne montre qu'un logiciel par projet.
+
 **Non vérifié** : l'échauffement réel du cuivre dans le module fermé (le modèle est une barre seule à l'air libre) ; la
 chaleur des cellules elles-mêmes à 45 A (la fiche donne ≤ 8 mΩ à 1 kHz à l'expédition, pas la résistance en courant
 continu) ; la tenue des plis du flex à l'assemblage ; le formage des cônes dans le polyimide ; la mesure par le cône (aucun essai) ;

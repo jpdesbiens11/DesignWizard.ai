@@ -124,7 +124,10 @@ test("the software is aligned on the board of the project : its host board, the 
   const nets = mcuNets(b); assert.ok(nets.length > 5 && nets.every((n) => n.net && /\./.test(n.pin)));
   assert.equal(hwTag(P, d, d.objects.find((o) => o.id === "adc_v")).state, "bench", "a value read from the chain is held by the bench, not a pin to link");
   assert.equal(hwTag(P, d, d.objects.find((o) => o.id === "adc_i")).state, "linked"); assert.ok(!hwProblems(P, d).some((x) => x.level === "check" || x.level === "error"), "the software of the BM : nothing to fix on the board, what it lacks is a tip");
-  assert.ok(hwProblems(P, d).some((x) => x.level === "tip" && /n'a pas assez de nets de sortie logique.*Buzzer/.test(x.text)), "outputs the board cannot carry : hardware to add, said");
+  assert.ok(!hwProblems(P, d).some((x) => /n'a pas assez de nets/.test(x.text)), "JP, 27 novembre 2026 : the main board carries every output of the software");
+  const buzz = d.objects.find((o) => o.id === "buzz"), hw = buzz.hw; delete buzz.hw;
+  assert.ok(hwProblems(P, d).some((x) => x.level === "tip" && /n'a pas assez de nets de sortie logique.*Buzzer/.test(x.text)), "an output the board cannot carry (its only net does something else) : hardware to add, said");
+  assert.ok(hwProblems(P, d).some((x) => x.level === "tip" && /DOUT5 — Avertisseur sonore/.test(x.text)), "the net of the buzzer waits for the block that commands it"); buzz.hw = hw;
   const pin = d.objects.find((o) => o.id === "adc_i"); delete pin.hw; assert.equal(hwTag(P, d, pin).state, "missing"); assert.equal(hwTag(P, d, d.objects.find((o) => o.kind === "limit")).state, "board");
   assert.ok(hwProblems(P, d).some((x) => x.level === "tip" && /AIN1 — /.test(x.text)), "a net the board gives a function waits for the block that does it — never for any free pin");
   pin.hw = { board: b.id, net: nets[0].net, pin: nets[0].pin }; assert.equal(hwTag(P, d, pin).state, "linked"); pin.hw.net = "NO-SUCH-NET"; assert.ok(hwProblems(P, d).some((x) => x.level === "error"));

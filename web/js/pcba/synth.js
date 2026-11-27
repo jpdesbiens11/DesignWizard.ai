@@ -45,19 +45,25 @@ function mergeNet(board, name, attrs, pins) {
 const refsOf = (board, blockId) => new Map((board.parts || []).filter((p) => p.block === blockId).map((p) => [p.local, p.ref]));
 /** Name of the next free net of a family : "AIN" → AIN0, AIN1… */
 function nextPool(board, family, taken = []) { for (let k = 0; k < 64; k++) if (!board.nets.some((n) => n.name === `${family}${k}`) && !taken.includes(`${family}${k}`)) return `${family}${k}`; return `${family}X`; }
-/** Lazy pins (a microcontroller pin offered to whoever needs it) join the nets that now exist ; nets left with lazy pins only are removed. */
+/** Lazy pins (a microcontroller pin offered to whoever needs it) join the nets that now exist ; nets left with lazy pins only are removed.
+    A pin joins ONE net : a pin two functions share (PA7 : PWM_L or AIN7) goes to the first that asks ; a SPARE pin (port.spare : the extra
+    discrete pins of a central BMS, JP 27 novembre 2026) gives way to a dedicated function (SPI, second UART) — it is bound last, where free. */
 function bindLazy(board) {
-  const lazy = new Set();
+  const lazy = new Set(), ports = [];
   for (const b of board.blocks) {
     const t = BLOCKS[b.template]; if (!t) continue;
     const built = buildBlock(b.template, b.params), refs = refsOf(board, b.id);
     for (const port of Object.values(built.ports)) {
       if (!port.lazy) continue;
       const [local, pin] = port.pin.split("."), ref = refs.get(local); if (!ref) continue;
-      const full = `${ref}.${pin}`, net = board.nets.find((n) => n.name === port.suggest);
-      lazy.add(full);
-      if (net && !net.pins.includes(full) && net.pins.some((p) => !lazy.has(p))) net.pins.push(full);
+      const full = `${ref}.${pin}`; lazy.add(full); ports.push({ full, suggest: port.suggest, spare: !!port.spare });
     }
+  }
+  const spareOn = new Set(ports.filter((p) => p.spare).map((p) => `${p.suggest}|${p.full}`));
+  for (const n of board.nets) if (n.pins.some((p) => spareOn.has(`${n.name}|${p}`))) n.pins = n.pins.filter((p) => !spareOn.has(`${n.name}|${p}`));      // unbound, bound again below where free
+  for (const p of [...ports.filter((x) => !x.spare), ...ports.filter((x) => x.spare)]) {
+    const net = board.nets.find((n) => n.name === p.suggest);
+    if (net && !net.pins.includes(p.full) && net.pins.some((q) => !lazy.has(q)) && !board.nets.some((n) => n !== net && n.pins.includes(p.full))) net.pins.push(p.full);
   }
   const dead = new Set(board.nets.filter((n) => !n.pins.length || n.pins.every((p) => lazy.has(p))).map((n) => n.name));
   if (dead.size) dropNets(board, dead);
