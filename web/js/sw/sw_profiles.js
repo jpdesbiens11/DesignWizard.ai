@@ -28,7 +28,9 @@ export const PLANT_VARS = [
   { key: "push", name: "module.push", unit: "A", min: 0, max: 600, text: "un chargeur qui pousse ce courant quoi qu'on lui demande (0 : il obéit)" },
   { key: "cvFail", name: "module.cv_fail", unit: "", values: ["0", "1"], text: "1 : le chargeur oublie sa tension constante (il continue au-delà de 4,2 V)" },
   { key: "heatTo", name: "module.heat_to", unit: "°C", min: 0, max: 150, text: "une chaleur du dehors amène le CORE le plus chaud à cette température (0 : aucune)" },
-  { key: "amb", name: "module.ambient", unit: "°C", min: -40, max: 85, text: "la température de l'air autour du module" }];
+  { key: "amb", name: "module.ambient", unit: "°C", min: -40, max: 85, text: "la température de l'air autour du module" },
+  { key: "cellHi", name: "module.cell_hi", unit: "V", min: 0, max: 5, text: "cell emulator : tient le cell block le plus haut à cette tension (0 : le vrai)" },
+  { key: "cellLo", name: "module.cell_lo", unit: "V", min: 0, max: 5, text: "cell emulator : tient le cell block le plus bas à cette tension (0 : le vrai)" }];
 const pv = (k) => PLANT_VARS.find((v) => v.name === k.trim().toLowerCase() || v.key === k.trim());
 const KINDS = ["charge", "discharge", "mission", "test"];
 const num = (x) => String(+x.toFixed(3));

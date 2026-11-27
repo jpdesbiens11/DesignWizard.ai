@@ -617,3 +617,44 @@ gestes (`web/js/sw/sw_loop.js`, pur ; `modules/sw_loop_ui.js`) :
 surtempérature à 90 °C fait échouer ESS-REQ-015 en décharge — refusée ; une version qui déplace la bobine du contactor sur un autre net la voit
 remise. **Non vérifié** : un tour avec une vraie réponse d'assistant (le format est celui de l'aller-retour existant du logiciel).
 
+
+## Les missions tirées des exigences (v0.212.0)
+
+JP, 27 novembre 2026 : « toutes les missions de l'équipement — les variations in / out que le logiciel doit tenir dans les bornes des requis » ;
+choix par menu : « les missions viennent des requis ». La campagne ne joue plus les profils écrits à partir des seuils du logiciel : sa mesure
+est lue dans les exigences (`web/js/sw/sw_req_missions.js`, pur ; écran `#/swmis`).
+
+| Sorte | Ce que la mission fait |
+|---|---|
+| Nominal | une charge à 1 C jusqu'au bout de la tension constante, une décharge à 2 C jusqu'à 0,4 V au-dessus de la limite basse — rien ne doit réagir à tort |
+| Limites des exigences | chaque limite lue par la machine (borne ou réaction) : **approchée** (à 0,02 V, 3 °C ou 5 % de la limite), **franchie et tenue** (0,03 à 0,05 V, 3 °C ou 10 % au-delà), puis **revenue** et acquittée ; deux limites sur la même grandeur à la même valeur font une seule mission (ESS-REQ-002 et 014 à 2,80 V) |
+| Enveloppe | ce que le produit doit atteindre : 360 A en décharge, 72 A en charge, tenus 60 s |
+| Corner cases | le plus grand courant d'un sens, au bord de la température qui retire le service dans ce sens (360 A à 73 °C, 72 A à 63 °C) |
+| Pannes injectées | le round-robin des CORE perdu, le 12 V perdu, le contact auxiliaire du contactor resté ouvert, puis collé pendant un défaut |
+| Profils du projet | les duty cycles importés dans la banque du banc ; ceux que l'outil a écrits à partir des seuils restent sur le banc (`projectProfiles`, marque `from: "thresholds"`) |
+| Lot de réserve | 4 missions de 8 segments tirées au hasard dans l'enveloppe et autour, d'une graine lue dans les exigences (`reserveSeed`) : le même lot tant qu'elles ne changent pas |
+
+- **Le cell emulator du banc** (`cellHi`, `cellLo` de `sw/sw_pack.js`, aussi dans les .txt de la banque) : un canal qui tient le cell block le plus
+  haut ou le plus bas à une tension, comme un banc HIL de BMS. Une montée lente franchit un seuil d'un mV, que la seconde suivante efface ; la
+  mission le franchit nettement et l'y tient. Les broches du logiciel et la règle de la CORE board lisent le bloc tenu.
+- **Le juge** (`core/req_oracle.js`) lit le sens de marche qu'avait le module quand son contactor l'a coupé : un logiciel qui ouvre à 75,0 °C pile
+  a répondu, il n'a pas « quitté la décharge ». ESS-REQ-013, 014 et 015 à 75 °C, « non exercées » avant, sont jugées et tiennent.
+- **Une enveloppe** est couverte par une mission ; les autres ne la « manquent » pas (le bilan d'avant déclarait ESS-REQ-004 non couverte alors
+  que la mission Charge l'atteignait).
+- **La règle nominale** (`NOMINAL_RULE`, `nominalVerdict` de `sw/sw_campaign.js`) : dans une mission nominale, une fois fermé, le contactor reste
+  fermé et le module n'entre jamais en Emergency ni en Shutdown. C'est une **règle de la campagne, pas une exigence de la liste**, et la ligne le dit.
+- **Dans la boucle IA**, le lot de réserve ne part pas (`visibleCampaign` : le constat et la consigne le retirent, la consigne dit qu'il existe et
+  nomme les limites qui n'échouent que là) ; la porte le rejoue. La porte rejoue les missions de la version en main (`missionsOf`), et une
+  campagne jouée sur d'autres missions (`missionSig`) est à rejouer d'abord ; une mission que la première campagne n'a pas jouée n'est pas une
+  régression.
+
+**Le constat du BM** : 22 missions, 4 h simulées, 12 s. 14 limites jugées : ESS-REQ-002 (4,20 V), 015 (65 °C en charge) et 024
+(équilibrage) échouent ; 013, 014, 015 (75 °C), 016, 047 et la règle nominale tiennent ; 003 et 004 couvertes ; 0 non exercée.
+
+**Trois versions à la porte** : ouvrir à 4,20 V corrige ESS-REQ-002 mais coupe le contactor au bout d'une charge nominale — refusée ; ouvrir à
+4,21 V passe toutes les missions visibles de ESS-REQ-002, pas le lot de réserve (un cell block tenu à 4,205 V) ; ouvrir au-delà de 4,200 V
+(4,201) corrige ESS-REQ-002 sans régression — acceptée. **Constat pour JP** : à 360 A, le module tombe sous 3,10 V (chute de 1,15 V sur la
+résistance typique) et se dérate dans la seconde ; ESS-REQ-003 dit « en continu » — l'oracle ne juge que l'atteinte, pas la tenue.
+
+**Ce que les missions ne font pas** (`GAPS`) : une limite franchie moins d'une seconde (le banc relève une ligne par seconde) ; une exigence non
+lue par la machine (les pannes l'exercent sans la juger) ; le froid (ESS-REQ-050 non lue). Le module est typique.

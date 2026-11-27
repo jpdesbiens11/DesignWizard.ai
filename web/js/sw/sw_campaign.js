@@ -12,6 +12,7 @@ import { expandProfile, profilesOf } from "./sw_story.js";
 import { seriesOf, verdicts, oracleText, oraclesFor, verdictWord } from "../core/req_oracle.js";
 import { forDiscipline, keyOf } from "../core/reqs.js";
 import { stampText } from "../core/brand.js";
+import { campaignMissions, missionSig } from "./sw_req_missions.js";
 
 /** One mission, played in slices of `slice` steps : yields { done, total } (ms of the mission) between slices ; returns the live run (its record :
     L.rec, L.recRefs). A screen pumps it and stays alive ; a test drains it. */
@@ -29,20 +30,29 @@ const drain = (g) => { let r = g.next(); while (!r.done) r = g.next(); return r.
 /** One mission, played to its end. → the live run */
 export const playMission = (d, profile) => drain(missionRun(d, profile, Infinity));
 const RANK = { fail: 5, uncovered: 4, pass: 3, covered: 3, none: 1 };
+/* A RULE OF THE CAMPAIGN, not a requirement of the list (JP's nominal missions : « rien ne doit réagir à tort ») : in a nominal mission, once the
+   contactor has closed, it stays closed and the module never goes to Emergency or Shutdown — a software that trips inside every limit loses the
+   product. Derated is allowed : the end of a charge may ask it. Said as a rule of the tool, in the findings and in the files. */
+export const NOMINAL_RULE = { key: "NOMINAL", text: "Missions nominales : le contactor reste fermé, aucun état Emergency ni Shutdown", statement: "Règle de la campagne (pas une exigence de la liste) : dans une mission nominale, une fois fermé, le contactor reste fermé et le module n'entre jamais en Emergency ni en Shutdown." };
+/** The nominal rule on one record. → pass | fail */
+export function nominalVerdict(S) { let on = false; for (const s of S) { if (s.contactor === 1) on = true; else if (on) return "fail"; if (on && s.state >= 2) return "fail"; } return on ? "pass" : "fail"; }
 /** Every mission of the software, each requirement judged on each — in slices : yields { mission, missions, name, done, total }.
-    → { when, profiles: [{ id, name, seconds }], rows: [{ key, n, req, oracle, text, sure, by: { [profile]: verdict }, overall }], unread: [{ key, why }], counts, design } */
-export function* campaignRun(project, d, { profiles = profilesOf(d), when = new Date().toISOString(), slice = 20000 } = {}) {
+    The missions : those written from the requirements (sw/sw_req_missions.js), unless the caller gives its own.
+    → { when, profiles: [{ id, name, origin, keys, seconds }], rows: [{ key, n, req, oracle, text, sure, by: { [profile]: verdict }, overall }], unread: [{ key, why }], counts, design } */
+export function* campaignRun(project, d, { profiles = campaignMissions(project, d), when = new Date().toISOString(), slice = 20000 } = {}) {
   const R = project && project.reqs, rows = new Map(), done = [];
   for (let i = 0; i < profiles.length; i++) { const p = profiles[i], g = missionRun(d, p, slice); let r = g.next();
     while (!r.done) { yield { mission: i, missions: profiles.length, name: p.name, ...r.value }; r = g.next(); }
-    const L = r.value; done.push({ id: p.id, name: p.name, seconds: Math.round(((L.rec || []).at(-1) || { t: 0 }).t / 1000) });
-    for (const v of R ? verdicts(R, seriesOf(L.rec, L.recRefs, d.plant)) : []) { const k = `${v.key}#${v.n}`;
+    const L = r.value; done.push({ id: p.id, name: p.name, origin: p.origin || "project", keys: p.keys || [], seconds: Math.round(((L.rec || []).at(-1) || { t: 0 }).t / 1000) });
+    const S = seriesOf(L.rec, L.recRefs, d.plant);
+    if (p.origin === "nominal") { const k = `${NOMINAL_RULE.key}#0`; if (!rows.has(k)) rows.set(k, { key: NOMINAL_RULE.key, n: 0, req: { statement: NOMINAL_RULE.statement, title: NOMINAL_RULE.text }, oracle: { kind: "nominal" }, text: NOMINAL_RULE.text, sure: true, rule: true, by: {} }); rows.get(k).by[p.id] = nominalVerdict(S); }
+    for (const v of R ? verdicts(R, S) : []) { const k = `${v.key}#${v.n}`;
       if (!rows.has(k)) rows.set(k, { key: v.key, n: v.n, req: v.req, oracle: v.oracle, text: oracleText(v.oracle), sure: v.sure, by: {} });
-      rows.get(k).by[p.id] = v.verdict; } }
-  const out = [...rows.values()].map((r) => ({ ...r, overall: Object.values(r.by).reduce((a, b) => (RANK[b] > RANK[a] ? b : a), "none") }));
+      rows.get(k).by[p.id] = v.oracle.kind === "envelope" && v.verdict === "uncovered" ? "none" : v.verdict; } }      // an envelope : covered by one mission, not missed by the others
+  const out = [...rows.values()].sort((a, b) => Number(!!a.rule) - Number(!!b.rule)).map((r) => ({ ...r, overall: r.oracle.kind === "envelope" ? (Object.values(r.by).includes("covered") ? "covered" : "uncovered") : Object.values(r.by).reduce((a, b) => (RANK[b] > RANK[a] ? b : a), "none") }));
   const mine = R ? forDiscipline(R, "sw").reqs : [], unread = mine.filter((r) => !oraclesFor(R, r).list.length).map((r) => ({ key: keyOf(r), why: oraclesFor(R, r).why }));
   const counts = { fail: 0, pass: 0, none: 0, uncovered: 0, covered: 0 }; for (const r of out) counts[r.overall] = (counts[r.overall] || 0) + 1;
-  return { when, profiles: done, rows: out, unread, counts, design: d.id };
+  return { when, profiles: done, rows: out, unread, counts, design: d.id, sig: missionSig(profiles) };
 }
 /** The campaign, played to its end. */
 export const runCampaign = (project, d, o = {}) => drain(campaignRun(project, d, { ...o, slice: Infinity }));

@@ -88,10 +88,10 @@ export function machine(d) {
   /* the plan of a step, written once : each object's inputs (where each comes from), the names of its outputs — a long campaign plays
      hundreds of thousands of steps (sw/sw_campaign.js), so nothing is composed again at each one ; the step is the same */
   const plan = ord.ids.map((id) => { const K = KINDS[O[id].kind];
-    return { id, K, pin: K.pin, ins: K.ports.in.map((p) => [p.key, src[`${id}.${p.key}`] || null, `${id}.${p.key}`]), outs: Object.fromEntries(K.ports.out.map((p) => [p.key, `${id}.${p.key}`])), first: K.ports.out[0] ? `${id}.${K.ports.out[0].key}` : null }; });
+    return { id, K, pin: K.pin, ins: K.ports.in.map((p) => [p.key, src[`${id}.${p.key}`] || null, `${id}.${p.key}`]), outs: Object.fromEntries(K.ports.out.map((p) => [p.key, `${id}.${p.key}`])), first: K.ports.out[0] ? `${id}.${K.ports.out[0].key}` : null, inp: {} }; });      // inp : filled again at each step, never kept by a kind
   return { ids: ord.ids, ok: !ord.loop.length, dt, mem, last, drove, get k() { return k; },
     step(read) { const now = k * dt;
-      for (const P of plan) { const inp = {};
+      for (const P of plan) { const inp = P.inp;
         for (const [key, from, ref] of P.ins) { const v = from ? last[from] : 0; inp[key] = v; last[ref] = v; }
         if (P.pin === "ain" || P.pin === "din") last[P.first] = read(P.id, k, now, drove);
         else if (P.pin === "dout") (drove[P.id] = drove[P.id] || []).push(inp.level);

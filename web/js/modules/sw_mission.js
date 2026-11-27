@@ -15,6 +15,7 @@ import { recordCsv } from "../sw/sw_live.js";
 import { packLimits } from "../sw/sw_pack.js";
 import { profileTxt } from "../sw/sw_profiles.js";
 import { profilesOf } from "../sw/sw_story.js";
+import { missionsOf } from "./sw_lean_ui.js";
 import { STATE_NAMES } from "../sw/sw_units.js";
 import { openBank } from "./sw_profile_bank.js";
 import { store } from "../core/store.js";
@@ -32,7 +33,7 @@ export function swMission(bench, design, story, change, showPieces) {
   const canvas = el("canvas", { class: "swmi-chart", role: "img", "aria-label": "La mission : tensions, courant, température, état du module et taux de marche de chaque composant dans le temps" });
   const title = el("b"), clock = el("small", { class: "swmi-clock" }), halt = el("div", { class: "swmi-halt", hidden: true, role: "alert", "data-sw-halt": "" });
   const names = () => { const d = design(), o = {}; for (const x of (d && d.objects) || []) o[`${x.id}.level`] = x.name; return o; };
-  const cur = () => { const d = design(), all = profilesOf(d); return all.find((p) => p.id === story.profileId) || all[0] || null; };
+  const cur = () => { const d = design(), all = profilesOf(d); return all.find((p) => p.id === story.profileId) || missionsOf(d).find((p) => p.id === story.profileId) || all[0] || null; };
   const exp = btn("Exporter le profil (.txt)", () => { const d = design(), p = cur(); if (!p) return; download(`profil_${p.id}.txt`, stampText(`profil_${p.id}.txt`, profileTxt(p, d)), "text/plain"); }, { small: true, icon: "download", tip: "Le profil joué, en texte : ce qui mène le module, les entrées, les seuils visés — à modifier, puis à réimporter" });
   const imp = btn("Importer un profil…", () => openBank({ design, change, current: story.profileId, choose: (id) => { bench.pause(); story.load(id); bench.reset(); draw(); } }), { small: true, icon: "upload", tip: "La banque : importer un .txt, en choisir un, ou demander à une IA d'en écrire un" });
   const rec = btn("Exporter l'enregistrement (.csv)", () => { const L = bench.L; if (!L || !L.rec) return; const d = design(), name = `mission_${(cur() || {}).id || "profil"}.csv`; download(name, stampText(name, recordCsv(L, names())), "text/csv"); }, { small: true, icon: "download", tip: "Ce qui s'est passé, une ligne par seconde : tensions, courant, température, état, chaque sortie" });

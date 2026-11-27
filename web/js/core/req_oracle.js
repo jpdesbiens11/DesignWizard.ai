@@ -123,7 +123,10 @@ export function seriesOf(rec, recRefs = [], plant = {}) {
   return (rec || []).map((x) => { const s = { t: x.t }; for (const [k, S] of Object.entries(SIGNALS)) s[k] = S.of(x, ix); return s; });
 }
 const holds = (c, s) => (c.op === ">" ? s[c.signal] > c.value : s[c.signal] < c.value);
-const modeOk = (o, s) => !o.mode || (o.mode === "charge" ? s.current < -0.5 : s.current > 0.5);
+/* the way the module goes on each line : its current ; with the contactor open, the way it was going when it was cut off — a software that
+   opens the very second a limit is reached has answered, it has not left the way the requirement names */
+const waysOf = (S) => { const w = new Array(S.length); for (let i = 0; i < S.length; i++) { const c = S[i].current; w[i] = c > 0.5 ? 1 : c < -0.5 ? -1 : S[i].contactor === 0 && i ? w[i - 1] : 0; } return w; };
+const modeOk = (o, way) => !o.mode || (o.mode === "charge" ? way < 0 : way > 0);
 const met = (t, s) => (t.is !== undefined ? s[t.signal] === t.is : s[t.signal] >= t.atLeast);
 const VERDICT = { pass: "tenue", fail: "échoue", none: "non exercée", covered: "couverte", uncovered: "non couverte" };
 /** Judges one oracle. S : seriesOf. → { verdict (pass | fail | none | covered | uncovered), text, at, delay, margin } */
@@ -142,11 +145,11 @@ export function judge(o, S) {
     return { verdict: "pass", text: Number.isFinite(margin) ? `Tenue : au plus près, ${fr(margin)} ${SIGNALS[o.signal].unit} de la borne${worst ? " (une ligne hors borne : moins d'une seconde, non jugée)" : ""}.` : "Tenue.", margin };
   }
   /* a reaction : each time the condition starts and holds long enough, the answer must come in time */
-  const cond = (s) => modeOk(o, s) && o.if.every((c) => holds(c, s)), need = Math.max(1, Math.ceil((o.hold || 0) / RESOLUTION)), late = (o.within !== null && o.within !== undefined ? o.within : (o.hold || 0)) + RESOLUTION;
+  const way = waysOf(S), cond = (s, i) => modeOk(o, way[i]) && o.if.every((c) => holds(c, s)), need = Math.max(1, Math.ceil((o.hold || 0) / RESOLUTION)), late = (o.within !== null && o.within !== undefined ? o.within : (o.hold || 0)) + RESOLUTION;
   const trials = [];
   for (let i = 0; i < S.length; i++) {
-    if (!cond(S[i]) || (i && cond(S[i - 1]))) continue;
-    let j = i; while (j + 1 < S.length && cond(S[j + 1]) && j - i + 1 < need) j++;
+    if (!cond(S[i], i) || (i && cond(S[i - 1], i - 1))) continue;
+    let j = i; while (j + 1 < S.length && cond(S[j + 1], j + 1) && j - i + 1 < need) j++;
     if (j - i + 1 < need) continue;      // too short to count
     const t0 = S[i].t, hit = S.slice(i).find((s) => s.t <= t0 + late && met(o.then, s));
     trials.push({ t0, ok: !!hit, delay: hit ? hit.t - t0 : null });

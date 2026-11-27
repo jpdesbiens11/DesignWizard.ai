@@ -8,6 +8,7 @@ import { runCampaign, campaignRun, findingsCsv, findingsMd, playMission } from "
 import { isMarked } from "../../web/js/core/brand.js";
 import { stairOf, downOf, aiTargetOf } from "../../web/js/core/stairs.js";
 import { bmProject } from "../../web/js/demo/demo_bm.js";
+import { campaignMissions } from "../../web/js/sw/sw_req_missions.js";
 
 const read = (f) => readFileSync(new URL(`../../${f}`, import.meta.url), "utf8");
 
@@ -30,19 +31,26 @@ test("the interfaces of the BM software, read from its board : each pin under th
   assert.ok(!I.problems.some((x) => x.level === "error" || x.level === "check"), "nothing to correct on the BM");
 });
 
-test("the campaign : every mission played on the virtual bench, each requirement judged on each — the same verdicts as the Mission view ; the findings marked, as CSV and Markdown", () => {
+test("the campaign : the missions written from the requirements, played on the virtual bench, each requirement judged on each — every limit read is judged ; the findings marked, as CSV and Markdown", () => {
   const p = bmProject(), d = p.software[0], C = runCampaign(p, d, { when: "2026-11-27T12:00:00.000Z" });
-  assert.deepEqual(C.profiles.map((x) => x.id), ["charge", "discharge"]); assert.ok(C.profiles.every((x) => x.seconds > 3000));
+  const ids = C.profiles.map((x) => x.id); assert.ok(ids.includes("nom-charge") && ids.includes("rq-vblock_max-hi-4_25-charge") && ids.includes("reserve-4"), ids.join(" "));
+  assert.ok(!ids.includes("charge") && !ids.includes("discharge"), "the bench's profiles written from the software's thresholds are not the yardstick");
+  assert.deepEqual([...new Set(C.profiles.map((x) => x.origin))], ["nominal", "limit", "envelope", "corner", "fault", "reserve"]);
   const row = (k, n = 0) => C.rows.find((r) => r.key === k && r.n === n);
-  assert.equal(row("ESS-REQ-015", 1).by.charge, "fail", "65 °C in charge : the software has one threshold, 75 °C"); assert.equal(row("ESS-REQ-015", 1).overall, "fail");
+  assert.equal(row("ESS-REQ-015", 1).by["rq-temp_max-hi-65-charge"], "fail", "65 °C in charge : the software has one threshold, 75 °C"); assert.equal(row("ESS-REQ-015", 1).overall, "fail");
   assert.equal(row("ESS-REQ-002", 1).overall, "fail", "4,20 V held in service : the software lets it climb to 4,25 V"); assert.equal(row("ESS-REQ-016").overall, "pass");
-  assert.equal(row("ESS-REQ-003").overall, "uncovered", "360 A : no mission reaches it"); assert.ok(C.unread.length > 0 && C.unread.every((u) => u.why));
-  assert.equal(C.counts.fail, C.rows.filter((r) => r.overall === "fail").length);
+  for (const k of ["ESS-REQ-013", "ESS-REQ-014", "ESS-REQ-015"]) assert.equal(row(k).overall, "pass", `${k} : the cell emulator and the heat cross the limit, the contactor opens`);
+  assert.equal(row("ESS-REQ-003").overall, "covered", "360 A : the envelope mission reaches it"); assert.equal(row("ESS-REQ-004").overall, "covered");
+  assert.equal(C.counts.none, 0, "every limit read by the machine is played"); assert.ok(C.unread.length > 0 && C.unread.every((u) => u.why));
+  assert.equal(row("NOMINAL").overall, "pass", "the nominal rule : nothing trips inside the limits"); assert.ok(row("NOMINAL").rule);
+  assert.equal(C.counts.fail, C.rows.filter((r) => r.overall === "fail").length); assert.ok(C.sig);
   const csv = findingsCsv(C), md = findingsMd(C); assert.ok(isMarked(csv) && isMarked(md), "the mark of the platform");
-  assert.match(csv, /^key,external_id,limit,read by,Charge,Décharge,overall/m); assert.match(md, /banc VIRTUEL/); assert.match(md, /## Ce qui échoue/);
-  /* in slices : the same as at once */
-  const g = campaignRun(p, d, { slice: 50000, when: C.when }); let r = g.next(), n = 0; while (!r.done) { n++; assert.ok(r.value.done <= r.value.total); r = g.next(); }
-  assert.ok(n > 2, "a screen can show its progress"); assert.deepEqual(r.value.rows.map((x) => x.overall), C.rows.map((x) => x.overall));
+  assert.match(csv, /^key,external_id,limit,read by,Nominal — charge à 1 C jusqu'à la fin,/m); assert.match(md, /banc VIRTUEL/); assert.match(md, /## Ce qui échoue/);
+  /* in slices : the same as at once — on two short missions */
+  const two = campaignMissions(p, d).filter((m) => ["env-ESS-REQ-003-0", "rq-vblock_max-hi-4_25-charge"].includes(m.id)), once = runCampaign(p, d, { profiles: two, when: C.when });
+  const g = campaignRun(p, d, { profiles: two, slice: 5000, when: C.when }); let r = g.next(), n = 0; while (!r.done) { n++; assert.ok(r.value.done <= r.value.total); r = g.next(); }
+  assert.ok(n > 2, "a screen can show its progress"); assert.deepEqual(r.value.rows.map((x) => x.overall), once.rows.map((x) => x.overall));
   const S = leanStates(p, d, C); assert.equal(S.findings.state, "todo"); assert.equal(S.export.state, "wait", "the package waits while a requirement fails"); assert.equal(leanStates(p, d, null).findings.state, "todo");
+  assert.equal(S.missions.state, "done", "every limit has its mission"); assert.match(S.missions.text, /exigences/);
   assert.ok(playMission(d, d.profiles[0]).rec.length > 3000, "one line a second, the whole mission");
 });

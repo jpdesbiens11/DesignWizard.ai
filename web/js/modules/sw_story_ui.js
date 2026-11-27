@@ -20,6 +20,7 @@ import { liveStep, liveSet } from "../sw/sw_live.js";
 import { packLimits } from "../sw/sw_pack.js";
 import { monitorOf } from "../sw/sw_monitor.js";      // the conditions — not an action like the pump's threshold
 import { openBank } from "./sw_profile_bank.js";
+import { missionsOf } from "./sw_lean_ui.js";      // the missions written from the requirements : the bench plays them too
 
 const fr = (ms) => `${String(+(ms / 1000).toFixed(1)).replace(".", ",")} s`;
 const PKEY = (d) => `dw.sw.profile.${d.id || "sw"}`;
@@ -40,11 +41,13 @@ export function swStory(bench, design, onSet, change, onHalt = null) {
 
   /* a profile : its events played on the model, its marks, its switch */
   function load(id) {
-    const d = design(), all = profilesOf(d); st.id = all.find((p) => p.id === id) ? id : all.find((p) => p.id === chosen(d)) ? chosen(d) : all[0] ? all[0].id : null;
+    const d = design(), own = profilesOf(d), every = [...own, ...missionsOf(d).filter((m) => !own.some((p) => p.id === m.id))];
+    st.id = every.find((p) => p.id === id) ? id : every.find((p) => p.id === chosen(d)) ? chosen(d) : every[0] ? every[0].id : null;
+    const cur = every.find((p) => p.id === st.id), all = cur && !own.includes(cur) ? [...own, cur] : own, evs = cur ? cur.events : profileOf(d, st.id);      // the switch : the bench's own, and a mission of the campaign when one is played
     if (id && st.id === id) { try { localStorage.setItem(PKEY(d), id); } catch (e) { /* the choice holds until the page is left */ } }
     /* a module on the bench (design.plant) : an hour of physics is not played in advance — what the software answers is gathered as it happens */
-    st.live = !!(d && d.plant); if (st.live) { E = expandProfile(profileOf(d, st.id)).map((e) => ({ ...e, answers: [] })); total = (E.length ? E[E.length - 1].t : 0) + 1000; }
-    else { const plan = playProfile(d, profileOf(d, st.id)); E = plan.events; total = plan.duration; } V = E.map((e, k) => (e.hidden ? -1 : k)).filter((k) => k >= 0);
+    st.live = !!(d && d.plant); if (st.live) { E = expandProfile(evs).map((e) => ({ ...e, answers: [] })); total = (E.length ? E[E.length - 1].t : 0) + 1000; }
+    else { const plan = playProfile(d, evs); E = plan.events; total = plan.duration; } V = E.map((e, k) => (e.hidden ? -1 : k)).filter((k) => k >= 0);
     st.on = false; st.manual = false; st.at = -1; bubble.hidden = true; total$.textContent = fr(total); line.dataset.swStory = String(V.length);
     marks.replaceChildren(...V.map((k, n) => { const e = E[k]; return el("button", { type: "button", class: "sws-mark", style: `left:${(100 * e.t) / total}%`, "data-sws": e.id, "data-tip": `${fr(e.t)} — ${e.title}`, "aria-label": `Événement ${n + 1} à ${fr(e.t)} : ${e.title}`, onClick: () => play(k) }, String(n + 1)); }));
     pick.replaceChildren(...(all.length > 1 ? all.map((p) => el("button", { type: "button", role: "radio", class: p.id === st.id ? "on" : "", "aria-checked": p.id === st.id ? "true" : "false", "data-profile": p.id, "data-tip": `Le profil « ${p.name} »${p.kind ? ` (${p.kind})` : ""}`, onClick: () => { if (p.id !== st.id) { bench.pause(); load(p.id); bench.reset(); } } }, icon(p.kind === "charge" ? "bolt" : p.kind === "discharge" ? "power" : "flow"), p.name)) : []));

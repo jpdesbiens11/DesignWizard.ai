@@ -28,7 +28,7 @@ export function packStart(d, over = {}) {
   const S = { ...PACK_DEFAULTS, ...balanceSpec(d, over), ...over }, base = socAt(S.start);
   const P = { S, t: 0, soc: Array.from({ length: S.n }, (_, k) => Math.min(1, Math.max(0, base + (S.spread[k % S.spread.length] || 0) * 0.5))), cap: Array.from({ length: S.n }, (_, k) => S.capAh * (S.capSpread[k % S.capSpread.length] || 1)),
     bleed: new Array(S.n).fill(0), mem: Array.from({ length: S.n }, () => KINDS.balancing.init()), bledAh: new Array(S.n).fill(0), i: 0, temp: S.amb, phase: "rest", done: false, trace: [],
-    drive: { mode: "rest", a: 0, push: 0, cvFail: 0, heatTo: 0, amb: S.amb, cMax: S.cHigh }, since: 0, held: -1 };
+    drive: { mode: "rest", a: 0, push: 0, cvFail: 0, heatTo: 0, amb: S.amb, cMax: S.cHigh, cellHi: 0, cellLo: 0 }, since: 0, held: -1 };
   P.v = P.soc.map(ocvX); sample(P); return P;
 }
 /** Changes what drives the pack (an event of a profile). A new charge starts its soft start again. */
@@ -58,7 +58,7 @@ export function packStep(P, out = {}) {
   /* the software's « Passive balancing » step, block by block, on voltages corrected of the drop the current makes — never while it discharges ;
      or, when the CORE boards balance alone (JP, 27 novembre 2026), each board's rule on its own terminal : it knows neither the others nor the current */
   const vr = P.v.map((x) => Math.round((x - I * S.r) * 1000)), low = Math.min(...vr);
-  if (S.local) for (let k = 0; k < S.n; k++) P.bleed[k] = coreBleed(P.bleed[k], Math.round(P.v[k] * 1000), S.local);
+  if (S.local) { const mv = cellMv(P); for (let k = 0; k < S.n; k++) P.bleed[k] = coreBleed(P.bleed[k], mv[k], S.local); }
   else for (let k = 0; k < S.n; k++) P.bleed[k] = KINDS.balancing.step(P.mem[k], S.cfg, { v: vr[k], low, i: -Math.round(I * 1000) }, dt * 1000).bleed;
   if (S.local && D.mode === "charge" && phase === "cv" && I < S.endC * C1) P.ended = true;
   /* the hottest block : I²R and its resistor heat it, the air (or the pump) cools it toward the ambient ; heat from outside adds */
@@ -70,12 +70,21 @@ export function packStep(P, out = {}) {
   P.done = S.local ? D.mode === "charge" && !!P.ended && !P.bleed.some(Boolean) : D.mode === "charge" && phase === "cv" && I < S.endC * C1 && !P.bleed.some(Boolean) && Math.max(...vr) - low <= S.cfg.delta;
   return P;
 }
+/* THE CELL EMULATOR of a HIL bench (JP, 27 novembre 2026 — the missions written from the requirements) : a channel that holds the highest cell
+   block (`cellHi`, V) or the lowest (`cellLo`, V) at a voltage, whatever its charge — the way a BMS bench tests a voltage limit, past it by a clear
+   margin and held there, not crept up on by one mV. What the boards read (the software's pins, a CORE board's own rule) is the emulated block. 0 : off. */
+function cellMv(P) {
+  const mv = P.v.map((x) => Math.round(x * 1000)), D = P.drive;
+  if (D.cellHi) { let k = 0; for (let j = 1; j < mv.length; j++) if (mv[j] > mv[k]) k = j; mv[k] = Math.round(D.cellHi * 1000); }
+  if (D.cellLo) { let k = 0; for (let j = 1; j < mv.length; j++) if (mv[j] < mv[k]) k = j; mv[k] = Math.round(D.cellLo * 1000); }
+  return mv;
+}
 function sample(P) { P.trace.push({ t: P.t, i: P.i, v: [...P.v], soc: [...P.soc], bleed: [...P.bleed], phase: P.phase, temp: P.temp }); if (P.trace.length > 4000) P.trace.splice(0, P.trace.length - 4000); }
 /** What the pins of the bench read, in the units the software keeps : mV of the highest and the lowest block (at their terminals), 0.1 °C, mA
     (+ : discharge) ; vmod : the module, the sum of its blocks (mV) ; vout : the output after the contactor — the module when it is closed, nothing
     when it is open (the central board reads both : JP, 27 novembre 2026, « measure current, voltage, temperature at output ») ; bleed : 1 while a
     CORE board says, in its frame of the round, that it bleeds. */
-export function packSense(P) { const mv = P.v.map((x) => Math.round(x * 1000)), vmod = mv.reduce((a, b) => a + b, 0); return { vmax: Math.max(...mv), vmin: Math.min(...mv), temp: Math.round(P.temp * 10), current: Math.round(-P.i * 1000), vmod, vout: P.closed ? vmod : 0, bleed: P.bleed.some(Boolean) ? 1 : 0 }; }
+export function packSense(P) { const mv = cellMv(P), vmod = mv.reduce((a, b) => a + b, 0); return { vmax: Math.max(...mv), vmin: Math.min(...mv), temp: Math.round(P.temp * 10), current: Math.round(-P.i * 1000), vmod, vout: P.closed ? vmod : 0, bleed: P.bleed.some(Boolean) ? 1 : 0 }; }
 
 /* ---------- the profiles, written from the thresholds of the software ---------- */
 /** The limits of the software that read the pack : { id, name, what (vmax | vmin | temp | current), above, trip, clear, delay, latch } */
@@ -127,7 +136,7 @@ export function missionProfiles(d) {
   dc.push(ev(t + 120, "stop", "La charge s'arrête", "Le véhicule s'arrête : plus de courant. Le module reste arrêté jusqu'à sa prochaine charge.", { plant: { mode: "rest", a: 0 } }));
   dc.push(ev(t + 240, "end", "Fin du profil de décharge", "Le profil est joué. Exportez-le, changez-le, ou rejouez-le pas à pas.", {}));
   const sort = (list) => list.sort((a, b) => a.t - b.t);
-  return [{ id: "charge", name: "Charge", kind: "charge", events: sort(ch) }, { id: "discharge", name: "Décharge", kind: "discharge", events: sort(dc) }];
+  return [{ id: "charge", name: "Charge", kind: "charge", from: "thresholds", events: sort(ch) }, { id: "discharge", name: "Décharge", kind: "discharge", from: "thresholds", events: sort(dc) }];      // from : written from the software's thresholds — they stay on the bench (sw/sw_req_missions.js)
 }
 /** Which limits of the software a profile crosses on purpose (`target`), and which it leaves untouched. → { covered: [limit], left: [limit] } */
 export function coverage(d, profiles) {

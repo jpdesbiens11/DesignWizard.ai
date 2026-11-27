@@ -8,8 +8,8 @@
 import { KINDS, cfgOf } from "./sw_objects.js";
 import { physText } from "./sw_units.js";
 import { hostBoard, hwProblems } from "./sw_blocks.js";
-import { plantOf, coverage } from "./sw_pack.js";
-import { profilesOf } from "./sw_story.js";
+import { plantOf } from "./sw_pack.js";
+import { missionGaps } from "./sw_req_missions.js";
 import { hwFunctions } from "../pcba/lab_system.js";
 import { forDiscipline } from "../core/reqs.js";
 import { oraclesFor, proposeOracles } from "../core/req_oracle.js";
@@ -18,7 +18,7 @@ import { oraclesFor, proposeOracles } from "../core/req_oracle.js";
 export const LEAN = [
   { key: "reqs", mod: "lreq", n: 1, title: "Exigences", en: "Requirements", icon: "report", color: "#2563eb", says: "Ce que le produit doit faire, lu de DynamiteAgile : une exigence prouvée par essai devient un oracle que le banc juge." },
   { key: "io", mod: "swio", n: 2, title: "Interfaces", en: "HW interfaces", icon: "chip", color: "#b45309", says: "Chaque entrée et chaque sortie du logiciel, sur son net et sa broche de la carte — ou dite par une autre carte, dans sa frame." },
-  { key: "missions", mod: "swmis", n: 3, title: "Missions", en: "Mission profiles", icon: "flow", color: "#7c3aed", says: "Les mission profiles que le banc joue : ce que chacun fait au produit, les limites qu'il franchit, ce qu'il laisse." },
+  { key: "missions", mod: "swmis", n: 3, title: "Missions", en: "Mission profiles", icon: "flow", color: "#7c3aed", says: "Les missions que la campagne joue, écrites à partir des exigences : nominal, chaque limite approchée, franchie et tenue, puis revenue, l'enveloppe, des corner cases, des pannes injectées, un lot de réserve." },
   { key: "bench", mod: "swsim", n: 4, title: "Banc HIL", en: "Virtual HIL", icon: "play", color: "#dc2626", says: "Le logiciel tourne contre le module simulé, une mission à la fois : les limites des exigences en pointillé, l'arrêt sur défaut." },
   { key: "findings", mod: "swfind", n: 5, title: "Constats", en: "Findings", icon: "check", color: "#16a34a", says: "Toutes les missions jouées d'un coup : chaque exigence tenue, échouée ou non exercée, et le fichier de constat." },
   { key: "export", mod: "swrel", n: 6, title: "Export", en: "Export", icon: "download", color: "#0f766e", says: "Le paquet C, caché jusqu'ici, part vers le microcontrôleur quand les constats sont verts." },
@@ -51,12 +51,12 @@ export function leanStates(project, d, campaign = null) {
   const R = project && project.reqs, mine = R ? forDiscipline(R, "sw").reqs : [], tested = mine.filter((r) => /T/.test(r.verification_method || "") && proposeOracles(r).list.length);
   const unsure = tested.filter((r) => !oraclesFor(R, r).sure);
   const io = d ? interfacesOf(project, d) : null, bad = io ? io.problems.filter((x) => x.level === "error" || x.level === "check") : [];
-  const P = d ? profilesOf(d) : [], left = d && plantOf(d) ? coverage(d, P).left : [];
+  const left = d && plantOf(d) ? missionGaps(project) : [];      // the limits of the requirements no mission can move (sw/sw_req_missions.js)
   const fails = campaign ? campaign.rows.filter((x) => x.overall === "fail") : [];
   return {
     reqs: { state: !mine.length ? "todo" : unsure.length ? "todo" : "done", text: !mine.length ? "Aucune exigence allouée au logiciel : lisez la liste de DynamiteAgile." : unsure.length ? `${unsure.length} lecture${unsure.length > 1 ? "s" : ""} par la machine à confirmer.` : `${mine.length} exigences, leurs oracles confirmés.` },
     io: { state: !d ? "wait" : bad.length ? "todo" : "done", text: !d ? "Le logiciel n'existe pas encore." : bad.length ? `${bad.length} interface${bad.length > 1 ? "s" : ""} à corriger.` : io.board ? `Aligné sur ${io.board.id}.` : "Aucune carte : le logiciel n'est aligné sur aucun matériel." },
-    missions: { state: !d ? "wait" : !P.length ? "todo" : left.length ? "info" : "done", text: !P.length ? "Aucune mission." : `${P.length} mission${P.length > 1 ? "s" : ""}${left.length ? ` — ${left.length} limite${left.length > 1 ? "s" : ""} jamais franchie${left.length > 1 ? "s" : ""}` : ""}.` },
+    missions: { state: !d ? "wait" : !plantOf(d) ? "todo" : left.length ? "info" : "done", text: !d ? "Le logiciel n'existe pas encore." : !plantOf(d) ? "Aucun module simulé sur le banc : aucune mission." : `Écrites à partir des exigences${campaign ? ` — ${campaign.profiles.length} jouées` : ""}${left.length ? ` ; ${left.length} limite${left.length > 1 ? "s" : ""} sans mission` : ""}.` },
     bench: { state: !d ? "wait" : plantOf(d) ? "info" : "todo", text: !d ? "Le logiciel n'existe pas encore." : plantOf(d) ? "Le module simulé est sur le banc." : "Aucun module simulé sur le banc." },
     findings: { state: !d ? "wait" : !campaign ? "todo" : fails.length ? "todo" : "done", text: !campaign ? "La campagne n'a pas encore été jouée." : fails.length ? `${fails.length} exigence${fails.length > 1 ? "s" : ""} échouée${fails.length > 1 ? "s" : ""}.` : "Aucune exigence échouée." },
     export: { state: !campaign ? "wait" : fails.length ? "wait" : "info", text: !campaign ? "D'abord les constats." : fails.length ? "Des exigences échouent encore : le paquet attend." : "Prêt : le paquet peut partir." },

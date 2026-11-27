@@ -13,13 +13,16 @@ import { snapshotLists, journalChange } from "../core/ai_door.js";
 import { verdictWord } from "../core/req_oracle.js";
 import { campaignRun } from "../sw/sw_campaign.js";
 import { loopFiles, loopPrompt, readCandidate, compareCampaigns, compareMd } from "../sw/sw_loop.js";
-import { rememberCampaign } from "./sw_lean_ui.js";
+import { rememberCampaign, missionsOf } from "./sw_lean_ui.js";
+import { missionSig } from "../sw/sw_req_missions.js";
 
 const CH = { regressed: { fr: "RÉGRESSION", c: "#dc2626" }, fixed: { fr: "corrigée", c: "#16a34a" }, same: { fr: "inchangée", c: "#94a3b8" }, moved: { fr: "a bougé", c: "#d97706" } };
 const stamp = (C) => `${(C.design || "logiciel").toLowerCase()}_${new Date().toISOString().slice(0, 10)}`;
 
 /** The section of the right pane : the loop, its three moves. d : the software ; C : its last campaign (or null). */
-export function loopSection(d, C) {
+export function loopSection(d, C0) {
+  /* the gate compares a version with the campaign it replays : missions changed since (the requirements, their readings) — play it again first */
+  const stale = !!C0 && C0.sig !== missionSig(missionsOf(d)), C = stale ? null : C0;
   const pack = btn("Paquet pour l'IA (.zip)", () => { download(`boucle_ia_${stamp(C)}.zip`, zip(loopFiles(store.project, d, C)), "application/zip"); toast("Paquet écrit : PROMPT.md, constat, exigences, software.json. Donnez-le à votre assistant ; collez sa réponse ici.", "success", 7000); }, { small: true, primary: true, icon: "download", disabled: !C, tip: "La consigne, le constat, les exigences et le logiciel — ce qui échoue est à corriger, les interfaces HW, le banc et les missions ne changent pas" });
   pack.dataset.swLoopPack = "";
   const copy = btn("Copier la consigne", async () => toast((await copyText(loopPrompt(store.project, d, C))) ? "Consigne copiée." : "Copie impossible.", "info"), { small: true, icon: "copy", disabled: !C });
@@ -27,7 +30,7 @@ export function loopSection(d, C) {
   read.dataset.swLoopRead = "";
   return el("div", { class: "side-section", "data-fold-note": C ? "3 gestes" : "après la campagne", "data-sw-loop": "" }, el("h3", null, "Boucle IA"),
     el("p", { class: "small" }, "1. Le paquet part à l'IA. 2. Sa nouvelle version revient. 3. Toute la campagne la rejoue : acceptée seulement sans régression."),
-    el("div", { class: "swl2-acts" }, pack, copy, read), C ? null : el("p", { class: "small muted" }, "Jouez d'abord la campagne : la boucle part de son constat."));
+    el("div", { class: "swl2-acts" }, pack, copy, read), C ? el("p", { class: "small muted" }, icon("lock"), " Le lot de réserve ne part pas : il est rejoué à la porte.") : el("p", { class: "small muted", "data-sw-loop-stale": stale ? "" : null }, stale ? "Les missions ont changé depuis la campagne (les exigences ou leur lecture) : rejouez-la, la boucle part de son constat." : "Jouez d'abord la campagne : la boucle part de son constat."));
 }
 
 /** The answer read back, the campaign played on it, the gate. */
@@ -54,7 +57,8 @@ export function openLoop(d, C) {
       cmp.rows.every((r) => r.change === "same") ? el("p", { class: "small muted" }, "Aucun verdict n'a bougé.") : null));
   }
   function run() {
-    if (!cand || !cand.ok || running) return; const g = campaignRun(store.project, cand.doc, { slice: 25000 }); let stop = false; running = true; play.disabled = true;
+    /* the missions of the version in hand : the yardstick does not move */
+    if (!cand || !cand.ok || running) return; const g = campaignRun(store.project, cand.doc, { profiles: missionsOf(d), slice: 25000 }); let stop = false; running = true; play.disabled = true;
     const cancel = () => { stop = true; };
     const pump = () => {
       if (stop) { running = false; veil.set(""); play.disabled = false; toast("Campagne annulée.", "info"); return; }

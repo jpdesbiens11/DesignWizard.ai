@@ -11,13 +11,16 @@ import { registerModule, setGuide, go } from "../core/app.js";
 import { store } from "../core/store.js";
 import { busyVeil } from "../core/busy.js";
 import { leanOf } from "../sw/sw_lean.js";
-import { profilesOf } from "../sw/sw_story.js";
+import { ORIGINS } from "../sw/sw_req_missions.js";
 import { campaignRun, findingsCsv, findingsMd } from "../sw/sw_campaign.js";
 import { verdictWord } from "../core/req_oracle.js";
 import { swShell } from "./sw_vband.js";
-import { leanHead, leanDesign, lastCampaign, rememberCampaign } from "./sw_lean_ui.js";
+import { leanHead, leanDesign, lastCampaign, rememberCampaign, missionsOf } from "./sw_lean_ui.js";
 import { loopSection } from "./sw_loop_ui.js";
 
+/* the columns, grouped by the kind of mission (sw/sw_req_missions.js ORIGINS), in the order they were played */
+const groupsOf = (C) => { const out = []; for (const p of C.profiles) { const k = p.origin || "project", last = out[out.length - 1]; if (last && last.k === k) last.n++; else out.push({ k, O: ORIGINS[k] || ORIGINS.project, n: 1 }); } return out; };
+const shortOf = (p) => (p.origin === "limit" || p.origin === "envelope" ? p.name.split(" — ").slice(1).join(" — ") : p.name.replace(/^(Nominal|Corner case|Pannes injectées) — /, "")) || p.name;
 const V = { pass: { c: "#16a34a", s: "✓" }, fail: { c: "#dc2626", s: "✗" }, none: { c: "#94a3b8", s: "–" }, uncovered: { c: "#d97706", s: "◌" }, covered: { c: "#0891b2", s: "●" } };
 const WHY = { offbench: "prouvée autrement que par essai", tbd: "une valeur TBD", unread: "aucune grandeur que le banc relève", need: "un besoin", person: "« ne pas juger au banc »" };
 
@@ -25,7 +28,7 @@ function render(main) {
   const { page, head, left, view, right } = swShell(main, "swf2-view"), veil = busyVeil(view);
   let running = null;
   function play(d) {
-    if (running) return; const g = campaignRun(store.project, d, { slice: 25000 }), P = profilesOf(d), t0 = Date.now(); let stop = false;
+    if (running) return; const P = missionsOf(d), g = campaignRun(store.project, d, { profiles: P, slice: 25000 }), t0 = Date.now(); let stop = false;
     running = { cancel: () => { stop = true; } };
     const pump = () => {
       if (stop) { running = null; veil.set(""); toast("Campagne annulée : aucun constat n'a été gardé.", "info"); return; }
@@ -40,7 +43,7 @@ function render(main) {
   function draw() {
     const d = leanDesign(); head.replaceChildren(leanHead("findings", d));
     if (!d) { view.replaceChildren(el("div", { class: "empty" }, el("h2", null, "Les constats"), el("p", null, "Le projet n'a pas encore de logiciel."))); setGuide([]); return; }
-    const C = lastCampaign(d), P = profilesOf(d), L = leanOf("findings");
+    const C = lastCampaign(d), P = missionsOf(d), L = leanOf("findings");
     clear(left); left.append(el("div", { class: "side-head" }, el("h2", null, "Constats")),
       el("div", { class: "side-actions" }, (() => { const b = btn(C ? "Rejouer la campagne" : "Jouer la campagne", () => play(d), { primary: true, icon: "play", tip: `Les ${P.length} missions sur le banc virtuel, chaque exigence jugée sur chacune` }); b.dataset.swCampaign = ""; return b; })()),
       el("div", { class: "side-scroll" }, el("div", { class: "side-section", "data-fold-note": C ? `${C.rows.length} limites` : "à jouer" }, el("h3", null, "Ce que l'écran montre"), el("p", { class: "small" }, L.says),
@@ -50,9 +53,10 @@ function render(main) {
         C ? el("div", { class: "side-section" }, el("h3", null, "Le fichier de constat"), btn("Constat (.csv)", () => save(C, "csv"), { small: true, icon: "download", tip: "Une ligne par limite, une colonne par mission — CSV" }), btn("Constat (.md)", () => save(C, "md"), { small: true, icon: "download", tip: "Le bilan, ce qui échoue, la table entière — Markdown" })) : null));
     if (!C) view.replaceChildren(el("div", { class: "empty", "data-sw-findings": "none" }, el("h2", null, "La campagne n'a pas encore été jouée"), el("p", null, `${P.length} mission${P.length > 1 ? "s" : ""} à jouer sur le banc virtuel : chaque exigence lue par la machine y sera jugée.`)), veil.node);
     else view.replaceChildren(el("div", { class: "swf2-wrap" }, el("table", { class: "swf2-table", "data-sw-findings": "matrix" },
-      el("thead", null, el("tr", null, el("th", null, "Exigence"), el("th", null, "Limite"), C.profiles.map((p) => el("th", null, p.name, el("small", null, ` ${Math.round(p.seconds / 60)} min`))), el("th", null, "Bilan"))),
+      el("thead", null, el("tr", null, el("th", { rowspan: 2 }, "Exigence"), el("th", { rowspan: 2 }, "Limite"), groupsOf(C).map((g) => el("th", { colspan: g.n, class: "swf2-og", style: `--g:${g.O.color}` }, icon(g.O.icon), ` ${g.O.fr}`)), el("th", { rowspan: 2 }, "Bilan")),
+        el("tr", null, C.profiles.map((p) => el("th", { class: "swf2-vh", style: `--g:${(ORIGINS[p.origin] || ORIGINS.project).color}`, "data-tip": `${p.name} — ${Math.round(p.seconds / 60)} min` }, el("span", null, shortOf(p)))))),
       el("tbody", null, C.rows.map((r) => el("tr", { class: `swf2-${r.overall}`, "data-sw-finding": r.key },
-        el("td", null, el("a", { href: "#/lreq", "data-tip": r.req.title || r.req.statement || "" }, r.key)), el("td", null, r.text, r.sure ? null : el("small", { class: "muted" }, " (à confirmer)")),
+        el("td", null, r.rule ? el("span", { class: "chip small", "data-tip": r.req.statement }, "Règle de la campagne") : el("a", { href: "#/lreq", "data-tip": r.req.title || r.req.statement || "" }, r.key)), el("td", null, r.text, r.sure ? null : el("small", { class: "muted" }, " (à confirmer)")),
         C.profiles.map((p) => { const v = r.by[p.id] || "none"; return el("td", { class: "swf2-cell", style: `--v:${V[v].c}`, "data-tip": verdictWord(v) }, V[v].s); }),
         el("td", { class: "swf2-cell all", style: `--v:${V[r.overall].c}` }, `${V[r.overall].s} ${verdictWord(r.overall)}`))))),
       C.unread.length ? el("details", { class: "swf2-unread" }, el("summary", null, `${C.unread.length} exigences non jugées au banc`), el("ul", { class: "small" }, C.unread.map((u) => el("li", null, `${u.key} — ${WHY[u.why] || u.why}`)))) : null), veil.node);
