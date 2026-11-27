@@ -45,5 +45,5 @@ test("the software of the BM runs on it : its pins on its nets, and the guide sa
   assert.equal(b.blocks.find((x) => Object.values(x.connect || {}).includes("AIN2")).connect.VBUS, "VOUT_TAP", "the output voltage : the tap after the contactor");
   assert.equal(hwTag(p, d, d.objects.find((o) => o.id === "adc_v")).state, "bench");
   const H = hwProblems(p, d).map((x) => x.text).join(" ");
-  assert.match(H, /DOUT1 — PRECHARGE, DOUT2 — PYRO/); assert.match(H, /DIN0 — WAKE/); assert.ok(!hwProblems(p, d).some((x) => x.level === "error" || x.level === "check"), "nothing to fix by hand : what is missing is a block or a net to add, said as a tip");
+  assert.match(H, /DOUT1 — PRECHARGE, DOUT2 — PYRO/); assert.doesNotMatch(H, /DIN0 — WAKE/, "the 12 V is read (JP, par menu : sans 12 V, le principal veille sur le module, le contacteur reste ouvert)"); assert.ok(!hwProblems(p, d).some((x) => x.level === "error" || x.level === "check"), "nothing to fix by hand : what is missing is a block or a net to add, said as a tip");
 });

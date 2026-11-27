@@ -14,7 +14,7 @@
 
 import { KINDS, cfgOf } from "./sw_objects.js";
 import { liveWires, split } from "./sw_design.js";
-import { ocv, socAt, BALANCE_DEFAULTS, balanceSpec, phaseText } from "./sw_balance.js";
+import { ocv, socAt, BALANCE_DEFAULTS, balanceSpec, phaseText, coreBleed } from "./sw_balance.js";
 
 /* 8 cells of about 70 g per block, about 1 000 J/(kg·K) ; a closed module loses about 0,5 W/K by the air ; the pump : four times more — examples */
 export const PACK_DEFAULTS = { ...BALANCE_DEFAULTS, mcp: 560, hA: 0.5, pumpGain: 4, amb: 25, cDerate: 0.5, hold: 30 };
@@ -32,8 +32,8 @@ export function packStart(d, over = {}) {
   P.v = P.soc.map(ocvX); sample(P); return P;
 }
 /** Changes what drives the pack (an event of a profile). A new charge starts its soft start again. */
-export function packDrive(P, patch = {}) { const was = P.drive.mode; Object.assign(P.drive, patch); if (patch.mode && patch.mode !== was) P.since = 0; if (patch.start !== undefined) { const b = socAt(patch.start); P.soc = P.soc.map((_, k) => Math.min(1, Math.max(0, b + (P.S.spread[k % P.S.spread.length] || 0) * 0.5))); P.v = P.soc.map(ocvX); } return P; }
-const PH = { rest: "Au repos", load: "Décharge", derate: "Dératé : courant tenu bas", open: "Contacteur ouvert : aucun courant", push: "Le chargeur pousse trop fort", runaway: "Le chargeur oublie sa tension constante" };
+export function packDrive(P, patch = {}) { const was = P.drive.mode; Object.assign(P.drive, patch); if (patch.mode && patch.mode !== was) { P.since = 0; P.ended = false; } if (patch.cvFail) P.ended = false; if (patch.start !== undefined) { const b = socAt(patch.start); P.soc = P.soc.map((_, k) => Math.min(1, Math.max(0, b + (P.S.spread[k % P.S.spread.length] || 0) * 0.5))); P.v = P.soc.map(ocvX); } return P; }
+const PH = { rest: "Au repos", load: "Décharge", derate: "Dératé : courant tenu bas", open: "Contacteur ouvert : aucun courant", push: "Le chargeur pousse trop fort", runaway: "Le chargeur oublie sa tension constante" };      // the others : sw/sw_balance.js PHASES
 export const packPhase = (p) => PH[p] || phaseText(p);
 /** One second (S.dt) of the pack, under what the software commands : out = { closed, derate, pump }. → P */
 export function packStep(P, out = {}) {
@@ -46,30 +46,36 @@ export function packStep(P, out = {}) {
     let want = anyBleed ? Math.min(want0, S.cBal * C1) : want0; if (derate) want = Math.min(want, S.cDerate * C1);
     const cv = D.cvFail ? Infinity : Math.max(0, (S.vTop - hi) / S.r); I = Math.min(want, cv);
     phase = D.cvFail && I > 0 ? "runaway" : derate ? "derate" : I < want - 1e-9 ? "cv" : anyBleed && want < want0 - 1e-9 ? "bal" : s < S.soft ? "soft" : s < S.soft + S.ramp ? "ramp" : "cc";
-    if (D.push) { I = D.push; phase = "push"; } }
+    if (D.push) { I = D.push; phase = "push"; }
+    /* CORE boards that balance alone (S.local) : the charger stops at the end of its constant voltage — they come down to their threshold at rest */
+    else if (S.local && P.ended && !D.cvFail) { I = 0; phase = anyBleed ? "top" : "full"; } }
   else if (D.mode === "discharge") { I = -Math.abs(D.a || 0); if (derate) I = Math.max(I, -S.cDerate * C1); phase = derate ? "derate" : "load"; }
   if (!closed) { I = 0; phase = "open"; }
   P.i = I; P.phase = phase; P.since += dt;
   let bleedW = 0;
   for (let k = 0; k < S.n; k++) { const ib = P.bleed[k] ? P.v[k] / S.rBal : 0; bleedW = Math.max(bleedW, ib * P.v[k]);
     P.soc[k] = Math.min(1.15, Math.max(0, P.soc[k] + (I - ib) * dt / 3600 / P.cap[k])); P.v[k] = ocvX(P.soc[k]) + I * S.r; P.bledAh[k] += ib * dt / 3600; }
-  /* the software's « Passive balancing » step, block by block, on voltages corrected of the drop the current makes — never while it discharges */
+  /* the software's « Passive balancing » step, block by block, on voltages corrected of the drop the current makes — never while it discharges ;
+     or, when the CORE boards balance alone (JP, 27 novembre 2026), each board's rule on its own terminal : it knows neither the others nor the current */
   const vr = P.v.map((x) => Math.round((x - I * S.r) * 1000)), low = Math.min(...vr);
-  for (let k = 0; k < S.n; k++) P.bleed[k] = KINDS.balancing.step(P.mem[k], S.cfg, { v: vr[k], low, i: -Math.round(I * 1000) }, dt * 1000).bleed;
+  if (S.local) for (let k = 0; k < S.n; k++) P.bleed[k] = coreBleed(P.bleed[k], Math.round(P.v[k] * 1000), S.local);
+  else for (let k = 0; k < S.n; k++) P.bleed[k] = KINDS.balancing.step(P.mem[k], S.cfg, { v: vr[k], low, i: -Math.round(I * 1000) }, dt * 1000).bleed;
+  if (S.local && D.mode === "charge" && phase === "cv" && I < S.endC * C1) P.ended = true;
   /* the hottest block : I²R and its resistor heat it, the air (or the pump) cools it toward the ambient ; heat from outside adds */
   /* heat from outside (`heatTo`, °C) : it brings the hottest block toward that temperature (a time constant of a minute), then holds it there */
   const hA = S.hA * (out.pump ? S.pumpGain : 1), amb = D.amb ?? S.amb, own = I * I * S.r + bleedW;
   const ext = D.heatTo ? Math.max(0, hA * (D.heatTo - amb) - own + (P.temp < D.heatTo ? S.mcp * (D.heatTo - P.temp) / 60 : 0)) : 0;
   P.temp += (own + ext - hA * (P.temp - amb)) * dt / S.mcp;
   P.t += dt; if (P.t % 10 === 0) sample(P);
-  P.done = D.mode === "charge" && phase === "cv" && I < S.endC * C1 && !P.bleed.some(Boolean) && Math.max(...vr) - low <= S.cfg.delta;
+  P.done = S.local ? D.mode === "charge" && !!P.ended && !P.bleed.some(Boolean) : D.mode === "charge" && phase === "cv" && I < S.endC * C1 && !P.bleed.some(Boolean) && Math.max(...vr) - low <= S.cfg.delta;
   return P;
 }
 function sample(P) { P.trace.push({ t: P.t, i: P.i, v: [...P.v], soc: [...P.soc], bleed: [...P.bleed], phase: P.phase, temp: P.temp }); if (P.trace.length > 4000) P.trace.splice(0, P.trace.length - 4000); }
-/** What the pins read, in the units the software keeps : mV of the highest and the lowest block (at their terminals), 0.1 °C, mA (+ : discharge). */
-/** What the pins of the bench read. vmod : the module, the sum of its blocks (mV) ; vout : the output after the contactor — the module when it is
-    closed, nothing when it is open (the central board reads both : JP, 27 novembre 2026, « measure current, voltage, temperature at output »). */
-export function packSense(P) { const mv = P.v.map((x) => Math.round(x * 1000)), vmod = mv.reduce((a, b) => a + b, 0); return { vmax: Math.max(...mv), vmin: Math.min(...mv), temp: Math.round(P.temp * 10), current: Math.round(-P.i * 1000), vmod, vout: P.closed ? vmod : 0 }; }
+/** What the pins of the bench read, in the units the software keeps : mV of the highest and the lowest block (at their terminals), 0.1 °C, mA
+    (+ : discharge) ; vmod : the module, the sum of its blocks (mV) ; vout : the output after the contactor — the module when it is closed, nothing
+    when it is open (the central board reads both : JP, 27 novembre 2026, « measure current, voltage, temperature at output ») ; bleed : 1 while a
+    CORE board says, in its frame of the round, that it bleeds. */
+export function packSense(P) { const mv = P.v.map((x) => Math.round(x * 1000)), vmod = mv.reduce((a, b) => a + b, 0); return { vmax: Math.max(...mv), vmin: Math.min(...mv), temp: Math.round(P.temp * 10), current: Math.round(-P.i * 1000), vmod, vout: P.closed ? vmod : 0, bleed: P.bleed.some(Boolean) ? 1 : 0 }; }
 
 /* ---------- the profiles, written from the thresholds of the software ---------- */
 /** The limits of the software that read the pack : { id, name, what (vmax | vmin | temp | current), above, trip, clear, delay, latch } */

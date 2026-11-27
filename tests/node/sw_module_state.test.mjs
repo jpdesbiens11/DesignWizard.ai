@@ -34,7 +34,7 @@ test("the software of the module, on its bench : derated above the sustained cur
   const ev = events(d, R).map((e) => `${e.t} ${e.ref} ${e.to}`);
   for (const e of ["2490 module.derate 1", "4010 module.derate 0", "5490 module.emergency 1", "6490 module.close 0", "6490 k.drive 0", "6520 k_fb.level 0"]) assert.ok(ev.includes(e), e);
   assert.ok(!ev.some((e) => / latch\.fault 1$/.test(e)), "no fault : the stop comes from the emergency that lasted");
-  assert.match(requirement(d, d.objects.find((o) => o.id === "module")), /STOP, the contactor open, as soon as Fault latch is 1.*EMERGENCY when Banc : la chaîne des cartes se tait has held for 500 ms/);
+  assert.match(requirement(d, d.objects.find((o) => o.id === "module")), /STOP, the contactor open, as soon as Fault latch is 1.*EMERGENCY when Banc : le tour des cartes de CORE ne revient plus has held for 500 ms/);
   assert.ok(bmProject().software.some((x) => x.id === "BM-SW"), "the software is in the project BM");
 });
 

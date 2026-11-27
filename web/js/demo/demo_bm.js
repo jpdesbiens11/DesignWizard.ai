@@ -150,10 +150,10 @@ export function bmProject(opts = {}) {
   p.parts.push(casing, ends.neg, ends.pos, ...top.parts, ...bottom.parts);
   syncTwins(p, LIBRARY);
   const board = p.boards[0], twin = p.parts.find((x) => x.id === board.part);
-  twin.name = "Carte de CORE 1S8P"; twin.function = "La carte de mesure du CORE, posée sur le busbar laminé : 8 températures, la tension du CORE, l'équilibrage, RS-485 isolé.";
+  twin.name = "Carte de CORE 1S8P"; twin.function = "La carte de mesure du CORE, posée sur le busbar laminé : 8 températures, la tension du CORE, l'équilibrage seule au seuil ; elle parle à son tour par RS-485 isolé.";
   p.assemblies = [moduleAssembly(), coreAssembly(twin.id, flex), top.assembly(), bottom.assembly, jointAssembly(layout)];
   const bms = p.parts.find((x) => x.id === p.boards[1].part);
-  bms.name = "BMS central du module"; bms.function = "Le BMS central : interroge les 8 cartes de CORE par la chaîne RS-485, lit le courant du module, commande le contacteur et dit l'état au véhicule par CAN. Pas encore posé : le logement du couvercle du fond est trop petit.";
+  bms.name = "BMS central du module"; bms.function = "Le BMS central : écoute les 8 cartes de CORE, qui parlent à tour de rôle sur la chaîne RS-485, lit le courant du module, commande le contacteur et dit l'état au véhicule par CAN. Pas encore posé : le logement du couvercle du fond est trop petit.";
   putBoard(p, BMS_BOARD_ID); putBoard(p, p.boards[0].id);
   p.software = [moduleDesign()];
   p.reqs = makeReqs(essList(), ESS_FILE, "2026-11-27T12:00:00.000Z");      // the requirements of the ESS, a draft in the format of DynamiteAgile (JP, 27 novembre) : seen by the three branches, kept by every point of the history

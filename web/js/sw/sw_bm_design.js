@@ -1,19 +1,27 @@
-/* DynamiteOrbit.ai — the software of the central BMS of the module BM 8s8p (architecture de JP, 21 novembre 2026 : « le BMS central interroge
-   les cartes, juge et agit — contactors, état envoyé au véhicule : normal, dératé, urgence, arrêt (contactors ouverts) »). Drawn as objects one
-   links, like any design of the Logiciel group ; its heart is a « Module state machine ». The thresholds are examples, to confirm — the derating
-   current is the one the closed module carries for ever (95 A, demo/demo_bm_heat.js). What arrives from the chain of CORE boards — the highest
-   cell voltage, the highest temperature, the silence of the chain — stands here as inputs of the bench, until the objects of the link exist. */
+/* DynamiteOrbit.ai — the software of the central BMS of the module BM 8s8p (architecture de JP, 21 novembre 2026 : « le BMS central juge et
+   agit — contactors, état envoyé au véhicule : normal, dératé, urgence, arrêt (contactors ouverts) »). Drawn as objects one links, like any design
+   of the Logiciel group ; its heart is a « Module state machine ». The thresholds are examples, to confirm — the derating current is the one the
+   closed module carries for ever (95 A, demo/demo_bm_heat.js).
+   THE TWO KINDS OF BOARDS (JP, 27 novembre 2026 : « 2 pcb types that speak to each other when powered with 12 V… the main might not send anything
+   to the core pcb, just use monitoring to manage the BM overall states and functions… use the core pcb to feed all other functions using sensors
+   from core + sensors from the main » ; choix par menu : un tour fixe — CORE 1 ouvre, chacun parle après le précédent ; chaque CORE équilibre
+   seule au seuil ; sans 12 V, le principal veille sur le module) : the eight CORE boards SPEAK, the central board LISTENS — its transceiver held
+   in receive (RS485_DE low, U11.PB1) ; it sends them nothing. What their round brings — the highest and the lowest CORE, the hottest probe, which
+   one bleeds, the silence of the round — stands here as inputs of the bench, until the objects of the link exist ; what the central board reads
+   itself has its pin. The balancing is each CORE board's own : the module on the bench runs its rule (plant.balance, sw/sw_balance.js). */
 
 import { missionProfiles } from "./sw_pack.js";
+import { CORE_BALANCE } from "./sw_balance.js";
 
 const OBJ = (id, kind, name, x, y, params = {}) => ({ id, kind, name, x, y, params, sure: [] });
-/* a value the bench stands in for : read from the chain of CORE boards (RS-485), not from a pin of the central board */
-const CHAIN = "relue par la chaîne RS-485 des 8 cartes de CORE (CORE-1S8P-PCBA : la tension de chaque CORE, ses 8 CTN)";
+/* a value the bench stands in for : what the CORE boards SAY in their round on the RS-485, not a pin of the central board */
+const CHAIN = "dite par les 8 cartes de CORE dans leur tour sur la RS-485 (CORE-1S8P-PCBA : la tension de chaque CORE, ses 8 CTN, son équilibrage) — CORE 1 ouvre le tour, chacune parle après la précédente ; le BMS central écoute, il ne leur envoie rien";
 const BENCH = (o, why = CHAIN) => ({ ...o, bench: why });
 /* a pin the central board has (demo/demo_bms3.js, the 3 in × 3 in board : U11 is its microcontroller) — JP, 27 novembre 2026 : « aligner le logiciel avec
    les 2 types de cartes, CORE × 8 + main » : AIN0 the module, AIN1 the shunt, AIN2 the output, AIN3 the NTC of the output terminal ; DIN1 the auxiliary
-   contact, DIN2 ENABLE, DIN3 the presence, DIN4 the acknowledgement ; DOUT0 the contactor, DOUT3 the pump, DOUT4 the fan, DOUT5 the buzzer ; three LEDs.
-   What a CORE board measures comes by the chain (BENCH) ; WAKE, the precharge and the pyrofuse are on the board, their blocks still to come. */
+   contact, DIN2 ENABLE, DIN3 the presence, DIN4 the acknowledgement, DIN0 the 12 V (WAKE) ; DOUT0 the contactor, DOUT3 the pump, DOUT4 the fan, DOUT5
+   the buzzer ; three LEDs. What a CORE board measures comes by its round (BENCH) ; the precharge and the pyrofuse are on the board, their blocks
+   still to come. */
 const HW = (o, net, pin) => ({ ...o, hw: { board: "BMS-CENTRAL-3X3", net, pin } });
 const W = (pairs) => pairs.map(([from, to, delay]) => ({ from, to, ...(delay ? { delay: true } : {}) }));
 /** counts of a 12-bit converter under 3.3 V for a voltage at its pin, in mV */
@@ -38,14 +46,15 @@ export function moduleDesign(cpu = "tms570ls1224_pge") {
       OBJ("over_i", "limit", "Above the sustained current — derate", 470, 380, { unit: "mA", above: 1, trip: 95000, clear: 90000, delay: 2000 }),
       OBJ("over_ic", "limit", "Charge current too high — derate", 470, 440, { unit: "mA", above: 0, trip: -95000, clear: -90000, delay: 2000 }),
       OBJ("i_watch", "logic", "Current to watch (discharge or charge)", 700, 400, { op: "OR" }),
-      BENCH(OBJ("lost", "pin_din", "Banc : la chaîne des cartes se tait", 470, 500, { pin: 5 }), "dit par la liaison RS-485 elle-même, quand plus aucune carte ne répond"),
+      BENCH(OBJ("lost", "pin_din", "Banc : le tour des cartes de CORE ne revient plus", 470, 500, { pin: 5 }), "dit par la liaison RS-485 elle-même, quand le tour ouvert par CORE 1 ne revient plus"),
       HW(OBJ("ack", "pin_din", "Entrée : acquitter le défaut (véhicule ou service)", 470, 600, { pin: 6 }), "DIN4", "U11.PB13"),
       OBJ("v_fault", "logic", "Voltage fault (over or under)", 700, -60, { op: "OR" }), OBJ("v_watch", "logic", "Voltage to watch (high or low)", 700, -200, { op: "OR" }),
       OBJ("watch", "logic", "To watch : voltage or temperature", 900, -100, { op: "OR" }),
       OBJ("latch", "fault_latch", "Fault latch", 700, 60), OBJ("module", "module_state", "Module state", 900, 260, { t_lost: 500, t_emerg: 1000 }),
       OBJ("k", "contactor", "Contactor", 1130, 260, { t_fb: 50 }), HW(OBJ("k_fb", "pin_din", "Entrée : contact auxiliaire", 900, 450, { pin: 3 }), "DIN1", "U11.PC14"), HW(OBJ("k_drv", "pin_dout", "Sortie : bobine du contacteur", 1360, 270, { pin: 2 }), "DOUT0", "U11.PB3"),
       OBJ("lamp", "state_lamp", "General state lamp", 1130, 40),
-      OBJ("bal", "balancing", "Passive balancing (per CORE)", 700, 640, { v_min: 3900, delta: 20, hyst: 10 }),
+      /* the balancing is each CORE board's (JP, 27 novembre 2026) : the central board only hears it, in their round, and passes it to the vehicle */
+      { ...BENCH(OBJ("bal_in", "pin_din", "Banc : une carte de CORE dit qu'elle équilibre", 1130, 640, { pin: 4 })), vehicle: "CAN FD", device: "balancing" },
       { ...HW(OBJ("led_g", "pin_dout", "LED verte — état bon", 1360, -60, { pin: 7 }), "LED_STATUS", "U11.PA15"), device: "led" }, { ...HW(OBJ("led_y", "pin_dout", "LED jaune — à surveiller", 1360, 20, { pin: 8 }), "LED_WARN", "U11.PB10"), device: "led" },
       { ...HW(OBJ("led_r", "pin_dout", "LED rouge — limite dépassée", 1360, 100, { pin: 9 }), "LED_FAULT", "U11.PB11"), device: "led" }, { ...HW(OBJ("buzz", "pin_dout", "Buzzer — alarme", 1360, 180, { pin: 10 }), "DOUT5", "U11.PB15"), device: "buzzer" },
       { ...HW(OBJ("pump", "pin_dout", "Pompe de refroidissement (WEG)", 1360, 360, { pin: 11 }), "DOUT3", "U11.PB2"), device: "pump" },
@@ -59,66 +68,25 @@ export function moduleDesign(cpu = "tms570ls1224_pge") {
       OBJ("warn_all", "logic", "To watch : cells or output terminal", 1000, -100, { op: "OR" }),
       { ...HW(OBJ("fan", "pin_dout", "Ventilateur du radiateur", 1360, 440, { pin: 12 }), "DOUT4", "U11.PB14"), device: "fan" },
       HW(OBJ("veh_en", "pin_din", "Entrée : le véhicule autorise l'énergie (ENABLE)", 700, 540, { pin: 13 }), "DIN2", "U11.PC15"), HW(OBJ("pres", "pin_din", "Entrée : le module est dans sa cavité (présence)", 700, 600, { pin: 14 }), "DIN3", "U11.PB12"),
+      /* without the 12 V the central board lives on the module and keeps watching it ; the contactor, whose coil is on the 12 V, stays open (JP, par menu) */
+      HW(OBJ("wake", "pin_din", "Entrée : le 12 V du véhicule ou de la borne est là (WAKE)", 470, 560, { pin: 15 }), "DIN0", "U11.PC13"),
+      OBJ("live", "logic", "12 V present and vehicle allows", 700, 480, { op: "AND" }),
       OBJ("allow", "logic", "Vehicle allows and module present", 900, 560, { op: "AND" }), OBJ("req", "logic", "Close only when allowed", 1050, 330, { op: "AND" })],
     wires: W([["adc_v.counts", "v_max.counts"], ["v_max.value", "ov.value"], ["v_max.value", "hvw.value"], ["adc_vmin.counts", "v_min.counts"], ["v_min.value", "uv.value"], ["v_min.value", "lvw.value"],
       ["adc_t.counts", "t_max.counts"], ["t_max.value", "hot.value"], ["t_max.value", "ot.value"], ["t_max.value", "cool.value"], ["cool.trip", "pump.level"], ["cool.trip", "fan.level"], ["adc_vm.counts", "v_mod.counts"], ["v_mod.value", "efc.v"], ["i_mod.value", "efc.i"], ["adc_vo.counts", "v_out.counts"], ["adc_to.counts", "t_out.counts"], ["t_out.value", "tout_hot.value"],
       ["adc_i.counts", "i_mod.counts"], ["i_mod.value", "over_i.value"], ["i_mod.value", "over_ic.value"], ["over_i.trip", "i_watch.a"], ["over_ic.trip", "i_watch.b"], ["ov.trip", "v_fault.a"], ["uv.trip", "v_fault.b"], ["v_fault.y", "latch.a"], ["ot.trip", "latch.b"], ["k.fault", "latch.c", 1],
       ["hvw.trip", "v_watch.a"], ["lvw.trip", "v_watch.b"], ["v_watch.y", "watch.a"], ["hot.trip", "watch.b"],
       ["latch.fault", "module.fault"], ["lost.level", "module.lost"], ["watch.y", "warn_all.a"], ["tout_hot.trip", "warn_all.b"], ["warn_all.y", "module.warn_a"], ["i_watch.y", "module.warn_b"], ["ack.level", "latch.reset"], ["ack.level", "module.reset"],
-      ["module.close", "req.a"], ["veh_en.level", "allow.a"], ["pres.level", "allow.b"], ["allow.y", "req.b"], ["req.y", "k.request"], ["latch.fault", "k.inhibit"], ["k_fb.level", "k.feedback"], ["k.drive", "k_drv.level"],
-      ["v_max.value", "bal.v"], ["v_min.value", "bal.low"], ["i_mod.value", "bal.i"], ["module.state", "lamp.state"], ["lamp.green", "led_g.level"], ["lamp.yellow", "led_y.level"], ["lamp.red", "led_r.level"], ["lamp.red", "buzz.level"]]),
+      ["module.close", "req.a"], ["wake.level", "live.a"], ["veh_en.level", "live.b"], ["live.y", "allow.a"], ["pres.level", "allow.b"], ["allow.y", "req.b"], ["req.y", "k.request"], ["latch.fault", "k.inhibit"], ["k_fb.level", "k.feedback"], ["k.drive", "k_drv.level"],
+      ["module.state", "lamp.state"], ["lamp.green", "led_g.level"], ["lamp.yellow", "led_y.level"], ["lamp.red", "led_r.level"], ["lamp.red", "buzz.level"]]),
     /* the bench : 50 A, then 150 A for 3.5 s (derated after 2 s), 50 A again ; at 5 s the chain falls silent : emergency after 0.5 s, stop after 1 s more */
     scenario: { steps: 800, pins: { adc_v: { points: [[0, counts(1950)]] }, adc_vmin: { points: [[0, counts(1825)]] }, adc_t: { points: [[0, counts(250)]] },
-      adc_i: { points: [[0, amps(50)], [500, amps(150)], [4000, amps(50)]] }, lost: { points: [[0, 0], [5000, 1]] }, ack: { points: [[0, 0]] }, veh_en: { points: [[0, 1]] }, pres: { points: [[0, 1]] }, adc_to: { points: [[0, counts(250)]] }, k_fb: { follows: "k_drv", delay: 20 } } },
-    profiles: [CHARGE, DISCHARGE], monitor: { title: "Monitoring du BM-SWAP" },
+      adc_i: { points: [[0, amps(50)], [500, amps(150)], [4000, amps(50)]] }, lost: { points: [[0, 0], [5000, 1]] }, ack: { points: [[0, 0]] }, wake: { points: [[0, 1]] }, veh_en: { points: [[0, 1]] }, pres: { points: [[0, 1]] }, adc_to: { points: [[0, counts(250)]] }, k_fb: { follows: "k_drv", delay: 20 } } },
+    profiles: [], monitor: { title: "Monitoring du BM-SWAP" },
     /* the module on the bench (sw/sw_pack.js) : the pins it drives, the outputs it obeys — and the charge and the discharge written from the thresholds */
-    plant: { vmax: "adc_v", vmin: "adc_vmin", temp: "adc_t", current: "adc_i", vmod: "adc_vm", vout: "adc_vo", contactor: "k_drv.level", state: "module.state", pump: "pump.level", lost: "lost", ack: "ack" },
+    plant: { vmax: "adc_v", vmin: "adc_vmin", temp: "adc_t", current: "adc_i", vmod: "adc_vm", vout: "adc_vo", bleed: "bal_in", contactor: "k_drv.level", state: "module.state", pump: "pump.level", lost: "lost", ack: "ack",
+      balance: CORE_BALANCE },
     reqs: [], tests: [] };
   d.profiles = missionProfiles(d);
   return d;
 }
-
-/* THE MISSION PROFILES of the module (demande de JP, 24 novembre 2026 : « un profil de charge et un de décharge avec des événements critiques pour
-   les deux au fil du profil — comm, voltage, current, temperature — et un bouton pour passer de l'un à l'autre ; typiques d'un produit avec un
-   ESS »). Each event says what happens to the module and what it puts on the bench, in the unit of each measure (mV of a CORE, mA, 0.1 °C) ;
-   an acknowledgement is a button pressed 0.3 s (`pulse`). In each, a red case opens the contactor and someone acknowledges 2 s later — in a
-   real module it would take milliseconds ; 2 s let one see it. The thresholds are examples, to confirm ; the times are shortened. */
-const ACK = { ack: 300 };
-const CHARGE = { id: "charge", name: "Charge", kind: "charge", events: [
-  { t: 0, id: "plug", title: "Le chargeur est branché : batterie presque vide, 3,0 V", says: "Les CORE sont entre 3,00 V et 3,05 V (0 % = 2,5 V, 100 % = 4,2 V), 25 °C. Le chargeur commence doucement : 0,1 C, soit 3,6 A (courant négatif : il entre). Sous 3,10 V, le module le dit — à surveiller.", set: { adc_v: 3050, adc_vmin: 3000, adc_t: 250, adc_i: -3600 } },
-  { t: 2500, id: "2c", title: "Courant : la charge rapide passe à 2 C, 72 A", says: "Les CORE ont repris : 3,40 à 3,45 V. Le chargeur monte à 2 C — 72 A, le maximum de la fiche des cellules (9 A par cellule, 8 en parallèle).", set: { adc_v: 3450, adc_vmin: 3400, adc_i: -72000 } },
-  { t: 5000, id: "fast", title: "Courant : une borne pousse 110 A", says: "Une borne trop forte pousse 110 A — plus que les 95 A que le module tient en continu : après 2 s, il se dérate et le demande au chargeur.", set: { adc_i: -110000 } },
-  { t: 9000, id: "fast-end", title: "Le chargeur revient à 2 C", says: "Le chargeur a lu la demande : 72 A.", set: { adc_i: -72000, adc_v: 3800, adc_vmin: 3750 } },
-  { t: 11000, id: "warm", title: "Température : 50 °C", says: "La charge rapide chauffe les cellules : 50 °C — la pompe eau-glycol démarre dès 45 °C.", set: { adc_t: 500 } },
-  { t: 13500, id: "top", title: "Tension : la CORE la plus haute à 4,19 V, l'équilibrage commence", says: "Phase à tension constante : la CORE la plus haute est à 4,19 V, la plus basse à 4,10 V — 90 mV d'écart. Au-dessus de 3,90 V et de 20 mV d'écart, le logiciel branche la résistance d'équilibrage de la plus haute.", set: { adc_v: 4190, adc_vmin: 4100, adc_i: -20000 } },
-  { t: 15500, id: "slow", title: "Équilibrage : la charge ralentit à 0,1 C", says: "Le chargeur ralentit à 0,1 C (3,6 A) pour laisser la résistance rattraper l'écart — un choix du projet : un circuit de surveillance du commerce équilibre aussi en pleine charge (Références). Les CORE se rapprochent : 4,15 et 4,13 V.", set: { adc_v: 4150, adc_vmin: 4130, adc_i: -3600 } },
-  { t: 18000, id: "comm", title: "Comm : la chaîne des cartes se tait", says: "Un connecteur de la chaîne RS-485 décroche : le BMS central n'entend plus les cartes de CORE. Urgence après 0,5 s, arrêt après 1 s de plus.", set: { lost: 1 } },
-  { t: 20000, id: "comm-back", title: "Comm : la chaîne répond de nouveau", says: "Le connecteur est remis : les cartes répondent. Le module reste arrêté jusqu'à l'acquittement.", set: { lost: 0, adc_i: 0 } },
-  { t: 21500, id: "ack-comm", title: "Acquittement, 2 s après l'ouverture", says: "On acquitte : le module repart, la charge reprend à 0,1 C.", set: { adc_i: -3600 }, pulse: ACK },
-  { t: 24000, id: "ov", title: "Cas extrême : surcharge à 4,30 V", says: "Le chargeur ne s'arrête pas : la CORE la plus haute passe 4,25 V — limite dépassée.", set: { adc_v: 4300, adc_i: -36000 } },
-  { t: 24500, id: "ov-relax", title: "Contacteur ouvert : la CORE se repose", says: "Plus de courant : la CORE redescend à 4,15 V. Le défaut reste retenu.", set: { adc_v: 4150, adc_i: 0 } },
-  { t: 26100, id: "ack-ov", title: "Acquittement, 2 s après l'ouverture", says: "On acquitte : plus aucun défaut.", set: {}, pulse: ACK },
-  { t: 28000, id: "ot", title: "Cas extrême : 80 °C pendant la charge", says: "Une cellule chauffe : 80 °C, au-delà de la limite de 75 °C.", set: { adc_t: 800, adc_i: -3600 } },
-  { t: 29000, id: "ot-cool", title: "Contacteur ouvert : le module refroidit", says: "Sans courant, la pompe refroidit : 40 °C (accéléré pour la démonstration).", set: { adc_t: 400, adc_i: 0 } },
-  { t: 30500, id: "ack-ot", title: "Acquittement, 2 s après l'ouverture", says: "On acquitte : le module repart.", set: {}, pulse: ACK },
-  { t: 33000, id: "full", title: "Fin de charge : équilibré", says: "Les CORE sont à 4,15 et 4,14 V : l'écart est revenu sous 10 mV, la résistance se débranche. Le chargeur s'arrête ; le module est plein.", set: { adc_v: 4150, adc_vmin: 4140, adc_t: 350, adc_i: 0 } },
-  { t: 36000, id: "end", title: "Fin du profil de charge", says: "Rejouez-le, ouvrez « Charge et équilibrage » pour voir les 8 CORE se rattraper en accéléré, passez au profil de décharge, ou changez un instrument du banc.", set: {} }] };
-const DISCHARGE = { id: "discharge", name: "Décharge", kind: "discharge", events: [
-  { t: 0, id: "go", title: "Le véhicule démarre", says: "Module chargé : CORE entre 3,95 V et 4,05 V, 25 °C. Le véhicule tire 50 A.", set: { adc_v: 4050, adc_vmin: 3950, adc_t: 250, adc_i: 50000 } },
-  { t: 2000, id: "climb", title: "Courant : montée à 150 A", says: "Une côte : le véhicule tire 150 A — plus que les 95 A tenus en continu. Après 2 s, le module se dérate.", set: { adc_i: 150000, adc_vmin: 3800 } },
-  { t: 6000, id: "cruise", title: "Courant : retour à 60 A", says: "Sur le plat : 60 A.", set: { adc_i: 60000, adc_vmin: 3850 } },
-  { t: 8000, id: "warm", title: "Température : 50 °C", says: "Les cellules chauffent : 50 °C — la pompe eau-glycol démarre.", set: { adc_t: 500 } },
-  { t: 10000, id: "hot", title: "Température : 65 °C", says: "Longue côte au soleil : 65 °C, au-dessus de 60 °C — le module se dérate.", set: { adc_t: 650 } },
-  { t: 13000, id: "hot-end", title: "Température : retour à 45 °C", says: "La pompe a fait son travail : 45 °C. Le module n'est plus dératé ; la pompe tourne encore.", set: { adc_t: 450 } },
-  { t: 15000, id: "low", title: "Tension : batterie presque vide, 3,05 V", says: "La CORE la plus basse tombe à 3,05 V : sous le seuil à surveiller (3,10 V).", set: { adc_vmin: 3050, adc_v: 3200 } },
-  { t: 18000, id: "comm", title: "Comm : la chaîne des cartes se tait", says: "La chaîne RS-485 se tait en roulant : urgence après 0,5 s — le véhicule a 1 s pour s'arrêter —, puis arrêt.", set: { lost: 1 } },
-  { t: 20000, id: "comm-back", title: "Comm : la chaîne répond de nouveau", says: "Les cartes répondent. Le module reste arrêté jusqu'à l'acquittement.", set: { lost: 0, adc_i: 0 } },
-  { t: 21500, id: "ack-comm", title: "Acquittement, 2 s après l'ouverture", says: "On acquitte : le module repart — toujours dératé, la CORE la plus basse est à 3,05 V.", set: {}, pulse: ACK },
-  { t: 23000, id: "rest", title: "Au repos : la CORE remonte à 3,40 V", says: "Sans courant, la tension remonte : 3,40 V.", set: { adc_vmin: 3400 } },
-  { t: 25000, id: "uv", title: "Cas extrême : décharge profonde à 2,70 V", says: "Le véhicule tire encore 80 A : la CORE la plus basse tombe à 2,70 V, sous la limite de 2,80 V.", set: { adc_vmin: 2700, adc_i: 80000 } },
-  { t: 25800, id: "uv-relax", title: "Contacteur ouvert : la CORE remonte", says: "Sans charge, la CORE remonte à 3,25 V.", set: { adc_vmin: 3250, adc_i: 0 } },
-  { t: 27200, id: "ack-uv", title: "Acquittement, 2 s après l'ouverture", says: "On acquitte : le module repart — à recharger sans tarder.", set: {}, pulse: ACK },
-  { t: 29000, id: "ot", title: "Cas extrême : 80 °C", says: "Un point chaud : 80 °C, au-delà de la limite de 75 °C.", set: { adc_t: 800, adc_i: 40000 } },
-  { t: 30000, id: "ot-cool", title: "Contacteur ouvert : le module refroidit", says: "Sans courant, la pompe refroidit : 40 °C (accéléré pour la démonstration).", set: { adc_t: 400, adc_i: 0 } },
-  { t: 31500, id: "ack-ot", title: "Acquittement, 2 s après l'ouverture", says: "On acquitte : le module repart.", set: {}, pulse: ACK },
-  { t: 34000, id: "end", title: "Fin du profil de décharge", says: "Rejouez-le, passez au profil de charge, ou changez un instrument du banc.", set: {} }] };

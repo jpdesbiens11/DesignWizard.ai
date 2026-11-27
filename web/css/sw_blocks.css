@@ -273,7 +273,7 @@ svg .sw-ask { cursor: pointer; } svg .sw-ask circle { fill: #d97706; stroke: #ff
 .swbal-cell { position: relative; width: 2.1rem; height: 5.5rem; border: 2px solid #475569; border-radius: 6px; background: #020617; overflow: hidden; } .swbal-cell::before { content: ""; position: absolute; top: -6px; left: 30%; width: 40%; height: 4px; background: #475569; border-radius: 2px; }
 .swbal-cell i { position: absolute; left: 0; right: 0; bottom: 0; background: linear-gradient(#4ade80, #16a34a); } .swbal-cell span { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: .68rem; text-shadow: 0 1px 2px #000; }
 .swbal-res { display: grid; justify-items: center; } .swbal-zig { width: 2.4rem; height: .8rem; fill: none; stroke: #475569; stroke-width: 1.6; } .swbal-zig.on { stroke: #f97316; filter: drop-shadow(0 0 4px #f97316); } .swbal-col.on .swbal-res small { color: #fdba74; font-weight: 700; }
-.swbal-note { color: #94a3b8; font-size: .7rem; margin: .5rem 0 .4rem; } .swbal-chart { width: 100%; display: block; border-radius: 8px; border: 1.5px solid #1e293b; }
+.swbal-note { color: #94a3b8; font-size: .7rem; margin: .5rem 0 .4rem; } .swbal-local { color: #cbd5e1; border-left: 3px solid #22c55e; padding-left: .5rem; } .swbal-chart { width: 100%; display: block; border-radius: 8px; border: 1.5px solid #1e293b; }
 @media (prefers-reduced-motion: reduce) { .swbal-zig.on { filter: none; } }
 
 /* the green light of balancing, in the charge window and in the monitoring ; the CORE climbing in the monitoring */

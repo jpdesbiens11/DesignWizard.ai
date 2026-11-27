@@ -997,6 +997,37 @@ jour : **le CAN FD isolé reste**, et porte aussi le flux de la chaîne RS-485 d
   allumerait une DEL rouge en service normal si elle était posée seule : elle viendra avec la précharge) ; le **logiciel de la carte de CORE** —
   la carte a son microcontrôleur, mais l'outil ne montre qu'un logiciel par projet.
 
+## Itération 18 — les deux types de cartes se parlent ; chaque CORE équilibre seule
+
+JP, 27 novembre 2026 : « 2 pcb types that speak to each other when powered with 12 V and do all functions related to HW / the main might not send
+anything to the core pcb, just use monitoring to manage the BM overall states and functions / I meant just use the core pcb to feed all other
+functions using sensors from core + sensors from the main ». Choix de JP, par menu, le même jour : **un tour fixe** — CORE 1 ouvre le tour,
+chaque carte parle après avoir entendu la précédente ; **chaque CORE équilibre seule au seuil** ; **sans 12 V, le principal veille sur le module**.
+
+- **Qui parle** : les 8 cartes de CORE parlent, la carte principale **écoute**. Son émetteur RS-485 est tenu en réception (`RS485_DE` bas, U11.PB1,
+  et le rappel sur DE au démarrage) : elle n'envoie rien aux CORE. Une carte connaît son **rang** dans le tour (écrit en mémoire à
+  l'assemblage) ; la carte principale vérifie en écoutant que les 8 rangs parlent ; un tour qui ne revient plus est une urgence.
+- **Ce que la carte principale fait de ce qu'elle entend** : toutes ses fonctions viennent des capteurs des CORE (tension de chaque CORE, ses
+  8 CTN, son équilibrage, dits à son tour) et des siens (courant du shunt, tension du module et de la sortie, CTN de la borne, 12 V, ordres du
+  véhicule). Le flux des CORE part au véhicule par le CAN FD.
+- **L'équilibrage est celui de chaque CORE** (`CORE_BALANCE`, `coreBleed` de `web/js/sw/sw_balance.js`) : la carte branche sa résistance à
+  **4,15 V** et la débranche à **4,13 V** (exemples à confirmer), sur sa **seule** tension — elle ne connaît ni les autres CORE ni le courant.
+  Le logiciel du BMS central n'a plus de bloc « Passive balancing » ; il **entend** qu'une carte équilibre (une entrée du banc, `bal_in`), le
+  montre au monitoring et le passe au véhicule. Le module simulé du banc fait tourner la règle des cartes (`plant.balance`).
+- **Ce que la règle donne**, sur le module simulé (cellules typiques, purge de 0,5 A) : partie de 3,0 V, la charge finit en **0,78 h** ; les CORE
+  au-dessus de 4,15 V redescendent ensuite seules à 4,13 V et **s'y rejoignent** (fin à **4,4 h**, écart final 23 mV — une CORE restée sous le seuil
+  ne se décharge pas). Le prix : **≈ 22 Wh de chaleur et ≈ 6 % de la charge** rendus pour s'égaliser, à chaque charge complète. Un seuil plus haut
+  ou un équilibrage commandé par le BMS central perdrait moins ; c'est le compromis d'une règle locale, sans ordre.
+- **Le 12 V** (`DIN0`, WAKE) : le contacteur ne se ferme qu'avec le 12 V, l'autorisation du véhicule et la présence. Sans 12 V, la carte
+  principale vit sur le module et le surveille toujours — et le côté bus des CORE aussi, qu'elle alimente : ce courant de veille est **à chiffrer**,
+  et un rythme lent est à choisir (revue de la carte).
+- **Le cuivre ne change pas** : les deux cartes gardent leur routage ; leurs fonctions, leur description et leurs points de revue disent la
+  nouvelle architecture.
+- **Écart à trancher** : la purge de la carte de CORE est de **100 mA** ; le module simulé du Logiciel purge **0,5 A**. À 100 mA, une CORE de 36 Ah
+  met plus de 20 h à redescendre de 4,20 V à 4,13 V.
+- **Encore à venir** : le programme de la carte de CORE (le tour, la règle) — l'outil montre un seul logiciel par projet ; les blocs qui lisent la
+  trame des CORE et écrivent celle du véhicule.
+
 **Non vérifié** : l'échauffement réel du cuivre dans le module fermé (le modèle est une barre seule à l'air libre) ; la
 chaleur des cellules elles-mêmes à 45 A (la fiche donne ≤ 8 mΩ à 1 kHz à l'expédition, pas la résistance en courant
 continu) ; la tenue des plis du flex à l'assemblage ; le formage des cônes dans le polyimide ; la mesure par le cône (aucun essai) ;

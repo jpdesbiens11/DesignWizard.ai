@@ -1,6 +1,9 @@
 /* DynamiteOrbit.ai — the CORE board, written by tools/gen_demo_core.mjs : the small board laid on the top of a CORE of 8 cells
    21700 in parallel, from its functions to its copper, in the .dwiz format. Do not edit by hand : change the tool and run it again. */
-export const DEMO_CORE_2 = `track +4V2 top w=0.5 pts=[[11.75, 26.75], [11.5, 26.75], [11.25, 27], [11.25, 28], [11.3, 28.3]]
+export const DEMO_CORE_2 = `track +4V2 top w=0.5 pts=[[14.75, 26.75], [15, 27], [15, 27.75], [15.25, 28.2]]
+track +4V2 top w=0.5 pts=[[15.25, 28.2], [15, 28], [13.5, 28], [13.2, 28.3]]
+track +4V2 bottom w=0.5 pts=[[14.75, 26.75], [11.75, 26.75]]
+track +4V2 top w=0.5 pts=[[11.75, 26.75], [11.5, 26.75], [11.25, 27], [11.25, 28], [11.3, 28.3]]
 track +4V2 bottom w=0.5 pts=[[11.75, 26.75], [9, 29.5], [8.5, 29.5]]
 track +4V2 top w=0.5 pts=[[8.5, 29.5], [8.75, 29.25], [8.75, 29], [9.2, 28.5]]
 track +4V2 top w=0.5 pts=[[19.5, 15.55], [21, 15], [27.5, 15]]
@@ -334,7 +337,7 @@ via AIN7 at=[48.25, 9.625] d=0.6 drill=0.3
 
 # Comment elle s'assemble — la gamme annotée et la revue
 review author=""
-  open=["Choisir et lire les composants : microcontrôleur (≥ 10 voies de conversion sous 3,0 V), isolateur, émetteur-récepteur, régulateur — leurs brochages sont ceux des séries génériques de l'outil, la fiche du composant monté fait foi.", "Dimensionner la barrière et la distance de fuite à la tension du pack, pas à celle du CORE.", "Valeurs d'exemple : purge de 100 mA, plage de températures, filtre des CTN à 10 Hz."]
+  open=["Choisir et lire les composants : microcontrôleur (≥ 10 voies de conversion sous 3,0 V), isolateur, émetteur-récepteur, régulateur — leurs brochages sont ceux des séries génériques de l'outil, la fiche du composant monté fait foi.", "Dimensionner la barrière et la distance de fuite à la tension du pack, pas à celle du CORE.", "Valeurs d'exemple : purge de 100 mA, plage de températures, filtre des CTN à 10 Hz.", "Purge : 100 mA sur la carte, 0,5 A dans le module simulé du Logiciel — à trancher. À 100 mA, une CORE de 36 Ah met plus de 20 h à redescendre de 4,20 V à 4,13 V.", "Le programme de la carte (le tour, la règle d'équilibrage) n'est pas dessiné : l'outil montre un logiciel par projet, celui du BMS central ; le module simulé fait tourner la règle."]
   decisions=[]
 
 # Autres données

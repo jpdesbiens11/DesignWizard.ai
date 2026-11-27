@@ -1,5 +1,6 @@
 /* Builds the CORE board — the small board laid on the top of a CORE of 8 cells 21700 in parallel (architecture de JP, 21 novembre
    2026) — from its functions to its copper, and writes it as .dwiz text in web/js/demo/demo_core_data.js.
+   JP, 27 novembre 2026, par menu : elle parle à son tour (CORE 1 ouvre le tour) et équilibre seule au seuil ; le BMS central ne lui envoie rien.
    Run : node tools/gen_demo_core.mjs */
 import { writeFileSync } from "node:fs";
 import { emptyBoard } from "../web/js/pcba/model.js";
@@ -12,17 +13,17 @@ import { LIBRARY } from "../web/js/pcba/library.js";
 import { toDwiz } from "../web/js/core/dwiz.js";
 
 const b = emptyBoard("CORE-1S8P-PCBA", "Carte de CORE 1S8P");
-b.description = "Posée sur le dessus d'un CORE de 8 cellules 21700 en parallèle (2 × 4) : mesure ses 8 températures — CTN sur les rabats du flex replié en G — et sa tension, équilibre sur ordre, et répond au BMS central du boîtier par RS-485 isolé, le côté bus alimenté par le faisceau, en chaîne d'un CORE au suivant.";
+b.description = "Posée sur le dessus d'un CORE de 8 cellules 21700 en parallèle (2 × 4) : mesure ses 8 températures — CTN sur les rabats du flex replié en G — et sa tension, équilibre seule au-dessus de son seuil, et parle à son tour au BMS central du boîtier par RS-485 isolé, le côté bus alimenté par le faisceau, en chaîne d'un CORE au suivant.";
 const F = (name, criteria = [], kind = "principale") => addFunction(b, { name, kind, criteria });
 const f1 = F("S'alimenter sur le CORE", [{ name: "Entrée", level: "3,2 à 4,2 V, le cell block 1S8P (valeurs du projet)", flex: "F0" }, { name: "Rail", level: "3,0 V, 50 mA", flex: "F1" }]);
 const f2 = F("Mesurer les 8 températures", [{ name: "Capteurs", level: "8 CTN 10 kΩ, une sous chaque cellule, sur les rabats du flex", flex: "F0" }, { name: "Plage", level: "−20 à 85 °C (exemple à confirmer)", flex: "F1" }]);
 const f3 = F("Mesurer la tension du CORE", [{ name: "Plage", level: "3,2 à 4,2 V", flex: "F0" }, { name: "Condition", level: "équilibrage coupé pendant la mesure", flex: "F1" }]);
-const f4 = F("Équilibrer sur ordre du BMS central", [{ name: "Purge", level: "≈ 90 mA à 4,2 V (exemple à confirmer)", flex: "F1" }]);
-const f5 = F("Calculer et répondre", [{ name: "Liaison", level: "UART, une réponse par tour du BMS central", flex: "F1" }]);
+const f4 = F("Équilibrer seule, au seuil", [{ name: "Purge", level: "≈ 90 mA à 4,2 V (exemple à confirmer)", flex: "F1" }, { name: "Seuil", level: "la résistance se branche à 4,15 V, se débranche à 4,13 V (exemples à confirmer) — sur sa seule tension : ni ordre du BMS central, ni courant lu", flex: "F1" }]);
+const f5 = F("Calculer et parler à son tour", [{ name: "Liaison", level: "UART ; CORE 1 ouvre le tour, chaque carte parle après avoir entendu la précédente", flex: "F1" }]);
 const f6 = F("Communiquer avec le BMS central", [{ name: "Bus", level: "RS-485 demi-duplex isolé, côté bus alimenté par le faisceau, en chaîne", flex: "F0" }, { name: "Terminaison", level: "au BMS central et au bout de la chaîne, pas sur chaque carte", flex: "F1" }]);
 const f7 = F("Être testable et programmable", [{ name: "Accès", level: "connecteur de programmation, points de test des deux côtés de la barrière", flex: "F1" }]);
 F("Tenir sur le dessus du CORE", [{ name: "Carte", level: "92,8 × 46,4 mm, à l'enveloppe d'une 21700 (Ø 21,7 mm)", flex: "F0" }], "contrainte");
-F("Une seule variante pour les 8 CORE", [{ name: "Adresse", level: "écrite en mémoire à l'assemblage, vérifiée au démarrage par le BMS central", flex: "F1" }], "contrainte");
+F("Une seule variante pour les 8 CORE", [{ name: "Rang", level: "écrit en mémoire à l'assemblage : sa place dans le tour ; le BMS central vérifie, en écoutant, que les 8 rangs parlent", flex: "F1" }], "contrainte");
 const NTC = Array.from({ length: 8 }, (_, i) => `NTC${i}`).join(",");
 addBlock(b, "conn_wire", { signals: `+4V2,+4V2,${NTC},GND,GND`, flex: 1 }, { parent: f1 });
 addBlock(b, "ldo", { vin: 4.2, vout: 3.0, iout: 0.05 }, { parent: f1 });
@@ -39,7 +40,9 @@ Object.assign(b.board, { size: [92.8, 46.4], layers: 4 });      // four layers, 
 b.review = { author: "", open: [
   "Choisir et lire les composants : microcontrôleur (≥ 10 voies de conversion sous 3,0 V), isolateur, émetteur-récepteur, régulateur — leurs brochages sont ceux des séries génériques de l'outil, la fiche du composant monté fait foi.",
   "Dimensionner la barrière et la distance de fuite à la tension du pack, pas à celle du CORE.",
-  "Valeurs d'exemple : purge de 100 mA, plage de températures, filtre des CTN à 10 Hz."], decisions: [] };
+  "Valeurs d'exemple : purge de 100 mA, plage de températures, filtre des CTN à 10 Hz.",
+  "Purge : 100 mA sur la carte, 0,5 A dans le module simulé du Logiciel — à trancher. À 100 mA, une CORE de 36 Ah met plus de 20 h à redescendre de 4,20 V à 4,13 V.",
+  "Le programme de la carte (le tour, la règle d'équilibrage) n'est pas dessiné : l'outil montre un logiciel par projet, celui du BMS central ; le module simulé fait tourner la règle."], decisions: [] };
 const fp = floorplan(b, LIBRARY), pl = placeParts(b, LIBRARY), rt = autoroute(b, LIBRARY, { maxMs: 240000, passes: 8 });
 const e = erc(b, LIBRARY), d = checkBoard(b, LIBRARY);
 console.log(`blocks ${b.blocks.length}, parts ${b.parts.length}, nets ${b.nets.length} | fill ${fp.fill.toFixed(1)} | placed ${pl.placed}, failed ${pl.failed} | routed ${rt.routed}/${rt.total} in ${rt.ms} ms, ${Math.round(rt.length)} mm, ${rt.vias} vias`);

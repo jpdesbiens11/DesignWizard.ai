@@ -548,3 +548,20 @@ ajouter une section Références dans le bas du menu Logiciel ».
 Le groupe Logiciel commence par la page des exigences du produit (`#/lreq`), la même liste de DynamiteAgile que la Mécanique et l'Électronique, filtrée sur le logiciel ; l'étape 1 du V (`#/swreq`, « Exigences du logiciel ») les reçoit sous leurs clés par « Vers les exigences du logiciel (V) » ou « Depuis le produit (n) ». Voir `docs/EXIGENCES.md`.
 
 Les exigences du produit prouvées par essai sont **lues par la machine** et tracées en pointillé tagué sur la vue Mission, avec leur verdict profil par profil (v0.205.0) : voir `docs/EXIGENCES.md`, « Lue par la machine ».
+
+## Deux types de cartes : les CORE parlent, la principale écoute (v0.207.0)
+
+JP, 27 novembre 2026 : « 2 pcb types that speak to each other when powered with 12 V… the main might not send anything to the core pcb… use the
+core pcb to feed all other functions using sensors from core + sensors from the main » ; choix par menu : un tour fixe (CORE 1 ouvre, chacune
+après la précédente), chaque CORE équilibre seule au seuil, sans 12 V le principal veille sur le module.
+
+- **Le logiciel du BMS central n'envoie rien aux CORE** : ce que leur tour apporte (la plus haute et la plus basse CORE, la CTN la plus chaude,
+  l'équilibrage, le silence du tour) reste une entrée du banc, dite comme telle ; ce que la carte principale lit elle-même a sa broche.
+- **Le bloc « Passive balancing » quitte le logiciel du BM** — il reste dans la bibliothèque, pour un BMS qui équilibre de façon centrale.
+  L'équilibrage est la règle de chaque carte de CORE (`CORE_BALANCE`, `coreBleed`, `localRule` de `sw/sw_balance.js` ; `plant.balance` du
+  logiciel) : le module simulé du banc la fait tourner, « Charge et équilibrage » le dit (`data-bal-local`), et le monitoring montre
+  « Équilibrage des CORE — chacune seule, dit dans leur tour » (une entrée `pin_din` marquée `device: "balancing"`).
+- **Le 12 V** (`wake`, `DIN0`) entre dans la condition de fermeture avec l'autorisation du véhicule et la présence. Sans lui, le logiciel tourne
+  et surveille ; le contacteur reste ouvert.
+- **Non fait** : le programme de la carte de CORE (l'outil montre un logiciel par projet), la lecture de la trame des CORE et l'écriture de celle
+  du véhicule. Voir `docs/BM_MODULE.md` (itération 18).

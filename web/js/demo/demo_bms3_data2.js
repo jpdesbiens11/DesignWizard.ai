@@ -1,6 +1,12 @@
 /* DynamiteOrbit.ai — the central BMS board 3 in × 3 in of the module BM 8s8p, written by tools/gen_demo_bms3.mjs, from its functions to its copper, in the
    .dwiz format. Do not edit by hand : change the generator and run it again. */
-export const DEMO_BMS3_2 = `part R43 R-0805 value="33 kΩ 1 %" block=B30 at=[20.5, 68.25] rot=90 side=top local=R1
+export const DEMO_BMS3_2 = `  role="Haut du pont : tient la tension de l'entrée"
+part R42 R-0603 value="10 kΩ 1 %" block=B29 at=[20.25, 62.5] rot=90 side=top local=R2 role="Bas du pont" near=R41
+part D16 D-ZEN-SOD123 value="3,3 V" block=B29 at=[23, 62.25] rot=90 side=top local=DZ role="Écrête les surtensions"
+  near=R42
+part C35 C-0603 value="100 nF" block=B29 at=[23.5, 58.75] rot=0 side=top local=C
+  role="Filtre les rebonds et les parasites" near=R42
+part R43 R-0805 value="33 kΩ 1 %" block=B30 at=[20.5, 68.25] rot=90 side=top local=R1
   role="Haut du pont : tient la tension de l'entrée"
 part R44 R-0603 value="10 kΩ 1 %" block=B30 at=[22.75, 68] rot=270 side=top local=R2 role="Bas du pont" near=R43
 part D17 D-ZEN-SOD123 value="3,3 V" block=B30 at=[22.25, 71.5] rot=180 side=top local=DZ role="Écrête les surtensions"
@@ -456,7 +462,4 @@ track ISO_CAN_RX top w=0.25 pts=[[37.5, 58.25], [36.75, 58.25], [36.655, 58.05]]
 track CAN_H top w=0.25 pts=[[26.85, 64.25], [26.5, 63.75], [26.5, 63.25]]
 track CAN_H bottom w=0.25 pts=[[26.5, 63.25], [26.5, 59.5]]
 track CAN_H top w=0.25 pts=[[26.5, 59.5], [26.5, 59], [26.3, 58.25]]
-track CAN_H top w=0.25
-  pts=[[26.85, 64.25], [26.25, 64.75], [26.25, 65], [25.75, 65.5], [25.75, 70.5], [26, 70.75], [26.3, 71.15]]
-track CAN_H bottom w=0.25
 `;

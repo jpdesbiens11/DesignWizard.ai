@@ -35,6 +35,8 @@ export function monitorOf(d) {
   for (const o of objs.filter((x) => x.kind === "pin_din" && modO && W.some((w) => w.from === `${x.id}.level` && w.to === `${modO.id}.lost`))) product.push({ id: o.id, label: o.name, ref: `${o.id}.level`, on: "muette", off: "répond", sev: "red" });
   for (const o of objs.filter((x) => KINDS[x.kind].pin === "dout" && ["pump", "fan", "heater", "valve"].includes(x.device))) product.push({ id: o.id, label: o.name, ref: `${o.id}.level`, on: "en marche", off: "à l'arrêt", sev: "green" });
   for (const o of objs.filter((x) => x.kind === "balancing")) product.push({ id: o.id, label: o.name, ref: `${o.id}.bleed`, on: "équilibre", off: "au repos", sev: "green" });      // the green light : balancing has started
+  /* or the boards that balance alone and say it in their round (JP, 27 novembre 2026) : the central board only hears it */
+  for (const o of objs.filter((x) => KINDS[x.kind].pin === "din" && x.device === "balancing")) product.push({ id: o.id, label: "Équilibrage des CORE — chacune seule, dit dans leur tour", ref: `${o.id}.level`, on: "équilibre", off: "au repos", sev: "green" });
   const alarm = objs.filter((o) => KINDS[o.kind].pin === "dout" && o.device === "buzzer").map((o) => `${o.id}.level`);
   for (const r of alarm) product.push({ id: split(r)[0], label: O[split(r)[0]].name, ref: r, on: "sonne", off: "silencieux", sev: "red" });
   return { title: (d && d.monitor && d.monitor.title) || `Monitoring — ${(d && d.name) || "logiciel"}`, lamp: lampO ? { green: `${lampO.id}.green`, yellow: `${lampO.id}.yellow`, red: `${lampO.id}.red` } : null,

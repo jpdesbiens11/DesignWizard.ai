@@ -15,7 +15,7 @@ test("the pieces : a sensor and what reads it are one piece, a driver and its pi
   const d = bmProject().software[0], P = pieces(d);
   assert.deepEqual(BANDS.map((b) => b.id), ["sense", "decide", "act"]);
   assert.deepEqual(P.find((p) => p.id === "v_max").members, ["adc_v", "v_max"]); assert.deepEqual(P.find((p) => p.id === "k").members, ["k", "k_drv"]);
-  assert.equal(P.length, 40, "49 blocks, 40 pieces (JP, 27 novembre 2026 : the central board aligned — module and output voltage, EFC, output terminal, fan, the orders of the vehicle)"); assert.equal(new Set(P.flatMap((p) => p.members)).size, d.objects.length, "every block in exactly one piece");
+  assert.equal(P.length, 42, "51 blocks, 42 pieces (JP, 27 novembre 2026 : the central board aligned — module and output voltage, EFC, output terminal, fan, the orders of the vehicle ; then the CORE boards speak and balance alone : the 12 V read, what their round says of the balancing, no balancing commanded)"); assert.equal(new Set(P.flatMap((p) => p.members)).size, d.objects.length, "every block in exactly one piece");
   assert.equal(P.find((p) => p.id === "v_max").band, "sense"); assert.equal(P.find((p) => p.id === "latch").band, "decide"); assert.equal(P.find((p) => p.id === "k").band, "act");
   const L = links(d, P); assert.ok(L.every((l) => l.from !== l.to)); assert.equal(new Set(L.map((l) => `${l.from}>${l.to}`)).size, L.length, "ONE link per pair");
   assert.ok(L.find((l) => l.from === "k" && l.to === "latch").delay, "the loop back : the value of the step before");

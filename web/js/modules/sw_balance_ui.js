@@ -10,17 +10,17 @@
 import { el, btn, icon } from "../core/dom.js";
 import { dragWindow, dockOver } from "./sw_drag.js";
 import { refCite } from "./sw_refs_ui.js";
-import { balanceSpec, balanceStart, balanceStep, balanceSummary } from "../sw/sw_balance.js";
+import { balanceSpec, balanceStart, balanceStep, balanceSummary, localRule } from "../sw/sw_balance.js";
 import { packPhase } from "../sw/sw_pack.js";
 
 const SPEEDS = [1, 10, 100, 1000, 10000], hm = (s) => `${Math.floor(s / 3600)} h ${String(Math.floor((s % 3600) / 60)).padStart(2, "0")} min`;
 const f = (x, d = 2) => String(x.toFixed(d)).replace(".", ",");
 
-/** design() → { button, dispose() } — null when the software has no « Passive balancing » block.
+/** design() → { button, dispose() } — null when the software has no « Passive balancing » block and its module no CORE board that balances alone.
     o.bench : the live bench — when it carries the module (sw/sw_pack.js), the window SHOWS IT (JP, 25 novembre 2026 : « ces 2 fenêtres doivent suivre le
     même profil de recharge en simulation ») : the same CORE, the same time, the same profile as the monitoring ; its transport is the bench's. */
 export function swBalance(design, o = {}) {
-  if (!((design() || {}).objects || []).some((o) => !o.off && o.kind === "balancing")) return null;
+  if (!((design() || {}).objects || []).some((o) => !o.off && o.kind === "balancing") && !localRule(design())) return null;
   const st = { open: false, run: false, speed: 1000, raf: 0, last: 0, rest: 0, over: { start: 3.0, cBal: 2, rBal: 8.2 } };
   let S = null, B = null; const shared = () => !!(o.bench && o.bench.plant), FASTS = [10, 100, 400];
   const cols = el("div", { class: "swbal-cols" }), head = el("div", { class: "swbal-head" }), chart = el("canvas", { class: "swbal-chart", role: "img", "aria-label": "Tension de chaque CORE dans le temps" });
@@ -34,7 +34,9 @@ export function swBalance(design, o = {}) {
   const same = el("p", { class: "swbal-same", hidden: true, "data-bal-shared": "" }, icon("link"), " La même simulation que le monitoring et le banc : le profil joué (Charge ou Décharge, sous la page) mène les CORE, et le logiciel y répond — contacteur, dératation, pompe.");
   const num = (key, label, step0, min, max, unit, tip) => el("label", { class: "swbal-set", "data-tip": tip }, el("span", null, label), el("input", { type: "number", step: step0, min, max, value: String(st.over[key]), "data-bal-set": key, onChange: (e) => { const v = Number(e.target.value); if (Number.isFinite(v)) { st.over[key] = v; pause(); reset(); } } }), el("small", null, unit));
   const sets = el("div", { class: "swbal-sets" }, num("start", "Départ", 0.05, 2.5, 4.1, "V", "Tension de départ de chaque CORE, au repos (0 % = 2,5 V, 100 % = 4,2 V)"), num("cBal", "Pendant l'équilibrage", 0.1, 0.05, 2, "C", "Le courant de charge pendant qu'une résistance décharge un CORE. 2 C : l'équilibrage tourne EN MÊME TEMPS que la charge, ce que prévoit un circuit de surveillance du commerce [ti-bq76952-trm]. Plus bas : la charge ralentit pour laisser l'écart se rattraper — un choix du projet, aucune source lue ne le demande"), num("rBal", "Résistance", 0.1, 1, 200, "Ω", "La résistance d'équilibrage de chaque CORE : plus petite, elle rattrape plus vite et chauffe plus"));
-  const body = el("div", { class: "swbal-body" }, head, cols, el("p", { class: "swbal-note" }, "L'équilibrage passif tourne pendant la charge ou au repos, au-dessus d'une tension minimale et d'un écart ; on ne mesure pas une cellule pendant qu'on la décharge ", refCite("ti-bq76952-trm"), ". Courant d'une résistance d'un circuit du commerce : 65 à 200 mA ", refCite("ti-sluaa81a"), refCite("digikey-ltc6813"), " — 0,5 A ici demande des transistors externes. Charge : 0,1 C, puis courant constant, puis tension constante ", refCite("ti-bq24610"), refCite("bu-409"), " ; 2 C = 72 A, le maximum de la fiche de la cellule (9 A par cellule, 8 en parallèle) ", refCite("molicel-p45b"), ". Cellules TYPIQUES : courbe écrite de mémoire (0 % = 2,5 V, 100 % = 4,2 V), résistance des CORE et écarts de départ en exemple ; aucune source lue ne chiffre la durée de l'équilibrage d'une grosse cellule."), chart);
+  /* JP, 27 novembre 2026 : the CORE boards balance ALONE — the central board sends them nothing ; the window says who decides */
+  const local = el("p", { class: "swbal-note swbal-local", hidden: true, "data-bal-local": "" });
+  const body = el("div", { class: "swbal-body" }, head, local, cols, el("p", { class: "swbal-note" }, "L'équilibrage passif tourne pendant la charge ou au repos, au-dessus d'une tension minimale et d'un écart ; on ne mesure pas une cellule pendant qu'on la décharge ", refCite("ti-bq76952-trm"), ". Courant d'une résistance d'un circuit du commerce : 65 à 200 mA ", refCite("ti-sluaa81a"), refCite("digikey-ltc6813"), " — 0,5 A ici demande des transistors externes. Charge : 0,1 C, puis courant constant, puis tension constante ", refCite("ti-bq24610"), refCite("bu-409"), " ; 2 C = 72 A, le maximum de la fiche de la cellule (9 A par cellule, 8 en parallèle) ", refCite("molicel-p45b"), ". Cellules TYPIQUES : courbe écrite de mémoire (0 % = 2,5 V, 100 % = 4,2 V), résistance des CORE et écarts de départ en exemple ; aucune source lue ne chiffre la durée de l'équilibrage d'une grosse cellule."), chart);
   const close = btn("", () => api.close(), { small: true, tip: "Fermer" }); close.textContent = "×"; close.classList.add("swm-x"); close.setAttribute("aria-label", "Fermer");
   const lamp = el("span", { class: "swbal-lamp", "data-bal-lamp": "off", role: "status", "aria-live": "polite" }, el("i", { "aria-hidden": "true" }), el("b", null, "Équilibrage au repos"));
   const bar = el("header", { class: "swm-head" }, icon("bolt"), el("h3", null, "Charge et équilibrage"), lamp, close);
@@ -52,7 +54,9 @@ export function swBalance(design, o = {}) {
   function draw() {
     if (o.onDraw) o.onDraw(B);
     if (shared() && B !== o.bench.plant) { B = o.bench.plant; S = B.S; }
-    if (!st.open || !B) return; const R = { ...balanceSummary(B), ...(shared() ? { text: packPhase(B.phase) } : {}) }, vr = B.v.map((x) => x - B.i * S.r), low = Math.min(...vr);
+    if (!st.open || !B) return; local.hidden = !S.local;
+    if (S.local) local.textContent = `Chaque carte de CORE équilibre seule : à ${f(S.local.on / 1000, 2)} V elle branche sa résistance, à ${f(S.local.off / 1000, 2)} V elle la débranche. Elle ne lit que sa propre tension — ni les autres CORE ni le courant — : pendant la charge, la tension sous courant la déclenche plus tôt ; après la charge, chaque CORE au-dessus du seuil y redescend, et elles s'y rejoignent. Le BMS central ne leur envoie rien : il l'entend dans leur tour. Seuils d'exemple, à confirmer.`;
+    const R = { ...balanceSummary(B), ...(shared() ? { text: packPhase(B.phase) } : {}) }, vr = B.v.map((x) => x - B.i * S.r), low = Math.min(...vr);
     head.replaceChildren(el("div", { class: `swbal-phase ${R.phase}` }, el("small", null, hm(R.t)), el("b", null, R.text)),
       el("div", { class: `swbal-gauge${R.i < 0 ? " out" : ""}` }, el("small", null, R.i < 0 ? "Décharge" : "Chargeur"), el("b", null, `${f(Math.abs(R.i), 1)} A`), el("span", null, `${f(Math.abs(R.cRate), 2)} C`), el("i", { style: `width:${Math.min(100, (100 * Math.abs(R.cRate)) / S.cHigh)}%` })),
       ...(B.temp !== undefined ? [el("div", { class: "swbal-fig" }, el("small", null, "Au plus chaud"), el("b", { class: B.temp > 45 ? "warn" : "ok" }, `${f(B.temp, 1)} °C`))] : []),

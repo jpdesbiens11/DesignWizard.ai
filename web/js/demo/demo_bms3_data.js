@@ -5,7 +5,7 @@ export const DEMO_BMS3_1 = `dwiz board/1 BMS-CENTRAL-3X3 "BMS central 3 po × 3 
 
 # Pourquoi — les fonctions que la carte remplit
 description <<<
-Le BMS central du module BM 8s8p, 3 po × 3 po au plus, dans le couvercle du bas : vit sur le module ou sur le 12 V du véhicule (le premier présent), interroge les 8 cartes de CORE par la chaîne RS-485 isolée (il en alimente le côté bus), mesure la sortie — courant sur le shunt de la barre de retour, tension du module et de la sortie, température de la borne — et compte l'énergie (EFC), autorise l'énergie (contacteur, précharge, pyrofusible), refroidit (pompe, ventilateur), signale l'état (trois témoins, avertisseur) et parle au véhicule par le CAN FD isolé, qui porte aussi le flux des CORE ; le connecteur d'échange est combiné : ses contacts LV sur la carte, ses contacts HV sur les barres
+Le BMS central du module BM 8s8p, 3 po × 3 po au plus, dans le couvercle du bas : vit sur le module ou sur le 12 V du véhicule (le premier présent), écoute les 8 cartes de CORE, qui parlent à tour de rôle sur la chaîne RS-485 isolée (il en alimente le côté bus et ne leur envoie rien), mesure la sortie — courant sur le shunt de la barre de retour, tension du module et de la sortie, température de la borne — et compte l'énergie (EFC), autorise l'énergie (contacteur, précharge, pyrofusible), refroidit (pompe, ventilateur), signale l'état (trois témoins, avertisseur) et parle au véhicule par le CAN FD isolé, qui porte aussi le flux des CORE ; le connecteur d'échange est combiné : ses contacts LV sur la carte, ses contacts HV sur les barres
 >>>
 revision A
 function F1 parent=null kind=principale name="Vivre sur le module ou sur le 12 V, le premier présent" block=null
@@ -13,12 +13,19 @@ function F1 parent=null kind=principale name="Vivre sur le module ou sur le 12 V
     level="le module (8S : 24 à 34 V, prise sur la barre B+) ou le 12 V du véhicule ou de la borne par le connecteur d'échange (9 à 16 V, exemple à confirmer)"
     flex=F1
   criterion name=Réveil level="par le véhicule (WAKE) ou par la borne" flex=F1
-function F2 parent=null kind=principale name="Collecter la chaîne RS-485 des 8 cartes de CORE" block=null
+  criterion name="Sans 12 V"
+    level="elle vit sur le module et veille sur lui — elle écoute toujours les CORE ; le contacteur reste ouvert (sa bobine est sur le 12 V)"
+    flex=F1
+function F2 parent=null kind=principale name="Écouter le tour des 8 cartes de CORE (RS-485)" block=null
   criterion name=Bus level="RS-485 demi-duplex isolé, en chaîne, 9 nœuds" flex=F0
   criterion name="Côté bus" level="alimenté par cette carte, 5 V isolés, 1 W" flex=F0
   criterion name=Terminaison level="120 Ω à cette carte et à la borne + du module" flex=F1
-  criterion name=Contenu level="par CORE : sa tension, ses 8 températures ; vers les CORE : l'ordre d'équilibrage"
+  criterion name=Tour
+    level="CORE 1 ouvre le tour, chacune parle après avoir entendu la précédente ; un tour qui ne revient plus est une urgence"
     flex=F0
+  criterion name=Contenu
+    level="par CORE, à son tour : sa tension, ses 8 températures, son équilibrage ; vers les CORE : rien" flex=F0
+  criterion name=Émetteur level="tenu en réception : DE bas par le microcontrôleur, rappel sur DE au démarrage" flex=F1
 function F3 parent=null kind=principale
   name="Mesurer la sortie : courant, tension, température — et compter l'énergie (EFC)" block=null
   criterion name=Courant
@@ -37,13 +44,15 @@ function F4 parent=null kind=principale name="Autoriser l'énergie : contacteur,
 function F5 parent=null kind=principale name="Parler au véhicule et à la borne, en recevoir les ordres" block=null
   criterion name=Liaison level="CAN FD isolé (exemple : 500 kbit/s, 2 Mbit/s en phase de données)" flex=F1
   criterion name=Flux
-    level="le flux de la chaîne des 8 CORE (tensions, températures), l'état du module, le courant, l'énergie comptée"
+    level="le flux de la chaîne des 8 CORE (tensions, températures, équilibrage), l'état du module, le courant, l'énergie comptée"
     flex=F0
   criterion name="Ordres câblés"
     level="ENABLE (le véhicule autorise l'énergie), présence (le module est dans sa cavité), acquittement d'un défaut"
     flex=F0
 function F6 parent=null kind=principale name="Juger et décider" block=null
-  criterion name=Calcul level="microcontrôleur : la machine à états du module, l'équilibrage commandé aux CORE" flex=F1
+  criterion name=Calcul
+    level="microcontrôleur : la machine à états du module, d'après ce que disent les CORE et ce que la carte mesure elle-même (sortie, 12 V, ordres du véhicule) — l'équilibrage est celui de chaque CORE"
+    flex=F1
   criterion name=Mémoire level="réglages, énergie comptée et journal des défauts" flex=F1
 function F7 parent=null kind=principale name="Être testable et programmable" block=null
   criterion name=Accès level="connecteur de programmation, points de test" flex=F1
@@ -453,10 +462,4 @@ part D15 D-ZEN-SOD123 value="3,3 V" block=B28 at=[15, 60.25] rot=90 side=top loc
 part C34 C-0603 value="100 nF" block=B28 at=[17.25, 61.5] rot=90 side=top local=C
   role="Filtre les rebonds et les parasites" near=R40
 part R41 R-0805 value="33 kΩ 1 %" block=B29 at=[20.5, 58.75] rot=90 side=top local=R1
-  role="Haut du pont : tient la tension de l'entrée"
-part R42 R-0603 value="10 kΩ 1 %" block=B29 at=[20.25, 62.5] rot=90 side=top local=R2 role="Bas du pont" near=R41
-part D16 D-ZEN-SOD123 value="3,3 V" block=B29 at=[23, 62.25] rot=90 side=top local=DZ role="Écrête les surtensions"
-  near=R42
-part C35 C-0603 value="100 nF" block=B29 at=[23.5, 58.75] rot=0 side=top local=C
-  role="Filtre les rebonds et les parasites" near=R42
 `;
