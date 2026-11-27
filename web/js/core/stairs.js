@@ -41,6 +41,8 @@ export function stairOf(key, args, project, o = {}) {
     case "sw": return SW("swarch", "chip", "Architecture", "La conception se fait dans l'architecture choisie : référence, CPU, cadence");
     case "swsim": case "swcode": return SW("sw", "part", "Conception", key === "swsim" ? "Ce que la simulation fait tourner : la conception" : "Ce que le code traduit : la conception");
     case "swrel": return SW("swtest", "check", "Vérification", "On livre ce qui est prouvé : la vérification");
+    case "swio": case "swmis": return SW("lreq", "report", "Exigences", key === "swio" ? "Les interfaces servent les exigences" : "Les missions viennent des exigences");      // the lean path (JP, 27 novembre 2026)
+    case "swfind": return SW("swmis", "flow", "Missions", "Les constats jugent les missions jouées");
     case "pcba": { const b = boards.find((x) => x.id === a[0]) || boards[0] || null; return b ? toPart(part(b.part), "La carte (PCB) que ce PCBA équipe") : null; }      // the assembled board hangs from its bare board, when it has one
     case "fea": { const p = part(a[0]), x = p ? null : asm(a[0]);
       if (p && p.study && p.study.model) return { hash: `#/physics/${enc(p.study.model)}/${enc(p.id)}`, icon: "physics", color: "#a16207", label: "Modèle analytique", tip: `Ce modèle simplifié est fait à partir d'un modèle analytique : y revenir, avec ses valeurs` }; return p ? toPart(p, "La pièce simulée") : x ? toAsm(x, "L'assemblage simulé") : toPart(parts[0], "La pièce simulée") || toAsm(asms[0], "L'assemblage simulé"); }
@@ -57,7 +59,7 @@ export function stairOf(key, args, project, o = {}) {
   }
 }
 /* the V, going down : what each step of the software leads to (the reverse of its step up) */
-const DOWN_SW = { swreq: [["swarch", "chip", "Architecture"], ["swtest", "check", "Vérification"]], swarch: [["sw", "part", "Conception"]], sw: [["swsim", "play", "Simulation"], ["swcode", "code", "Code"]], swtest: [["swrel", "download", "Livraison"]] };
+const DOWN_SW = { swio: [["swmis", "flow", "Missions"]], swmis: [["swsim", "play", "Banc HIL"], ["swfind", "check", "Constats"]], swfind: [["swrel", "download", "Export"]], swreq: [["swarch", "chip", "Architecture"], ["swtest", "check", "Vérification"]], swarch: [["sw", "part", "Conception"]], sw: [["swsim", "play", "Simulation"], ["swcode", "code", "Code"]], swtest: [["swrel", "download", "Livraison"]] };
 /** The steps DOWN from a screen (demande de JP : « monter d'un niveau… descendre d'un niveau, plus profond dans la définition ») : what is made FROM what
     the screen shows — the exact reverse of the step up. A board (PCB) leads down to the PCBA mounted on it, a PCBA to its Labo ; a part to its
     simulation and its drawing ; an assembly to its sub-assemblies, its isolation and its drawing. What defines the product comes first ; at most
@@ -110,7 +112,7 @@ export function aiTargetOf(key, args, project) {
     case "creepage": return (a[0] === "board" ? I("board", boards.find((b) => b.id === a[1])) : I("assembly", asm(a[0]) || asms[0])) || all;
     case "render": case "labels": return A(asm(a[0]) || asms[0]) || all;
     case "swreq": return { key: "sw:req", label: "les exigences du logiciel" };      // the Logiciel group has its own round trip (modules/sw_ai.js)
-    case "swarch": case "sw": case "swsim": case "swcode": case "swtest": case "swrel": return { key: "sw:design", label: "le logiciel" };
+    case "swarch": case "sw": case "swsim": case "swcode": case "swtest": case "swrel": case "swio": case "swmis": case "swfind": return { key: "sw:design", label: "le logiciel" };
     default: return all;
   }
 }

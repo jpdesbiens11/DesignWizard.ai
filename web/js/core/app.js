@@ -25,8 +25,9 @@ import { installPanelKeep } from "./panel_keep.js";
 import { installLoupe } from "./loupe.js";
 import { installUpdateCheck, versionChip, sayUpdated } from "./update_check.js";
 import { installWhatsNew, newsButton } from "./whats_new_ui.js";
+import { navKeys } from "../sw/sw_lean.js";
 
-export const APP_VERSION = "0.209.0";
+export const APP_VERSION = "0.210.0";
 /** What every document of the open project carries beside its content : approval names, organisation, confidentiality note, extraction stamp (core/brand.js). */
 export const docMeta = (when = new Date()) => docIdentity(store.project, when, APP_VERSION);
 const modules = new Map();
@@ -35,9 +36,13 @@ const modules = new Map();
 export const NAV = [
   { id: "mech", label: "Mécanique", icon: "part", color: "#2563eb", hint: "De l'intention à la simulation", keys: ["mreq", "shop", "parts", "assembly", "drawings", "physics", "fab"], also: { fea: "physics" }, tiles: { physics: { label: "Physique · Simulation", sub: "Calcul à la main, puis éléments finis" } } },
   { id: "elec", label: "Électronique", icon: "chip", color: "#16a34a", hint: "De la carte nue au banc d'essai", keys: ["ereq", "pcb", "pcba", "elab", "creepage"] },
-  { id: "soft", label: "Logiciel", icon: "code", color: "#0891b2", hint: "Des exigences du produit au paquet livré, par le cycle en V", keys: ["lreq", "swreq", "swarch", "sw", "swsim", "swcode", "swtest", "swrel", "swref"] },
+  /* the Logiciel group (JP, 27 novembre 2026, par menu : « Alléger le parcours d'abord ») : the lean path for everyone — Exigences · Interfaces · Missions ·
+     Banc HIL · Constats · Export ; the screens of the V and of the detailed design added at the Expert level (sw/sw_lean.js navKeys) */
+  { id: "soft", label: "Logiciel", icon: "code", color: "#0891b2", hint: "Exigences, interfaces, missions, banc HIL, constats, export — le cycle en V au niveau Expert", keys: ["lreq", "swio", "swmis", "swsim", "swfind", "swrel", "swreq", "swarch", "sw", "swcode", "swtest", "swref"], shown: () => navKeys(swLevel()) },
   { id: "product", label: "Produit", icon: "report", color: "#7c3aed", hint: "Règles, revue, dossier", keys: ["dfx", "review", "report", "history", "eco"] },
 ];
+/* the level a person reads the software at (modules/sw_level_ui.js keeps it in the browser) : the top bar shows the screens of that level */
+const swLevel = () => { try { return localStorage.getItem("dw.sw.level") || "novice"; } catch (e) { return "novice"; } };
 const SHOP_SCREENS = new Set(["interfaces", "process", "extrusion", "library", "busbar", "flex"]);      // screens of the Shop : its tab stays lit on them (see modules/shop_tabs.js)
 export const app = { modules, context: {}, version: APP_VERSION, current: null, cleanup: null, commands: [] };
 
@@ -94,7 +99,7 @@ function topbar() {
     const wrap = el("div", { class: "menu-wrap nav-wrap" }), close = () => { const m = wrap.querySelector(".menu"); if (m) m.remove(); b.setAttribute("aria-expanded", "false"); };
     const b = el("button", { class: "tab nav-group", type: "button", "data-group": G.id, "data-key": "", "aria-haspopup": "true", "aria-expanded": "false", "data-tip": `${G.label} — ${G.hint.toLowerCase()}`, style: `--tab-acc:${G.color}`, onClick: () => {
       const open = wrap.querySelector(".menu"); document.querySelectorAll(".menu").forEach((m) => m.remove()); document.querySelectorAll(".nav-group").forEach((x) => x.setAttribute("aria-expanded", "false")); if (open) return;
-      const list = G.keys.map((k) => [k, modules.get(k)]).filter(([, m]) => m), pop = el("div", { class: "menu nav-pop", role: "menu", "aria-label": G.label, style: `--dom:${G.color}` }, el("p", { class: "nav-hint" }, icon(G.icon), el("b", null, G.label), el("small", null, G.hint)),
+      const list = (G.shown ? G.shown() : G.keys).map((k) => [k, modules.get(k)]).filter(([, m]) => m), pop = el("div", { class: "menu nav-pop", role: "menu", "aria-label": G.label, style: `--dom:${G.color}` }, el("p", { class: "nav-hint" }, icon(G.icon), el("b", null, G.label), el("small", null, G.hint)),
         list.map(([k, m], i) => el("a", { class: "nav-tile" + (b.dataset.key === k ? " on" : ""), href: `#/${k}`, role: "menuitem", "data-nav": k, onClick: close }, el("span", { class: "nav-step", "aria-hidden": "true" }, String(i + 1)), icon(m.icon), el("span", { class: "nav-text" }, el("b", null, (G.tiles && G.tiles[k] || m).label), el("small", null, G.tiles && G.tiles[k] ? G.tiles[k].sub : String(m.tip || "").split(/ : | — |\. /)[0])))));
       wrap.append(pop); b.setAttribute("aria-expanded", "true"); const first = pop.querySelector(".nav-tile.on") || pop.querySelector(".nav-tile"); if (first) first.focus();
       pop.addEventListener("keydown", (e) => { const t = [...pop.querySelectorAll(".nav-tile")], i = t.indexOf(document.activeElement); if (e.key === "ArrowDown") { e.preventDefault(); t[(i + 1) % t.length].focus(); } else if (e.key === "ArrowUp") { e.preventDefault(); t[(i - 1 + t.length) % t.length].focus(); } });

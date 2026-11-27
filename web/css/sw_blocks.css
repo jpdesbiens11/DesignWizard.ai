@@ -384,3 +384,18 @@ svg.swp .swp-piece { touch-action: none; }
 .swmi-full { position: fixed; inset: 0; z-index: 70; overflow: auto; background: #0b1220; padding: .7rem 1rem; }
 .swmi-full .swmi-halt { margin-bottom: .6rem; }
 .swmi:fullscreen { background: #0b1220; overflow: auto; padding: .7rem 1rem; } .swmi::backdrop { background: #0b1220; }
+/* the lean path of the Logiciel (JP, 27 novembre 2026) : Interfaces, Missions, Constats */
+.swi-view, .swmi2-view, .swf2-view { overflow: auto; padding: .8rem 1rem; } .swi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: .8rem; }
+.swi-group { border: 1.5px solid var(--line); border-left: 5px solid var(--g); border-radius: 10px; background: var(--surface); padding: .5rem .7rem; } .swi-group h3 { display: flex; align-items: center; gap: .35rem; margin: 0 0 .4rem; font-size: .9rem; color: var(--g); } .swi-group h3 small { color: var(--muted); font-weight: 400; }
+.swi-row { display: flex; align-items: center; gap: .45rem; padding: .25rem 0; border-top: 1px dashed var(--line); font-size: .82rem; } .swi-row small { color: var(--muted); }
+.swi-dir { display: inline-flex; width: 1.6rem; height: 1.6rem; align-items: center; justify-content: center; border-radius: 6px; background: color-mix(in srgb, var(--d) 16%, transparent); color: var(--d); flex: none; }
+.swi-net { font-size: .72rem; padding: .05rem .35rem; border-radius: 5px; background: var(--surface-2); white-space: nowrap; } .swi-net.frame { color: #0f766e; } .swi-range { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 600; }
+.swi-key { display: flex; align-items: center; gap: .3rem; color: var(--g); margin: .15rem .6rem; }
+.swm2-list { display: grid; gap: .8rem; } .swm2-card { border: 1.5px solid var(--line); border-left: 5px solid var(--g); border-radius: 10px; background: var(--surface); padding: .55rem .8rem; }
+.swm2-card header { display: flex; align-items: center; gap: .45rem; } .swm2-card header small { color: var(--muted); } .swm2-strip { width: 100%; max-width: 640px; height: 30px; display: block; margin: .3rem 0; }
+.swm2-axis { stroke: var(--line); stroke-width: 2; } .swm2-ev { fill: #94a3b8; } .swm2-ev.hit { fill: #dc2626; } .swm2-hit { display: inline-block; margin: 0 .25rem .2rem 0; padding: .05rem .4rem; border-radius: 999px; background: color-mix(in srgb, #dc2626 14%, transparent); color: #b91c1c; font-size: .75rem; }
+.swm2-proof span { display: inline-block; margin-right: .5rem; padding: .05rem .45rem; border-radius: 999px; background: color-mix(in srgb, var(--v) 16%, transparent); color: var(--v); font-weight: 600; }
+.swf2-wrap { overflow: auto; } .swf2-table { border-collapse: collapse; font-size: .8rem; width: 100%; } .swf2-table th, .swf2-table td { border-bottom: 1px solid var(--line); padding: .3rem .45rem; text-align: left; vertical-align: top; }
+.swf2-table th small { color: var(--muted); font-weight: 400; } .swf2-cell { text-align: center !important; font-weight: 700; color: var(--v); background: color-mix(in srgb, var(--v) 12%, transparent); white-space: nowrap; }
+.swf2-fail td:first-child { box-shadow: inset 4px 0 0 #dc2626; } .swf2-count { display: flex; align-items: baseline; gap: .4rem; margin: .15rem .6rem; color: var(--v); } .swf2-count b { font-size: 1.2rem; min-width: 1.6rem; text-align: right; }
+.swf2-unread { margin-top: .8rem; font-size: .82rem; }

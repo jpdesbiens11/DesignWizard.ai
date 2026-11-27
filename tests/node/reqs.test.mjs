@@ -127,7 +127,7 @@ test("read again from DynamiteAgile : found by external id, keys given, changes 
 });
 
 test("the page is the first tile of each branch, and the BM project opens with the ESS draft, kept by its history", () => {
-  assert.equal(NAV.find((g) => g.id === "soft").keys[0], "lreq"); assert.equal(NAV.find((g) => g.id === "soft").keys[1], "swreq", "then the requirements of the software, the V");
+  assert.equal(NAV.find((g) => g.id === "soft").keys[0], "lreq"); assert.equal(NAV.find((g) => g.id === "soft").keys[1], "swio", "then the interfaces : the lean path (JP, 27 novembre 2026) — the V at the Expert level"); assert.ok(NAV.find((g) => g.id === "soft").keys.includes("swreq"));
   const m = readFileSync(new URL("../../web/js/modules/reqs_page.js", import.meta.url), "utf8"); assert.match(m, /key: "lreq"/); assert.match(m, /essList\(\)/);
   const p = bmProject(); assert.equal(p.reqs.file, ESS_FILE); assert.equal(stageOf(p.reqs).stage, "draft"); assert.equal(p.reqs.rows.length, 62);
   assert.equal(bmProject({ branch: "c4" }).reqs.rows.length, 62, "restored from a point of the history : the list is part of the definition");

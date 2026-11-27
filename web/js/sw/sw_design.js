@@ -85,15 +85,17 @@ export function machine(d) {
   const mem = Object.fromEntries(ord.ids.map((id) => [id, KINDS[O[id].kind].init ? KINDS[O[id].kind].init() : {}])), cfg = Object.fromEntries(ord.ids.map((id) => [id, cfgOf(O[id])]));
   const last = {}, drove = {}; let k = 0;      // drove : a contact that follows an output reads it late
   for (const id of ord.ids) for (const p of [...portsOf(O[id]).in, ...portsOf(O[id]).out]) last[`${id}.${p.key}`] = 0;
+  /* the plan of a step, written once : each object's inputs (where each comes from), the names of its outputs — a long campaign plays
+     hundreds of thousands of steps (sw/sw_campaign.js), so nothing is composed again at each one ; the step is the same */
+  const plan = ord.ids.map((id) => { const K = KINDS[O[id].kind];
+    return { id, K, pin: K.pin, ins: K.ports.in.map((p) => [p.key, src[`${id}.${p.key}`] || null, `${id}.${p.key}`]), outs: Object.fromEntries(K.ports.out.map((p) => [p.key, `${id}.${p.key}`])), first: K.ports.out[0] ? `${id}.${K.ports.out[0].key}` : null }; });
   return { ids: ord.ids, ok: !ord.loop.length, dt, mem, last, drove, get k() { return k; },
     step(read) { const now = k * dt;
-      for (const id of ord.ids) { const o = O[id], K = KINDS[o.kind], inp = {};
-        for (const p of K.ports.in) { const from = src[`${id}.${p.key}`]; inp[p.key] = from ? last[from] : 0; last[`${id}.${p.key}`] = inp[p.key]; }
-        let out = {};
-        if (K.pin === "ain" || K.pin === "din") out[K.ports.out[0].key] = read(id, k, now, drove);
-        else if (K.pin === "dout") (drove[id] = drove[id] || []).push(inp.level);
-        else out = K.step(mem[id], cfg[id], inp, dt);
-        for (const [key, v] of Object.entries(out)) last[`${id}.${key}`] = v; }
+      for (const P of plan) { const inp = {};
+        for (const [key, from, ref] of P.ins) { const v = from ? last[from] : 0; inp[key] = v; last[ref] = v; }
+        if (P.pin === "ain" || P.pin === "din") last[P.first] = read(P.id, k, now, drove);
+        else if (P.pin === "dout") (drove[P.id] = drove[P.id] || []).push(inp.level);
+        else { const out = P.K.step(mem[P.id], cfg[P.id], inp, dt); for (const key in out) last[P.outs[key] || `${P.id}.${key}`] = out[key]; } }
       k++; return now; } };
 }
 /** What an input pin reads at step k of a scenario : its points held, or the output it follows, late. */

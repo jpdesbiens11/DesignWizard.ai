@@ -23,6 +23,7 @@ import { openMerge } from "./reqs_merge_ui.js";
 import { openImport } from "./sw_lib_ui.js";
 import { oracleLine, oracleSection } from "./reqs_oracle_ui.js";
 import { oracleGuide } from "../core/req_oracle.js";
+import { leanHead } from "./sw_lean_ui.js";
 
 const ROVER = "examples/exemple_exigences_rover.csv";
 const slug = (s) => String(s || "produit").normalize("NFKD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9]+/g, "_").replace(/^_|_$/g, "").toLowerCase() || "produit";
@@ -107,6 +108,7 @@ function page(disc) {
           return el("button", { type: "button", class: `rq-cat${st.cat === c ? " on" : ""}`, style: `--c:${C.color}`, "aria-pressed": st.cat === c ? "true" : "false", onClick: () => { st.cat = c; draw(); } }, icon(C.icon), el("span", null, C.fr), el("small", null, String(c === null ? reqs.length : reqs.filter((r) => (r.category || "") === c).length))); }))),
         el("div", { class: "side-section" }, el("h3", null, "Le guide"), guideBox(G, { go: (x) => { if (x.key || (x.keys && x.keys[0])) { st.sel = x.key || x.keys[0]; draw(); } } })));
       const pg = el("div", { class: "page rq-page" });
+      if (disc === "sw") pg.append(leanHead("reqs"));      // the first step of the lean path of the software (modules/sw_lean_ui.js)
       pg.append(stageBand(L), el("p", { class: "muted small" }, `${L.file || "Liste de DynamiteAgile"} — ${reqs.length} exigence${reqs.length > 1 ? "s" : ""} allouée${reqs.length > 1 ? "s" : ""} ${D.to} sur ${L.rows.filter((r) => !isNeed(r) && maturityOf(r) !== "out").length}. M · E · L : les disciplines qui la portent — en pointillé, une proposition de l'outil. La même liste se voit dans les trois branches : ce qui change ici change partout.`));
       if (needs.length) pg.append(el("h3", { class: "rq-h need" }, icon("user"), "Les besoins — le pourquoi"), el("div", { class: "rq-grid" }, needs.map((r) => card(r, L))));
       for (const c of cats.filter((x) => st.cat === null || x === st.cat)) { const C = categoryOf(c); pg.append(el("h3", { class: "rq-h", style: `--cat:${C.color}` }, icon(C.icon), C.fr), el("div", { class: "rq-grid" }, reqs.filter((r) => (r.category || "") === c).map((r) => card(r, L)))); }

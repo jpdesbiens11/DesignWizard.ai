@@ -568,3 +568,31 @@ CORE boards silent ; « utilise les termes anglais techniques toujours ».
   le monitoring suit l'entrée que nomme `plant.lost`.
 - **Non fait** : le firmware de la CORE board (l'outil montre un logiciel par projet), la lecture des frames des CORE et l'écriture de celle du
   véhicule. Voir `docs/BM_MODULE.md` (itération 18).
+
+## Le parcours allégé : six étapes, la campagne HIL virtuelle (v0.210.0)
+
+JP, 27 novembre 2026 : « lean tout ce qui n'est pas des requis, interfaces HW, fonctions… passer rapidement à des tests logiciels embarqués HIL
+virtuels, qui ne coûtent rien, pour valider les profils de missions et les différences specs, limites, corner cases, performances et safety… itérer
+rapidement » ; choix par menu : « Alléger le parcours d'abord ».
+
+| Étape | Écran | Ce qu'elle montre |
+|---|---|---|
+| 1 Exigences | `#/lreq` | les exigences du produit allouées au logiciel, lues par la machine (oracles) |
+| 2 Interfaces | `#/swio` | chaque entrée et sortie du logiciel sous la fonction de la carte qui la porte : net, broche, plage, capteur ou actionneur ; puis ce que les autres cartes disent dans leurs frames (`interfacesOf`) |
+| 3 Missions | `#/swmis` | une carte par mission profile : durée, événements, limites franchies ; ce qu'aucune mission n'atteint |
+| 4 Banc HIL | `#/swsim` | le banc existant : le logiciel contre le module simulé, la vue Mission |
+| 5 Constats | `#/swfind` | la campagne : toutes les missions jouées, chaque exigence jugée sur chacune ; le constat en .csv et .md (`runCampaign`, `findingsCsv`, `findingsMd`) |
+| 6 Export | `#/swrel` | le paquet C, quand les constats sont verts |
+
+- **Pour tous les niveaux**, la barre du haut montre ces six écrans (`navKeys` de `web/js/sw/sw_lean.js`) ; le **niveau Expert** y ajoute le
+  cycle en V et les blocs détaillés (`EXPERT_KEYS`). Sous Expert, la tête des écrans du V et leur carte d'étape suivent les six étapes
+  (`modules/sw_lean_ui.js`, `V_TO_LEAN`).
+- **La campagne** (`web/js/sw/sw_campaign.js`) joue chaque mission comme le banc, sans écran ni arrêt sur défaut, en tranches (`campaignRun`) :
+  l'écran montre sa progression et « Annuler ». Pour la tenir rapide, le pas du logiciel est écrit une fois (`machine` de `sw/sw_design.js` : le
+  plan du pas précalculé, le même pas) et le banc ne garde pas de trace pendant une campagne (`liveStart(d, 0)`) — 35 s → 7 s pour les deux
+  missions du BM, les mêmes verdicts, les essais dos à dos en C inchangés.
+- **Premier constat du BM** (deux missions, 72 et 74 min simulées) : ESS-REQ-002 (≤ 4,20 V en service), ESS-REQ-015 (65 °C en charge) et
+  ESS-REQ-024 (équilibrage) échouent ; ESS-REQ-003 et 004 (360 A, 72 A) non couvertes ; 23 exigences non lues par la machine.
+- **Virtuel** : le module est typique ; l'écran et les fichiers le disent. **Ensuite** : les missions tirées des exigences (phase 2), puis la
+  boucle IA (constat + consigne → nouvelle version → toute la campagne rejouée, acceptée sans régression).
+

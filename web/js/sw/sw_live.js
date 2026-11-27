@@ -59,11 +59,12 @@ export function liveStep(L, n = 1) {
   const by = Object.fromEntries(L.inputs.map((i) => [i.id, i]));
   const read = (id, k, now, drove) => { const i = by[id], v = L.set[id]; if (!i) return 0; if (i.kind === "analog") return i.toCounts(v); if (i.kind === "digital") return v ? 1 : 0;
     return pinRead({ follows: i.of, delay: i.delay, ...(v === "open" ? { stuck: 0 } : v === "closed" ? { stuck: 1 } : {}) }, k, now, drove, L.m.dt); };
-  for (let q = 0; q < n; q++) { const before = {}; for (const r of L.bool) before[r] = L.m.last[r];
+  const B = L.boolList || (L.boolList = [...L.bool]), before = L.boolPrev || (L.boolPrev = new Array(B.length));      // reused from step to step : a campaign plays hundreds of thousands
+  for (let q = 0; q < n; q++) { for (let j = 0; j < B.length; j++) before[j] = L.m.last[B[j]];
     const now = L.m.step(read); L.t = now + L.m.dt;
-    for (const r of L.bool) if (L.m.last[r] !== before[r]) { L.log.push({ t: now, ref: r, to: L.m.last[r] }); L.nlog = (L.nlog || 0) + 1; }      // nlog : how many were ever logged (the log keeps the last 200)
-    L.trace.t.push(now); for (const r of Object.keys(L.trace.ports)) L.trace.ports[r].push(L.m.last[r]);
-    if (L.trace.t.length > L.keep) { L.trace.t.shift(); for (const r of Object.keys(L.trace.ports)) L.trace.ports[r].shift(); }
+    for (let j = 0; j < B.length; j++) if (L.m.last[B[j]] !== before[j]) { L.log.push({ t: now, ref: B[j], to: L.m.last[B[j]] }); L.nlog = (L.nlog || 0) + 1; }      // nlog : how many were ever logged (the log keeps the last 200)
+    if (L.keep) { L.trace.t.push(now); for (const r of Object.keys(L.trace.ports)) L.trace.ports[r].push(L.m.last[r]);
+      if (L.trace.t.length > L.keep) { L.trace.t.shift(); for (const r of Object.keys(L.trace.ports)) L.trace.ports[r].shift(); } }      // keep 0 : no trace (a campaign judges the record only)
     if (L.plant && ++L.pk.n >= L.pk.every) { L.pk.n = 0; const last = L.m.last, pl = L.pl;
       packStep(L.plant, { closed: pl.contactor ? !!last[pl.contactor] : true, derate: pl.state ? (last[pl.state] || 0) >= 1 : false, pump: pl.pump ? !!last[pl.pump] : false }); sensePlant(L); record(L); } }
   if (L.log.length > 200) L.log.splice(0, L.log.length - 200);

@@ -139,7 +139,7 @@ test("seven steps of the V : left branch defines, bottom writes the code, right 
 });
 
 test("a group of its own in the top bar, seven screens wired, the V drawn above each, the old addresses lead to their step", () => {
-  const app = read("web/js/core/app.js"); assert.match(app, /id: "soft", label: "Logiciel"[^}]*keys: \["lreq", "swreq", "swarch", "sw", "swsim", "swcode", "swtest", "swrel", "swref"\]/); assert.match(app, /id: "elec"[^}]*keys: \["ereq", "pcb", "pcba", "elab", "creepage"\]/, "the software has left the Electronics group");
+  const app = read("web/js/core/app.js"); assert.match(app, /id: "soft", label: "Logiciel"[^}]*keys: \["lreq", "swio", "swmis", "swsim", "swfind", "swrel", "swreq", "swarch", "sw", "swcode", "swtest", "swref"\], shown: \(\) => navKeys\(swLevel\(\)\)/);      // the lean path, the V at the Expert level (JP, 27 novembre 2026) assert.match(app, /id: "elec"[^}]*keys: \["ereq", "pcb", "pcba", "elab", "creepage"\]/, "the software has left the Electronics group");
   const sw = read("web/js/modules/sw.js"); assert.match(sw, /for \(const k of \["arch", "design", "sim", "code", "release"\]\)/); assert.match(sw, /location\.replace\(vHash\(/, "an old address (#/sw/live) leads to the step of its page");
   assert.match(read("web/js/modules/sw_req.js"), /registerModule\(\{ key: "swreq"/); assert.match(read("web/js/modules/sw_verify.js"), /registerModule\(\{ key: "swtest"/);
   const main = read("web/js/main.js"); assert.match(main, /import "\.\/modules\/sw_req\.js";/); assert.match(main, /import "\.\/modules\/sw_verify\.js";/);

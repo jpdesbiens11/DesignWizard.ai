@@ -10,7 +10,10 @@
 import { el, icon, btn } from "../core/dom.js";
 import { VSTEPS, STEPS as PAGES, vStates, vstepOf, wordsIn } from "../sw/sw_steps.js";
 import { shows, kidOf, levelSteps } from "../sw/sw_levels.js";
-import { level, levelSwitch, stepPath } from "./sw_level_ui.js";
+import { level, levelSwitch } from "./sw_level_ui.js";
+import { leanHead, lastCampaign } from "./sw_lean_ui.js";
+import { V_TO_LEAN, LEAN, leanStates } from "../sw/sw_lean.js";
+import { store } from "../core/store.js";
 
 const NS = "http://www.w3.org/2000/svg", S = (tag, attrs = {}, ...kids) => { const n = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs || {})) if (v !== null && v !== undefined && v !== false) { if (k.startsWith("on")) n.addEventListener(k.slice(2).toLowerCase(), v); else n.setAttribute(k, v); } for (const c of kids.flat()) if (c !== null && c !== undefined) n.append(c); return n; };
 /* where each box stands in the V : x of its left edge, y of its top */
@@ -20,7 +23,7 @@ export const vHash = (key, page = "") => `#/${vstepOf(key).mod}${page ? `/${page
 
 /** The V. → an element : the diagram, and a line that says the reference the project follows */
 export function vBand(d, cpu, cur, run, std) {
-  const lv = level(); if (!shows(lv, "vband")) return el("div", { class: "swv-head swl-head" }, stepPath(lv, cur, vStates(d, cpu, run), (k) => vHash(k)), levelSwitch());      // novice, intermediate : the path of their steps (sw/sw_levels.js)
+  const lv = level(); if (!shows(lv, "vband")) return leanHead(V_TO_LEAN[cur] || "bench", d);      // novice, intermediate : the lean path (JP, 27 novembre 2026, par menu : « Alléger le parcours d'abord ») ; intermediate : the path of their steps (sw/sw_levels.js)
   const st = vStates(d, cpu, run), svg = S("svg", { class: "swv-band", viewBox: "0 0 1180 138", role: "group", "aria-label": "Le cycle en V du logiciel : sept étapes", "data-sw-v": "" });
   const mid = (k) => [POS[k][0] + BW / 2, POS[k][1] + BH / 2];
   svg.append(S("text", { class: "swv-branch", x: 6, y: 132 }, "Définir et concevoir ↘"), S("text", { class: "swv-branch", x: 1174, y: 132, "text-anchor": "end" }, "↗ Prouver et livrer"));
@@ -40,11 +43,13 @@ export function vBand(d, cpu, cur, run, std) {
 /** The card of the step, at the head of the left panel. page : the page shown (a key of PAGES) or "". go(page) : open another page of the step. */
 export function stepCard(d, cpu, cur, page, run, go) {
   const lv = level(), K = kidOf(cur);
-  if (!shows(lv, "words") && K) { const L = levelSteps(lv), i = L.findIndex((x) => x.key === cur), st0 = vStates(d, cpu, run)[cur], prev = L[i - 1], next = L[i + 1];      // the novice : a pictogram, a name, one sentence
-    return el("div", { class: "side-section sw-stepcard swl-kid", "data-sw-step": cur, "data-fold-note": i >= 0 ? `étape ${i + 1} sur ${L.length}` : "", style: `--dom:${K.color}` }, el("h3", null, i >= 0 ? `Étape ${i + 1}` : "Étape"),
-      el("div", { class: "swl-kidcard" }, icon(K.icon, "swl-big"), el("div", null, el("b", null, K.kid), el("p", null, K.says))),
+  /* novice and intermediate : the step of the LEAN path this screen is (JP, 27 novembre 2026, par menu : « Alléger le parcours d'abord ») — a
+     pictogram, a name, one sentence, where it stands, the step before and after ; the V and its words stay at the Expert level */
+  if (lv !== "expert") { const LK = V_TO_LEAN[cur] || "bench", i = LEAN.findIndex((x) => x.key === LK), S = LEAN[i], st0 = leanStates(store.project, d, lastCampaign(d))[LK], prev = LEAN[i - 1], next = LEAN[i + 1];
+    return el("div", { class: "side-section sw-stepcard swl-kid", "data-sw-step": LK, "data-fold-note": `étape ${S.n} sur ${LEAN.length}`, style: `--dom:${S.color}` }, el("h3", null, `Étape ${S.n}`),
+      el("div", { class: "swl-kidcard" }, icon(S.icon, "swl-big"), el("div", null, el("b", null, S.title), el("p", null, S.says))),
       el("p", { class: `sw-state ${st0.state}`, "data-sw-state-of": st0.state }, icon(st0.state === "done" ? "check" : st0.state === "todo" ? "warning" : "info"), " ", st0.text),
-      el("div", { class: "sw-nav" }, prev ? btn(`← ${prev.kid}`, () => { location.hash = vHash(prev.key); }, { small: true }) : el("span"), next ? (() => { const b = btn(`${next.kid} →`, () => { location.hash = vHash(next.key); }, { small: true, primary: st0.state === "done" }); b.dataset.swNext = next.key; return b; })() : null)); }
+      el("div", { class: "sw-nav" }, prev ? btn(`← ${prev.title}`, () => { location.hash = `#/${prev.mod}`; }, { small: true }) : el("span"), next ? (() => { const b = btn(`${next.title} →`, () => { location.hash = `#/${next.mod}`; }, { small: true, primary: st0.state === "done" }); b.dataset.swNext = next.key; return b; })() : null)); }
   const s = vstepOf(cur), st = vStates(d, cpu, run)[cur], i = VSTEPS.indexOf(s), prev = VSTEPS[i - 1], next = VSTEPS[i + 1], P = PAGES.find((x) => x.key === page);
   const words = wordsIn(`${s.plain} ${s.do} ${P ? `${P.plain} ${P.do}` : ""}`);
   return el("div", { class: "side-section sw-stepcard", "data-sw-step": s.key, "data-fold-note": `étape ${s.n} sur ${VSTEPS.length}`, style: `--dom:${s.color}` }, el("h3", null, `Étape ${s.n} — ${s.long}`),

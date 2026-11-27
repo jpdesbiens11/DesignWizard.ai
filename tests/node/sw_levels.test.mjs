@@ -27,7 +27,7 @@ test("three levels : 3 steps for a novice, 5 for an intermediate, the 7 of the V
   assert.ok(offered.some((x) => x.device === "ntc") && offered.some((x) => x.kind === "limit") && offered.some((x) => x.kind === "module_state"), "sensors, decisions, the blocks of the domain in use");
   assert.ok(!offered.some((x) => x.planned) && !offered.some((x) => x.kind === "pin_adc"), "no planned block, no raw pin for a novice");
   const o = { id: "l", kind: "limit", params: {}, x: 0, y: 0 }, full = blockBox(o).h; VIEW.tags = false; VIEW.chips = false; assert.ok(blockBox(o).h < full - 30, "a bare block is smaller"); VIEW.tags = true; VIEW.chips = true;
-  const band = read("web/js/modules/sw_vband.js"); assert.match(band, /stepPath\(lv, cur/); assert.match(band, /levelSwitch\(\)/);
+  const band = read("web/js/modules/sw_vband.js"); assert.match(band, /leanHead\(V_TO_LEAN\[cur\]/, "below Expert, the lean path heads the screens of the V (JP, 27 novembre 2026)"); assert.match(band, /levelSwitch\(\)/);
   assert.match(read("web/js/modules/sw_level_ui.js"), /"dw\.sw\.level"/, "the level is kept by the browser of each person");
 });
 
