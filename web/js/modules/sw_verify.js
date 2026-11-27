@@ -51,10 +51,11 @@ function render(main, args) {
     scroll.append(el("div", { class: "side-section", "data-fold-note": `${g.length}` }, el("h3", null, "À régler — le guide"), guideBox(g, { quiet: "Chaque essai attend quelque chose, prouve une exigence et réussit." })));
   }
   function matrix(d) {
-    const T = trace(d, run.results), tests = testsOf(d).filter((t) => t.on !== false), rows = T.rows.filter((x) => x.state !== "off"), cell = (r, t) => { if (!(t.reqs || []).includes(r.req.id)) return el("td", { class: "swm-none" }, "");
-      const x = run.results[t.id], ok = x && x.ok && (t.expect || []).length; return el("td", { class: ok ? "swm-ok" : "swm-ko", "data-tip": `${t.id} — ${ok ? "réussi" : "échoue ou n'attend rien"}` }, ok ? "✓" : "✗"); };
+    const T = trace(d, run.results), tests = testsOf(d).filter((t) => t.on !== false), rows = T.rows.filter((x) => x.state !== "off"), cell = (r, t) => { if (!(t.reqs || []).includes(r.req.id)) return el("td", { class: "swmx-none" }, "");
+      const x = run.results[t.id], ok = x && x.ok && (t.expect || []).length; return el("td", { class: ok ? "swmx-ok" : "swmx-ko", "data-tip": `${t.id} — ${ok ? "réussi" : "échoue ou n'attend rien"}` }, ok ? "✓" : "✗"); };
     return el("section", { class: "sw-card" }, el("h3", null, "La matrice de traçabilité"), el("p", { class: "muted small" }, "Une ligne par exigence, une colonne par essai : ✓ un essai qui la prouve a réussi, ✗ il échoue. La dernière colonne dit l'état de l'exigence."),
-      el("div", { class: "table-wrap" }, el("table", { class: "data swm", "data-sw-matrix": "" }, el("thead", null, el("tr", null, el("th", null, "Exigence"), tests.map((t) => el("th", null, el("button", { type: "button", class: "linklike", onClick: () => pick(t.id) }, t.id))), el("th", null, "État"))),
+      !rows.length || !tests.length ? el("p", { class: "lab-note", "data-sw-matrix-empty": "" }, icon("info"), !rows.length ? " Aucune exigence encore : la matrice se remplit quand le logiciel en a — étape 1 « Ce qu'il doit faire » (ou l'export .csv de DynamiteAgile) —, puis qu'un essai les prouve (« Nouvel essai »)." : " Aucun essai encore : « Nouvel essai », dans le volet de gauche, en écrit un qui prouve une exigence.") : null,
+      el("div", { class: "table-wrap", hidden: !rows.length || !tests.length }, el("table", { class: "data swmx", "data-sw-matrix": "" }, el("thead", null, el("tr", null, el("th", null, "Exigence"), tests.map((t) => el("th", null, el("button", { type: "button", class: "linklike", onClick: () => pick(t.id) }, t.id))), el("th", null, "État"))),
         el("tbody", null, rows.map((r) => { const [fr, tone] = TRACE_STATES[r.state]; return el("tr", null, el("th", { style: `box-shadow: inset 4px 0 0 ${REQ_KINDS[r.req.kind].color}` }, el("a", { href: vHash("req") }, r.req.id), el("small", null, ` ${REQ_KINDS[r.req.kind].fr}`)), tests.map((t) => cell(r, t)), el("td", null, badge(fr, tone))); })))));
   }
   function drawCentre(d) {
