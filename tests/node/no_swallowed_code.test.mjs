@@ -8,7 +8,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 const ROOT = new URL("../../web/js/", import.meta.url).pathname;
-const CODE = /(\b(const|let) [A-Za-z_$][\w$]* (=|of) )|(\b(else|return)\b [\w$.]+\([^)]*\);)|(\) \{ [\w$]+[.(= ])|(\}\);?\s*$)/;
+const CODE = /(\b(const|let) [A-Za-z_$][\w$]* (=|of) )|(\b(else|return)\b [\w$.]+\()|(\) \{ [\w$]+[.(= ])|(\}\);?\s*$)/;
 /** The lines where a `//` comment carries what reads as code. → ["file:line: text"] */
 export function swallowed(text, name = "") {
   const out = []; text.split("\n").forEach((line, i) => { const m = /(?:^|[;,){}\]]\s+)\/\/ (.*)$/.exec(line); if (m && CODE.test(m[1])) out.push(`${name}:${i + 1}: ${m[1].slice(0, 120)}`); }); return out;
@@ -17,6 +17,7 @@ test("the guard sees the three cases of the day, and lets a plain comment be", (
   assert.equal(swallowed(`  if (x) { a(); }      // older than its profiles (v0.195.0) const u = btn("x");`).length, 1);
   assert.equal(swallowed(`  ok(); }      // the usage profile (modules/sw_story_ui.js) else stopBench();`).length, 1);
   assert.equal(swallowed(`  mode = 1;      // a file is a software ; for (const b of box.children) { b.on = 1; }`).length, 1);
+  assert.equal(swallowed(`  x(a, b)]));      // with the mission view, its chart replaces the chronogram else liveHost.append(el("p", { class: "e" }, f(1)));`).length, 1, "a call with parentheses in its arguments, after an else (26 novembre)");
   assert.equal(swallowed(`  const a = 1;      // the time, in ms : one step of the period`).length, 0);
 });
 test("no line of web/js hides code behind a `//`", () => {

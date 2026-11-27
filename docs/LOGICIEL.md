@@ -275,6 +275,26 @@ le module oscille entre normal et dératé toutes les 30 s — un seuil d'exempl
 masse thermique, refroidissement) et l'écran le dit. Vérifié par `tests/node/sw_pack.test.mjs` (chaque seuil déclenché, contacteur ouvert,
 aller-retour du fichier) et dans le navigateur ; non vérifié : un essai sur une vraie batterie.
 
+## 4 sedecies. La vue Mission, l'arrêt sur défaut (v0.202.0)
+
+Demande de JP, 26 novembre 2026, sur une capture du banc : « replace the central part of the simulation with an overlay that shows the duty cycle of
+the component vs. time, we can export/import actual profile, when we meet a limit, user must restart the profile by clicking on "continue" if fault
+is manageable ».
+
+- **L'enregistrement** (`sw/sw_live.js`) : le module sur le banc garde une ligne par seconde — tensions du CORE le plus haut et du plus bas,
+  température, courant, état du module, chaque sortie du logiciel, le nombre de CORE qui s'équilibrent (`L.rec`) ; `recordCsv` l'écrit en CSV.
+- **La vue Mission** (`modules/sw_mission.js`) prend la place des pièces pendant qu'un module est sur le banc : trois panneaux (tensions,
+  courant, température) avec les seuils du logiciel en pointillé (jaune : à surveiller ; rouge : défaut retenu), l'état du module en bande de
+  couleur, une bande par composant avec son **taux de marche** (`dutyOf`), les événements numérotés, le curseur de maintenant. Le chronogramme
+  des dernières secondes s'efface derrière elle ; « Voir les pièces » ramène les pièces et lui.
+- **Un défaut arrête le profil** (`modules/sw_story_ui.js`) : quand le module passe en URGENCE ou à l'ARRÊT, le temps s'arrête, un bandeau dit
+  les conditions qui ont déclenché et l'événement en cours ; « Continuer » reprend — « Acquitter et continuer » quand la cause est retombée (une
+  pression de 0,3 s sur l'acquittement), sinon le temps la fera retomber et le profil acquittera ensuite.
+- En tête de la Mission : exporter le profil joué (.txt), en importer un (la banque), exporter l'enregistrement (.csv, avec la marque).
+
+Vérifié par `tests/node/sw_mission.test.mjs` et dans le navigateur (charge jouée à ×400 : arrêt à la surchauffe, « Continuer », arrêt à la
+perte de communication). Non vérifié : un essai sur une vraie batterie.
+
 ## 5. Ce qui est vérifié, ce qui ne l'est pas
 
 Vérifié : 6 essais Node (`tests/node/sw_objects.test.mjs`) — objets, fils, guide, simulation, et le C compilé qui

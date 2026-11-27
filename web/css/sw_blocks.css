@@ -333,3 +333,11 @@ svg.swp .swp-title { font-size: 13px; }
 .swm.docked.docked-left { border-right: 2px solid var(--line); } .swm.docked.docked-right { border-left: 2px solid var(--line); }
 .swbal.docked .swbal-cols { grid-template-columns: repeat(4, minmax(0, 1fr)); } .swbal.docked .swbal-head { grid-template-columns: repeat(2, minmax(0, 1fr)); flex-wrap: wrap; }
 .swbal.docked .swbal-bar, .swbal.docked .swbal-sets { flex-wrap: wrap; }
+/* the MISSION view (v0.202.0) : the whole profile as a chart recorder draws it, over the place of the pieces */
+.swmi-host { flex: 1 1 auto; min-height: 0; overflow: auto; background: #0b1220; } .swmi-host[hidden] { display: none; }
+.swmi { color: #e2e8f0; padding: .5rem .7rem; } .swmi-head { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem; margin-bottom: .4rem; } .swmi-head b { font-size: 1rem; } .swmi-gap { flex: 1; }
+.swmi-clock { color: #94a3b8; font-variant-numeric: tabular-nums; } .swmi-chart { display: block; border-radius: 8px; } .swmi-note { margin: .35rem 0 0; color: #94a3b8; }
+.swmi-halt { display: flex; align-items: center; gap: .8rem; margin: 0 0 .5rem; padding: .55rem .8rem; border: 2px solid #ef4444; border-radius: 10px; background: color-mix(in srgb, #ef4444 16%, #0b1220); } .swmi-halt[hidden] { display: none; }
+.swmi-halt div { flex: 1; } .swmi-halt p { margin: .2rem 0 0; font-size: .85rem; color: #fecaca; } .swmi-halt svg { color: #f87171; width: 28px; height: 28px; }
+.swmi-host { flex: 1 1 0; min-height: 300px; }
+.swmi-halt b { color: #fff; font-size: .95rem; }

@@ -54,6 +54,6 @@ test("the dashboard is read from the software : its title, the colour of each co
 
 test("the screens : the bubble under the storyline, « Suivant », the window and its sound", () => {
   const read = (f) => readFileSync(new URL(`../../web/js/modules/${f}`, import.meta.url), "utf8");
-  assert.match(read("sw_story_ui.js"), /swStoryNext/); assert.match(read("sw_story_ui.js"), /data-sw-profiles/); assert.match(read("sw_profile_bank.js"), /Ajouter à la banque/); assert.match(read("sw.js"), /story\.line, story\.bubble/);
+  assert.match(read("sw_story_ui.js"), /swStoryNext/); assert.match(read("sw_story_ui.js"), /data-sw-profiles/); assert.match(read("sw_profile_bank.js"), /Ajouter à la banque/); assert.match(read("sw.js"), /\[story\.line\] : \[\]\), \.\.\.\(mission \? \[mission\.halt\] : \[\]\), \.\.\.\(story \? \[story\.bubble\]/, "the line of the profile, the banner of a limit, then the bubble");
   assert.match(read("sw_monitor_ui.js"), /Fenêtre à part/); assert.match(read("sw_sound.js"), /createOscillator/);
 });

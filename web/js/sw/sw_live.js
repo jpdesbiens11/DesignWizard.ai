@@ -32,10 +32,19 @@ export function liveStart(d, keep = 600) {
   const m = machine(d), inputs = liveInputs(d), set = Object.fromEntries(inputs.map((i) => [i.id, i.start]));
   const L = { d, m, inputs, set, keep, t: 0, log: [], trace: { t: [], ports: Object.fromEntries(Object.keys(m.last).map((r) => [r, []])) }, bool: boolOuts(d) };
   /* the module on the bench (sw/sw_pack.js) : it drives the pins it names, one second at a time, and obeys what the software commands */
-  const pl = plantOf(d); if (pl) { L.plant = packStart(d); L.pl = pl; L.pk = { every: Math.max(1, Math.round(1000 / m.dt)), n: 0 }; sensePlant(L); }
+  const pl = plantOf(d); if (pl) { L.plant = packStart(d); L.pl = pl; L.pk = { every: Math.max(1, Math.round(1000 / m.dt)), n: 0 }; sensePlant(L);
+    /* the RECORD of the mission (JP, 26 novembre 2026 : « le duty cycle des composants dans le temps ») : one sample a second — what the pins read,
+       the state of the module, what the software commands (every output pin), how many resistors bleed */
+    L.recRefs = (d.objects || []).filter((o) => !o.off && KINDS[o.kind] && KINDS[o.kind].pin === "dout").map((o) => `${o.id}.level`); L.rec = []; record(L); }
   return L;
 }
 const PLANT_PINS = ["vmax", "vmin", "temp", "current"];
+function record(L) { const s = packSense(L.plant), last = L.m.last; L.rec.push({ t: L.t, ...s, state: L.pl.state ? last[L.pl.state] || 0 : 0, bleed: L.plant.bleed.filter(Boolean).length, out: L.recRefs.map((r) => (last[r] ? 1 : 0)) }); if (L.rec.length > 30000) L.rec.splice(0, L.rec.length - 30000); }
+/** The record of a mission as CSV : one line a second — time, what the pins read in the units of physics, the state, each output. */
+export function recordCsv(L, names = {}) {
+  if (!L || !L.rec) return ""; const head = ["t (s)", "Vmax (V)", "Vmin (V)", "T max (°C)", "I (A, + discharge)", "state", "bleeding CORE", ...L.recRefs.map((r) => names[r] || r)];
+  return `${[head.join(","), ...L.rec.map((x) => [x.t / 1000, x.vmax / 1000, x.vmin / 1000, x.temp / 10, x.current / 1000, x.state, x.bleed, ...x.out].join(","))].join("\r\n")}\r\n`;
+}
 function sensePlant(L) { const s = packSense(L.plant); for (const k of PLANT_PINS) if (L.pl[k]) liveSet(L, L.pl[k], s[k]); }
 /** The pins the module on the bench drives : they are read, not set by hand. */
 export const plantPins = (L) => new Set(L && L.pl ? PLANT_PINS.map((k) => L.pl[k]).filter(Boolean) : []);
@@ -56,7 +65,7 @@ export function liveStep(L, n = 1) {
     L.trace.t.push(now); for (const r of Object.keys(L.trace.ports)) L.trace.ports[r].push(L.m.last[r]);
     if (L.trace.t.length > L.keep) { L.trace.t.shift(); for (const r of Object.keys(L.trace.ports)) L.trace.ports[r].shift(); }
     if (L.plant && ++L.pk.n >= L.pk.every) { L.pk.n = 0; const last = L.m.last, pl = L.pl;
-      packStep(L.plant, { closed: pl.contactor ? !!last[pl.contactor] : true, derate: pl.state ? (last[pl.state] || 0) >= 1 : false, pump: pl.pump ? !!last[pl.pump] : false }); sensePlant(L); } }
+      packStep(L.plant, { closed: pl.contactor ? !!last[pl.contactor] : true, derate: pl.state ? (last[pl.state] || 0) >= 1 : false, pump: pl.pump ? !!last[pl.pump] : false }); sensePlant(L); record(L); } }
   if (L.log.length > 200) L.log.splice(0, L.log.length - 200);
   return L;
 }
