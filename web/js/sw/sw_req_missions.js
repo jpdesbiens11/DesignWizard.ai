@@ -21,6 +21,7 @@ import { profilesOf } from "./sw_story.js";
 import { liveInputs } from "./sw_live.js";
 import { forDiscipline, keyOf } from "../core/reqs.js";
 import { oraclesFor, oracleText, SIGNALS } from "../core/req_oracle.js";
+import { applyPlan, planOf } from "./sw_mission_plan.js";
 
 /** The kinds of missions, in the order the screen shows them : a colour, a pictogram, a short name. */
 export const ORIGINS = {
@@ -100,7 +101,7 @@ function limitMissions(tests, C1, amb, pl) {
       : ev(60 + go, "past", `Franchit : ${what} à ${fr(past, 2)} ${u}`, `Au-delà de la limite, tenu ${hold} s. Attendu — ${expect}.`, { plant: put(past), keys: T.keys, cross: true });
     const e3 = ev(60 + go + hold, "back", "Retour : la cause disparaît", cool ? "La mission revient au repos." : cur ? (T.mode === "charge" ? "Le chargeur revient à sa consigne." : `La charge revient à 1 C (${fr(C1, 0)} A).`) : `${what} : rendu à la normale.`, { plant: back });
     const end = 60 + go + hold + rest;
-    return { id: `rq-${T.signal}-${T.op === ">" ? "hi" : "lo"}-${String(T.value).replace(/[^0-9]/g, "_")}-${T.mode}`, origin: "limit", kind: T.mode, keys: T.keys,
+    return { id: `rq-${T.signal}-${T.op === ">" ? "hi" : "lo"}-${String(T.value).replace(/[^0-9]/g, "_")}-${T.mode}`, origin: "limit", kind: T.mode, keys: T.keys, aims: T.items.map((x) => ({ key: x.key, n: x.n })),
       name: `${T.keys.join(" · ")} — ${S.short} ${T.op} ${fr(T.value, 2)} ${u}${D.modes ? ` en ${MODE_FR[T.mode]}` : ""}`,
       events: [ev0, e1, e2, e3, ...ackEv(60 + go + hold + 60, pl), ev(end, "end", "Fin de la mission", "La mission est jouée.")] };
   });
@@ -108,14 +109,14 @@ function limitMissions(tests, C1, amb, pl) {
 
 /** The nominal charge and discharge : inside every limit the requirements set. */
 function nominalMissions(d, list, C1, amb) {
-  const lo = Math.max(2.8, ...list.filter((x) => x.o.kind === "bound" && x.o.min !== undefined).map((x) => x.o.min)), keys = [...new Set(list.filter((x) => x.o.kind === "bound").map((x) => x.key))];
+  const lo = Math.max(2.8, ...list.filter((x) => x.o.kind === "bound" && x.o.min !== undefined).map((x) => x.o.min)), keys = [...new Set(list.filter((x) => x.o.kind === "bound").map((x) => x.key))], aims = list.filter((x) => x.o.kind === "bound").map((x) => ({ key: x.key, n: x.n }));
   const tc = until(d, { mode: "charge", start: 3.9, cMax: 1, amb }, (s, P) => P.done || P.ended, 3 * 3600) || 3600;
   const floor = +(lo + 0.4).toFixed(2), td = until(d, { mode: "discharge", start: 4.1, a: 2 * C1, amb }, (s) => s.vmin < floor * 1000, 3 * 3600) || 1800;
   return [
-    { id: "nom-charge", origin: "nominal", kind: "charge", keys, name: "Nominal — charge à 1 C jusqu'à la fin", events: [
+    { id: "nom-charge", origin: "nominal", kind: "charge", keys, aims, name: "Nominal — charge à 1 C jusqu'à la fin", events: [
       ev(0, "start", "Départ en charge", `${startText("charge", C1, 3.9)} Le chargeur va jusqu'au bout de sa tension constante.`, { plant: setup("charge", C1, amb, 3.9) }),
       ev(tc + 60, "rest", "Le chargeur s'arrête", "La charge est finie : le module reste au repos.", { plant: { mode: "rest" } }), ev(tc + 180, "end", "Fin de la mission", "Rien n'a dû réagir.")] },
-    { id: "nom-discharge", origin: "nominal", kind: "discharge", keys, name: `Nominal — décharge à 2 C jusqu'à ${fr(floor, 2)} V`, events: [
+    { id: "nom-discharge", origin: "nominal", kind: "discharge", keys, aims, name: `Nominal — décharge à 2 C jusqu'à ${fr(floor, 2)} V`, events: [
       ev(0, "start", "Départ en décharge", `Le module est en service : la charge tire 2 C (${fr(2 * C1, 0)} A), cell blocks à 4,1 V au repos.`, { plant: { ...setup("discharge", C1, amb, 4.1), a: 2 * C1 } }),
       ev(td, "rest", "La charge s'arrête", `Le cell block le plus bas est à ${fr(floor, 2)} V : ${fr(0.4, 1)} V au-dessus de la limite basse.`, { plant: { mode: "rest", a: 0 } }), ev(td + 120, "end", "Fin de la mission", "Rien n'a dû réagir.")] },
   ];
@@ -124,7 +125,7 @@ function nominalMissions(d, list, C1, amb) {
 function envelopeMissions(list, C1, amb) {
   return list.filter((x) => x.o.kind === "envelope" && x.o.signal === "current").map((x) => { const dis = x.o.max !== undefined, A = Math.abs(dis ? x.o.max : x.o.min), mode = dis ? "discharge" : "charge";
     const s0 = dis ? 4.1 : 3.4, at = dis ? 60 : 200;
-    return { id: `env-${x.key}-${x.n}`, origin: "envelope", kind: mode, keys: [x.key], name: `${x.key} — ${fr(A, 0)} A en ${MODE_FR[mode]}`, events: [
+    return { id: `env-${x.key}-${x.n}`, origin: "envelope", kind: mode, keys: [x.key], aims: [{ key: x.key, n: x.n }], name: `${x.key} — ${fr(A, 0)} A en ${MODE_FR[mode]}`, events: [
       ev(0, "start", `Départ en ${MODE_FR[mode]}`, startText(mode, C1, s0), { plant: setup(mode, C1, amb, s0) }),
       ev(at, "reach", `${dis ? "La charge tire" : "Le chargeur pousse"} ${fr(A, 0)} A`, `L'enveloppe de ${x.key} : ${oracleText(x.o)}. Tenu 60 s.`, { plant: currentPut(mode, A, C1), keys: [x.key], cross: true }),
       ev(at + 60, "back", "Retour à 1 C", "Le courant revient à la normale.", { plant: currentOff(mode, C1) }), ev(at + 180, "end", "Fin de la mission", "La mission est jouée.")] }; });
@@ -138,7 +139,7 @@ function cornerMissions(list, C1, amb, pl) {
       .flatMap((x) => x.o.if.filter((c) => c.signal === "temp_max" && c.op === ">").map((c) => ({ x, v: c.value }))).sort((a, b) => a.v - b.v)[0];
     if (!env || !hot) continue;
     const A = Math.abs(mode === "discharge" ? env.o.max : env.o.min), T = hot.v - 2, s0 = mode === "charge" ? 3.4 : 4.0;
-    out.push({ id: `corner-${mode}`, origin: "corner", kind: mode, keys: [env.key, hot.x.key], name: `Corner case — ${MODE_FR[mode]} ${fr(A, 0)} A à ${fr(T, 0)} °C`, events: [
+    out.push({ id: `corner-${mode}`, origin: "corner", kind: mode, keys: [env.key, hot.x.key], aims: [{ key: env.key, n: env.n }, { key: hot.x.key, n: hot.x.n }], name: `Corner case — ${MODE_FR[mode]} ${fr(A, 0)} A à ${fr(T, 0)} °C`, events: [
       ev(0, "start", `Départ en ${MODE_FR[mode]}`, startText(mode, C1, s0), { plant: setup(mode, C1, amb, s0) }),
       ev(30, "hot", `Chaleur du dehors : la cell la plus chaude à ${fr(T, 0)} °C`, `À 2 °C de la limite de ${hot.x.key} : le module doit rester en service.`, { plant: { heatTo: T } }),
       ev(300, "peak", `${mode === "discharge" ? "La charge tire" : "Le chargeur pousse"} ${fr(A, 0)} A, à chaud`, `Le courant de ${env.key}, au bord de la température : les deux bords à la fois.`, { plant: currentPut(mode, A, C1), keys: [env.key, hot.x.key], cross: true }),
@@ -198,16 +199,17 @@ export function projectProfiles(d) {
   const fromThresholds = (p) => p.from === "thresholds" || auto.get(p.id) === JSON.stringify(p.events);      // a project saved before the mark : the same events
   return { played: all.filter((p) => !fromThresholds(p)), bench: all.filter(fromThresholds) };
 }
-/** Every mission the campaign plays, written from the requirements (and the project's own duty cycles). → [{ id, origin, kind, keys, name, events }] */
+/** Every mission of the software, written from the requirements (and the project's own duty cycles), with its plan — class, place, On / Off,
+    difficulty (sw/sw_mission_plan.js). The campaign plays those that are On, in that order. → [{ id, origin, kind, keys, name, events, cls, off, level, levelSure }] */
 export function campaignMissions(project, d, { reserve = true } = {}) {
-  const pl = plantOf(d), own = projectProfiles(d).played.map((p) => ({ ...p, origin: "project", keys: p.keys || [] })); if (!pl) return own;
-  const R = project && project.reqs, list = reqOracles(R), S = packStart(d).S, C1 = S.capAh, amb = S.amb, { tests } = limitsOf(list);
-  return [...nominalMissions(d, list, C1, amb), ...limitMissions(tests, C1, amb, pl), ...envelopeMissions(list, C1, amb), ...cornerMissions(list, C1, amb, pl), ...faultMissions(d, C1, amb, pl), ...own,
-    ...(reserve ? reserveMissions(R, list, C1, amb, pl) : [])];
+  const R = project && project.reqs, pl = plantOf(d), own = projectProfiles(d).played.map((p) => ({ ...p, origin: "project", keys: p.keys || [] })); if (!pl) return applyPlan(own, planOf(d), R);
+  const list = reqOracles(R), S = packStart(d).S, C1 = S.capAh, amb = S.amb, { tests } = limitsOf(list);
+  return applyPlan([...nominalMissions(d, list, C1, amb), ...limitMissions(tests, C1, amb, pl), ...envelopeMissions(list, C1, amb), ...cornerMissions(list, C1, amb, pl), ...faultMissions(d, C1, amb, pl), ...own,
+    ...(reserve ? reserveMissions(R, list, C1, amb, pl) : [])], planOf(d), R);
 }
 /** The oracles no mission crosses on purpose (no quantity the bench moves) — said, never hidden. → [{ key, n, o }] */
 export function missionGaps(project) { return limitsOf(reqOracles(project && project.reqs)).none; }
 /** A short signature of a set of missions : a campaign played on another set cannot be compared with it. */
-export const missionSig = (list) => hash((list || []).map((p) => `${p.id}:${(p.events || []).length}:${(p.events || []).at(-1)?.t || 0}`).join("|")).toString(36);
+export const missionSig = (list) => hash((list || []).filter((p) => !p.off).map((p) => `${p.id}:${(p.events || []).length}:${(p.events || []).at(-1)?.t || 0}`).sort().join("|")).toString(36);      // what is played, not its order
 /** How long a mission lasts, in seconds. */
 export const missionSeconds = (p) => Math.round((((p.events || []).at(-1) || { t: 0 }).t) / 1000);

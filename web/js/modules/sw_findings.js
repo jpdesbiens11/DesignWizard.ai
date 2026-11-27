@@ -11,15 +11,16 @@ import { registerModule, setGuide, go } from "../core/app.js";
 import { store } from "../core/store.js";
 import { busyVeil } from "../core/busy.js";
 import { leanOf } from "../sw/sw_lean.js";
-import { ORIGINS } from "../sw/sw_req_missions.js";
+import { classOf, LEVELS } from "../sw/sw_mission_plan.js";
 import { campaignRun, findingsCsv, findingsMd } from "../sw/sw_campaign.js";
 import { verdictWord } from "../core/req_oracle.js";
 import { swShell } from "./sw_vband.js";
 import { leanHead, leanDesign, lastCampaign, rememberCampaign, missionsOf } from "./sw_lean_ui.js";
 import { loopSection } from "./sw_loop_ui.js";
 
-/* the columns, grouped by the kind of mission (sw/sw_req_missions.js ORIGINS), in the order they were played */
-const groupsOf = (C) => { const out = []; for (const p of C.profiles) { const k = p.origin || "project", last = out[out.length - 1]; if (last && last.k === k) last.n++; else out.push({ k, O: ORIGINS[k] || ORIGINS.project, n: 1 }); } return out; };
+/* the columns, grouped by the class of the mission (sw/sw_mission_plan.js CLASSES : Functional → Malfunction), in the order they were played */
+const groupsOf = (C) => { const out = []; for (const p of C.profiles) { const k = p.cls || "functional", last = out[out.length - 1]; if (last && last.k === k) last.n++; else out.push({ k, O: { ...classOf(k) }, n: 1 }); } return out; };
+const lv = (p) => LEVELS[Math.min(5, Math.max(1, p.level || 3)) - 1];
 const shortOf = (p) => (p.origin === "limit" || p.origin === "envelope" ? p.name.split(" — ").slice(1).join(" — ") : p.name.replace(/^(Nominal|Corner case|Pannes injectées) — /, "")) || p.name;
 const V = { pass: { c: "#16a34a", s: "✓" }, fail: { c: "#dc2626", s: "✗" }, none: { c: "#94a3b8", s: "–" }, uncovered: { c: "#d97706", s: "◌" }, covered: { c: "#0891b2", s: "●" } };
 const WHY = { offbench: "prouvée autrement que par essai", tbd: "une valeur TBD", unread: "aucune grandeur que le banc relève", need: "un besoin", person: "« ne pas juger au banc »" };
@@ -54,7 +55,7 @@ function render(main) {
     if (!C) view.replaceChildren(el("div", { class: "empty", "data-sw-findings": "none" }, el("h2", null, "La campagne n'a pas encore été jouée"), el("p", null, `${P.length} mission${P.length > 1 ? "s" : ""} à jouer sur le banc virtuel : chaque exigence lue par la machine y sera jugée.`)), veil.node);
     else view.replaceChildren(el("div", { class: "swf2-wrap" }, el("table", { class: "swf2-table", "data-sw-findings": "matrix" },
       el("thead", null, el("tr", null, el("th", { rowspan: 2 }, "Exigence"), el("th", { rowspan: 2 }, "Limite"), groupsOf(C).map((g) => el("th", { colspan: g.n, class: "swf2-og", style: `--g:${g.O.color}` }, icon(g.O.icon), ` ${g.O.fr}`)), el("th", { rowspan: 2 }, "Bilan")),
-        el("tr", null, C.profiles.map((p) => el("th", { class: "swf2-vh", style: `--g:${(ORIGINS[p.origin] || ORIGINS.project).color}`, "data-tip": `${p.name} — ${Math.round(p.seconds / 60)} min` }, el("span", null, shortOf(p)))))),
+        el("tr", null, C.profiles.map((p) => el("th", { class: "swf2-vh", style: `--g:${classOf(p.cls).color}`, "data-tip": `${p.name} — ${Math.round(p.seconds / 60)} min — difficulté ${lv(p).n} (${lv(p).fr})` }, el("i", { class: "swf2-lv", style: `--l:${lv(p).color}` }, String(lv(p).n)), el("span", null, shortOf(p)))))),
       el("tbody", null, C.rows.map((r) => el("tr", { class: `swf2-${r.overall}`, "data-sw-finding": r.key },
         el("td", null, r.rule ? el("span", { class: "chip small", "data-tip": r.req.statement }, "Règle de la campagne") : el("a", { href: "#/lreq", "data-tip": r.req.title || r.req.statement || "" }, r.key)), el("td", null, r.text, r.sure ? null : el("small", { class: "muted" }, " (à confirmer)")),
         C.profiles.map((p) => { const v = r.by[p.id] || "none"; return el("td", { class: "swf2-cell", style: `--v:${V[v].c}`, "data-tip": verdictWord(v) }, V[v].s); }),

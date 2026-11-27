@@ -19,7 +19,7 @@ let mm = null;
 /** Every mission of the campaign for a software (sw/sw_req_missions.js), kept while the requirements, their readings and the bench do not change. */
 export function missionsOf(d) {
   if (!d) return []; const p = store.project, R = p && p.reqs;
-  const key = [d.id, reserveSeed(R), JSON.stringify((R && R.oracles) || {}), JSON.stringify((R && R.alloc) || {}), JSON.stringify(d.plant || null), JSON.stringify((d.profiles || []).map((x) => [x.id, (x.events || []).length]))].join("¦");
+  const key = [d.id, reserveSeed(R), JSON.stringify((R && R.oracles) || {}), JSON.stringify((R && R.alloc) || {}), JSON.stringify(d.plant || null), JSON.stringify(d.missionPlan || null), JSON.stringify((d.profiles || []).map((x) => [x.id, (x.events || []).length]))].join("¦");
   if (!mm || mm.key !== key) mm = { key, list: campaignMissions(p, d) };
   return mm.list;
 }

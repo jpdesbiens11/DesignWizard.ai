@@ -78,5 +78,5 @@ test("wiring : the Missions screen groups by kind and names the requirements ; t
   const m = read("web/js/modules/sw_missions.js"); assert.match(m, /data-sw-mission-group/); assert.match(m, /missionsOf\(d\)/); assert.match(m, /Restent sur le banc/);
   assert.match(read("web/js/modules/sw_story_ui.js"), /missionsOf\(d\)/); assert.match(read("web/js/modules/sw_mission.js"), /missionsOf\(d\)\.find/);
   const f = read("web/js/modules/sw_findings.js"); assert.match(f, /swf2-og/); assert.match(f, /Règle de la campagne/); assert.match(f, /profiles: P/);
-  assert.match(read("web/js/sw/sw_campaign.js"), /profiles = campaignMissions\(project, d\)/);
+  assert.match(read("web/js/sw/sw_campaign.js"), /profiles: all = campaignMissions\(project, d\)/);
 });

@@ -17,7 +17,7 @@ import { oraclesFor, oracleText, verdictWord } from "../core/req_oracle.js";
 import { stampText } from "../core/brand.js";
 
 /* what the loop never lets an answer change : the bench and the missions are the yardstick, the board is the hardware */
-const FROZEN_KEYS = ["plant", "profiles", "profile", "board", "scenario", "id"];
+const FROZEN_KEYS = ["plant", "profiles", "profile", "missionPlan", "board", "scenario", "id"];
 
 /** What an assistant may see of a campaign : the HOLDOUT SET left out (sw/sw_req_missions.js — played at every campaign, never shown), each
     verdict read again on the missions it sees ; `held` : the limits that fail only on missions it does not see. */
@@ -38,7 +38,9 @@ export function loopPrompt(project, d, C0) {
     "", "TA TÂCHE — corrige le logiciel pour que les exigences ÉCHOUÉES tiennent, sans en faire échouer d'autres. Change des seuils, des délais, ajoute ou relie des objets des genres disponibles ; dis en tête, exigence par exigence, ce que tu changes et pourquoi.",
     "", "CE QUI NE CHANGE PAS — les broches et leurs nets (interfaces HW), le module sur le banc (plant), les missions (profiles), la carte (board) : l'outil les remet tels quels. Les exigences ne se changent pas ici : si une exigence te paraît fausse ou contradictoire, dis-le, ne la contourne pas. N'invente pas de genre d'objet.",
     "", `LES MISSIONS (${C.profiles.length} montrées) — écrites à partir des exigences : nominal, chaque limite approchée, franchie et tenue, puis revenue (un cell emulator tient un cell block à une tension), l'enveloppe, des corner cases, des pannes injectées. ${C.reserve ? `Un LOT DE RÉSERVE de ${C.reserve} missions tirées au hasard dans l'enveloppe est joué aussi, sans t'être montré : une version réglée sur les seules missions que tu vois y sera prise.` : ""}`,
-    "", `CE QUI ÉCHOUE (${fails.length}) :`, ...fails.map((r) => `- ${r.key} — ${r.text} — échoue sur ${C.profiles.filter((p) => r.by[p.id] === "fail").map((p) => p.name).join(", ")} — « ${String(r.req.statement || "").slice(0, 300)} »`),
+    "", `CE QUI ÉCHOUE (${fails.length}) — de la mission la plus facile à la plus difficile, la priorité de conception du projet (difficulté 1 à 5) :`,
+    ...fails.map((r) => { const on = C.profiles.filter((p) => r.by[p.id] === "fail").sort((a, b) => (a.level || 3) - (b.level || 3)); return { r, on, lv: on.length ? on[0].level || 3 : 9 }; }).sort((a, b) => a.lv - b.lv)
+      .map(({ r, on }) => `- ${r.key} — ${r.text} — échoue sur ${on.map((p) => `${p.name} (difficulté ${p.level || 3})`).join(", ")} — « ${String(r.req.statement || "").slice(0, 300)} »`),
     ...(held.length ? ["", `ÉCHOUE AUSSI SUR LE LOT DE RÉSERVE (${held.length}) — tu ne vois pas ces missions ; corrige la cause, pas la mission :`, ...held.map((r) => `- ${r.key} — ${r.text}`)] : []),
     ...(unc.length ? ["", `ENVELOPPE NON COUVERTE (${unc.length}) — les missions ne l'atteignent pas ; ce n'est pas au logiciel de la couvrir :`, ...unc.map((r) => `- ${r.key} — ${r.text}`)] : []),
     "", `LES EXIGENCES DU LOGICIEL (${mine.length}) : voir requirements.md.`, "", `LES INTERFACES HW (gelées, ${pins.length}) :`, ...pins.map((x) => `- ${x}`),

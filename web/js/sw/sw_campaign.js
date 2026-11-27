@@ -39,11 +39,11 @@ export function nominalVerdict(S) { let on = false; for (const s of S) { if (s.c
 /** Every mission of the software, each requirement judged on each — in slices : yields { mission, missions, name, done, total }.
     The missions : those written from the requirements (sw/sw_req_missions.js), unless the caller gives its own.
     → { when, profiles: [{ id, name, origin, keys, seconds }], rows: [{ key, n, req, oracle, text, sure, by: { [profile]: verdict }, overall }], unread: [{ key, why }], counts, design } */
-export function* campaignRun(project, d, { profiles = campaignMissions(project, d), when = new Date().toISOString(), slice = 20000 } = {}) {
-  const R = project && project.reqs, rows = new Map(), done = [];
+export function* campaignRun(project, d, { profiles: all = campaignMissions(project, d), when = new Date().toISOString(), slice = 20000 } = {}) {
+  const R = project && project.reqs, rows = new Map(), done = [], profiles = all.filter((p) => !p.off);      // a mission set Off is kept, never played
   for (let i = 0; i < profiles.length; i++) { const p = profiles[i], g = missionRun(d, p, slice); let r = g.next();
     while (!r.done) { yield { mission: i, missions: profiles.length, name: p.name, ...r.value }; r = g.next(); }
-    const L = r.value; done.push({ id: p.id, name: p.name, origin: p.origin || "project", keys: p.keys || [], seconds: Math.round(((L.rec || []).at(-1) || { t: 0 }).t / 1000) });
+    const L = r.value; done.push({ id: p.id, name: p.name, origin: p.origin || "project", cls: p.cls || "functional", level: p.level || 3, keys: p.keys || [], seconds: Math.round(((L.rec || []).at(-1) || { t: 0 }).t / 1000) });
     const S = seriesOf(L.rec, L.recRefs, d.plant);
     if (p.origin === "nominal") { const k = `${NOMINAL_RULE.key}#0`; if (!rows.has(k)) rows.set(k, { key: NOMINAL_RULE.key, n: 0, req: { statement: NOMINAL_RULE.statement, title: NOMINAL_RULE.text }, oracle: { kind: "nominal" }, text: NOMINAL_RULE.text, sure: true, rule: true, by: {} }); rows.get(k).by[p.id] = nominalVerdict(S); }
     for (const v of R ? verdicts(R, S) : []) { const k = `${v.key}#${v.n}`;

@@ -658,3 +658,35 @@ résistance typique) et se dérate dans la seconde ; ESS-REQ-003 dit « en conti
 
 **Ce que les missions ne font pas** (`GAPS`) : une limite franchie moins d'une seconde (le banc relève une ligne par seconde) ; une exigence non
 lue par la machine (les pannes l'exercent sans la juger) ; le froid (ESS-REQ-050 non lue). Le module est typique.
+
+## Les missions se rangent : classes, ordre, On / Off, difficulté, graphe tagué (v0.213.0)
+
+JP, 27 novembre 2026 : « que les missions puissent être déplacées et réordonnées dans la fenêtre Missions, être classées de fonctionnelle vers
+performance puis par safety / corner case / malfunction ; voir les tags des requis dans le graph temporel du profil de mission ; disable / enable
+Mission ; attribuer un niveau de difficulté — une priorité de conception, du plus facile au plus difficile ». Pur : `web/js/sw/sw_mission_plan.js` ;
+écran : `modules/sw_missions.js`, graphe : `modules/sw_mission_graph.js`.
+
+- **Les classes**, dans l'ordre de JP : Functional, Performance, Safety, Corner cases, Malfunction, puis le lot de réserve (`CLASSES`). La classe
+  est proposée d'après ce qu'est la mission (nominal → Functional, enveloppe → Performance, corner case, pannes → Malfunction) et, pour une
+  limite, d'après la catégorie DynamiteAgile des exigences qu'elle vise (Safety si l'une l'est, sinon Performance, sinon Functional). Sur le BM :
+  5 Functional, 3 Performance, 7 Safety, 2 Corner cases, 1 Malfunction, 4 en réserve.
+- **L'ordre** : une mission se glisse par sa poignée, dans sa classe ou sur une autre (le glisser-déposer du navigateur) ; au clavier, ↑ ↓ sur la
+  poignée la déplacent dans sa classe (Alt + ↑ ↓ reste la marche d'escalier de la plateforme), et son menu « Classe » la change de classe. Le lot
+  de réserve ne prend ni ne donne de mission.
+- **On / Off** : Off la garde, la campagne ne la joue pas ; le banc peut encore la jouer. **Copier** en met une copie dans la banque, née Off.
+- **La difficulté**, de 1 (Facile) à 5 (Très difficile) : proposée d'après la classe (1 Functional … 4 Corner cases et Malfunction, 5 réserve), en
+  pointillé et clignotante jusqu'à ce qu'une personne la choisisse ; « Confirmer » les prend telles quelles, « Ranger par difficulté » trie
+  chaque classe du plus facile au plus difficile. « Par où commencer » (marge de droite, après la campagne) et la consigne de la boucle IA
+  listent ce qui échoue à partir de la mission la plus facile.
+- **Le graphe du profil** de chaque mission : ce qu'elle impose au banc, voie par voie — le courant (+ décharge, − charge), la cell la plus chaude,
+  le cell block tenu par le cell emulator — et, en pointillé sur chaque voie, les limites des exigences qu'elle vise (seulement celles-là : la
+  mission à 75 °C ne montre pas le 65 °C de la même exigence), taguées de leur clé et de leur valeur, de la couleur de leur verdict sur cette
+  mission après la campagne. Une limite sur une grandeur que la mission n'impose pas (une charge nominale : les cell blocks) a sa voie « jugée
+  par le banc, non imposée ».
+- **Le plan** est gardé dans le logiciel (`design.missionPlan`), chaque changement une étape annulable ; la boucle IA le remet tel quel. La
+  campagne joue les missions On, dans l'ordre du plan ; sa signature (`missionSig`) compte ce qui est joué, pas son ordre : réordonner ne
+  demande pas de rejouer la campagne, mettre une mission Off oui.
+
+**Essayé dans Chromium** : glisser une mission en tête de sa classe et sur une autre classe, la refuser au lot de réserve, ↑ ↓ sur la poignée,
+le menu « Classe », On / Off (la campagne joue 21 missions sur 22), une difficulté choisie puis Ctrl + Z. **Pas essayé** : au toucher, Firefox,
+Safari ; le défilement automatique pendant un long glisser (une classe hors de l'écran se rejoint par le menu « Classe »).
