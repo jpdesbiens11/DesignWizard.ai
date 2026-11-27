@@ -40,7 +40,7 @@ export function swBalance(design, o = {}) {
   const bar = el("header", { class: "swm-head" }, icon("bolt"), el("h3", null, "Charge et équilibrage"), lamp, close);
   const win = el("div", { class: "swm swbal", role: "dialog", "aria-label": "Charge et équilibrage", tabindex: "-1", hidden: true, "data-sw-balance": "", onKeydown: (e) => { if (e.key === "Escape") api.close(); } },
     bar, stale, el("div", { class: "swbal-bar" }, go, step, again, speed), same, sets, body);
-  const drag = dragWindow(win, bar, "dw.sw.balance.pos"), dock = dockOver(win, "left");      // in the left pane while it is open (JP) ; floating when the pane is hidden
+  const drag = dragWindow(win, bar, "dw.sw.balance.pos"), dock = dockOver(win, "right");      // in the right pane while it is open (JP, 26 novembre 2026 : « interchange right to left pane ») ; floating when the pane is hidden
   const button = btn("Charge et équilibrage", () => (st.open ? api.close() : api.open()), { small: true, icon: "bolt", tip: "Les 8 CORE pendant une charge : de 0,1 C à 2 C, puis l'équilibrage passif qui rattrape les écarts — en accéléré" }); button.dataset.swBalanceOpen = "";
 
   function reset() { if (shared()) { B = o.bench.plant; S = B.S; } else { S = balanceSpec(design(), { start: st.over.start, cBal: st.over.cBal, rBal: st.over.rBal }); B = balanceStart(S); } draw(); }

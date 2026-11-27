@@ -26,7 +26,7 @@ import { installLoupe } from "./loupe.js";
 import { installUpdateCheck, versionChip, sayUpdated } from "./update_check.js";
 import { installWhatsNew, newsButton } from "./whats_new_ui.js";
 
-export const APP_VERSION = "0.201.3";
+export const APP_VERSION = "0.201.4";
 /** What every document of the open project carries beside its content : approval names, organisation, confidentiality note, extraction stamp (core/brand.js). */
 export const docMeta = (when = new Date()) => docIdentity(store.project, when, APP_VERSION);
 const modules = new Map();

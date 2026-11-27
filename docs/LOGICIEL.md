@@ -265,8 +265,8 @@ exporter et importer un profil… le démarrer et voir les conséquences dans la
   une fois par la physique : courant (chargeur qui pousse, charge qui tire), température (chaleur du dehors), communication, tension haute
   (chargeur qui oublie sa tension constante), tension basse (module qui se vide) ; un défaut retenu est acquitté. `coverage` dit ce qu'un
   profil ne franchit pas. Les réponses du logiciel sont recueillies pendant que le profil joue.
-- **Les fenêtres dans les volets** (v0.201.2, JP) : le monitoring s'ouvre par-dessus le volet de droite, « Charge et équilibrage » par-dessus
-  celui de gauche (`dockOver` de `modules/sw_drag.js`) ; le volet reste dessous, intact, et revient au clic sur le ×.
+- **Les fenêtres dans les volets** (v0.201.2, JP) : le monitoring s'ouvre par-dessus le volet de gauche, « Charge et équilibrage » par-dessus
+  celui de droite (inversés en v0.201.4, JP) (`dockOver` de `modules/sw_drag.js`) ; le volet reste dessous, intact, et revient au clic sur le ×.
 - **Le fichier** (`sw/sw_profiles.js`) porte `module.mode`, `module.start`, `module.load`, `module.push`, `module.cv_fail`, `module.heat_to`,
   `module.ambient`, et en 5e champ les seuils visés ; il revient tel quel ; le prompt pour l'IA les nomme.
 

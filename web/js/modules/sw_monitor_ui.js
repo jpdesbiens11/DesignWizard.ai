@@ -47,7 +47,7 @@ export function swMonitor(bench, design, sound) {
     const move = (m) => place({ x: m.clientX - dx, y: m.clientY - dy }), up = () => { bar.removeEventListener("pointermove", move); bar.removeEventListener("pointerup", up); keep({ x: panel.offsetLeft, y: panel.offsetTop }); };
     bar.addEventListener("pointermove", move); bar.addEventListener("pointerup", up); });
   const place = (p) => { const w = panel.offsetWidth || 380, h = panel.offsetHeight || 300; panel.style.left = `${Math.max(0, Math.min(window.innerWidth - w, p.x))}px`; panel.style.top = `${Math.max(0, Math.min(window.innerHeight - 40, p.y))}px`; void h; };
-  const dock = dockOver(panel, "right");      // in the right pane while it is open (JP) ; floating when the pane is hidden
+  const dock = dockOver(panel, "left");      // in the left pane while it is open (JP, 26 novembre 2026 : « interchange right to left pane ») ; floating when the pane is hidden
   const button = btn(M.title, () => (st.open ? api.close() : api.open()), { small: true, icon: "sensor", tip: "Le tableau de bord : une LED par condition à surveiller, les valeurs à côté, l'état général en vert, jaune ou rouge" });
   button.dataset.swMonitorOpen = ""; button.setAttribute("aria-expanded", "false");
   const light = el("i", { class: "swm-dot", "aria-hidden": "true" }); button.prepend(light);
