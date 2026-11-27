@@ -34,7 +34,7 @@ test("the software of the module, on its bench : derated above the sustained cur
   const ev = events(d, R).map((e) => `${e.t} ${e.ref} ${e.to}`);
   for (const e of ["2490 module.derate 1", "4010 module.derate 0", "5490 module.emergency 1", "6490 module.close 0", "6490 k.drive 0", "6520 k_fb.level 0"]) assert.ok(ev.includes(e), e);
   assert.ok(!ev.some((e) => / latch\.fault 1$/.test(e)), "no fault : the stop comes from the emergency that lasted");
-  assert.match(requirement(d, d.objects.find((o) => o.id === "module")), /STOP, the contactor open, as soon as Fault latch is 1.*EMERGENCY when Banc : le tour des cartes de CORE ne revient plus has held for 500 ms/);
+  assert.match(requirement(d, d.objects.find((o) => o.id === "module")), /STOP, the contactor open, as soon as Fault latch is 1.*EMERGENCY when Round of the CORE silent, 12 V present has held for 500 ms/);
   assert.ok(bmProject().software.some((x) => x.id === "BM-SW"), "the software is in the project BM");
 });
 
@@ -49,4 +49,13 @@ test("its C : the module of the state machine in the library — and, compiled, 
   const made = spawnSync("cc", ["-std=c99", "-Wall", "-Wextra", "-pedantic", "-Werror", ...inc, ...src, "-o", join(dir, "t")], { encoding: "utf8" }); assert.equal(made.status, 0, `the C compiles without a warning : ${made.stderr}`);
   const ran = spawnSync(join(dir, "t"), [], { encoding: "utf8" }); assert.equal(ran.status, 0); assert.equal(ran.stdout, want, "back to back");
   const doc = read("docs/BM_MODULE.md"); for (const re of [/Itération 15/, /module_state/, /[Dd]os à dos/]) assert.match(doc, re);
+});
+
+test("without the 12 V the CORE boards are silent : a silent round-robin is no emergency then — with the 12 V it is (JP, 27 novembre 2026, par menu)", async () => {
+  const { liveStart, liveSet, liveStep } = await import("../../web/js/sw/sw_live.js");
+  const d = moduleDesign(), L = liveStart(d, 10), at = (r) => L.m.last[r];
+  liveSet(L, "wake", 0); liveSet(L, "lost", 1); liveStep(L, 200);
+  assert.equal(at("module.emergency"), 0, "standby : the round is silent, as it should be"); assert.equal(at("k.drive"), 0, "the contactor stays open without the 12 V");
+  liveSet(L, "wake", 1); liveStep(L, 60); assert.equal(at("module.emergency"), 1, "the 12 V is there and the round stays silent : timeout, emergency");
+  assert.ok(d.wires.some((w) => w.from === "silent.y" && w.to === "module.lost") && d.wires.some((w) => w.from === "wake.level" && w.to === "silent.b"));
 });

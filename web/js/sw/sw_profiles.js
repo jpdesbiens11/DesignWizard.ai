@@ -7,7 +7,7 @@
      kind: charge
      # t (s) | title | what happens | changes : variable = value unit ; …
      0    | Le chargeur est branché | Le module est à moitié chargé. | adc_v = 3.7 V ; adc_i = -60 A
-     16   | Comm : la chaîne se tait | Un connecteur décroche.        | lost = 1
+     16   | Comm : timeout du round-robin | Un connecteur décroche.  | lost = 1
      19.5 | Acquittement             | On acquitte.                   | ack = pulse 0.3 s
 
    The variables are the INPUTS of the bench of this software (sw/sw_live.js liveInputs) — by id or by name —, in the units of physics (V, A,

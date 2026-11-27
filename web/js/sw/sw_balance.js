@@ -47,7 +47,7 @@ export function balanceStart(S) {
   B.v = soc.map((x) => ocv(x)); sample(B); return B;
 }
 const PHASES = { soft: "Départ doux à 0,1 C", ramp: "Montée vers 2 C", cc: "Charge rapide à 2 C", bal: "Équilibrage : la charge ralentie", cv: "Tension constante à 4,2 V", done: "Chargé et équilibré",
-  top: "Chargé : chaque CORE au-dessus du seuil se décharge seule", full: "Chargé : le chargeur s'est arrêté" };
+  top: "Chargé : balancing local, les CORE au-dessus du threshold descendent", full: "Chargé : charger OFF" };
 export const phaseText = (p) => PHASES[p] || p;
 /** Runs n steps of S.dt seconds. → B */
 export function balanceStep(B, n = 1) {

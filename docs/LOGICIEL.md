@@ -549,19 +549,22 @@ Le groupe Logiciel commence par la page des exigences du produit (`#/lreq`), la 
 
 Les exigences du produit prouvées par essai sont **lues par la machine** et tracées en pointillé tagué sur la vue Mission, avec leur verdict profil par profil (v0.205.0) : voir `docs/EXIGENCES.md`, « Lue par la machine ».
 
-## Deux types de cartes : les CORE parlent, la principale écoute (v0.207.0)
+## Deux types de cartes : les CORE boards transmettent, la principale écoute (v0.207.0, v0.208.0)
 
 JP, 27 novembre 2026 : « 2 pcb types that speak to each other when powered with 12 V… the main might not send anything to the core pcb… use the
-core pcb to feed all other functions using sensors from core + sensors from the main » ; choix par menu : un tour fixe (CORE 1 ouvre, chacune
-après la précédente), chaque CORE équilibre seule au seuil, sans 12 V le principal veille sur le module.
+core pcb to feed all other functions using sensors from core + sensors from the main » ; choix par menu : round-robin fixe (CORE 1 ouvre le cycle,
+chaque CORE transmet après la précédente), passive balancing local au threshold, sans 12 V la carte principale en standby sur le module et les
+CORE boards silent ; « utilise les termes anglais techniques toujours ».
 
-- **Le logiciel du BMS central n'envoie rien aux CORE** : ce que leur tour apporte (la plus haute et la plus basse CORE, la CTN la plus chaude,
-  l'équilibrage, le silence du tour) reste une entrée du banc, dite comme telle ; ce que la carte principale lit elle-même a sa broche.
-- **Le bloc « Passive balancing » quitte le logiciel du BM** — il reste dans la bibliothèque, pour un BMS qui équilibre de façon centrale.
-  L'équilibrage est la règle de chaque carte de CORE (`CORE_BALANCE`, `coreBleed`, `localRule` de `sw/sw_balance.js` ; `plant.balance` du
-  logiciel) : le module simulé du banc la fait tourner, « Charge et équilibrage » le dit (`data-bal-local`), et le monitoring montre
-  « Équilibrage des CORE — chacune seule, dit dans leur tour » (une entrée `pin_din` marquée `device: "balancing"`).
-- **Le 12 V** (`wake`, `DIN0`) entre dans la condition de fermeture avec l'autorisation du véhicule et la présence. Sans lui, le logiciel tourne
-  et surveille ; le contacteur reste ouvert.
-- **Non fait** : le programme de la carte de CORE (l'outil montre un logiciel par projet), la lecture de la trame des CORE et l'écriture de celle
-  du véhicule. Voir `docs/BM_MODULE.md` (itération 18).
+- **Le logiciel du BMS central ne transmet rien aux CORE** : ce que leurs frames apportent (la plus haute et la plus basse cell block voltage,
+  la NTC la plus chaude, le balancing, le timeout du round-robin) reste une entrée du banc, dite comme telle ; ce que la carte principale lit
+  elle-même a sa broche.
+- **Le bloc « Passive balancing » quitte le logiciel du BM** — il reste dans la bibliothèque, pour un BMS à balancing central. Le balancing est
+  la règle de chaque CORE board (`CORE_BALANCE`, `coreBleed`, `localRule` de `sw/sw_balance.js` ; `plant.balance` du logiciel) : le module simulé
+  du banc la fait tourner, « Charge et équilibrage » le dit (`data-bal-local`), et le monitoring montre « Balancing des CORE — local, signalé
+  dans leur frame » (une entrée `pin_din` marquée `device: "balancing"`).
+- **Le 12 V** (`wake`, `DIN0`) entre dans la condition de fermeture du contactor avec l'ENABLE du véhicule et la présence. Sans lui, le logiciel
+  tourne en standby, le contactor reste ouvert, et un round-robin silent n'est pas une emergency (`silent` = timeout ET WAKE → `module.lost`) ;
+  le monitoring suit l'entrée que nomme `plant.lost`.
+- **Non fait** : le firmware de la CORE board (l'outil montre un logiciel par projet), la lecture des frames des CORE et l'écriture de celle du
+  véhicule. Voir `docs/BM_MODULE.md` (itération 18).

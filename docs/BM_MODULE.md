@@ -997,36 +997,42 @@ jour : **le CAN FD isolé reste**, et porte aussi le flux de la chaîne RS-485 d
   allumerait une DEL rouge en service normal si elle était posée seule : elle viendra avec la précharge) ; le **logiciel de la carte de CORE** —
   la carte a son microcontrôleur, mais l'outil ne montre qu'un logiciel par projet.
 
-## Itération 18 — les deux types de cartes se parlent ; chaque CORE équilibre seule
+## Itération 18 — les deux types de cartes se parlent ; passive balancing local
 
 JP, 27 novembre 2026 : « 2 pcb types that speak to each other when powered with 12 V and do all functions related to HW / the main might not send
 anything to the core pcb, just use monitoring to manage the BM overall states and functions / I meant just use the core pcb to feed all other
-functions using sensors from core + sensors from the main ». Choix de JP, par menu, le même jour : **un tour fixe** — CORE 1 ouvre le tour,
-chaque carte parle après avoir entendu la précédente ; **chaque CORE équilibre seule au seuil** ; **sans 12 V, le principal veille sur le module**.
+functions using sensors from core + sensors from the main ». Choix de JP, par menu, le même jour : **un round-robin fixe** — CORE 1 ouvre le
+cycle, chaque CORE board transmet dans son slot après avoir entendu la précédente ; **passive balancing local, au threshold** ; **sans 12 V, la
+carte principale reste en standby sur le module** ; puis (v0.208.0) **sans 12 V, les CORE boards sont silent**. JP, même jour : « utilise les termes
+anglais techniques toujours ».
 
-- **Qui parle** : les 8 cartes de CORE parlent, la carte principale **écoute**. Son émetteur RS-485 est tenu en réception (`RS485_DE` bas, U11.PB1,
-  et le rappel sur DE au démarrage) : elle n'envoie rien aux CORE. Une carte connaît son **rang** dans le tour (écrit en mémoire à
-  l'assemblage) ; la carte principale vérifie en écoutant que les 8 rangs parlent ; un tour qui ne revient plus est une urgence.
-- **Ce que la carte principale fait de ce qu'elle entend** : toutes ses fonctions viennent des capteurs des CORE (tension de chaque CORE, ses
-  8 CTN, son équilibrage, dits à son tour) et des siens (courant du shunt, tension du module et de la sortie, CTN de la borne, 12 V, ordres du
-  véhicule). Le flux des CORE part au véhicule par le CAN FD.
-- **L'équilibrage est celui de chaque CORE** (`CORE_BALANCE`, `coreBleed` de `web/js/sw/sw_balance.js`) : la carte branche sa résistance à
-  **4,15 V** et la débranche à **4,13 V** (exemples à confirmer), sur sa **seule** tension — elle ne connaît ni les autres CORE ni le courant.
-  Le logiciel du BMS central n'a plus de bloc « Passive balancing » ; il **entend** qu'une carte équilibre (une entrée du banc, `bal_in`), le
-  montre au monitoring et le passe au véhicule. Le module simulé du banc fait tourner la règle des cartes (`plant.balance`).
-- **Ce que la règle donne**, sur le module simulé (cellules typiques, purge de 0,5 A) : partie de 3,0 V, la charge finit en **0,78 h** ; les CORE
-  au-dessus de 4,15 V redescendent ensuite seules à 4,13 V et **s'y rejoignent** (fin à **4,4 h**, écart final 23 mV — une CORE restée sous le seuil
-  ne se décharge pas). Le prix : **≈ 22 Wh de chaleur et ≈ 6 % de la charge** rendus pour s'égaliser, à chaque charge complète. Un seuil plus haut
-  ou un équilibrage commandé par le BMS central perdrait moins ; c'est le compromis d'une règle locale, sans ordre.
-- **Le 12 V** (`DIN0`, WAKE) : le contacteur ne se ferme qu'avec le 12 V, l'autorisation du véhicule et la présence. Sans 12 V, la carte
-  principale vit sur le module et le surveille toujours — et le côté bus des CORE aussi, qu'elle alimente : ce courant de veille est **à chiffrer**,
-  et un rythme lent est à choisir (revue de la carte).
-- **Le cuivre ne change pas** : les deux cartes gardent leur routage ; leurs fonctions, leur description et leurs points de revue disent la
-  nouvelle architecture.
-- **Écart à trancher** : la purge de la carte de CORE est de **100 mA** ; le module simulé du Logiciel purge **0,5 A**. À 100 mA, une CORE de 36 Ah
-  met plus de 20 h à redescendre de 4,20 V à 4,13 V.
-- **Encore à venir** : le programme de la carte de CORE (le tour, la règle) — l'outil montre un seul logiciel par projet ; les blocs qui lisent la
-  trame des CORE et écrivent celle du véhicule.
+- **Qui transmet** : les 8 CORE boards transmettent, la carte principale **écoute**. Son transceiver RS-485 est en receive mode (`RS485_DE` bas,
+  U11.PB1, et le pull-down sur DE au reset) : elle ne transmet rien aux CORE. Chaque CORE board connaît son **slot** (node ID écrit en mémoire à
+  l'assemblage) ; la carte principale vérifie en écoutant que les 8 slots transmettent ; un cycle qui ne revient pas est un timeout, donc une
+  emergency — **si le 12 V est là** (v0.208.0).
+- **Ce que la carte principale fait des frames** : toutes ses fonctions viennent des sensors des CORE (cell block voltage, 8 NTC, balancing
+  actif, dans leur frame) et des siens (current du shunt, module voltage, output voltage, NTC de l'output terminal, 12 V, vehicle commands). Le
+  stream des CORE part au véhicule par le CAN FD.
+- **Le balancing est local à chaque CORE board** (`CORE_BALANCE`, `coreBleed` de `web/js/sw/sw_balance.js`) : bleed resistor **ON à 4,15 V**,
+  **OFF à 4,13 V** (exemples à confirmer), sur sa **seule** cell block voltage — elle ne connaît ni les autres CORE ni le current. Le logiciel du
+  BMS central n'a plus de bloc « Passive balancing » ; il **lit** le balancing dans les frames (une entrée du banc, `bal_in`), le montre au
+  monitoring et le passe au véhicule. Le module simulé du banc fait tourner la règle des CORE boards (`plant.balance`).
+- **Ce que la règle donne**, sur le module simulé (cellules typiques, bleed current de 0,5 A) : partie de 3,0 V, la charge finit en **0,78 h** ;
+  les CORE au-dessus du threshold redescendent ensuite seules à 4,13 V et **s'y rejoignent** (fin à **4,4 h**, écart final 23 mV — une CORE restée
+  sous le threshold ne bleed pas). Le prix : **≈ 22 Wh de chaleur et ≈ 6 % de la charge** perdus à chaque charge complète. Un threshold plus haut
+  ou un balancing commandé par le BMS central perdrait moins ; c'est le compromis d'une règle locale, sans commande.
+- **Le 12 V** (`DIN0`, WAKE) : le contactor ne se ferme qu'avec le 12 V, l'ENABLE du véhicule et la présence. **Sans 12 V** (stockage,
+  transport), la carte principale vit sur le module en **standby** et le surveille avec ses propres sensors (module voltage, NTC de l'output
+  terminal) ; **les CORE boards sont silent** : le DC-DC isolé de leur bus side prend maintenant le **12 V** (`+12V`), plus le rail de 5 V — sans
+  12 V, plus de bus side, plus de frames. Le logiciel ne fait d'un round-robin silent une emergency qu'avec le 12 V (`silent` = timeout ET
+  WAKE). Le standby current est **à chiffrer**.
+- **Le cuivre** : en v0.207.0 il ne changeait pas (seuls les textes) ; en v0.208.0 la carte principale est **routée de nouveau** pour l'entrée du
+  DC-DC isolé du bus side, prise sur le 12 V : **325 liaisons sur 340** routées (15 à router à la main, 17 avant), aucune erreur ERC. Un DC-DC isolé unregulated suit son entrée : sur un 12 V de 9 à 16 V, en choisir un à wide input et
+  sortie regulated (revue de la carte).
+- **Écart à trancher** : le bleed current de la CORE board est de **100 mA** ; le module simulé du Logiciel bleed **0,5 A**. À 100 mA, une CORE de
+  36 Ah met plus de 20 h à redescendre de 4,20 V à 4,13 V.
+- **Encore à venir** : le firmware de la CORE board (round-robin, balancing) — l'outil montre un seul logiciel par projet ; les blocs qui lisent
+  les frames des CORE et écrivent celle du véhicule.
 
 **Non vérifié** : l'échauffement réel du cuivre dans le module fermé (le modèle est une barre seule à l'air libre) ; la
 chaleur des cellules elles-mêmes à 45 A (la fiche donne ≤ 8 mΩ à 1 kHz à l'expédition, pas la résistance en courant

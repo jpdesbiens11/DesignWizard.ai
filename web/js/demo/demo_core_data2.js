@@ -337,7 +337,7 @@ via AIN7 at=[48.25, 9.625] d=0.6 drill=0.3
 
 # Comment elle s'assemble — la gamme annotée et la revue
 review author=""
-  open=["Choisir et lire les composants : microcontrôleur (≥ 10 voies de conversion sous 3,0 V), isolateur, émetteur-récepteur, régulateur — leurs brochages sont ceux des séries génériques de l'outil, la fiche du composant monté fait foi.", "Dimensionner la barrière et la distance de fuite à la tension du pack, pas à celle du CORE.", "Valeurs d'exemple : purge de 100 mA, plage de températures, filtre des CTN à 10 Hz.", "Purge : 100 mA sur la carte, 0,5 A dans le module simulé du Logiciel — à trancher. À 100 mA, une CORE de 36 Ah met plus de 20 h à redescendre de 4,20 V à 4,13 V.", "Le programme de la carte (le tour, la règle d'équilibrage) n'est pas dessiné : l'outil montre un logiciel par projet, celui du BMS central ; le module simulé fait tourner la règle."]
+  open=["Choisir et lire les composants : microcontrôleur (≥ 10 voies de conversion sous 3,0 V), isolateur, émetteur-récepteur, régulateur — leurs brochages sont ceux des séries génériques de l'outil, la fiche du composant monté fait foi.", "Dimensionner la barrière et la distance de fuite à la tension du pack, pas à celle du CORE.", "Valeurs d'exemple : purge de 100 mA, plage de températures, filtre des CTN à 10 Hz.", "Bleed current : 100 mA sur la carte, 0,5 A dans le module simulé du Logiciel — à trancher. À 100 mA, une CORE de 36 Ah met plus de 20 h à redescendre de 4,20 V à 4,13 V.", "Le firmware de la carte (round-robin, balancing) n'est pas dessiné : l'outil montre un logiciel par projet, celui du BMS central ; le module simulé fait tourner la règle de balancing."]
   decisions=[]
 
 # Autres données

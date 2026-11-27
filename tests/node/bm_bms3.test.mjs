@@ -37,7 +37,7 @@ test("the software of the BM runs on it : its pins on its nets, and the guide sa
   const b = hostBoard(p, d), at = new Map(mcuNets(b).map((x) => [x.net, x.pin])), role = (o) => netRole(b, o.hw.net);
   for (const o of d.objects.filter((x) => KINDS[x.kind] && KINDS[x.kind].pin)) {
     assert.ok(o.bench || (o.hw && o.hw.net), `${o.id} : on a net of the board, or read from the chain`);
-    if (o.bench) { assert.match(o.bench, /cartes de CORE|liaison RS-485/, `${o.id} : said where it comes from`); continue; }
+    if (o.bench) { assert.match(o.bench, /CORE boards|liaison RS-485/, `${o.id} : said where it comes from`); continue; }
     assert.equal(at.get(o.hw.net), o.hw.pin, `${o.id} : ${o.hw.net} reaches ${o.hw.pin}`);
   }
   const want = { pump: /PUMP/, fan: /FAN/, buzz: /Avertisseur/, veh_en: /ENABLE/, pres: /PRES/, ack: /ACK/, k_fb: /AUX/, k_drv: /CONTACTEUR/, adc_i: /shunt/, adc_vm: /tension du bus/, adc_vo: /tension du bus/, adc_to: /CTN/, led_y: /Témoin/, led_r: /Témoin/ };

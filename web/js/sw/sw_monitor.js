@@ -32,11 +32,13 @@ export function monitorOf(d) {
   const product = [];
   for (const o of objs.filter((x) => x.kind === "contactor")) product.push({ id: o.id, label: o.name, ref: `${o.id}.drive`, on: "fermé", off: "ouvert", sev: "off-red" });
   for (const o of objs.filter((x) => x.kind === "fault_latch")) product.push({ id: o.id, label: o.name, ref: `${o.id}.fault`, on: "défaut retenu", off: "aucun défaut", sev: "red" });
-  for (const o of objs.filter((x) => x.kind === "pin_din" && modO && W.some((w) => w.from === `${x.id}.level` && w.to === `${modO.id}.lost`))) product.push({ id: o.id, label: o.name, ref: `${o.id}.level`, on: "muette", off: "répond", sev: "red" });
+  /* the silence of the link : the pin the module names (`plant.lost`, it may reach the state through a gate — JP, 27 novembre 2026 : only with the 12 V), or a pin wired to it */
+  const lostPin = d && d.plant && d.plant.lost;
+  for (const o of objs.filter((x) => x.kind === "pin_din" && modO && (lostPin ? x.id === lostPin : W.some((w) => w.from === `${x.id}.level` && w.to === `${modO.id}.lost`)))) product.push({ id: o.id, label: o.name, ref: `${o.id}.level`, on: "muette", off: "répond", sev: "red" });
   for (const o of objs.filter((x) => KINDS[x.kind].pin === "dout" && ["pump", "fan", "heater", "valve"].includes(x.device))) product.push({ id: o.id, label: o.name, ref: `${o.id}.level`, on: "en marche", off: "à l'arrêt", sev: "green" });
   for (const o of objs.filter((x) => x.kind === "balancing")) product.push({ id: o.id, label: o.name, ref: `${o.id}.bleed`, on: "équilibre", off: "au repos", sev: "green" });      // the green light : balancing has started
   /* or the boards that balance alone and say it in their round (JP, 27 novembre 2026) : the central board only hears it */
-  for (const o of objs.filter((x) => KINDS[x.kind].pin === "din" && x.device === "balancing")) product.push({ id: o.id, label: "Équilibrage des CORE — chacune seule, dit dans leur tour", ref: `${o.id}.level`, on: "équilibre", off: "au repos", sev: "green" });
+  for (const o of objs.filter((x) => KINDS[x.kind].pin === "din" && x.device === "balancing")) product.push({ id: o.id, label: "Balancing des CORE — local, signalé dans leur frame", ref: `${o.id}.level`, on: "équilibre", off: "au repos", sev: "green" });
   const alarm = objs.filter((o) => KINDS[o.kind].pin === "dout" && o.device === "buzzer").map((o) => `${o.id}.level`);
   for (const r of alarm) product.push({ id: split(r)[0], label: O[split(r)[0]].name, ref: r, on: "sonne", off: "silencieux", sev: "red" });
   return { title: (d && d.monitor && d.monitor.title) || `Monitoring — ${(d && d.name) || "logiciel"}`, lamp: lampO ? { green: `${lampO.id}.green`, yellow: `${lampO.id}.yellow`, red: `${lampO.id}.red` } : null,

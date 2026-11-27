@@ -52,7 +52,7 @@ test("the module BM : each CORE board balances ALONE at its threshold — the ce
   const P = packStart(d); packDrive(P, { mode: "charge" }); let said = 0, top = 0; for (let k = 0; k < 6 * 3600 && !P.done; k++) { packStep(P, { closed: true }); said += packSense(P).bleed; if (P.phase === "top") top++; }
   assert.ok(said > 0 && top > 0, "the boards bleed after the charge, and say it"); assert.equal(d.plant.bleed, "bal_in");
   const pin = d.objects.find((o) => o.id === "bal_in"); assert.equal(pin.vehicle, "CAN FD", "passed to the vehicle with the round"); assert.ok(pin.bench, "a value of the round : no pin of the central board");
-  assert.ok(monitorOf(d).product.some((p) => p.ref === "bal_in.level" && /chacune seule/.test(p.label)), "the monitoring shows it");
+  assert.ok(monitorOf(d).product.some((p) => p.ref === "bal_in.level" && /local, signalé/.test(p.label)), "the monitoring shows it");
   assert.ok(d.objects.some((o) => o.id === "wake" && o.hw.net === "DIN0"), "the 12 V read on WAKE : without it the contactor stays open, the board keeps watching");
   assert.match(readFileSync(new URL("../../web/js/modules/sw_balance_ui.js", import.meta.url), "utf8"), /data-bal-local/);
 });

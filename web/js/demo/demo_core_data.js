@@ -5,7 +5,7 @@ export const DEMO_CORE_1 = `dwiz board/1 CORE-1S8P-PCBA "Carte de CORE 1S8P"
 
 # Pourquoi — les fonctions que la carte remplit
 description <<<
-Posée sur le dessus d'un CORE de 8 cellules 21700 en parallèle (2 × 4) : mesure ses 8 températures — CTN sur les rabats du flex replié en G — et sa tension, équilibre seule au-dessus de son seuil, et parle à son tour au BMS central du boîtier par RS-485 isolé, le côté bus alimenté par le faisceau, en chaîne d'un CORE au suivant.
+Posée sur le dessus d'un CORE de 8 cellules 21700 en parallèle (2 × 4) : mesure ses 8 températures — CTN sur les rabats du flex replié en G — et sa tension, fait son passive balancing seule au-dessus de son threshold, et transmet dans son slot du round-robin au BMS central du boîtier par RS-485 isolé, le côté bus alimenté par le faisceau, en chaîne d'un CORE au suivant.
 >>>
 revision A
 function F1 parent=null kind=principale name="S'alimenter sur le CORE" block=null
@@ -17,13 +17,14 @@ function F2 parent=null kind=principale name="Mesurer les 8 températures" block
 function F3 parent=null kind=principale name="Mesurer la tension du CORE" block=null
   criterion name=Plage level="3,2 à 4,2 V" flex=F0
   criterion name=Condition level="équilibrage coupé pendant la mesure" flex=F1
-function F4 parent=null kind=principale name="Équilibrer seule, au seuil" block=null
-  criterion name=Purge level="≈ 90 mA à 4,2 V (exemple à confirmer)" flex=F1
-  criterion name=Seuil
-    level="la résistance se branche à 4,15 V, se débranche à 4,13 V (exemples à confirmer) — sur sa seule tension : ni ordre du BMS central, ni courant lu"
+function F4 parent=null kind=principale name="Passive balancing local, au threshold" block=null
+  criterion name="Bleed current" level="≈ 90 mA à 4,2 V (exemple à confirmer)" flex=F1
+  criterion name=Threshold
+    level="bleed resistor ON à 4,15 V, OFF à 4,13 V (exemples à confirmer) — sur sa seule cell block voltage : aucune commande du BMS central, aucun current lu"
     flex=F1
-function F5 parent=null kind=principale name="Calculer et parler à son tour" block=null
-  criterion name=Liaison level="UART ; CORE 1 ouvre le tour, chaque carte parle après avoir entendu la précédente"
+function F5 parent=null kind=principale name="Calculer et transmettre dans son slot" block=null
+  criterion name=Liaison
+    level="UART ; round-robin : CORE 1 ouvre le cycle, chaque CORE board transmet après avoir entendu la précédente"
     flex=F1
 function F6 parent=null kind=principale name="Communiquer avec le BMS central" block=null
   criterion name=Bus level="RS-485 demi-duplex isolé, côté bus alimenté par le faisceau, en chaîne" flex=F0
@@ -33,8 +34,8 @@ function F7 parent=null kind=principale name="Être testable et programmable" bl
 function F8 parent=null kind=contrainte name="Tenir sur le dessus du CORE" block=null
   criterion name=Carte level="92,8 × 46,4 mm, à l'enveloppe d'une 21700 (Ø 21,7 mm)" flex=F0
 function F9 parent=null kind=contrainte name="Une seule variante pour les 8 CORE" block=null
-  criterion name=Rang
-    level="écrit en mémoire à l'assemblage : sa place dans le tour ; le BMS central vérifie, en écoutant, que les 8 rangs parlent"
+  criterion name=Slot
+    level="node ID écrit en mémoire à l'assemblage : sa place dans le round-robin ; le BMS central vérifie, en écoutant, que les 8 slots transmettent"
     flex=F1
 function F1.1 parent=F1 kind=technique
   name="Raccorder le circuit flexible : +4V2,+4V2,NTC0,NTC1,NTC2,NTC3,NTC4,NTC5,NTC6,NTC7,GND,GND" block=B1 auto=true
