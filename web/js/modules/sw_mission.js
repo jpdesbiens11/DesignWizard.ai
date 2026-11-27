@@ -40,12 +40,21 @@ export function swMission(bench, design, story, change, showPieces) {
   const go = btn("Pause", () => (bench.running ? bench.pause() : bench.play()), { small: true, primary: true, icon: "play", tip: "Laisser courir le profil, ou l'arrêter" }); go.hidden = true; go.dataset.swmiRun = "";
   const full = btn("Plein écran", () => setFull(!st.full), { small: true, icon: "fit", tip: "La mission sur tout l'écran ; « Écran normal » ou Échap y revient" }); full.dataset.swmiFull = "";
   const onKey = (e) => { if (e.key === "Escape" && st.full) { e.preventDefault(); setFull(false); } };
-  function setFull(on) {
-    st.full = on; node.classList.toggle("swmi-full", on); full.lastChild.textContent = on ? "Écran normal" : "Plein écran"; full.dataset.swmiFull = on ? "on" : ""; go.hidden = !on;
-    if (on) { st.home = halt.parentNode; node.insertBefore(halt, node.querySelector(".swmi-body")); document.addEventListener("keydown", onKey); }
-    else { if (st.home && st.home.isConnected) st.home.insertBefore(halt, st.home.querySelector("[data-sw-bubble]") || null); document.removeEventListener("keydown", onKey); }
-    draw();
+  /* the browser's own full screen (the Fullscreen API : the whole screen, whatever the page around does) ; refused, the mission goes to the root
+     of the page and covers the window — a pane whose style makes its own frame (a transform) would otherwise keep a fixed overlay inside it */
+  function setFull(on, byBrowser = false) {
+    if (on === st.full) return; st.full = on; node.classList.toggle("swmi-full", on); full.lastChild.textContent = on ? "Écran normal" : "Plein écran"; full.dataset.swmiFull = on ? "on" : ""; go.hidden = !on;
+    if (on) { st.home = halt.parentNode; node.insertBefore(halt, node.querySelector(".swmi-body")); st.parent = node.parentNode; st.next = node.nextSibling; document.addEventListener("keydown", onKey);
+      const root = () => { if (st.full && !document.fullscreenElement) document.body.append(node); draw(); };
+      if (node.requestFullscreen) node.requestFullscreen().then(() => requestAnimationFrame(() => draw()), root); else root(); }
+    else { if (!byBrowser && document.fullscreenElement === node && document.exitFullscreen) document.exitFullscreen().catch(() => {});
+      if (node.parentNode === document.body && st.parent && st.parent.isConnected) st.parent.insertBefore(node, st.next && st.next.parentNode === st.parent ? st.next : null);
+      if (st.home && st.home.isConnected) st.home.insertBefore(halt, st.home.querySelector("[data-sw-bubble]") || null); document.removeEventListener("keydown", onKey); }
+    requestAnimationFrame(() => draw());
   }
+  /* Esc in the browser's full screen leaves it : the mission follows */
+  const fsChange = () => { if (st.full && document.fullscreenElement !== node) setFull(false, true); };
+  document.addEventListener("fullscreenchange", fsChange);
   const node = el("div", { class: "swmi", "data-sw-mission": "" }, el("header", { class: "swmi-head" }, icon("report"), title, clock, el("span", { class: "swmi-gap" }), go, full, exp, imp, rec, back), el("div", { class: "swmi-body" }, canvas),
     el("p", { class: "swmi-note muted small" }, "Une ligne par seconde du module simulé (valeurs TYPIQUES). Les traits pointillés sont les seuils du logiciel ; une bande pleine, un composant en marche, avec son taux de marche à gauche. Un chiffre en haut : un événement du profil."));
   /* the banner of a limit met */
@@ -99,5 +108,5 @@ export function swMission(bench, design, story, change, showPieces) {
     g.strokeStyle = "#f8fafc"; g.lineWidth = 1.5; g.beginPath(); g.moveTo(X(L.t), top - 14); g.lineTo(X(L.t), yEnd); g.stroke(); g.lineWidth = 1;
   }
   let at = 0; const refresh = () => { go.lastChild.textContent = bench.running ? "Pause" : "Marche"; const now = performance.now(); if (now - at < 250) return; at = now; draw(); };
-  return { node, halt, refresh, draw, halted, get full() { return st.full; }, dispose() { if (st.full) setFull(false); node.remove(); halt.remove(); } };      // the banner of a limit goes under the line of the profile (modules/sw.js)
+  return { node, halt, refresh, draw, halted, get full() { return st.full; }, dispose() { if (st.full) setFull(false); document.removeEventListener("fullscreenchange", fsChange); node.remove(); halt.remove(); } };      // the banner of a limit goes under the line of the profile (modules/sw.js)
 }

@@ -26,3 +26,7 @@ test("the screen : the mission takes the place of the pieces, a limit stops the 
 test("the rack, compact while a module is on the bench : what it drives is read, what one injects stays a switch", () => {
   const r = read("web/js/modules/sw_lab.js"); assert.match(r, /node\.classList\.toggle\("compact", !!L\.plant\)/); assert.match(r, /swlab-chip read/); assert.match(r, /swlab-seg mini/);
 });
+
+test("full screen is the browser's own (the whole screen), with the root of the page when it is refused", () => {
+  const m = read("web/js/modules/sw_mission.js"); assert.match(m, /node\.requestFullscreen\(\)/); assert.match(m, /document\.body\.append\(node\)/); assert.match(m, /addEventListener\("fullscreenchange", fsChange\)/);
+});

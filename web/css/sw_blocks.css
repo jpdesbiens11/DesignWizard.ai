@@ -358,3 +358,4 @@ svg.swp .swp-piece { touch-action: none; }
 /* the mission, full screen (v0.203.0) */
 .swmi-full { position: fixed; inset: 0; z-index: 70; overflow: auto; background: #0b1220; padding: .7rem 1rem; }
 .swmi-full .swmi-halt { margin-bottom: .6rem; }
+.swmi:fullscreen { background: #0b1220; overflow: auto; padding: .7rem 1rem; } .swmi::backdrop { background: #0b1220; }
