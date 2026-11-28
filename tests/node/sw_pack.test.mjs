@@ -15,7 +15,7 @@ test("the plant obeys the software : no current with the contactor open, the cur
   packStep(P, { closed: true, derate: true }); assert.equal(P.i, -18, "derated : 0,5 C"); packStep(P, { closed: true }); assert.equal(P.i, -18, "the vehicle holds the derating a while");
   const hot = packStart(d); packDrive(hot, { heatTo: 70 }); for (let s = 0; s < 300; s++) packStep(hot, {});
   assert.ok(Math.abs(hot.temp - 70) < 1.5, `heat from outside brings it to 70 °C (${hot.temp})`); assert.equal(packSense(hot).temp, Math.round(hot.temp * 10), "0,1 °C as the software keeps it");
-  const air = packStart(d), pump = packStart(d); air.temp = pump.temp = 60; packStep(air, {}); packStep(pump, { pump: true }); assert.ok(pump.temp < air.temp, "the pump cools faster than the air");
+  const air = packStart(d), pump = packStart(d); air.th.tk.fill(60); pump.th.tk.fill(60); for (let s = 0; s < 30; s++) { packStep(air, {}); packStep(pump, { pump: true }); } assert.ok(pump.temp < air.temp - 0.5, "the pump cools faster than the air (the 1.5D network : each CORE to the coolant)");
 });
 
 test("every limit of the software is crossed by the physics, the software answering : charge and discharge played on the bench", () => {

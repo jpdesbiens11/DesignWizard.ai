@@ -3,8 +3,10 @@
    afin de couvrir tous les cas de l'enveloppe de fonctionnement et trigger les safety… exporter et importer un profil… le démarrer et voir les
    conséquences dans la logique SW implantée » ; choix cliqué : « Tirés des seuils du logiciel »).
    The PLANT is the module itself : N cell blocks in series (sw/sw_balance.js : capacity, state of charge, typical curve, resistance, the passive
-   balancing of each block by the step of the software's block), a CHARGER (0.1 C, ramp, 2 C, constant voltage) or a LOAD, a lumped TEMPERATURE of
-   the hottest block (I²R and the resistors heat it, the air or the pump cool it). It runs WITH the software, one second at a time : what the
+   balancing of each block by the step of the software's block), a CHARGER (0.1 C, ramp, 2 C, constant voltage), a LOAD or a POWER (kW), and — since
+   JP's demand of 28 novembre 2026 — a 1.5D system model : each CORE its resistance (Arrhenius, state of charge), its capacity in the cold, its own
+   TEMPERATURE in a thermal network along the stack, the casing, the air and the coolant (sw/sw_pack_model.js) ; the pin « temperature » reads the
+   hottest CORE. It runs WITH the software, one second at a time : what the
    software commands acts on it — the contactor open, no current ; DERATED, the current is held to `cDerate` ; the pump on, it cools four times
    better — and what it measures goes to the pins the software reads (`design.plant` names them). A profile drives it (`plant` on an event : the
    mode, the load, a charger that pushes too hard or forgets its constant voltage, heat from outside) ; the logic inputs stay on `set`.
@@ -15,9 +17,10 @@
 import { KINDS, cfgOf } from "./sw_objects.js";
 import { liveWires, split } from "./sw_design.js";
 import { ocv, socAt, BALANCE_DEFAULTS, balanceSpec, phaseText, coreBleed } from "./sw_balance.js";
+import { modelOf, rFactor, capFactor, solvePower, thermalStart, thermalStep, lossOf } from "./sw_pack_model.js";
 
-/* 8 cells of about 70 g per block, about 1 000 J/(kg·K) ; a closed module loses about 0,5 W/K by the air ; the pump : four times more — examples */
-export const PACK_DEFAULTS = { ...BALANCE_DEFAULTS, mcp: 560, hA: 0.5, pumpGain: 4, amb: 25, cDerate: 0.5, hold: 30 };
+/* the derating the vehicle and the charger hold, and how long ; the thermal and electrical values are the 1.5D model's (sw/sw_pack_model.js) */
+export const PACK_DEFAULTS = { ...BALANCE_DEFAULTS, amb: 25, cDerate: 0.5, hold: 30 };      // the thermal values : the 1.5D model (sw/sw_pack_model.js)
 /* past 100 % the curve keeps rising, steeply : a charger that forgets its constant voltage overcharges — typical, to see the limit trip */
 const ocvX = (soc) => (soc > 1 ? 4.2 + (soc - 1) * 3 : ocv(soc));
 /** What links the plant to the software : the bench inputs it drives and the outputs it obeys — `design.plant`, or nothing. */
@@ -25,15 +28,16 @@ export const plantOf = (d) => (d && d.plant && d.plant.vmax ? d.plant : null);
 
 /** A pack at rest at `start` volts (or the start of the drive). */
 export function packStart(d, over = {}) {
-  const S = { ...PACK_DEFAULTS, ...balanceSpec(d, over), ...over }, base = socAt(S.start);
+  /* the 1.5D model of the module (sw/sw_pack_model.js) : its cell, its pack, its thermal network, its boundary conditions — typical until entered */
+  const M = modelOf(d).v, S = { ...PACK_DEFAULTS, ...balanceSpec(d, over), capAh: M.capCell * M.np, r: M.rCell / 1000 / M.np, amb: M.amb, cHigh: M.iChgCell / M.capCell, iMax: M.iMaxCell * M.np, ...over, M }, base = socAt(S.start);
   const P = { S, t: 0, soc: Array.from({ length: S.n }, (_, k) => Math.min(1, Math.max(0, base + (S.spread[k % S.spread.length] || 0) * 0.5))), cap: Array.from({ length: S.n }, (_, k) => S.capAh * (S.capSpread[k % S.capSpread.length] || 1)),
     bleed: new Array(S.n).fill(0), mem: Array.from({ length: S.n }, () => KINDS.balancing.init()), bledAh: new Array(S.n).fill(0), i: 0, temp: S.amb, phase: "rest", done: false, trace: [],
-    drive: { mode: "rest", a: 0, push: 0, cvFail: 0, heatTo: 0, amb: S.amb, cMax: S.cHigh, cellHi: 0, cellLo: 0 }, since: 0, held: -1 };
-  P.v = P.soc.map(ocvX); sample(P); return P;
+    drive: { mode: "rest", a: 0, push: 0, power: 0, cvFail: 0, heatTo: 0, amb: S.amb, cMax: S.cHigh, cellHi: 0, cellLo: 0 }, since: 0, held: -1, th: thermalStart(S.n, M), rk: new Array(S.n).fill(S.r), pmax: false };
+  P.temp = M.tInit; P.v = P.soc.map(ocvX); sample(P); return P;
 }
 /** Changes what drives the pack (an event of a profile). A new charge starts its soft start again. */
 export function packDrive(P, patch = {}) { const was = P.drive.mode; Object.assign(P.drive, patch); if (patch.mode && patch.mode !== was) { P.since = 0; P.ended = false; } if (patch.cvFail) P.ended = false; if (patch.start !== undefined) { const b = socAt(patch.start); P.soc = P.soc.map((_, k) => Math.min(1, Math.max(0, b + (P.S.spread[k % P.S.spread.length] || 0) * 0.5))); P.v = P.soc.map(ocvX); } return P; }
-const PH = { rest: "Au repos", load: "Décharge", derate: "Dératé : courant tenu bas", open: "Contacteur ouvert : aucun courant", push: "Le chargeur pousse trop fort", runaway: "Le chargeur oublie sa tension constante" };      // the others : sw/sw_balance.js PHASES
+const PH = { power: "Puissance imposée", powerChg: "Puissance imposée, en charge", pmax: "Puissance au-delà du module : tenue à son maximum", rest: "Au repos", load: "Décharge", derate: "Dératé : courant tenu bas", open: "Contacteur ouvert : aucun courant", push: "Le chargeur pousse trop fort", runaway: "Le chargeur oublie sa tension constante" };      // the others : sw/sw_balance.js PHASES
 export const packPhase = (p) => PH[p] || phaseText(p);
 /** One second (S.dt) of the pack, under what the software commands : out = { closed, derate, pump }. → P */
 export function packStep(P, out = {}) {
@@ -41,32 +45,40 @@ export function packStep(P, out = {}) {
   P.closed = closed;
   /* the vehicle and the charger, asked to derate, hold the lower current a while (S.hold s) : they do not beat with the threshold */
   if (out.derate) P.held = P.t + S.hold; const derate = P.t < P.held;
-  const ocvs = P.soc.map(ocvX), hi = Math.max(...ocvs), anyBleed = P.bleed.some(Boolean); let I = 0, phase = "rest", cvHeld = false;      // I > 0 : into the pack (charge)
+  const M = S.M, ocvs = P.soc.map(ocvX), hi = Math.max(...ocvs), kh = ocvs.indexOf(hi), anyBleed = P.bleed.some(Boolean); let I = 0, phase = "rest", cvHeld = false;      // I > 0 : into the pack (charge)
+  /* each CORE's resistance at its own temperature and state of charge (Arrhenius ; it rises when nearly empty) */
+  const rk = P.soc.map((x, k) => S.r * rFactor(P.th.tk[k], x, M)); P.rk = rk; P.pmax = false;
   if (D.mode === "charge") { const s = P.since, want0 = s < S.soft ? S.cLow * C1 : s < S.soft + S.ramp ? (S.cLow + (D.cMax - S.cLow) * (s - S.soft) / S.ramp) * C1 : D.cMax * C1;
     let want = anyBleed ? Math.min(want0, S.cBal * C1) : want0; if (derate) want = Math.min(want, S.cDerate * C1);
-    const cv = D.cvFail ? Infinity : Math.max(0, (S.vTop - hi) / S.r); I = Math.min(want, cv); cvHeld = cv < want;      // the constant voltage holds the current, derated or not
+    const cv = D.cvFail ? Infinity : Math.max(0, (S.vTop - hi) / rk[kh]); I = Math.min(want, cv); cvHeld = cv < want;      // the constant voltage holds the current, derated or not
     phase = D.cvFail && I > 0 ? "runaway" : derate ? "derate" : I < want - 1e-9 ? "cv" : anyBleed && want < want0 - 1e-9 ? "bal" : s < S.soft ? "soft" : s < S.soft + S.ramp ? "ramp" : "cc";
     if (D.push) { I = D.push; phase = "push"; }
     /* CORE boards that balance alone (S.local) : the charger stops at the end of its constant voltage — they come down to their threshold at rest */
     else if (S.local && P.ended && !D.cvFail) { I = 0; phase = anyBleed ? "top" : "full"; } }
-  else if (D.mode === "discharge") { I = -Math.abs(D.a || 0); if (derate) I = Math.max(I, -S.cDerate * C1); phase = derate ? "derate" : "load"; }
+  else if (D.mode === "discharge") { I = -Math.min(Math.abs(D.a || 0), S.iMax); if (derate) I = Math.max(I, -S.cDerate * C1); phase = derate ? "derate" : "load"; }
+  /* a POWER asked (kW, + discharge, − charge) : the current is the root of P = (Σ OCV − I Σ R)·I, held under the peak power, the cells' currents,
+     the constant voltage of a charge and a derating */
+  else if (D.mode === "power" && D.power) { const want = Math.sign(D.power) * Math.min(Math.abs(D.power), M.pPeak) * 1000, vO = ocvs.reduce((a, b) => a + b, 0), rs = rk.reduce((a, b) => a + b, 0), x = solvePower(want, vO, rs);
+    I = x.i; P.pmax = x.max || Math.abs(D.power) > M.pPeak;
+    if (I < 0) { I = Math.max(I, -S.iMax); if (derate) I = Math.max(I, -S.cDerate * C1); } else { I = Math.min(I, S.cHigh * C1, D.cvFail ? Infinity : Math.max(0, (S.vTop - hi) / rk[kh])); if (derate) I = Math.min(I, S.cDerate * C1); }
+    phase = derate ? "derate" : P.pmax ? "pmax" : I < 0 ? "power" : "powerChg"; }
   if (!closed) { I = 0; phase = "open"; }
   P.i = I; P.phase = phase; P.since += dt;
-  let bleedW = 0;
-  for (let k = 0; k < S.n; k++) { const ib = P.bleed[k] ? P.v[k] / S.rBal : 0; bleedW = Math.max(bleedW, ib * P.v[k]);
-    P.soc[k] = Math.min(1.15, Math.max(0, P.soc[k] + (I - ib) * dt / 3600 / P.cap[k])); P.v[k] = ocvX(P.soc[k]) + I * S.r; P.bledAh[k] += ib * dt / 3600; }
+  const q = new Array(S.n).fill(0);      // the heat of each CORE : I²R and its resistor
+  for (let k = 0; k < S.n; k++) { const ib = P.bleed[k] ? P.v[k] / S.rBal : 0; q[k] = I * I * rk[k] + ib * P.v[k];
+    P.soc[k] = Math.min(1.15, Math.max(0, P.soc[k] + (I - ib) * dt / 3600 / (P.cap[k] * capFactor(P.th.tk[k], M)))); P.v[k] = ocvX(P.soc[k]) + I * rk[k]; P.bledAh[k] += ib * dt / 3600; }
   /* the software's « Passive balancing » step, block by block, on voltages corrected of the drop the current makes — never while it discharges ;
      or, when the CORE boards balance alone (JP, 27 novembre 2026), each board's rule on its own terminal : it knows neither the others nor the current */
-  const vr = P.v.map((x) => Math.round((x - I * S.r) * 1000)), low = Math.min(...vr);
+  const vr = P.v.map((x, k) => Math.round((x - I * rk[k]) * 1000)), low = Math.min(...vr);
   if (S.local) { const mv = cellMv(P); for (let k = 0; k < S.n; k++) P.bleed[k] = coreBleed(P.bleed[k], mv[k], S.local); }
   else for (let k = 0; k < S.n; k++) P.bleed[k] = KINDS.balancing.step(P.mem[k], S.cfg, { v: vr[k], low, i: -Math.round(I * 1000) }, dt * 1000).bleed;
   /* the end of the constant voltage : the voltage holds the current and it falls under endC — whatever the phase says (derated at the top of a charge too) */
   if (S.local && D.mode === "charge" && cvHeld && !D.push && closed && I < S.endC * C1) P.ended = true;
-  /* the hottest block : I²R and its resistor heat it, the air (or the pump) cools it toward the ambient ; heat from outside adds */
-  /* heat from outside (`heatTo`, °C) : it brings the hottest block toward that temperature (a time constant of a minute), then holds it there */
-  const hA = S.hA * (out.pump ? S.pumpGain : 1), amb = D.amb ?? S.amb, own = I * I * S.r + bleedW;
-  const ext = D.heatTo ? Math.max(0, hA * (D.heatTo - amb) - own + (P.temp < D.heatTo ? S.mcp * (D.heatTo - P.temp) / 60 : 0)) : 0;
-  P.temp += (own + ext - hA * (P.temp - amb)) * dt / S.mcp;
+  /* THE 1.5D NETWORK (sw/sw_pack_model.js) : each CORE heats by its own I²R and resistor, gives to its neighbours, the casing, the lids, and — the pump
+     running — the coolant ; heat from outside (`heatTo`, °C) brings the hottest CORE toward that temperature (a minute), then holds it there */
+  const amb = D.amb ?? S.amb, Th = P.th, hot = Th.tk.indexOf(Math.max(...Th.tk)), C = M.mCell / 1000 * M.cpCell * M.np * M.inertia;
+  const ext = D.heatTo ? Math.max(0, lossOf(Th, hot, M, { pump: !!out.pump, amb }) - q[hot] + (Th.tk[hot] < D.heatTo ? C * (D.heatTo - Th.tk[hot]) / 60 : 0)) : 0;
+  thermalStep(Th, q, M, { pump: !!out.pump, amb, ext: ext ? { k: hot, w: ext } : null, dt }); P.temp = Math.max(...Th.tk); P.q = q;
   P.t += dt; if (P.t % 10 === 0) sample(P);
   P.done = S.local ? D.mode === "charge" && !!P.ended && !P.bleed.some(Boolean) : D.mode === "charge" && phase === "cv" && I < S.endC * C1 && !P.bleed.some(Boolean) && Math.max(...vr) - low <= S.cfg.delta;
   return P;
@@ -86,6 +98,10 @@ function sample(P) { P.trace.push({ t: P.t, i: P.i, v: [...P.v], soc: [...P.soc]
     when it is open (the central board reads both : JP, 27 novembre 2026, « measure current, voltage, temperature at output ») ; bleed : 1 while a
     CORE board says, in its frame of the round, that it bleeds. */
 export function packSense(P) { const mv = cellMv(P), vmod = mv.reduce((a, b) => a + b, 0); return { vmax: Math.max(...mv), vmin: Math.min(...mv), temp: Math.round(P.temp * 10), current: Math.round(-P.i * 1000), vmod, vout: P.closed ? vmod : 0, bleed: P.bleed.some(Boolean) ? 1 : 0 }; }
+/** What the 1.5D model shows beside the pins (sw/sw_live.js records it, a line a second) : the mean state of charge (0.1 %), the power (W, + discharge),
+    the temperature of each CORE and of the casing (0.1 °C), the coolant at the outlet, the heat of the module (W). */
+export function packState(P) { const vt = P.v.reduce((a, b) => a + b, 0), n = P.soc.length;
+  return { soc: Math.round(P.soc.reduce((a, b) => a + Math.min(1, b), 0) / n * 1000), pw: Math.round(-P.i * vt), tk: P.th.tk.map((x) => Math.round(x * 10)), tc: Math.round(P.th.tc * 10), tco: Math.round(P.th.cool[n] * 10), qw: Math.round((P.q || []).reduce((a, b) => a + b, 0)) }; }
 
 /* ---------- the profiles, written from the thresholds of the software ---------- */
 /** The limits of the software that read the pack : { id, name, what (vmax | vmin | temp | current), above, trip, clear, delay, latch } */

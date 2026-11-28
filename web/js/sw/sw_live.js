@@ -7,7 +7,7 @@
 
 import { KINDS, cfgOf } from "./sw_objects.js";
 import { machine, liveWires, pinRead, split } from "./sw_design.js";
-import { plantOf, packStart, packStep, packSense, packDrive } from "./sw_pack.js";
+import { plantOf, packStart, packStep, packSense, packState, packDrive } from "./sw_pack.js";
 
 const div = (a, b) => Math.trunc(a / b), clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 /** The controls of the bench : one per input pin. kind "analog" : a quantity in the unit of the measure it feeds (or in counts when it feeds
@@ -39,7 +39,7 @@ export function liveStart(d, keep = 600) {
   return L;
 }
 const PLANT_PINS = ["vmax", "vmin", "temp", "current", "vmod", "vout", "bleed"];
-function record(L) { const s = packSense(L.plant), last = L.m.last; L.rec.push({ t: L.t, ...s, state: L.pl.state ? last[L.pl.state] || 0 : 0, bleed: L.plant.bleed.filter(Boolean).length, out: L.recRefs.map((r) => (last[r] ? 1 : 0)) }); if (L.rec.length > 30000) L.rec.splice(0, L.rec.length - 30000); }
+function record(L) { const s = packSense(L.plant), last = L.m.last; L.rec.push({ t: L.t, ...s, ...packState(L.plant), state: L.pl.state ? last[L.pl.state] || 0 : 0, bleed: L.plant.bleed.filter(Boolean).length, out: L.recRefs.map((r) => (last[r] ? 1 : 0)) }); if (L.rec.length > 30000) L.rec.splice(0, L.rec.length - 30000); }
 /** The record of a mission as CSV : one line a second — time, what the pins read in the units of physics, the state, each output. */
 export function recordCsv(L, names = {}) {
   if (!L || !L.rec) return ""; const head = ["t (s)", "Vmax (V)", "Vmin (V)", "T max (°C)", "I (A, + discharge)", "state", "bleeding CORE", ...L.recRefs.map((r) => names[r] || r)];

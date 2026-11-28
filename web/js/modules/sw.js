@@ -50,6 +50,8 @@ import { shows, noviceOffers } from "../sw/sw_levels.js";
 import { level, viewMode, viewSwitch } from "./sw_level_ui.js";
 import { VIEW, autoPlace } from "../sw/sw_blocks.js";
 import { DEVICES, devicePlacement } from "../sw/sw_devices.js";
+import { plantSections } from "./sw_plant_ui.js";
+import { openPhases } from "./sw_phase_ui.js";
 
 const FOLDERS = { lib: ["#0891b2", "un module par genre de tuile"], cfg: ["#7c3aed", "une table de réglages par tuile posée"], io: ["#64748b", "le nom de chaque broche"], app: ["#16a34a", "le pas du logiciel"], hal: ["#b45309", "ce qui touche le CPU"], test: ["#dc2626", "le scénario rejoué sur un ordinateur"], doc: ["#475569", "traçabilité et chargement"] };
 const LEVEL = { error: "error", todo: "todo", check: "warn" }, CANVAS = new Set(["objects", "values", "live"]), RIGHT = CANVAS;
@@ -180,6 +182,8 @@ function render(main, args, vkey) {
     const body = el("div", { class: "side-scroll" }); right.append(body);
     if (st.step === "live") { const at = el("div");
       body.append(el("div", { class: "side-section", "data-box": "bench", "data-fold-note": "les instruments" }, el("h3", null, "Le banc du logiciel"), el("p", { class: "muted small" }, "Comme au Labo d'une carte, les instruments sont au-dessus des blocs : une source par entrée du logiciel, réglée sur sa face — sa valeur dans l'unité du capteur, les comptes qu'elle met à la broche —, et les témoins de ce que le logiciel commande. Changez une source pendant la marche, ou en pause puis « Un pas »."), at));
+      /* the module on the bench, a 1.5D system model : its values and boundary conditions (JP, 28 novembre 2026) — modules/sw_plant_ui.js */
+      body.prepend(...plantSections(d, change, { phases: () => openPhases(design, change, (id) => { try { localStorage.setItem(`dw.sw.profile.${d.id || "sw"}`, id); } catch (e) { /* the bench opens on its first mission */ } }) }));
       if (o) sheet(body, { d, sel: st.sel, change, live: true, level: lv, values: bench ? { ...bench.L.m.last } : null, onGone: () => { st.sel = null; } });
       else body.append(el("p", { class: "muted small" }, "Un clic sur une tuile montre ici ce qui y entre et ce qui en sort, en direct."));
       return; }

@@ -714,3 +714,37 @@ le temps final et afficher succès ; remettre une marge droite où charge et éq
 **Essayé dans Chromium** : la marge de droite cachée, rouverte par « Charge et équilibrage » puis repliée ; la charge nominale jouée sur le banc
 s'arrête à 34 min 33 sur 57 min 19, « Succès », deux limites tenues ; la mission à 4,25 V s'arrête sur défaut, « Continuer », puis « Succès » à
 5 min 01 ; la mission à 65 °C en charge finit à 8 min 31, ESS-REQ-015 en échec.
+
+## Le module du banc en modèle système 1.5D (v0.218.0)
+
+JP, 28 novembre 2026 : « mettre dans la marge de droite les paramètres du pack qui permettent d'évaluer performance et aspect thermique transitoire
+durant les missions qu'on va simuler de manière système 1.5D comme dans LMS Amesim de Siemens ; les conditions aux frontières sont aussi définies dans
+ce pan ; inspire-toi de l'exemple de simulation que nous avons monté ensemble (validé avec des simulations Matlab plus complexes) ». Le simulateur
+de JP porte la marque H55 : **ses principes seulement** sont repris (circuit équivalent, résistance d'Arrhenius, masse thermique, puissance imposée,
+barre de phases) — aucune de ses valeurs, aucun de ses profils, aucun de ses textes.
+
+- **Électrique** : chaque CORE (8 cellules en parallèle) est une courbe à vide et une résistance qui suit sa température (Arrhenius) et son état de
+  charge ; sa capacité utile baisse au froid. Une mission peut imposer une **puissance** (`mode: "power"`, kW, + en décharge) : le courant est la
+  racine de P = (Σ OCV − I·Σ R)·I, tenu aux courants de la fiche (45 A et 9 A par cellule), à la puissance de crête et à une dératation.
+- **Thermique 1.5D** : un nœud par CORE le long de l'empilement (conduction CORE à CORE, les bouts vers les couvercles ou adiabatiques), et en
+  travers : le boîtier puis l'air (h·A), et, la pompe en marche, le liquide qui longe l'empilement et s'échauffe CORE après CORE (température
+  d'entrée, débit). Un pas d'une seconde, explicite : le réseau le permet largement (la marge de droite le calcule). La broche « température »
+  du logiciel lit le CORE le plus chaud ; une chaleur du dehors (`heatTo`) s'applique au CORE le plus chaud.
+- **La marge de droite du banc HIL** (`modules/sw_plant_ui.js`) : le réseau dessiné, la tension nominale, l'énergie, la capacité, la masse des
+  cellules, les courants max, la constante de temps d'un CORE ; puis cinq groupes — **Cell**, **Pack**, **Thermique 1.5D**, **Conditions aux
+  frontières** (ambiante, température de départ, entrée du liquide, bouts de l'empilement), **Limites**. Chaque valeur dit son unité, son nom du
+  métier et d'où elle vient ; celles de la cellule viennent de sa fiche (lue), les autres sont des **exemples**, en pointillé et clignotants jusqu'à
+  ce qu'on les entre ou les confirme. Chaque changement est une étape annulable ; le banc repart avec, la campagne joue avec ; une IA n'y touche pas.
+- **La vue Mission** : des vues à cocher — Tension, Courant, **Puissance** (kW), **SoC**, **Températures** (chaque CORE, le boîtier, le liquide en
+  sortie, le plus chaud en gras) — et, au-dessus, **la barre des phases** de la mission (sa couleur dit ce qu'on demande au module, ou la couleur
+  de la phase d'une mission par phases). Les exigences peuvent lire le SoC et la puissance (`SIGNALS.soc`, `SIGNALS.power`).
+- **« Mission par phases… »** (`sw/sw_phases.js`, `modules/sw_phase_ui.js`) : une fenêtre — un tableau de phases (nom, kW, minutes), sa barre de
+  phases, ce qu'il demande en tout (temps, énergie donnée et reçue, crête) comparé à ce que le module tient, un tableau collé d'un tableur ; elle
+  entre dans la banque (une étape annulable) et le banc s'ouvre dessus. L'exemple est celui de l'outil : un vol dans les mots du métier (Taxi,
+  Takeoff, Climb, Cruise, Descent, Landing), les puissances à l'échelle d'UN module.
+- **Ce qu'une mission vise doit être exercé** : « Succès » demande, pour une mission qui vise des limites, que chacune ait été exercée et tenue ; le
+  corner case à 360 A et 73 °C finit « limites visées non exercées » — le logiciel dérate dès 60 °C, les 360 A ne passent jamais.
+
+**Mesuré sur le BM** : charge nominale à 1 C, 30,8 °C au plus, les CORE des bouts plus frais d'un demi-degré ; décharge nominale à 2 C, 45,1 °C, la
+pompe démarre ; la campagne garde ses verdicts (3 échouées, 9 tenues, 2 enveloppes couvertes), en 10 s. **Non fait** (`MODEL_GAPS`) : l'écart entre
+les 8 cellules d'un CORE, la chaleur entropique, la capacité propre du liquide ; le modèle n'est recalé sur aucune mesure du module.
