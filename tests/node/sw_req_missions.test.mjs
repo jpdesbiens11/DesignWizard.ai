@@ -3,7 +3,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { campaignMissions, missionGaps, projectProfiles, reserveSeed, missionSig, reqOracles, ORIGINS, GAPS } from "../../web/js/sw/sw_req_missions.js";
+import { campaignMissions, missionGaps, projectProfiles, reserveSeed, missionSig, reqOracles, ORIGINS, GAPS, goalOf, goalReached, missionOutcome, QUIET } from "../../web/js/sw/sw_req_missions.js";
+import { playMission } from "../../web/js/sw/sw_campaign.js";
 import { packStart, packDrive, packStep, packSense, missionProfiles } from "../../web/js/sw/sw_pack.js";
 import { PLANT_VARS, profileTxt, parseProfileTxt } from "../../web/js/sw/sw_profiles.js";
 import { judge } from "../../web/js/core/req_oracle.js";
@@ -79,4 +80,21 @@ test("wiring : the Missions screen groups by kind and names the requirements ; t
   assert.match(read("web/js/modules/sw_story_ui.js"), /missionsOf\(d\)/); assert.match(read("web/js/modules/sw_mission.js"), /missionsOf\(d\)\.find/);
   const f = read("web/js/modules/sw_findings.js"); assert.match(f, /swf2-og/); assert.match(f, /Règle de la campagne/); assert.match(f, /profiles: P/);
   assert.match(read("web/js/sw/sw_campaign.js"), /profiles: all = campaignMissions\(project, d\)/);
+});
+
+test("a mission ends at its goal, before its longest time : the nominal charge when the charger stops, the nominal discharge at its floor, the others when every event is played and nothing moves for 30 s — « Succès » when no requirement it aims at fails", () => {
+  const p = bmProject(), d = p.software[0], M = campaignMissions(p, d), m = (id) => M.find((q) => q.id === id);
+  assert.deepEqual(goalOf(m("nom-charge")).kind, "charge-end"); assert.equal(goalOf(m("nom-discharge")).kind, "floor"); assert.equal(goalOf(m("rq-vblock_max-hi-4_25-charge")).kind, "events");
+  const ch = playMission(d, m("nom-charge")); assert.ok(ch.goal && /chargeur/.test(ch.goal.why)); assert.ok(ch.t < goalOf(m("nom-charge")).max * 0.75, `the charge ends at ${ch.t / 1000} s, its longest is ${goalOf(m("nom-charge")).max / 1000} s`);
+  assert.deepEqual(missionOutcome(m("nom-charge"), p.reqs, ch, d.plant), { ok: true, fails: [], held: 2, judged: 2 });
+  const dis = playMission(d, m("nom-discharge")); assert.ok(dis.goal && /sous 3,2 V/.test(dis.goal.why));
+  const ov = playMission(d, m("rq-vblock_max-hi-4_25-charge")), G = goalOf(m("rq-vblock_max-hi-4_25-charge")); assert.ok(ov.goal && ov.t >= G.last + QUIET && ov.t < G.max, "every event played, then 30 s of quiet");
+  assert.equal(missionOutcome(m("rq-vblock_max-hi-4_25-charge"), p.reqs, ov, d.plant).ok, true);
+  const hot = missionOutcome(m("rq-temp_max-hi-65-charge"), p.reqs, playMission(d, m("rq-temp_max-hi-65-charge")), d.plant); assert.deepEqual([hot.ok, hot.fails], [false, ["ESS-REQ-015"]], "the 65 °C in charge : no threshold in the software");
+  /* the rule on a made-up run */
+  const L = { t: 50000, plant: { drive: { mode: "rest" }, v: [3.9] }, log: [{ t: 30000 }] }; assert.equal(goalReached({ kind: "events", last: 10000, quiet: 30000 }, L), null, "an output changed 20 s ago");
+  assert.ok(goalReached({ kind: "events", last: 10000, quiet: 30000 }, { ...L, t: 61000 }));
+  /* on the bench : the story ends the mission and the Mission view says so ; the docked window opens a hidden pane again */
+  assert.match(read("web/js/modules/sw_story_ui.js"), /goalReached\(st\.goal, bench\.L\)/); assert.match(read("web/js/modules/sw_mission.js"), /Succès — objectifs atteints en/); assert.match(read("web/js/modules/sw.js"), /mission\.done\(r\)/);
+  assert.match(read("web/js/modules/sw_drag.js"), /hiddenPane\(side\)/);
 });

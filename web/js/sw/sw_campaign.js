@@ -12,16 +12,19 @@ import { expandProfile, profilesOf } from "./sw_story.js";
 import { seriesOf, verdicts, oracleText, oraclesFor, verdictWord } from "../core/req_oracle.js";
 import { forDiscipline, keyOf } from "../core/reqs.js";
 import { stampText } from "../core/brand.js";
-import { campaignMissions, missionSig } from "./sw_req_missions.js";
+import { campaignMissions, missionSig, goalOf, goalReached } from "./sw_req_missions.js";
 
 /** One mission, played in slices of `slice` steps : yields { done, total } (ms of the mission) between slices ; returns the live run (its record :
     L.rec, L.recRefs). A screen pumps it and stays alive ; a test drains it. */
 export function* missionRun(d, profile, slice = 20000) {
-  const L = liveStart(d, 0), dt = L.m.dt, E = expandProfile((profile && profile.events) || []), end = (E.length ? E[E.length - 1].t : 0) + 1000;
+  const L = liveStart(d, 0), dt = L.m.dt, E = expandProfile((profile && profile.events) || []), end = (E.length ? E[E.length - 1].t : 0) + 1000, G = goalOf(profile), sec = Math.max(1, Math.round(1000 / dt));
   let now = 0, i = 0, since = 0;
   while (now <= end) {
     while (i < E.length && E[i].t <= now) { const e = E[i++]; if (e.plant) liveDrive(L, e.plant); for (const [id, v] of Object.entries(e.set || {})) liveSet(L, id, v); }
-    const next = i < E.length ? E[i].t : end + dt, n = Math.max(1, Math.min(slice, Math.round((next - now) / dt))); liveStep(L, n); now += n * dt; since += n;
+    /* where the goal may be reached, a second at a time : the mission stops there, as on the bench (sw/sw_req_missions.js goalOf) */
+    const watch = L.plant && (G.kind !== "events" || now >= G.last), next = i < E.length ? E[i].t : end + dt, n = Math.max(1, Math.min(slice, watch ? sec : slice, Math.round((next - now) / dt)));
+    liveStep(L, n); now += n * dt; since += n;
+    if (watch && goalReached(G, L)) { L.goal = { t: L.t, ...goalReached(G, L) }; break; }
     if (since >= slice) { since = 0; yield { done: now, total: end }; }
   }
   return L;

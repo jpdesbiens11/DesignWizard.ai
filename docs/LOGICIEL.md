@@ -690,3 +690,27 @@ Mission ; attribuer un niveau de difficulté — une priorité de conception, du
 **Essayé dans Chromium** : glisser une mission en tête de sa classe et sur une autre classe, la refuser au lot de réserve, ↑ ↓ sur la poignée,
 le menu « Classe », On / Off (la campagne joue 21 missions sur 22), une difficulté choisie puis Ctrl + Z. **Pas essayé** : au toucher, Firefox,
 Safari ; le défilement automatique pendant un long glisser (une classe hors de l'écran se rejoint par le menu « Classe »).
+
+## Une mission s'arrête à son objectif (v0.216.0)
+
+JP, 28 novembre 2026 : « quand les objectifs d'un profil de mission sont complétés, la simulation peut arrêter même avant le temps maximal, donner
+le temps final et afficher succès ; remettre une marge droite où charge et équilibrage sont incrustés lorsque ce volet est ouvert ».
+
+- **Le dernier événement d'une mission est son temps le plus long** ; son **objectif** l'arrête avant (`goalOf`, `goalReached` de
+  `web/js/sw/sw_req_missions.js`) : la charge nominale quand le chargeur s'arrête au bout de sa tension constante (`charge-end`), la décharge
+  nominale quand le cell block le plus bas passe son plancher (`floor`), toute autre mission quand chacun de ses événements qui agit est joué et
+  que rien de ce que le logiciel commande n'a changé depuis 30 s (`QUIET`).
+- **Sur le banc HIL**, la mission s'arrête là (`finish` de `modules/sw_story_ui.js`) ; la vue Mission donne le **temps final** (« terminée à
+  34 min 33 — au plus 57 min 19 ») et un bandeau : **« Succès »** quand aucune exigence visée n'échoue, sinon les exigences en échec ; une mission
+  qui a duré tout son temps le dit (« Temps maximal atteint — objectifs non atteints ») ; « Rejouer ». Le bandeau est dans la vue : il se voit
+  aussi en plein écran.
+- **La campagne** arrête chaque mission au même moment (`missionRun`) : mêmes verdicts, 10 s au lieu de 12 sur le BM.
+- **Le module simulé** : la fin de la tension constante se reconnaissait à l'étiquette de la phase ; dératé en haut de charge (le seuil « to
+  watch » de 4,18 V), l'étiquette disait « derate » et la charge ne finissait jamais. Elle se reconnaît maintenant au courant tenu par la tension
+  constante, sous 0,05 C (`cvHeld` de `sw/sw_pack.js`).
+- **« Charge et équilibrage »** se loge sur la marge de droite ; quand cette marge était cachée, la fenêtre la rouvre (le bouton de sa bordure,
+  le même état qu'un clic) et la replie en se fermant ; le monitoring fait de même à gauche (`dockOver` de `modules/sw_drag.js`).
+
+**Essayé dans Chromium** : la marge de droite cachée, rouverte par « Charge et équilibrage » puis repliée ; la charge nominale jouée sur le banc
+s'arrête à 34 min 33 sur 57 min 19, « Succès », deux limites tenues ; la mission à 4,25 V s'arrête sur défaut, « Continuer », puis « Succès » à
+5 min 01 ; la mission à 65 °C en charge finit à 8 min 31, ESS-REQ-015 en échec.
