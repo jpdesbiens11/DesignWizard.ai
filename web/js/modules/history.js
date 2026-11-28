@@ -15,10 +15,13 @@ import { store } from "../core/store.js";
 import { registerModule, setGuide } from "../core/app.js";
 import { guideBox } from "../core/guide.js";
 import { toDwiz } from "../core/dwiz.js";
-import { historyOf, pointOf, addPoint, restoreInto, sinceThen, diffTrees, changeCount, setDropped, weight, pointProject, contextOf, historyGuide, POINT_KINDS, ART_KINDS, MAIN, deletePlan, deletePoint, nextBranch, branchNames } from "../core/history.js";
+import { historyOf, pointOf, addPoint, sinceThen, diffTrees, changeCount, setDropped, weight, pointProject, contextOf, historyGuide, POINT_KINDS, ART_KINDS, MAIN, deletePlan, deletePoint, nextBranch, branchNames } from "../core/history.js";
 import { freeName, startBranch, branchSuggestion, mergePlan } from "../core/history_branches.js";
 import { branchSection, branchGuide, openMerge } from "./history_branches_ui.js";
 import { historyTree } from "./history_tree.js";
+import { returnTo, demoNews, demoSection, offerDemo } from "./history_demo_ui.js";
+import { demoLine } from "../core/history_demo.js";
+import { seedOf, seedReady, seedHistory } from "../demo/demo_seeds.js";
 
 const VERB = { added: ["ajouté", "#16a34a"], removed: ["retiré", "#dc2626"], changed: ["modifié", "#b45309"] };
 const kb = (n) => (n < 1024 ? `${n} o` : n < 1048576 ? `${(n / 1024).toFixed(n < 10240 ? 1 : 0).replace(".", ",")} ko` : `${(n / 1048576).toFixed(1).replace(".", ",")} Mo`);
@@ -54,12 +57,17 @@ function render(main, args) {
   }
   const pendingNow = () => { const p = store.project, h = historyOf(p), head = pointOf(h, h.head); return head ? changeCount(sinceThen(p, head.id)) : 0; };
   /** The return itself, without asking : what no point keeps is kept first by a point « Avant le retour » ; then ONE undoable step. */
-  function restoreTo(id) {
-    const pt = pointOf(historyOf(store.project), id);
-    if (pendingNow()) store.writeHistory("Point avant le retour", (x) => addPoint(x, { kind: "before", label: `Avant le retour à ${pt.id}`, context: contextOf(x) }));
-    const changed = store.commit(`Retour au point ${pt.id} — ${pt.label}`, (x) => { restoreInto(x, id); });
-    if (!changed) store.writeHistory("Vous êtes ici", (x) => { historyOf(x).head = id; });
+  const restoreTo = (id) => returnTo(id);
+  /** What the demonstration this project is a copy of has more (JP, 28 novembre 2026 : « où est le concept 5 ? ») — the demonstration is
+      rebuilt once per visit, after the screen is drawn. → { seed, plan, name } | null */
+  let waiting = false;
+  function news(p) {
+    const s = seedOf(p); if (!s) return null;
+    if (seedReady(s)) return demoNews(p);
+    if (!waiting) { waiting = true; setTimeout(() => { try { seedHistory(s); } catch (e) { /* the demonstration could not be rebuilt : nothing to offer */ } if (store.project === p) draw(); }, 60); }
+    return null;
   }
+  const afterDemo = (pts, went) => { const last = pts.slice().sort((a, b) => b.n - a.n)[0]; if (last) { st.sel = last.id; mark(); draw(); requestAnimationFrame(() => tree.focus(last.id)); } };
   async function goBack(id) {
     const pt = pointOf(historyOf(store.project), id), pending = pendingNow();
     const ok = await confirmBox(`Revenir au point ${pt.id}`, `Le produit redevient celui du point « ${pt.label} » (${when(pt.at)}) : pièces, assemblages, cartes et registres.${pending ? ` Les ${pending} changement${pending > 1 ? "s" : ""} qu'aucun point ne garde encore seront d'abord gardés par un point automatique « Avant le retour ».` : ""} Ce que vous ferez ensuite ouvrira une branche. Le retour est une étape annulable (Ctrl + Z).`, "Revenir à ce point");
@@ -121,6 +129,7 @@ function render(main, args) {
     left.append(el("div", { class: "side-head" }, el("h2", null, "Historique")),
       el("div", { class: "side-actions" }, el("div", { class: "side-actions-row" }, btn("Poser un point", () => { const f = left.querySelector("[data-history-name]"); if (f) f.focus(); else pose(); }, { primary: true, icon: "save", tip: "Garder la définition complète du produit, telle qu'elle est maintenant" }))));
     const body = el("div", { class: "side-scroll" }); left.append(body);
+    const demo = demoSection(st.news, { onDone: afterDemo }); if (demo) body.append(demo);
     const name = el("input", { type: "text", value: st.name, placeholder: "Ce que ce point garde, en quelques mots", "data-history-name": "", maxlength: "120", onInput: (e) => { st.name = e.target.value; }, onKeydown: (e) => { if (e.key === "Enter") { e.preventDefault(); pose(); } } });
     const note = el("textarea", { rows: "3", placeholder: "Pourquoi maintenant, ce que l'on essaie ensuite (la dictée du système tape ici)", "data-history-note": "", onInput: (e) => { st.note = e.target.value; } }, st.note);
     body.append(el("div", { class: "side-section", "data-fold-note": "nom et note" }, el("h3", null, "Poser un point"),
@@ -158,6 +167,7 @@ function render(main, args) {
       el("p", { class: "hist-kindline", style: `--dom:${K.color}` }, el("span", { class: "hist-kind" }, K.label), ` ${K.fr}.`),
       el("p", { class: "small", "data-history-branch": branchNames(h).get(pt.id) }, "Branche : ", el("b", null, branchNames(h).get(pt.id)), branchNames(h).get(pt.id) === MAIN ? " — la branche principale, au centre de l'arbre." : ".", pt.merged ? ` Fusion : reprend ${pt.merged} d'un bloc.` : "", pt.kind === "import" ? ` Lu dans le fichier d'un coéquipier${pt.from === "closest" ? " ; parti du point le plus proche — à vérifier" : ""}.` : ""),
       el("p", { class: "small" }, `Posé le ${when(pt.at)}${pt.by ? ` par ${pt.by}` : ""}${pt.parent ? `, après ${pt.parent}` : ", premier point"}.${here ? " Vous êtes ici." : ""}${pt.dropped ? " Sa branche est abandonnée." : ""}`),
+      pt.demo ? el("p", { class: "small", "data-history-demo-point": "" }, el("b", null, "Ajouté depuis la démonstration"), ` le ${when(pt.demo)} : un point que la démonstration a gagné après votre copie.`) : null,
       pt.note ? el("p", { class: "hist-note" }, pt.note) : null,
       el("p", { class: "small" }, el("b", null, "Itération MVP : "), c.mvp ? `${c.mvp.name}${c.mvp.trl ? ` (TRL ${c.mvp.trl} visé)` : ""} — ${c.mvp.fr}.` : "aucune ouverte."),
       el("p", { class: "small" }, el("b", null, "Révisions : "), c.revs ? `${c.revs.frozen} gelée(s), ${c.revs.released} libérée(s), ${c.revs.rejected} refusée(s)${c.revs.last && c.revs.last.length ? ` — dernières : ${c.revs.last.map((r) => `${r.pn} rév. ${r.rev} (${r.fr})`).join(", ")}` : ""}.` : "—")));
@@ -175,13 +185,15 @@ function render(main, args) {
     const p = store.project;
     if (!p) { clear(left); clear(right); empty.hidden = false; host.hidden = true; empty.replaceChildren(el("p", null, "Ouvrez un projet : son historique s'affiche ici.")); setGuide([]); return; }
     const h = historyOf(p), head = pointOf(h, h.head), d = head ? sinceThen(p, head.id) : { added: [], removed: [], changed: [] };
+    st.news = news(p);
     if (st.sel && !pointOf(h, st.sel)) st.sel = null; if (!st.sel && head) st.sel = head.id;
     const none = !(h.points || []).length; empty.hidden = !none; host.hidden = none;
     if (none) empty.replaceChildren(el("h2", null, "Aucun point de restauration"), el("p", null, "Un point garde la définition complète du produit à un moment : on peut y revenir, comparer, repartir dans une autre direction. Un point se pose aussi tout seul après chaque réponse d'IA appliquée."),
       btn("Poser le premier point", pose, { primary: true, icon: "save" }));
     else tree.draw(h, st.sel, changeCount(d), nextBranch(h));
     drawLeft(p, h, head, d); drawRight(p, h, pointOf(h, st.sel));
-    setGuide([...historyGuide(p), ...branchGuide(h)].map((x) => ({ ...x, go: () => { const f = left.querySelector("[data-history-name]"); if (f) f.focus(); } })));
+    const demoTip = st.news ? [{ level: "tip", text: `La démonstration a avancé : ${demoLine(st.news.plan)}. « Voir et ajouter » les ajoute à votre historique, aperçu d'abord ; rien de votre travail ne bouge.`, go: () => offerDemo(st.news, { onDone: afterDemo }) }] : [];
+    setGuide([...demoTip, ...[...historyGuide(p), ...branchGuide(h)].map((x) => ({ ...x, go: () => { const f = left.querySelector("[data-history-name]"); if (f) f.focus(); } }))]);
   }
   const off = store.on("change", () => draw());
   draw();

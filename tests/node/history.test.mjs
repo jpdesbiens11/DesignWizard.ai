@@ -109,7 +109,7 @@ test("wiring : a screen, a place in the menu Produit, a step up, the automatic p
   assert.match(read("web/js/modules/ai_loop.js"), /delete d\.history;/); assert.match(read("web/js/modules/mvp.js"), /delete d\.history;/);
   assert.match(read("web/js/modules/team.js"), /toDwiz\(withoutHistory\(store\.project\)\)/); assert.match(read("web/js/modules/shop_ai.js"), /toDwiz\(withoutHistory\(p\)\)/);
   const screen = read("web/js/modules/history.js"); assert.match(screen, /class: "studio" \}, left, view, right/); assert.match(screen, /class: "side-head"/);
-  assert.match(screen, /store\.commit\(`Retour au point/, "going back is one undoable step");
+  assert.match(screen, /returnTo/); assert.match(read("web/js/modules/history_demo_ui.js"), /store\.commit\(`Retour au point/, "going back is one undoable step");
   for (const s of ["web/img/icons.svg", "web/img/icons-crisp.svg"]) { assert.match(read(s), /id="i-history"/); assert.match(read(s), /id="i-branch"/); }
   assert.match(read("web/index.html"), /href="css\/history\.css"/);
 });

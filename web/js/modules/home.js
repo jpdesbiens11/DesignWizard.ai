@@ -15,6 +15,8 @@ import { inverterProject } from "../demo/demo_inverter.js";
 import { moldedProject } from "../demo/demo_molded.js";
 import { firstSteps, firstStepsLine } from "../core/first_steps.js";
 import { showFilm, filmLength } from "../core/film.js";
+import { demoNews, offerDemo } from "./history_demo_ui.js";
+import { keepSeed } from "../demo/demo_seeds.js";
 
 const STEPS = [
   ["shop", "Atelier", "Dites l'intention : à quoi sert la pièce, ses interfaces, sa matière, sa matière première. Elle se construit sous vos yeux, sans esquisse — ou par une entrevue avec Claude."],
@@ -46,6 +48,7 @@ const BRICKS = [
 
 const askDemo = (name) => new Promise((resolve) => { let out = null;
   const m = modal("Démonstration déjà chargée", [el("p", null, `« ${name} » est déjà dans vos projets. Ouvrir la vôtre, telle que vous l'avez laissée, ou en charger une neuve à côté ?`),
+    el("p", { class: "muted small" }, "Si la démonstration a gagné des points d'historique depuis votre copie, ils vous seront proposés à l'ouverture — l'aperçu d'abord ; rien de votre travail ne bouge."),
     el("div", { class: "form-actions" }, btn("Annuler", () => m.close()), btn("En charger une neuve", () => { out = "new"; m.close(); }, { icon: "plus" }), btn("Ouvrir la mienne", () => { out = "open"; m.close(); }, { primary: true, icon: "folder" }))], { onClose: () => resolve(out) }); });
 /* One click, one project. Writing a project in Drive takes a few seconds : the click answers at once and a second one is ignored — it used
    to make a twin. A demonstration already among the projects is opened, unless the person asks for a fresh one, which is then numbered. */
@@ -61,7 +64,12 @@ async function loadDemo(seed, target) {
     veil.set("");
     const choice = mine.length ? await askDemo(seed.name) : "new";
     if (!choice) { setStatus("Prêt", ""); return; }
-    if (choice === "open") { veil.set(`Ouverture de « ${mine[0].name} »…`, { cancel: stop, kind: drive }); await store.open(mine[0].id); veil.set(""); toast(`« ${mine[0].name} » ouvert, tel que vous l'avez laissé.`, "info"); go(target); return; }
+    if (choice === "open") {
+      veil.set(`Ouverture de « ${mine[0].name} »…`, { cancel: stop, kind: drive }); await store.open(mine[0].id); veil.set("");
+      keepSeed(seed); const news = demoNews(store.project, seed.history || null);      // the demonstration has gained points since this copy : offered, preview first (JP, 28 novembre 2026)
+      if (news) { const r = await offerDemo(news); if (r.added.length) { go(`#/history/${r.added.slice().sort((a, b) => b.n - a.n)[0].id}`); return; } }
+      toast(`« ${mine[0].name} » ouvert, tel que vous l'avez laissé.`, "info"); go(target); return;
+    }
     veil.set(drive ? "Écriture du projet dans votre Google Drive…" : "Création du projet…", { kind: drive });      // no cancel here : a project half written would be worse than a wait
     const name = freshName(seed.name, list.map((x) => x.name)), words = seed.drawing && seed.drawing.words, tail = name.startsWith(seed.name) ? name.slice(seed.name.length) : "";
     const named = words && words[seed.name] && tail ? { ...seed, drawing: { ...seed.drawing, words: Object.fromEntries(Object.entries(words).map(([k, v]) => (k === seed.name ? [name, v + tail] : [k, v]))) } } : seed;      // a second copy is « … (2) » : its drawings say its name in English too

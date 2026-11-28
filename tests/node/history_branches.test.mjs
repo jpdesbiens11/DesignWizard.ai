@@ -133,6 +133,6 @@ test("wired : the screen, the tree, the sources, the news, the documents", () =>
   const ui = read("web/js/modules/history.js") + read("web/js/modules/history_branches_ui.js");
   assert.match(ui, /mergePlan/); assert.match(ui, /importPlan/); assert.match(ui, /historyMerge:/); assert.match(ui, /data-history-import/);
   assert.match(ui, /startBranch/); assert.match(ui, /historyMergePoint:/); assert.match(ui, /historyFork:/); assert.match(ui, /historyForkHere:/); assert.match(ui, /Nouvelle branche ici/);
-  assert.match(read("web/js/modules/history_tree.js"), /branchLayout/); assert.match(read("web/js/modules/history_tree.js"), /data-lane/);
+  assert.match(read("web/js/modules/history_tree.js"), /treeRows/); assert.match(read("web/js/core/history_view.js"), /branchLayout/); assert.match(read("web/js/modules/history_tree.js"), /data-lane/);
   assert.match(read("docs/HISTORIQUE.md"), /MAIN/); assert.match(read("docs/HISTORIQUE.md"), /Nouvelle branche ici/); assert.match(read("CLAUDE.md"), /history_branches\.js/);
 });

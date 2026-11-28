@@ -10,15 +10,15 @@
    merge : an artefact the branch took out stays in MAIN ; an instance that MAIN's assembly has and the branch's lacks comes back at Off,
    with its mates, ready to be switched on. Pure : no page, no store. The naming of branches is in core/history.js. */
 
-import { MAIN, pointOf, branchNames, tipOf, describe, docOf, storePieces, fingerprint, cut, historyOf, diffTrees, pathTo, addPoint } from "./history.js";
+import { MAIN, pointOf, branchNames, tipOf, describe, docOf, storePieces, fingerprint, cut, historyOf, diffTrees, pathTo, addPoint, isNoise } from "./history.js";
 
-const own = (tree) => (tree || []).filter(([k]) => !k.startsWith("list:"));
+const own = (tree) => (tree || []).filter(([k]) => !k.startsWith("list:") && !isNoise(k));
 /* Two files of the same product may write an artefact with its keys in another order (a project read back from its .dwiz) : the same
    content. Matching a teammate's file compares artefacts up to the order of their keys. */
 const sortKeys = (v) => (Array.isArray(v) ? v.map(sortKeys) : v && typeof v === "object" ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, sortKeys(v[k])])) : v);
 const canonText = (t) => { try { return JSON.stringify(sortKeys(JSON.parse(t))); } catch (e) { return String(t || ""); } };
-/** A key of a whole product, up to the order of the keys of each artefact. objects : fingerprint → text */
-function keyer(objects) {
+/** A key of a whole product, up to the order of the keys of each artefact. objects : fingerprint → text (core/history_demo.js uses it too) */
+export function keyer(objects) {
   const memo = new Map(), text = (f) => (objects instanceof Map ? objects.get(f) : objects && objects[f]) || "";
   return (tree) => own(tree).map(([k, f]) => { if (!memo.has(f)) memo.set(f, fingerprint(canonText(text(f)))); return `${k}=${memo.get(f)}`; }).sort().join("|");
 }
@@ -71,11 +71,12 @@ export function mergePlan(h, name, at = null) {
   const take = [], lost = [], kept = [], offs = [];
   for (const [k, f] of T) {
     if (k.startsWith("list:")) { if (!R.has(k)) R.set(k, f); continue; }
+    if (isNoise(k)) continue;                                          // the date the project was made : never taken from a branch
     if (B.get(k) === f || M.get(k) === f) continue;                   // untouched by the branch, or already the same in MAIN
     R.set(k, f); take.push({ key: k, how: B.has(k) ? "changed" : "added", ...describe(k, texts[f]) });
     if (M.has(k) && M.get(k) !== B.get(k)) lost.push({ key: k, ...describe(k, texts[M.get(k)]) });
   }
-  for (const [k] of B) if (!k.startsWith("list:") && !T.has(k) && M.has(k)) kept.push({ key: k, ...describe(k, texts[M.get(k)]) });
+  for (const [k] of B) if (!k.startsWith("list:") && !isNoise(k) && !T.has(k) && M.has(k)) kept.push({ key: k, ...describe(k, texts[M.get(k)]) });
   for (const t of take) {
     if (t.kind !== "assembly" || !M.has(t.key)) continue;
     const mine = JSON.parse(texts[M.get(t.key)]), theirs = JSON.parse(texts[T.get(t.key)]), ids = new Set((theirs.instances || []).map((i) => i && i.id));

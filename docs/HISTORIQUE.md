@@ -61,6 +61,28 @@ Les trois places de tout studio :
 - **à droite** : la fiche du point choisi — genre, date, auteur, note, itération MVP, révisions, son journal, la
   comparaison ; « Revenir à ce point » et « .dwiz » épinglés en tête.
 
+**L'arbre, à mesure qu'il grandit** (JP, 28 novembre 2026, sur sa capture d'un arbre de 8 points aux titres coupés par la
+marge de droite, chaque ligne redisant « branche « … » · Point posé · DynamiteOrbit.ai » : « met à jour l'historique pour
+plus de clarté et me permette de naviguer aisément plus on avance » ; choix par menu sur une maquette : « Plus récent en
+haut, bascule » et « Titres complets, branche une fois ») — l'usage suivi : l'historique d'un client de gestion de versions
+(GitHub Desktop, Sourcetree, GitKraken) :
+
+- **le point le plus récent en haut**, d'office ; « Plus ancien en haut », sur la vue, retourne l'arbre, et le choix est
+  gardé dans le navigateur (`dw.history.order`). « Maintenant » (ce qu'aucun point ne garde) est au bout le plus récent ;
+- **un arbre plus haut que la fenêtre s'ouvre à sa largeur**, son bout le plus récent en vue (« Ajuster » fait de même) ;
+  ↑ ↓ passent d'un point au voisin et **la vue suit** le point choisi (`reveal` de `modules/svg_view.js`) ;
+- **le titre s'écrit en entier**, coupé aux mots sur deux ou trois lignes ; ce qui dépasse trois lignes, et la note, sont
+  dans l'infobulle du point. La place de « ◀ vous êtes ici » est gardée sur sa rangée ;
+- **le nom d'une branche se dit une fois**, en pastille de sa couleur, en tête de chaque suite de points de la même branche
+  (et plus seulement sur son dernier point) ;
+- **la ligne sous le titre** ne dit plus que la date ; le genre quand ce n'est pas un point posé à la main ; l'auteur,
+  l'itération MVP et « ajouté de la démonstration » seulement quand ils changent par rapport à la rangée du dessus.
+
+Les rangées ont la hauteur de ce qu'elles disent. Pur : `treeRows`, `wrapText` de `web/js/core/history_view.js` ;
+dessin : `modules/history_tree.js`. **Pas fait**, proposé à JP sur la même maquette et non retenu pour l'instant : replier
+une branche en un seul point, le menu « Aller à un point… » avec recherche et « Voir » sur chaque branche, la navigation
+avant le formulaire « Poser un point ».
+
 Pictogrammes et couleurs des points : posé à la main (bleu), après une réponse d'IA (violet, étincelle), avant un retour
 (gris, flèche de retour).
 
@@ -158,6 +180,43 @@ MAIN ».
 Pur : `deletePlan` (ce que cela ferait) et `deletePoint` de `web/js/core/history.js` ; écran : `modules/history.js`.
 Usage suivi : effacer un instantané dans le gestionnaire d'instantanés d'une machine virtuelle — ses enfants restent et
 pendent de son parent. Choix maison : le retour à MAIN quand la branche de « vous êtes ici » disparaît (demande de JP).
+
+## 5 quater. La démonstration a avancé : ses points nouveaux dans une copie gardée
+
+Demande de JP (28 novembre 2026), sur sa capture de l'Historique de son « BM 8s8p - 21700 » arrêté à P8 : « où est le
+concept 5 ? ». Sa copie, rouverte par « Ouvrir la mienne » depuis l'Accueil, datait d'avant la v0.214 : les points du
+concept 5 (P9 à P11) n'existaient que dans le projet que la carte reconstruit. Choix par menu : **« Proposer, aperçu
+d'abord »**.
+
+- **Quand** : à l'ouverture d'une copie par « Ouvrir la mienne » (la boîte de l'Accueil le dit), et en tête du volet de
+  gauche de l'Historique (« La démonstration a avancé », avec une ligne au guide) tant que la copie n'a pas ces points.
+- **L'aperçu** : les points nouveaux, chacun avec son numéro dans la copie, son titre, sa date ; le point de la copie d'où
+  ils partent ; et que **rien du travail de la personne ne bouge** — ses points, « vous êtes ici », ses changements.
+  « Plus tard », « Ajouter les N points », ou « **Ajouter et aller à P…** », qui fait ensuite un retour au plus récent
+  d'entre eux (un retour comme les autres : ce qu'aucun point ne garde l'est d'abord par « Avant le retour » ; Ctrl + Z
+  ramène le produit). L'ajout lui-même est dans l'historique, pas dans l'annulation.
+- **Quel point est « le même »** : un point d'une démonstration est daté à la main, une fois, et signé — **sa date et son
+  auteur** sont son identité (`demoKey`). Pas son contenu : la démonstration est reconstruite par l'outil du jour, et ce
+  que l'outil écrit dans une pièce ou une carte change d'une version à l'autre (mesuré : une copie faite en v0.200 diffère
+  de celle d'aujourd'hui de 8 artéfacts à chaque point, titres et dates égaux). L'aperçu dit quand le point d'où partent
+  les nouveaux a évolué ; celui de la copie reste tel quel.
+- **Ce qui est proposé** : les points de la démonstration posés **après le plus récent des points communs**. Un point plus
+  ancien que la personne a effacé n'est pas proposé de nouveau. Chaque point garde sa branche : il continue la branche de
+  la copie quand il en continue le bout ; sinon sa branche à lui, sous son nom (« … (2) » si le nom est pris). Les numéros
+  suivent ceux de la copie. Un point dont le parent n'est plus dans la copie part du plus proche qui y est, et l'aperçu le
+  dit. Une copie qui ne partage aucun point avec la démonstration n'en reçoit rien.
+- Dans la fiche d'un tel point : « Ajouté depuis la démonstration le … » ; dans l'arbre, une fois par suite de points.
+
+Ce que l'on suit : aller chercher les nouveaux commits d'un dépôt distant dans un client de gestion de versions — ils
+arrivent à côté de son propre travail, sa branche et sa copie de travail ne bougent pas ; on y va quand on le choisit.
+Pur : `demoPlan`, `addDemoPoints`, `demoLine` de `web/js/core/history_demo.js` ; les démonstrations dont l'historique
+grandit : `web/js/demo/demo_seeds.js` (aujourd'hui le BM, reconstruit une fois par visite) ; écran :
+`modules/history_demo_ui.js`. Essais : `tests/node/history_demo.test.mjs`, dont le cas de JP (une copie du BM arrêtée à P8
+reçoit P9 à P11 sur la branche du concept 5, attachés à son P8).
+
+Corrigé au passage : la date de création du projet (`created`) n'est plus prise pour un artéfact — elle faisait dire
+« 1 artéfact a changé — created » à toute copie d'une démonstration ; un point plus ancien qui la porte encore ne la
+compte pas comme un changement.
 
 ## 6. Ce qui est vérifié, ce qui ne l'est pas
 

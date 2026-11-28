@@ -15,10 +15,15 @@ import { iterationState, stateLabel } from "./mvp.js";
 import { releases } from "./plm.js";
 import { stateOf, REV_STATES } from "./plm_review.js";
 
-const SKIP = new Set(["history", "log", "updated", "id"]);           // what is not the definition : the history itself, the activity log, the clock, the name of the file
+const SKIP = new Set(["history", "log", "updated", "created", "id"]);           // what is not the definition : the history itself, the activity log, the clocks, the name of the file
 const LISTS = { part: "parts", assembly: "assemblies", board: "boards" };
 const LIST_KIND = Object.fromEntries(Object.entries(LISTS).map(([k, v]) => [v, k]));
 const KEEP_JOURNAL = 40;
+/* « created » is the date the project was made (store.js) : not the definition. Points posed before it was set aside carry it ; compared, it is
+   no change (it made « 1 artéfact a changé — created » show on every copy of a demonstration, JP's capture of 28 November 2026). */
+const NOISE = new Set(["key:created"]);
+/** A key of a tree that is not part of the definition, and never a change. */
+export const isNoise = (k) => NOISE.has(k);
 
 /** The kinds of point, with their pictogram and their colour. */
 export const POINT_KINDS = {
@@ -61,7 +66,7 @@ export function historyOf(project) {
 }
 export const pointOf = (h, id) => ((h && h.points) || []).find((p) => p.id === id) || null;
 const treeOf = (h, pieces) => pieces.map(([k, t]) => { if (!t) return [k, ""]; const f = fingerprint(t); if (h && !(f in h.objects)) h.objects[f] = t; return [k, f]; });
-const sameTree = (a, b) => !!a && !!b && a.length === b.length && a.every(([k, f], i) => b[i][0] === k && b[i][1] === f);
+const clean = (t) => (t || []).filter(([k]) => !NOISE.has(k)), sameTree = (a, b) => { if (!a || !b) return false; const A = clean(a), B = clean(b); return A.length === B.length && A.every(([k, f], i) => B[i][0] === k && B[i][1] === f); };
 /** The tree of the project as it stands, without storing anything. */
 export const treeNow = (project) => cut(project).map(([k, t]) => [k, t ? fingerprint(t) : ""]);
 
@@ -114,7 +119,7 @@ export function describe(key, text) {
 /** What differs from a tree to another. a, b : trees ([[key, fingerprint]]) ; texts : fingerprint → text (h.objects), now : the texts of the project
     when one side is the project as it stands. → { added, removed, changed } — each [{ key, kind, id, name, fr }] ; « list:… » and the order are not changes */
 export function diffTrees(a, b, texts, now = null) {
-  const A = new Map((a || []).filter(([k]) => !k.startsWith("list:"))), B = new Map((b || []).filter(([k]) => !k.startsWith("list:"))), out = { added: [], removed: [], changed: [] };
+  const A = new Map((a || []).filter(([k]) => !k.startsWith("list:") && !NOISE.has(k))), B = new Map((b || []).filter(([k]) => !k.startsWith("list:") && !NOISE.has(k))), out = { added: [], removed: [], changed: [] };
   const text = (f) => (texts && texts[f]) || (now && now.get(f)) || "";
   for (const [k, f] of B) { if (!A.has(k)) out.added.push({ key: k, ...describe(k, text(f)) }); else if (A.get(k) !== f) out.changed.push({ key: k, ...describe(k, text(f)) }); }
   for (const [k, f] of A) if (!B.has(k)) out.removed.push({ key: k, ...describe(k, text(f)) });

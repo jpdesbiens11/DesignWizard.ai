@@ -148,8 +148,10 @@ du modèle. Voir [GAMMES.md](GAMMES.md).
 
 Un projet porte aussi son **historique**, sous `history` : `v`, `head` (le point « vous êtes ici »), `objects`
 (chaque artéfact rangé une fois, en texte JSON, sous l'empreinte de son contenu) et `points` (pour chacun : `id`, `n`,
-`parent`, `at`, `kind` — `manual`, `ai` ou `before` —, `label`, `note`, `journal`, `context` et `tree`, la liste
-« artéfact → empreinte »). Il ne part ni vers une IA ni dans un miroir d'équipe. Voir [HISTORIQUE.md](HISTORIQUE.md).
+`parent`, `branch`, `at`, `by`, `kind` — `manual`, `ai`, `before`, `merge` ou `import` —, `label`, `note`, `journal`, `context`
+et `tree`, la liste « artéfact → empreinte » ; `merged` pour un point de fusion, `demo` — la date de l'ajout — pour un
+point venu d'une démonstration après la copie). Un point d'une démonstration est reconnu par son `at` et son `by`. Le
+`created` du projet n'entre pas dans `tree`. Il ne part ni vers une IA ni dans un miroir d'équipe. Voir [HISTORIQUE.md](HISTORIQUE.md).
 
 **Ajouter un genre ou un mot** se fait dans un seul fichier, `web/js/core/dwiz_names.js` : l'ordre des sections, et
 pour chaque liste le mot de ses lignes et les valeurs écrites sans leur nom. Le lecteur et l'écrivain

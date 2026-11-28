@@ -30,3 +30,10 @@
 .hist-branch-acts { display: flex; flex-wrap: wrap; gap: .3rem; }
 .hist-merge-group { margin: .6rem 0 .2rem; font-weight: 700; font-size: .86rem; } .hist-merge-group.warn { color: #b45309; } .hist-merge-group.off { color: var(--muted); }
 .hist-offs { list-style: none; margin: .2rem 0; padding: 0; font-size: .84rem; } .hist-offs li { padding: .2rem .5rem; margin: .15rem 0; border-radius: 5px; background: var(--surface-2); color: var(--muted); }
+/* the order of the tree, on the view (JP, 28 novembre 2026 : « Plus récent en haut, bascule ») ; a point added from the demonstration */
+.hist-order { position: absolute; top: .5rem; left: .6rem; z-index: 6; box-shadow: 0 1px 3px rgba(0, 0, 0, .08); }
+.hist-demo { border: 2px solid #db2777; border-radius: 8px; padding: .5rem .65rem; background: color-mix(in srgb, #db2777 7%, var(--surface)); }
+.hist-demo-list { list-style: none; margin: .4rem 0; padding: 0; } .hist-demo-list li { border-left: 4px solid var(--lane, #7c3aed); padding: .35rem .6rem; margin: .3rem 0; border-radius: 0 6px 6px 0; background: color-mix(in srgb, var(--lane, #7c3aed) 6%, transparent); font-size: .88rem; }
+.hist-demo-list li b { font-family: var(--mono, ui-monospace, monospace); color: var(--muted); margin-right: .4rem; } .hist-demo-list small { display: block; color: var(--muted); font-size: .78rem; }
+.hist-demo-keep { border-left: 4px solid #16a34a; padding: .4rem .6rem; border-radius: 0 6px 6px 0; background: color-mix(in srgb, #16a34a 6%, transparent); font-size: .86rem; }
+.hist-demo-keep small { display: block; color: var(--muted); font-size: .78rem; }
