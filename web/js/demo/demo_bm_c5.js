@@ -109,7 +109,7 @@ export function layout5(m) {
 
 /* ---------- the parts of the handle (frame of the pivot, closed) ---------- */
 
-function handlePart(L) {
+export function handlePart(L) {
   const A = C5.arm, P = C5.pivot, g = C5.grip, T = C5.trigger, zG = L.zG, f = [];
   for (const [s, x0] of [["g", L.arm[0]], ["d", L.mir(L.arm[1])]]) {
     const side = s === "g" ? "gauche" : "droit";
@@ -152,13 +152,13 @@ function pawlPart(L) {
     function: "Le second verrou : poussé par un ressort, son nez entre dans l'oreille quand la poignée est fermée ; la gâchette le retire.",
     notes: [`Dessiné engagé : ${p.into} mm dans l'oreille. Son ressort et le renvoi de la tringle sont dans le bras (non dessinés). Bout chanfreiné : il s'efface en passant sur l'oreille à la fermeture.`] });
 }
-function rodPart(L) {
+export function rodPart(L) {
   return part("BM5-ROD", "Tringle de la gâchette", { family: "turned", process: "cnc_turning", material: "SS-304",
     features: [cylZ("tige", `Tige Ø${C5.rod.d}`, [0, 0, 0], C5.rod.d, r3(L.zG - C5.grip.d / 2 - 16))],
     function: "Relie la gâchette au pawl de son bras.", notes: ["Dans le bras ; ses deux renvois — vers l'arbre de la gâchette dans le grip, vers le pawl — sont à dessiner."] });
 }
-function triggerPart(L) {
-  const T = C5.trigger, zG = L.zG, y0 = r3(C5.grip.d / 2 + T.gap), x0 = r3(L.xm - T.half);
+export function triggerPart(L, T = C5.trigger) {
+  const zG = L.zG, y0 = r3(C5.grip.d / 2 + T.gap), x0 = r3(L.xm - T.half);
   return part("BM5-TRIGGER", "Gâchette du grip", { family: "molded", process: "injection_molding", material: "PA66-GF30",
     features: [cylX("charniere", "Charnière", [x0, 18.5, zG + 1], 8, 2 * T.half), cylX("tourillons", "Tourillons Ø4 dans les chapes", [r3(L.xm - T.half - 4.5), 18.5, zG + 1], 4, 2 * T.half + 9),
       box("lame", "Lame, sous le grip", [x0, y0, zG - T.drop], [2 * T.half, T.t, T.drop + 1])],
@@ -168,7 +168,7 @@ function triggerPart(L) {
 
 /* ---------- the ears of the module : on the interface ring of the top lid ---------- */
 
-function earFeatures(L, ringEnd) {
+export function earFeatures(L, ringEnd) {
   const P = C5.pivot, f = [];
   for (const [s, x0] of [["g", L.ear[0]], ["d", L.mir(L.ear[1])]]) {
     const side = s === "g" ? "gauche" : "droite";
@@ -182,7 +182,7 @@ function earFeatures(L, ringEnd) {
 
 /* ---------- the swap surface (frame of the module : the module closed, home) ---------- */
 
-function swapPlate(L) {
+export function swapPlate(L) {
   const p = C5.plate, R = C5.rail, W = C5.wall, m = L.m, x1 = L.mir(p.x0), y0 = r3(m.face - deep() - W.t), y1 = r3(L.yS + C5.stop.l + p.tail);
   const wall1 = r3(y0 + W.t), bottom = m.bottom, holes = stopHoles(L);
   return part("BM5-SWAP-PLATE", "Swap surface — drone et charging base", { family: "machined", process: "cnc_milling", material: "AL6061-T6",
@@ -196,9 +196,9 @@ function swapPlate(L) {
       `Le module se pose entre les rails, sa quille sur le plateau, et glisse vers la cloison jusqu'à ce que ses cames touchent les butées, poignée couchée : son connector est alors à ${C5.cam.stroke} mm de chez lui, son nez déjà ${fr(inMouth(m))} mm dans la bouche du réceptacle. Relever la poignée fait le reste.`,
       "Aluminium 6061-T6 usiné (exemple) ; dans le véhicule, le plateau est une partie de sa structure."] });
 }
-const stopX0 = (L) => r3(L.cam[0] - C5.stop.out);      // the left stop : 7 mm beyond the outer face of the cam ; its inner face 1 mm short of the arm
+export const stopX0 = (L) => r3(L.cam[0] - C5.stop.out);      // the left stop : 7 mm beyond the outer face of the cam ; its inner face 1 mm short of the arm
 function stopHoles(L) { const x = r3(stopX0(L) + C5.stop.w / 2), xs = [x, L.mir(x)]; return xs.flatMap((xx) => [[xx, r3(L.yS + C5.stop.hole)], [xx, r3(L.yS + C5.stop.l - C5.stop.hole)]]); }
-function stopPart(L, band) {
+export function stopPart(L, band) {
   const S = C5.stop, zTop = r3(L.zP + band.z1 + S.top), h = r3(zTop - L.m.bottom);
   return part("BM5-STOP", "Butée fixe de la came", { family: "machined", process: "cnc_milling", material: "STEEL-1018",
     features: [box("bloc", "Bloc", [0, 0, 0], [S.w, S.l, h]),

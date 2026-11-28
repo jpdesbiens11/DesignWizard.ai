@@ -48,6 +48,7 @@ import { CORE_ENV } from "./demo_bm_case.js";
 import { lidForks, lidForkFeatures, bridgeC3, lidBandsPart } from "./demo_bm_c3_lid.js";
 import { conceptFour } from "./demo_bm_c4.js";
 import { conceptFive, C5 } from "./demo_bm_c5.js";
+import { conceptFiveHigh } from "./demo_bm_c5_hi.js";
 import { run as runCalc, sessionDefaults as calcDefaults } from "../analysis/physics/index.js";
 import { addPoint, restoreInto, putDefinition, withoutHistory, tipOf, rebuild } from "../core/history.js";
 
@@ -256,6 +257,9 @@ function withConceptFive(p) {
   const r = conceptFive(p), L = r.layout;
   addPoint(p, { kind: "manual", branch: C5_BRANCH, label: "Concept 5 — premier jet : poignée en U, cames asymétriques, swap surface", when: "2026-11-27T22:30:00.000Z", by: "DynamiteOrbit.ai",
     note: `Feuille de concept CB-6.29 de DynamiteAgile (brique CB-6 Swap interface), choix de JP par menu : « Concept 5, depuis concept 4 ». Le module du concept 4 tel quel ; deux oreilles sur l'anneau du couvercle du haut ; une poignée en U qui pivote ${frC(L.yP - L.m.cap)} mm derrière le couvercle (la main gantée, 45 mm derrière le grip) ; deux cames de ${C5.cam.stroke} mm de course qui roulent sur les butées fixes de la swap surface et barrent le module sur leur plat ; gâchette et pawls ; rails, réceptacle, tampons.` });
+  const h = conceptFiveHigh(p), H = h.layout;
+  addPoint(p, { kind: "manual", branch: C5_BRANCH, label: `Concept 5 — pivot haut : ${frC(h.gain)} mm de moins`, when: "2026-11-28T01:00:00.000Z", by: "DynamiteOrbit.ai",
+    note: `Choix de JP par menu : « Rapprocher le pivot », puis « A · pivot haut », sur l'image de trois options calculées sur le modèle. Le grip reste où il était ; le pivot monte à ${frC(H.zP)} mm et avance de ${frC(L.yP - H.yP)} mm, les bras s'inclinent vers le grip ; la came, son plat et sa course ne changent pas (90°) ; la gâchette descend moins ; les butées montent aux cames, les rails s'arrêtent avant le couvercle. Levier ${frC(H.lever)} mm, ${Math.round(h.calc.values.F_hand)} N à la main. Le premier jet reste au point d'avant.` });
 }
 const frC = (v) => String(Math.round(v * 100) / 100).replace(".", ",");
 

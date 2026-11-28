@@ -926,8 +926,34 @@ de P8 ; la carte de l'accueil ouvre cette branche, sur l'assemblage « Interface
   rotation (−90°, −60°, −30°, −12°, 0°), la came reste devant sa butée et au-dessus du plateau, la poignée passe à côté de la butée ; la course,
   le cran, la pente constante, le grip, la main gantée ; le concept 4 inchangé.
 
-**À revoir avec JP** : le pivot loin derrière le couvercle (ce que coûtent les 45 mm de la main ; des bras coudés ou un grip au-dessus du module
-changeraient la feuille) ; un **galet** sur la butée, qui ôterait le tiers de l'effort ; l'**extraction** (la poignée couchée tire le module,
+### Itération 2 — le pivot haut (point P10, sur la branche du concept 5)
+
+JP, 28 novembre, par menu : « Rapprocher le pivot », puis, sur une image de trois options calculées sur le modèle (A pivot haut, B bras inclinés
+sur 55°, C main gantée à 30 mm) : **« A · pivot haut »**. Source : `web/js/demo/demo_bm_c5_hi.js` (`conceptFiveHigh`, `highPivot`) ; le premier
+jet reste au point P9, inchangé, et un essai tient que seules les pièces que le pivot demande ont changé.
+
+- **Ce qui fixe la longueur** : le grip et la main gantée derrière lui, pas le pivot. Au premier jet, les cames et les butées étaient jusqu'à
+  55 mm plus loin que le grip ; ici, elles viennent dessous : **42,5 mm de moins** derrière le couvercle.
+- **Le grip reste où il était** (10 mm sous le dessus, 45 mm derrière le levier du quart de tour). **Le pivot monte à 57 mm et avance de
+  55,5 mm** ; les bras s'inclinent de 78° vers l'arrière, du pivot au grip ; levier 56,8 mm (56,95 au premier jet).
+- **La came ne change pas** : elle tourne toujours de 90°, avec sa course, son plat et son cran. Ouverte, la poignée **pend vers le bas**, juste
+  derrière le couvercle.
+- **Comment le pivot est choisi** (`highPivot`) : pour chaque hauteur, le pivot le plus avancé dont la poignée ouverte passe 1 mm derrière le
+  couvercle (derrière le levier du quart de tour à sa hauteur) et au-dessus de la swap surface, le bout de l'axe hors du couvercle ; de ceux-là,
+  celui qui donne le plus long levier, les butées finissant sous le grip.
+- **Ce qui suit** : les **oreilles** de l'anneau, courtes et hautes ; les **butées**, qui montent aux cames (82 mm de haut, le long des
+  flancs) ; les **tringles**, le long des bras ; la **gâchette**, qui ne descend plus que de 12 mm sous le grip (30 au premier jet) ; les **rails**,
+  qui s'arrêtent 10 mm avant le couvercle ; une **fenêtre** de 139 × 29 mm traverse la swap surface sous la poignée ouverte, qui y pend jusqu'à
+  6 mm sous le dessus du plateau, sans en sortir par-dessous.
+- **Ce que la figure ne disait pas** : la gâchette et ses chapes, derrière le grip, sont ce qui pend le plus bas. Sans la fenêtre, le pivot doit
+  reculer, le levier perd 3 mm et l'effort passe 80 N (80,7 N) ; avec la gâchette du premier jet (30 mm), 83 N même avec la fenêtre.
+- **Le calcul** : **76 N à la main** pour 80 admis (exemple), la même came, le même effort sur la pile.
+- **Vérifié par les essais** : rien ne traverse rien, la poignée fermée ; tournée à −30°, −60° et −90°, le module chez lui ou là où la came le
+  laisse, aucune pièce de la poignée n'entre dans le module, la swap surface ou les butées (les pawls, dessinés engagés, sont retirés par la
+  gâchette avant de tourner, et laissés hors de cette vérification).
+
+**À revoir avec JP** : la fenêtre dans la swap surface (le véhicule et la station doivent l'accepter) ; des butées hautes, le long des flancs ;
+le pivot loin derrière le couvercle au premier jet (P9) — réglé ici pour la longueur, pas pour la main (45 mm) ; un **galet** sur la butée, qui ôterait le tiers de l'effort ; l'**extraction** (la poignée couchée tire le module,
 rien ne l'éjecte) ; la **glace** sur la butée ; les efforts réels du connector et sa sur-course admise ; les oreilles usinées avec l'anneau
 (rapportées et vissées en série) ; la clavette des butées ; le quart de tour du couvercle, toujours là sous la poignée.
 
