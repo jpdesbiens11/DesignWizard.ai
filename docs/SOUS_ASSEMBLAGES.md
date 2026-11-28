@@ -153,7 +153,7 @@ Pas vérifié : un grand produit à plusieurs niveaux (le Rover n'a pas été re
 construction sur un assemblage de plus de cinquante pièces ; l'envoi réel vers Onshape ; deux membres d'une équipe qui
 modifient le parent et le sous-assemblage en même temps.
 
-## Glisser un sous-assemblage pour l'emboîter (v0.217.0)
+## Glisser un sous-assemblage pour l'emboîter (v0.219.0)
 
 La poignée qui déplace la pièce choisie dans la vue de l'Assemblage ([IMPORT_STEP.md](IMPORT_STEP.md), § 4) déplace aussi un
 sous-assemblage, **d'un seul bloc** : il s'emboîte par l'interface libre d'une de ses pièces, et le joint écrit dans le parent nomme

@@ -86,7 +86,8 @@ test("a mission ends at its goal, before its longest time : the nominal charge w
   const p = bmProject(), d = p.software[0], M = campaignMissions(p, d), m = (id) => M.find((q) => q.id === id);
   assert.deepEqual(goalOf(m("nom-charge")).kind, "charge-end"); assert.equal(goalOf(m("nom-discharge")).kind, "floor"); assert.equal(goalOf(m("rq-vblock_max-hi-4_25-charge")).kind, "events");
   const ch = playMission(d, m("nom-charge")); assert.ok(ch.goal && /chargeur/.test(ch.goal.why)); assert.ok(ch.t < goalOf(m("nom-charge")).max * 0.75, `the charge ends at ${ch.t / 1000} s, its longest is ${goalOf(m("nom-charge")).max / 1000} s`);
-  assert.deepEqual(missionOutcome(m("nom-charge"), p.reqs, ch, d.plant), { ok: true, fails: [], held: 2, judged: 2 });
+  assert.deepEqual(missionOutcome(m("nom-charge"), p.reqs, ch, d.plant), { ok: true, fails: [], idle: [], held: 2, judged: 2 });
+  const co = missionOutcome(m("corner-discharge"), p.reqs, playMission(d, m("corner-discharge")), d.plant); assert.deepEqual([co.ok, co.fails, co.idle.length > 0], [false, [], true], "the software derates at 60 °C : the 360 A of the corner never flow — not a success");
   const dis = playMission(d, m("nom-discharge")); assert.ok(dis.goal && /sous 3,2 V/.test(dis.goal.why));
   const ov = playMission(d, m("rq-vblock_max-hi-4_25-charge")), G = goalOf(m("rq-vblock_max-hi-4_25-charge")); assert.ok(ov.goal && ov.t >= G.last + QUIET && ov.t < G.max, "every event played, then 30 s of quiet");
   assert.equal(missionOutcome(m("rq-vblock_max-hi-4_25-charge"), p.reqs, ov, d.plant).ok, true);

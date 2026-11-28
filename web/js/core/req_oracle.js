@@ -30,6 +30,9 @@ export const SIGNALS = {
   contactor: { label: "Contactor", fr: "contactor (1 fermé, 0 ouvert)", short: "contactor", unit: "", of: (x, ix) => (ix.contactor >= 0 ? x.out[ix.contactor] : (x.state || 0) >= 3 ? 0 : 1) },
   pump: { label: "Cooling pump", fr: "pompe de refroidissement", short: "pompe", unit: "", of: (x, ix) => (ix.pump >= 0 ? x.out[ix.pump] : null) },
   bleed: { label: "Cell blocks being balanced", fr: "cell blocks en équilibrage", short: "équilibrage", unit: "", of: (x) => x.bleed || 0 },
+  /* the 1.5D model of the module (sw/sw_pack_model.js, JP 28 novembre 2026) : what a requirement on the state of charge or the power may read */
+  soc: { label: "State of charge (mean of the CORE)", fr: "état de charge, moyenne des CORE", short: "SoC", unit: "%", panel: "s", of: (x) => (x.soc ?? 0) / 10 },
+  power: { label: "Module power (+ discharge)", fr: "puissance du module (+ en décharge)", short: "P", unit: "kW", panel: "p", of: (x) => (x.pw ?? 0) / 1000 },
 };
 export const STATES = ["Normal", "Derated", "Emergency", "Shutdown"];
 const STATE_OF = { normal: 0, derated: 1, emergency: 2, shutdown: 3 };

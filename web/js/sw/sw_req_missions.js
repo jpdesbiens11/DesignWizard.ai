@@ -235,11 +235,12 @@ export function goalReached(G, L) {
   const out = L.log && L.log.length ? L.log[L.log.length - 1].t : 0;
   return L.t - Math.max(G.last, out) >= G.quiet ? { why: `tous ses événements sont joués et rien de ce que le logiciel commande ne change depuis ${G.quiet / 1000} s` } : null;
 }
-/** The outcome of a mission on the record so far : the requirements it aims at (else those it names, else every one judged) — ok when none fails.
-    → { ok, fails: [key], held, judged } */
+/** The outcome of a mission on the record so far : the requirements it aims at (else those it names, else every one judged) — ok when none fails,
+    and, for a mission that aims at limits, when each of them was exercised (a corner case whose current the software never let through has not done
+    its job). → { ok, fails: [key], idle: [key] (aimed at, not exercised), held, judged } */
 export function missionOutcome(p, R, L, plant) {
   const S = seriesOf((L && L.rec) || [], (L && L.recRefs) || [], plant), aims = p && p.aims ? new Set(p.aims.map((a) => `${a.key}#${a.n}`)) : null, keys = p && p.keys && p.keys.length ? new Set(p.keys) : null;
   const V = (R ? verdicts(R, S) : []).filter((v) => (aims ? aims.has(`${v.key}#${v.n}`) : keys ? keys.has(v.key) : true));
-  const fails = [...new Set(V.filter((v) => v.verdict === "fail").map((v) => v.key))];
-  return { ok: !fails.length, fails, held: V.filter((v) => v.verdict === "pass" || v.verdict === "covered").length, judged: V.length };
+  const fails = [...new Set(V.filter((v) => v.verdict === "fail").map((v) => v.key))], idle = aims ? [...new Set(V.filter((v) => v.verdict === "none" || v.verdict === "uncovered").map((v) => v.key))].filter((k) => !fails.includes(k)) : [];
+  return { ok: !fails.length && !idle.length, fails, idle, held: V.filter((v) => v.verdict === "pass" || v.verdict === "covered").length, judged: V.length };
 }

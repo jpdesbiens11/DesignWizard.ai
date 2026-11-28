@@ -23,6 +23,12 @@ import { seriesOf, verdicts, chartLines, verdictWord, oracleText } from "../core
 
 /* the limits of the REQUIREMENTS (core/req_oracle.js, JP 27 novembre : « tagger les ID de requis… lignes pointillées pour les limites min / max ») : the colour is the verdict */
 const RQ_COL = { pass: "#4ade80", covered: "#4ade80", fail: "#f87171", none: "#cbd5e1", uncovered: "#fbbf24" }, RQ_RANK = { fail: 4, uncovered: 3, none: 2, pass: 1, covered: 1 };
+/* THE VIEWS of the 1.5D module (JP, 28 novembre 2026 : « intégrer les vues désirées : SoC, Puissance, etc. ») — each one shown or not, kept by the browser */
+const VIEWS = [["v", "Tension"], ["i", "Courant"], ["p", "Puissance"], ["s", "SoC"], ["t", "Températures"]], BASE = { v: 104, i: 70, p: 70, s: 60, t: 96 }, VKEY = "dw.sw.mission.views";
+const readViews = () => { try { const o = JSON.parse(localStorage.getItem(VKEY) || "null"); return o && typeof o === "object" ? { ...Object.fromEntries(VIEWS.map(([k]) => [k, true])), ...o } : Object.fromEntries(VIEWS.map(([k]) => [k, true])); } catch (e) { return Object.fromEntries(VIEWS.map(([k]) => [k, true])); } };
+/* the colour of a phase of the profile : what the module is asked, from grey (rest) to red (the most it gives), green when it takes */
+function phaseColor(st, iMax, pPeak) { if (st.mode === "charge" || (st.mode === "power" && st.power < 0)) return "#16a34a"; const share = st.mode === "power" ? Math.abs(st.power) / (pPeak || 10) : st.mode === "discharge" ? Math.abs(st.a || 0) / (iMax || 360) : 0;
+  return st.mode === "rest" || !share ? "#475569" : share < 0.15 ? "#fbbf24" : share < 0.4 ? "#f97316" : "#dc2626"; }
 const STATE_COL = ["#16a34a", "#eab308", "#f97316", "#dc2626"], fr = (x, n = 1) => String(+x.toFixed(n)).replace(".", ",");
 const hms = (ms) => { const s = Math.round(ms / 1000); return s < 60 ? `${s} s` : `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, "0")}`; };
 /** The duty cycle of each lane of a record : the share of the time it was on. Pure. → { ref: 0..1 } */
@@ -41,7 +47,9 @@ export function swMission(bench, design, story, change, showPieces) {
   /* FULL SCREEN (JP, 26 novembre 2026 : « allow a full screen mode for the central area with a lot of data during the profile runs, with a normal
      screen button to get back ») : the mission over the whole window, with what one needs while it runs — Marche / Pause, the banner of a limit
      and its « Continuer » ; « Écran normal » or Esc brings the page back. What it follows : the full-screen view of a recorder or a video player. */
-  const st = { full: false };
+  const st = { full: false }; let views = readViews();
+  const viewBar = el("div", { class: "swmi-views", role: "group", "aria-label": "Les vues de la mission", "data-swmi-views": "" }, el("small", null, "Vues"), VIEWS.map(([k, w]) => el("button", { type: "button", class: "chip small", "aria-pressed": views[k] ? "true" : "false", "data-swmi-view": k,
+    onClick: (e) => { views = { ...views, [k]: !views[k] }; if (!VIEWS.some(([q]) => views[q])) views[k] = true; e.currentTarget.setAttribute("aria-pressed", views[k] ? "true" : "false"); try { localStorage.setItem(VKEY, JSON.stringify(views)); } catch (x) { /* kept for the page */ } draw(); } }, w)));
   /* the verdicts of the requirements on this run : a chip per requirement (its worst verdict), the details folded under */
   const reqHead = el("div", { class: "swmi-rqchips" }), reqList = el("ul", { class: "small" }), reqBox = el("details", { class: "swmi-reqs", "data-swmi-reqs": "" }, el("summary", null, "Le constat des exigences sur ce profil"), reqHead, reqList);
   function showVerdicts(res) {
@@ -68,7 +76,7 @@ export function swMission(bench, design, story, change, showPieces) {
   /* Esc in the browser's full screen leaves it : the mission follows */
   const fsChange = () => { if (st.full && document.fullscreenElement !== node) setFull(false, true); };
   document.addEventListener("fullscreenchange", fsChange);
-  const node = el("div", { class: "swmi", "data-sw-mission": "" }, el("header", { class: "swmi-head" }, icon("report"), title, clock, el("span", { class: "swmi-gap" }), go, full, exp, imp, rec, back), fin, el("div", { class: "swmi-body" }, canvas),
+  const node = el("div", { class: "swmi", "data-sw-mission": "" }, el("header", { class: "swmi-head" }, icon("report"), title, clock, el("span", { class: "swmi-gap" }), go, full, exp, imp, rec, back), fin, viewBar, el("div", { class: "swmi-body" }, canvas),
     reqBox, el("p", { class: "swmi-note muted small" }, "Une ligne par seconde du module simulé (valeurs TYPIQUES). En jaune et rouge, les seuils du LOGICIEL ; en pointillé tagué, les limites des EXIGENCES, colorées par leur verdict (vert tenue, rouge échoue, gris non exercée, ambre enveloppe non couverte ; trait fin : lecture à confirmer). Une bande pleine, un composant en marche, avec son taux de marche à gauche. Un chiffre en haut : un événement du profil."));
   /* the banner of a limit met */
   function halted(h) {
@@ -79,8 +87,8 @@ export function swMission(bench, design, story, change, showPieces) {
   }
   /* THE MISSION DONE (JP, 28 novembre 2026 : « arrêter même avant le temps maximal, donner le temps final et afficher succès ») — modules/sw_story_ui.js finish */
   function done(r) {
-    fin.hidden = !r; if (!r) { fin.replaceChildren(); fin.className = "swmi-done"; return; } const k = r.reached ? (r.ok ? "ok" : "bad") : "late"; fin.className = `swmi-done ${k}`; fin.dataset.swDone = k;
-    const head = r.reached ? (r.ok ? `Succès — objectifs atteints en ${hms(r.t)}` : `Objectifs atteints en ${hms(r.t)} — ${r.fails.length} exigence${r.fails.length > 1 ? "s" : ""} en échec : ${r.fails.join(", ")}`) : `Temps maximal atteint (${hms(r.t)}) — objectifs non atteints${r.fails.length ? ` ; en échec : ${r.fails.join(", ")}` : ""}`;
+    fin.hidden = !r; if (!r) { fin.replaceChildren(); fin.className = "swmi-done"; return; } const k = r.reached ? (r.ok ? "ok" : r.fails.length ? "bad" : "late") : "late", idle = r.idle || []; fin.className = `swmi-done ${k}`; fin.dataset.swDone = k;
+    const head = r.reached ? (r.ok ? `Succès — objectifs atteints en ${hms(r.t)}` : r.fails.length ? `Objectifs atteints en ${hms(r.t)} — ${r.fails.length} exigence${r.fails.length > 1 ? "s" : ""} en échec : ${r.fails.join(", ")}` : `Terminée en ${hms(r.t)} — ${idle.length} limite${idle.length > 1 ? "s" : ""} visée${idle.length > 1 ? "s" : ""} non exercée${idle.length > 1 ? "s" : ""} : ${idle.join(", ")}`) : `Temps maximal atteint (${hms(r.t)}) — objectifs non atteints${r.fails.length ? ` ; en échec : ${r.fails.join(", ")}` : ""}`;
     const said = [r.reached ? `La mission s'arrête : ${r.why}.` : "La mission a duré tout son temps sans atteindre son objectif.", r.reached && r.max > r.t + 1000 ? `Au plus ${hms(r.max)} : ${hms(r.max - r.t)} de moins.` : "", r.judged ? `${r.held} limite${r.held > 1 ? "s" : ""} d'exigence tenue${r.held > 1 ? "s" : ""} sur ${r.judged} jugée${r.judged > 1 ? "s" : ""}.` : ""].filter(Boolean).join(" ");
     fin.replaceChildren(icon(k === "ok" ? "check" : "warning"), el("div", null, el("b", null, head), el("p", null, said)), btn("Rejouer", () => story.play(), { small: true, icon: "refresh", tip: "Rejouer la mission depuis le début" }));
     draw();
@@ -90,8 +98,8 @@ export function swMission(bench, design, story, change, showPieces) {
     const w = Math.max(320, ((canvas.parentNode && canvas.parentNode.clientWidth) || 900) - 4), refs = L.recRefs, nm = names(), lanes = [...refs.map((r, k) => ({ k, label: nm[r] || r })), { k: -1, label: "Équilibrage (au moins un CORE)" }];
     /* the left column narrows with the pane ; each panel has its title ABOVE it, across the width, and its scale at the right of the column */
     /* full screen : the three panels share what the window leaves, so that the lanes and the time axis stay in sight */
-    const fixedH = 34 + 30 * 3 + 22 + (refs.length + 1) * 17 + 34 + 10, canvasTop = st.full ? canvas.getBoundingClientRect().top : 0, k = st.full ? Math.max(1, (window.innerHeight - canvasTop - fixedH) / 244) : 1;
-    const LBL = Math.round(Math.min(190, Math.max(96, w * 0.22))), X0 = LBL + 8, X1 = w - 10, top = 34, H = [104, 70, 70].map((x) => Math.round(x * k)), gap = 30, laneH = 17, h = top + H[0] + H[1] + H[2] + gap * 3 + 22 + lanes.length * laneH + 34, dpr = Math.min(2, window.devicePixelRatio || 1);
+    const on = VIEWS.map(([q]) => q).filter((q) => views[q]), sumB = on.reduce((a, q) => a + BASE[q], 0), fixedH = 34 + 40 + 30 * on.length + 22 + (refs.length + 1) * 17 + 34 + 10, canvasTop = st.full ? canvas.getBoundingClientRect().top : 0, k = st.full ? Math.max(1, (window.innerHeight - canvasTop - fixedH) / Math.max(1, sumB)) : 1;
+    const LBL = Math.round(Math.min(190, Math.max(96, w * 0.22))), X0 = LBL + 8, X1 = w - 10, top = 34, H = Object.fromEntries(on.map((q) => [q, Math.round(BASE[q] * k)])), gap = 30, laneH = 17, h = top + 40 + on.reduce((a, q) => a + H[q] + gap, 0) + 22 + lanes.length * laneH + 34, dpr = Math.min(2, window.devicePixelRatio || 1);
     canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr); canvas.style.width = `${w}px`; canvas.style.height = `${h}px`;
     const g = canvas.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.fillStyle = "#0b1220"; g.fillRect(0, 0, w, h); g.font = "11px system-ui, sans-serif"; g.textBaseline = "middle";
     const RQ = store.project && store.project.reqs, res = RQ ? verdicts(RQ, seriesOf(L.rec, refs, d.plant)) : []; showVerdicts(res);
@@ -118,11 +126,23 @@ export function swMission(bench, design, story, change, showPieces) {
         const txt = `${ln.key}${ln.when ? ` · ${ln.when === "charge" ? "charge" : "décharge"}` : ""}`, tw = g.measureText(txt).width + 10, ty = Math.max(y0 + 7, Math.min(y0 + hh - 7, yy));
         let tx = X0 + 4; while (tags.some((t) => Math.abs(t.y - ty) < 14 && tx < t.x + t.w + 4 && t.x < tx + tw + 4)) tx = Math.max(...tags.filter((t) => Math.abs(t.y - ty) < 14).map((t) => t.x + t.w + 6)); tags.push({ x: tx, y: ty, w: tw });
         g.fillStyle = "#0b1220"; g.fillRect(tx, ty - 6, tw, 13); g.strokeStyle = col; g.strokeRect(tx, ty - 6, tw, 13); g.fillStyle = col; g.fillText(txt, tx + 5, ty + 0.5); g.globalAlpha = 1; }
-      for (const [col, f] of series) { g.strokeStyle = col; g.lineWidth = 1.6; g.beginPath(); R.forEach((x, j) => { const yy = Y(f(x)); if (!j) g.moveTo(X(x.t), yy); else g.lineTo(X(x.t), yy); }); g.stroke(); g.lineWidth = 1; }
+      for (const [col, f, lw = 1.6, dash = null] of series) { g.strokeStyle = col; g.lineWidth = lw; if (dash) g.setLineDash(dash); g.beginPath(); R.forEach((x, j) => { const yy = Y(f(x)); if (!j) g.moveTo(X(x.t), yy); else g.lineTo(X(x.t), yy); }); g.stroke(); g.setLineDash([]); g.lineWidth = 1; }
     };
-    let y = top; panel(y, H[0], 2.6, 4.4, 0.6, "Tension des CORE (haut, bas)", [["#60a5fa", (x) => x.vmax / 1000], ["#22d3ee", (x) => x.vmin / 1000]], ["vmax", "vmin"], "V", "v"); y += H[0] + gap;
-    panel(y, H[1], -120, 120, 60, "Courant (+ décharge, − charge)", [["#fbbf24", (x) => x.current / 1000]], ["current"], "A", "i"); y += H[1] + gap;
-    panel(y, H[2], 15, 85, 20, "Température du CORE le plus chaud", [["#fb7185", (x) => x.temp / 10]], ["temp"], "°C", "t"); y += H[2] + gap;
+    /* THE PHASES of the profile (as a mission planner shows them) : what the module is asked, segment by segment, under the event numbers */
+    { const M = (L.plant && L.plant.S && L.plant.S.M) || {}, iMax = (L.plant && L.plant.S && L.plant.S.iMax) || 360, s0 = { mode: "rest", a: 0, power: 0 }, ev = story.events.filter((e) => e.plant);
+      g.fillStyle = "#e2e8f0"; g.font = "600 12px system-ui, sans-serif"; g.fillText("Phases", 6, top + 6); g.font = "11px system-ui, sans-serif";
+      ev.forEach((e, j) => { Object.assign(s0, e.plant); const x0 = X(e.t), x1 = X(ev[j + 1] ? ev[j + 1].t : T); g.fillStyle = e.phase ? e.phase.color : phaseColor(s0, iMax, M.pPeak); g.fillRect(x0, top, Math.max(1, x1 - x0), 12);
+        if (e.phase && x1 - x0 > 40) { g.fillStyle = "#0b1220"; g.font = "600 9px system-ui, sans-serif"; g.fillText(e.phase.name, x0 + 3, top + 6.5); g.font = "11px system-ui, sans-serif"; } });      // a mission by phases : its own colours and names (sw/sw_phases.js)
+      g.strokeStyle = "#334155"; g.strokeRect(X0, top, X1 - X0, 12); }
+    const iAbs = Math.max(120, Math.ceil(Math.max(0, ...R.map((x) => Math.abs(x.current))) / 1000 / 60) * 60), pAbs = Math.max(2, Math.ceil(Math.max(0, ...R.map((x) => Math.abs(x.pw || 0))) / 1000 / 2) * 2);
+    const tVals = R.flatMap((x) => [x.temp / 10, ...(x.tk || []).map((q) => q / 10), (x.tc || 250) / 10]), tLo = Math.min(15, Math.floor((Math.min(...tVals) - 5) / 10) * 10), tHi = Math.max(85, Math.ceil((Math.max(...tVals) + 5) / 10) * 10);
+    const nk = R.length && R[0].tk ? R[0].tk.length : 0, coreCol = (q) => `hsl(${20 + (q * 300) / Math.max(1, nk)} 75% 62%)`;
+    let y = top + 40;
+    if (H.v) { panel(y, H.v, 2.6, 4.4, 0.6, "Tension des CORE (haut, bas)", [["#60a5fa", (x) => x.vmax / 1000], ["#22d3ee", (x) => x.vmin / 1000]], ["vmax", "vmin"], "V", "v"); y += H.v + gap; }
+    if (H.i) { panel(y, H.i, -iAbs, iAbs, iAbs / 2, "Courant (+ décharge, − charge)", [["#fbbf24", (x) => x.current / 1000]], ["current"], "A", "i"); y += H.i + gap; }
+    if (H.p) { panel(y, H.p, -pAbs, pAbs, pAbs / 2, "Puissance du module (+ décharge, − charge)", [["#f472b6", (x) => (x.pw || 0) / 1000]], [], "kW", "p"); y += H.p + gap; }
+    if (H.s) { panel(y, H.s, 0, 100, 25, "État de charge (SoC, moyenne des CORE)", [["#a3e635", (x) => (x.soc || 0) / 10]], [], "%", "s"); y += H.s + gap; }
+    if (H.t) { panel(y, H.t, tLo, tHi, 20, "Températures : chaque CORE, le boîtier, le liquide en sortie", [...Array.from({ length: nk }, (_, q) => [coreCol(q), (x) => x.tk[q] / 10, 1]), ["#94a3b8", (x) => (x.tc || 0) / 10, 1.2, [5, 4]], ["#38bdf8", (x) => (x.tco || 0) / 10, 1, [2, 3]], ["#fb7185", (x) => x.temp / 10, 2.2]], ["temp"], "°C", "t"); y += H.t + gap; }
     /* the state of the module, as a band ; then one lane per component, filled where it is on, with its duty cycle */
     g.fillStyle = "#e2e8f0"; g.font = "600 12px system-ui, sans-serif"; g.fillText("État du module", 6, y - 12); g.font = "11px system-ui, sans-serif";
     STATE_NAMES.forEach((s0, k) => { g.fillStyle = STATE_COL[k]; g.fillRect(X0 + k * 78, y - 17, 9, 9); g.fillStyle = "#94a3b8"; g.fillText(s0, X0 + k * 78 + 13, y - 12); });

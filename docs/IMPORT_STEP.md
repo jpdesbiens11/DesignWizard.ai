@@ -3,7 +3,7 @@
 Demande de JP (28 novembre 2026, pendant le concept 5 du BM) : « ce serait nice de pouvoir faire les pièces les plus
 complexes en 3D dans OnShape ou Inventor et les importer comme une nouvelle pièce en stp ou autre format que tu veux dans
 l'assemblage et que l'interface soit reconnue pour le mating en promenant la pièce devant l'interface parent à l'écran. »
-Ordre choisi par JP, par menu : 1 → 2 → 3 → 4, publié d'un bloc (v0.217.0).
+Ordre choisi par JP, par menu : 1 → 2 → 3 → 4, publié d'un bloc (v0.219.0).
 
 ## 1. Le format : STEP
 

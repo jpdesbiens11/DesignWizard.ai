@@ -22,7 +22,8 @@ export const PROFILE_FORMAT = "dynamiteorbit/mission-profile@1";
 /* what drives the MODULE on the bench (sw/sw_pack.js, design.plant) : written « module.<name> = value unit » — JP, 25 novembre 2026 : « exporter et
    importer un profil de charge et décharge » ; a fifth field names the limits an event crosses on purpose (« ov, hvw ») */
 export const PLANT_VARS = [
-  { key: "mode", name: "module.mode", unit: "", values: ["charge", "discharge", "rest"], text: "ce que fait le module : charge (le chargeur), discharge (la charge tire), rest (au repos)" },
+  { key: "mode", name: "module.mode", unit: "", values: ["charge", "discharge", "power", "rest"], text: "ce que fait le module : charge (le chargeur), discharge (la charge tire), power (une puissance imposée), rest (au repos)" },
+  { key: "power", name: "module.power", unit: "kW", min: -1000, max: 1000, text: "la puissance imposée en mode power : + en décharge, − en charge (le courant en découle, tenu aux limites du module)" },
   { key: "start", name: "module.start", unit: "V", min: 2.5, max: 4.2, text: "la tension de départ des CORE, au repos (repart de là)" },
   { key: "a", name: "module.load", unit: "A", min: 0, max: 600, text: "le courant que la charge tire, en décharge" },
   { key: "push", name: "module.push", unit: "A", min: 0, max: 600, text: "un chargeur qui pousse ce courant quoi qu'on lui demande (0 : il obéit)" },
