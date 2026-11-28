@@ -16,11 +16,11 @@
    follows : requirements-based testing (each limit : nominal, boundary, beyond, recovery), fault injection, and a holdout set as in machine
    learning. The standards were not read. Pure. */
 
-import { packStart, plantOf, until, missionProfiles } from "./sw_pack.js";
+import { packStart, packSense, plantOf, until, missionProfiles } from "./sw_pack.js";
 import { profilesOf } from "./sw_story.js";
 import { liveInputs } from "./sw_live.js";
 import { forDiscipline, keyOf } from "../core/reqs.js";
-import { oraclesFor, oracleText, SIGNALS } from "../core/req_oracle.js";
+import { oraclesFor, oracleText, SIGNALS, seriesOf, verdicts } from "../core/req_oracle.js";
 import { applyPlan, planOf } from "./sw_mission_plan.js";
 
 /** The kinds of missions, in the order the screen shows them : a colour, a pictogram, a short name. */
@@ -113,12 +113,13 @@ function nominalMissions(d, list, C1, amb) {
   const tc = until(d, { mode: "charge", start: 3.9, cMax: 1, amb }, (s, P) => P.done || P.ended, 3 * 3600) || 3600;
   const floor = +(lo + 0.4).toFixed(2), td = until(d, { mode: "discharge", start: 4.1, a: 2 * C1, amb }, (s) => s.vmin < floor * 1000, 3 * 3600) || 1800;
   return [
-    { id: "nom-charge", origin: "nominal", kind: "charge", keys, aims, name: "Nominal — charge à 1 C jusqu'à la fin", events: [
+    /* their goal (goalOf) ends them as soon as it is reached ; the last event is the longest they may last */
+    { id: "nom-charge", origin: "nominal", kind: "charge", keys, aims, goal: { kind: "charge-end" }, name: "Nominal — charge à 1 C jusqu'à la fin", events: [
       ev(0, "start", "Départ en charge", `${startText("charge", C1, 3.9)} Le chargeur va jusqu'au bout de sa tension constante.`, { plant: setup("charge", C1, amb, 3.9) }),
-      ev(tc + 60, "rest", "Le chargeur s'arrête", "La charge est finie : le module reste au repos.", { plant: { mode: "rest" } }), ev(tc + 180, "end", "Fin de la mission", "Rien n'a dû réagir.")] },
-    { id: "nom-discharge", origin: "nominal", kind: "discharge", keys, aims, name: `Nominal — décharge à 2 C jusqu'à ${fr(floor, 2)} V`, events: [
+      ev(Math.round(tc * 1.5 + 600), "end", "Temps maximal de la mission", "Le chargeur ne s'est pas arrêté à temps : la mission n'a pas atteint son objectif.")] },
+    { id: "nom-discharge", origin: "nominal", kind: "discharge", keys, aims, goal: { kind: "floor", mv: Math.round(floor * 1000) }, name: `Nominal — décharge à 2 C jusqu'à ${fr(floor, 2)} V`, events: [
       ev(0, "start", "Départ en décharge", `Le module est en service : la charge tire 2 C (${fr(2 * C1, 0)} A), cell blocks à 4,1 V au repos.`, { plant: { ...setup("discharge", C1, amb, 4.1), a: 2 * C1 } }),
-      ev(td, "rest", "La charge s'arrête", `Le cell block le plus bas est à ${fr(floor, 2)} V : ${fr(0.4, 1)} V au-dessus de la limite basse.`, { plant: { mode: "rest", a: 0 } }), ev(td + 120, "end", "Fin de la mission", "Rien n'a dû réagir.")] },
+      ev(Math.round(td * 1.5 + 600), "end", "Temps maximal de la mission", `Le cell block le plus bas n'est pas descendu à ${fr(floor, 2)} V à temps : la mission n'a pas atteint son objectif.`)] },
   ];
 }
 /** What the requirements say the product must reach. */
@@ -213,3 +214,32 @@ export function missionGaps(project) { return limitsOf(reqOracles(project && pro
 export const missionSig = (list) => hash((list || []).filter((p) => !p.off).map((p) => `${p.id}:${(p.events || []).length}:${(p.events || []).at(-1)?.t || 0}`).sort().join("|")).toString(36);      // what is played, not its order
 /** How long a mission lasts, in seconds. */
 export const missionSeconds = (p) => Math.round((((p.events || []).at(-1) || { t: 0 }).t) / 1000);
+
+/* ---------- when a mission has done what it must (JP, 28 novembre 2026 : « quand les objectifs d'un profil de mission sont complétés, la simulation
+   peut arrêter même avant le temps maximal, donner le temps final et afficher succès ») ----------
+   Its last event is the LONGEST it may last ; its goal ends it as soon as it is reached — on the bench and in the campaign alike. */
+const acts = (e) => !!(e.plant || (e.set && Object.keys(e.set).length) || e.pulse);
+/** Nothing the software commands may change for this long after the last event that acts : then the mission has done what it must. */
+export const QUIET = 30000;
+/** What a mission must reach : its own goal — `charge-end` (the charger stopped at the end of its constant voltage), `floor` (the lowest cell block
+    under `mv`) —, else `events` : every event that acts played, then QUIET ms without a change of what the software commands. → { kind, mv, last, quiet, max } */
+export function goalOf(p) {
+  const E = (p && p.events) || [], g = (p && p.goal) || {};
+  return { kind: g.kind || "events", mv: g.mv, last: E.filter(acts).reduce((m, e) => Math.max(m, e.t), 0), quiet: QUIET, max: E.length ? E[E.length - 1].t : 0 };
+}
+/** Has the mission reached its goal on a live run (sw/sw_live.js) ? → { why } | null */
+export function goalReached(G, L) {
+  if (!L || !L.plant || L.t < G.last) return null; const P = L.plant;
+  if (G.kind === "charge-end") return P.drive.mode === "charge" && (P.ended || P.done) ? { why: "le chargeur s'est arrêté au bout de sa tension constante" } : null;
+  if (G.kind === "floor") return packSense(P).vmin < G.mv ? { why: `le cell block le plus bas est descendu sous ${fr(G.mv / 1000, 2)} V` } : null;
+  const out = L.log && L.log.length ? L.log[L.log.length - 1].t : 0;
+  return L.t - Math.max(G.last, out) >= G.quiet ? { why: `tous ses événements sont joués et rien de ce que le logiciel commande ne change depuis ${G.quiet / 1000} s` } : null;
+}
+/** The outcome of a mission on the record so far : the requirements it aims at (else those it names, else every one judged) — ok when none fails.
+    → { ok, fails: [key], held, judged } */
+export function missionOutcome(p, R, L, plant) {
+  const S = seriesOf((L && L.rec) || [], (L && L.recRefs) || [], plant), aims = p && p.aims ? new Set(p.aims.map((a) => `${a.key}#${a.n}`)) : null, keys = p && p.keys && p.keys.length ? new Set(p.keys) : null;
+  const V = (R ? verdicts(R, S) : []).filter((v) => (aims ? aims.has(`${v.key}#${v.n}`) : keys ? keys.has(v.key) : true));
+  const fails = [...new Set(V.filter((v) => v.verdict === "fail").map((v) => v.key))];
+  return { ok: !fails.length, fails, held: V.filter((v) => v.verdict === "pass" || v.verdict === "covered").length, judged: V.length };
+}

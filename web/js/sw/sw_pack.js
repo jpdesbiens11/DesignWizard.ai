@@ -41,10 +41,10 @@ export function packStep(P, out = {}) {
   P.closed = closed;
   /* the vehicle and the charger, asked to derate, hold the lower current a while (S.hold s) : they do not beat with the threshold */
   if (out.derate) P.held = P.t + S.hold; const derate = P.t < P.held;
-  const ocvs = P.soc.map(ocvX), hi = Math.max(...ocvs), anyBleed = P.bleed.some(Boolean); let I = 0, phase = "rest";      // I > 0 : into the pack (charge)
+  const ocvs = P.soc.map(ocvX), hi = Math.max(...ocvs), anyBleed = P.bleed.some(Boolean); let I = 0, phase = "rest", cvHeld = false;      // I > 0 : into the pack (charge)
   if (D.mode === "charge") { const s = P.since, want0 = s < S.soft ? S.cLow * C1 : s < S.soft + S.ramp ? (S.cLow + (D.cMax - S.cLow) * (s - S.soft) / S.ramp) * C1 : D.cMax * C1;
     let want = anyBleed ? Math.min(want0, S.cBal * C1) : want0; if (derate) want = Math.min(want, S.cDerate * C1);
-    const cv = D.cvFail ? Infinity : Math.max(0, (S.vTop - hi) / S.r); I = Math.min(want, cv);
+    const cv = D.cvFail ? Infinity : Math.max(0, (S.vTop - hi) / S.r); I = Math.min(want, cv); cvHeld = cv < want;      // the constant voltage holds the current, derated or not
     phase = D.cvFail && I > 0 ? "runaway" : derate ? "derate" : I < want - 1e-9 ? "cv" : anyBleed && want < want0 - 1e-9 ? "bal" : s < S.soft ? "soft" : s < S.soft + S.ramp ? "ramp" : "cc";
     if (D.push) { I = D.push; phase = "push"; }
     /* CORE boards that balance alone (S.local) : the charger stops at the end of its constant voltage — they come down to their threshold at rest */
@@ -60,7 +60,8 @@ export function packStep(P, out = {}) {
   const vr = P.v.map((x) => Math.round((x - I * S.r) * 1000)), low = Math.min(...vr);
   if (S.local) { const mv = cellMv(P); for (let k = 0; k < S.n; k++) P.bleed[k] = coreBleed(P.bleed[k], mv[k], S.local); }
   else for (let k = 0; k < S.n; k++) P.bleed[k] = KINDS.balancing.step(P.mem[k], S.cfg, { v: vr[k], low, i: -Math.round(I * 1000) }, dt * 1000).bleed;
-  if (S.local && D.mode === "charge" && phase === "cv" && I < S.endC * C1) P.ended = true;
+  /* the end of the constant voltage : the voltage holds the current and it falls under endC — whatever the phase says (derated at the top of a charge too) */
+  if (S.local && D.mode === "charge" && cvHeld && !D.push && closed && I < S.endC * C1) P.ended = true;
   /* the hottest block : I²R and its resistor heat it, the air (or the pump) cools it toward the ambient ; heat from outside adds */
   /* heat from outside (`heatTo`, °C) : it brings the hottest block toward that temperature (a time constant of a minute), then holds it there */
   const hA = S.hA * (out.pump ? S.pumpGain : 1), amb = D.amb ?? S.amb, own = I * I * S.r + bleedW;

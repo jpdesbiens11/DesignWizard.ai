@@ -21,6 +21,8 @@ import { packLimits } from "../sw/sw_pack.js";
 import { monitorOf } from "../sw/sw_monitor.js";      // the conditions — not an action like the pump's threshold
 import { openBank } from "./sw_profile_bank.js";
 import { missionsOf } from "./sw_lean_ui.js";      // the missions written from the requirements : the bench plays them too
+import { goalOf, goalReached, missionOutcome } from "../sw/sw_req_missions.js";
+import { store } from "../core/store.js";
 
 const fr = (ms) => `${String(+(ms / 1000).toFixed(1)).replace(".", ",")} s`;
 const PKEY = (d) => `dw.sw.profile.${d.id || "sw"}`;
@@ -28,7 +30,7 @@ const chosen = (d) => { try { return localStorage.getItem(PKEY(d)); } catch (e) 
 
 /** bench : the live bench ; design() ; onSet() : the instruments were changed by an event ; change(label, fn) : an undoable step on the design.
     → { line, bubble, tick(), play(), next(), dispose() } */
-export function swStory(bench, design, onSet, change, onHalt = null) {
+export function swStory(bench, design, onSet, change, onHalt = null, onDone = null) {
   const st = { on: false, at: -1, until: null, manual: false, id: null, live: false, logN: 0, state: undefined }; let E = [], V = [], total = 1;
   const cursor = el("i", { class: "sws-cursor", "aria-hidden": "true" }), marks = el("div", { class: "sws-marks" }), bubble = el("div", { class: "sws-bubble", hidden: true, role: "status", "aria-live": "polite", "data-sw-bubble": "" });
   const go = btn("Jouer le profil", () => play(), { small: true, primary: true, icon: "play", tip: "Le banc repart de zéro et les événements arrivent un à un, en temps réel : ce qui arrive au produit, ce que le logiciel répond" }); go.dataset.swStoryPlay = "";
@@ -43,7 +45,8 @@ export function swStory(bench, design, onSet, change, onHalt = null) {
   function load(id) {
     const d = design(), own = profilesOf(d), every = [...own, ...missionsOf(d).filter((m) => !own.some((p) => p.id === m.id))];
     st.id = every.find((p) => p.id === id) ? id : every.find((p) => p.id === chosen(d)) ? chosen(d) : every[0] ? every[0].id : null;
-    const cur = every.find((p) => p.id === st.id), all = cur && !own.includes(cur) ? [...own, cur] : own, evs = cur ? cur.events : profileOf(d, st.id);      // the switch : the bench's own, and a mission of the campaign when one is played
+    const cur = every.find((p) => p.id === st.id), all = cur && !own.includes(cur) ? [...own, cur] : own, evs = cur ? cur.events : profileOf(d, st.id);
+    st.mission = cur || { id: st.id, events: evs }; st.goal = goalOf(st.mission);      // what the mission must reach : it may end before its longest time      // the switch : the bench's own, and a mission of the campaign when one is played
     if (id && st.id === id) { try { localStorage.setItem(PKEY(d), id); } catch (e) { /* the choice holds until the page is left */ } }
     /* a module on the bench (design.plant) : an hour of physics is not played in advance — what the software answers is gathered as it happens */
     st.live = !!(d && d.plant); if (st.live) { E = expandProfile(evs).map((e) => ({ ...e, answers: [] })); total = (E.length ? E[E.length - 1].t : 0) + 1000; }
@@ -87,12 +90,18 @@ export function swStory(bench, design, onSet, change, onHalt = null) {
   function tick() {
     const t = bench.L ? bench.L.t : 0; cursor.style.left = `${Math.min(100, (100 * t) / total)}%`; if (!st.on) return;
     const was = vis(); apply(); const v = vis(); if (v >= 0) show(v); if (v !== was) marksOn();
-    if (t >= total) { st.on = false; bench.pause(); }
+    if (t >= total) { st.on = false; bench.pause(); finish(null); }
   }
+  /* THE MISSION DONE (JP, 28 novembre 2026 : « quand les objectifs d'un profil de mission sont complétés, la simulation peut arrêter même avant le temps
+     maximal, donner le temps final et afficher succès ») : its goal reached (sw/sw_req_missions.js goalReached), the bench stops there ; « Succès »
+     when no requirement it aims at fails, else which fail ; its longest time spent without the goal : said too */
+  function finish(why) { const L = bench.L, d = design(); if (!L || !st.live || st.done) return;
+    st.done = { t: L.t, max: total, reached: !!why, why: why ? why.why : "", ...missionOutcome(st.mission, store.project && store.project.reqs, L, d && d.plant) }; st.on = false; bench.pause(); if (onDone) onDone(st.done); }
+  const reached = () => { if (!st.live || !st.on || st.done || !bench.L) return false; const r = goalReached(st.goal, bench.L); if (r) finish(r); return !!r; };
   /* the bench runs n steps : split at the time of each event of the profile, so that each is applied on time (sw_bench setAdvance) */
   function advance(n) { const L = bench.L, dt = L.m.dt, end = L.t + n * dt; if (st.halt) return L; if (!st.on && !st.manual) { liveStep(L, n); return L; }
     while (L.t < end) { apply(); const nx = E[st.at + 1] ? Math.min(E[st.at + 1].t, end) : end; let k = Math.max(1, Math.ceil((nx - L.t) / dt));
-      while (k > 0) { const q = st.live ? Math.min(k, 100) : k; liveStep(L, q); k -= q; if (st.live && halted()) { apply(); return L; } } } apply(); return L; }
+      while (k > 0) { const q = st.live ? Math.min(k, 100) : k; liveStep(L, q); k -= q; if (st.live && halted()) { apply(); return L; } if (reached()) return L; } } apply(); return L; }
   /* A LIMIT MET (JP, 26 novembre 2026 : « when we meet a limit, user must restart the profile by clicking on "continue" if fault is manageable ») :
      the module goes to URGENCE or ARRÊT — the profile stops there and says why ; « Continuer » acknowledges the fault when its cause is gone, then
      the profile runs on (when the cause is still there, it runs on so that the time can clear it, and the profile's own acknowledgement comes) */
@@ -107,7 +116,7 @@ export function swStory(bench, design, onSet, change, onHalt = null) {
   const canClear = () => { const L = bench.L, d = design(); return !!(L && d && d.plant && !packLimits(d).some((l) => L.m.last[`${l.id}.trip`]) && !(d.plant.lost && L.set[d.plant.lost])); };
   if (bench.setAdvance) bench.setAdvance(advance);
   /* a run starts : the answers gathered live are forgotten */
-  function fresh() { st.logN = 0; st.state = undefined; st.halt = null; st.lastRed = 0; if (onHalt) onHalt(null); if (st.live) for (const e of E) e.answers = []; }
+  function fresh() { st.logN = 0; st.state = undefined; st.halt = null; st.lastRed = 0; st.done = null; if (onHalt) onHalt(null); if (onDone) onDone(null); if (st.live) for (const e of E) e.answers = []; }
   load(null);
-  return { get live() { return st.live; }, get playing() { return st.on; }, get halt() { return st.halt; }, get events() { return E; }, get total() { return total; }, get profileId() { return st.id; }, cont, canClear, load, line, bubble, tick, play, next, dispose() { st.on = false; if (bench.setAdvance) bench.setAdvance(null); } };
+  return { get live() { return st.live; }, get playing() { return st.on; }, get halt() { return st.halt; }, get events() { return E; }, get total() { return total; }, get profileId() { return st.id; }, get done() { return st.done; }, cont, canClear, load, line, bubble, tick, play, next, dispose() { st.on = false; if (bench.setAdvance) bench.setAdvance(null); } };
 }

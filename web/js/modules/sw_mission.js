@@ -31,7 +31,7 @@ export function dutyOf(rec, refs) { const n = rec.length || 1, out = {}; refs.fo
 /** bench ; design() ; story (modules/sw_story_ui.js) ; change(label, fn) ; showPieces(on). → { node, refresh(), halted(h), dispose() } */
 export function swMission(bench, design, story, change, showPieces) {
   const canvas = el("canvas", { class: "swmi-chart", role: "img", "aria-label": "La mission : tensions, courant, température, état du module et taux de marche de chaque composant dans le temps" });
-  const title = el("b"), clock = el("small", { class: "swmi-clock" }), halt = el("div", { class: "swmi-halt", hidden: true, role: "alert", "data-sw-halt": "" });
+  const title = el("b"), clock = el("small", { class: "swmi-clock" }), halt = el("div", { class: "swmi-halt", hidden: true, role: "alert", "data-sw-halt": "" }), fin = el("div", { class: "swmi-done", hidden: true, role: "status", "aria-live": "polite", "data-sw-done": "" });
   const names = () => { const d = design(), o = {}; for (const x of (d && d.objects) || []) o[`${x.id}.level`] = x.name; return o; };
   const cur = () => { const d = design(), all = profilesOf(d); return all.find((p) => p.id === story.profileId) || missionsOf(d).find((p) => p.id === story.profileId) || all[0] || null; };
   const exp = btn("Exporter le profil (.txt)", () => { const d = design(), p = cur(); if (!p) return; download(`profil_${p.id}.txt`, stampText(`profil_${p.id}.txt`, profileTxt(p, d)), "text/plain"); }, { small: true, icon: "download", tip: "Le profil joué, en texte : ce qui mène le module, les entrées, les seuils visés — à modifier, puis à réimporter" });
@@ -68,7 +68,7 @@ export function swMission(bench, design, story, change, showPieces) {
   /* Esc in the browser's full screen leaves it : the mission follows */
   const fsChange = () => { if (st.full && document.fullscreenElement !== node) setFull(false, true); };
   document.addEventListener("fullscreenchange", fsChange);
-  const node = el("div", { class: "swmi", "data-sw-mission": "" }, el("header", { class: "swmi-head" }, icon("report"), title, clock, el("span", { class: "swmi-gap" }), go, full, exp, imp, rec, back), el("div", { class: "swmi-body" }, canvas),
+  const node = el("div", { class: "swmi", "data-sw-mission": "" }, el("header", { class: "swmi-head" }, icon("report"), title, clock, el("span", { class: "swmi-gap" }), go, full, exp, imp, rec, back), fin, el("div", { class: "swmi-body" }, canvas),
     reqBox, el("p", { class: "swmi-note muted small" }, "Une ligne par seconde du module simulé (valeurs TYPIQUES). En jaune et rouge, les seuils du LOGICIEL ; en pointillé tagué, les limites des EXIGENCES, colorées par leur verdict (vert tenue, rouge échoue, gris non exercée, ambre enveloppe non couverte ; trait fin : lecture à confirmer). Une bande pleine, un composant en marche, avec son taux de marche à gauche. Un chiffre en haut : un événement du profil."));
   /* the banner of a limit met */
   function halted(h) {
@@ -77,8 +77,16 @@ export function swMission(bench, design, story, change, showPieces) {
       (() => { const b = btn(ok ? "Acquitter et continuer" : "Continuer", () => story.cont(), { primary: true, icon: "play", tip: "Reprendre le profil là où il s'est arrêté" }); b.dataset.swContinue = ""; return b; })());
     if (st.full) draw();      // the banner takes room : the chart shares what is left
   }
+  /* THE MISSION DONE (JP, 28 novembre 2026 : « arrêter même avant le temps maximal, donner le temps final et afficher succès ») — modules/sw_story_ui.js finish */
+  function done(r) {
+    fin.hidden = !r; if (!r) { fin.replaceChildren(); fin.className = "swmi-done"; return; } const k = r.reached ? (r.ok ? "ok" : "bad") : "late"; fin.className = `swmi-done ${k}`; fin.dataset.swDone = k;
+    const head = r.reached ? (r.ok ? `Succès — objectifs atteints en ${hms(r.t)}` : `Objectifs atteints en ${hms(r.t)} — ${r.fails.length} exigence${r.fails.length > 1 ? "s" : ""} en échec : ${r.fails.join(", ")}`) : `Temps maximal atteint (${hms(r.t)}) — objectifs non atteints${r.fails.length ? ` ; en échec : ${r.fails.join(", ")}` : ""}`;
+    const said = [r.reached ? `La mission s'arrête : ${r.why}.` : "La mission a duré tout son temps sans atteindre son objectif.", r.reached && r.max > r.t + 1000 ? `Au plus ${hms(r.max)} : ${hms(r.max - r.t)} de moins.` : "", r.judged ? `${r.held} limite${r.held > 1 ? "s" : ""} d'exigence tenue${r.held > 1 ? "s" : ""} sur ${r.judged} jugée${r.judged > 1 ? "s" : ""}.` : ""].filter(Boolean).join(" ");
+    fin.replaceChildren(icon(k === "ok" ? "check" : "warning"), el("div", null, el("b", null, head), el("p", null, said)), btn("Rejouer", () => story.play(), { small: true, icon: "refresh", tip: "Rejouer la mission depuis le début" }));
+    draw();
+  }
   function draw() {
-    const L = bench.L, d = design(); if (!L || !L.rec || !d) return; const p = cur(); title.textContent = `Mission — ${p ? p.name : "profil"}`; clock.textContent = `${hms(L.t)} sur ${hms(story.total)}`;
+    const L = bench.L, d = design(); if (!L || !L.rec || !d) return; const p = cur(); title.textContent = `Mission — ${p ? p.name : "profil"}`; clock.textContent = story.done ? `terminée à ${hms(story.done.t)} — au plus ${hms(story.total)}` : `${hms(L.t)} sur ${hms(story.total)}`;
     const w = Math.max(320, ((canvas.parentNode && canvas.parentNode.clientWidth) || 900) - 4), refs = L.recRefs, nm = names(), lanes = [...refs.map((r, k) => ({ k, label: nm[r] || r })), { k: -1, label: "Équilibrage (au moins un CORE)" }];
     /* the left column narrows with the pane ; each panel has its title ABOVE it, across the width, and its scale at the right of the column */
     /* full screen : the three panels share what the window leaves, so that the lanes and the time axis stay in sight */
@@ -129,5 +137,5 @@ export function swMission(bench, design, story, change, showPieces) {
     g.strokeStyle = "#f8fafc"; g.lineWidth = 1.5; g.beginPath(); g.moveTo(X(L.t), top - 14); g.lineTo(X(L.t), yEnd); g.stroke(); g.lineWidth = 1;
   }
   let at = 0; const refresh = () => { go.lastChild.textContent = bench.running ? "Pause" : "Marche"; const now = performance.now(); if (now - at < 250) return; at = now; draw(); };
-  return { node, halt, refresh, draw, halted, get full() { return st.full; }, dispose() { if (st.full) setFull(false); document.removeEventListener("fullscreenchange", fsChange); node.remove(); halt.remove(); } };      // the banner of a limit goes under the line of the profile (modules/sw.js)
+  return { node, halt, refresh, draw, halted, done, get full() { return st.full; }, dispose() { if (st.full) setFull(false); document.removeEventListener("fullscreenchange", fsChange); node.remove(); halt.remove(); } };      // the banner of a limit goes under the line of the profile (modules/sw.js)
 }

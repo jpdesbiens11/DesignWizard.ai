@@ -418,3 +418,5 @@ svg.swp .swp-piece { touch-action: none; }
 @media (prefers-reduced-motion: reduce) { .swm2-level.guess button.on { animation: none; } }
 .swf2-lv { display: inline-grid; place-items: center; width: 1rem; height: 1rem; margin-bottom: .2rem; border-radius: 50%; background: var(--l); color: #fff; font: 700 .62rem var(--label-font); font-style: normal; }
 .swm2-cls { display: inline-flex; align-items: center; gap: .3rem; } .swm2-cls select { font: inherit; padding: .05rem .3rem; border: 1.3px solid var(--g); border-radius: 6px; background: var(--surface); color: var(--ink-strong); }
+.swmi-done { display: flex; align-items: center; gap: .6rem; margin: .4rem .6rem; padding: .5rem .7rem; border-radius: 10px; border: 1.5px solid var(--d, #16a34a); background: color-mix(in srgb, var(--d, #16a34a) 16%, #0b1220); color: #f1f5f9; }
+.swmi-done.ok { --d: #16a34a; } .swmi-done.bad { --d: #dc2626; } .swmi-done.late { --d: #d97706; } .swmi-done > div { flex: 1; } .swmi-done p { margin: .15rem 0 0; font-size: .82rem; color: #cbd5e1; } .swmi-done .sk-icon { width: 1.4rem; height: 1.4rem; color: var(--d); }
