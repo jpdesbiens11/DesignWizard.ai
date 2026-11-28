@@ -107,12 +107,13 @@ function deviation(A, B) {
   return d;
 }
 
-/** Interfaces of the assembly not used by any mate yet. */
+/** Interfaces of the assembly not used by any mate yet. An interface the tool only PROPOSED (read in an imported file, not yet confirmed by
+    a person : core/step_interfaces.js) is not offered : it waits. */
 export function freeInterfaces(asm, built) {
   const used = new Set();
   for (const m of asm.mates || []) { used.add(`${m.a.inst}/${m.a.iface}`); used.add(`${m.b.inst}/${m.b.iface}`); }
   const out = [];
-  for (const inst of asm.instances) for (const it of (built[inst.part] && built[inst.part].interfaces) || []) if (!used.has(`${inst.id}/${it.id}`)) out.push({ inst: inst.id, part: inst.part, iface: it, external: !!it.external, ...(inst.group ? { group: inst.group } : {}) });
+  for (const inst of asm.instances) for (const it of (built[inst.part] && built[inst.part].interfaces) || []) if (!it.proposed && !used.has(`${inst.id}/${it.id}`)) out.push({ inst: inst.id, part: inst.part, iface: it, external: !!it.external, ...(inst.group ? { group: inst.group } : {}) });
   return out;
 }
 

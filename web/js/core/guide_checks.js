@@ -21,7 +21,8 @@ export function partIssues(part, others = new Set()) {
   const out = [], id = part.id || "?", hash = `#/parts/${encodeURIComponent(id)}`, add = (level, text) => out.push({ level, text: `${id} — ${text}`, screen: "parts", ref: id, hash });
   const mat = part.material ? material(part.material) : null, bought = part.process === "purchased" || part.family === "purchased";
   if (!GEOMETRY.some((k) => (Array.isArray(part[k]) ? part[k].length : part[k]))) add("error", "aucune géométrie : ni matière première, ni opération. Correctif : repartez de l'Atelier, ou ajoutez une opération dans son arbre.");
-  if (!part.material) add(bought ? "tip" : "error", "aucune matière : ni masse, ni règles de fabrication, ni simulation. Correctif : choisissez-la dans ses paramètres.");
+  const made = !!(part.imported && part.step);      // made elsewhere and imported (a STEP from Onshape, Inventor…) : the file gives the shape, not the material
+  if (!part.material) add(made ? "todo" : bought ? "tip" : "error", made ? "matière à entrer : le volume est mesuré sur le fichier importé, la masse attend sa densité. Correctif : choisissez-la dans sa fiche." : "aucune matière : ni masse, ni règles de fabrication, ni simulation. Correctif : choisissez-la dans ses paramètres.");
   else if (!mat) add("warn", `matière « ${part.material} » inconnue de la bibliothèque : ses propriétés ne seront pas trouvées.`);
   if (!part.process) add("todo", "aucun procédé : le DFx et la gamme ne savent pas comment elle se fabrique.");
   else if (!PROCESSES[part.process]) add("warn", `procédé « ${part.process} » inconnu.`);
@@ -37,10 +38,13 @@ export function partIssues(part, others = new Set()) {
     else if (typeof v === "number" && ((typeof p.min === "number" && v < p.min - 1e-9) || (typeof p.max === "number" && v > p.max + 1e-9))) add("warn", `paramètre « ${label} » à ${v}, hors de ses bornes (${p.min ?? "…"} à ${p.max ?? "…"}).`);
     else if (typeof v === "number" && v <= 0 && (p.unit === "mm" || !p.unit) && !/angle|jeu|décalage|offset/i.test(label)) add("warn", `paramètre « ${label} » à ${v} mm : une dimension nulle ou négative.`);
   }
+  if (made && !(part.interfaces || []).length) add("todo", (part.imported.read ? "aucune interface retenue du fichier : " : "interfaces à reconnaître : ") + "sans elles, la pièce ne s'accouple à rien. Correctif : onglet Interfaces → « Reconnaître les interfaces », ou ajoutez-en une à la main.");
   const seen = new Set();
   for (const it of part.interfaces || []) {
     if (!it || typeof it !== "object") continue;
     if (it.id && seen.has(it.id)) add("error", `deux interfaces portent le numéro ${it.id}.`); seen.add(it.id);
+    if (it.proposed) { add("warn", `interface ${it.id || ""} « ${it.name || it.type} » proposée par l'outil d'après le fichier : à confirmer — elle ne s'accouple à rien d'ici là.`); continue; }
+    if (!it.key && it.found) continue;      // read in a file : it mates by its geometry (the same screw and pattern), no key is needed
     if (!it.key) add("todo", `interface ${it.id || ""} « ${it.name || it.type} » sans clé : aucune pièce voisine ne pourra s'y accoupler.`);
     else if (!it.external && !others.has(it.key)) add("tip", `interface ${it.id || ""} « ${it.name || it.type} » libre : aucune autre pièce du projet ne porte sa clé. Créez la voisine dans l'Atelier (elle la reprendra), ou marquez l'interface « externe ».`);
   }

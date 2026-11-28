@@ -15,6 +15,9 @@ import { mountPins } from "./view_pins.js";
 import { buildAssembly, showAssembly, stepItems, stepCount } from "../core/asm_scene.js";
 import { formSub, dissolveSub } from "../core/asm_form.js";
 import { mountTurn } from "./asm_turn.js";
+import { mountDrag } from "./asm_drag.js";
+import { stepIntoAssembly } from "./step_import.js";
+import { stepHook } from "../core/importer.js";
 import { autoMate, candidates, freeInterfaces, ifaceOf, pairKey, joints, jointsCsv, nextJoint, placedTree } from "../core/assembly_logic.js";
 import { assemblyHealth, HEALTH } from "../core/joint_health.js";
 import { announceLinks } from "../core/part_edit.js";
@@ -77,6 +80,13 @@ function render(main, args) {
   const pins = mountPins(vp, { key: () => `assembly:${id}` });      // the messages pinned on this assembly, each on its instance
   /* the part chosen can be turned by hand : a ring and a grip round it in the view, the same angle as a number in its card */
   const turner = mountTurn(vp, { id, ctx: () => st.ctx, selected: () => (st.tab === "inst" && !st.mate ? st.sel : null), name: (iid) => { const i = asm().instances.find((q) => q.id === iid); return i ? what(i).name : iid; } });
+  /* the part chosen can be moved by hand : a grip in its middle — dragged in front of a compatible interface, it snaps on it (core/asm_snap.js) */
+  const mover = mountDrag(vp, { id, ctx: () => st.ctx, selected: () => (st.tab === "inst" && !st.mate ? st.sel : null), name: (iid) => { const i = asm().instances.find((q) => q.id === iid); return i ? what(i).name : iid; },
+    quiet: () => { vp.viewer.clearOverlays("turn"); vp.viewer.clearOverlays("turn-live"); }, back: () => turner.draw() });
+  /* a STEP dropped on this screen (or picked by its button) becomes a part of the project, its interfaces read and confirmed, placed beside the assembly */
+  const takeStep = async (text, name) => { const r = await stepIntoAssembly(id, text, name, { veil: { set: vp.setBusy }, bbox: () => (st.ctx ? st.ctx.bbox : null) }); if (r && r.inst) { st.sel = r.inst; st.multi = []; st.tab = "inst"; st.autoFor = JSON.stringify(asm().instances.map((i) => i.id)); st.fitted = false; } return r; };      // brought in by hand : it waits beside the assembly for the hand to snap it, the automatic mating leaves it
+  stepHook.take = takeStep;
+  const pickStepFile = () => { const f = el("input", { type: "file", accept: ".step,.stp", hidden: true }); f.addEventListener("change", async () => { const file = f.files && f.files[0]; if (file) await takeStep(await file.text(), file.name); }); f.click(); };
   const info = el("span", { class: "chip" }, "—"), clash = el("span", { class: "chip", "data-tip": "Volumes communs entre pièces voisines, cherchés après chaque montage" }, "interférences : …");
   const healthChip = el("span", { class: "chip", style: { cursor: "pointer" }, onClick: () => { st.tab = "mates"; renderRight(); } }, "accouplements : …");
   vp.setStatus(info, clash, healthChip);
@@ -175,7 +185,7 @@ function render(main, args) {
     const scroll = el("div", { class: "side-scroll" });
     left.append(scroll);
     scroll.append(el("div", { class: "side-section" }, store.assemblies.map((x) => el("a", { class: "nav-item" + (x.id === id ? " active" : ""), href: `#/assembly/${encodeURIComponent(x.id)}` }, icon("assembly"), el("span", { class: "grow" }, x.name || x.id), el("small", null, x.id)))));
-    const sec = el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, `Pièces de l'assemblage (${a.instances.length - offOf(a).instances.length}${offOf(a).instances.length ? ` + ${offOf(a).instances.length} à Off` : ""})`), ...[variantChip(asmVariantNow(a), "La liste")].filter(Boolean), asmLookTools({ asm: a, id }), btn("", () => formFrom(st.multi.length ? st.multi : st.sel ? [st.sel] : []), { small: true, icon: "assembly", tip: "Former un sous-assemblage : des pièces d'ici partent ensemble et reviennent d'un seul bloc" }), btn("", () => addDialog(), { small: true, icon: "plus", tip: "Ajouter une pièce du projet" })));
+    const sec = el("div", { class: "side-section" }, el("h3", null, el("span", { class: "grow" }, `Pièces de l'assemblage (${a.instances.length - offOf(a).instances.length}${offOf(a).instances.length ? ` + ${offOf(a).instances.length} à Off` : ""})`), ...[variantChip(asmVariantNow(a), "La liste")].filter(Boolean), asmLookTools({ asm: a, id }), btn("", () => formFrom(st.multi.length ? st.multi : st.sel ? [st.sel] : []), { small: true, icon: "assembly", tip: "Former un sous-assemblage : des pièces d'ici partent ensemble et reviennent d'un seul bloc" }), btn("", () => addDialog(), { small: true, icon: "plus", tip: "Ajouter une pièce du projet" }), btn("", () => pickStepFile(), { small: true, icon: "step", cls: "step-in", tip: "Importer une pièce faite ailleurs (Onshape, Inventor…) : un fichier STEP. Ses interfaces sont reconnues et confirmées, puis elle se glisse devant une interface de l'assemblage pour s'y emboîter. On peut aussi déposer le fichier sur la vue." })));
     st.multi = keepChosen(st.multi, a.instances.map((i) => i.id)); if (st.multi.length > 1) sec.append(batchBar(a));
     const line = (inst, inFolder) => {
       const { spec, sub, name, icon: mark } = what(inst), placed = st.ctx && st.ctx.sol.placedBy[inst.id], nIn = sub && st.ctx ? st.ctx.asm.instances.filter((i) => i.group === inst.id).length : 0;
@@ -261,7 +271,7 @@ function render(main, args) {
 
   /* ---------- right ---------- */
   function renderRight() {
-    clear(right); turner.draw();      // the handle follows the part chosen, and what the card shows
+    clear(right); turner.draw(); mover.draw();      // the handle follows the part chosen, and what the card shows
     const a = asm(), tabs = [["mates", "Mates"], ["inst", "Pièce"], ["bom", "BOM"], ["dfa", "DFA"], ["gamme", "Gamme"]];
     if (st.tab !== "gamme" && st.step) { st.step = null; showWhole(vp); }      // leaving the routing sheet : the whole product again
     const nErr = st.dfa && st.dfa.summary ? st.dfa.summary.errors : 0;
@@ -399,7 +409,7 @@ function render(main, args) {
 
   app.commands = [{ label: "Assemblage : mater automatiquement", hint: "assemblage", icon: "sparkle", keys: "mate auto assembler", run: () => store.commit(`${id} : mates automatiques`, (p) => autoMate(p.assemblies.find((x) => x.id === id), st.ctx.built, st.ctx.asm), { assembly: id }) },
     { label: "Assemblage : exporter le STEP", hint: "assemblage", icon: "step", keys: "step export", run: exportStep }, { label: "Assemblage : former un sous-assemblage…", hint: "assemblage", icon: "assembly", keys: "sous-assemblage module bloc former grouper niveaux", run: () => formFrom(st.sel ? [st.sel] : []) }, { label: "Assemblage : chercher les interférences", hint: "assemblage", icon: "warning", keys: "interference collision", run: checkInterference }];
-  return () => { off(); pins.dispose(); st.token++; vp.dispose(); };
+  return () => { off(); pins.dispose(); st.token++; if (stepHook.take === takeStep) stepHook.take = null; vp.dispose(); };
 }
 
 registerModule({ key: "assembly", label: "Assemblage", icon: "assembly", tip: "Les pièces se matent par leurs interfaces ; mates liés, éclaté, BOM, interférences", render });

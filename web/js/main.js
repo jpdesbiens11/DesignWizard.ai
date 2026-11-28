@@ -62,7 +62,7 @@ store.hooks.push(followAll); store.loaders.push(followAll);      // the variant 
 store.hooks.push((p, extra) => { if (extra && extra.board) syncTwins(p, LIBRARY, extra.board); });      // the mechanical twin of a board follows it, in the step that changes it (pcba/twin.js)
 app.openPalette = openPalette;
 app.onImported = (r) => {
-  if (!r) return;
+  if (!r || r.placed) return;      // placed : the screen that took it (the Assembly) keeps it where it is
   if (r.kind === "part" || r.kind === "step") { const p = store.part(r.id); go(`#/${p && p.family === "pcb" ? "pcb" : p && p.family === "extrusion" ? "extrusion" : "parts"}/${encodeURIComponent(r.id)}`); }
   else if (r.kind === "assembly") go(`#/assembly/${encodeURIComponent(r.id)}`);
   else if (r.kind === "project") go(r.review ? "#/review" : "#/home");

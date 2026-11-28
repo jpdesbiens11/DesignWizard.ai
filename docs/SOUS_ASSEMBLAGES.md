@@ -152,3 +152,11 @@ le projet. Tests : `tests/node/asm_levels.test.mjs` (structure, solveur à un et
 Pas vérifié : un grand produit à plusieurs niveaux (le Rover n'a pas été refait en sous-assemblages) ; le temps de
 construction sur un assemblage de plus de cinquante pièces ; l'envoi réel vers Onshape ; deux membres d'une équipe qui
 modifient le parent et le sous-assemblage en même temps.
+
+## Glisser un sous-assemblage pour l'emboîter (v0.217.0)
+
+La poignée qui déplace la pièce choisie dans la vue de l'Assemblage ([IMPORT_STEP.md](IMPORT_STEP.md), § 4) déplace aussi un
+sous-assemblage, **d'un seul bloc** : il s'emboîte par l'interface libre d'une de ses pièces, et le joint écrit dans le parent nomme
+cette pièce par son chemin (« S~j1 »), comme un joint posé par l'accouplement automatique. Ce qui pend au sous-assemblage le suit.
+Tenu par un joint, il ne bouge pas tant que la main n'est pas à 36 px ; alors les joints qui le relient au reste sont retirés et gardés
+comme écartés (`core/asm_snap.js`, essai « a whole sub-assembly is dragged as one block »).

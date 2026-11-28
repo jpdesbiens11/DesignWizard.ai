@@ -7,6 +7,7 @@ import { loadKernel } from "./occ.js";
 import { buildPart } from "./build.js";
 import { matIsIdentity, bboxTransform } from "./vec.js";
 import { fillCavity } from "./fill.js";
+import { readFeatures } from "./step_read.js";
 
 let K = null, loading = null;
 const cache = new Map();          // partId -> { bodies: [{name, shape}], rgb: {name: [r,g,b]} }
@@ -127,6 +128,9 @@ const COMMANDS = {
     K.flush();
     return { result: d };
   },
+  /** What the kernel reads of a part already built (an imported STEP) : its faces along the axes and its cylinders (cad/step_read.js).
+      args: {key} → { bbox, planes, cyls, faces, slanted, other } — plain numbers ; core/step_interfaces.js makes interfaces of them. */
+  recognize({ key }) { const out = readFeatures(K, shapeOf(key)); K.flush(); return { result: out }; },
   bboxWorld({ key, matrix }) { return { result: bboxTransform(K.bbox(shapeOf(key)), matrix) }; },
 };
 

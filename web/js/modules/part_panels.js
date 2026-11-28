@@ -16,6 +16,9 @@ import { lookOf, hasLook, lookWords } from "../core/part_look.js";
 import { useMakerModel, dropMakerModel } from "../core/elec_parts.js";
 import { validateSpec } from "../cad/build.js";
 import { applyFix } from "../analysis/dfx_api.js";
+import { confirmInterface, dropProposal, applyProposals } from "../core/step_interfaces.js";
+import { readStep, proposalsDialog } from "./step_import.js";
+import { underVeil, pageVeil } from "../core/busy.js";
 import { toDwiz } from "../core/dwiz.js";
 import { dwizFileName } from "../core/dwiz_names.js";
 import { extractJson } from "../core/importer.js";
@@ -71,6 +74,7 @@ export function paramsPanel(body, { st, id, live }) {
 export function interfacesPanel(body, { st, id, editIface }) {
   const s = st.spec;
   body.append(el("p", { class: "muted", style: { fontSize: ".84rem" } }, "Une interface est le contrat entre cette pièce et sa voisine : même type, même clé, mêmes paramètres des deux côtés. La géométrie, le mate, la visserie et le GD&T en découlent."));
+  if (s.step && !s.library) body.append(stepSection(s, id));      // a part made elsewhere : its interfaces are read in its file, then confirmed
   for (const it of s.interfaces || []) {
     let t = null; try { t = interfaceType(it.type); } catch (e) { t = null; }
     const b = st.built && st.built.interfaces.find((x) => x.id === it.id);
@@ -79,9 +83,12 @@ export function interfacesPanel(body, { st, id, editIface }) {
       const open = openInstances(a, (x) => store.assembly(x)), inst = open.find((i) => i.id === me.inst), o = open.find((i) => i.id === other.inst);      // through the levels
       if (inst && o && inst.part === id && me.iface === it.id) mates.push(`${o.part} (${a.id})`);
     }
-    body.append(el("div", { class: "card", style: { marginBottom: ".6rem", padding: ".6rem .7rem" } },
+    body.append(el("div", { class: `card${it.proposed ? " iface-proposed" : ""}`, style: { marginBottom: ".6rem", padding: ".6rem .7rem" }, "data-iface": it.id },
       el("div", { style: { display: "flex", gap: ".4rem", alignItems: "center", flexWrap: "wrap" } }, el("b", null, it.name || it.id), badge(`côté ${it.side || "A"}`, it.side === "B" ? "b" : "a"), badge(t ? t.fr : it.type, "neutral"),
-        mates.length ? badge("liée", "ok") : badge("libre", "warn")),
+        it.proposed ? badge("proposée · à confirmer", "warn") : mates.length ? badge("liée", "ok") : badge("libre", "warn"), it.found ? badge("lue dans le fichier", "info") : null),
+      it.why ? el("p", { class: "small muted", style: { margin: ".3rem 0" } }, it.why) : null,
+      it.proposed ? el("div", { class: "form-actions", style: { justifyContent: "flex-start", marginTop: ".2rem" } }, btn("Confirmer", () => store.updatePart(id, (x) => { confirmInterface(x, it.id); }, `${s.id} : interface ${it.id} confirmée`), { small: true, primary: true, icon: "check", tip: "Une interface proposée par l'outil est un exemple : elle ne s'accouple à rien tant qu'une personne ne l'a pas confirmée" }),
+        btn("Écarter", () => store.updatePart(id, (x) => { dropProposal(x, it.id); }, `${s.id} : proposition ${it.id} écartée`), { small: true, icon: "cross", tip: "La retirer : la prochaine lecture du fichier ne la proposera plus" })) : null,
       el("p", { class: "muted", style: { margin: ".3rem 0", fontSize: ".82rem" } }, `${it.id} · face ${it.face || "+Z"} · clé ${it.key || "—"}${it.partner ? ` · voisin : ${it.partner}` : ""}`),
       b && el("p", { class: "code", style: { margin: ".2rem 0", fontSize: ".76rem", wordBreak: "break-word" } }, JSON.stringify(b.params)),
       mates.length ? el("p", { style: { margin: ".2rem 0", fontSize: ".82rem" } }, icon("link"), ` Liée à ${mates.join(", ")} : toute modification s'y propage.`) : null,
@@ -91,6 +98,18 @@ export function interfacesPanel(body, { st, id, editIface }) {
   body.append(btn("Ajouter une interface", () => interfaceDialog({ id: nextIfaceId(s), type: "bolt_pattern", side: "A", face: "+Z", at: st.built ? [(st.built.bbox[0] + st.built.bbox[3]) / 2, (st.built.bbox[1] + st.built.bbox[4]) / 2].map((x) => Math.round(x * 10) / 10) : [0, 0] },
     (ni) => store.updatePart(id, (x) => { x.interfaces = x.interfaces || []; x.interfaces.push(ni); }, `Interface ${ni.id} ajoutée`), true), { icon: "plus" }));
   body.append(el("div", { class: "side-section" }, el("h3", null, "Types d'interface"), Object.entries(INTERFACE_TYPES).map(([k, t]) => el("p", { style: { fontSize: ".8rem", margin: "0 0 .35rem" } }, el("b", null, t.label), ` (${k}) — `, t.doc))));
+}
+
+/* a part made elsewhere : what was read in its file, and the button that reads it again for interfaces (modules/step_import.js) */
+function stepSection(s, id) {
+  const r = (s.imported || {}).read, proposed = (s.interfaces || []).filter((i) => i.proposed).length;
+  const go = async (e, b) => { b.disabled = true; try { const got = await underVeil(pageVeil(), `Lecture de ${(s.step && s.step.file) || s.id}…`, () => readStep(s)); if (!got) return; const { built, found } = got;      // a long read : the common veil, and a cancel that stops the kernel
+    proposalsDialog({ spec: s, built, found, title: `Interfaces lues dans ${(s.step && s.step.file) || s.id}`, ok: "Confirmer les interfaces On", later: "Les garder à confirmer",
+      done: ({ picks, material, read }) => store.updatePart(id, (x) => { applyProposals(x, picks, read); if (material && material !== x.material) x.material = material; }, `${s.id} : interfaces lues dans le fichier`) }); }
+    catch (err) { toast(err.message, "error", 8000); } finally { b.disabled = false; } };
+  return el("div", { class: "side-section", "data-step-read": r ? "read" : "unread" }, el("h3", null, "Lu dans le fichier STEP"),
+    el("p", { class: "small" }, r ? `Lu le ${r.at} : ${r.faces} faces, ${r.holes} trou${r.holes > 1 ? "s" : ""}, ${r.shafts} arbre${r.shafts > 1 ? "s" : ""} — ${r.proposed} interface${r.proposed > 1 ? "s" : ""} proposée${r.proposed > 1 ? "s" : ""}${proposed ? `, ${proposed} encore à confirmer` : ""}.` : `Pièce faite ailleurs (${(s.step && s.step.file) || "fichier STEP"}) : l'outil peut lire ses trous, alésages, arbres et faces planes, et en proposer les interfaces.`),
+    btn(r ? "Relire le fichier…" : "Reconnaître les interfaces…", go, { small: true, primary: !r, icon: "interfaces", cls: "step-recognize", tip: "Le noyau lit le fichier ; l'outil propose les interfaces (motif de vis, goupilles, alésage, arbre, appui plan) ; vous confirmez celles qui sont justes. La forme du fichier ne change pas." }));
 }
 
 /* ---------- DFx ---------- */

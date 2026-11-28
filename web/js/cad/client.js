@@ -84,4 +84,5 @@ export const kernel = { call, build, forget, onStage, stage, cancel, restart,
   fill: (container, others, level, name) => call("fill", { container, others, level, name }),
   interference: (pairs) => call("interference", { pairs }),
   distance: (a, b) => call("distance", { a, b }),
+  recognize: (key) => call("recognize", { key }),      // the faces and cylinders of a part built, for its interfaces (core/step_interfaces.js)
 };

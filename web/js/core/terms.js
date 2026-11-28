@@ -26,6 +26,7 @@ import { PALETTES } from "../analysis/fea/palette.js";
 import { NATURES as PART_NATURES } from "./shop_levels.js";
 import { KINDS as SW_KINDS } from "../sw/sw_objects.js";
 import { FAB_TOOLS } from "./fab_path.js";
+import { STEP_WORDS } from "./step_interfaces.js";
 
 export const TERM_GROUPS = [
   { id: "process", label: "Procédés", hint: "comment la pièce se fabrique", icon: "cast", color: "#ee8a32" },
@@ -85,6 +86,7 @@ export function glossary() {
   all("operation", SHOP_VERBS, "verbe d'atelier"); for (const [en, fr] of FEATURES) add("operation", en, fr, "forme");
   all("operation", FAB_TOOLS, "outil d'un parcours, atelier de fab"); add("operation", "Tool path", "parcours d'outil", "les positions du bout de l'outil, dans le repère de la pièce"); add("operation", "Canned cycle (G81–G85)", "cycle de perçage", "au-dessus du trou, plongée au plan R, travail jusqu'à Z, retour"); add("operation", "Rapid move (G0)", "déplacement rapide", "hors de la matière"); add("operation", "Feed move (G1)", "déplacement de travail", "l'outil coupe"); add("operation", "Live tooling", "outil motorisé", "un outil qui tourne sur un tour : perçage radial, méplat");
   all("stock", STOCK_FORMS); all("stock", LASER_FAMILIES, "matière en feuille, au laser");
+  for (const w of STEP_WORDS) add("interface", w.label, w.fr, w.note);      // a part made elsewhere, read from its file
   all("interface", INTERFACE_TYPES, "type d'interface"); all("interface", ADHESIVES, "colle"); all("interface", WELD_PROCESSES, "soudage"); add("interface", "Mate", "accouplement"); add("interface", "Dowel pin", "goupille de positionnement"); add("interface", "Heat-set insert", "insert posé à chaud"); add("interface", "Clearance hole", "trou de passage"); add("interface", "Tapped hole", "trou taraudé"); add("interface", "Counterbore", "lamage"); add("interface", "Countersink", "fraisure"); add("interface", "Slip fit / press fit", "ajustement glissant / serré");
   all("electrical", MODEL_WORDS, "modèle de connecteur"); all("electrical", PLATINGS, "revêtement"); all("electrical", CONTACT_FORMS, "forme de contact"); all("electrical", CONTACT_BASES, "matière de contact"); all("electrical", ENDS, "circuit flexible"); all("electrical", INSULATIONS, "isolant de busbar");
   all("electrical", NATURES, "nature d'un essai de laboratoire"); all("electrical", INSTRUMENTS, "instrument du laboratoire");

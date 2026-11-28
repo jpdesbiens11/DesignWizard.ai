@@ -61,21 +61,39 @@ export function importPart(spec, opts = {}) {
   return { id, replaced: false, errors: [], warnings: v.warnings };
 }
 
-export function importStep(text, filename = "import.step") {
+/** The files a part made elsewhere comes in : STEP (AP203, AP214, AP242 — what Onshape, Inventor, SolidWorks, Fusion and the suppliers export)
+    is the one the kernel of the platform reads as a solid. What it does not read, and why, is said (docs/IMPORT_STEP.md). */
+export const STEP_FORMATS = { read: ["step", "stp"], not: [
+  { what: "IGES", ext: ["igs", "iges"], why: "le lecteur IGES n'est pas compilé dans le noyau de l'outil : exportez la pièce en STEP" },
+  { what: "STL, OBJ, 3MF", ext: ["stl", "obj", "3mf"], why: "un maillage de triangles : ni trou, ni cylindre, ni face plane à reconnaître — exportez la pièce en STEP" },
+  { what: "Parasolid, ACIS, formats natifs", ext: ["x_t", "x_b", "sat", "ipt", "iam", "prt", "sldprt", "sldasm", "f3d"], why: "le format d'un autre noyau ou d'un logiciel : exportez la pièce en STEP (AP214 ou AP242)" }] };
+/** Why a file is not read, from its name — or null. */
+export const notRead = (filename) => { const ext = String(filename || "").toLowerCase().split(".").pop(); return STEP_FORMATS.not.find((f) => f.ext.includes(ext)) || null; };
+/** A part made elsewhere, as the project keeps it : its file, its family and nature (imported), no material yet — the mass waits for it. */
+export function stepSpec(text, filename = "import.step") {
   const base = filename.replace(/\.(step|stp)$/i, "").replace(/[^A-Za-z0-9_\-]/g, "-").slice(0, 32) || "IMPORT";
-  const spec = { dw: "part/1", id: store.uniqueId(base.toUpperCase()), name: base, family: "purchased", process: "purchased", material: "", function: `Pièce importée du fichier ${filename}.`, step: { text, file: filename }, features: [] };
-  return store.addPart(spec, `STEP importé : ${filename}`);
+  return { dw: "part/1", id: store.uniqueId(base.toUpperCase()), name: base, family: "purchased", process: "purchased", material: "", function: `Pièce importée du fichier ${filename}.`, step: { text, file: filename },
+    imported: { from: "step", file: filename, on: new Date().toISOString().slice(0, 10) }, features: [] };
 }
+export function importStep(text, filename = "import.step") {
+  return store.addPart(stepSpec(text, filename), `STEP importé : ${filename}`);
+}
+/** A screen that takes a STEP itself (the Assembly : the part is read, its interfaces confirmed, and it is placed) : take(text, filename) →
+    a result of importAny, or null to let the import go on as usual. */
+export const stepHook = { take: null };
 
 /** Import any text (pasted or read from a dropped file). Returns {kind, id} or null; shows what happened. */
 export async function importAny(text, filename = "") {
   if (/^\s*ISO-10303-21/.test(text)) {
     if (!store.project) await store.create("Projet importé");
+    if (stepHook.take) { const r = await stepHook.take(text, filename || "import.step"); if (r) return r; }
     const id = importStep(text, filename || "import.step");
-    toast(`STEP importé comme pièce achetée « ${id} ».`, "success");
+    toast(`STEP importé : la pièce « ${id} ». Entrez sa matière, puis « Reconnaître les interfaces » (onglet Interfaces) — ou déposez le fichier sur un assemblage.`, "success", 8000);
     return { kind: "step", id };
   }
   const obj = extractJson(text), kind = kindOf(obj);
+  const bad = notRead(filename);
+  if (!kind && bad) { toast(`${filename} : ${bad.why}.`, "error", 9000); return null; }
   if (!kind) { toast(extractJson.error ? `Fichier .dwiz illisible — ${extractJson.error}` : "Texte non reconnu : ni pièce, ni profil, ni projet DynamiteOrbit.ai (.dwiz ou JSON), ni STEP. Correctif : collez la réponse complète de l'entrevue.", "error", 8000); return null; }
   if (kind === "project" && ((obj.boards || []).some((b) => b && Array.isArray(b.functions) && !Array.isArray(b.parts)) || (obj.physics || []).some((r) => r && !r.values))) {
     const { readFirstDesign } = await import("./first_design.js"), r = readFirstDesign(obj), p = await store.create(r.project.name, r.project);      // a first design written by an AI : built, computed, and filed as a draft

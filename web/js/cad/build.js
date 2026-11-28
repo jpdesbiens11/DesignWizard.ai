@@ -69,8 +69,8 @@ export function buildPart(K, source, opts = {}) {
         level = F.n[F.axis] > 0 ? bb[3 + F.axis] : bb[F.axis];
       }
       const c = compileInterface({ ...iface, body }, level);
-      runFeatures(K, st, c.features);
-      ifaces.push({ id: iface.id, type: iface.type, name: iface.name || type.label, key: iface.key || null, side: iface.side === "B" ? "B" : "A", ...(iface.external ? { external: true } : {}), face, at: iface.at || [0, 0],
+      if (!iface.found) runFeatures(K, st, c.features);       // found : the holes, the bore, the face are already in the solid (an imported STEP, core/step_interfaces.js) — nothing is drilled or added
+      ifaces.push({ id: iface.id, type: iface.type, name: iface.name || type.label, key: iface.key || null, side: iface.side === "B" ? "B" : "A", ...(iface.external ? { external: true } : {}), ...(iface.found ? { found: true } : {}), ...(iface.proposed ? { proposed: true } : {}), face, at: iface.at || [0, 0],
         rot: iface.rot || 0, level, params: c.params, opts: c.opts, frame: c.frame, body, partner: iface.partner || null, net: iface.net || null });
     } catch (e) {
       st.log.push({ level: "error", feature: iface.id, msg: `Interface « ${iface.id} » : ${e.message}` });
