@@ -1,0 +1,105 @@
+/* DynamiteOrbit.ai — composes the drawing of an ASSEMBLY on a tabloid sheet : the three standard views of the placed
+   parts in the middle, a small isometric view top right, the notes bottom left, and above the title block — bottom
+   right — the parts list. Each part of the list is shown on a view by a round balloon with its item number ; the overall
+   dimensions carry their own small balloons, numbered after the items, so that no number is used twice on the sheet.
+   An assembly that holds sub-assemblies lists ITS level (the usual parts list of an assembly drawing) : a sub-assembly is one
+   line and one balloon, at the middle of the block — it has its own drawing, with its own list ; the parts and the hardware
+   listed are those of this level. The same sheet can list every part through the levels instead (data.rows says which).
+   Pure layout code (browser and Node). */
+
+import { LW, dimLinear, drawBorder, drawTitleBlock, drawNotes, drawTable, drawRevisionTable, viewLabel, TITLE_BLOCK_H, TITLE_BLOCK_W, TOL_BLOCK_W } from "./drafting.js";
+import { liveDetails, drawDetail, markDetail, detailRoom, placeOf } from "./detail_view.js";
+import { Room, placeBox } from "./sheet_room.js";
+import { liveAsm } from "../core/asm_live.js";
+import { bounds, drawView, balloon, notesHeight } from "./part_drawing.js";
+import { uosOf, uosLines, UOS_STD } from "./uos.js";
+import { len, massOf, drawingUnit, inDrawingUnits, inDrawingWords, say } from "./dim_model.js";
+
+const SCALES = [[5, "5:1"], [2, "2:1"], [1, "1:1"], [0.5, "1:2"], [0.4, "1:2.5"], [0.25, "1:4"], [0.2, "1:5"], [0.1, "1:10"], [0.05, "1:20"], [0.02, "1:50"]];
+const RIGHT_W = 180, ITEM_R = 4, AX = { front: [0, 2], top: [0, 1], right: [1, 2] };
+
+/** Where the balloons of a view stand : on the rectangle of the view grown by `out`, in the direction of each part, pushed apart when two would touch. */
+export function placeBalloons(items, box, out = 13, r = ITEM_R) {
+  const c = [box.x + box.w / 2, box.y + box.h / 2], hw = box.w / 2 + out, hh = box.h / 2 + out;
+  const list = items.map((it) => { const dx = it.p[0] - c[0], dy = it.p[1] - c[1]; return { ...it, a: Math.hypot(dx, dy) < 0.5 ? -Math.PI / 2 : Math.atan2(dy, dx) }; }).sort((p, q) => p.a - q.a);
+  const at = (a) => { const t = Math.min(hw / Math.max(Math.abs(Math.cos(a)), 1e-9), hh / Math.max(Math.abs(Math.sin(a)), 1e-9)); return [c[0] + t * Math.cos(a), c[1] + t * Math.sin(a)]; };
+  for (let pass = 0; pass < 40; pass++) { let moved = false;
+    for (let i = 1; i < list.length; i++) { const p = at(list[i - 1].a), q = at(list[i].a); if (Math.hypot(p[0] - q[0], p[1] - q[1]) < 2 * r + 1.5) { list[i].a += 0.06; moved = true; } }
+    if (!moved) break; }
+  return list.map((it) => ({ ...it, b: at(it.a) }));
+}
+
+/** The centre of a line of the list : a part by its id, a sub-assembly under « asm:<id> » (a part and an assembly may bear the same id). */
+export const centerKey = (row) => (row.kind === "assembly" ? `asm:${row.id}` : row.id);
+/** data = { asm, project, views, bbox, rows (the BOM : of this level, or flat), centers: { partId | "asm:<id>": [x, y, z] }, mass,
+    count: { parts, inSubs, subs, joints } (what is placed, through the levels), opts }. Returns what was drawn. */
+export function composeAssemblyDrawing(sheet, data) { const o = data.opts || {}; return inDrawingUnits(o.units, () => inDrawingWords(o.say, () => composeSheet(sheet, data))); }
+function composeSheet(sheet, data) {
+  const { asm, project, views, bbox: bb, rows } = data, o = data.opts || {}, frame = drawBorder(sheet, { confidential: o.confidential });
+  const B = { front: bounds(views.front), top: bounds(views.top), right: bounds(views.right), iso: bounds(views.iso) }, third = (o.projection || "third") === "third";
+  const parts = rows.filter((r) => r.kind === "part" || r.kind === "assembly"), hw = rows.filter((r) => r.kind === "hardware"), subs = rows.filter((r) => r.kind === "assembly");
+  const c = data.count || { parts: liveAsm(asm).instances.length, inSubs: 0, subs: 0, joints: (liveAsm(asm).mates || []).length }, nSubs = subs.reduce((n, r) => n + r.qty, 0);
+  const auto = [{ key: "standard", text: `Dimensioning per ASME Y14.5-2018; dimensions in ${drawingUnit() === "in" ? "inches, converted from the millimetre model (1 in = 25.4 mm)" : "millimetres"}; overall dimensions of the assembled product; untoleranced dimensions: see the tolerance block.` },
+    { key: "items", text: `Balloons refer to the items of the bill of materials; each part${subs.length ? " and each sub-assembly" : ""} is defined by its own drawing, at the revision shown.` },
+    { key: "count", text: `${c.parts} part(s) placed${subs.length ? `, ${c.inSubs} of them inside ${nSubs} sub-assembl${nSubs > 1 ? "ies" : "y"} listed as one item each` : c.subs ? `, through ${c.subs} sub-assembl${c.subs > 1 ? "ies" : "y"} (every part listed)` : ""}, ${c.joints} joint(s)${hw.length ? `, fasteners and consumables: ${hw.length} line(s) of the bill of materials` : ""}.` },
+    { key: "routing", text: "Assembly sequence, tooling and tightening torques: see the assembly routing." }], off = new Set(o.notesOff || []), U = o.uos || uosOf(null);
+  const notes = [...auto.filter((n) => !off.has(n.key)).map((n) => n.text), ...(asm.notes || []).map(say)];
+  const notesW = 150, nH = Math.min(notesHeight(sheet, notes, notesW), 80), notesY = frame.y + frame.h - nH - 3, colX = frame.x + frame.w - RIGHT_W;
+  const revs = o.revisions && o.revisions.length ? o.revisions : [{ rev: asm.revision || "A", description: "Initial release", date: o.date || "", by: o.drawnBy || "" }];
+  const revH = (Math.min(revs.length, 4) + 2) * 5, isoBox = { x: frame.x + frame.w - 66, y: frame.y + revH + 3, w: 62, h: 48 };
+  const gap = 32, pad = 30, area = { x: frame.x + 4, y: frame.y + 4, w: colX - frame.x - 10, h: Math.min(notesY, frame.y + frame.h - TITLE_BLOCK_H - 3) - frame.y - 10 };      // above the notes and above the tolerance block
+  let scale = SCALES[SCALES.length - 1];
+  for (const sc of SCALES) { const k = sc[0]; if ((B.front.w + B.right.w) * k + gap + 2 * pad <= area.w && (B.front.h + B.top.h) * k + gap + 2 * pad <= area.h) { scale = sc; break; } }
+  const s = scale[0], bw = (B.front.w + B.right.w) * s + gap, bh = (B.front.h + B.top.h) * s + gap, fx = area.x + (area.w - bw) / 2, y0 = area.y + (area.h - bh) / 2;
+  const topY = third ? y0 : y0 + B.front.h * s + gap, frontY = third ? y0 + B.top.h * s + gap : y0, rightX = fx + B.front.w * s + gap;
+  const O = { front: [fx, frontY], top: [fx, topY], right: [rightX, frontY] }, T = {};
+  for (const v of ["front", "top", "right"]) T[v] = drawView(sheet, views[v], B[v], O[v][0], O[v][1], s, false);
+  const isoS = Math.min(isoBox.w / Math.max(B.iso.w, 1), isoBox.h / Math.max(B.iso.h, 1));
+  drawView(sheet, views.iso, B.iso, isoBox.x + (isoBox.w - B.iso.w * isoS) / 2, isoBox.y + (isoBox.h - B.iso.h * isoS) / 2, isoS, false);
+  /* each part of the list goes to the view where it stands clear of those already placed there */
+  const onView = { front: [], top: [], right: [] }, where = {};
+  for (const r of parts) { const c = (data.centers || {})[centerKey(r)]; if (!c) continue;
+    const v = ["front", "top", "right"].find((k) => { const p = T[k]([c[AX[k][0]], c[AX[k][1]]]); return onView[k].every((q) => Math.hypot(q.p[0] - p[0], q.p[1] - p[1]) > 7); }) || "front";
+    onView[v].push({ item: r.item, p: T[v]([c[AX[v][0]], c[AX[v][1]]]) }); where[centerKey(r)] = v; }
+  for (const v of ["front", "top", "right"]) for (const it of placeBalloons(onView[v], { x: O[v][0], y: O[v][1], w: B[v].w * s, h: B[v].h * s })) {
+    const d = Math.hypot(it.b[0] - it.p[0], it.b[1] - it.p[1]) || 1, e = [it.b[0] - (it.b[0] - it.p[0]) / d * ITEM_R, it.b[1] - (it.b[1] - it.p[1]) / d * ITEM_R];
+    sheet.line(it.p[0], it.p[1], e[0], e[1], { w: LW.fine }); sheet.circle(it.p[0], it.p[1], 0.55, { w: LW.fine, fill: "#000000" }); balloon(sheet, it.b, it.item, ITEM_R);
+  }
+  /* overall dimensions, numbered after the items */
+  let n = rows.length;
+  const dim = (p1, p2, dir, off, value) => { const r = dimLinear(sheet, p1, p2, { dir, offset: off, text: len(value) }), a = r.angle * Math.PI / 180, al = [Math.cos(a), Math.sin(a)], up = [Math.sin(a), -Math.cos(a)], run = sheet.textWidth(r.text, { size: 3.5 }) / 2 + 4.5;
+    balloon(sheet, [r.x + al[0] * run + up[0] * 2.3, r.y + al[1] * run + up[1] * 2.3], ++n); return n; };
+  const dims = [["Overall length", bb[3] - bb[0], dim(T.front([B.front.x0, B.front.y0]), T.front([B.front.x1, B.front.y0]), "h", 24, bb[3] - bb[0])],
+    ["Overall height", bb[5] - bb[2], dim(T.front([B.front.x0, B.front.y0]), T.front([B.front.x0, B.front.y1]), "v", -24, bb[5] - bb[2])],
+    ["Overall width", bb[4] - bb[1], dim(T.top([B.top.x0, B.top.y0]), T.top([B.top.x0, B.top.y1]), "v", -24, bb[4] - bb[1])]];
+  /* the parts list sits on the title block */
+  const rowH = 4.8, room = Math.floor((frame.y + frame.h - TITLE_BLOCK_H - (isoBox.y + isoBox.h + 8)) / rowH) - 2, shown = rows.slice(0, Math.max(1, room)), th = (shown.length + 2) * rowH;
+  drawTable(sheet, colX, frame.y + frame.h - TITLE_BLOCK_H - th, [{ title: "Item", width: 12, align: "center" }, { title: "Qty", width: 12, align: "center" }, { title: "Part No.", width: 42 }, { title: "Description", width: 62 }, { title: "Rev.", width: 12, align: "center" }, { title: "Material", width: 40 }],
+    shown.map((r) => [String(r.item), String(r.qty), r.id, r.kind === "hardware" ? r.name : say(r.name), r.kind === "hardware" ? "—" : r.rev || "A", r.kind === "part" ? r.material || "—" : r.kind === "assembly" ? `Sub-assembly, ${r.parts} part${r.parts > 1 ? "s" : ""}` : "purchased"]), { size: 2.3, rowH, title: "BILL OF MATERIALS" });
+  if (rows.length > shown.length) sheet.text(colX, frame.y + frame.h - TITLE_BLOCK_H - th - 2, `… and ${rows.length - shown.length} more line(s): see the bill of materials of the assembly.`, { size: 2.3, font: "italic" });
+  drawNotes(sheet, frame.x + 4, notesY, notesW, notes, { title: "NOTES", size: 2.3 });
+  viewLabel(sheet, fx + B.front.w * s / 2, frontY + B.front.h * s + 34, "", `SCALE ${scale[1]}`);
+  drawRevisionTable(sheet, frame.x + frame.w, frame.y, revs.slice(-4), { align: "right" });
+  drawTitleBlock(sheet, frame, { title: `${say(asm.name) || asm.id}${o.variant ? ` — VARIANT ${say(o.variant)}` : ""}`, partNumber: asm.id, revision: asm.revision || "A", material: "Assembly", finish: "—", mass: massOf(data.mass || 0),
+    scale: scale[1], sheet: "1/1", size: "B (11 × 17)", drawnBy: o.drawnBy || "", checkedBy: o.checkedBy || "", approvedBy: o.approvedBy || "", date: o.date || "", company: o.organisation || "DynamiteOrbit.ai", project: say((project && project.name) || ""),
+    projection: third ? "third" : "first", units: drawingUnit(), status: o.status || "Preliminary", uos: { lines: uosLines(U, drawingUnit() === "in"), example: !U.sure, std: UOS_STD } });
+  /* detail views (JP : « une vue de détail sur un dessin d'assemblage ») : as on a part, a circle drawn on a view becomes a view of its own, in the
+     white room left — the views, their balloons and dimensions, the iso view, the parts list, the notes and the title block are not white ;
+     a detail dragged on the sheet stays where it was put. One that finds no room is said (detailsLeft), not drawn over the rest. */
+  const white = new Room(2 * frame.x + frame.w, 2 * frame.y + frame.h), details = []; let detailsLeft = 0;
+  const bomY = frame.y + frame.h - TITLE_BLOCK_H - th;      // the right column : the revisions on top, the iso view, then the parts list — white between them
+  white.rect(fx - 32, y0 - 32, bw + 64, bh + 64); white.rect(frame.x + frame.w - 150, frame.y, 150, revH + 2); white.rect(isoBox.x - 2, isoBox.y - 2, isoBox.w + 4, isoBox.h + 4); white.rect(colX - 2, bomY - 8, RIGHT_W + 2, th + 8); white.rect(frame.x, notesY - 2, notesW + 4, nH + 4);
+  white.rect(frame.x + frame.w - TITLE_BLOCK_W - TOL_BLOCK_W, frame.y + frame.h - TITLE_BLOCK_H, TITLE_BLOCK_W + TOL_BLOCK_W, TITLE_BLOCK_H);
+  for (const d of liveDetails(asm)) {
+    if (!views[d.view] || !T[d.view]) continue;
+    const R = detailRoom(d, []), hand = placeOf(d, frame, R.w, R.h), at = hand || placeBox(white, R.w, R.h, T[d.view](d.at), { x: frame.x + 2, y: frame.y + 2, w: frame.w - 4, h: frame.h - 4 });
+    markDetail(sheet, T[d.view], d, s);
+    if (!at) { detailsLeft++; continue; }
+    drawDetail(sheet, views[d.view], d, at.x + 2, at.y + 1, d.scale, false); white.rect(at.x, at.y, R.w, R.h);
+    details.push({ letter: d.letter, id: d.id, view: d.view, sheet: 1, box: { x: at.x, y: at.y, w: R.w, h: R.h }, dims: [], hand: !!hand });
+  }
+  const boxes = { top: { x: fx, y: topY, w: B.top.w * s, h: B.top.h * s }, front: { x: fx, y: frontY, w: B.front.w * s, h: B.front.h * s }, right: { x: rightX, y: frontY, w: B.right.w * s, h: B.right.h * s } };
+  const transforms = { front: { ox: fx, oy: frontY, s, x0: B.front.x0, y1: B.front.y1 }, top: { ox: fx, oy: topY, s, x0: B.top.x0, y1: B.top.y1 }, right: { ox: rightX, oy: frontY, s, x0: B.right.x0, y1: B.right.y1 } };
+  return { scale: scale[1], scaleK: s, details, detailsLeft, notes, autoNotes: auto, uos: U, items: parts.map((r) => ({ item: r.item, id: r.id, kind: r.kind, view: where[centerKey(r)] || null })), dims: dims.map(([label, value, k]) => ({ n: k, label, value })), bom: shown.length,
+    layout: { notes: { x: frame.x + 4, y: notesY, w: notesW, h: nH }, iso: isoBox, views: { x: fx, y: y0, w: bw, h: bh }, bom: { x: colX, y: frame.y + frame.h - TITLE_BLOCK_H - th, w: RIGHT_W, h: th }, area, frame, boxes, transforms, bounds: { front: B.front, top: B.top, right: B.right } } };
+}
