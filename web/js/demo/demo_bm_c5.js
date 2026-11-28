@@ -246,7 +246,8 @@ export function camCalc5(L, pts) {
 export function moduleSizes(p) {
   const find = (id) => p.parts.find((x) => x.id === id), feat = (id, f) => find(id).features.find((q) => q.id === f);
   const end = (f) => f.at[1] + (f.op === "box" ? f.size[1] : f.h);
-  const ring = feat("BM-LID-RING-TOP", "bride"), cap = feat("BM-LID-TOP", "plaque"), shaft = feat("BM-LATCH-CAM", "arbre"), lever = feat("BM-LATCH-CAM", "levier");
+  const has = (id) => !!find(id), ring = feat("BM-LID-RING-TOP", "bride"), solid = feat("BM-LID-RING-TOP", "plaque");      // concept 5, iteration 3 : the lid in one piece, no cap nor latch
+  const cap = has("BM-LID-TOP") ? feat("BM-LID-TOP", "plaque") : solid, shaft = has("BM-LATCH-CAM") ? feat("BM-LATCH-CAM", "arbre") : cap, lever = has("BM-LATCH-CAM") ? feat("BM-LATCH-CAM", "levier") : cap;
   const lid = feat("BM-LID-BOT", "coque");
   const conn = find("BM-SWAP-CONN"), cb = conn.features.reduce((b, f) => { if (f.op !== "box" || f.mode === "cut") return b; return { x0: Math.min(b.x0, f.at[0]), x1: Math.max(b.x1, f.at[0] + f.size[0]), z0: Math.min(b.z0, f.at[2]), z1: Math.max(b.z1, f.at[2] + f.size[2]), tip: Math.min(b.tip, f.at[1]) }; }, { x0: Infinity, x1: -Infinity, z0: Infinity, z1: -Infinity, tip: Infinity });
   return { out: { x0: ring.at[0], x1: r3(ring.at[0] + ring.size[0]) }, top: r3(ring.at[2] + ring.size[2]), bottom: ring.at[2], ringEnd: ring.at[1],

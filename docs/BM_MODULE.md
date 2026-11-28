@@ -952,7 +952,38 @@ jet reste au point P9, inchangé, et un essai tient que seules les pièces que l
   laisse, aucune pièce de la poignée n'entre dans le module, la swap surface ou les butées (les pawls, dessinés engagés, sont retirés par la
   gâchette avant de tourner, et laissés hors de cette vérification).
 
-**À revoir avec JP** : la fenêtre dans la swap surface (le véhicule et la station doivent l'accepter) ; des butées hautes, le long des flancs ;
+### Itération 3 — un couvercle de 16 mm usiné, le pivot dedans, la poignée verticale (point P11)
+
+Messages de JP, 28 novembre : « épaissir… 15-20 mm… pour avoir assez d'épaisseur pour le trou du pivot structural… un couvercle allégé en alu ou
+titane machiné dans la masse… toute la matière qui n'est pas structurale peut être évidée » ; « l'ajout de dimension… était en longueur pas
+largeur, le couvercle du bout avec le pivot est très mince » ; « attention à la position angulaire de la came, ça doit pousser au max quand la
+poignée est dans le haut parallèle au cover vertical » ; « montre-moi… tu dois montrer des schémas » ; « la partie qui accueille la main est
+offset des bouts droits qui vont jusqu'au pivot pour offrir la place pour les doigts ». Sur deux planches dessinées à partir du modèle, ses choix
+par menu : « Pivot dans le couvercle », « Oui, une seule pièce », « A · pivot haut ». Source : `web/js/demo/demo_bm_c5_lid.js`
+(`conceptFiveLid`, `layoutLid`) ; les itérations 1 (P9) et 2 (P10) restent dans l'historique, et un essai tient ce qui change de l'une à l'autre.
+
+- **Un seul couvercle du haut, 16 mm en longueur** : l'anneau (6 mm) et le couvercle PA66 (3 mm) deviennent une pièce en alu 6061-T6 usinée
+  dans la masse (un titane ou un 7075 se choisira : absents de la bibliothèque), vissée au boîtier par ses quatre vis (lamées), **évidée** sur sa
+  face extérieure — 12 poches de 7 mm, nervures de 3 mm, toile de 3 mm —, pleine aux vis et aux pattes du pivot. **Le module prend 7 mm.**
+- **Plus de quart de tour** : le couvercle est vissé ; ouvrir le module demande un tournevis. Il n'isole plus : les rondelles ressorts appuient
+  sur sa face intérieure, au même plan qu'avant, et la plaque de pression isolante reste entre elles et la borne +.
+- **Le pivot dans le couvercle** : dans ses deux pattes latérales, au milieu de ses 16 mm, à 50,25 mm de haut ; l'axe est emmanché 3 mm dans le
+  couvercle, la came et le bras tournent dessus.
+- **Fermée, la poignée est VERTICALE**, parallèle au couvercle : la came pousse alors son plus — son plat sur la butée (8 mm) ; **la came ne
+  change pas**. Ses **bouts droits** (18,7 mm) montent du pivot ; la partie qui reçoit la main est **décalée de 65,5 mm** vers l'arrière : 45 mm
+  pour les doigts gantés avant le couvercle, puis le grip, toujours 10 mm sous le dessus du module.
+- **Elle s'ouvre de 75°** (une butée d'ouverture sur la patte, à dessiner) : à 90°, le grip décalé retomberait dans le couvercle — ce que la
+  première planche (option A) ne montrait pas, et qui a été corrigé. La came n'en use pas le début : **6,2 mm de course** depuis la poignée
+  ouverte (5–10 mm, la feuille CB-6.29).
+- **L'anse de libération** passe sous le grip (se serre vers le haut) ; les **tringles** courent dans le coude des bras, un renvoi les relie au
+  pawl, sous le pivot (non dessiné).
+- **Les butées** suivent le pivot (75 mm de haut) ; la **fenêtre** de la swap surface reste sous la poignée qui tourne.
+- **Le calcul** : levier 68,1 mm, **64 N à la main** pour 80 admis (exemple).
+- **Vérifié par les essais** : rien ne traverse rien, la poignée fermée ; tournée à −30°, −60° et −75°, le module chez lui ou là où la came le
+  laisse, aucune pièce de la poignée n'entre dans le module, la swap surface ou les butées.
+
+**À revoir avec JP** : la butée d'ouverture à 75° ; le service sans quart de tour (un tournevis) ; le renvoi des tringles au pawl ; la
+fenêtre dans la swap surface (le véhicule et la station doivent l'accepter) ; des butées hautes, le long des flancs ;
 le pivot loin derrière le couvercle au premier jet (P9) — réglé ici pour la longueur, pas pour la main (45 mm) ; un **galet** sur la butée, qui ôterait le tiers de l'effort ; l'**extraction** (la poignée couchée tire le module,
 rien ne l'éjecte) ; la **glace** sur la butée ; les efforts réels du connector et sa sur-course admise ; les oreilles usinées avec l'anneau
 (rapportées et vissées en série) ; la clavette des butées ; le quart de tour du couvercle, toujours là sous la poignée.

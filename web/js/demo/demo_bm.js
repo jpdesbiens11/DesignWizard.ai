@@ -49,6 +49,7 @@ import { lidForks, lidForkFeatures, bridgeC3, lidBandsPart } from "./demo_bm_c3_
 import { conceptFour } from "./demo_bm_c4.js";
 import { conceptFive, C5 } from "./demo_bm_c5.js";
 import { conceptFiveHigh } from "./demo_bm_c5_hi.js";
+import { conceptFiveLid, LID } from "./demo_bm_c5_lid.js";
 import { run as runCalc, sessionDefaults as calcDefaults } from "../analysis/physics/index.js";
 import { addPoint, restoreInto, putDefinition, withoutHistory, tipOf, rebuild } from "../core/history.js";
 
@@ -260,6 +261,9 @@ function withConceptFive(p) {
   const h = conceptFiveHigh(p), H = h.layout;
   addPoint(p, { kind: "manual", branch: C5_BRANCH, label: `Concept 5 — pivot haut : ${frC(h.gain)} mm de moins`, when: "2026-11-28T01:00:00.000Z", by: "DynamiteOrbit.ai",
     note: `Choix de JP par menu : « Rapprocher le pivot », puis « A · pivot haut », sur l'image de trois options calculées sur le modèle. Le grip reste où il était ; le pivot monte à ${frC(H.zP)} mm et avance de ${frC(L.yP - H.yP)} mm, les bras s'inclinent vers le grip ; la came, son plat et sa course ne changent pas (90°) ; la gâchette descend moins ; les butées montent aux cames, les rails s'arrêtent avant le couvercle. Levier ${frC(H.lever)} mm, ${Math.round(h.calc.values.F_hand)} N à la main. Le premier jet reste au point d'avant.` });
+  const c = conceptFiveLid(p), K = c.layout;
+  addPoint(p, { kind: "manual", branch: C5_BRANCH, label: `Concept 5 — couvercle de ${LID.t} mm usiné, pivot dedans, poignée verticale`, when: "2026-11-28T02:00:00.000Z", by: "DynamiteOrbit.ai",
+    note: `JP, 28 novembre : « épaissir… en longueur… le couvercle du bout avec le pivot est très mince », « un couvercle allégé en alu ou titane machiné dans la masse », « ça doit pousser au max quand la poignée est dans le haut parallèle au cover vertical », « la partie qui accueille la main est offset des bouts droits qui vont jusqu'au pivot » ; par menu, sur des planches : « Pivot dans le couvercle », « Oui, une seule pièce », « A · pivot haut ». Un couvercle de ${LID.t} mm, alu usiné dans la masse, évidé, qui remplace l'anneau et le couvercle PA66 (plus de quart de tour) ; le pivot dans ses pattes, à ${frC(K.zP)} mm ; poignée fermée verticale (la came y pousse son plus), grip décalé de ${LID.fingers} mm pour les doigts ; ouverte à ${LID.swing}° ; levier ${frC(K.lever)} mm, ${Math.round(c.calc.values.F_hand)} N à la main.` });
 }
 const frC = (v) => String(Math.round(v * 100) / 100).replace(".", ",");
 
